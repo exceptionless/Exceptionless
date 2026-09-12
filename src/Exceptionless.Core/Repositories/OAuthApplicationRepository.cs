@@ -52,6 +52,9 @@ public class OAuthApplicationRepository : RepositoryBase<OAuthApplication>, IOAu
     }
 
     public Task<FindResults<OAuthApplication>> GetByCriteriaAsync(string? criteria, IReadOnlyCollection<string>? organizationIds, CommandOptionsDescriptor<OAuthApplication>? options = null)
+        => GetByCriteriaAsync(criteria, organizationIds, null, null, options);
+
+    public Task<FindResults<OAuthApplication>> GetByCriteriaAsync(string? criteria, IReadOnlyCollection<string>? organizationIds, bool? authorized, string? sort, CommandOptionsDescriptor<OAuthApplication>? options = null)
     {
         var query = new RepositoryQuery<OAuthApplication>();
 
@@ -66,7 +69,16 @@ public class OAuthApplicationRepository : RepositoryBase<OAuthApplication>, IOAu
         if (organizationIds is { Count: > 0 })
             query.FieldEquals(application => application.OrganizationIds, organizationIds);
 
-        query.SortAscending(application => application.Name);
+        if (authorized is true)
+            query.FieldHasValue(application => application.OrganizationIds);
+        else if (authorized is false)
+            query.FieldEmpty(application => application.OrganizationIds);
+
+        if (!String.IsNullOrWhiteSpace(sort))
+            query.SortExpression($"{sort} id");
+        else
+            query.SortAscending(application => application.Name).SortAscending(application => application.Id);
+
         return FindAsync(q => query, options);
     }
 }

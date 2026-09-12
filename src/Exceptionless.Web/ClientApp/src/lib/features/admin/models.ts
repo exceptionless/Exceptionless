@@ -170,6 +170,7 @@ export type OAuthApplication = {
 
 export type OAuthApplicationOrganization = {
     id: string;
+    is_available?: boolean;
     name: string;
 };
 

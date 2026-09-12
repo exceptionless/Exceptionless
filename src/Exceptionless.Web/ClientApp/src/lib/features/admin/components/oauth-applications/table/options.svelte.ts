@@ -7,13 +7,26 @@ import { getSharedTableOptions } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
 import OAuthApplicationActionsCell from './oauth-application-actions-cell.svelte';
-import OAuthApplicationClientCell from './oauth-application-client-cell.svelte';
+import OAuthApplicationExpandCell from './oauth-application-expand-cell.svelte';
 import OAuthApplicationOrganizationsCell from './oauth-application-organizations-cell.svelte';
 import OAuthApplicationScopesCell from './oauth-application-scopes-cell.svelte';
 import OAuthApplicationSummaryCell from './oauth-application-summary-cell.svelte';
 
 export function getColumns(): ColumnDef<StockFeatures, OAuthApplication, unknown>[] {
     return [
+        {
+            cell: (info) =>
+                renderComponent(OAuthApplicationExpandCell, {
+                    row: info.row
+                }),
+            enableHiding: false,
+            enableSorting: false,
+            header: '',
+            id: 'expand',
+            meta: {
+                class: 'w-12 min-w-12 max-w-12'
+            }
+        },
         {
             accessorKey: 'name',
             cell: (info) =>
@@ -24,19 +37,7 @@ export function getColumns(): ColumnDef<StockFeatures, OAuthApplication, unknown
             enableSorting: false,
             header: 'Application',
             meta: {
-                class: 'w-[28%] max-w-none whitespace-normal'
-            }
-        },
-        {
-            accessorKey: 'client_id',
-            cell: (info) =>
-                renderComponent(OAuthApplicationClientCell, {
-                    clientId: info.row.original.client_id
-                }),
-            enableSorting: false,
-            header: 'Client ID',
-            meta: {
-                class: 'w-[30%] max-w-none'
+                class: 'w-[45%] max-w-none whitespace-normal'
             }
         },
         {
@@ -84,8 +85,12 @@ export function getTableOptions(
     queryResponse: CreateQueryResult<FetchClientResponse<OAuthApplication[]>, ProblemDetails>
 ) {
     return getSharedTableOptions<OAuthApplication, 'offset'>({
-        columnPersistenceKey: 'oauth-applications-compact',
+        columnPersistenceKey: 'oauth-applications-details',
         columns: getColumns(),
+        configureOptions: (options) => ({
+            ...options,
+            getRowCanExpand: () => true
+        }),
         paginationStrategy: 'offset',
         get queryData() {
             return queryResponse.data?.data ?? [];
