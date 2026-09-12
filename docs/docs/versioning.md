@@ -4,6 +4,8 @@ title: "Versioning"
 
 # Versioning
 
+Stacks and their fixed version are shared across [environments](/docs/environments/). Continue sending application versions so older deployments can report occurrences without incorrectly reopening a stack fixed in a newer version.
+
 You can mark error stacks fixed and they won't show up or notify you until they regress!
 
 ## How does this work?

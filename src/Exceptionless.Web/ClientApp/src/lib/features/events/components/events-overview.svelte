@@ -429,7 +429,7 @@
                             ondrop={(event) => handlePromotedTabDrop(event, tab)}
                             ondragend={handlePromotedTabDragEnd}
                             title={isPromotedTab(tab) ? 'Drag to reorder custom tab' : undefined}
-                            value={tab}>{tab}</Tabs.Trigger
+                            value={tab}>{tab === 'Environment' ? 'Machine & runtime' : tab}</Tabs.Trigger
                         >
                     {/each}
                 </Tabs.List>

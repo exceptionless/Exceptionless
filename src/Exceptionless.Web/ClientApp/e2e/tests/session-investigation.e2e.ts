@@ -115,7 +115,7 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
         await page.getByRole('tab', { name: 'Exception' }).click();
         await expectWrappedMessageWithoutMeaningfulOverflow();
 
-        await page.getByRole('tab', { name: 'Environment' }).click();
+        await page.getByRole('tab', { name: 'Machine & runtime' }).click();
         const machineNameRow = activePanel().getByRole('row').filter({ hasText: 'Machine Name' });
         await expect(machineNameRow).toBeVisible();
         await expect

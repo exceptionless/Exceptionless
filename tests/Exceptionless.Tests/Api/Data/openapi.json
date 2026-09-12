@@ -531,6 +531,14 @@
         ],
         "parameters": [
           {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "source",
             "in": "query",
             "description": "The event source (ie. machine name, log name, feature name).",
@@ -694,6 +702,14 @@
             }
           },
           {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "source",
             "in": "query",
             "description": "The event source (ie. machine name, log name, feature name).",
@@ -853,6 +869,14 @@
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
               "type": "string"
             }
           },
@@ -1025,6 +1049,14 @@
             "required": true,
             "schema": {
               "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
               "type": "string"
             }
           },
@@ -10646,6 +10678,14 @@
             }
           },
           {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "source",
             "in": "query",
             "description": "The event source (ie. machine name, log name, feature name).",
@@ -10807,6 +10847,14 @@
             "required": true,
             "schema": {
               "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
               "type": "string"
             }
           },
@@ -10983,6 +11031,14 @@
             }
           },
           {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "source",
             "in": "query",
             "description": "The event source (ie. machine name, log name, feature name).",
@@ -11154,6 +11210,14 @@
             "required": true,
             "schema": {
               "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
               "type": "string"
             }
           },
@@ -13037,6 +13101,15 @@
             ],
             "additionalProperties": {},
             "description": "Used to store primitive data type custom data values for searching the event."
+          },
+          "environment": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The deployment environment, such as production, staging, or development.\nMissing or invalid names remain unspecified. Machine and runtime information is stored separately in data.@environment."
           },
           "type": {
             "maxLength": 100,

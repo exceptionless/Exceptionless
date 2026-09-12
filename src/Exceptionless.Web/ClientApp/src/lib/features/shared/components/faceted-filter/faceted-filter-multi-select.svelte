@@ -15,6 +15,8 @@
 
     interface Props {
         changed: (values: string[]) => void;
+        createOption?: (search: string) => Option | undefined;
+        emptyText?: string;
         hidden?: boolean;
         loading?: boolean;
         noOptionsText?: string;
@@ -28,6 +30,8 @@
 
     let {
         changed,
+        createOption,
+        emptyText = 'No Value',
         hidden = false,
         loading = false,
         noOptionsText = 'No results found.',
@@ -38,6 +42,10 @@
         toggleHidden,
         values
     }: Props = $props();
+
+    let search = $state('');
+    const customOption = $derived(createOption?.(search));
+    const showCustomOption = $derived(customOption && !options.some((option) => option.value === customOption.value));
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValues = $state<string[]>([]);
@@ -68,6 +76,8 @@
     }
 
     function filter(value: string, search: string) {
+        search = search.trim().toLowerCase();
+        value = value.toLowerCase();
         if (value.includes(search)) {
             return 1;
         }
@@ -107,23 +117,30 @@
                         {/snippet}
                     </FacetedFilter.BadgeValues>
                 {:else}
-                    <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
+                    <FacetedFilter.BadgeValue>{emptyText}</FacetedFilter.BadgeValue>
                 {/if}
             </Button>
         {/snippet}
     </Popover.Trigger>
     <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
         <Command.Root {filter}>
-            <Command.Input placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
+            <Command.Input placeholder={title} bind:value={search} autofocus={open} aria-describedby={`${title}-help`} />
             <Command.List>
                 <Command.Empty>{noOptionsText}</Command.Empty>
+                {#if showCustomOption && customOption}
+                    <Command.Group>
+                        <Command.Item value={customOption.value} onSelect={() => customOption && onValueSelected(customOption.value)}>
+                            Use {customOption.label}
+                        </Command.Item>
+                    </Command.Group>
+                {/if}
                 {#if loading}
                     <Command.Loading><div class="flex p-2"><Spinner /> Loading...</div></Command.Loading>
                 {/if}
                 {#if options.length > 0}
                     <Command.Group>
                         {#each options as option (option.value)}
-                            <Command.Item id={option.value} onSelect={() => onValueSelected(option.value)} value={option.value}>
+                            <Command.Item id={option.value || undefined} onSelect={() => onValueSelected(option.value)} value={option.value || option.label}>
                                 <div
                                     class={cn(
                                         'border-primary mr-2 flex size-4 items-center justify-center rounded-sm border',

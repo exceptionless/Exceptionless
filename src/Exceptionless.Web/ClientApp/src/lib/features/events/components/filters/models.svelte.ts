@@ -3,6 +3,8 @@ import type { PersistentEventKnownTypes } from '$features/events/models';
 import type { LogLevel } from '$features/events/models/event-data';
 import type { StackStatus } from '$features/stacks/models';
 
+import { SvelteSet } from 'svelte/reactivity';
+
 import { quoteIfSpecialCharacters } from './helpers.svelte';
 
 export class BooleanFilter implements IFilter {
@@ -77,6 +79,32 @@ export class DateFilter implements IFilter {
 
         const date = this.value instanceof Date ? this.value.toISOString() : this.value;
         return `${this.term}:${quoteIfSpecialCharacters(date)}`;
+    }
+}
+
+export class EnvironmentFilter implements IFilter {
+    public hidden = $state(false);
+    public id: string = crypto.randomUUID();
+    public readonly key = 'environment';
+    public readonly type = 'environment';
+    public value = $state<string[]>([]);
+
+    constructor(value: string[] = []) {
+        this.value = [...new SvelteSet(value.map((name) => name.trim().toLowerCase()))];
+    }
+
+    public clone(): EnvironmentFilter {
+        const filter = new EnvironmentFilter([...this.value]);
+        filter.hidden = this.hidden;
+        filter.id = this.id;
+        return filter;
+    }
+
+    public toFilter(): string {
+        const clauses = this.value.map((value) =>
+            value === '' ? '_missing_:environment' : `environment:${/^[a-z0-9][a-z0-9_.-]*$/.test(value) ? value : JSON.stringify(value)}`
+        );
+        return clauses.length > 1 ? `(${clauses.join(' OR ')})` : (clauses[0] ?? '');
     }
 }
 

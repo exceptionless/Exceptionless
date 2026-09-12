@@ -910,6 +910,7 @@ internal static class EventEndpointHelpers
     /// </summary>
     public static readonly List<AdditionalParameterDefinition> SubmitGetAdditionalParameters =
     [
+        new("environment", "query", Description: "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified."),
         new("source", "query", Description: "The event source (ie. machine name, log name, feature name)."),
         new("message", "query", Description: "The event message."),
         new("reference", "query", Description: "An optional identifier to be used for referencing this event instance at a later time."),
