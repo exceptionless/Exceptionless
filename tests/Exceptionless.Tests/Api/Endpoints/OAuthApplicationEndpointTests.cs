@@ -7,6 +7,7 @@ using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Models.Admin;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
@@ -145,6 +146,64 @@ public sealed class OAuthApplicationEndpointTests : IntegrationTestsBase
         var organization = Assert.Single(match.Organizations);
         Assert.Equal(SampleDataService.TEST_ORG_ID, organization.Id);
         Assert.Equal("Acme", organization.Name);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WithAuthorizationFilterAndUpdatedSort_FiltersBeforePaging()
+    {
+        var oldest = await CreateApplicationAsync(CreateModel("authorized-oldest", "Authorization Alpha"));
+        var newest = await CreateApplicationAsync(CreateModel("authorized-newest", "Authorization Zulu"));
+        var pending = await CreateApplicationAsync(CreateModel("authorization-pending", "Authorization Pending"));
+        var legacy = await CreateApplicationAsync(CreateModel("authorization-legacy", "Authorization Legacy"));
+        Assert.NotNull(oldest);
+        Assert.NotNull(newest);
+        Assert.NotNull(pending);
+        Assert.NotNull(legacy);
+        await _repository.AddOrganizationIdsAsync(oldest.ClientId, [SampleDataService.TEST_ORG_ID]);
+        await _repository.AddOrganizationIdsAsync(newest.ClientId, [SampleDataService.TEST_ORG_ID]);
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        await _repository.PatchAsync(oldest.Id, new PartialPatch(new { updated_utc = utcNow.AddDays(-2) }));
+        await _repository.PatchAsync(newest.Id, new PartialPatch(new { updated_utc = utcNow.AddDays(-1) }));
+        await _repository.PatchAsync(legacy.Id, new ScriptPatch("ctx._source.remove('organization_ids');"));
+
+        var firstPage = await GetApplicationsAsync(authorized: true, page: 1);
+        var secondPage = await GetApplicationsAsync(authorized: true, page: 2);
+        var unauthorized = await GetApplicationsAsync(authorized: false, limit: 20);
+        var all = await GetApplicationsAsync(authorized: null, limit: 20);
+
+        Assert.Equal(newest.Id, Assert.Single(firstPage).Id);
+        Assert.Equal(oldest.Id, Assert.Single(secondPage).Id);
+        Assert.Equal(2, unauthorized.Count);
+        Assert.Contains(unauthorized, application => application.Id == pending.Id);
+        Assert.Contains(unauthorized, application => application.Id == legacy.Id);
+        Assert.Equal(4, all.Count);
+
+        var noOrganizationMatches = await SendRequestAsAsync<IReadOnlyCollection<ViewOAuthApplication>>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "oauth-applications")
+            .QueryString("authorized", false)
+            .QueryString("organization", "Acme")
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(noOrganizationMatches);
+        Assert.Empty(noOrganizationMatches);
+
+        async Task<IReadOnlyCollection<ViewOAuthApplication>> GetApplicationsAsync(bool? authorized, int page = 1, int limit = 1)
+        {
+            var applications = await SendRequestAsAsync<IReadOnlyCollection<ViewOAuthApplication>>(request =>
+            {
+                request.AsGlobalAdminUser()
+                    .AppendPaths("admin", "oauth-applications")
+                    .QueryString("criteria", "Authorization")
+                    .QueryString("sort", "-updated_utc")
+                    .QueryString("page", page)
+                    .QueryString("limit", limit)
+                    .StatusCodeShouldBeOk();
+                if (authorized.HasValue)
+                    request.QueryString("authorized", authorized.Value);
+            });
+            Assert.NotNull(applications);
+            return applications;
+        }
     }
 
     [Fact]

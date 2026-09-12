@@ -28,7 +28,7 @@ public class OAuthApplicationHandler(
         if (!String.IsNullOrWhiteSpace(message.Organization) && organizationIds.Count == 0)
             return new PagedResult<ViewOAuthApplication>([], false, page, 0);
 
-        var results = await repository.GetByCriteriaAsync(message.Criteria, organizationIds, o => o.PageNumber(page).PageLimit(limit));
+        var results = await repository.GetByCriteriaAsync(message.Criteria, organizationIds, message.Authorized, message.Sort, o => o.PageNumber(page).PageLimit(limit));
         var applications = await MapApplicationsAsync(results.Documents);
         return new PagedResult<ViewOAuthApplication>(applications, results.HasMore && !Pagination.NextPageExceedsSkipLimit(page, limit), page, results.Total);
     }

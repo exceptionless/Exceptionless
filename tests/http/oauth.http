@@ -79,7 +79,15 @@ Content-Type: application/json
 }
 
 ### List OAuth Applications
-GET {{apiUrl}}/admin/oauth-applications?page=1&limit=20&criteria=Codex&organization=Acme
+GET {{apiUrl}}/admin/oauth-applications?page=1&limit=20&criteria=Codex&organization=Acme&authorized=true&sort=-updated_utc
+Authorization: Bearer {{login.response.body.token}}
+
+### List OAuth applications awaiting authorization
+GET {{apiUrl}}/admin/oauth-applications?authorized=false&sort=-updated_utc
+Authorization: Bearer {{login.response.body.token}}
+
+### List all OAuth applications, including those without authorization
+GET {{apiUrl}}/admin/oauth-applications?sort=-updated_utc
 Authorization: Bearer {{login.response.body.token}}
 
 ### Get OAuth Application
