@@ -70,6 +70,20 @@
         }
     });
 
+    async function addReference(url: string) {
+        if (!stack.references?.includes(url)) {
+            await addLink.mutateAsync(url);
+        }
+    }
+
+    async function navigateToProjectIntegrations() {
+        await goto(
+            resolve('/(app)/project/[projectId]/manage', {
+                projectId: stack.project_id
+            })
+        );
+    }
+
     async function promoteToExternal() {
         const response = await promote.mutateAsync();
         if (response.status === 200) {
@@ -90,12 +104,10 @@
         toast.error(response.problem?.detail ?? 'An error occurred while promoting the stack.');
     }
 
-    async function navigateToProjectIntegrations() {
-        await goto(
-            resolve('/(app)/project/[projectId]/manage', {
-                projectId: stack.project_id
-            })
-        );
+    async function remove() {
+        await removeStacks.mutateAsync();
+        toast.success('Successfully queued the stack for deletion.');
+        onDeleted?.();
     }
 
     async function updateCritical() {
@@ -104,18 +116,6 @@
         } else {
             await markCritical.mutateAsync();
         }
-    }
-
-    async function addReference(url: string) {
-        if (!stack.references?.includes(url)) {
-            await addLink.mutateAsync(url);
-        }
-    }
-
-    async function remove() {
-        await removeStacks.mutateAsync();
-        toast.success('Successfully queued the stack for deletion.');
-        onDeleted?.();
     }
 </script>
 

@@ -64,6 +64,15 @@
         )?.focus();
     }
 
+    async function handleImpersonate(organization: ViewOrganization): Promise<void> {
+        currentOrganizationId = organization.id;
+        await goto(resolve('/'));
+    }
+
+    async function navigateTo(href: string): Promise<void> {
+        await goto(href);
+    }
+
     async function onOrganizationSelected(organization: ViewOrganization): Promise<void> {
         if (sidebar.isMobile) {
             sidebar.toggle();
@@ -77,18 +86,9 @@
         await goto(resolve('/'));
     }
 
-    async function handleImpersonate(organization: ViewOrganization): Promise<void> {
-        currentOrganizationId = organization.id;
-        await goto(resolve('/'));
-    }
-
     async function stopImpersonating(): Promise<void> {
         currentOrganizationId = organizations[0]?.id;
         await goto(resolve('/'));
-    }
-
-    async function navigateTo(href: string): Promise<void> {
-        await goto(href);
     }
 </script>
 

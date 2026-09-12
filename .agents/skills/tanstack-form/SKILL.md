@@ -1,142 +1,28 @@
 ---
 name: tanstack-form
-description: >
-    Use this skill when building or modifying forms with TanStack Form and Zod validation.
-    Covers createForm, field-level validation, error handling, and mapping ProblemDetails
-    API errors to form fields. Apply when adding new forms, implementing validation logic,
-    or handling form submission in the Svelte frontend.
+description: Build Svelte forms with TanStack Form, Zod validation, and API error mapping.
 ---
 
 # TanStack Form
 
-> **Documentation:** [tanstack.com/form](https://tanstack.com/form). Use official docs when the local pattern is not enough.
+Use `@tanstack/svelte-form` with feature schemas derived from `$generated/schemas`. Extend schemas in feature-owned files; do not edit generated output.
 
-Use TanStack Form (`@tanstack/svelte-form`) with Zod for form state management.
+## Current examples
 
-## Zod Schema Generation
+- `src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte`: form creation, submission, field composition, and submitting state.
+- `src/Exceptionless.Web/ClientApp/src/lib/features/auth/schemas.ts`: generated schema exports and feature-specific validation.
+- `src/Exceptionless.Web/ClientApp/src/lib/features/shared/validation.ts`: `ariaInvalid`, `mapFieldErrors`, and `problemDetailsToFormErrors`.
 
-Schemas are generated from backend models and extended in feature slices:
+Follow the current implementations rather than duplicating form infrastructure. Map API ProblemDetails into field/form errors, retain entered values after failure, and close dialogs only after successful submission.
 
-```typescript
-// Generated in $generated/schemas.ts (auto-generated from backend)
-export const LoginSchema = object({ email: email(), password: string() });
-export type LoginFormData = Infer<typeof LoginSchema>;
+Use installed `Field` components with associated labels and validation attributes. Disable duplicate submission while pending. See [shadcn-svelte](../shadcn-svelte/SKILL.md) for component composition.
 
-// Extended in feature schemas.ts
-// From src/lib/features/auth/schemas.ts
-import { ChangePasswordModelSchema } from "$generated/schemas";
+## Submission lifecycle
 
-export const ChangePasswordSchema = ChangePasswordModelSchema.extend({
-    confirm_password: string().min(6).max(100),
-}).refine((data) => data.password === data.confirm_password, {
-    message: "Passwords do not match",
-    path: ["confirm_password"],
-});
-export type ChangePasswordFormData = Infer<typeof ChangePasswordSchema>;
+1. Define typed default values and extend generated Zod schemas for feature-specific or cross-field constraints.
+2. Use the current form's synchronous validation hook for schema errors and asynchronous submission hook for the server operation. Follow the referenced implementation's hook contracts rather than moving API calls between hooks blindly.
+3. Await the operation. Map expected ProblemDetails with `problemDetailsToFormErrors`; provide a form-level error for an unexpected failure without exposing internal details.
+4. Connect field state through `ariaInvalid` and `mapFieldErrors`. Display form-level errors as well as field errors so non-field failures remain visible.
+5. Keep pending state active through required work. Preserve values on failure; reset, navigate, or close a dialog only after success and any required cache reconciliation.
 
-// Re-export generated schemas
-export { LoginSchema, type LoginFormData } from "$generated/schemas";
-```
-
-## Basic Form Pattern
-
-From src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte:
-
-```svelte
-<script lang="ts">
-    import { createForm } from '@tanstack/svelte-form';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Button } from '$comp/ui/button';
-    import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
-    import { ariaInvalid, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
-
-    const form = createForm(() => ({
-        defaultValues: {
-            email: '',
-            password: ''
-        } as LoginFormData,
-        validators: {
-            onSubmit: LoginSchema,
-            onSubmitAsync: async ({ value }) => {
-                const response = await login(value.email, value.password);
-                if (response.ok) {
-                    await goto('/');
-                    return null;
-                }
-                return problemDetailsToFormErrors(response.problem);
-            }
-        }
-    }));
-</script>
-
-<form onsubmit={(e) => { e.preventDefault(); form.handleSubmit(); }}>
-    <form.Field name="email">
-        {#snippet children(field)}
-            <Field.Field data-invalid={ariaInvalid(field)}>
-                <Field.Label for={field.name}>Email</Field.Label>
-                <Input
-                    id={field.name}
-                    type="email"
-                    value={field.state.value}
-                    onblur={field.handleBlur}
-                    oninput={(e) => field.handleChange(e.currentTarget.value)}
-                    aria-invalid={ariaInvalid(field)}
-                />
-                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-            </Field.Field>
-        {/snippet}
-    </form.Field>
-
-    <form.Subscribe selector={(state) => state.isSubmitting}>
-        {#snippet children(isSubmitting)}
-            <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Logging in...' : 'Log In'}
-            </Button>
-        {/snippet}
-    </form.Subscribe>
-</form>
-```
-
-## Server Error Handling
-
-Convert ProblemDetails to form errors:
-
-```typescript
-onSubmitAsync: async ({ value }) => {
-    const response = await login(value.email, value.password);
-    if (response.ok) return null;
-    return problemDetailsToFormErrors(response.problem);
-};
-```
-
-## Form in Dialog Pattern
-
-Close dialog only after successful submission:
-
-```svelte
-let open = $state(false);
-
-const form = createForm(() => ({
-    defaultValues: { name: '' },
-    validators: {
-        onSubmit: mySchema,
-        onSubmitAsync: async ({ value }) => {
-            try {
-                await createMutation.mutateAsync(value);
-                open = false;
-                return null;
-            } catch (error: unknown) {
-                if (error instanceof ProblemDetails) {
-                    return problemDetailsToFormErrors(error);
-                }
-                return { form: 'An unexpected error occurred' };
-            }
-        }
-    }
-}));
-```
-
-## References
-
-See [shadcn-svelte](../shadcn-svelte/SKILL.md) for Field component patterns.
+Check invalid input, server rejection, repeated submission, and successful completion. A dialog closing is not by itself proof that the save succeeded.

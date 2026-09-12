@@ -10,6 +10,22 @@
 
     let { level }: Props = $props();
 
+    function getDarkThemeClasses(level: LogLevel | null): string {
+        if (level === 'error' || level === 'fatal') {
+            return 'dark:border-red-400/25 dark:bg-red-400/15 dark:text-red-300';
+        }
+
+        if (level === 'info') {
+            return 'dark:border-green-400/25 dark:bg-green-400/15 dark:text-green-200';
+        }
+
+        if (level === 'warn') {
+            return 'dark:border-yellow-400/25 dark:bg-yellow-400/15 dark:text-yellow-200';
+        }
+
+        return 'dark:border-white/20 dark:bg-zinc-300/15 dark:text-zinc-300';
+    }
+
     function getLogLevelVariant(level: LogLevel | null): 'default' | 'destructive' | 'info' | 'outline' | 'secondary' | 'yellow' {
         if (level === 'trace' || level === 'debug') {
             return 'secondary';
@@ -28,22 +44,6 @@
         }
 
         return 'default';
-    }
-
-    function getDarkThemeClasses(level: LogLevel | null): string {
-        if (level === 'error' || level === 'fatal') {
-            return 'dark:border-red-400/25 dark:bg-red-400/15 dark:text-red-300';
-        }
-
-        if (level === 'info') {
-            return 'dark:border-green-400/25 dark:bg-green-400/15 dark:text-green-200';
-        }
-
-        if (level === 'warn') {
-            return 'dark:border-yellow-400/25 dark:bg-yellow-400/15 dark:text-yellow-200';
-        }
-
-        return 'dark:border-white/20 dark:bg-zinc-300/15 dark:text-zinc-300';
     }
 
     const normalizedLogLevel = $derived(getLogLevel(level));

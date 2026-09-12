@@ -21,6 +21,31 @@
 
     type SystemNotificationTarget = 'Both' | 'Legacy' | 'Modern';
 
+    function getDismissedSystemNotificationKey() {
+        if (typeof localStorage === 'undefined') {
+            return null;
+        }
+
+        try {
+            return localStorage.getItem(dismissedSystemNotificationStorageKey);
+        } catch {
+            return null;
+        }
+    }
+
+    function getSystemNotificationDateKey(date: null | string | undefined) {
+        if (!date) {
+            return null;
+        }
+
+        const parsedDate = new Date(date);
+        return Number.isNaN(parsedDate.getTime()) ? date : parsedDate.toISOString();
+    }
+
+    function getSystemNotificationKey(date: null | string | undefined, level: 'Error' | 'Info' | 'Warning', target: SystemNotificationTarget, message: string) {
+        return JSON.stringify([getSystemNotificationDateKey(date), level, target, message]);
+    }
+
     function normalizeSystemNotificationTarget(target: null | string | undefined): SystemNotificationTarget {
         const normalizedTarget = (target ?? 'Both').replace(/[^a-z]/gi, '').toLowerCase();
 
@@ -45,31 +70,6 @@
         }
 
         return 'Both';
-    }
-
-    function getDismissedSystemNotificationKey() {
-        if (typeof localStorage === 'undefined') {
-            return null;
-        }
-
-        try {
-            return localStorage.getItem(dismissedSystemNotificationStorageKey);
-        } catch {
-            return null;
-        }
-    }
-
-    function getSystemNotificationDateKey(date: null | string | undefined) {
-        if (!date) {
-            return null;
-        }
-
-        const parsedDate = new Date(date);
-        return Number.isNaN(parsedDate.getTime()) ? date : parsedDate.toISOString();
-    }
-
-    function getSystemNotificationKey(date: null | string | undefined, level: 'Error' | 'Info' | 'Warning', target: SystemNotificationTarget, message: string) {
-        return JSON.stringify([getSystemNotificationDateKey(date), level, target, message]);
     }
 
     function setDismissedSystemNotificationKey(key: null | string) {

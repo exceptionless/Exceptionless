@@ -46,21 +46,9 @@
         updatedValue = value;
     });
 
-    function cancelAndClose() {
-        updatedValue = value;
+    export function onClearFilter() {
+        updatedValue = undefined;
         changed(updatedValue);
-        open = false;
-    }
-
-    function onOpenChange(isOpen: boolean) {
-        if (!isOpen) {
-            open = false;
-        }
-    }
-
-    function onEscapeKeydown(e: KeyboardEvent) {
-        e.preventDefault();
-        cancelAndClose();
     }
 
     export function onValueSelected(currentValue: string) {
@@ -73,9 +61,10 @@
         changed(updatedValue);
     }
 
-    export function onClearFilter() {
-        updatedValue = undefined;
+    function cancelAndClose() {
+        updatedValue = value;
         changed(updatedValue);
+        open = false;
     }
 
     function displayValue(value: string | undefined) {
@@ -93,6 +82,17 @@
         }
 
         return 0;
+    }
+
+    function onEscapeKeydown(e: KeyboardEvent) {
+        e.preventDefault();
+        cancelAndClose();
+    }
+
+    function onOpenChange(isOpen: boolean) {
+        if (!isOpen) {
+            open = false;
+        }
     }
 </script>
 

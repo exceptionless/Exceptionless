@@ -6,6 +6,8 @@
     import DelayedRender from '$comp/delayed-render.svelte';
     import { type StockFeatures, type Table } from '@tanstack/svelte-table';
 
+    import OAuthApplicationDetails from './oauth-application-details.svelte';
+
     interface Props {
         isLoading: boolean;
         limit: number;
@@ -28,6 +30,9 @@
         <DataTable.Pager bind:value={limit} {table} />
     </DataTable.Footer>
     <DataTable.Body {rowClick} {rowHref} {table}>
+        {#snippet rowDetails(application: OAuthApplication)}
+            <OAuthApplicationDetails {application} />
+        {/snippet}
         {#if isLoading}
             <DelayedRender>
                 <DataTable.Loading {table} />

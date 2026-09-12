@@ -48,15 +48,30 @@
     const setOrganizationBonus = postSetBonusOrganization();
     const runJob = runMaintenanceJobMutation();
 
-    async function suspend(params: PostSuspendOrganizationParams) {
+    async function handleFixStackStats(params: Parameters<typeof runJob.mutateAsync>[0]) {
         toast.dismiss(toastId);
 
         try {
-            await markSuspended.mutateAsync(params);
-            toastId = toast.success('Successfully suspended the organization.');
+            await runJob.mutateAsync(params);
+            toastId = toast.success('Successfully enqueued the Fix Stack Stats job.');
         } catch (error: unknown) {
-            toastId = toast.error(`An error occurred while trying to suspend the organization: ${getProblemMessage(error, 'Please try again.')}`);
+            toastId = toast.error(`An error occurred while starting the job: ${getProblemMessage(error, 'Please try again.')}`);
             throw error;
+        }
+    }
+
+    function handleSetBonus() {
+        openSetEventBonusDialog = true;
+    }
+
+    async function handleUnsuspend() {
+        toast.dismiss(toastId);
+
+        try {
+            await markUnsuspended.mutateAsync();
+            toastId = toast.success('Successfully unsuspended the organization.');
+        } catch (error: unknown) {
+            toastId = toast.error(`An error occurred while trying to unsuspend the organization: ${getProblemMessage(error, 'Please try again.')}`);
         }
     }
 
@@ -72,29 +87,14 @@
         }
     }
 
-    async function handleUnsuspend() {
+    async function suspend(params: PostSuspendOrganizationParams) {
         toast.dismiss(toastId);
 
         try {
-            await markUnsuspended.mutateAsync();
-            toastId = toast.success('Successfully unsuspended the organization.');
+            await markSuspended.mutateAsync(params);
+            toastId = toast.success('Successfully suspended the organization.');
         } catch (error: unknown) {
-            toastId = toast.error(`An error occurred while trying to unsuspend the organization: ${getProblemMessage(error, 'Please try again.')}`);
-        }
-    }
-
-    function handleSetBonus() {
-        openSetEventBonusDialog = true;
-    }
-
-    async function handleFixStackStats(params: Parameters<typeof runJob.mutateAsync>[0]) {
-        toast.dismiss(toastId);
-
-        try {
-            await runJob.mutateAsync(params);
-            toastId = toast.success('Successfully enqueued the Fix Stack Stats job.');
-        } catch (error: unknown) {
-            toastId = toast.error(`An error occurred while starting the job: ${getProblemMessage(error, 'Please try again.')}`);
+            toastId = toast.error(`An error occurred while trying to suspend the organization: ${getProblemMessage(error, 'Please try again.')}`);
             throw error;
         }
     }

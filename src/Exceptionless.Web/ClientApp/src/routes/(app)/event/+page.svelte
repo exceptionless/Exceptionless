@@ -126,21 +126,17 @@
         return buildFilterCacheKey(organization.current, page.url.pathname, filter);
     }
 
-    function getQueryTime(params: ListFilterQueryParams = queryParams): null | string {
-        if (params.time != null) {
-            if (params.time === ALL_TIME_QUERY_VALUE) {
-                return null;
-            }
-
-            return params.time ? deserializeTimeQueryParam(params.time) : null;
-        }
-
-        return savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
-    }
-
     function getEffectiveFilter(): null | string {
         const filter = toFilter(getCurrentFiltersWithoutTime());
         return filter || null;
+    }
+
+    function getEffectiveSort(): null | string | undefined {
+        if (queryParams.sort != null) {
+            return queryParams.sort || undefined;
+        }
+
+        return savedViewsState.activeSavedView?.sort ?? undefined;
     }
 
     function getQueryFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] | null {
@@ -199,6 +195,18 @@
         return filters.length > 0 ? filters : null;
     }
 
+    function getQueryTime(params: ListFilterQueryParams = queryParams): null | string {
+        if (params.time != null) {
+            if (params.time === ALL_TIME_QUERY_VALUE) {
+                return null;
+            }
+
+            return params.time ? deserializeTimeQueryParam(params.time) : null;
+        }
+
+        return savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
+    }
+
     function parseBooleanQueryParam(value: null | string | undefined): boolean | undefined {
         if (value === 'true') {
             return true;
@@ -216,14 +224,6 @@
             .split(',')
             .map((item) => item.trim())
             .filter((item) => item);
-    }
-
-    function getEffectiveSort(): null | string | undefined {
-        if (queryParams.sort != null) {
-            return queryParams.sort || undefined;
-        }
-
-        return savedViewsState.activeSavedView?.sort ?? undefined;
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
@@ -359,15 +359,6 @@
         return getFiltersFromCache(filterCacheKey(filter), filter).filter((filter) => filter.type !== 'date');
     }
 
-    function getSavedViewFilters(): FacetedFilter.IFilter[] | null {
-        const savedView = savedViewsState.activeSavedView;
-        if (!savedView?.filter_definitions) {
-            return null;
-        }
-
-        return deserializeFilters(savedView.filter_definitions);
-    }
-
     function getQueryFilterRemovalKeys(savedViewFilters: FacetedFilter.IFilter[], params: ListFilterQueryParams = queryParams): string[] {
         const removedKeys: string[] = [];
 
@@ -424,6 +415,15 @@
         }
 
         return removedKeys;
+    }
+
+    function getSavedViewFilters(): FacetedFilter.IFilter[] | null {
+        const savedView = savedViewsState.activeSavedView;
+        if (!savedView?.filter_definitions) {
+            return null;
+        }
+
+        return deserializeFilters(savedView.filter_definitions);
     }
 
     function mergeFilterOverrides(
@@ -583,6 +583,35 @@
         normalizedSavedViewId = activeSavedViewId;
     });
 
+    function getPageSize(): number {
+        return queryParams.limit ?? pageSizePreference.current;
+    }
+
+    function getQueryFilterParamDeltas(currentParams: ReturnType<typeof getQueryFilterParams>, baseParams: ReturnType<typeof getQueryFilterParams>) {
+        const getDelta = (currentValue: null | string, baseValue: null | string): null | string => {
+            if (currentValue === baseValue) {
+                return null;
+            }
+
+            return currentValue ?? (baseValue ? '' : null);
+        };
+
+        return {
+            bot: getDelta(currentParams.bot, baseParams.bot),
+            environment: getDelta(currentParams.environment, baseParams.environment),
+            first: getDelta(currentParams.first, baseParams.first),
+            level: getDelta(currentParams.level, baseParams.level),
+            project: getDelta(currentParams.project, baseParams.project),
+            reference: getDelta(currentParams.reference, baseParams.reference),
+            session: getDelta(currentParams.session, baseParams.session),
+            stack: getDelta(currentParams.stack, baseParams.stack),
+            status: getDelta(currentParams.status, baseParams.status),
+            tag: getDelta(currentParams.tag, baseParams.tag),
+            type: getDelta(currentParams.type, baseParams.type),
+            version: getDelta(currentParams.version, baseParams.version)
+        };
+    }
+
     function getQueryFilterParams(filters: FacetedFilter.IFilter[]) {
         const botFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'bot');
         const firstFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'first');
@@ -613,31 +642,6 @@
         };
     }
 
-    function getQueryFilterParamDeltas(currentParams: ReturnType<typeof getQueryFilterParams>, baseParams: ReturnType<typeof getQueryFilterParams>) {
-        const getDelta = (currentValue: null | string, baseValue: null | string): null | string => {
-            if (currentValue === baseValue) {
-                return null;
-            }
-
-            return currentValue ?? (baseValue ? '' : null);
-        };
-
-        return {
-            bot: getDelta(currentParams.bot, baseParams.bot),
-            environment: getDelta(currentParams.environment, baseParams.environment),
-            first: getDelta(currentParams.first, baseParams.first),
-            level: getDelta(currentParams.level, baseParams.level),
-            project: getDelta(currentParams.project, baseParams.project),
-            reference: getDelta(currentParams.reference, baseParams.reference),
-            session: getDelta(currentParams.session, baseParams.session),
-            stack: getDelta(currentParams.stack, baseParams.stack),
-            status: getDelta(currentParams.status, baseParams.status),
-            tag: getDelta(currentParams.tag, baseParams.tag),
-            type: getDelta(currentParams.type, baseParams.type),
-            version: getDelta(currentParams.version, baseParams.version)
-        };
-    }
-
     function isQueryParamFilter(filter: FacetedFilter.IFilter): boolean {
         if (filter.type === 'string' && filter.key === 'string-stack') {
             return true;
@@ -652,10 +656,6 @@
         }
 
         return ['environment', 'level', 'project', 'reference', 'session', 'status', 'tag', 'type', 'version'].includes(filter.type);
-    }
-
-    function getPageSize(): number {
-        return queryParams.limit ?? pageSizePreference.current;
     }
 
     function setPageSize(value: number): void {
@@ -765,11 +765,6 @@
         })
     );
 
-    function reset() {
-        table.resetRowSelection();
-        table.setPageIndex(0);
-    }
-
     async function handleRefresh() {
         table.resetRowSelection();
         await eventsQuery.refetch();
@@ -818,6 +813,11 @@
         if (totalPages != null && table.store.state.pagination.pageIndex >= totalPages) {
             table.firstPage();
         }
+    }
+
+    function reset() {
+        table.resetRowSelection();
+        table.setPageIndex(0);
     }
 
     let reconcileTotalRequested = false;

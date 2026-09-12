@@ -70,51 +70,6 @@
     const userAgentsIsDirty = $derived(userAgents !== (settings['@@UserAgentBotPatterns'] as string));
     const deleteBotDataEnabledIsDirty = $derived(deleteBotDataEnabled !== projectQuery.data?.delete_bot_data_enabled);
 
-    async function updateOrRemoveProjectConfig(key: string, value: null | string, displayName: string) {
-        toast.dismiss(toastId);
-
-        try {
-            if (value) {
-                await updateProjectConfig.mutateAsync({
-                    key,
-                    value
-                });
-            } else {
-                await removeProjectConfig.mutateAsync({
-                    key
-                });
-            }
-
-            toastId = toast.success(`Successfully updated ${displayName} setting.`);
-        } catch {
-            toastId = toast.error(`Error updating ${displayName}'s setting. Please try again.`);
-        }
-    }
-
-    async function saveDataExclusion() {
-        if (!dataExclusionsIsDirty) {
-            return;
-        }
-
-        await updateOrRemoveProjectConfig('@@DataExclusions', dataExclusions, 'Data Exclusions');
-    }
-
-    async function saveIncludePrivateInformation() {
-        if (!excludePrivateInformationIsDirty) {
-            return;
-        }
-
-        await updateOrRemoveProjectConfig('@@IncludePrivateInformation', excludePrivateInformation ? 'false' : null, 'Exclude Private Information');
-    }
-
-    async function saveUserNamespaces() {
-        if (!userNamespacesIsDirty) {
-            return;
-        }
-
-        await updateOrRemoveProjectConfig('UserNamespaces', userNamespaces, 'User Namespaces');
-    }
-
     async function saveCommonMethods() {
         if (!commonMethodsIsDirty) {
             return;
@@ -123,12 +78,12 @@
         await updateOrRemoveProjectConfig('CommonMethods', commonMethods, 'Common Methods');
     }
 
-    async function saveUserAgents() {
-        if (!userAgentsIsDirty) {
+    async function saveDataExclusion() {
+        if (!dataExclusionsIsDirty) {
             return;
         }
 
-        await updateOrRemoveProjectConfig('@@UserAgentBotPatterns', userAgents, 'User Agents');
+        await updateOrRemoveProjectConfig('@@DataExclusions', dataExclusions, 'Data Exclusions');
     }
 
     async function saveDeleteBotDataEnabled() {
@@ -148,6 +103,51 @@
         } catch {
             toast.dismiss(toastId);
             toastId = toast.error(`Error updating Delete Bot Data Enabled setting. Please try again.`);
+        }
+    }
+
+    async function saveIncludePrivateInformation() {
+        if (!excludePrivateInformationIsDirty) {
+            return;
+        }
+
+        await updateOrRemoveProjectConfig('@@IncludePrivateInformation', excludePrivateInformation ? 'false' : null, 'Exclude Private Information');
+    }
+
+    async function saveUserAgents() {
+        if (!userAgentsIsDirty) {
+            return;
+        }
+
+        await updateOrRemoveProjectConfig('@@UserAgentBotPatterns', userAgents, 'User Agents');
+    }
+
+    async function saveUserNamespaces() {
+        if (!userNamespacesIsDirty) {
+            return;
+        }
+
+        await updateOrRemoveProjectConfig('UserNamespaces', userNamespaces, 'User Namespaces');
+    }
+
+    async function updateOrRemoveProjectConfig(key: string, value: null | string, displayName: string) {
+        toast.dismiss(toastId);
+
+        try {
+            if (value) {
+                await updateProjectConfig.mutateAsync({
+                    key,
+                    value
+                });
+            } else {
+                await removeProjectConfig.mutateAsync({
+                    key
+                });
+            }
+
+            toastId = toast.success(`Successfully updated ${displayName} setting.`);
+        } catch {
+            toastId = toast.error(`Error updating ${displayName}'s setting. Please try again.`);
         }
     }
 

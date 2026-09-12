@@ -9,7 +9,9 @@ public sealed class EventEnvironmentSchemaTransformer : IOpenApiSchemaTransforme
     public Task TransformAsync(OpenApiSchema schema, OpenApiSchemaTransformerContext context, CancellationToken cancellationToken)
     {
         if (!typeof(Event).IsAssignableFrom(context.JsonTypeInfo.Type) || schema.Properties is null)
+        {
             return Task.CompletedTask;
+        }
 
         var property = context.JsonTypeInfo.Type.GetProperty(nameof(Event.Environment))!;
         string? name = JsonPropertyNameResolver.GetJsonPropertyName(context.JsonTypeInfo, property);

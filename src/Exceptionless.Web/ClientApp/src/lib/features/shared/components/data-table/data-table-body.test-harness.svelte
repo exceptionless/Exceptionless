@@ -10,8 +10,6 @@
     import DataTableBody from './data-table-body.svelte';
     import DataTableEmpty from './data-table-empty.svelte';
 
-    type TestSummary = EventSummaryModel<'event-error-summary'> | StackSummaryModel<'stack-error-summary'>;
-
     interface Props {
         allColumnsSized?: boolean;
         autoFillColumnId?: null | string;
@@ -23,6 +21,8 @@
         sizedFullWidthSummary?: boolean;
         wrappedColumnIds?: readonly string[];
     }
+
+    type TestSummary = EventSummaryModel<'event-error-summary'> | StackSummaryModel<'stack-error-summary'>;
 
     let {
         allColumnsSized = false,

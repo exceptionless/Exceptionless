@@ -29,18 +29,6 @@
         eventSubmissionEnabled = settings.enabled;
     });
 
-    async function saveEventSubmission() {
-        try {
-            const saved = await updateSettings.mutateAsync({
-                enabled: eventSubmissionEnabled
-            });
-            eventSubmissionEnabled = saved.enabled;
-            toast.success(saved.enabled ? 'Event submission is enabled.' : 'Event submission is disabled.');
-        } catch {
-            toast.error('Failed to update event submission.');
-        }
-    }
-
     async function resetEventSubmission() {
         try {
             const saved = await updateSettings.mutateAsync({
@@ -50,6 +38,18 @@
             toast.success('Event submission reset to the deployment default.');
         } catch {
             toast.error('Failed to reset event submission.');
+        }
+    }
+
+    async function saveEventSubmission() {
+        try {
+            const saved = await updateSettings.mutateAsync({
+                enabled: eventSubmissionEnabled
+            });
+            eventSubmissionEnabled = saved.enabled;
+            toast.success(saved.enabled ? 'Event submission is enabled.' : 'Event submission is disabled.');
+        } catch {
+            toast.error('Failed to update event submission.');
         }
     }
 </script>

@@ -27,7 +27,10 @@ public record ViewOAuthApplication
             RedirectUris = application.RedirectUris,
             Scopes = application.Scopes,
             Organizations = application.OrganizationIds
-                .Select(id => new ViewOAuthApplicationOrganization(id, organizationNames?.GetValueOrDefault(id) ?? id))
+                .Select(id => new ViewOAuthApplicationOrganization(id, organizationNames?.GetValueOrDefault(id) ?? id)
+                {
+                    IsAvailable = organizationNames?.ContainsKey(id) is true
+                })
                 .OrderBy(organization => organization.Name)
                 .ToArray(),
             Notes = application.Notes,
@@ -40,4 +43,7 @@ public record ViewOAuthApplication
     }
 }
 
-public sealed record ViewOAuthApplicationOrganization(string Id, string Name);
+public sealed record ViewOAuthApplicationOrganization(string Id, string Name)
+{
+    public bool IsAvailable { get; init; }
+}

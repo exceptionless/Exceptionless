@@ -4,6 +4,10 @@
     import * as Kbd from '$comp/ui/kbd';
     import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '$features/shared/keyboard-shortcuts';
 
+    type Props = {
+        open: boolean;
+    };
+
     type ShortcutRow = {
         action: string;
         shortcuts: readonly (readonly ShortcutKey[])[];
@@ -12,10 +16,6 @@
     type ShortcutSection = {
         rows: readonly ShortcutRow[];
         title: string;
-    };
-
-    type Props = {
-        open: boolean;
     };
 
     let { open = $bindable() }: Props = $props();

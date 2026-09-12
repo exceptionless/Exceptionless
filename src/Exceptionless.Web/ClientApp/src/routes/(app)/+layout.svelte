@@ -99,29 +99,6 @@
         premiumPage.current = undefined;
     });
 
-    function openCommandPalette(): void {
-        commandResetKey += 1;
-        isCommandOpen = true;
-    }
-
-    async function toggleAssistantPanel(): Promise<void> {
-        if (isAssistantPage) {
-            await goto(assistantReturnHref);
-            return;
-        }
-
-        if (!isAssistantOpen) {
-            await loadAssistantPanel();
-        }
-
-        isAssistantOpen = !isAssistantOpen;
-    }
-
-    async function openAssistantPanel(): Promise<void> {
-        await loadAssistantPanel();
-        isAssistantOpen = true;
-    }
-
     async function askAssistant(prompt: string): Promise<void> {
         await loadAssistantPanel();
         isAssistantOpen = true;
@@ -129,10 +106,6 @@
             id: crypto.randomUUID(),
             prompt
         };
-    }
-
-    async function loadAssistantPanel(): Promise<void> {
-        AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
     }
 
     function buildAssistantPageHref(returnHref: string, contextPath: string, projectId: string | undefined): string {
@@ -147,31 +120,6 @@
         }
 
         return `${assistantPageHref}?${queryParameters}`;
-    }
-
-    function getAssistantSourcePath(): string {
-        if (!isAssistantPage) {
-            return `${page.url.pathname}${page.url.search}`;
-        }
-
-        return normalizeAssistantHref(page.url.searchParams.get('context')) ?? normalizeAssistantHref(page.url.searchParams.get('from')) ?? assistantPageHref;
-    }
-
-    function getAssistantReturnHref(): string {
-        return normalizeAssistantHref(page.url.searchParams.get('from')) ?? resolve('/');
-    }
-
-    function normalizeAssistantHref(value: null | string): string | undefined {
-        if (!value?.startsWith('/')) {
-            return undefined;
-        }
-
-        const url = new URL(value, page.url.origin);
-        if (url.origin !== page.url.origin || url.pathname === assistantPageHref || !url.pathname.startsWith(resolve('/'))) {
-            return undefined;
-        }
-
-        return `${url.pathname}${url.search}${url.hash}`;
     }
 
     function getAssistantPath(context: AssistantResourceContext | undefined, fallback: string): string {
@@ -195,6 +143,63 @@
         }
 
         return fallback;
+    }
+
+    function getAssistantReturnHref(): string {
+        return normalizeAssistantHref(page.url.searchParams.get('from')) ?? resolve('/');
+    }
+
+    function getAssistantSourcePath(): string {
+        if (!isAssistantPage) {
+            return `${page.url.pathname}${page.url.search}`;
+        }
+
+        return normalizeAssistantHref(page.url.searchParams.get('context')) ?? normalizeAssistantHref(page.url.searchParams.get('from')) ?? assistantPageHref;
+    }
+
+    async function loadAssistantPanel(): Promise<void> {
+        AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
+    }
+
+    function normalizeAssistantHref(value: null | string): string | undefined {
+        if (!value?.startsWith('/')) {
+            return undefined;
+        }
+
+        const url = new URL(value, page.url.origin);
+        if (url.origin !== page.url.origin || url.pathname === assistantPageHref || !url.pathname.startsWith(resolve('/'))) {
+            return undefined;
+        }
+
+        return `${url.pathname}${url.search}${url.hash}`;
+    }
+
+    async function openAssistantPanel(): Promise<void> {
+        await loadAssistantPanel();
+        isAssistantOpen = true;
+    }
+
+    function openCommandPalette(): void {
+        commandResetKey += 1;
+        isCommandOpen = true;
+    }
+
+    async function openImpersonateOrganization(): Promise<void> {
+        isCommandOpen = false;
+        isKeyboardShortcutsOpen = false;
+        isOrganizationSwitcherOpen = false;
+        isUserMenuOpen = false;
+        await tick();
+        isImpersonateOrganizationOpen = true;
+    }
+
+    async function openKeyboardShortcuts(): Promise<void> {
+        isCommandOpen = false;
+        isImpersonateOrganizationOpen = false;
+        isOrganizationSwitcherOpen = false;
+        isUserMenuOpen = false;
+        await tick();
+        isKeyboardShortcutsOpen = true;
     }
 
     async function openOrganizationSwitcher(): Promise<void> {
@@ -224,28 +229,23 @@
         isUserMenuOpen = true;
     }
 
-    async function openKeyboardShortcuts(): Promise<void> {
-        isCommandOpen = false;
-        isImpersonateOrganizationOpen = false;
-        isOrganizationSwitcherOpen = false;
-        isUserMenuOpen = false;
-        await tick();
-        isKeyboardShortcutsOpen = true;
-    }
-
-    async function openImpersonateOrganization(): Promise<void> {
-        isCommandOpen = false;
-        isKeyboardShortcutsOpen = false;
-        isOrganizationSwitcherOpen = false;
-        isUserMenuOpen = false;
-        await tick();
-        isImpersonateOrganizationOpen = true;
-    }
-
     async function stopImpersonating(): Promise<void> {
         isCommandOpen = false;
         organization.current = organizations[0]?.id;
         await goto(resolve('/'));
+    }
+
+    async function toggleAssistantPanel(): Promise<void> {
+        if (isAssistantPage) {
+            await goto(assistantReturnHref);
+            return;
+        }
+
+        if (!isAssistantOpen) {
+            await loadAssistantPanel();
+        }
+
+        isAssistantOpen = !isAssistantOpen;
     }
 
     useMiddleware(async (ctx, next) => {

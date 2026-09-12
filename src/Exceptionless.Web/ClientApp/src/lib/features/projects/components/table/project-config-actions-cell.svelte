@@ -39,6 +39,20 @@
         }
     });
 
+    async function remove() {
+        toast.dismiss(toastId);
+
+        try {
+            await removeProjectConfig.mutateAsync({
+                key: setting.key
+            });
+            toastId = toast.success(`Successfully removed ${setting.key} setting.`);
+        } catch (error) {
+            toastId = toast.error(`Error removing ${setting.key}'s setting. Please try again.`);
+            throw error;
+        }
+    }
+
     async function save(value: string) {
         toast.dismiss(toastId);
 
@@ -50,20 +64,6 @@
             toastId = toast.success(`Successfully updated ${setting.key} setting.`);
         } catch (error) {
             toastId = toast.error(`Error updating ${setting.key}'s setting. Please try again.`);
-            throw error;
-        }
-    }
-
-    async function remove() {
-        toast.dismiss(toastId);
-
-        try {
-            await removeProjectConfig.mutateAsync({
-                key: setting.key
-            });
-            toastId = toast.success(`Successfully removed ${setting.key} setting.`);
-        } catch (error) {
-            toastId = toast.error(`Error removing ${setting.key}'s setting. Please try again.`);
             throw error;
         }
     }

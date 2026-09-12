@@ -29,15 +29,15 @@
 
     const svelteKitPageStateKey = 'sveltekit:states';
 
-    interface PendingNavigation {
-        options?: LinkNavigationOptions;
-        url: URL;
-    }
-
     interface LinkNavigationOptions {
         keepFocus?: boolean;
         noScroll?: boolean;
         replaceState?: boolean;
+    }
+
+    interface PendingNavigation {
+        options?: LinkNavigationOptions;
+        url: URL;
     }
 
     let { actions, children, detailsHref, historyKey, historyValue, onClose, onOpen, open, title }: Props = $props();
@@ -52,6 +52,24 @@
     let wasOpen = false;
     const clipboard = new UseClipboard();
 
+    function clearOwnedHistoryEntry(): void {
+        historyEntryUrl = undefined;
+        historyEntryValue = undefined;
+        ownsHistoryEntry = false;
+    }
+
+    function consumeOwnedHistoryEntry(): void {
+        if (!browser || !ownsHistoryEntry) {
+            return;
+        }
+
+        const shouldTraverseBack = historyEntryUrl === getCurrentUrl();
+        clearOwnedHistoryEntry();
+        if (shouldTraverseBack) {
+            window.history.back();
+        }
+    }
+
     async function copyDetailsLink(): Promise<void> {
         await clipboard.copy(new URL(detailsHref, window.location.href).href);
         if (clipboard.copied) {
@@ -61,12 +79,35 @@
         }
     }
 
-    function getCurrentUrl(): string {
-        return `${page.url.pathname}${page.url.search}${page.url.hash}`;
+    function createHistoryState(value?: string): Record<string, unknown> {
+        return {
+            ...page.state,
+            [detailSheetHistoryStateKey]: value
+                ? {
+                      key: historyKey,
+                      value
+                  }
+                : undefined
+        };
     }
 
     function getBrowserUrl(): string {
         return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    }
+
+    function getCurrentUrl(): string {
+        return `${page.url.pathname}${page.url.search}${page.url.hash}`;
+    }
+
+    function getHistoryEntry(historyState: unknown): DetailSheetHistoryEntry | undefined {
+        if (!historyState || typeof historyState !== 'object') {
+            return undefined;
+        }
+
+        const rawHistoryState = historyState as Record<string, unknown>;
+        const pageState = (rawHistoryState[svelteKitPageStateKey] ?? rawHistoryState) as DetailSheetPageState;
+        const entry = pageState[detailSheetHistoryStateKey];
+        return entry?.key === historyKey && typeof entry.value === 'string' ? entry : undefined;
     }
 
     function getLinkNavigationOptions(link: HTMLAnchorElement): LinkNavigationOptions | undefined {
@@ -93,33 +134,11 @@
         return Object.values(options).some((value) => value !== undefined) ? options : undefined;
     }
 
-    function clearOwnedHistoryEntry(): void {
-        historyEntryUrl = undefined;
-        historyEntryValue = undefined;
-        ownsHistoryEntry = false;
-    }
-
-    function createHistoryState(value?: string): Record<string, unknown> {
-        return {
-            ...page.state,
-            [detailSheetHistoryStateKey]: value
-                ? {
-                      key: historyKey,
-                      value
-                  }
-                : undefined
-        };
-    }
-
-    function getHistoryEntry(historyState: unknown): DetailSheetHistoryEntry | undefined {
-        if (!historyState || typeof historyState !== 'object') {
-            return undefined;
+    function handleOpenChange(nextOpen: boolean) {
+        if (!nextOpen) {
+            consumeOwnedHistoryEntry();
+            onClose();
         }
-
-        const rawHistoryState = historyState as Record<string, unknown>;
-        const pageState = (rawHistoryState[svelteKitPageStateKey] ?? rawHistoryState) as DetailSheetPageState;
-        const entry = pageState[detailSheetHistoryStateKey];
-        return entry?.key === historyKey && typeof entry.value === 'string' ? entry : undefined;
     }
 
     function restoreOwnedHistoryEntry(entry: DetailSheetHistoryEntry): void {
@@ -130,25 +149,6 @@
 
         if (!open || historyValue !== entry.value) {
             onOpen(entry.value);
-        }
-    }
-
-    function consumeOwnedHistoryEntry(): void {
-        if (!browser || !ownsHistoryEntry) {
-            return;
-        }
-
-        const shouldTraverseBack = historyEntryUrl === getCurrentUrl();
-        clearOwnedHistoryEntry();
-        if (shouldTraverseBack) {
-            window.history.back();
-        }
-    }
-
-    function handleOpenChange(nextOpen: boolean) {
-        if (!nextOpen) {
-            consumeOwnedHistoryEntry();
-            onClose();
         }
     }
 

@@ -169,56 +169,19 @@
         }
     });
 
-    function isPromotedTab(tab: TabType): boolean {
-        return !!projectQuery.data?.promoted_tabs?.includes(tab);
+    function handlePromotedTabDragEnd(): void {
+        draggedPromotedTab = null;
     }
 
-    function updateTabsOverflow(): void {
-        if (!tabsListRef) {
-            canScrollTabsLeft = false;
-            canScrollTabsRight = false;
+    function handlePromotedTabDragOver(event: DragEvent, tab: TabType): void {
+        if (!draggedPromotedTab || !isPromotedTab(tab) || draggedPromotedTab === tab) {
             return;
         }
 
-        const maxScrollLeft = tabsListRef.scrollWidth - tabsListRef.clientWidth;
-        canScrollTabsLeft = tabsListRef.scrollLeft > 1;
-        canScrollTabsRight = tabsListRef.scrollLeft < maxScrollLeft - 1;
-    }
-
-    function scrollTabs(direction: 'left' | 'right'): void {
-        if (!tabsListRef) {
-            return;
+        event.preventDefault();
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
         }
-
-        tabsListRef.scrollBy({
-            behavior: 'smooth',
-            left: direction === 'left' ? -tabsListRef.clientWidth / 2 : tabsListRef.clientWidth / 2
-        });
-    }
-
-    function onPromoted(title: string): void {
-        activeTab = title;
-    }
-
-    function onDemoted(): void {
-        activeTab = 'Extended Data';
-    }
-
-    function movePromotedTab(source: string, target: string): null | string[] {
-        const promotedTabs = [...(projectQuery.data?.promoted_tabs ?? [])];
-        const fromIndex = promotedTabs.indexOf(source);
-        const toIndex = promotedTabs.indexOf(target);
-        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
-            return null;
-        }
-
-        const [moved] = promotedTabs.splice(fromIndex, 1);
-        if (!moved) {
-            return null;
-        }
-
-        promotedTabs.splice(toIndex, 0, moved);
-        return promotedTabs;
     }
 
     function handlePromotedTabDragStart(event: DragEvent, tab: TabType): void {
@@ -230,17 +193,6 @@
         if (event.dataTransfer) {
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData('text/plain', tab);
-        }
-    }
-
-    function handlePromotedTabDragOver(event: DragEvent, tab: TabType): void {
-        if (!draggedPromotedTab || !isPromotedTab(tab) || draggedPromotedTab === tab) {
-            return;
-        }
-
-        event.preventDefault();
-        if (event.dataTransfer) {
-            event.dataTransfer.dropEffect = 'move';
         }
     }
 
@@ -266,14 +218,25 @@
         }
     }
 
-    function handlePromotedTabDragEnd(): void {
-        draggedPromotedTab = null;
+    function isPromotedTab(tab: TabType): boolean {
+        return !!projectQuery.data?.promoted_tabs?.includes(tab);
     }
 
-    function navigateToPrevious(): void {
-        if (navigation?.previousId && onNavigate) {
-            onNavigate(navigation.previousId);
+    function movePromotedTab(source: string, target: string): null | string[] {
+        const promotedTabs = [...(projectQuery.data?.promoted_tabs ?? [])];
+        const fromIndex = promotedTabs.indexOf(source);
+        const toIndex = promotedTabs.indexOf(target);
+        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+            return null;
         }
+
+        const [moved] = promotedTabs.splice(fromIndex, 1);
+        if (!moved) {
+            return null;
+        }
+
+        promotedTabs.splice(toIndex, 0, moved);
+        return promotedTabs;
     }
 
     function navigateToNext(): void {
@@ -282,10 +245,47 @@
         }
     }
 
+    function navigateToPrevious(): void {
+        if (navigation?.previousId && onNavigate) {
+            onNavigate(navigation.previousId);
+        }
+    }
+
+    function onDemoted(): void {
+        activeTab = 'Extended Data';
+    }
+
+    function onPromoted(title: string): void {
+        activeTab = title;
+    }
+
     function prepareEventAssistantContext(): void {
         if (event) {
             assistantPageContext.setPageEvent(event);
         }
+    }
+
+    function scrollTabs(direction: 'left' | 'right'): void {
+        if (!tabsListRef) {
+            return;
+        }
+
+        tabsListRef.scrollBy({
+            behavior: 'smooth',
+            left: direction === 'left' ? -tabsListRef.clientWidth / 2 : tabsListRef.clientWidth / 2
+        });
+    }
+
+    function updateTabsOverflow(): void {
+        if (!tabsListRef) {
+            canScrollTabsLeft = false;
+            canScrollTabsRight = false;
+            return;
+        }
+
+        const maxScrollLeft = tabsListRef.scrollWidth - tabsListRef.clientWidth;
+        canScrollTabsLeft = tabsListRef.scrollLeft > 1;
+        canScrollTabsRight = tabsListRef.scrollLeft < maxScrollLeft - 1;
     }
 
     $effect(() => {

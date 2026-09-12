@@ -23,6 +23,7 @@ namespace Exceptionless.Core.Jobs;
 public class CleanupDataJob : JobWithLockBase, IHealthCheck
 {
     private static readonly TimeSpan OAuthTokenCleanupSafetyWindow = TimeSpan.FromDays(1);
+    private static readonly TimeSpan OAuthApplicationCleanupSafetyWindow = TimeSpan.FromDays(1);
     private static readonly TimeSpan SyntheticOrganizationCleanupSafetyWindow = TimeSpan.FromDays(1);
     private static readonly TimeSpan SyntheticUserCleanupSafetyWindow = TimeSpan.FromDays(1);
     private const string SyntheticOrganizationNamePrefix = "E2E Playwright Org";
@@ -38,6 +39,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     private readonly IEventRepository _eventRepository;
     private readonly ITokenRepository _tokenRepository;
     private readonly IOAuthTokenRepository _oauthTokenRepository;
+    private readonly IOAuthApplicationRepository _oauthApplicationRepository;
     private readonly IWebHookRepository _webHookRepository;
     private readonly BillingManager _billingManager;
     private readonly UsageService _usageService;
@@ -58,6 +60,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         IEventRepository eventRepository,
         ITokenRepository tokenRepository,
         IOAuthTokenRepository oauthTokenRepository,
+        IOAuthApplicationRepository oauthApplicationRepository,
         IWebHookRepository webHookRepository,
         ILockProvider lockProvider,
         ICacheClient cacheClient,
@@ -80,6 +83,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _eventRepository = eventRepository;
         _tokenRepository = tokenRepository;
         _oauthTokenRepository = oauthTokenRepository;
+        _oauthApplicationRepository = oauthApplicationRepository;
         _webHookRepository = webHookRepository;
         _billingManager = billingManager;
         _billingPlans = billingPlans;
@@ -103,6 +107,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         bool canCleanupSourceMaps = await FlushSourceMapUsagesAsync(context.CancellationToken);
 
         await MarkTokensSuspended(context);
+        await CleanupOAuthApplicationsAsync(context);
         await CleanupOAuthTokensAsync(context);
         await CleanupSyntheticOrganizationsAsync(context);
         await CleanupSyntheticUsersAsync(context);
@@ -138,6 +143,65 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         var utcCutoff = _timeProvider.GetUtcNow().UtcDateTime.Subtract(OAuthTokenCleanupSafetyWindow);
         long removed = await _oauthTokenRepository.RemoveExpiredDisabledAsync(utcCutoff, context.CancellationToken);
         _logger.LogInformation("Removed {OAuthTokenCount} expired disabled OAuth token(s)", removed);
+    }
+
+    private async Task CleanupOAuthApplicationsAsync(JobContext context)
+    {
+        var utcCutoff = _timeProvider.GetUtcNow().UtcDateTime.Subtract(OAuthApplicationCleanupSafetyWindow);
+        var applications = await _oauthApplicationRepository.FindAsync(
+            query => AbandonedApplications(query).SortAscending(application => application.Id),
+            options => options.SearchAfterPaging().PageLimit(500));
+
+        long removed = 0;
+        while (applications.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        {
+            // Legacy applications may have tokens before their organization associations are backfilled.
+            string[] clientIds = applications.Documents.Select(application => application.ClientId).Distinct(StringComparer.Ordinal).ToArray();
+            var tokens = await _oauthTokenRepository.FindAsync(
+                query => query.FieldEquals(token => token.ClientId, clientIds).Include(token => token.ClientId, token => token.OrganizationIds).SortAscending(token => token.Id),
+                options => options.SearchAfterPaging().PageLimit(500));
+            var authorizedClientIds = new HashSet<string>(StringComparer.Ordinal);
+            do
+            {
+                context.CancellationToken.ThrowIfCancellationRequested();
+                authorizedClientIds.UnionWith(tokens.Documents.Select(token => token.ClientId));
+                foreach (var clientTokens in tokens.Documents.GroupBy(token => token.ClientId, StringComparer.Ordinal))
+                {
+                    // Retain authorization history even after the legacy tokens themselves are cleaned up.
+                    string[] organizationIds = clientTokens.SelectMany(token => token.OrganizationIds).Distinct(StringComparer.Ordinal).ToArray();
+                    await _oauthApplicationRepository.AddOrganizationIdsAsync(clientTokens.Key, organizationIds, options => options.ImmediateConsistency().Notifications(false));
+                }
+            } while (!context.CancellationToken.IsCancellationRequested && await tokens.NextPageAsync());
+
+            context.CancellationToken.ThrowIfCancellationRequested();
+
+            string[] abandonedIds = applications.Documents
+                .Where(application => !authorizedClientIds.Contains(application.ClientId))
+                .Select(application => application.Id)
+                .ToArray();
+            if (abandonedIds.Length > 0)
+            {
+                // Recheck eligibility when deleting. Delete-by-query skips concurrent consent or administrator updates.
+                removed += await _oauthApplicationRepository.RemoveAllAsync(
+                    query => AbandonedApplications(query).Id(abandonedIds),
+                    options => options.Cache(false).ImmediateConsistency());
+            }
+
+            await RenewLockAsync(context);
+            if (!await applications.NextPageAsync())
+                break;
+        }
+
+        _logger.LogInformation("Removed {OAuthApplicationCount} abandoned OAuth application(s)", removed);
+
+        IRepositoryQuery<OAuthApplication> AbandonedApplications(IRepositoryQuery<OAuthApplication> query) => query
+            .FieldEquals(application => application.CreatedByUserId, OAuthApplication.SystemUserId)
+            .FieldOr(group => group
+                .FieldEquals(application => application.UpdatedByUserId, OAuthApplication.SystemUserId)
+                .FieldEmpty(application => application.UpdatedByUserId))
+            .FieldEquals(application => application.IsDisabled, false)
+            .FieldEmpty(application => application.OrganizationIds)
+            .DateRange(null, utcCutoff, (OAuthApplication application) => application.UpdatedUtc);
     }
 
     private async Task CleanupSyntheticOrganizationsAsync(JobContext context)

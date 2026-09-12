@@ -74,6 +74,11 @@
         }
     }));
 
+    function confirmDelete(sourceMap: SourceMapArtifact) {
+        sourceMapToDelete = sourceMap;
+        showDeleteDialog = true;
+    }
+
     async function removeSourceMap() {
         if (!sourceMapToDelete) {
             return;
@@ -92,11 +97,6 @@
         } catch {
             toast.error('Unable to delete the source map.');
         }
-    }
-
-    function confirmDelete(sourceMap: SourceMapArtifact) {
-        sourceMapToDelete = sourceMap;
-        showDeleteDialog = true;
     }
 </script>
 
