@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -57,6 +58,42 @@ public sealed class EventEnvironmentTests : TestWithServices
         Assert.Null(serializer.Deserialize<Event>("{}")?.Environment);
         Assert.Null(new Event { Environment = new string('x', 65) }.Environment);
         Assert.Equal(new string('X', 64), new Event { Environment = new string('X', 64) }.Environment);
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("42")]
+    [InlineData("true")]
+    [InlineData("{\"region\":\"west\"}")]
+    [InlineData("[\"production\",\"staging\"]")]
+    public void Deserialize_LegacyRootEnvironment_PreservesCustomDataRegardlessOfPropertyOrder(string environment)
+    {
+        var serializer = GetService<ITextSerializer>();
+        using var expected = JsonDocument.Parse(environment);
+
+        foreach (var (environmentFirst, duplicateKey) in new[] { (true, false), (false, false), (true, true), (false, true) })
+        {
+            string environmentProperty = $"\"environment\":{environment}";
+            string dataProperty = duplicateKey
+                ? "\"data\":{\"environment\":\"nested\",\"kept\":true}"
+                : "\"data\":{\"kept\":true}";
+            string json = environmentFirst
+                ? $"{{{environmentProperty},{dataProperty}}}"
+                : $"{{{dataProperty},{environmentProperty}}}";
+            var ev = serializer.Deserialize<Event>(json);
+
+            Assert.NotNull(ev);
+            Assert.Null(ev.Environment);
+            using var result = JsonDocument.Parse(serializer.SerializeToString(ev)!);
+            var data = result.RootElement.GetProperty("data");
+            Assert.True(data.GetProperty("kept").GetBoolean());
+            Assert.True(JsonElement.DeepEquals(expected.RootElement, data.GetProperty(duplicateKey ? "environment1" : "environment")));
+            if (duplicateKey)
+            {
+                Assert.Equal("nested", data.GetProperty("environment").GetString());
+            }
+            Assert.False(result.RootElement.TryGetProperty("environment", out _));
+        }
     }
 
     [Fact]

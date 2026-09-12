@@ -18,7 +18,6 @@ public class Event : IData, IJsonOnDeserialized
     /// Missing or invalid names remain unspecified. Machine and runtime information is stored separately in data.@environment.
     /// </summary>
     [StringLength(64)]
-    [JsonConverter(typeof(EventEnvironmentConverter))]
     public string? Environment
     {
         get => _environment;

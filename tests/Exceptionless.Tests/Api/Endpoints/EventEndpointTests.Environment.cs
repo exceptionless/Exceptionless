@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
@@ -11,6 +12,31 @@ namespace Exceptionless.Tests.Api.Endpoints;
 
 public partial class EventEndpointTests
 {
+    [Fact]
+    public async Task PostEvent_LegacyRootEnvironment_PreservesCustomDataThroughStorageAndApi()
+    {
+        await SendRequestAsync(request => request.Post()
+            .AsTestOrganizationClientUser().AppendPath("events")
+            .Content(new
+            {
+                type = "log",
+                message = "Legacy environment metadata",
+                reference_id = "legacy-environment-reference",
+                environment = new { region = "west" }
+            }).StatusCodeShouldBeAccepted());
+
+        await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        var events = await SendRequestAsAsync<List<PersistentEvent>>(request => request
+            .AsTestOrganizationUser().AppendPath("events")
+            .QueryString("filter", "reference:legacy-environment-reference").StatusCodeShouldBeOk());
+        var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(events));
+        Assert.Null(ev.Environment);
+        Assert.NotNull(ev.Data);
+        Assert.Equal("west", JsonSerializer.SerializeToElement(ev.Data["environment"]).GetProperty("region").GetString());
+    }
+
     [Theory]
     [InlineData(" Production ", "Production")]
     [InlineData("preview-42", "preview-42")]
