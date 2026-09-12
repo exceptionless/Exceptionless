@@ -40,6 +40,7 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public string? AvatarFileName { get; set; }
 
     public bool EmailNotificationsEnabled { get; set; } = true;
+    public bool? AssistantConversationSharingEnabled { get; set; }
     public bool IsEmailAddressVerified { get; set; }
     public string? VerifyEmailAddressToken { get; set; }
     public DateTime VerifyEmailAddressTokenExpiration { get; set; }

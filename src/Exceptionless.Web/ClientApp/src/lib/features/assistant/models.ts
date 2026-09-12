@@ -1,3 +1,5 @@
+export type { AssistantConversationSharingSettings } from '$generated/api';
+
 export interface AssistantAccess {
     enabled: boolean;
     has_access: boolean;
@@ -10,6 +12,7 @@ export type AssistantAccessState = 'available' | 'disabled' | 'error' | 'loading
 
 export interface AssistantChatMessage {
     content: string;
+    conversationId?: string;
     feedback?: AssistantFeedback;
     id: string;
     isSuggestedAction?: boolean;
