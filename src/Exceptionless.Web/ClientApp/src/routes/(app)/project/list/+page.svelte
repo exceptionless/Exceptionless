@@ -10,7 +10,7 @@
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
-    import { type GetProjectsParams, getProjectsQuery } from '$features/projects/api.svelte';
+    import { type GetOrganizationProjectsParams, getOrganizationProjectsQuery } from '$features/projects/api.svelte';
     import { getTableOptions } from '$features/projects/components/table/options.svelte';
     import ProjectsDataTable from '$features/projects/components/table/projects-data-table.svelte';
     import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
@@ -32,7 +32,7 @@
         }
     });
 
-    const projectsQueryParameters: GetProjectsParams = $state({
+    const projectsQueryParameters: GetOrganizationProjectsParams = $state({
         get filter() {
             return queryParams.filter!;
         },
@@ -48,11 +48,16 @@
         mode: 'stats'
     });
 
-    const projectsQuery = getProjectsQuery({
+    const projectsQuery = getOrganizationProjectsQuery({
         get params() {
             return projectsQueryParameters;
         },
-        refetchInterval: ORGANIZATION_USAGE_REFETCH_INTERVAL_MS
+        refetchInterval: ORGANIZATION_USAGE_REFETCH_INTERVAL_MS,
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
     });
 
     const table = createTable(
@@ -97,7 +102,7 @@
     </div>
     <ProjectsDataTable bind:limit={projectsQueryParameters.limit!} isLoading={projectsQuery.isLoading} {rowClick} {rowHref} {table}>
         {#snippet toolbarChildren()}
-            <Input type="search" placeholder="Filter projects or organizations..." class="flex-1" bind:value={projectsQueryParameters.filter} />
+            <Input type="search" placeholder="Filter projects..." class="flex-1" bind:value={projectsQueryParameters.filter} />
             <DataTableViewOptions size="icon-lg" {table} />
             <Button size="icon-lg" onclick={addProject} title="Add Project">
                 <Plus class="size-4" aria-hidden="true" />

@@ -460,7 +460,10 @@
 
         const organizationEventRefresher = createOrganizationEventNotificationRefresher(queryClient);
         const projectStackRefresher = createProjectStackNotificationRefresher(queryClient);
-        const ws = new WebSocketClient();
+        const ws = new WebSocketClient(undefined, {
+            // Reconnect with the selected organization's notification subscription.
+            organizationId: organization.current
+        });
         ws.onMessage = (message) => void onMessage(message, organizationEventRefresher, projectStackRefresher);
         ws.onOpen = (_, isReconnect) => {
             if (isReconnect) {
@@ -500,9 +503,9 @@
     const organizations = $derived(organizationsQuery.data?.data ?? []);
 
     const impersonatingOrganizationId = $derived.by(() => {
-        // Only consider impersonation if user data is loaded and user has organizations
+        // Impersonation does not require the administrator to have organization memberships.
         const userOrganizationIds = meQuery.data?.organization_ids;
-        if (!isGlobalAdmin || !userOrganizationIds || userOrganizationIds.length === 0 || !organization.current) {
+        if (!isGlobalAdmin || !userOrganizationIds || !organization.current) {
             return undefined;
         }
 
@@ -542,12 +545,13 @@
     $effect(() => {
         void page.url.pathname;
 
-        if (!organizationsQuery.isSuccess) {
+        if (!organizationsQuery.isSuccess || !meQuery.isSuccess) {
             return;
         }
 
         const hasOrganizations = organizations.length > 0;
-        if (!hasOrganizations) {
+        const hasInvalidImpersonatedOrganization = !!impersonatingOrganizationId && impersonatedOrganizationQuery.isError;
+        if (!hasOrganizations && (!impersonatingOrganizationId || hasInvalidImpersonatedOrganization)) {
             organization.current = undefined;
 
             if (shouldRedirectToSetup()) {
@@ -558,7 +562,6 @@
         }
 
         const hasSelectedOrganization = !!organization.current && organizations.some((organizationItem) => organizationItem.id === organization.current);
-        const hasInvalidImpersonatedOrganization = !!impersonatingOrganizationId && impersonatedOrganizationQuery.isError;
         if ((!hasSelectedOrganization && !impersonatingOrganizationId) || hasInvalidImpersonatedOrganization) {
             organization.current = organizations[0]!.id;
         }
@@ -735,7 +738,6 @@
                 isLoading={meQuery.isLoading}
                 user={meQuery.data}
                 {gravatar}
-                {organizations}
                 {openChat}
                 {openKeyboardShortcuts}
                 {intercomUnreadCount}
