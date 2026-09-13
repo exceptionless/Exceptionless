@@ -15,9 +15,6 @@
         filterChanged(filter);
     }
 
-    // Store the organizationId to prevent loading when switching organizations.
-    const organizationId = organization.current;
-
     // Create query with conditional enabled - only fetch when dropdown is open
     const countQuery = getOrganizationCountQuery({
         enabled: () => open,
@@ -26,7 +23,7 @@
         },
         route: {
             get organizationId() {
-                return organizationId;
+                return organization.current;
             }
         }
     });

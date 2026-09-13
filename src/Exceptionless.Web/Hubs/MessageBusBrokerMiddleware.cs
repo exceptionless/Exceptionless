@@ -2,6 +2,7 @@
 using System.Text;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
+using Exceptionless.Web.Extensions;
 
 namespace Exceptionless.Web.Hubs;
 
@@ -83,7 +84,7 @@ public class MessageBusBrokerMiddleware
 
         try
         {
-            foreach (string organizationId in context.User.GetOrganizationIds())
+            foreach (string organizationId in GetSubscribedOrganizationIds(context))
                 await _connectionMapping.GroupAddAsync(organizationId, connectionId);
 
             string? userId = context.User.GetUserId();
@@ -103,7 +104,7 @@ public class MessageBusBrokerMiddleware
 
         try
         {
-            foreach (string organizationId in context.User.GetOrganizationIds())
+            foreach (string organizationId in GetSubscribedOrganizationIds(context))
                 await _connectionMapping.GroupRemoveAsync(organizationId, connectionId);
 
             string? userId = context.User.GetUserId();
@@ -115,6 +116,16 @@ public class MessageBusBrokerMiddleware
             _logger.LogError(ex, "OnDisconnected Error: {Message}", ex.Message);
             throw;
         }
+    }
+
+    private static IEnumerable<string> GetSubscribedOrganizationIds(HttpContext context)
+    {
+        var organizationIds = context.User.GetOrganizationIds().ToHashSet(StringComparer.Ordinal);
+        string? impersonatedOrganizationId = context.Request.Query["organization_id"];
+        if (!String.IsNullOrWhiteSpace(impersonatedOrganizationId) && context.Request.IsGlobalAdmin())
+            organizationIds.Add(impersonatedOrganizationId);
+
+        return organizationIds;
     }
 
     private async Task ReceiveAsync(WebSocket socket, Func<WebSocketReceiveResult, string, Task> handleMessage)

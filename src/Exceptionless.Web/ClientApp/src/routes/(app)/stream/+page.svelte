@@ -122,6 +122,11 @@
     watch(
         () => organization.current,
         () => {
+            loadDataRequestId++;
+            before = undefined;
+            clientResponse = undefined;
+            queryData = [];
+            debouncedLoadData.cancel();
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             queryParams.update(DEFAULT_PARAMS);
             paused = false;
@@ -266,7 +271,8 @@
             return;
         }
 
-        if (!organization.current) {
+        const organizationId = organization.current;
+        if (!organizationId) {
             return;
         }
 
@@ -274,14 +280,14 @@
             before = undefined;
         }
 
-        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organization.current}/events`, {
+        const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
             expectedStatusCodes: [426],
             params: {
                 ...eventsQueryParameters,
                 before
             }
         });
-        if (requestId !== loadDataRequestId) {
+        if (requestId !== loadDataRequestId || organizationId !== organization.current) {
             return;
         }
 
@@ -353,12 +359,11 @@
         queryData = [];
     });
 
-    $effect(() => {
-        if (paused) {
-            return;
+    // Cursor and result updates must not retrigger the request that produced them.
+    watch([() => paused, () => isSavedViewPending, () => organization.current, () => queryParams.filter, () => queryParams.limit], ([isPaused]) => {
+        if (!isPaused) {
+            void loadData();
         }
-
-        loadData();
     });
 </script>
 

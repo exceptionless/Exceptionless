@@ -7,7 +7,8 @@
     import { Skeleton } from '$comp/ui/skeleton';
     import { Switch } from '$comp/ui/switch';
     import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
-    import { getProjectsQuery, getProjectUserNotificationSettings, postProjectUserNotificationSettings } from '$features/projects/api.svelte';
+    import { organization } from '$features/organizations/context.svelte';
+    import { getOrganizationProjectsQuery, getProjectUserNotificationSettings, postProjectUserNotificationSettings } from '$features/projects/api.svelte';
     import UserNotificationSettingsForm from '$features/projects/components/user-notification-settings-form.svelte';
     import AlertDescription from '$features/shared/components/ui/alert/alert-description.svelte';
     import AlertTitle from '$features/shared/components/ui/alert/alert-title.svelte';
@@ -39,7 +40,13 @@
         }
     });
 
-    const projectsQuery = getProjectsQuery({});
+    const projectsQuery = getOrganizationProjectsQuery({
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
     const allProjects = $derived(projectsQuery.data?.data ?? []);
 
     const projectsByOrganization = $derived.by(() => {

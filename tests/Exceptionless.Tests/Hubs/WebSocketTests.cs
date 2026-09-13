@@ -1,4 +1,7 @@
 using System.Net.WebSockets;
+using System.Security.Claims;
+using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
@@ -113,6 +116,48 @@ public sealed class WebSocketTests : TestWithServices
             await _connectionMapping.GroupRemoveAsync(organizationId, unrelatedConnectionId);
             await _connectionManager.RemoveWebSocketAsync(unrelatedConnectionId);
         }
+    }
+
+    [Theory]
+    [InlineData(true, "impersonated-organization", true)]
+    [InlineData(false, "impersonated-organization", false)]
+    [InlineData(true, null, false)]
+    [InlineData(false, null, false)]
+    public async Task Invoke_OrganizationSubscription_RequiresGlobalAdminAndCleansUpOnDisconnect(bool isGlobalAdmin, string? requestedOrganizationId, bool shouldReceiveImpersonatedUpdates)
+    {
+        // Arrange
+        const string membershipOrganizationId = "membership-organization";
+        const string impersonatedOrganizationId = "impersonated-organization";
+        var identity = new ClaimsIdentity([
+            new Claim(ClaimTypes.NameIdentifier, "subscription-user"),
+            new Claim(IdentityUtils.OrganizationIdsClaim, membershipOrganizationId),
+            new Claim(ClaimTypes.Role, isGlobalAdmin ? AuthorizationRoles.GlobalAdmin : AuthorizationRoles.User)
+        ], IdentityUtils.UserAuthenticationType);
+        var socket = new TestWebSocket();
+        var context = new DefaultHttpContext { User = new ClaimsPrincipal(identity) };
+        context.Request.Path = "/api/v2/push";
+        if (requestedOrganizationId is not null)
+            context.Request.QueryString = QueryString.Create("organization_id", requestedOrganizationId);
+        context.Features.Set<IHttpWebSocketFeature>(new TestWebSocketFeature(socket));
+        var middleware = new MessageBusBrokerMiddleware(_ => Task.CompletedTask, _connectionManager, _connectionMapping, GetService<ILogger<MessageBusBrokerMiddleware>>());
+        string[] membershipConnections = [];
+        string[] impersonatedConnections = [];
+        socket.OnReceive = async () =>
+        {
+            membershipConnections = [.. await _connectionMapping.GetGroupConnectionsAsync(membershipOrganizationId)];
+            impersonatedConnections = [.. await _connectionMapping.GetGroupConnectionsAsync(impersonatedOrganizationId)];
+            return new WebSocketReceiveResult(0, WebSocketMessageType.Close, true, WebSocketCloseStatus.NormalClosure, "Closed");
+        };
+
+        // Act
+        await middleware.Invoke(context);
+
+        // Assert
+        Assert.Single(membershipConnections);
+        Assert.Equal(shouldReceiveImpersonatedUpdates ? 1 : 0, impersonatedConnections.Length);
+        Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(membershipOrganizationId));
+        Assert.Empty(await _connectionMapping.GetGroupConnectionsAsync(impersonatedOrganizationId));
+        Assert.Empty(await _connectionMapping.GetUserIdConnectionsAsync("subscription-user"));
     }
 
     [Fact]
