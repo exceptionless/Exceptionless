@@ -359,12 +359,11 @@
         queryData = [];
     });
 
-    $effect(() => {
-        if (paused) {
-            return;
+    // Cursor and result updates must not retrigger the request that produced them.
+    watch([() => paused, () => isSavedViewPending, () => organization.current, () => queryParams.filter, () => queryParams.limit], ([isPaused]) => {
+        if (!isPaused) {
+            void loadData();
         }
-
-        loadData();
     });
 </script>
 

@@ -51,7 +51,7 @@
     import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@foundatiofx/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
-    import { useInterval } from 'runed';
+    import { useInterval, watch } from 'runed';
     import { tick } from 'svelte';
     import { SvelteURLSearchParams } from 'svelte/reactivity';
     import { fade } from 'svelte/transition';
@@ -394,10 +394,8 @@
         }
     });
 
-    // WebSocket + keyboard shortcuts — only depends on token, not navigation
-    $effect(() => {
-        const currentToken = accessToken.current;
-
+    // Keep lifecycle dependencies explicit; setup helpers must not add reactive inputs.
+    watch([() => accessToken.current, () => organization.current], ([currentToken, currentOrganizationId]) => {
         function handleKeydown(e: KeyboardEvent) {
             if (
                 e.defaultPrevented ||
@@ -462,7 +460,7 @@
         const projectStackRefresher = createProjectStackNotificationRefresher(queryClient);
         const ws = new WebSocketClient(undefined, {
             // Reconnect with the selected organization's notification subscription.
-            organizationId: organization.current
+            organizationId: currentOrganizationId
         });
         ws.onMessage = (message) => void onMessage(message, organizationEventRefresher, projectStackRefresher);
         ws.onOpen = (_, isReconnect) => {

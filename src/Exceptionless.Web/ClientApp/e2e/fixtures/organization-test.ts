@@ -15,7 +15,15 @@ export const test = base.extend<{ impersonatedOrganization: ImpersonatedOrganiza
         let projectId: string | undefined;
 
         try {
-            ownerToken = await e2eApi.signup('Impersonated organization owner', email, E2E_TEST_PASSWORD);
+            ownerToken = await e2eApi.createInvitedUser(
+                e2eScenario.userToken,
+                e2eScenario.organizationId,
+                'Impersonated organization owner',
+                email,
+                E2E_TEST_PASSWORD
+            );
+            await e2eApi.deleteOrganizationUser(e2eScenario.userToken, e2eScenario.organizationId, email);
+            await e2eApi.waitForOrganizationNotListed(ownerToken, e2eScenario.organizationId);
             const organization = await e2eApi.createOrganization(ownerToken, organizationName);
             organizationId = organization.id;
             await e2eApi.waitForOrganizationListed(ownerToken, organization.id);

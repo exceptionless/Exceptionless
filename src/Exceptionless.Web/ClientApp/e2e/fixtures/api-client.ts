@@ -41,6 +41,21 @@ export class E2EApiClient {
         readonly environment: E2EEnvironment
     ) {}
 
+    async createInvitedUser(token: string, organizationId: string, name: string, email: string, password: string): Promise<string> {
+        await this.inviteOrganizationUser(token, organizationId, email);
+        const response = await this.request.get(this.url(`organizations/${organizationId}`), {
+            headers: this.authHeaders(token)
+        });
+        await expectStatus(response, [200], 'get organization invitation');
+        const organization = (await readJson(response)) as { invites?: { email_address: string; token: string }[] };
+        const invitation = organization.invites?.find((invite) => invite.email_address.toLowerCase() === email.toLowerCase());
+        if (!invitation?.token) {
+            throw new Error('Could not find the generated test user invitation');
+        }
+
+        return await this.signup(name, email, password, invitation.token);
+    }
+
     async createOrganization(token: string, name: string): Promise<E2EOrganization> {
         const response = await this.request.post(this.url('organizations'), {
             data: { name },
@@ -285,10 +300,11 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for ${path} email sent to ${email}`);
     }
 
-    async signup(name: string, email: string, password: string): Promise<string> {
+    async signup(name: string, email: string, password: string, inviteToken?: string): Promise<string> {
         const response = await this.request.post(this.url('auth/signup'), {
             data: {
                 email,
+                invite_token: inviteToken,
                 name,
                 password
             }
