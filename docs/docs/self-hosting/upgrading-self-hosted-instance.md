@@ -6,6 +6,14 @@ title: "Upgrading"
 
 **Please ensure that you have created backups before upgrading!**
 
+## Layered infrastructure connection strings
+
+Existing Helm values, Docker Compose settings, and explicit `provider=...` role connection strings require no changes. They continue to override automatic provider selection. New installations may use the simpler technology-named connection strings described in [Infrastructure Configuration](/docs/self-hosting/configuration).
+
+For a rolling Helm image upgrade, leave every rendered role selector and effective connection string exactly unchanged while old and new replicas overlap. The current chart remains in legacy-selector mode, so a technology-named RabbitMQ connection string alone does not override its explicit MessageBus value. Configure RabbitMQ through `messagebus.connectionString` as documented in [Infrastructure Configuration](/docs/self-hosting/configuration#helm-docker-compose-and-aspire).
+
+Treat selector removal and provider or endpoint changes as separate infrastructure migrations. Selector removal is safe only when the resolved provider and exact effective connection string are identical before and after the change. A real backend change requires a provider-specific bridge or dual-read/write process, or a quiesce-and-drain maintenance window; it is not a zero-downtime rolling configuration change.
+
 **If you are upgrading from v1 or [v2](https://github.com/exceptionless/Exceptionless/releases/tag/v2.0.0) you will need to upgrade to [v3.0](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) before upgrading to the latest release.**
 
 ## Upgrading from v7.1 to v8
