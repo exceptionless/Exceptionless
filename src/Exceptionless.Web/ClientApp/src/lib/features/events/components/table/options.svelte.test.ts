@@ -34,6 +34,7 @@ describe('event table columns', () => {
 
         expect(columnsById.message?.enableSorting).toBe(false);
     });
+
     it('offers project and tags as hidden optional columns', () => {
         const columns = getColumns<EventSummaryModel<SummaryTemplateKeys>>();
         const columnIds = columns.map((column) => column.id);

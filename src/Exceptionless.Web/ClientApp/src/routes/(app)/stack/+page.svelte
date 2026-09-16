@@ -133,6 +133,18 @@
         return filter || null;
     }
 
+    function getEffectiveStackSort(): StackSortMode {
+        return getStackSortMode(getPersistedStackSort()) ?? 'stack_frequent';
+    }
+
+    function getPersistedStackSort(): string | undefined {
+        if (queryParams.sort != null) {
+            return getStackSortMode(queryParams.sort) ?? 'stack_frequent';
+        }
+
+        return savedViewsState.activeSavedView?.sort ?? undefined;
+    }
+
     function getQueryFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] | null {
         const filters: FacetedFilter.IFilter[] = [];
 
@@ -209,29 +221,17 @@
         return undefined;
     }
 
+    function setStackSort(mode: StackSortMode): void {
+        const savedViewSort = getStackSortMode(savedViewsState.activeSavedView?.sort) ?? 'stack_frequent';
+        queryParams.sort = mode === savedViewSort ? null : mode;
+        table.setPageIndex(0);
+    }
+
     function splitQueryParam(value: string): string[] {
         return value
             .split(',')
             .map((item) => item.trim())
             .filter((item) => item);
-    }
-
-    function getPersistedStackSort(): string | undefined {
-        if (queryParams.sort != null) {
-            return getStackSortMode(queryParams.sort) ?? 'stack_frequent';
-        }
-
-        return savedViewsState.activeSavedView?.sort ?? undefined;
-    }
-
-    function getEffectiveStackSort(): StackSortMode {
-        return getStackSortMode(getPersistedStackSort()) ?? 'stack_frequent';
-    }
-
-    function setStackSort(mode: StackSortMode): void {
-        const savedViewSort = getStackSortMode(savedViewsState.activeSavedView?.sort) ?? 'stack_frequent';
-        queryParams.sort = mode === savedViewSort ? null : mode;
-        table.setPageIndex(0);
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
@@ -743,6 +743,16 @@
         })
     );
 
+    watch(
+        getEffectiveStackSort,
+        () => {
+            table.resetRowSelection();
+        },
+        {
+            lazy: true
+        }
+    );
+
     async function handleRefresh() {
         table.resetRowSelection();
         await eventsQuery.refetch();
@@ -915,7 +925,7 @@
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
                     setShowStats={(v) => (showStats = v)}
-                    sort={getStackSortMode(getPersistedStackSort())}
+                    sort={getPersistedStackSort()}
                     {table}
                     time={getQueryTime() ?? undefined}
                     view={VIEW}
