@@ -4,10 +4,10 @@ type Options = {
 };
 
 export class UseClipboard {
-    get copied() {
+    public get copied() {
         return this.#copiedStatus === 'success';
     }
-    get status() {
+    public get status() {
         return this.#copiedStatus;
     }
     #copiedStatus = $state<'failure' | 'success'>();
@@ -20,7 +20,7 @@ export class UseClipboard {
         this.delay = delay;
     }
 
-    async copy(text: string) {
+    public async copy(text: string) {
         if (this.timeout) {
             this.#copiedStatus = undefined;
             clearTimeout(this.timeout);

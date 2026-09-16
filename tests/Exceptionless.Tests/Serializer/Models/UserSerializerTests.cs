@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Models;
 using Foundatio.Serializer;
 using Xunit;
@@ -236,6 +237,115 @@ public class UserSerializerTests : TestWithServices
         Assert.Equal(2, user.Roles.Count);
         Assert.Contains("user", user.Roles);
         Assert.Contains("client", user.Roles);
+    }
+
+    [Fact]
+    public void Serialize_UserWithProductTourState_PreservesUiDefinedKeys()
+    {
+        // Arrange
+        var original = new User
+        {
+            Id = "tour-user",
+            FullName = "Tour User",
+            EmailAddress = "tour@example.com",
+            IsEmailAddressVerified = true,
+            ProductTours = new Dictionary<string, JsonElement>
+            {
+                ["app_overview"] = JsonSerializer.SerializeToElement(FixedDateTime),
+                ["future_guide_v2"] = JsonSerializer.SerializeToElement(FixedDateTime.AddMinutes(1))
+            }
+        };
+
+        // Act
+        string? json = _serializer.SerializeToString(original);
+
+        // Assert
+        Assert.Contains("\"product_tours\":{\"app_overview\":\"2024-01-15T12:00:00Z\",\"future_guide_v2\":\"2024-01-15T12:01:00Z\"}", json);
+        Assert.DoesNotContain("status", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("version", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("event_investigate", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Deserialize_UserWithProductTourState_PreservesAllDates()
+    {
+        // Arrange
+        const string json = """
+            {
+                "id": "tour-user",
+                "full_name": "Tour User",
+                "email_address": "tour@example.com",
+                "is_email_address_verified": true,
+                "product_tours": {
+                    "app_overview": "2024-01-15T12:00:00Z",
+                    "exie_overview": "2024-01-15T12:01:00Z",
+                    "event_investigate": "2024-01-15T12:02:00Z",
+                    "project_configure": "2024-01-15T12:03:00Z",
+                    "saved_view_create": "2024-01-15T12:04:00Z",
+                    "app_welcome": "2024-01-15T12:05:00Z",
+                    "exie_announcement": "2024-01-15T12:06:00Z"
+                }
+            }
+            """;
+
+        // Act
+        var user = _serializer.Deserialize<User>(json);
+
+        // Assert
+        Assert.NotNull(user);
+        var state = user.ProductTours;
+        Assert.Equal(FixedDateTime, state["app_overview"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(1), state["exie_overview"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(2), state["event_investigate"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(3), state["project_configure"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(4), state["saved_view_create"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(5), state["app_welcome"].GetDateTime());
+        Assert.Equal(FixedDateTime.AddMinutes(6), state["exie_announcement"].GetDateTime());
+    }
+
+    [Theory]
+    [InlineData("{\"id\":\"legacy-user\",\"full_name\":\"Legacy User\",\"email_address\":\"legacy@example.com\",\"is_email_address_verified\":true}")]
+    public void Deserialize_UserWithoutProductTours_ReturnsEmptyState(string json)
+    {
+        // Arrange: InlineData supplies a legacy user with no product_tours field.
+
+        // Act
+        var user = _serializer.Deserialize<User>(json);
+
+        // Assert
+        Assert.NotNull(user);
+        var state = user.ProductTours;
+        Assert.Empty(state);
+    }
+
+    [Fact]
+    public void Deserialize_UserWithLegacyAndFutureTourState_PreservesOpaqueValuesOnSave()
+    {
+        // Arrange
+        const string json = """
+            {
+                "id": "tour-user",
+                "product_tours": {
+                    "app-overview": { "status": "completed", "version": 1, "updated_utc": "2024-01-15T12:00:00Z" },
+                    "future_guide_v2": "2024-01-15T12:01:00Z",
+                    "unknown_shape": { "step": 3 },
+                    "empty": null
+                }
+            }
+            """;
+
+        // Act
+        var user = _serializer.Deserialize<User>(json);
+        Assert.NotNull(user);
+        var roundTrip = _serializer.Deserialize<User>(_serializer.SerializeToString(user));
+
+        // Assert
+        Assert.NotNull(roundTrip);
+        Assert.Equal(4, roundTrip.ProductTours.Count);
+        Assert.Equal("completed", roundTrip.ProductTours["app-overview"].GetProperty("status").GetString());
+        Assert.Equal(FixedDateTime.AddMinutes(1), roundTrip.ProductTours["future_guide_v2"].GetDateTime());
+        Assert.Equal(3, roundTrip.ProductTours["unknown_shape"].GetProperty("step").GetInt32());
+        Assert.Equal(JsonValueKind.Null, roundTrip.ProductTours["empty"].ValueKind);
     }
 
     [Fact]

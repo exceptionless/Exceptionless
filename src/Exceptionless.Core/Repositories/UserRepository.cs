@@ -10,11 +10,46 @@ namespace Exceptionless.Core.Repositories;
 
 public class UserRepository : RepositoryBase<User>, IUserRepository
 {
+    private const int MaximumProductTourEntries = 100;
+
     public UserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Users, validator, options)
     {
         DefaultConsistency = Consistency.Immediate;
         AddRequiredField(u => u.EmailAddress, u => u.OrganizationIds);
+    }
+
+    public async Task<User?> RecordProductTourAsync(User user, string stateKey, DateTime recordedUtc)
+    {
+        const string script = """
+            if (ctx._source.product_tours == null) {
+                ctx._source.product_tours = [:];
+            }
+            if (ctx._source.product_tours[params.key] instanceof String ||
+                (!ctx._source.product_tours.containsKey(params.key) && ctx._source.product_tours.size() >= params.maximum_entries)) {
+                ctx.op = 'none';
+            } else {
+                ctx._source.product_tours[params.key] = params.recorded_utc;
+            }
+            """;
+
+        await PatchAsync(user.Id, new ScriptPatch(script)
+        {
+            Params = new Dictionary<string, object>
+            {
+                ["key"] = stateKey,
+                ["maximum_entries"] = MaximumProductTourEntries,
+                ["recorded_utc"] = recordedUtc.ToString("O")
+            }
+        });
+        await Cache.RemoveAsync(EmailCacheKey(user.EmailAddress));
+
+        var updatedUser = await GetByIdAsync(user.Id, o => o.Cache(false));
+        // A concurrent writer may have advanced the document since this read; do not cache this snapshot.
+        if (updatedUser is not null)
+            await InvalidateCacheAsync(updatedUser);
+
+        return updatedUser;
     }
 
     public Task<bool> SetSavedViewOrdersAsync(User user, CommandOptionsDescriptor<User>? options = null)

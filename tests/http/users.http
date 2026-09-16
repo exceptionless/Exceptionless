@@ -21,6 +21,10 @@ Content-Type: application/json
 GET {{apiUrl}}/users/me
 Authorization: Bearer {{token}}
 
+### Record a completed guided tour (repeating this request preserves its first timestamp)
+PUT {{apiUrl}}/users/me/product-tours/app-overview/record
+Authorization: Bearer {{token}}
+
 ###
 @userId = {{currentUser.response.body.$.id}}
 @avatarFile = ./avatar.png
