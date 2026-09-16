@@ -117,8 +117,10 @@ public class Bootstrapper
         services.AddSingleton(s => CreateQueue<WebHookNotification>(s));
         services.AddSingleton(s => CreateQueue<MailMessage>(s));
         services.AddSingleton(s => CreateQueue<WorkItemData>(s, TimeSpan.FromHours(1)));
+        services.AddSingleton(s => CreateQueue<RateNotification>(s));
 
         services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<WorkItemData>, WorkItemDuplicateDetectionQueueBehavior>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IQueueBehavior<RateNotification>, RateNotificationDuplicateDetectionQueueBehavior>());
 
         services.AddSingleton<IConnectionMapping, ConnectionMapping>();
         services.AddSingleton<MessageService>();
@@ -156,6 +158,7 @@ public class Bootstrapper
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
         services.AddSingleton<ISavedViewRepository, SavedViewRepository>();
         services.AddSingleton<ISystemSettingsRepository, SystemSettingsRepository>();
+        services.AddSingleton<IRateNotificationRuleRepository, RateNotificationRuleRepository>();
         services.AddSingleton<ITokenRepository, TokenRepository>();
 
         services.AddSingleton<IGeocodeService, NullGeocodeService>();
@@ -218,6 +221,10 @@ public class Bootstrapper
         services.AddSingleton<SourceMapService>();
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
+        services.AddSingleton<RateCounterService>();
+        services.AddSingleton<ProjectNotificationThrottleService>();
+        services.AddSingleton<RateNotificationRuleCache>();
+        services.AddStartupAction<RateNotificationRuleCache>();
         services.AddSingleton<IAssistantUsageRecorder>(provider => provider.GetRequiredService<UsageService>());
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
@@ -493,6 +500,7 @@ public class Bootstrapper
         services.AddJob<EventPostsJob>(o => o.WaitForStartupActions());
         services.AddJob<EventUserDescriptionsJob>(o => o.WaitForStartupActions());
         services.AddJob<MailMessageJob>(o => o.WaitForStartupActions());
+        services.AddJob<RateNotificationsJob>(o => o.WaitForStartupActions());
         services.AddJob<MigrationJob>(o => o.WaitForStartupActions());
         services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());
         services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions());
@@ -500,6 +508,7 @@ public class Bootstrapper
         services.AddJob<WorkItemJob>(o => o.WaitForStartupActions());
 
         services.AddDistributedCronJob<EventUsageJob>(Cron.Minutely());
+        services.AddDistributedCronJob<RateNotificationEvaluatorJob>(Cron.Minutely());
         services.AddDistributedCronJob<CleanupDataJob>("30 */4 * * *");
         services.AddDistributedCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
         services.AddDistributedCronJob<DownloadGeoIPDatabaseJob>(Cron.Daily(1));
@@ -526,4 +535,7 @@ public class Bootstrapper
 
     private sealed class WorkItemDuplicateDetectionQueueBehavior(ICacheClient cacheClient, ILoggerFactory loggerFactory)
         : DuplicateDetectionQueueBehavior<WorkItemData>(cacheClient, loggerFactory, TimeSpan.FromHours(24));
+
+    private sealed class RateNotificationDuplicateDetectionQueueBehavior(ICacheClient cacheClient, ILoggerFactory loggerFactory)
+        : DuplicateDetectionQueueBehavior<RateNotification>(cacheClient, loggerFactory, TimeSpan.FromHours(3));
 }

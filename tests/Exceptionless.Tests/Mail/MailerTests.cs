@@ -88,6 +88,21 @@ public sealed class MailerTests : TestWithServices
         Assert.Equal(expected, url);
     }
 
+    [Theory]
+    [InlineData("http://localhost:9001", "http://localhost:9001/next/account/notifications?project=project-1")]
+    [InlineData("http://localhost:9001/#!", "http://localhost:9001/next/account/notifications?project=project-1")]
+    public void RateNotificationSettings_BaseUrlVariant_UsesSvelteRoute(string baseUrl, string expected)
+    {
+        // Arrange
+        var appUrls = new EmailAppUrlBuilder(baseUrl);
+
+        // Act
+        string url = appUrls.RateNotificationSettings("project-1");
+
+        // Assert
+        Assert.Equal(expected, url);
+    }
+
     [Fact]
     public void EmailAppUrlBuilder_ProductionBaseUrl_MatchesExistingTemplates()
     {
@@ -104,6 +119,7 @@ public sealed class MailerTests : TestWithServices
             ("stack/stack-1/ignored", appUrls.IgnoreStack("stack-1")),
             ("stack/stack-1/discarded", appUrls.DiscardStack("stack-1")),
             ("account/manage?projectId=project-1&tab=notifications", appUrls.ProjectNotifications("project-1")),
+            ("next/account/notifications?project=project-1", appUrls.RateNotificationSettings("project-1")),
             ("organization/organization-1/dashboard", appUrls.OrganizationDashboard("organization-1")),
             ("signup?token=token-1", appUrls.Signup("token-1")),
             ("organization/organization-1/upgrade", appUrls.OrganizationUpgrade("organization-1")),
@@ -659,6 +675,111 @@ public sealed class MailerTests : TestWithServices
         Assert.Contains("free plan", body, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData(1, "1 event (threshold: 1)")]
+    [InlineData(2, "2 events (threshold: 1)")]
+    public async Task SendRateNotificationUsesCorrectEventNounAsync(long observedCount, string expectedText)
+    {
+        var user = _userData.GenerateSampleUser();
+        var project = _projectData.GenerateSampleProject();
+        var rule = new RateNotificationRule
+        {
+            Id = TestConstants.WebHookId,
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
+            UserId = user.Id,
+            Name = "Production error storm",
+            IsEnabled = true,
+            Signal = RateNotificationSignal.Errors,
+            Subject = RateNotificationSubject.Project,
+            Threshold = 1,
+            Window = TimeSpan.FromMinutes(1),
+            Cooldown = TimeSpan.FromMinutes(30)
+        };
+
+        await _mailer.SendRateNotificationAsync(user, project, rule, observedCount, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow);
+        await RunMailJobAsync();
+
+        var sender = Assert.IsType<InMemoryMailSender>(GetService<IMailSender>());
+        Assert.Contains(expectedText, sender.LastMessage?.Body);
+    }
+
+    [Fact]
+    public async Task SendRateNotificationAsync_WithStackScope_EncodesValuesAndRendersStackLink()
+    {
+        // Arrange
+        var user = _userData.GenerateSampleUser();
+        var project = _projectData.GenerateSampleProject();
+        project.Name = "Project <img src=x onerror=alert(1)>";
+        var stack = _stackData.GenerateStack(
+            id: TestConstants.StackId,
+            organizationId: project.OrganizationId,
+            projectId: project.Id,
+            title: "Stack <img src=x onerror=alert(1)>");
+        var rule = new RateNotificationRule
+        {
+            Id = TestConstants.WebHookId,
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
+            UserId = user.Id,
+            Name = "Rule <script>alert(1)</script>",
+            IsEnabled = true,
+            Signal = RateNotificationSignal.Errors,
+            Subject = RateNotificationSubject.Stack,
+            StackId = stack.Id,
+            Threshold = 10,
+            Window = TimeSpan.FromMinutes(5),
+            Cooldown = TimeSpan.FromMinutes(30)
+        };
+
+        // Act
+        await _mailer.SendRateNotificationAsync(user, project, rule, 12, DateTime.UtcNow.AddMinutes(-5), DateTime.UtcNow, stack);
+        string body = await RunMailJobAsync();
+
+        // Assert
+        Assert.Contains("&lt;img", body, StringComparison.Ordinal);
+        Assert.Contains("&lt;script&gt;", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<img src=x onerror=alert(1)>", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<script>alert(1)</script>", body, StringComparison.Ordinal);
+        Assert.Contains("View Stack", body, StringComparison.Ordinal);
+        Assert.Contains("Manage rate notification rules", body, StringComparison.Ordinal);
+        Assert.Contains($"/next/account/notifications?project={project.Id}", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
+        Assert.Contains($"/stack/{stack.Id}", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendRateNotificationAsync_WithProjectScope_RendersProjectTimelineLink()
+    {
+        // Arrange
+        var user = _userData.GenerateSampleUser();
+        var project = _projectData.GenerateSampleProject();
+        var rule = new RateNotificationRule
+        {
+            Id = TestConstants.WebHookId,
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
+            UserId = user.Id,
+            Name = "Production error storm",
+            IsEnabled = true,
+            Signal = RateNotificationSignal.CriticalErrors,
+            Subject = RateNotificationSubject.Project,
+            Threshold = 10,
+            Window = TimeSpan.FromMinutes(5),
+            Cooldown = TimeSpan.FromMinutes(30)
+        };
+
+        // Act
+        await _mailer.SendRateNotificationAsync(user, project, rule, 12, DateTime.UtcNow.AddMinutes(-5), DateTime.UtcNow);
+        string body = await RunMailJobAsync();
+
+        // Assert
+        Assert.Contains("View Project Timeline", body, StringComparison.Ordinal);
+        Assert.Contains("Manage rate notification rules", body, StringComparison.Ordinal);
+        Assert.Contains($"/project/{project.Id}/error/timeline", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
+        Assert.Contains($"/next/account/notifications?project={project.Id}", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
+        Assert.DoesNotContain("/stack/", body, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task SendProjectDailySummaryAsync_WithRegressedStack_RendersRegressedLabel()
     {
@@ -783,7 +904,6 @@ public sealed class MailerTests : TestWithServices
             }
 
             Assert.True(String.Equals(uri.Scheme, baseUri.Scheme, StringComparison.OrdinalIgnoreCase), $"Expected internal email URL scheme '{baseUri.Scheme}' but found '{uri.Scheme}'.");
-            Assert.DoesNotContain("/next/", uri.PathAndQuery, StringComparison.OrdinalIgnoreCase);
             AssertValidInternalUrl(uri);
         }
     }
@@ -791,7 +911,13 @@ public sealed class MailerTests : TestWithServices
     private static void AssertValidInternalUrl(Uri uri)
     {
         Assert.Empty(uri.Fragment);
-        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|error/(?:timeline|frequent|new))|account/(?:manage|verify)|organization/[^/]+/(?:dashboard|upgrade|frequent|manage)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
+        Assert.Matches(@"^/(?:next/account/notifications|event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|error/(?:timeline|frequent|new))|account/(?:manage|verify)|organization/[^/]+/(?:dashboard|upgrade|frequent|manage)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
+
+        if (uri.AbsolutePath == "/next/account/notifications")
+        {
+            Assert.Matches(@"^\?project=[^?&#]+$", uri.Query);
+            return;
+        }
 
         if (uri.AbsolutePath is "/account/verify" or "/signup")
         {
