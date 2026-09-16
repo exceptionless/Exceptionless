@@ -8,6 +8,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Validation;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -134,11 +135,33 @@ public class ProjectHandler(
         if (error is not null)
             return error;
 
+        var changed = message.Changes.GetEntity();
+        bool ingestLimitChanged = message.Changes.ContainsChangedProperty(p => p.IngestLimit!);
+
         message.Changes.Patch(original);
+        if (ingestLimitChanged)
+            original.IngestLimit = changed.IngestLimit;
+
         if (message.Changes.ContainsChangedProperty(p => p.PromotedTabs!))
             original.PromotedTabs = NormalizePromotedTabs(original.PromotedTabs);
 
-        await repository.SaveAsync(original, o => o.Cache());
+        if (ingestLimitChanged && original.IngestLimit is not null)
+        {
+            if (original.IngestLimit.Type is ProjectIngestLimitType.Fixed)
+                original.IngestLimit.PercentOfOrganizationLimit = null;
+            else if (original.IngestLimit.Type is ProjectIngestLimitType.PercentOfOrganizationLimit)
+                original.IngestLimit.FixedLimit = null;
+        }
+
+        try
+        {
+            await repository.SaveAsync(original, o => o.Cache());
+        }
+        catch (MiniValidatorException ex)
+        {
+            return ex.ToValidationResult<ViewProject>();
+        }
+
         return await MapToViewAsync(original);
     }
 
@@ -496,7 +519,13 @@ public class ProjectHandler(
         if (viewProjects.Count == 0)
             return;
 
-        var organizations = await organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).Distinct().ToArray(), o => o.Cache());
+        var organizationsTask = organizationRepository.GetByIdsAsync(viewProjects.Select(p => p.OrganizationId).Distinct().ToArray(), o => o.Cache());
+        var throttleStatesTask = usageService.GetProjectSmartThrottleStatesAsync(
+            viewProjects.Select(project => (project.OrganizationId, project.Id)).ToArray());
+        await Task.WhenAll(organizationsTask, throttleStatesTask);
+
+        var organizations = await organizationsTask;
+        var throttleStates = await throttleStatesTask;
         foreach (var viewProject in viewProjects)
         {
             if (!viewProject.IsConfigured.HasValue)
@@ -530,6 +559,18 @@ public class ProjectHandler(
             currentHourUsage.Discarded = realTimeUsage.CurrentHourUsage.Discarded;
             currentHourUsage.TooBig = realTimeUsage.CurrentHourUsage.TooBig;
             currentHourUsage.Deleted = realTimeUsage.CurrentHourUsage.Deleted;
+
+            if (viewProject.IngestLimit is not null)
+            {
+                int effectiveLimit = usageService.GetEffectiveProjectLimit(viewProject.IngestLimit, organization);
+                viewProject.EffectiveIngestLimit = effectiveLimit > 0 ? effectiveLimit : null;
+            }
+
+            if (throttleStates.TryGetValue(viewProject.Id, out var throttleState))
+            {
+                viewProject.IsSmartThrottled = true;
+                viewProject.SmartThrottleSampleRate = throttleState.SampleRate;
+            }
         }
     }
 
@@ -569,6 +610,13 @@ public class ProjectHandler(
         var changed = changes.GetEntity();
         if (changes.ContainsChangedProperty(p => p.Name) && !await IsProjectNameAvailableInternalAsync(original.OrganizationId, changed.Name, original.Id, httpContext))
             return Result.BadRequest("A project with this name already exists.");
+
+        if (changes.ContainsChangedProperty(p => p.IngestLimit!) && changed.IngestLimit?.Type is ProjectIngestLimitType.PercentOfOrganizationLimit)
+        {
+            var organization = await organizationRepository.GetByIdAsync(original.OrganizationId, o => o.Cache());
+            if (organization?.GetMaxEventsPerMonthWithBonus(timeProvider) < 0)
+                return Result.BadRequest("A percentage project ingest limit cannot be used with an unlimited organization allowance.");
+        }
 
         if (changes.GetChangedPropertyNames().Contains(nameof(Project.OrganizationId)))
             return Result.BadRequest("OrganizationId cannot be modified.");
@@ -732,7 +780,6 @@ public class ProjectHandler(
 
         return Result.Forbidden(permission.Message ?? "Access denied.");
     }
-
     private static User GetCurrentUser(HttpContext httpContext) => httpContext.Request.GetUser();
     private static string GetCurrentUserId(HttpContext httpContext) => GetCurrentUser(httpContext).Id;
     private static bool IsStatsMode(string? mode) => !String.IsNullOrEmpty(mode) && String.Equals(mode, "stats", StringComparison.OrdinalIgnoreCase);
