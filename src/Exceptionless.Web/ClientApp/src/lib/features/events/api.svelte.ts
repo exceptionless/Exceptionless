@@ -11,6 +11,8 @@ import { SvelteSet } from 'svelte/reactivity';
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
 
+import { TAG_SUGGESTION_STALE_TIME, tagSuggestionAggregation, tagSuggestionSession } from './tag-suggestions';
+
 export interface OrganizationEventNotificationRefresher {
     cancel: () => void;
     schedule: (organizationId?: string, refreshImmediately?: boolean) => void;
@@ -645,6 +647,32 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
         },
         queryKey: queryKeys.stackEvents(request.route.stackId, request.params)
     }));
+}
+
+export function getTagSuggestionsQuery(request: { enabled: () => boolean; organizationId: string | undefined; search: string }) {
+    return createQuery<CountResult, ProblemDetails>(() => {
+        const organizationId = request.organizationId;
+        const search = request.search;
+        const session = tagSuggestionSession(accessToken.current);
+
+        return {
+            enabled: !!accessToken.current && !!organizationId && request.enabled(),
+            queryFn: async ({ signal }) => {
+                const response = await useFetchClient().getJSON<CountResult>(`/organizations/${organizationId}/events/count`, {
+                    params: {
+                        aggregations: tagSuggestionAggregation(search),
+                        time: 'all'
+                    },
+                    signal
+                });
+                return response.data!;
+            },
+            queryKey: ['EventTagSuggestions', session, organizationId, search],
+            refetchOnWindowFocus: false,
+            retry: false,
+            staleTime: TAG_SUGGESTION_STALE_TIME
+        };
+    });
 }
 
 export function retainPreviousOrganizationQueryData<T>(
