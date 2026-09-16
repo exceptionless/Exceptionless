@@ -44,6 +44,8 @@
             if (depth === 0) {
                 table.classList.add("table-fixed");
             }
+            var body = document.createElement("tbody");
+            table.appendChild(body);
 
             Object.keys(value).forEach(function (key) {
                 var row = document.createElement("tr");
@@ -54,7 +56,7 @@
                 cell.appendChild(renderValue(value[key], depth + 1));
                 row.appendChild(heading);
                 row.appendChild(cell);
-                table.appendChild(row);
+                body.appendChild(row);
             });
 
             return table;

@@ -7,7 +7,7 @@ var crypto = require("crypto");
 var CSP_HEADER = "Content-Security-Policy";
 var HTML_CACHE_CONTROL = "no-store";
 var NONCE_BYTE_LENGTH = 32;
-var SCRIPT_NONCE_PATTERN = /\s+nonce(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi;
+var SCRIPT_NONCE_PATTERN = /("[^"]*"|'[^']*')|\s+nonce(?=[\s=>/]|$)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi;
 var SCRIPT_ELEMENT_PATTERN = /(<script\b)((?:"[^"]*"|'[^']*'|[^'">])*)>([\s\S]*?)(<\/script\s*>)/gi;
 
 // Exceptionless uses Intercom's US endpoints. Keep region-specific sources scoped to that workspace.
@@ -148,7 +148,9 @@ function stampScriptNonces(html, nonce) {
     return html.replace(
         SCRIPT_ELEMENT_PATTERN,
         function (scriptElement, scriptTagName, attributes, content, closingTag) {
-            var attributesWithoutNonce = attributes.replace(SCRIPT_NONCE_PATTERN, "");
+            var attributesWithoutNonce = attributes.replace(SCRIPT_NONCE_PATTERN, function (attribute, quoted) {
+                return quoted || "";
+            });
 
             return scriptTagName + ' nonce="' + nonce + '"' + attributesWithoutNonce + ">" + content + closingTag;
         }
@@ -165,7 +167,11 @@ function isHtmlRequest(request) {
     var pathname = (request.url || "").split("?", 1)[0];
     var lastSegment = pathname.substring(pathname.lastIndexOf("/") + 1);
 
-    return accept.indexOf("text/html") !== -1 || pathname === "/index.html" || lastSegment.indexOf(".") === -1;
+    return (
+        pathname === "/index.html" ||
+        lastSegment.indexOf(".") === -1 ||
+        (accept.indexOf("text/html") !== -1 && /\.html$/i.test(pathname))
+    );
 }
 
 function removeConditionalRequestHeaders(request) {

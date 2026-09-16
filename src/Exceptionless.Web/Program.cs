@@ -25,7 +25,6 @@ using Foundatio.Mediator;
 using Foundatio.Repositories.Exceptions;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Joonasw.AspNetCore.SecurityHeaders.Csp;
-using Joonasw.AspNetCore.SecurityHeaders.Csp.Builder;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -269,57 +268,7 @@ public partial class Program
             if (ssl)
                 app.UseHttpsRedirection();
 
-            app.UseCsp(csp =>
-            {
-                csp.AllowFonts.FromSelf()
-                    .From("https://fonts.gstatic.com")
-                    .From("https://www.gravatar.com")
-                    .From("https://fonts.intercomcdn.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowImages.FromSelf()
-                    .From("data:")
-                    .From("https://q.stripe.com")
-                    .From("https://js.intercomcdn.com")
-                    .From("https://downloads.intercomcdn.com")
-                    .From("https://uploads.intercomcdn.com")
-                    .From("https://static.intercomassets.com")
-                    .From("https://user-images.githubusercontent.com")
-                    .From("https://www.gravatar.com")
-                    .From("http://www.gravatar.com");
-                csp.AllowScripts.FromSelf()
-                    .AddNonce()
-                    .WithStrictDynamic()
-                    .From("https://js.stripe.com")
-                    .From("https://widget.intercom.io")
-                    .From("https://js.intercomcdn.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowStyles.FromSelf()
-                    .AllowUnsafeInline()
-                    .From("https://fonts.googleapis.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowConnections.ToSelf()
-                    .To("https://collector.exceptionless.io")
-                    .To("https://config.exceptionless.io")
-                    .To("https://heartbeat.exceptionless.io")
-                    .To("https://via.intercom.io")
-                    .To("https://api.intercom.io")
-                    .To("https://api-iam.intercom.io/")
-                    .To("https://api-ping.intercom.io")
-                    .To("https://*.intercom-messenger.com")
-                    .To("wss://*.intercom-messenger.com")
-                    .To("https://nexus-websocket-a.intercom.io")
-                    .To("wss://nexus-websocket-a.intercom.io")
-                    .To("https://nexus-websocket-b.intercom.io")
-                    .To("wss://nexus-websocket-b.intercom.io")
-                    .To("https://uploads.intercomcdn.com")
-                    .To("https://uploads.intercomusercontent.com");
-
-                csp.OnSendingHeader = new Func<CspSendingHeaderContext, Task>(context =>
-                {
-                    context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
-                    return Task.CompletedTask;
-                });
-            });
+            app.UseCsp(FrontendContentSecurityPolicy.Configure);
 
             app.UseSerilogRequestLogging(o =>
             {
@@ -430,19 +379,24 @@ public partial class Program
 
     internal static async Task InjectCspNonceAsync(HttpContext context, RequestDelegate next)
     {
-        string accept = context.Request.Headers.Accept.ToString();
-        bool acceptsHtml = accept.Contains("text/html", StringComparison.OrdinalIgnoreCase);
-        bool acceptsAny = String.IsNullOrWhiteSpace(accept) || accept.Contains("*/*", StringComparison.Ordinal);
+        bool isHead = HttpMethods.IsHead(context.Request.Method);
         bool hasNonHtmlExtension = Path.HasExtension(context.Request.Path)
             && !context.Request.Path.Value!.EndsWith(".html", StringComparison.OrdinalIgnoreCase);
 
-        if (!HttpMethods.IsGet(context.Request.Method)
+        if ((!HttpMethods.IsGet(context.Request.Method) && !isHead)
             || context.Request.Path.StartsWithSegments("/api")
-            || (!acceptsHtml && (!acceptsAny || hasNonHtmlExtension)))
+            || context.Request.Path.StartsWithSegments("/mcp")
+            || hasNonHtmlExtension)
         {
             await next(context);
             return;
         }
+
+        // Each HTML response needs a new nonce, so cached or partial bodies cannot be reused.
+        context.Request.Headers.Remove(HeaderNames.IfNoneMatch);
+        context.Request.Headers.Remove(HeaderNames.IfModifiedSince);
+        context.Request.Headers.Remove(HeaderNames.Range);
+        context.Request.Headers.Remove(HeaderNames.IfRange);
 
         Stream responseBody = context.Response.Body;
         await using var buffer = new MemoryStream();
@@ -461,15 +415,23 @@ public partial class Program
                 return;
             }
 
+            context.Response.Headers.CacheControl = "no-store";
+            context.Response.Headers.Remove(HeaderNames.ETag);
+            context.Response.Headers.Remove(HeaderNames.LastModified);
+            context.Response.Headers.Remove(HeaderNames.AcceptRanges);
+
+            if (isHead)
+            {
+                context.Response.ContentLength = null;
+                return;
+            }
+
             using var reader = new StreamReader(buffer, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
             string html = await reader.ReadToEndAsync(context.RequestAborted);
             string responseHtml = AddScriptNonce(html, context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce());
             byte[] responseBytes = Encoding.UTF8.GetBytes(responseHtml);
 
             context.Response.ContentLength = responseBytes.Length;
-            context.Response.Headers.CacheControl = "no-store";
-            context.Response.Headers.Remove(HeaderNames.ETag);
-            context.Response.Headers.Remove(HeaderNames.LastModified);
 
             context.Response.Body = responseBody;
             await context.Response.Body.WriteAsync(responseBytes, context.RequestAborted);
@@ -484,7 +446,7 @@ public partial class Program
     {
         return ScriptElementRegex().Replace(html, match =>
         {
-            string attributes = NonceAttributeRegex().Replace(match.Groups["attributes"].Value, String.Empty);
+            string attributes = NonceAttributeRegex().Replace(match.Groups["attributes"].Value, attribute => attribute.Groups["quoted"].Success ? attribute.Value : String.Empty);
             return $"<script nonce=\"{nonce}\"{attributes}>{match.Groups["content"].Value}{match.Groups["closingTag"].Value}";
         });
     }
@@ -492,7 +454,7 @@ public partial class Program
     [GeneratedRegex("<script\\b(?<attributes>(?:\"[^\"]*\"|'[^']*'|[^'\">])*)>(?<content>.*?)(?<closingTag></script\\s*>)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.NonBacktracking)]
     private static partial Regex ScriptElementRegex();
 
-    [GeneratedRegex("\\snonce(?=[\\s=>/]|$)(?:\\s*=\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s>]+))?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex("(?<quoted>\"[^\"]*\"|'[^']*')|\\snonce(?=[\\s=>/]|$)(?:\\s*=\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s>]+))?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex NonceAttributeRegex();
 
     internal static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)

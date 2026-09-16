@@ -102,15 +102,27 @@ public sealed class CspNonceTests
         Assert.False(context.Response.Headers.ContainsKey("Cache-Control"));
     }
 
-    [Fact]
-    public async Task InjectCspNonceAsync_RequestDoesNotAcceptHtml_DoesNotResolveNonceService()
+    [Theory]
+    [InlineData("GET", "/api/v2/about")]
+    [InlineData("GET", "/mcp")]
+    [InlineData("GET", "/app.js")]
+    [InlineData("POST", "/index.html")]
+    public async Task InjectCspNonceAsync_NonHtmlRequest_PreservesStreamingAndConditionalHeaders(string method, string path)
     {
         var context = new DefaultHttpContext();
-        context.Request.Method = HttpMethods.Get;
+        context.Request.Method = method;
+        context.Request.Path = path;
+        context.Request.Headers.Accept = "text/html";
+        context.Request.Headers.IfNoneMatch = "\"current\"";
         context.Response.Body = new MemoryStream();
+        Stream originalBody = context.Response.Body;
 
         await Exceptionless.Web.Program.InjectCspNonceAsync(context, httpContext =>
-            httpContext.Response.WriteAsync("content", httpContext.RequestAborted));
+        {
+            Assert.Same(originalBody, httpContext.Response.Body);
+            Assert.Equal("\"current\"", context.Request.Headers.IfNoneMatch);
+            return httpContext.Response.WriteAsync("content", httpContext.RequestAborted);
+        });
 
         context.Response.Body.Position = 0;
         using var reader = new StreamReader(context.Response.Body, Encoding.UTF8);

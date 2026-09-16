@@ -17,6 +17,13 @@ describe('createNonce', () => {
 });
 
 describe('addNonceToScripts', () => {
+    it('preserves similar attribute names and nonce text inside quoted values', () => {
+        const nonce = createNonce();
+        const html = `<script noncevalue='keep' data-note="a nonce='keep'" nonce='old'></script>`;
+
+        expect(addNonceToScripts(html, nonce)).toBe(`<script nonce="${nonce}" noncevalue='keep' data-note="a nonce='keep'"></script>`);
+    });
+
     it('adds the nonce to every script opening tag', () => {
         const nonce = createNonce();
         const html = '<script>first()</script><script async src="/second.js"></script>';
