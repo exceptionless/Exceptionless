@@ -11,8 +11,14 @@
     import { ChangePlanDialog } from '$features/billing';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
-    import { getNextBillingDateUtc, getRemainingEventLimit, ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
+    import {
+        getEffectiveEventLimit,
+        getNextBillingDateUtc,
+        getRemainingEventLimit,
+        ORGANIZATION_USAGE_REFETCH_INTERVAL_MS
+    } from '$features/organizations/utils';
     import { getProjectQuery } from '$features/projects/api.svelte';
+    import ProjectIngestLimitCard from '$features/projects/components/project-ingest-limit-card.svelte';
     import { formatDateLabel, formatLongDate } from '$shared/dates';
     import { scaleUtc } from 'd3-scale';
     import { curveMonotoneX } from 'd3-shape';
@@ -33,6 +39,7 @@
     const hasMonthlyUsage = $derived((organizationQuery.data?.max_events_per_month ?? 0) > 0);
     const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
     const remainingEventLimit = $derived(getRemainingEventLimit(organizationQuery.data));
+    const organizationLimit = $derived(getEffectiveEventLimit(organizationQuery.data));
     const nextBillingDate = $derived(getNextBillingDateUtc(organizationQuery.data));
 
     const projectQuery = getProjectQuery({
@@ -46,7 +53,7 @@
 
     let changePlanDialogOpen = $state(false);
 
-    const chartConfig = {
+    const chartConfig = $derived({
         blocked: {
             color: 'var(--chart-2)',
             label: 'Blocked'
@@ -61,7 +68,7 @@
         },
         limit: {
             color: 'var(--chart-6)',
-            label: 'Limit'
+            label: projectQuery.data?.effective_ingest_limit == null ? 'Organization limit' : 'Project limit'
         },
         org_total: {
             color: 'var(--chart-5)',
@@ -75,7 +82,7 @@
             color: 'var(--chart-1)',
             label: 'Total'
         }
-    } satisfies Chart.ChartConfig;
+    } satisfies Chart.ChartConfig);
 
     const chartData = $derived.by(() => {
         const project = projectQuery.data;
@@ -99,7 +106,7 @@
                 date: new Date(projItem.date),
                 deleted: projItem.deleted,
                 discarded: projItem.discarded,
-                limit: orgItem?.limit || 0,
+                limit: project.effective_ingest_limit ?? orgItem?.limit ?? 0,
                 org_total: orgItem?.total || 0,
                 too_big: projItem.too_big,
                 total: projItem.total
@@ -107,7 +114,7 @@
         });
     });
 
-    const series = [
+    const series = $derived([
         {
             key: 'org_total',
             ...chartConfig.org_total
@@ -142,7 +149,7 @@
                 }
             }
         }
-    ];
+    ]);
 </script>
 
 <div class="space-y-6">
@@ -212,6 +219,12 @@
         </div>
     {/if}
 </div>
+
+{#if projectQuery.data && organizationQuery.data}
+    {#key projectQuery.data.id}
+        <ProjectIngestLimitCard project={projectQuery.data} {organizationLimit} />
+    {/key}
+{/if}
 
 {#if changePlanDialogOpen && organizationQuery.data}
     <ChangePlanDialog organization={organizationQuery.data} onclose={() => (changePlanDialogOpen = false)} />

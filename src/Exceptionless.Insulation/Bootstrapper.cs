@@ -9,6 +9,7 @@ using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.HealthChecks;
@@ -110,6 +111,7 @@ public class Bootstrapper
                 container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
             else
                 container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
+            container.ReplaceSingleton<IAtomicCacheBatch>(s => new RedisAtomicCacheBatch(s.GetRequiredService<IConnectionMultiplexer>(), options, s.GetRequiredService<TimeProvider>()));
 
             container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
         }

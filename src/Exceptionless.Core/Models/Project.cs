@@ -64,6 +64,11 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
     public bool DeleteBotDataEnabled { get; set; }
 
     /// <summary>
+    /// Optional project-level event budget configuration. Null means no project-specific cap.
+    /// </summary>
+    public ProjectIngestLimit? IngestLimit { get; set; }
+
+    /// <summary>
     /// The tick count that represents the next time the daily summary job should run. This time is set to midnight of the
     /// projects local time.
     /// </summary>
@@ -90,5 +95,24 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
             yield return new ValidationResult("Please specify a valid next summary end of day ticks.",
                 [nameof(NextSummaryEndOfDayTicks)]);
         }
+
+        if (IngestLimit is null)
+            yield break;
+
+        if (!Enum.IsDefined(IngestLimit.Type))
+        {
+            yield return new ValidationResult("Please specify a valid project ingest limit type.", [nameof(IngestLimit)]);
+            yield break;
+        }
+
+        if (IngestLimit.Type is ProjectIngestLimitType.Fixed && IngestLimit.FixedLimit is null or <= 0)
+            yield return new ValidationResult("The fixed project ingest limit must be greater than 0.", [nameof(IngestLimit)]);
+
+        if (IngestLimit.Type is ProjectIngestLimitType.PercentOfOrganizationLimit && IngestLimit.PercentOfOrganizationLimit is null or <= 0 or > 100)
+            yield return new ValidationResult("The project ingest percentage must be greater than 0 and no more than 100.", [nameof(IngestLimit)]);
+
+        if (IngestLimit.Type is ProjectIngestLimitType.PercentOfOrganizationLimit &&
+            IngestLimit.PercentOfOrganizationLimit is { } percentage && percentage != Decimal.Round(percentage, 4))
+            yield return new ValidationResult("The project ingest percentage can have no more than 4 decimal places.", [nameof(IngestLimit)]);
     }
 }
