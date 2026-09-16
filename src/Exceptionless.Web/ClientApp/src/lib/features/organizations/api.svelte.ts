@@ -329,13 +329,18 @@ export function deleteOrganizationDataMutation() {
         },
         mutationKey: queryKeys.data(undefined),
         onError: (_, { organizationId }) => {
-            queryClient.invalidateQueries({
+            return queryClient.invalidateQueries({
                 queryKey: queryKeys.id(organizationId, undefined)
             });
         },
         onMutate: ({ organizationId }) => cancelOrganizationDataRead(queryClient, organizationId),
-        onSuccess: (_, { key, organizationId }) => {
-            updateOrganizationQueryData(queryClient, organizationId, (organization) => {
+        onSettled: () =>
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.list(undefined)
+            }),
+        onSuccess: async (_, { key, organizationId }) => {
+            await cancelOrganizationDataRead(queryClient, organizationId);
+            updateOrganizationCaches(queryClient, organizationId, (organization) => {
                 if (!organization.data) {
                     return organization;
                 }
@@ -646,13 +651,18 @@ export function postOrganizationDataMutation() {
         },
         mutationKey: queryKeys.data(undefined),
         onError: (_, { organizationId }) => {
-            queryClient.invalidateQueries({
+            return queryClient.invalidateQueries({
                 queryKey: queryKeys.id(organizationId, undefined)
             });
         },
         onMutate: ({ organizationId }) => cancelOrganizationDataRead(queryClient, organizationId),
-        onSuccess: (_, { key, organizationId, value }) => {
-            updateOrganizationQueryData(queryClient, organizationId, (organization) => ({
+        onSettled: () =>
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.list(undefined)
+            }),
+        onSuccess: async (_, { key, organizationId, value }) => {
+            await cancelOrganizationDataRead(queryClient, organizationId);
+            updateOrganizationCaches(queryClient, organizationId, (organization) => ({
                 ...organization,
                 data: {
                     ...(organization.data ?? {}),
@@ -814,6 +824,17 @@ export function uploadOrganizationIcon(request: OrganizationIconRequest) {
     }));
 }
 
+async function cancelOrganizationDataRead(queryClient: QueryClient, organizationId: string) {
+    await Promise.all([
+        queryClient.cancelQueries({
+            queryKey: queryKeys.id(organizationId, undefined)
+        }),
+        queryClient.cancelQueries({
+            queryKey: queryKeys.list(undefined)
+        })
+    ]);
+}
+
 function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
     if (!id) {
         return;
@@ -838,40 +859,6 @@ function updateOrganizationCaches(queryClient: QueryClient, id: string, update: 
                 ...response,
                 data: response.data.map((existingOrganization) => {
                     return existingOrganization.id === id ? update(existingOrganization) : existingOrganization;
-                })
-            };
-        }
-    );
-}
-
-async function cancelOrganizationDataRead(queryClient: QueryClient, organizationId: string) {
-    await queryClient.cancelQueries({
-        queryKey: queryKeys.id(organizationId, undefined)
-    });
-}
-
-function updateOrganizationCache(queryClient: QueryClient, id: string | undefined, organization: ViewOrganization) {
-    updateOrganizationQueryData(queryClient, id, () => organization);
-}
-
-function updateOrganizationQueryData(queryClient: QueryClient, id: string | undefined, updater: (organization: ViewOrganization) => ViewOrganization) {
-    for (const mode of [undefined, 'stats'] as const) {
-        queryClient.setQueryData<undefined | ViewOrganization>(queryKeys.id(id, mode), (organization) => (organization ? updater(organization) : organization));
-    }
-
-    queryClient.setQueriesData<FetchClientResponse<ViewOrganization[]> | undefined>(
-        {
-            queryKey: queryKeys.type
-        },
-        (response) => {
-            if (!Array.isArray(response?.data) || !response.data.some((organization) => organization.id === id)) {
-                return response;
-            }
-
-            return {
-                ...response,
-                data: response.data.map((organization) => {
-                    return organization.id === id ? updater(organization) : organization;
                 })
             };
         }

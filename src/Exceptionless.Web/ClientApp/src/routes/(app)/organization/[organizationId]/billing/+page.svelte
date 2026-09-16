@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { InvoiceGridModel } from '$features/organizations/models';
 
+    import { beforeNavigate } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
@@ -133,6 +134,23 @@
 
     const debouncedFormSubmit = debounce(1000, (targetOrganizationId: string) => {
         void submitBillingInformationForm(targetOrganizationId);
+    });
+
+    beforeNavigate(({ cancel, willUnload }) => {
+        const hasChanges = getOrganizationBillingInformationChanges(getOrganizationBillingInformation(organizationQuery.data), form.state.values).length > 0;
+        if (!hasChanges && !form.state.isSubmitting) {
+            return;
+        }
+
+        cancel();
+        if (!willUnload) {
+            toast.dismiss(toastId);
+            toastId = toast.info('Please wait for billing information to finish saving, then try navigating again.');
+            debouncedFormSubmit.cancel({
+                upcomingOnly: true
+            });
+            void submitBillingInformationForm(organizationId);
+        }
     });
 
     $effect(() => {
