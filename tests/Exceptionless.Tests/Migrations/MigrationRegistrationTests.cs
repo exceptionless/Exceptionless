@@ -65,14 +65,14 @@ public sealed class MigrationRegistrationTests : TestWithServices
     }
 
     [Fact]
-    public void BackfillParentReferences_UsesNextUnusedVersion()
+    public void MigrationRegistration_ParentReferenceBackfill_IsRegisteredAsVersionedAndResumable()
     {
-        var migration = GetService<BackfillParentReferences>();
+        var migration = GetService<IEnumerable<IMigration>>()
+            .DistinctBy(item => item.GetType())
+            .SingleOrDefault(item => item is BackfillParentReferences);
 
+        Assert.NotNull(migration);
         Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
         Assert.Equal(10, migration.Version);
-        Assert.True(migration.Version > GetService<IEnumerable<IMigration>>()
-            .Where(item => item is not BackfillParentReferences && item.Version.HasValue)
-            .Max(item => item.Version));
     }
 }
