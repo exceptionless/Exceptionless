@@ -385,6 +385,43 @@ for (const title of ['Explore Exceptionless', 'Create a saved view', 'Meet Exie'
     });
 }
 
+for (const [list, stepTitle, advances] of [
+    ['event', 'Narrow your results', 2],
+    ['event', 'Keep a useful view', 3],
+    ['stack', 'Keep a useful view', 3],
+    ['sessions', 'Keep a useful view', 3]
+] as const) {
+    test(`the overview continues ${stepTitle} on a ${list} saved view`, async ({ page }) => {
+        // Arrange
+        const savedViewPath = `/next/${list}/all`;
+        await page.goto(savedViewPath);
+        await expect(page.locator('[data-tour="saved-view-trigger"]')).toBeVisible();
+        await startTourFromCommand(page, 'Explore Exceptionless');
+        await expect(page).toHaveURL(/\/next\/event$/);
+        const callout = page.locator('.driver-popover');
+        const stepTitles = ['Spot repeated problems', 'See each report', 'Narrow your results'];
+        for (let step = 0; step < advances; step++) {
+            await expect(page.locator('.driver-popover-title')).toHaveText(stepTitles[step]);
+            await callout.getByRole('button', { name: 'Next' }).click();
+        }
+        await expect(page.locator('.driver-popover-title')).toHaveText(stepTitle);
+
+        // Act
+        await page.goBack();
+        await expect(page).toHaveURL(new RegExp(`${savedViewPath}$`));
+        await page.keyboard.press('/');
+        await page.getByRole('option', { exact: true, name: 'Guided Tours' }).click();
+        const catalog = page.getByRole('dialog', { name: 'Guided Tours' });
+        await catalog.getByRole('button', { exact: true, name: 'Continue Explore Exceptionless' }).click();
+
+        // Assert
+        await expect(catalog).toBeHidden();
+        await expect(page).toHaveURL(new RegExp(`${savedViewPath}$`));
+        await expect(page.locator('.driver-popover-title')).toHaveText(stepTitle);
+        await expectActiveProductTour(page, true);
+    });
+}
+
 for (const [stepTitle, advances] of [
     ['Narrow your results', 2],
     ['Keep a useful view', 3]

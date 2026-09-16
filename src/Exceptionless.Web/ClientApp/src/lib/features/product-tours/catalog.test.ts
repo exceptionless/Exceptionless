@@ -32,6 +32,27 @@ describe('product tour catalog', () => {
         }
     });
 
+    it.each(['/(app)/event/[slug=savedview]', '/(app)/stack/[slug=savedview]', '/(app)/sessions/[slug=savedview]'] as const)(
+        'resumes the overview View step on the saved-view page %s',
+        (route) => {
+            const guide = productTourCatalog.find((tour) => tour.name === 'app-overview')!;
+            expect(guide.canResume('saved-views', route)).toBe(true);
+        }
+    );
+
+    it('resumes Events list checkpoints on an Events saved view without resuming dialogs or details', () => {
+        const overview = productTourCatalog.find((tour) => tour.name === 'app-overview')!;
+        const savedView = productTourCatalog.find((tour) => tour.name === 'saved-view-create')!;
+        const investigation = productTourCatalog.find((tour) => tour.name === 'event-investigate')!;
+        const route = '/(app)/event/[slug=savedview]';
+
+        expect(overview.canResume('filters', route)).toBe(true);
+        expect(savedView.canResume('open-view-menu', route)).toBe(true);
+        expect(investigation.canResume('choose-error', route)).toBe(true);
+        expect(savedView.canResume('name-view', route)).toBe(false);
+        expect(investigation.canResume('stack-summary', route)).toBe(false);
+    });
+
     it('keeps shell-wide overview steps resumable outside Events', () => {
         const guide = productTourCatalog.find((tour) => tour.name === 'app-overview')!;
         for (const checkpoint of ['navigation', 'events', 'exie', 'command-search'] as const) {

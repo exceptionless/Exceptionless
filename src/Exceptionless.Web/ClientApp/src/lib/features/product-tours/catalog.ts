@@ -7,7 +7,15 @@ import type { ProductTourContext, ProductTourDefinition, ProductTourListItem, Pr
 
 import { getProductTourRecordedAt } from './eligibility';
 
-const savedViewRouteIds = new Set<RouteId>(['/(app)/event', '/(app)/sessions', '/(app)/stack', '/(app)/stream']);
+const eventRouteIds = new Set<RouteId>(['/(app)/event', '/(app)/event/[slug=savedview]']);
+const savedViewRouteIds = new Set<RouteId>([
+    ...eventRouteIds,
+    '/(app)/sessions',
+    '/(app)/sessions/[slug=savedview]',
+    '/(app)/stack',
+    '/(app)/stack/[slug=savedview]',
+    '/(app)/stream'
+]);
 
 function requireApplicationShell(context: ProductTourContext) {
     return context.isSetupPage || !context.organizationId
@@ -47,7 +55,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
             }
 
             if (checkpoint === 'filters') {
-                return routeId === '/(app)/event';
+                return eventRouteIds.has(routeId);
             }
 
             if (checkpoint === 'saved-views') {
@@ -104,7 +112,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     },
     {
         availability: requireOrganization,
-        canResume: (checkpoint, routeId) => routeId === '/(app)/event' && checkpoint === 'open-view-menu',
+        canResume: (checkpoint, routeId) => !!routeId && eventRouteIds.has(routeId) && checkpoint === 'open-view-menu',
         description: 'Save a useful set of filters to come back to later.',
         name: 'saved-view-create',
         start: () => ({ checkpointName: 'open-view-menu', route: resolve('/(app)/event') }),
@@ -113,7 +121,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
     },
     {
         availability: requireError,
-        canResume: (checkpoint, routeId) => routeId === '/(app)/event' && checkpoint === 'choose-error',
+        canResume: (checkpoint, routeId) => !!routeId && eventRouteIds.has(routeId) && checkpoint === 'choose-error',
         description: 'Open an error, see its impact, and read what happened.',
         name: 'event-investigate',
         start: () => ({ checkpointName: 'choose-error', route: `${resolve('/(app)/event')}?time=all&type=error` }),

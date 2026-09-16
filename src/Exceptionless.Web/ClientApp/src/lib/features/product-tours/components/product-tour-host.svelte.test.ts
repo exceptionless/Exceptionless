@@ -11,11 +11,12 @@ const mocks = vi.hoisted(() => ({
     invalidateAssistantAccessQueries: vi.fn(),
     isStripeEnabled: vi.fn(),
     mutateAsync: vi.fn(),
+    page: { route: { id: '/(app)/stack' } },
     queryClient: {},
     showChangePlanDialog: vi.fn()
 }));
 
-vi.mock('$app/state', () => ({ page: { route: { id: '/(app)/stack/all' } } }));
+vi.mock('$app/state', () => ({ page: mocks.page }));
 vi.mock('$features/assistant/api.svelte', () => ({ invalidateAssistantAccessQueries: mocks.invalidateAssistantAccessQueries }));
 vi.mock('$features/billing/change-plan.svelte', () => ({ showChangePlanDialog: mocks.showChangePlanDialog }));
 vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled: mocks.isStripeEnabled }));
@@ -49,6 +50,7 @@ function props() {
 describe('ProductTourHost', () => {
     beforeEach(() => {
         vi.resetAllMocks();
+        mocks.page.route.id = '/(app)/stack';
         mocks.isStripeEnabled.mockReturnValue(true);
         mocks.mutateAsync.mockResolvedValue({ recorded_utc: '2026-09-09T00:00:00Z' });
     });
@@ -125,5 +127,20 @@ describe('ProductTourHost', () => {
 
         // Assert
         expect(productTourCheckpoint.current).toBeUndefined();
+    });
+
+    it.each(['event', 'stack', 'sessions'])('continues the current overview checkpoint from a %s saved view', async (list) => {
+        // Arrange
+        mocks.page.route.id = `/(app)/${list}/[slug=savedview]`;
+        const active = productTourCheckpoint.start('app-overview', 'saved-views', 'user', 'organization');
+        const { component } = render(ProductTourHost, { ...props(), isAnyOverlayOpen: true, pathname: `/next/${list}/saved-view` });
+
+        // Act
+        await component.openCatalog();
+        await fireEvent.click(await screen.findByRole('button', { name: 'Continue Explore Exceptionless' }));
+
+        // Assert
+        expect(productTourCheckpoint.current).toBe(active);
+        expect(screen.queryByRole('dialog', { name: 'Guided Tours' })).toBeNull();
     });
 });
