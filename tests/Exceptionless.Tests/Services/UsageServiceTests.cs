@@ -520,8 +520,12 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         }
     }
 
-    [Fact]
-    public async Task SavePendingUsageAsync_PriorMonthUsageAfterPlanChange_PreservesHistoricalLimit()
+    [Theory]
+    [InlineData(null, 15_000, 1)]
+    [InlineData(0, 15_000, 3)]
+    [InlineData(20_000, 20_000, 3)]
+    [InlineData(-1, -1, 3)]
+    public async Task SavePendingUsageAsync_PriorMonthUsageAfterPlanChange_PreservesHistoricalLimit(int? previousProjectLimit, int expectedProjectLimit, int expectedProjectTotal)
     {
         // Arrange
         var mayUsageBucketUtc = new DateTime(2015, 5, 31, 23, 55, 0, DateTimeKind.Utc);
@@ -541,15 +545,19 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         {
             Name = "Test",
             OrganizationId = organization.Id,
-            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks,
+            Usage = previousProjectLimit.HasValue
+                ? [new UsageInfo { Date = mayUsageBucketUtc.StartOfMonth(), Limit = previousProjectLimit.Value, Total = 2 }]
+                : []
         }, o => o.ImmediateConsistency().Cache());
         await _usageService.IncrementTotalAsync(organization.Id, project.Id);
 
         TimeProvider.SetUtcNow(new DateTime(2015, 6, 1, 0, 0, 0, DateTimeKind.Utc));
         GetService<BillingManager>().ApplyBillingPlan(organization, _plans.MediumPlan);
-        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
 
         // Act
+        await _usageService.IncrementTotalAsync(organization.Id, project.Id);
         TimeProvider.Advance(TimeSpan.FromMinutes(10));
         await _usageService.SavePendingUsageAsync();
 
@@ -561,6 +569,15 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(1, mayUsage.Total);
         Assert.Equal(_plans.MediumPlan.MaxEventsPerMonth,
             organization.Usage.Single(usage => usage.Date == TimeProvider.GetUtcNow().UtcDateTime.StartOfMonth()).Limit);
+
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(project);
+        var projectMayUsage = project.Usage.Single(usage => usage.Date == mayUsageBucketUtc.StartOfMonth());
+        Assert.Equal(expectedProjectLimit, projectMayUsage.Limit);
+        Assert.Equal(expectedProjectTotal, projectMayUsage.Total);
+        var currentProjectUsage = project.GetCurrentUsage(TimeProvider);
+        Assert.Equal(_plans.MediumPlan.MaxEventsPerMonth, currentProjectUsage.Limit);
+        Assert.Equal(1, currentProjectUsage.Total);
     }
 
     [Fact]

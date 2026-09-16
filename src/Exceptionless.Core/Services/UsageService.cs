@@ -330,11 +330,19 @@ public class UsageService : IAssistantUsageRecorder
                     if (hasIngestion)
                         project.LastEventDateUtc = _timeProvider.GetUtcNow().UtcDateTime;
 
-                    (string OrganizationId, Organization? Organization) context = (OrganizationId: project.OrganizationId, Organization: null);
-                    int maxEventsPerMonth = await GetMaxEventsPerMonthAsync(context);
-
                     var usage = project.GetUsage(bucketUtc);
-                    usage.Limit = maxEventsPerMonth;
+                    bool isCurrentMonth = bucketUtc.StartOfMonth() == utcNow.StartOfMonth();
+                    if (usage.Limit == 0 || isCurrentMonth)
+                    {
+                        (string OrganizationId, Organization? Organization) context = (project.OrganizationId, null);
+                        if (!isCurrentMonth)
+                            context.Organization = await _organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
+
+                        int? historicalLimit = context.Organization?.Usage
+                            .FirstOrDefault(monthlyUsage => monthlyUsage.Date.Year == bucketUtc.Year
+                                && monthlyUsage.Date.Month == bucketUtc.Month && monthlyUsage.Limit != 0)?.Limit;
+                        usage.Limit = historicalLimit ?? await GetMaxEventsPerMonthAsync(context);
+                    }
                     usage.Total += bucketTotal?.Value ?? 0;
                     usage.Blocked += bucketBlocked?.Value ?? 0;
                     usage.Discarded += bucketDiscarded?.Value ?? 0;
