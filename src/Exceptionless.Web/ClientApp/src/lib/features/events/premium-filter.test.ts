@@ -3,6 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { filterUsesPremiumFeatures, getSearchResourceForPathname } from './premium-filter';
 
 describe('filterUsesPremiumFeatures', () => {
+    it('keeps built-in parent reference navigation available without premium features', () => {
+        expect(filterUsesPremiumFeatures('(reference:"parent-id" OR ref.parent:"parent-id")', 'event')).toBe(false);
+    });
+
+    it('still requires premium features for custom references', () => {
+        expect(filterUsesPremiumFeatures('ref.custom:"reference-id"', 'event')).toBe(true);
+    });
+
+    it.each(['ref.order-id:"reference-id"', 'ref.订单-1:"reference-id"'])('recognizes backend-valid custom reference field %s', (filter) => {
+        expect(filterUsesPremiumFeatures(filter, 'event')).toBe(true);
+    });
+
     it.each([
         undefined,
         null,

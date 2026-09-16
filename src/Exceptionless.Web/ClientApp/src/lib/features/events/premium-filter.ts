@@ -7,6 +7,7 @@ const EVENT_FREE_QUERY_FIELDS = new Set([
     'organization_id',
     'project',
     'project_id',
+    'ref.parent',
     'reference',
     'reference_id',
     'stack',
@@ -65,8 +66,8 @@ export function getSearchResourceForPathname(pathname: string): SearchResource {
 function extractFilterFields(filter: string): string[] {
     // Ignore quoted and range values so value text such as ISO timestamps is not mistaken for a field.
     const filterWithoutValueLiterals = filter.replace(/"(?:\\.|[^"\\])*"|[[{](?:\\.|[^}\]\\])*[\]}]/g, '');
-    // Existence queries name their field after the operator; other fields may have unary +/- prefixes and contain metadata (@) or custom-name hyphens.
-    const fieldPattern = /(?:^|\s|[(!])[-+]?(?:(?:_exists_|_missing_):(\w[\w.@-]*)|(\w[\w.@-]*):)/gi;
+    // Existence queries name their field after the operator; other fields may have unary +/- prefixes and contain metadata (@), Unicode, or custom-name hyphens.
+    const fieldPattern = /(?:^|\s|[(!])[-+]?(?:(?:_exists_|_missing_):([\p{L}\p{N}_][\p{L}\p{N}_.@-]*)|([\p{L}\p{N}_][\p{L}\p{N}_.@-]*):)/giu;
     const fields: string[] = [];
     let match: null | RegExpExecArray;
 

@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Plugins.EventProcessor;
+﻿using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Pipeline;
@@ -11,7 +12,15 @@ public class CopySimpleDataToIdxAction : EventPipelineActionBase
     public override Task ProcessAsync(EventContext ctx)
     {
         if (!ctx.Organization.HasPremiumFeatures)
+        {
+            string[] parentKeys = ctx.Event.Data?.Keys
+                .Where(key => String.Equals(key.Trim(), $"@ref:{Event.KnownReferenceNames.Parent}", StringComparison.OrdinalIgnoreCase))
+                .ToArray() ?? [];
+            if (parentKeys.Length > 0)
+                ctx.Event.CopyDataToIndex(parentKeys);
+
             return Task.CompletedTask;
+        }
 
         // TODO: Do we need a pipeline action to trim keys and remove null values that may be sent by other native clients.
         ctx.Event.CopyDataToIndex([]);
