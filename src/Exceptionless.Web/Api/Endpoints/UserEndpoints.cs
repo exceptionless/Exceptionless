@@ -37,6 +37,22 @@ public static class UserEndpoints
             }
         });
 
+        group.MapPut("users/me/product-tours/{tourName}/record", async (string tourName, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<RecordProductTourResult>>(new UserMessages.RecordCurrentUserProductTour(tourName))).ToHttpResult(resultMapper))
+        .Produces<RecordProductTourResult>()
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Record current user product tour")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["tourName"] = "A UI-defined product tour identifier using lowercase letters, digits, and hyphens (up to 64 characters).",
+            },
+            ResponseDescriptions = new() {
+                ["422"] = "The product tour name is invalid or the limit of 100 recorded product tour entries has been reached.",
+                ["404"] = "The current user could not be found.",
+            }
+        });
+
         group.MapGet("users/me/oauth-grants", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<IReadOnlyCollection<ViewOAuthGrant>>>(new UserMessages.GetCurrentUserOAuthGrants())).ToHttpResult(resultMapper))
         .Produces<IReadOnlyCollection<ViewOAuthGrant>>()
