@@ -47,7 +47,7 @@
     import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
     import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
     import { ChangeType, isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '$features/websockets/models';
-    import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
+    import { SseClient } from '$features/websockets/sse-client.svelte';
     import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@foundatiofx/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
@@ -362,11 +362,10 @@
             }
         }
 
-        // This event is fired when a user is added or removed from an organization.
-        // if (data.type === "UserMembershipChanged" && data.message?.organization_id) {
-        //     $rootScope.$emit("OrganizationChanged", data.message);
-        //     $rootScope.$emit("ProjectChanged", data.message);
-        // }
+        // Membership changes affect access-scoped queries, including detail and current-user caches.
+        if (data.type === 'UserMembershipChanged') {
+            await queryClient.invalidateQueries();
+        }
     }
 
     // Close Sidebar on page change on mobile
@@ -394,7 +393,7 @@
         }
     });
 
-    // WebSocket + keyboard shortcuts — only depends on token, not navigation
+    // SSE + keyboard shortcuts — only depends on token, not navigation
     $effect(() => {
         const currentToken = accessToken.current;
 
@@ -458,17 +457,17 @@
             capture: true
         });
 
+        const sse = new SseClient();
         const organizationEventRefresher = createOrganizationEventNotificationRefresher(queryClient);
         const projectStackRefresher = createProjectStackNotificationRefresher(queryClient);
-        const ws = new WebSocketClient();
-        ws.onMessage = (message) => void onMessage(message, organizationEventRefresher, projectStackRefresher);
-        ws.onOpen = (_, isReconnect) => {
+        sse.onMessage = (message) => void onMessage(message, organizationEventRefresher, projectStackRefresher);
+        sse.onOpen = (isReconnect) => {
             if (isReconnect) {
                 queryClient.invalidateQueries();
                 document.dispatchEvent(
                     new CustomEvent('refresh', {
                         bubbles: true,
-                        detail: 'WebSocket Connected'
+                        detail: 'SSE Connected'
                     })
                 );
             }
@@ -480,7 +479,7 @@
             });
             organizationEventRefresher.cancel();
             projectStackRefresher.cancel();
-            ws?.close();
+            sse?.close();
         };
     });
 

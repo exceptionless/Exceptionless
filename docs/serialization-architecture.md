@@ -109,11 +109,11 @@ Messages: `EntityChanged`, `PlanChanged`, `UserMembershipChanged`, `ReleaseNotif
 
 Cached values: Organizations, Projects, Stacks, Tokens, Users. Cache is ephemeral — keys expire. No migration needed; old cached values are simply evicted.
 
-### Path 6: WebSocket Messages
+### Path 6: Real-Time Push Messages (SSE and WebSocket)
 
-**Config:** `WebSocketConnectionManager` resolves `ITextSerializer` from DI.
+**Config:** `SseConnectionManager` and the temporary rollout-compatible `WebSocketConnectionManager` resolve `ITextSerializer` from DI.
 
-Messages sent to browser clients use `serializer.SerializeToString(message)` with the standard snake_case options. The JavaScript/TypeScript frontend expects snake_case.
+Messages sent to browser clients use `serializer.SerializeToString(message)` with the standard snake_case options. The Svelte client receives the payload over SSE, while the legacy Angular client temporarily remains on WebSocket. Both clients consume the same `TypedMessage` JSON contract and expect snake_case.
 
 ### Path 7: Webhook Payloads
 
@@ -445,7 +445,7 @@ Every code path that calls `GetValue<T>()`, mutates the result, and needs to per
 | Existing ES documents | Read fine — `PropertyNameCaseInsensitive` handles any key format |
 | In-flight queue messages | STJ reads Newtonsoft output (case-insensitive DTOs) |
 | Cached values | Ephemeral with TTL, auto-expire |
-| WebSocket messages | Consumers expect snake_case (unchanged) |
+| SSE and WebSocket push messages | Both rollout transports share the same snake_case `TypedMessage` contract |
 | Webhook consumers | snake_case output (unchanged from Newtonsoft era) |
 | Old client submissions | Event upgrader handles V1/V2 format |
 | Custom data keys in Event.Data | Preserved as-is (no DictionaryKeyPolicy in main serializer) |

@@ -1,6 +1,7 @@
 (function () {
     "use strict";
 
+    // Deprecated: keep the legacy Angular client on WebSocket during the SSE rollout.
     angular
         .module("exceptionless.websocket", ["app.config", "exceptionless", "exceptionless.auth"])
         .factory("websocketService", function ($ExceptionlessClient, $rootScope, $timeout, authService, BASE_URL) {
