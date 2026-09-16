@@ -13,8 +13,7 @@
     import { createProjectIngestLimit, getEffectiveProjectLimit, type ProjectBudgetType } from '$features/projects/budget-utils';
     import { ProjectIngestLimitType, type ViewProject } from '$features/projects/models';
     import { type ProjectBudgetCardFormData, ProjectBudgetCardSchema } from '$features/projects/schemas';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@foundatiofx/fetchclient';
+    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '$features/shared/validation';
     import { createForm } from '@tanstack/svelte-form';
     import { untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
@@ -67,11 +66,9 @@
                     return null;
                 } catch (error: unknown) {
                     toast.error('Unable to save the project event budget.');
-                    return error instanceof ProblemDetails
-                        ? problemDetailsToFormErrors(error)
-                        : {
-                              form: 'An unexpected error occurred.'
-                          };
+                    return {
+                        form: getProblemMessage(error, 'An unexpected error occurred.')
+                    };
                 }
             }
         }

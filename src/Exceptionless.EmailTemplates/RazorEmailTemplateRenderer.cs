@@ -34,7 +34,9 @@ public sealed class RazorEmailTemplateRenderer : IEmailTemplateRenderer
             OrganizationInvitedEmail value => RenderComponentAsync<OrganizationInvited, OrganizationInvitedEmail>(value),
             OrganizationNoticeEmail value => RenderComponentAsync<OrganizationNotice, OrganizationNoticeEmail>(value),
             OrganizationPaymentFailedEmail value => RenderComponentAsync<OrganizationPaymentFailed, OrganizationPaymentFailedEmail>(value),
+            OrganizationBudgetAlertEmail value => RenderComponentAsync<OrganizationBudgetAlert, OrganizationBudgetAlertEmail>(value),
             ProjectDailySummaryEmail value => RenderComponentAsync<ProjectDailySummary, ProjectDailySummaryEmail>(value),
+            ProjectSmartThrottleEmail value => RenderComponentAsync<ProjectSmartThrottle, ProjectSmartThrottleEmail>(value),
             UserEmailVerifyEmail value => RenderComponentAsync<UserEmailVerify, UserEmailVerifyEmail>(value),
             UserPasswordResetEmail value => RenderComponentAsync<UserPasswordReset, UserPasswordResetEmail>(value),
             _ => throw new NotSupportedException($"No Razor component is registered for {template.GetType().Name}.")

@@ -1,0 +1,18 @@
+@namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<ProjectSmartThrottleEmail>
+
+<EmailLayout Model="Model">
+    <EmailSection>
+        <p style="@EmailStyles.Lead">Smart throttling is active for <strong>@Model.ProjectName</strong> in <strong>@Model.OrganizationName</strong>.</p>
+        <p style="@EmailStyles.Paragraph">This project's recent event rate is consuming more than its share of the organization's remaining allowance. Exceptionless is accepting a stable @Model.SamplePercent% sample from this project. Events outside that sample are counted as blocked.</p>
+        <p style="@EmailStyles.Paragraph">The project has accepted @Model.CurrentEventCount events this month. Its monthly fair-share allowance is @Model.EventLimit events.</p>
+        <p style="@EmailStyles.Paragraph">Other projects are unaffected unless they independently meet the same smart-throttling criteria.</p>
+        <EmailButton Url="@Model.Action!.Url">View Project Usage</EmailButton>
+    </EmailSection>
+    <ActionsFooter Links="NotificationLinks" />
+</EmailLayout>
+
+@code {
+    private IReadOnlyCollection<EmailLink> NotificationLinks =>
+        [new("Change your notification settings", Model.NotificationSettingsUrl)];
+}

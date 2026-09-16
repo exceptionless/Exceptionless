@@ -3,6 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventParser;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
@@ -176,6 +177,12 @@ public class EventPostsJob : QueueJobBase<EventPost>
         if (reservation.IsCompleted)
         {
             await _usageService.CompleteEventIngestReservationAsync(reservation, organization, reservation.ProcessedCount);
+            if (!await RetryReservedEventsAsync(reservation, events, ep, entry, project, isInternalProject))
+            {
+                await AbandonEntryAsync(entry);
+                return JobResult.FailedWithMessage($"Unable to requeue failed events for EventPost '{entry.Id}'.");
+            }
+
             await CompleteEntryAsync(entry, ep, createdUtc);
             return JobResult.Success;
         }
@@ -183,7 +190,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
         int errorCount = 0;
         bool reservationCompleted = false;
         bool reservationCompletionStarted = false;
+        var submittedEvents = events;
         var eventsToRetry = new List<PersistentEvent>();
+        var retryIndexes = new List<int>();
         try
         {
             events = reservation.AcceptedIndexes.Select(index => events[index]).ToList();
@@ -200,22 +209,17 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 return JobResult.Success;
             }
 
-            var contexts = await _eventPipeline.RunAsync(events, organization, project, ep);
+            var pipelineContexts = events.Select(ev => new EventContext(ev, organization, project, ep)).ToArray();
+            var indexesByContext = pipelineContexts.Select((pipelineContext, index) => (pipelineContext, index))
+                .ToDictionary(pair => pair.pipelineContext, pair => reservation.AcceptedIndexes[pair.index]);
+            var contexts = await _eventPipeline.RunAsync(pipelineContexts);
             if (!isInternalProject && isDebugLogLevelEnabled)
             {
                 using (_logger.BeginScope(new ExceptionlessState().Value(contexts.Count)))
                     _logger.LogDebug("Ran {@Value} events through the pipeline: id={QueueEntryId} success={SuccessCount} error={ErrorCount}", contexts.Count, entry.Id, contexts.Count(r => r.IsProcessed), contexts.Count(r => r.HasError));
             }
 
-            // increment the plan usage counters (note: OverageHandler already incremented usage by 1)
             int processedEvents = contexts.Count(c => c.IsProcessed);
-            reservationCompletionStarted = true;
-            await _usageService.CompleteEventIngestReservationAsync(reservation, organization, processedEvents);
-            reservationCompleted = true;
-
-            int discardedEvents = contexts.Count(c => c.IsDiscarded);
-            await _usageService.IncrementDiscardedAsync(organization.Id, project.Id, discardedEvents);
-
             foreach (var ctx in contexts)
             {
                 if (ctx.IsCancelled)
@@ -233,7 +237,18 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 {
                     // Put this single event back into the queue so we can retry it separately.
                     eventsToRetry.Add(ctx.Event);
+                    retryIndexes.Add(indexesByContext[ctx]);
                 }
+            }
+
+            // A failed single event retries under the same queue entry. Leave its reservation
+            // active so the finally block releases it before the queue entry is abandoned.
+            if (!isSingleEvent || errorCount == 0 || processedEvents > 0)
+            {
+                reservationCompletionStarted = true;
+                await _usageService.CompleteEventIngestReservationAsync(reservation, organization, processedEvents, retryIndexes,
+                    contexts.Count(c => c.IsDiscarded));
+                reservationCompleted = true;
             }
         }
         catch (Exception ex)
@@ -263,7 +278,15 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 await _usageService.ReleaseEventIngestReservationAsync(reservation);
         }
 
-        if (eventsToRetry.Count > 0)
+        if (reservation.IsTracked && reservationCompleted && retryIndexes.Count > 0)
+        {
+            if (!await RetryReservedEventsAsync(reservation, submittedEvents, ep, entry, project, isInternalProject))
+            {
+                await AbandonEntryAsync(entry);
+                return JobResult.FailedWithMessage($"Unable to requeue failed events for EventPost '{entry.Id}'.");
+            }
+        }
+        else if (eventsToRetry.Count > 0)
             await AppDiagnostics.PostsRetryTime.TimeAsync(() => RetryEventsAsync(eventsToRetry, ep, entry, project, isInternalProject));
 
         if (isSingleEvent && errorCount > 0)
@@ -348,8 +371,16 @@ public class EventPostsJob : QueueJobBase<EventPost>
         }
     }
 
-    private async Task RetryEventsAsync(List<PersistentEvent> eventsToRetry, EventPostInfo ep, IQueueEntry<EventPost> queueEntry, Project project, bool isInternalProject)
+    private Task<bool> RetryReservedEventsAsync(EventIngestReservation reservation, IReadOnlyList<PersistentEvent> events, EventPostInfo ep,
+        IQueueEntry<EventPost> queueEntry, Project project, bool isInternalProject)
     {
+        return _usageService.RetryPendingEventIngestAsync(reservation,
+            index => RetryEventsAsync([events[index]], ep, queueEntry, project, isInternalProject));
+    }
+
+    private async Task<bool> RetryEventsAsync(List<PersistentEvent> eventsToRetry, EventPostInfo ep, IQueueEntry<EventPost> queueEntry, Project project, bool isInternalProject)
+    {
+        bool succeeded = true;
         AppDiagnostics.EventsRetryCount.Add(eventsToRetry.Count);
         foreach (var ev in eventsToRetry)
         {
@@ -358,7 +389,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 using var stream = new MemoryStream(ev.GetBytes(_serializer));
 
                 // Put this single event back into the queue so we can retry it separately.
-                await _eventPostService.EnqueueAsync(new EventPost(false)
+                string? retryId = await _eventPostService.EnqueueAsync(new EventPost(false)
                 {
                     ApiVersion = ep.ApiVersion,
                     CharSet = ep.CharSet,
@@ -370,6 +401,8 @@ public class EventPostsJob : QueueJobBase<EventPost>
                     ProjectId = ep.ProjectId ?? project.Id,
                     UserAgent = ep.UserAgent
                 }, stream);
+                if (String.IsNullOrEmpty(retryId))
+                    throw new InvalidOperationException("Unable to enqueue the failed event.");
             }
             catch (Exception ex)
             {
@@ -380,8 +413,11 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 }
 
                 AppDiagnostics.EventsRetryErrors.Add(1);
+                succeeded = false;
             }
         }
+
+        return succeeded;
     }
 
     private Task AbandonEntryAsync(IQueueEntry<EventPost> queueEntry)

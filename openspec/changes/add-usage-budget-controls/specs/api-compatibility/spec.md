@@ -1,6 +1,6 @@
 # Spec: API Compatibility
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Event submission MUST preserve existing organization overage behavior
 
@@ -40,11 +40,9 @@ Given generic API throttling emits request-rate headers
 When usage budget controls are added
 Then those headers must continue to represent generic API request throttling behavior.
 
-## ADDED Requirements
-
 ### Requirement: Organization API exposes budget alert settings
 
-The organization API may expose and update budget alert settings as an additive organization field.
+The organization API SHALL expose and support updates to budget alert settings as an additive organization field.
 
 #### Scenario: Organization response includes budget alert settings
 
@@ -70,11 +68,9 @@ Given a user is authorized to update an organization
 When the user submits invalid budget alert settings
 Then the API must reject the request with a validation error.
 
-## ADDED Requirements
-
 ### Requirement: Budget alert emails are asynchronous side effects
 
-Budget alert emails are side effects of accepted usage threshold crossing and must not change event submission success responses.
+Budget alert emails are side effects of accepted usage threshold crossing and MUST not change event submission success responses.
 
 #### Scenario: Event crosses budget alert threshold
 
@@ -88,11 +84,9 @@ Given budget alerts are enabled and budget alert queuing fails
 When an event is submitted
 Then the event must not be rejected solely because budget alert queuing failed.
 
-## ADDED Requirements
-
 ### Requirement: Project API accepts event budget configuration
 
-The project update API may accept an optional project event budget configuration as an additive project field.
+The project update API SHALL accept an optional project event budget configuration as an additive project field.
 
 #### Scenario: Clear project event budget
 
@@ -123,8 +117,6 @@ Then the API must reject the request with a validation error.
 Given an authorized user can update a project
 When the user patches the project with a percentage event budget less than or equal to 0 or greater than 100
 Then the API must reject the request with a validation error.
-
-## ADDED Requirements
 
 ### Requirement: Project response MUST include budget and throttling state
 

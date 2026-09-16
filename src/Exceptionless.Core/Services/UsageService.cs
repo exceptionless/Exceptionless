@@ -959,7 +959,7 @@ public class EventIngestAllowance
     public static readonly EventIngestAllowance Unlimited = new() { EventsLeft = Int32.MaxValue };
 
     public int EventsLeft { get; init; }
-    public bool IsOverOrgLimit { get; init; }
+    public bool IsOverOrganizationLimit { get; init; }
     public bool IsOverProjectLimit { get; init; }
     public int EffectiveProjectLimit { get; init; } = -1;
     public SmartThrottleResult SmartThrottle { get; init; } = SmartThrottleResult.NoThrottle;

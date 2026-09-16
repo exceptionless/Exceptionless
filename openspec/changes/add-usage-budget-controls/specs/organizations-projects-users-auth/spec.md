@@ -4,7 +4,7 @@
 
 ### Requirement: Budget alert settings belong to an organization
 
-Budget alert settings belong to an organization and may be changed only by users authorized to update that organization.
+Budget alert settings belong to an organization. The API MUST allow changes only by users authorized to update that organization.
 
 #### Scenario: Authorized organization user updates budget alerts
 
@@ -18,11 +18,9 @@ Given a user is not authorized to update an organization
 When the user attempts to update budget alert settings
 Then the API must reject the operation according to existing organization authorization behavior.
 
-## ADDED Requirements
-
 ### Requirement: Budget alert email recipients respect user preferences
 
-Budget alert email recipients must respect existing user email verification and email notification preferences.
+Budget alert email recipients MUST respect existing user email verification and email notification preferences.
 
 #### Scenario: User email notifications disabled
 
@@ -42,11 +40,9 @@ Given a user belongs to an organization with a verified email and notifications 
 When a budget alert is sent
 Then the user may receive the budget alert email.
 
-## ADDED Requirements
-
 ### Requirement: Project event budget authorization follows project authorization
 
-A project event budget belongs to a project and is scoped by the project's owning organization. Only users authorized to update the project may configure its event budget.
+A project event budget belongs to a project and is scoped by the project's owning organization. The API MUST allow event budget configuration only by users authorized to update the project.
 
 #### Scenario: Authorized project user updates project event budget
 
@@ -66,11 +62,9 @@ Given a user configures a project event budget
 When events are submitted for the project
 Then the project event budget must not allow accepted event usage beyond the organization's effective allowance.
 
-## ADDED Requirements
-
 ### Requirement: Budget controls preserve existing token and auth behavior
 
-Budget alert settings, smart project throttling, and project event budget configuration must not change API key authentication, token scopes, or user authorization roles.
+Budget alert settings, smart project throttling, and project event budget configuration MUST not change API key authentication, token scopes, or user authorization roles.
 
 #### Scenario: Existing project token behavior is preserved
 
@@ -95,8 +89,6 @@ Then the API key must not be considered disabled solely because the project reac
 Given a project has remaining project event budget and the API key is disabled or suspended
 When an event is submitted with that API key
 Then the event must still be rejected due to token authentication state.
-
-## ADDED Requirements
 
 ### Requirement: Project event budget MUST NOT preclude future token-level caps
 

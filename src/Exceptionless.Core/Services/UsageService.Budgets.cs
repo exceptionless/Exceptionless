@@ -47,7 +47,7 @@ public partial class UsageService
             return new EventIngestAllowance
             {
                 EventsLeft = 0,
-                IsOverOrgLimit = true,
+                IsOverOrganizationLimit = true,
                 EffectiveProjectLimit = effectiveProjectLimit
             };
         }

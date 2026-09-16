@@ -13,8 +13,7 @@
     import { getBudgetThresholdEventCount, parseBudgetThresholds } from '$features/organizations/budget-utils';
     import { type BudgetAlertCardFormData, BudgetAlertCardSchema } from '$features/organizations/schemas';
     import { getEffectiveEventLimit } from '$features/organizations/utils';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@foundatiofx/fetchclient';
+    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '$features/shared/validation';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
 
@@ -57,11 +56,9 @@
                     return null;
                 } catch (error: unknown) {
                     toast.error('Unable to save budget alert settings.');
-                    return error instanceof ProblemDetails
-                        ? problemDetailsToFormErrors(error)
-                        : {
-                              form: 'An unexpected error occurred.'
-                          };
+                    return {
+                        form: getProblemMessage(error, 'An unexpected error occurred.')
+                    };
                 }
             }
         }

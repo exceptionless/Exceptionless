@@ -29,6 +29,7 @@ describe('project read lifecycle', () => {
         has_premium_features: false,
         has_slack_integration: false,
         id: 'project-id',
+        is_smart_throttled: false,
         name: 'Example',
         organization_id: 'organization-id',
         organization_name: 'Example organization',

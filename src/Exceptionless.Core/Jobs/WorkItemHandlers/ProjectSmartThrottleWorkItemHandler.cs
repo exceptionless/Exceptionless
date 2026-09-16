@@ -112,16 +112,12 @@ public class ProjectSmartThrottleWorkItemHandler : WorkItemHandlerBase
             return;
         }
 
-        int organizationLimit = await _usageService.GetMaxEventsPerMonthAsync(organization.Id);
-        if (organizationLimit <= 0)
+        var allowance = await _usageService.GetEventIngestAllowanceAsync(organization, project);
+        if (!allowance.SmartThrottle.IsThrottled)
         {
-            Log.LogInformation("Organization {OrganizationId} no longer has a finite event allowance, skipping smart throttle notification", wi.OrganizationId);
+            Log.LogInformation("Project {ProjectId} is no longer smart throttled, skipping notification", wi.ProjectId);
             return;
         }
-
-        int projectCount = (int)Math.Max(1, (await _projectRepository.GetCountByOrganizationIdAsync(organization.Id)).Total);
-        int fairShareLimit = organizationLimit / projectCount;
-        int currentProjectUsage = (await _usageService.GetUsageAsync(organization.Id, project.Id)).CurrentUsage.Total;
 
         var results = await _userRepository.GetByOrganizationIdAsync(organization.Id);
         foreach (var user in results.Documents)
@@ -146,7 +142,10 @@ public class ProjectSmartThrottleWorkItemHandler : WorkItemHandlerBase
                 continue;
 
             Log.LogTrace("Sending smart throttle email to {EmailAddress}...", user.EmailAddress);
-            await _mailer.SendProjectThrottledNoticeAsync(user, organization, project, wi.SampleRate, currentProjectUsage, fairShareLimit);
+            await _mailer.SendProjectThrottledNoticeAsync(user, organization, project,
+                allowance.SmartThrottle.SampleRate,
+                allowance.SmartThrottle.CurrentProjectUsage,
+                allowance.SmartThrottle.FairShareLimit);
             await _notificationService.MarkUsageNotificationRecipientSentAsync(notificationIdentifier, user.Id, usagePeriod);
         }
 

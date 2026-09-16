@@ -4,7 +4,7 @@
 
 ### Requirement: Smart throttling works without required user configuration
 
-Exceptionless must provide automatic smart project throttling without requiring users to configure per-project or per-stack throttling settings.
+Exceptionless MUST provide automatic smart project throttling without requiring users to configure per-project or per-stack throttling settings.
 
 #### Scenario: No smart throttling configuration exists
 
@@ -21,7 +21,7 @@ Then the UI must not require the user to configure many low-level throttling par
 
 ### Requirement: Smart throttling uses remaining allowance and remaining time
 
-Smart throttling must calculate allowed throughput using the organization's remaining monthly event allowance and the time remaining in the monthly usage period.
+Smart throttling MUST calculate allowed throughput using the organization's remaining monthly event allowance and the time remaining in the monthly usage period.
 
 #### Scenario: Organization has substantial allowance remaining late in the month
 
@@ -39,7 +39,7 @@ Then the allowed throughput should decrease to protect the remaining monthly all
 
 ### Requirement: Smart throttling isolates noisy projects where possible
 
-When one project is responsible for a usage spike, smart throttling must apply to that project where possible rather than fully throttling the entire organization.
+When one project is responsible for a usage spike, smart throttling MUST apply to that project where possible rather than fully throttling the entire organization.
 
 #### Scenario: One project spikes
 
@@ -59,7 +59,7 @@ Then each noisy project may be evaluated and throttled independently.
 
 ### Requirement: Smart throttling preserves a sample of events
 
-When a project is smart-throttled and the organization still has remaining monthly allowance, Exceptionless must continue accepting a small sample of events for that project.
+When a project is smart-throttled and the organization still has remaining monthly allowance, Exceptionless MUST continue accepting a small sample of events for that project.
 
 #### Scenario: Project is throttled but organization has allowance
 
@@ -86,7 +86,7 @@ And smart throttling must not allow sampled events beyond the organization hard 
 
 ### Requirement: Smart throttling operates after event posts are parsed
 
-Smart project throttling must be evaluated in a processing path that knows the number of events in the post so it can accept a sample and block the remainder.
+Smart project throttling MUST be evaluated in a processing path that knows the number of events in the post so it can accept a sample and block the remainder.
 
 #### Scenario: Batch contains more events than allowed
 
@@ -104,7 +104,7 @@ Then the system should prefer sampled processing over full request rejection.
 
 ### Requirement: Smart throttling sends project throttling notification
 
-When smart throttling is applied to a project, Exceptionless must send an email notification to eligible organization users.
+When smart throttling is applied to a project, Exceptionless MUST send an email notification to eligible organization users.
 
 #### Scenario: Project enters smart-throttled state
 
@@ -128,7 +128,7 @@ Then that user must not receive the email.
 
 ### Requirement: Smart throttling usage accounting remains accurate
 
-Smart throttling must record accepted, blocked, and discarded event counts consistently with existing usage accounting.
+Smart throttling MUST record accepted, blocked, and discarded event counts consistently with existing usage accounting.
 
 #### Scenario: Sampled events accepted
 
@@ -150,7 +150,7 @@ Then blocked events must not count as accepted usage for organization budget ale
 
 ### Requirement: Smart throttling does not replace explicit project budgets
 
-Automatic smart throttling must coexist with optional project event budgets.
+Automatic smart throttling MUST coexist with optional project event budgets.
 
 #### Scenario: Project has no explicit budget
 
@@ -163,8 +163,6 @@ Then automatic smart throttling may still apply.
 Given a project has an explicit project event budget and automatic smart throttling also applies
 When events are processed
 Then the number of events accepted must not exceed the lowest applicable allowance from organization hard limit, project budget, and smart throttling sample.
-
-## ADDED Requirements
 
 ### Requirement: Projects MUST be able to define optional event budgets
 
@@ -234,7 +232,7 @@ Then the percentage project event budget must not produce an effective project c
 
 ### Requirement: Project event budgets MUST be caps, not reservations
 
-Project event budgets MUST prevent a project from exceeding its cap but must not reserve organization event allowance for other projects.
+Project event budgets MUST prevent a project from exceeding its cap but MUST not reserve organization event allowance for other projects.
 
 #### Scenario: Unused project budget does not reserve events
 
@@ -362,3 +360,25 @@ Given EnableSmartProjectThrottling is false
 When a noisy project submits events
 Then automatic sampling must be bypassed
 And explicit project and organization limits must remain enforced.
+
+### Requirement: Completed reservations MUST preserve failed event retries
+
+A completed reservation MUST retain the original indexes of retryable failed events until each retry has been queued. Recovery MUST skip events already counted as processed. Legacy completed records without retry metadata MUST be treated as having no pending retries.
+
+#### Scenario: Completion side effect fails for a mixed batch
+
+Given a batch contains one processed event and one retryable failure
+When a cache operation fails after the reservation commits
+Then redelivery queues only the failed event and does not increment accepted usage for the processed event again.
+
+#### Scenario: Retry dispatch partially succeeds
+
+Given a completed reservation contains multiple failed event indexes
+When one retry is queued and acknowledged but the next enqueue fails
+Then redelivery dispatches only the unacknowledged indexes.
+
+#### Scenario: Enqueue succeeds but acknowledgement fails
+
+Given a failed event has been queued for retry
+When acknowledgement cannot be persisted
+Then the event remains pending for at-least-once delivery and may be queued again, while processed events in the original batch remain completed.

@@ -225,11 +225,14 @@ public partial class UsageService
         return new ReservationCreationResult(record, newlyBlockedCount, smartThrottleBlockedCount);
     }
 
-    internal async Task CompleteEventIngestReservationAsync(EventIngestReservation reservation, Organization organization, int processedCount)
+    internal async Task CompleteEventIngestReservationAsync(EventIngestReservation reservation, Organization organization, int processedCount,
+        IReadOnlyCollection<int>? retryIndexes = null, int discardedCount = 0)
     {
         using var reservationTimer = AppDiagnostics.IngestReservationCompleteTime.StartTimer();
         ArgumentNullException.ThrowIfNull(reservation);
         ArgumentNullException.ThrowIfNull(organization);
+        if (discardedCount is < 0 || discardedCount > reservation.ReservedCount)
+            throw new ArgumentOutOfRangeException(nameof(discardedCount));
         if (!reservation.IsTracked)
         {
             if (!String.Equals(reservation.OrganizationId, organization.Id, StringComparison.Ordinal))
@@ -237,6 +240,7 @@ public partial class UsageService
             if (processedCount is < 0 || processedCount > reservation.ReservedCount)
                 throw new ArgumentOutOfRangeException(nameof(processedCount));
             await IncrementTotalAsync(organization, reservation.ProjectId, processedCount);
+            await IncrementDiscardedAsync(organization.Id, reservation.ProjectId, discardedCount);
             return;
         }
 
@@ -268,13 +272,20 @@ public partial class UsageService
                     throw new UsageServiceException($"Ingest reservation '{reservation.Id}' is not active and cannot be completed.");
                 if (processedCount is < 0 || processedCount > record.ReservedCount)
                     throw new ArgumentOutOfRangeException(nameof(processedCount));
+                int[] pendingRetries = retryIndexes?.Distinct().Order().ToArray() ?? [];
+                if (pendingRetries.Any(index => !record.AcceptedIndexes.Contains(index)) || processedCount + pendingRetries.Length > record.ReservedCount)
+                    throw new ArgumentOutOfRangeException(nameof(retryIndexes));
 
                 completionBucketUtc = _timeProvider.GetUtcNow().UtcDateTime.Floor(_bucketSize);
                 string organizationReservedKey = GetIngestReservedKey(record.UsagePeriod, record.OrganizationId);
                 string projectReservedKey = GetIngestReservedKey(record.UsagePeriod, record.OrganizationId, record.ProjectId);
                 string organizationBucketKey = GetBucketTotalCacheKey(completionBucketUtc, record.OrganizationId);
                 string projectBucketKey = GetBucketTotalCacheKey(completionBucketUtc, record.OrganizationId, record.ProjectId);
-                string[] keys = [reservationKey, organizationReservedKey, projectReservedKey, organizationBucketKey, projectBucketKey];
+                string organizationDiscardedKey = GetBucketDiscardedCacheKey(completionBucketUtc, record.OrganizationId);
+                string projectDiscardedKey = GetBucketDiscardedCacheKey(completionBucketUtc, record.OrganizationId, record.ProjectId);
+                var keys = new List<string> { reservationKey, organizationReservedKey, projectReservedKey, organizationBucketKey, projectBucketKey };
+                if (discardedCount > 0)
+                    keys.AddRange([organizationDiscardedKey, projectDiscardedKey]);
                 var values = await _cache.GetAllAsync<string>(keys);
                 int organizationReserved = GetLedgerInt(values, organizationReservedKey);
                 int projectReserved = GetLedgerInt(values, projectReservedKey);
@@ -286,6 +297,7 @@ public partial class UsageService
                 {
                     State = EventIngestReservationState.Completed,
                     ProcessedCount = processedCount,
+                    RetryIndexes = pendingRetries,
                     CompletionBucketUtc = completionBucketUtc,
                     CompletionOrganizationBucketTotal = organizationBucketTotal
                 };
@@ -304,6 +316,11 @@ public partial class UsageService
                     [GetOrganizationSetKey(completionBucketUtc)] = record.OrganizationId,
                     [GetProjectSetKey(completionBucketUtc)] = record.ProjectId
                 };
+                if (discardedCount > 0)
+                {
+                    updatedValues[organizationDiscardedKey] = new(FormatInt(checked(GetLedgerInt(values, organizationDiscardedKey) + discardedCount)), TimeSpan.FromHours(8));
+                    updatedValues[projectDiscardedKey] = new(FormatInt(checked(GetLedgerInt(values, projectDiscardedKey) + discardedCount)), TimeSpan.FromHours(8));
+                }
                 if (!await _atomicCacheBatch.TrySetAllAsync(GetExpectedValues(values, keys), updatedValues, usageSetMembers, TimeSpan.FromHours(8)))
                 {
                     AppDiagnostics.IngestReservationCasConflicts.Add(1);
@@ -311,11 +328,66 @@ public partial class UsageService
                 }
 
                 committedCount = processedCount;
+                if (discardedCount > 0)
+                    AppDiagnostics.EventsDiscarded.Add(discardedCount);
             }
         }
 
         if (committedCount > 0)
             await PublishUsageIncrementNotificationsAsync(organization, projectId, committedCount, completionBucketUtc, organizationBucketTotal);
+    }
+
+    internal async Task<bool> RetryPendingEventIngestAsync(EventIngestReservation reservation, Func<int, Task<bool>> enqueueRetry)
+    {
+        // Serialize retry dispatch for duplicate deliveries of this completed post. This lock
+        // is separate from the organization allowance lock and is used only for failed events.
+        await using var retryLock = await _lockProvider.AcquireAsync(
+            $"usage:ingest-retries:{reservation.OrganizationId}:{reservation.Id}", TimeSpan.FromMinutes(5), CancellationToken.None);
+        string key = GetIngestReservationKey(reservation.OrganizationId, reservation.Id);
+        var value = await _cache.GetAsync<string>(key);
+        if (!value.HasValue)
+            throw new UsageServiceException($"Ingest reservation '{reservation.Id}' is missing while dispatching retries.");
+
+        var record = DeserializeReservation(value.Value);
+        ValidateReservationIdentity(record, reservation);
+        if (record.State is not EventIngestReservationState.Completed)
+            throw new UsageServiceException($"Ingest reservation '{reservation.Id}' must be completed before dispatching retries.");
+
+        foreach (int index in record.RetryIndexes)
+        {
+            if (!await enqueueRetry(index))
+                return false;
+
+            // A failed acknowledgement keeps the event pending for at-least-once delivery.
+            await AcknowledgeEventIngestRetryAsync(reservation, index);
+            await retryLock.RenewAsync();
+        }
+
+        return true;
+    }
+
+    private async Task AcknowledgeEventIngestRetryAsync(EventIngestReservation reservation, int index)
+    {
+        await using (await _lockProvider.AcquireAsync(GetIngestReservationLockKey(reservation.OrganizationId), IngestReservationLockLifetime, CancellationToken.None))
+        {
+            string key = GetIngestReservationKey(reservation.OrganizationId, reservation.Id);
+            var value = await _cache.GetAsync<string>(key);
+            if (!value.HasValue)
+                throw new UsageServiceException($"Ingest reservation '{reservation.Id}' is missing while acknowledging a retry.");
+
+            var record = DeserializeReservation(value.Value);
+            ValidateReservationIdentity(record, reservation);
+            if (record.State is not EventIngestReservationState.Completed)
+                throw new UsageServiceException($"Ingest reservation '{reservation.Id}' must be completed before acknowledging a retry.");
+            if (!record.RetryIndexes.Contains(index))
+                return;
+
+            record = record with { RetryIndexes = record.RetryIndexes.Where(pending => pending != index).ToArray() };
+            if (!await _atomicCacheBatch.TrySetAllAsync(
+                new Dictionary<string, string?> { [key] = value.Value },
+                new Dictionary<string, AtomicCacheValue> { [key] = new(JsonSerializer.Serialize(record), IngestReservationRetention) }))
+                throw new UsageServiceException($"Ingest reservation '{reservation.Id}' changed while acknowledging a retry.");
+        }
     }
 
     internal async Task ReleaseEventIngestReservationAsync(EventIngestReservation reservation)
@@ -369,7 +441,7 @@ public partial class UsageService
     private static EventIngestReservationRecord DeserializeReservation(string value, int? submittedCount = null)
     {
         var record = JsonSerializer.Deserialize<EventIngestReservationRecord>(value) ?? throw new UsageServiceException("Invalid ingest reservation state.");
-        if (record.AcceptedIndexes is null || record.SmartThrottle is null)
+        if (record.AcceptedIndexes is null || record.SmartThrottle is null || record.RetryIndexes is null)
             throw new UsageServiceException($"Ingest reservation '{record.Id}' contains invalid state.");
 
         int normalizedSubmittedCount = record.SubmittedCount;
@@ -389,6 +461,9 @@ public partial class UsageService
         if (!Enum.IsDefined(record.State)
             || record.ProcessedCount < 0
             || record.ProcessedCount > record.ReservedCount
+            || record.RetryIndexes.Any(index => !record.AcceptedIndexes.Contains(index))
+            || !record.RetryIndexes.SequenceEqual(record.RetryIndexes.Distinct().Order())
+            || record.ProcessedCount + record.RetryIndexes.Length > record.ReservedCount
             || record.CompletionOrganizationBucketTotal < 0)
             throw new UsageServiceException($"Ingest reservation '{record.Id}' contains invalid transition state.");
         if (record.State is EventIngestReservationState.Completed && record.CompletionBucketUtc is null)
@@ -452,6 +527,8 @@ public partial class UsageService
         DateTime? CompletionBucketUtc,
         long CompletionOrganizationBucketTotal)
     {
+        // Older reservation records have no pending retry indexes.
+        public int[] RetryIndexes { get; init; } = [];
         public int ReservedCount => AcceptedIndexes.Length;
         public int BlockedCount => SubmittedCount - ReservedCount;
 

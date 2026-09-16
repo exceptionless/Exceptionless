@@ -26,11 +26,11 @@ public sealed partial class UsageServiceTests
     {
         // Regression test: When the organization does not exist, GetMaxEventsPerMonthAsync
         // returns 0 (default). GetSmartThrottleRateAsync must not divide by zero.
-        string nonExistentOrgId = "000000000000000000000099";
+        string nonExistentOrganizationId = "000000000000000000000099";
         string nonExistentProjectId = "000000000000000000000098";
 
-        // Act - this would divide by zero before the fix (maxEventsPerMonth=0 returned for missing org)
-        var result = await _usageService.GetSmartThrottleRateAsync(nonExistentOrgId, nonExistentProjectId);
+        // Act - this would divide by zero before the fix (maxEventsPerMonth=0 returned for missing organization)
+        var result = await _usageService.GetSmartThrottleRateAsync(nonExistentOrganizationId, nonExistentProjectId);
 
         // Assert - should return NoThrottle since maxEventsPerMonth <= 0 means unlimited/invalid
         Assert.False(result.IsThrottled);
@@ -40,7 +40,7 @@ public sealed partial class UsageServiceTests
     // ── GetEventIngestAllowanceAsync ────────────────────────────────────────
 
     [Fact]
-    public async Task GetEventIngestAllowanceAsync_Project_WithNoIngestLimit_ReturnsOrgLimit()
+    public async Task GetEventIngestAllowanceAsync_Project_WithNoIngestLimit_ReturnsOrganizationLimit()
     {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
@@ -49,12 +49,12 @@ public sealed partial class UsageServiceTests
 
         Assert.True(result.EventsLeft > 0);
         Assert.Equal(1.0, result.SampleRate);
-        Assert.False(result.IsOverOrgLimit);
+        Assert.False(result.IsOverOrganizationLimit);
         Assert.False(result.IsOverProjectLimit);
     }
 
     [Fact]
-    public async Task GetEventIngestAllowanceAsync_Project_WithFixedIngestLimit_BelowOrgLimit_ReturnsFixed()
+    public async Task GetEventIngestAllowanceAsync_Project_WithFixedIngestLimit_BelowOrganizationLimit_ReturnsFixed()
     {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project
@@ -69,12 +69,12 @@ public sealed partial class UsageServiceTests
 
         Assert.Equal(100, result.EventsLeft);
         Assert.Equal(100, result.EffectiveProjectLimit);
-        Assert.False(result.IsOverOrgLimit);
+        Assert.False(result.IsOverOrganizationLimit);
         Assert.False(result.IsOverProjectLimit);
     }
 
     [Fact]
-    public async Task GetEventIngestAllowanceAsync_Project_WithFixedIngestLimit_AboveOrgLimit_ReturnsOrgLimit()
+    public async Task GetEventIngestAllowanceAsync_Project_WithFixedIngestLimit_AboveOrganizationLimit_ReturnsOrganizationLimit()
     {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project
@@ -91,7 +91,7 @@ public sealed partial class UsageServiceTests
 
         Assert.Equal(1, result.EventsLeft);
         Assert.Equal(750, result.EffectiveProjectLimit);
-        Assert.False(result.IsOverOrgLimit);
+        Assert.False(result.IsOverOrganizationLimit);
         Assert.False(result.IsOverProjectLimit);
     }
 
@@ -111,7 +111,7 @@ public sealed partial class UsageServiceTests
 
         Assert.Equal(500, result.EventsLeft);
         Assert.Equal(500, result.EffectiveProjectLimit);
-        Assert.False(result.IsOverOrgLimit);
+        Assert.False(result.IsOverOrganizationLimit);
         Assert.False(result.IsOverProjectLimit);
     }
 
@@ -131,7 +131,7 @@ public sealed partial class UsageServiceTests
 
         Assert.Equal(-1, result.EffectiveProjectLimit);
         Assert.True(result.EventsLeft > 0);
-        Assert.False(result.IsOverOrgLimit);
+        Assert.False(result.IsOverOrganizationLimit);
         Assert.False(result.IsOverProjectLimit);
     }
 
@@ -153,12 +153,12 @@ public sealed partial class UsageServiceTests
 
         Assert.Equal(0, result.EventsLeft);
         Assert.True(result.IsOverProjectLimit);
-        Assert.False(result.IsOverOrgLimit);
+        Assert.False(result.IsOverOrganizationLimit);
         Assert.Equal(100, result.EffectiveProjectLimit);
     }
 
     [Fact]
-    public async Task GetEventIngestAllowanceAsync_Organization_OverLimit_IsOverOrgLimitTrue()
+    public async Task GetEventIngestAllowanceAsync_Organization_OverLimit_IsOverOrganizationLimitTrue()
     {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
@@ -168,12 +168,12 @@ public sealed partial class UsageServiceTests
         var result = await _usageService.GetEventIngestAllowanceAsync(organization.Id, project.Id);
 
         Assert.Equal(0, result.EventsLeft);
-        Assert.True(result.IsOverOrgLimit);
+        Assert.True(result.IsOverOrganizationLimit);
         Assert.False(result.IsOverProjectLimit);
     }
 
     [Fact]
-    public async Task GetEventIngestAllowanceAsync_UnlimitedOrg_WithFixedProjectLimit_ReturnsFixed()
+    public async Task GetEventIngestAllowanceAsync_UnlimitedOrganization_WithFixedProjectLimit_ReturnsFixed()
     {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = _plans.UnlimitedPlan.MaxEventsPerMonth, PlanId = _plans.UnlimitedPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project
@@ -188,7 +188,7 @@ public sealed partial class UsageServiceTests
 
         Assert.Equal(500, result.EventsLeft);
         Assert.Equal(500, result.EffectiveProjectLimit);
-        Assert.False(result.IsOverOrgLimit);
+        Assert.False(result.IsOverOrganizationLimit);
         Assert.False(result.IsOverProjectLimit);
     }
 
@@ -213,7 +213,7 @@ public sealed partial class UsageServiceTests
     }
 
     [Fact]
-    public async Task GetSmartThrottleRateAsync_SingleProjectInOrg_ReturnsNoThrottle()
+    public async Task GetSmartThrottleRateAsync_SingleProjectInOrganization_ReturnsNoThrottle()
     {
         var organization = new Organization { Name = "Test", MaxEventsPerMonth = 1000, PlanId = _plans.SmallPlan.Id };
         organization.GetCurrentUsage(TimeProvider).Total = 900;
@@ -229,7 +229,7 @@ public sealed partial class UsageServiceTests
     }
 
     [Fact]
-    public async Task GetSmartThrottleRateAsync_NoOrgUsage_ReturnsNoThrottle()
+    public async Task GetSmartThrottleRateAsync_NoOrganizationUsage_ReturnsNoThrottle()
     {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = 1000, PlanId = _plans.SmallPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project1 = await _projectRepository.AddAsync(new Project { Name = "P1", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());
@@ -318,7 +318,7 @@ public sealed partial class UsageServiceTests
     }
 
     [Fact]
-    public async Task GetSmartThrottleRateAsync_UnlimitedOrg_ReturnsNoThrottle()
+    public async Task GetSmartThrottleRateAsync_UnlimitedOrganization_ReturnsNoThrottle()
     {
         var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = _plans.UnlimitedPlan.MaxEventsPerMonth, PlanId = _plans.UnlimitedPlan.Id }, o => o.ImmediateConsistency().Cache());
         var project = await _projectRepository.AddAsync(new Project { Name = "P1", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency().Cache());

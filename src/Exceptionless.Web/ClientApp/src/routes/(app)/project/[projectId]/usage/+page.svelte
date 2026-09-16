@@ -68,7 +68,7 @@
         },
         limit: {
             color: 'var(--chart-6)',
-            label: projectQuery.data?.effective_ingest_limit == null ? 'Organization limit' : 'Project limit'
+            label: projectQuery.data?.effective_ingest_limit == null ? 'Organization limit' : 'Current project limit'
         },
         org_total: {
             color: 'var(--chart-5)',

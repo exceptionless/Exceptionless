@@ -4,7 +4,7 @@
 
 ### Requirement: Organizations may configure budget alert thresholds
 
-Organizations may configure event budget alert thresholds as percentages of their effective monthly event allowance. Budget alerts are disabled by default.
+Organizations SHALL be able to configure event budget alert thresholds as percentages of their effective monthly event allowance. Budget alerts are disabled by default.
 
 #### Scenario: Existing organization has no budget alerts
 
@@ -26,7 +26,7 @@ Then budget alert emails must no longer be sent for that organization.
 
 ### Requirement: Budget alert thresholds validate percentage values
 
-Budget alert threshold percentages must be valid pre-overage warning thresholds.
+Budget alert threshold percentages MUST be valid pre-overage warning thresholds.
 
 #### Scenario: Reject zero threshold
 
@@ -48,7 +48,7 @@ Then the API must reject the request with a validation error.
 
 ### Requirement: Budget alerts use effective organization allowance
 
-Budget alert thresholds must be evaluated against the same effective organization event allowance used by existing usage enforcement.
+Budget alert thresholds MUST be evaluated against the same effective organization event allowance used by existing usage enforcement.
 
 #### Scenario: Threshold uses plan allowance
 
@@ -65,7 +65,7 @@ Then percentage budget alerts must be inactive and no budget alert email must be
 
 ### Requirement: Budget alerts send when accepted usage crosses thresholds
 
-Budget alert emails must be triggered when accepted organization event usage crosses a configured threshold for the first time in a monthly usage period.
+Budget alert emails MUST be triggered when accepted organization event usage crosses a configured threshold for the first time in a monthly usage period.
 
 #### Scenario: Usage below threshold does not send alert
 
@@ -95,7 +95,7 @@ Then both the 50 percent and 80 percent budget alert emails must be queued.
 
 ### Requirement: Budget alert emails are sent once per threshold per monthly usage period
 
-Each configured threshold may generate at most one budget alert email per organization per monthly usage period.
+Each configured threshold MUST generate no more than one budget alert email per organization per monthly usage period.
 
 #### Scenario: Threshold already sent in period
 
@@ -111,7 +111,7 @@ Then a new 80 percent budget alert email may be sent.
 
 ### Requirement: Budget alert emails use organization email notification eligibility
 
-Budget alert emails must be sent only to organization users who are eligible for existing organization email notices.
+Budget alert emails MUST be sent only to organization users who are eligible for existing organization email notices.
 
 #### Scenario: Verified user with email notifications enabled receives alert
 
@@ -127,7 +127,7 @@ Then the user must not receive the budget alert email.
 
 ### Requirement: Budget alerts do not block ingestion
 
-Budget alert processing must not block accepted event ingestion.
+Budget alert processing MUST not block accepted event ingestion.
 
 #### Scenario: Alert email enqueue fails
 
@@ -137,7 +137,7 @@ Then the accepted event must not be rejected solely because the alert email fail
 
 ### Requirement: Budget alerts preserve existing overage notifications
 
-Budget alerts must not replace or suppress existing monthly/hourly overage notifications.
+Budget alerts MUST not replace or suppress existing monthly/hourly overage notifications.
 
 #### Scenario: Existing monthly overage still sends
 
@@ -147,15 +147,13 @@ Then the existing monthly overage email must still be sent.
 
 ### Requirement: Budget alert emails are separate from smart throttling emails
 
-Organization budget alerts and project smart throttling notifications must be distinct notifications.
+Organization budget alerts and project smart throttling notifications MUST be distinct notifications.
 
 #### Scenario: Project throttling below budget threshold
 
 Given organization budget alerts are enabled and accepted usage has not crossed a threshold
 When a project enters smart-throttled state
 Then no organization budget threshold email must be sent solely because smart throttling was applied.
-
-## ADDED Requirements
 
 ### Requirement: Smart throttling MUST send project throttling notification email
 
