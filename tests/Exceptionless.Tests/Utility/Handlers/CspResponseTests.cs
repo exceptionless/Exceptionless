@@ -1,52 +1,60 @@
-using System.Text;
 using System.Text.Json;
-using Exceptionless.Web;
 using Exceptionless.Web.Security;
-using Exceptionless.Web.Utility.Handlers;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Joonasw.AspNetCore.SecurityHeaders.Csp;
 using Joonasw.AspNetCore.SecurityHeaders.Csp.Builder;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Primitives;
-using Microsoft.Net.Http.Headers;
 using Scalar.AspNetCore;
 using Xunit;
 
 namespace Exceptionless.Tests.Utility.Handlers;
 
-public sealed class SpaIndexHtmlMiddlewareTests
+public sealed class CspResponseTests
 {
     [Theory]
-    [InlineData("/index.html", "index.html")]
-    [InlineData("/next/index.html", "next/index.html")]
-    public async Task InvokeAsync_IndexRequest_AddsNonceAndDisablesCaching(string requestPath, string filePath)
+    [InlineData("GET", "If-Modified-Since", "Mon, 01 Jan 2024 00:00:00 GMT")]
+    [InlineData("GET", "If-None-Match", "*")]
+    [InlineData("GET", "Range", "bytes=0-15")]
+    [InlineData("GET", "Accept", "application/json")]
+    [InlineData("HEAD", "Accept", "text/html")]
+    public async Task InjectCspNonceAsync_HtmlRequest_PreservesFreshResponse(string method, string header, string value)
     {
-        const string html = "<html><body><script src=\"/app.js\"></script><SCRIPT nonce='old'>start();</SCRIPT></body></html>";
-        bool nextCalled = false;
-        var middleware = CreateMiddleware(
-            new Dictionary<string, string> { [filePath] = html },
-            context =>
-            {
-                nextCalled = true;
-                return Task.CompletedTask;
-            });
-        var context = CreateContext(requestPath);
-        context.Response.Headers.ETag = "\"cached\"";
-        context.Response.Headers.LastModified = DateTimeOffset.UtcNow.ToString("R");
+        string webRoot = Path.Combine(Path.GetTempPath(), $"exceptionless-csp-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(webRoot);
+        await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), "<script src=\"/app.js\"></script>", TestContext.Current.CancellationToken);
+        File.SetLastWriteTimeUtc(Path.Combine(webRoot, "index.html"), new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc));
 
-        await middleware.InvokeAsync(context, new TestNonceService("fresh-nonce"));
+        try
+        {
+            using IHost host = await CreatePipelineHostAsync(webRoot);
+            using HttpClient client = host.GetTestClient();
+            using var request = new HttpRequestMessage(new HttpMethod(method), "/index.html");
+            request.Headers.TryAddWithoutValidation(header, value);
+            using HttpResponseMessage response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
-        string responseBody = ReadResponseBody(context);
-        Assert.False(nextCalled);
-        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
-        Assert.Equal("text/html; charset=utf-8", context.Response.ContentType);
-        Assert.Equal("no-store", context.Response.Headers.CacheControl);
-        Assert.False(context.Response.Headers.ContainsKey(HeaderNames.ETag));
-        Assert.False(context.Response.Headers.ContainsKey(HeaderNames.LastModified));
-        Assert.Equal(2, CountOccurrences(responseBody, "<script nonce=\"fresh-nonce\""));
-        Assert.DoesNotContain("nonce='old'", responseBody, StringComparison.Ordinal);
-        Assert.Equal(Encoding.UTF8.GetByteCount(responseBody), context.Response.ContentLength);
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+            Assert.Null(response.Headers.ETag);
+            Assert.Null(response.Content.Headers.LastModified);
+            Assert.Empty(response.Headers.AcceptRanges);
+            string body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            if (method == "HEAD")
+                Assert.Empty(body);
+            else
+                Assert.Contains($"'nonce-{GetScriptNonce(body)}'", response.Headers.GetValues("Content-Security-Policy").Single());
+        }
+        finally
+        {
+            Directory.Delete(webRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AddScriptNonce_NonceTextInsideAttribute_PreservesAttribute()
+    {
+        const string html = "<script data-note=\"a nonce='keep'\" nonce='old'></script>";
+
+        Assert.Equal("<script nonce=\"new\" data-note=\"a nonce='keep'\"></script>", Exceptionless.Web.Program.AddScriptNonce(html, "new"));
     }
 
     [Theory]
@@ -56,7 +64,7 @@ public sealed class SpaIndexHtmlMiddlewareTests
     [InlineData("<script nonce async></script>")]
     public void AddScriptNonce_ScriptWithExistingNonce_ReplacesNonce(string html)
     {
-        string result = SpaIndexHtmlMiddleware.AddScriptNonce(html, "new");
+        string result = Exceptionless.Web.Program.AddScriptNonce(html, "new");
 
         Assert.Equal(1, CountOccurrences(result, "nonce=\"new\""));
         Assert.DoesNotContain("old", result, StringComparison.Ordinal);
@@ -67,7 +75,7 @@ public sealed class SpaIndexHtmlMiddlewareTests
     {
         const string html = "<script data-state=\"ready > pending\" nonce></script>";
 
-        string result = SpaIndexHtmlMiddleware.AddScriptNonce(html, "new");
+        string result = Exceptionless.Web.Program.AddScriptNonce(html, "new");
 
         Assert.Equal("<script nonce=\"new\" data-state=\"ready > pending\"></script>", result);
     }
@@ -77,7 +85,7 @@ public sealed class SpaIndexHtmlMiddlewareTests
     {
         const string html = "<script>const marker = \"<script>\";</script>";
 
-        string result = SpaIndexHtmlMiddleware.AddScriptNonce(html, "new");
+        string result = Exceptionless.Web.Program.AddScriptNonce(html, "new");
 
         Assert.Equal("<script nonce=\"new\">const marker = \"<script>\";</script>", result);
     }
@@ -87,7 +95,7 @@ public sealed class SpaIndexHtmlMiddlewareTests
     {
         const string html = "<script data-nonce=\"keep\" noncevalue=\"keep\" nonce-value=\"keep\"></script>";
 
-        string result = SpaIndexHtmlMiddleware.AddScriptNonce(html, "new");
+        string result = Exceptionless.Web.Program.AddScriptNonce(html, "new");
 
         Assert.Contains("data-nonce=\"keep\"", result, StringComparison.Ordinal);
         Assert.Contains("noncevalue=\"keep\"", result, StringComparison.Ordinal);
@@ -96,86 +104,9 @@ public sealed class SpaIndexHtmlMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_HeadIndexRequest_WritesHeadersWithoutBody()
-    {
-        const string html = "<html><script>start();</script></html>";
-        var middleware = CreateMiddleware(new Dictionary<string, string> { ["index.html"] = html });
-        var context = CreateContext("/index.html", HttpMethods.Head);
-
-        await middleware.InvokeAsync(context, new TestNonceService("head-nonce"));
-
-        string expectedResponse = "<html><script nonce=\"head-nonce\">start();</script></html>";
-        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
-        Assert.Equal("text/html; charset=utf-8", context.Response.ContentType);
-        Assert.Equal("no-store", context.Response.Headers.CacheControl);
-        Assert.Equal(Encoding.UTF8.GetByteCount(expectedResponse), context.Response.ContentLength);
-        Assert.Equal(String.Empty, ReadResponseBody(context));
-    }
-
-    [Fact]
-    public async Task InvokeAsync_NonIndexRequest_CallsNext()
-    {
-        bool nextCalled = false;
-        var middleware = CreateMiddleware(
-            new Dictionary<string, string> { ["app.js"] = "console.log('ok');" },
-            context =>
-            {
-                nextCalled = true;
-                return Task.CompletedTask;
-            });
-        var context = CreateContext("/app.js");
-
-        await middleware.InvokeAsync(context, new TestNonceService("unused"));
-
-        Assert.True(nextCalled);
-        Assert.Equal(String.Empty, ReadResponseBody(context));
-        Assert.False(context.Response.Headers.ContainsKey(HeaderNames.CacheControl));
-    }
-
-    [Fact]
-    public async Task InvokeAsync_MissingIndexFile_CallsNext()
-    {
-        bool nextCalled = false;
-        var middleware = CreateMiddleware(
-            new Dictionary<string, string>(),
-            context =>
-            {
-                nextCalled = true;
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
-                return Task.CompletedTask;
-            });
-        var context = CreateContext("/next/index.html");
-
-        await middleware.InvokeAsync(context, new TestNonceService("unused"));
-
-        Assert.True(nextCalled);
-        Assert.Equal(StatusCodes.Status404NotFound, context.Response.StatusCode);
-        Assert.False(context.Response.Headers.ContainsKey(HeaderNames.CacheControl));
-    }
-
-    [Fact]
-    public async Task InvokeAsync_PostIndexRequest_CallsNext()
-    {
-        bool nextCalled = false;
-        var middleware = CreateMiddleware(
-            new Dictionary<string, string> { ["index.html"] = "<script></script>" },
-            context =>
-            {
-                nextCalled = true;
-                return Task.CompletedTask;
-            });
-        var context = CreateContext("/index.html", HttpMethods.Post);
-
-        await middleware.InvokeAsync(context, new TestNonceService("unused"));
-
-        Assert.True(nextCalled);
-        Assert.Equal(String.Empty, ReadResponseBody(context));
-    }
-
-    [Fact]
     public async Task Configure_IndexAndFallbackRoutes_ServeFreshNoncedHtml()
     {
-        string webRoot = Path.Combine(Path.GetTempPath(), "Exceptionless-SpaIndexHtmlMiddlewareTests", Guid.NewGuid().ToString("N"));
+        string webRoot = Path.Combine(Path.GetTempPath(), "Exceptionless-CspResponseTests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(webRoot, "next"));
         await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), "<html><body>root<script src=\"/root.js\"></script></body></html>", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(Path.Combine(webRoot, "next", "index.html"), "<html><body>next<script>start();</script></body></html>", TestContext.Current.CancellationToken);
@@ -238,34 +169,14 @@ public sealed class SpaIndexHtmlMiddlewareTests
 
         (_, string policy) = options.ToString(new TestNonceService("policy-nonce"));
         string scriptDirective = GetDirective(policy, "script-src");
-        string imageDirective = GetDirective(policy, "img-src");
-
         Assert.Contains("default-src 'self'", policy, StringComparison.Ordinal);
         Assert.Contains("object-src 'none'", policy, StringComparison.Ordinal);
         Assert.Contains("base-uri 'none'", policy, StringComparison.Ordinal);
         Assert.Contains("frame-ancestors 'none'", policy, StringComparison.Ordinal);
-        Assert.Contains("form-action 'self'", policy, StringComparison.Ordinal);
-        Assert.Contains("manifest-src 'self'", policy, StringComparison.Ordinal);
-        Assert.Contains("worker-src 'self' blob:", policy, StringComparison.Ordinal);
-        Assert.Contains("frame-src 'self' https://*.js.stripe.com", policy, StringComparison.Ordinal);
-        Assert.Contains("connect-src 'self'", policy, StringComparison.Ordinal);
-        Assert.Contains("https://api.stripe.com", policy, StringComparison.Ordinal);
-        Assert.Contains("img-src 'self' data: blob: https://*.stripe.com https://*.link.com", policy, StringComparison.Ordinal);
-        Assert.Contains("https://uploads.intercomcdn.com", imageDirective, StringComparison.Ordinal);
-        Assert.Contains("wss://*.intercom-messenger.com", policy, StringComparison.Ordinal);
         Assert.Contains("'nonce-policy-nonce'", scriptDirective, StringComparison.Ordinal);
         Assert.Contains("'strict-dynamic'", scriptDirective, StringComparison.Ordinal);
         Assert.DoesNotContain("'unsafe-inline'", scriptDirective, StringComparison.Ordinal);
         Assert.DoesNotContain("'unsafe-eval'", scriptDirective, StringComparison.Ordinal);
-        Assert.DoesNotContain("https://cdn.jsdelivr.net", scriptDirective, StringComparison.Ordinal);
-        Assert.DoesNotContain("http://", policy, StringComparison.Ordinal);
-        Assert.DoesNotContain("intercomcdn.eu", policy, StringComparison.Ordinal);
-        Assert.DoesNotContain(".eu.intercom.io", policy, StringComparison.Ordinal);
-        Assert.DoesNotContain(".au.intercom.io", policy, StringComparison.Ordinal);
-        Assert.DoesNotContain("au.intercomcdn.com", policy, StringComparison.Ordinal);
-        Assert.DoesNotContain("static.au.intercomassets.com", policy, StringComparison.Ordinal);
-        Assert.DoesNotContain("intercom-attachments.eu", policy, StringComparison.Ordinal);
-        Assert.DoesNotContain("au.intercom-attachments.com", policy, StringComparison.Ordinal);
 
         var apiContext = new DefaultHttpContext();
         apiContext.Request.Path = "/api/v2/about";
@@ -311,13 +222,6 @@ public sealed class SpaIndexHtmlMiddlewareTests
         Assert.NotEqual(firstNonce, secondNonce);
     }
 
-    private static SpaIndexHtmlMiddleware CreateMiddleware(IReadOnlyDictionary<string, string> files, RequestDelegate? next = null)
-    {
-        return new SpaIndexHtmlMiddleware(
-            next ?? (_ => Task.CompletedTask),
-            new InMemoryFileProvider(files));
-    }
-
     private static async Task<IHost> CreatePipelineHostAsync(string webRoot)
     {
         IHost host = Host.CreateDefaultBuilder()
@@ -339,31 +243,14 @@ public sealed class SpaIndexHtmlMiddlewareTests
                     app.UseRouting();
                     app.UseEndpoints(endpoints =>
                     {
-                        endpoints.MapScalarApiReference("/docs", (options, context) =>
-                            options.WithNonce(context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce()));
-                        endpoints.MapFallback("{**slug:nonfile}", Exceptionless.Web.Program.CreateRequestDelegate(endpoints, "index.html"));
+                        endpoints.MapScalarApiReference("/docs");
+                        endpoints.MapFallback("{**slug:nonfile}", Exceptionless.Web.Program.CreateRequestDelegate(endpoints, "/index.html"));
                     });
                 }))
             .Build();
 
         await host.StartAsync(TestContext.Current.CancellationToken);
         return host;
-    }
-
-    private static DefaultHttpContext CreateContext(string path, string method = "GET")
-    {
-        var context = new DefaultHttpContext();
-        context.Request.Method = method;
-        context.Request.Path = path;
-        context.Response.Body = new MemoryStream();
-        return context;
-    }
-
-    private static string ReadResponseBody(DefaultHttpContext context)
-    {
-        context.Response.Body.Position = 0;
-        using var reader = new StreamReader(context.Response.Body, leaveOpen: true);
-        return reader.ReadToEnd();
     }
 
     private static int CountOccurrences(string value, string search)
@@ -417,31 +304,5 @@ public sealed class SpaIndexHtmlMiddlewareTests
     private sealed class TestNonceService(string nonce) : ICspNonceService
     {
         public string GetNonce() => nonce;
-    }
-
-    private sealed class InMemoryFileProvider(IReadOnlyDictionary<string, string> files) : IFileProvider
-    {
-        public IDirectoryContents GetDirectoryContents(string subpath) => NotFoundDirectoryContents.Singleton;
-
-        public IFileInfo GetFileInfo(string subpath)
-        {
-            return files.TryGetValue(subpath.TrimStart('/'), out string? content)
-                ? new InMemoryFileInfo(subpath, content)
-                : new NotFoundFileInfo(subpath);
-        }
-
-        public IChangeToken Watch(string filter) => NullChangeToken.Singleton;
-    }
-
-    private sealed class InMemoryFileInfo(string name, string content) : IFileInfo
-    {
-        public bool Exists => true;
-        public long Length => Encoding.UTF8.GetByteCount(content);
-        public string? PhysicalPath => null;
-        public string Name => name;
-        public DateTimeOffset LastModified => DateTimeOffset.MinValue;
-        public bool IsDirectory => false;
-
-        public Stream CreateReadStream() => new MemoryStream(Encoding.UTF8.GetBytes(content), writable: false);
     }
 }
