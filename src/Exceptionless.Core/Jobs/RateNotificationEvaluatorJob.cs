@@ -58,8 +58,9 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
     {
         using var evaluationTimer = AppDiagnostics.RateNotificationEvaluationTime.StartTimer();
         var now = _timeProvider.GetUtcNow().UtcDateTime;
-        var currentMinute = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc);
-        var toMinute = currentMinute.AddMinutes(-1);
+        // Leave a full minute for in-flight counter writes before advancing the checkpoint.
+        var evaluationEndUtc = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0, DateTimeKind.Utc).AddMinutes(-1);
+        var toMinute = evaluationEndUtc.AddMinutes(-1);
         var lastEvaluatedMinute = await _counterService.GetLastEvaluatedMinuteAsync(context.CancellationToken);
         var earliestRecoveryMinute = toMinute.Subtract(ScanWindow).AddMinutes(1);
         var fromMinute = lastEvaluatedMinute.HasValue
@@ -99,7 +100,7 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
                 return JobResult.Cancelled;
 
             await context.RenewLockAsync();
-            await EvaluateProjectAsync(projectCounterKeys.Key, projectCounterKeys, currentMinute, context);
+            await EvaluateProjectAsync(projectCounterKeys.Key, projectCounterKeys, evaluationEndUtc, context);
         }
 
         await _counterService.SetLastEvaluatedMinuteAsync(toMinute, context.CancellationToken);
@@ -182,9 +183,7 @@ public class RateNotificationEvaluatorJob : JobWithLockBase
 
         var windowStartUtc = evaluationEndUtc.Subtract(rule.Window);
 
-        // SNOOZE BACK-ALERT FIX:
-        // If the rule was recently un-snoozed (SnoozedUntilUtc is set and in the past), use that as the
-        // effective window start to ignore traffic that occurred during the snooze period.
+        // Exclude the partial minute at the snooze boundary so muted traffic cannot trigger an alert.
         var snoozeBoundaryUtc = rule.SnoozedUntilUtc?.Ceiling(TimeSpan.FromMinutes(1));
         var effectiveWindowStartUtc = snoozeBoundaryUtc.HasValue && snoozeBoundaryUtc.Value > windowStartUtc
             ? snoozeBoundaryUtc.Value

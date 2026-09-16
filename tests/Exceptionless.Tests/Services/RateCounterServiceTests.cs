@@ -287,23 +287,23 @@ public class RateCounterServiceTests
     }
 
     [Fact]
-    public async Task IsOnCooldownAsync_AfterClaimingCooldown_ReturnsTrue()
+    public async Task IsOnCooldownAsync_AfterSettingCooldown_ReturnsTrue()
     {
         var ct = TestContext.Current.CancellationToken;
         var (service, _, _) = Create();
-        Assert.True(await service.TrySetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromHours(1), ct));
+        await service.SetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromHours(1), ct);
         bool onCooldown = await service.IsOnCooldownAsync(RuleId, SubjectKey, ct);
         Assert.True(onCooldown);
     }
 
     [Fact]
-    public async Task TrySetCooldownAsync_DifferentRules_IndependentCooldowns()
+    public async Task SetCooldownAsync_DifferentRules_IndependentCooldowns()
     {
         var ct = TestContext.Current.CancellationToken;
         var (service, _, _) = Create();
         const string ruleId2 = "rule-002";
 
-        Assert.True(await service.TrySetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromHours(1), ct));
+        await service.SetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromHours(1), ct);
 
         bool rule1OnCooldown = await service.IsOnCooldownAsync(RuleId, SubjectKey, ct);
         bool rule2OnCooldown = await service.IsOnCooldownAsync(ruleId2, SubjectKey, ct);
@@ -313,13 +313,13 @@ public class RateCounterServiceTests
     }
 
     [Fact]
-    public async Task TrySetCooldownAsync_ConfiguredDuration_ExpiresWithoutBuffer()
+    public async Task SetCooldownAsync_ConfiguredDuration_ExpiresWithoutBuffer()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var (service, timeProvider, _) = Create();
         var duration = TimeSpan.FromMinutes(5);
-        Assert.True(await service.TrySetCooldownAsync(RuleId, SubjectKey, duration, ct));
+        await service.SetCooldownAsync(RuleId, SubjectKey, duration, ct);
 
         // Act
         timeProvider.Advance(duration);
@@ -327,22 +327,6 @@ public class RateCounterServiceTests
 
         // Assert
         Assert.False(onCooldown);
-    }
-
-    [Fact]
-    public async Task TrySetCooldownAsync_WhenAlreadyClaimed_ReturnsFalse()
-    {
-        // Arrange
-        var ct = TestContext.Current.CancellationToken;
-        var (service, _, _) = Create();
-
-        // Act
-        bool first = await service.TrySetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromMinutes(5), ct);
-        bool second = await service.TrySetCooldownAsync(RuleId, SubjectKey, TimeSpan.FromMinutes(5), ct);
-
-        // Assert
-        Assert.True(first);
-        Assert.False(second);
     }
 
     [Fact]

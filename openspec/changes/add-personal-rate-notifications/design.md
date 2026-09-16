@@ -211,6 +211,7 @@ project:{projectId}:stack:{stackId}:signal:AllEvents
 ### RateNotificationEvaluatorJob
 
 - Runs periodically (recommended: every 60 seconds)
+- Waits one full minute after a bucket closes before evaluating it, allowing in-flight counter writes to settle. Evaluation windows end at that settled boundary, adding one minute of alert latency.
 - Acquires distributed lock so only one evaluator runs per cluster
 - Renews the distributed lock during recovery scans, pagination, and large rule evaluations
 - Inspects recently active counters from active bucket sets

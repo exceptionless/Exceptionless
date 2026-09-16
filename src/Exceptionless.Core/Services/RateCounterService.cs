@@ -86,13 +86,6 @@ public class RateCounterService
         return _cache.ExistsAsync(key);
     }
 
-    /// <summary>Atomically claims the cooldown for a rule/subject combination.</summary>
-    public Task<bool> TrySetCooldownAsync(string ruleId, string subjectKey, TimeSpan duration, CancellationToken ct = default)
-    {
-        ct.ThrowIfCancellationRequested();
-        return _cache.AddAsync(GetCooldownKey(ruleId, subjectKey), true, duration);
-    }
-
     /// <summary>Claims an evaluation briefly so a crash before enqueue cannot consume the full cooldown.</summary>
     public Task<bool> TryAcquireEvaluationClaimAsync(string ruleId, string subjectKey, CancellationToken ct = default)
     {
@@ -111,12 +104,6 @@ public class RateCounterService
     {
         ct.ThrowIfCancellationRequested();
         return _cache.RemoveAsync(GetEvaluationClaimKey(ruleId, subjectKey));
-    }
-
-    public Task RemoveCooldownAsync(string ruleId, string subjectKey, CancellationToken ct = default)
-    {
-        ct.ThrowIfCancellationRequested();
-        return _cache.RemoveAsync(GetCooldownKey(ruleId, subjectKey));
     }
 
     public async Task<DateTime?> GetLastEvaluatedMinuteAsync(CancellationToken ct = default)

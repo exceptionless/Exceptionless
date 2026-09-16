@@ -141,6 +141,17 @@ Given no enabled rate notification rules for project
 When event is processed
 Then no rate counter is incremented.
 
+### Requirement: Counter buckets settle before evaluation
+
+The evaluator MUST allow one full minute after a counter bucket closes for in-flight writes before advancing its checkpoint. Its evaluation window MUST end at that settled boundary so one-minute rules retain the event minute.
+
+#### Scenario: An increment finishes just after the minute boundary
+
+Given a one-minute rule and an increment started during minute M
+When the active marker is written before the increment finishes, and the evaluator runs at the next minute boundary
+Then the evaluator waits for the settlement minute before evaluating M
+And an increment completed during that grace period contributes to the next evaluation of M.
+
 ### Requirement: Rate notifications honor premium and rollout gating
 
 Rate notifications MUST require premium status plus the `rate-notifications` organization feature and MUST NOT become a free or accidentally exposed notification channel.

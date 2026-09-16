@@ -91,7 +91,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         Assert.True(stats.Enqueued > 0, "Expected a RateNotification to be enqueued when threshold is crossed.");
         var savedRule = await _ruleRepository.GetByIdAsync(rule.Id);
         Assert.NotNull(savedRule);
-        Assert.Equal(now, savedRule.LastFiredUtc);
+        Assert.Equal(now.AddMinutes(-1), savedRule.LastFiredUtc);
     }
 
     [Fact]
@@ -188,7 +188,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RunAsync_AfterSuccessfulRecovery_AdvancesCheckpointToLastCompleteMinute()
+    public async Task RunAsync_AfterSuccessfulRecovery_AdvancesCheckpointToLastSettledMinute()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
@@ -201,7 +201,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(new DateTime(2024, 6, 1, 11, 59, 0, DateTimeKind.Utc), await _counterService.GetLastEvaluatedMinuteAsync(ct));
+        Assert.Equal(new DateTime(2024, 6, 1, 11, 58, 0, DateTimeKind.Utc), await _counterService.GetLastEvaluatedMinuteAsync(ct));
     }
 
     [Fact]
@@ -223,7 +223,7 @@ public class RateNotificationEvaluatorJobTests : IntegrationTestsBase
         TimeProvider.Advance(TimeSpan.FromMinutes(2));
 
         // Put rule on cooldown (at "now")
-        Assert.True(await _counterService.TrySetCooldownAsync(rule.Id, subjectKey, TimeSpan.FromHours(1), ct));
+        await _counterService.SetCooldownAsync(rule.Id, subjectKey, TimeSpan.FromHours(1), ct);
 
         long queueBefore = (await _notificationQueue.GetQueueStatsAsync()).Enqueued;
 
