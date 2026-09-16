@@ -391,10 +391,11 @@ for (const [list, stepTitle, advances] of [
     ['stack', 'Keep a useful view', 3],
     ['sessions', 'Keep a useful view', 3]
 ] as const) {
-    test(`the overview continues ${stepTitle} on a ${list} saved view`, async ({ page }) => {
+    test(`the overview continues ${stepTitle} on a ${list} saved view`, async ({ e2eScenario, page }) => {
         // Arrange
         const savedViewPath = `/next/${list}/all`;
         await page.goto(savedViewPath);
+        await expect(page.getByRole('button', { name: new RegExp(e2eScenario.userName) })).toBeVisible();
         await expect(page.locator('[data-tour="saved-view-trigger"]')).toBeVisible();
         await startTourFromCommand(page, 'Explore Exceptionless');
         await expect(page).toHaveURL(/\/next\/event$/);
