@@ -107,6 +107,15 @@ test("preserves script-like text inside inline scripts", function () {
     assert.equal(csp.stampScriptNonces(html, "nonce"), '<script nonce="nonce">const marker = "<script>";</script>');
 });
 
+test("preserves similar attribute names and nonce text inside quoted values", function () {
+    var html = '<script noncevalue="keep" data-note="a nonce=\'keep\'" nonce="old"></script>';
+
+    assert.equal(
+        csp.stampScriptNonces(html, "fresh"),
+        '<script nonce="fresh" noncevalue="keep" data-note="a nonce=\'keep\'"></script>'
+    );
+});
+
 test("matches the canonical cross-runtime policy contract", function () {
     var policy = normalizeDevelopmentPolicy(csp.createContentSecurityPolicy(csp.createNonce()));
     var contractPath = path.join(__dirname, "..", "..", "Security", "frontend-content-security-policy.contract.json");
@@ -176,6 +185,18 @@ test("leaves Angular template XHR caching unchanged", async function (context) {
     var response = await fetch(getServerUrl(server) + "app/auth/login.tpl.html", {
         headers: { Accept: "application/json, text/plain, */*" },
     });
+
+    assert.equal(response.headers.get(csp.CSP_HEADER), null);
+    assert.equal(response.headers.get("Cache-Control"), null);
+});
+
+test("leaves static asset navigation responses unchanged", async function (context) {
+    var server = await startServer();
+    context.after(function () {
+        server.close();
+    });
+
+    var response = await fetch(getServerUrl(server) + "image.png", { headers: { Accept: "text/html" } });
 
     assert.equal(response.headers.get(csp.CSP_HEADER), null);
     assert.equal(response.headers.get("Cache-Control"), null);

@@ -57,6 +57,10 @@ test("renders false, null, empty, nested, and HTML-like values without executabl
 
     var tables = findElements(root, "TABLE");
     assert.equal(tables.length, 2);
+    tables.forEach(function (table) {
+        assert.equal(table.firstChild.tagName, "TBODY");
+        assert.equal(table.firstChild.firstChild.tagName, "TR");
+    });
     assert.match(tables[0].className, /(?:^| )table-fixed(?: |$)/);
     assert.doesNotMatch(tables[1].className, /(?:^| )table-fixed(?: |$)/);
 });

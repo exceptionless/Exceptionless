@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 
 const NONCE_BYTE_LENGTH = 32;
 const NONCE_PATTERN = /^[A-Za-z\d+/]{43}=$/;
-const NONCE_ATTRIBUTE_PATTERN = /\s+nonce(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi;
+const NONCE_ATTRIBUTE_PATTERN = /("[^"]*"|'[^']*')|\s+nonce(?=[\s=>/]|$)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi;
 const SCRIPT_ELEMENT_PATTERN = /(<script\b)((?:"[^"]*"|'[^']*'|[^'">])*)>([\s\S]*?)(<\/script\s*>)/gi;
 
 // Exceptionless uses Intercom's US endpoints. Keep region-specific sources scoped to that workspace.
@@ -120,7 +120,7 @@ export function addNonceToScripts(html: string, nonce: string): string {
     validateNonce(nonce);
 
     return html.replace(SCRIPT_ELEMENT_PATTERN, (_scriptElement, scriptTagName: string, attributes: string, content: string, closingTag: string) => {
-        const attributesWithoutNonce = attributes.replace(NONCE_ATTRIBUTE_PATTERN, '');
+        const attributesWithoutNonce = attributes.replace(NONCE_ATTRIBUTE_PATTERN, (_attribute, quoted: string | undefined) => quoted ?? '');
 
         return `${scriptTagName} nonce="${nonce}"${attributesWithoutNonce}>${content}${closingTag}`;
     });
