@@ -5,7 +5,7 @@ using Foundatio.Serializer;
 namespace Exceptionless.Web.Hubs;
 
 /// <summary>
-/// Manages active SSE connections. Replaces WebSocketConnectionManager.
+/// Manages active SSE connections alongside the rollout-compatible WebSocket transport.
 /// Sends keep-alive comments every 15 seconds to prevent proxy/LB disconnects.
 /// Proactively prunes dead connections during keep-alive sweeps.
 /// </summary>
@@ -80,7 +80,17 @@ public sealed class SseConnectionManager : IDisposable, IAsyncDisposable
 
     public SseConnection AddConnection(string connectionId, HttpResponse response, CancellationToken requestAborted)
     {
-        var connection = new SseConnection(connectionId, response, _serializer, requestAborted, _logger);
+        return AddConnection(connectionId, response, requestAborted, startImmediately: true);
+    }
+
+    internal SseConnection AddConnectionDeferred(string connectionId, HttpResponse response, CancellationToken requestAborted)
+    {
+        return AddConnection(connectionId, response, requestAborted, startImmediately: false);
+    }
+
+    private SseConnection AddConnection(string connectionId, HttpResponse response, CancellationToken requestAborted, bool startImmediately)
+    {
+        var connection = new SseConnection(connectionId, response, _serializer, requestAborted, _logger, startImmediately: startImmediately);
         if (!_connections.TryAdd(connectionId, connection))
         {
             connection.DisposeAsync().AsTask().GetAwaiter().GetResult();

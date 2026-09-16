@@ -58,7 +58,7 @@ public sealed class MessageBusBroker : IStartupAction
         var userConnectionIds = _connectionRegistry.GetUserConnections(userMembershipChanged.UserId);
         _logger.LogTrace("Attempting to update user {User} active groups for {UserConnectionCount} connections", userMembershipChanged.UserId, userConnectionIds.Count);
         if (userMembershipChanged.ChangeType is ChangeType.Removed && userConnectionIds.Count > 0)
-            TypedSend(userConnectionIds, userMembershipChanged);
+            TypedSend(userConnectionIds.Where(connectionId => _connectionRegistry.GetGroups(connectionId).Contains(userMembershipChanged.OrganizationId)), userMembershipChanged);
 
         foreach (string connectionId in userConnectionIds)
         {
@@ -81,6 +81,17 @@ public sealed class MessageBusBroker : IStartupAction
             return;
 
         var entityChanged = ExtendedEntityChanged.Create(ec);
+        if (String.Equals(nameof(OAuthToken), entityChanged.Type, StringComparison.Ordinal))
+        {
+            if (entityChanged.Id is not null && (entityChanged.ChangeType is ChangeType.Removed
+                || entityChanged.Data.GetValueOrDefault<bool>(ExtendedEntityChanged.KnownKeys.IsTokenRevoked)))
+            {
+                await CloseConnectionsAsync(_connectionRegistry.RevokeToken(entityChanged.Id)).ConfigureAwait(false);
+            }
+
+            return;
+        }
+
         if (String.Equals(UserTypeName, entityChanged.Type, StringComparison.Ordinal))
         {
             // It's pointless to send a user added message to the new user.

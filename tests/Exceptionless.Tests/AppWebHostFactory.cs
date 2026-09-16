@@ -79,7 +79,7 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
         {
             try
             {
-                using var response = await client.GetAsync(elasticsearchUri);
+                using var response = await client.GetAsync(new Uri(elasticsearchUri, "/_cluster/health?wait_for_status=yellow&timeout=1s"));
                 if (response.StatusCode == HttpStatusCode.OK)
                     return;
             }
@@ -166,7 +166,7 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
 
         // In the minimal hosting model, Program.Main reads AppOptions BEFORE Build() applies
         // ConfigureAppConfiguration overrides. Re-register AppOptions from the final configuration
-        // so the per-instance AppScope (test, test-1, test-2) is used correctly.
+        // so each instance uses its unique test scope.
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton(sp =>

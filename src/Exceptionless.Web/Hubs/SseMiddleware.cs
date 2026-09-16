@@ -4,7 +4,7 @@ using Exceptionless.Core.Utility;
 namespace Exceptionless.Web.Hubs;
 
 /// <summary>
-/// Handles SSE connections at /api/v2/push. Replaces MessageBusBrokerMiddleware (WebSocket).
+/// Handles SSE connections at /api/v2/push.
 /// Accepts authenticated GET requests, sets SSE response headers, registers the connection
 /// in the process-local ownership registry, and holds the response open until disconnect.
 /// </summary>
@@ -73,8 +73,8 @@ public class SseMiddleware
 
             try
             {
-                connection = _connectionManager.AddConnection(connectionId, context.Response, connectionLifetime.Token);
-                if (!_connectionRegistry.TryRegister(connectionId, principal.UserId, principal.TokenId, principal.OrganizationIds))
+                connection = _connectionManager.AddConnectionDeferred(connectionId, context.Response, connectionLifetime.Token);
+                if (!_connectionRegistry.TryRegister(connectionId, principal.UserId, principal.TokenId, principal.OrganizationIds, principal.FollowMembershipAdditions))
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     return;
@@ -89,6 +89,7 @@ public class SseMiddleware
                 var bufferingFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
                 bufferingFeature?.DisableBuffering();
                 await context.Response.StartAsync(connectionLifetime.Token).ConfigureAwait(false);
+                connection.Start();
 
                 _logger.LogTrace("SSE connected {ConnectionId}", connectionId);
 
@@ -105,9 +106,22 @@ public class SseMiddleware
             finally
             {
                 _logger.LogTrace("SSE disconnected {ConnectionId}", connectionId);
-                if (connection is not null)
-                    await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
-                _connectionRegistry.Unregister(connectionId);
+                try
+                {
+                    await lease.DisposeAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    try
+                    {
+                        if (connection is not null)
+                            await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        _connectionRegistry.Unregister(connectionId);
+                    }
+                }
             }
         }
     }

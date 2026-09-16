@@ -76,7 +76,7 @@ public sealed class WebSocketPushMiddleware
             {
                 socket = await context.WebSockets.AcceptWebSocketAsync();
                 _connectionManager.AddConnection(connectionId, socket);
-                if (!_connectionRegistry.TryRegister(connectionId, principal.UserId, principal.TokenId, principal.OrganizationIds))
+                if (!_connectionRegistry.TryRegister(connectionId, principal.UserId, principal.TokenId, principal.OrganizationIds, principal.FollowMembershipAdditions))
                 {
                     await socket.CloseOutputAsync((WebSocketCloseStatus)UnauthorizedCloseStatus, "Unauthorized", context.RequestAborted).ConfigureAwait(false);
                     return;
@@ -98,12 +98,19 @@ public sealed class WebSocketPushMiddleware
                 _logger.LogTrace("WebSocket push disconnected {ConnectionId}", connectionId);
                 try
                 {
-                    await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+                    await lease.DisposeAsync().ConfigureAwait(false);
                 }
                 finally
                 {
-                    socket?.Dispose();
-                    _connectionRegistry.Unregister(connectionId);
+                    try
+                    {
+                        await _connectionManager.RemoveConnectionAsync(connectionId).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        socket?.Dispose();
+                        _connectionRegistry.Unregister(connectionId);
+                    }
                 }
             }
         }

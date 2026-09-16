@@ -329,7 +329,7 @@ public class Bootstrapper
             GetProviderEndpoint(options.StorageOptions.Data, options.StorageOptions.ConnectionString));
 
         logger.LogInformation(
-            "Startup services: event submission {EventSubmission}; WebSockets {WebSockets}; jobs in process {JobsInProcess}; email {Email}; account creation {AccountCreation}; index configuration {IndexConfiguration}",
+            "Startup services: event submission {EventSubmission}; push {Push}; jobs in process {JobsInProcess}; email {Email}; account creation {AccountCreation}; index configuration {IndexConfiguration}",
             GetStatus(!options.EventSubmissionDisabled),
             GetStatus(options.EnablePush),
             GetStatus(options.RunJobsInProcess),

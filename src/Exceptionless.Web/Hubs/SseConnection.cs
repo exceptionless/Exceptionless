@@ -23,8 +23,9 @@ public sealed class SseConnection : IAsyncDisposable
     private readonly DedupQueue _queue;
     private readonly CancellationTokenSource _cts;
     private readonly CancellationToken _connectionAborted;
-    private readonly Task _writeLoop;
+    private readonly object _lifecycleLock = new();
     private readonly ILogger _logger;
+    private Task? _writeLoop;
     private long _droppedMessages;
     private long _dedupedMessages;
     private int _disposeState;
@@ -38,7 +39,7 @@ public sealed class SseConnection : IAsyncDisposable
     /// <summary>Number of messages skipped due to deduplication.</summary>
     public long DedupedMessages => Interlocked.Read(ref _dedupedMessages);
 
-    public SseConnection(string connectionId, HttpResponse response, ITextSerializer serializer, CancellationToken requestAborted, ILogger logger, int capacity = 64)
+    public SseConnection(string connectionId, HttpResponse response, ITextSerializer serializer, CancellationToken requestAborted, ILogger logger, int capacity = 64, bool startImmediately = true)
     {
         ConnectionId = connectionId;
         _response = response;
@@ -48,7 +49,23 @@ public sealed class SseConnection : IAsyncDisposable
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(requestAborted);
         _connectionAborted = _cts.Token;
-        _writeLoop = WriteLoopAsync(_cts.Token);
+        if (startImmediately)
+            Start();
+    }
+
+    /// <summary>
+    /// Starts the write loop after the response has been initialized. Public connections
+    /// still start in the constructor; the middleware uses this gate while registering.
+    /// </summary>
+    internal void Start()
+    {
+        lock (_lifecycleLock)
+        {
+            if (_writeLoop is not null || Volatile.Read(ref _disposeState) != 0)
+                return;
+
+            _writeLoop = WriteLoopAsync(_cts.Token);
+        }
     }
 
     /// <summary>
@@ -120,12 +137,18 @@ public sealed class SseConnection : IAsyncDisposable
         if (Interlocked.Exchange(ref _disposeState, 1) != 0)
             return;
         Abort();
+
+        Task? writeLoop;
+        lock (_lifecycleLock)
+            writeLoop = _writeLoop;
+
         using (_queue)
         using (_cts)
         {
             try
             {
-                await _writeLoop.ConfigureAwait(false);
+                if (writeLoop is not null)
+                    await writeLoop.ConfigureAwait(false);
             }
             catch (OperationCanceledException ex)
             {

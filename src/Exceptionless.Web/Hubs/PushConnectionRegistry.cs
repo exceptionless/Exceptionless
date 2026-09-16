@@ -14,7 +14,7 @@ public sealed class PushConnectionRegistry(TimeProvider timeProvider)
     private readonly Dictionary<string, HashSet<string>> _userConnections = [];
     private readonly object _lock = new();
 
-    public bool TryRegister(string connectionId, string? userId, string? tokenId, IEnumerable<string> organizationIds)
+    public bool TryRegister(string connectionId, string? userId, string? tokenId, IEnumerable<string> organizationIds, bool followMembershipAdditions = true)
     {
         lock (_lock)
         {
@@ -22,7 +22,7 @@ public sealed class PushConnectionRegistry(TimeProvider timeProvider)
             if (tokenId is not null && _revokedTokens.ContainsKey(tokenId))
                 return false;
 
-            var registration = new Registration(userId, tokenId, organizationIds);
+            var registration = new Registration(userId, tokenId, organizationIds, followMembershipAdditions);
             _connections.Add(connectionId, registration);
             if (userId is not null)
                 AddToIndex(_userConnections, userId, connectionId);
@@ -67,7 +67,7 @@ public sealed class PushConnectionRegistry(TimeProvider timeProvider)
     {
         lock (_lock)
         {
-            if (_connections.TryGetValue(connectionId, out var registration) && registration.OrganizationIds.Add(organizationId))
+            if (_connections.TryGetValue(connectionId, out var registration) && registration.FollowMembershipAdditions && registration.OrganizationIds.Add(organizationId))
                 AddToIndex(_groupConnections, organizationId, connectionId);
         }
     }
@@ -130,7 +130,7 @@ public sealed class PushConnectionRegistry(TimeProvider timeProvider)
             _revokedTokens.Remove(tokenId);
     }
 
-    private sealed record Registration(string? UserId, string? TokenId, IEnumerable<string> InitialOrganizationIds)
+    private sealed record Registration(string? UserId, string? TokenId, IEnumerable<string> InitialOrganizationIds, bool FollowMembershipAdditions)
     {
         public HashSet<string> OrganizationIds { get; } = [.. InitialOrganizationIds];
     }

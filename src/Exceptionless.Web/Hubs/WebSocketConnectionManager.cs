@@ -12,6 +12,7 @@ namespace Exceptionless.Web.Hubs;
 /// </summary>
 public class WebSocketConnectionManager : IDisposable
 {
+    private static readonly TimeSpan ConnectionCloseTimeout = TimeSpan.FromSeconds(1);
     private static readonly ArraySegment<byte> KeepAliveMessage = new(Encoding.ASCII.GetBytes("{}"), 0, 2);
     private readonly ConcurrentDictionary<string, ManagedWebSocket> _connections = new();
     private readonly Timer? _timer;
@@ -95,19 +96,39 @@ public class WebSocketConnectionManager : IDisposable
         if (!_connections.TryRemove(connectionId, out var connection))
             return;
 
-        var socket = connection.Socket;
-
-        if (!CanClose(socket))
+        connection.CancelPendingSends();
+        if (!CanClose(connection.Socket))
         {
             AppDiagnostics.PushWebSocketConnectionsClosed.Add(1);
             AppDiagnostics.Gauge("push.connections.websocket.active", _connections.Count);
             return;
         }
 
-        await connection.SendLock.WaitAsync().ConfigureAwait(false);
+        bool lockAcquired = false;
         try
         {
-            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by manager", CancellationToken.None).ConfigureAwait(false);
+            lockAcquired = await connection.SendLock.WaitAsync(ConnectionCloseTimeout).ConfigureAwait(false);
+            if (!lockAcquired)
+            {
+                Abort(connection, connectionId, "waiting for websocket sends");
+                return;
+            }
+
+            using var closeCancellation = new CancellationTokenSource(ConnectionCloseTimeout);
+            try
+            {
+                await connection.Socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by manager", closeCancellation.Token)
+                    .WaitAsync(ConnectionCloseTimeout)
+                    .ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                Abort(connection, connectionId, "closing websocket");
+            }
+            catch (OperationCanceledException)
+            {
+                Abort(connection, connectionId, "closing websocket");
+            }
         }
         catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
         {
@@ -125,7 +146,8 @@ public class WebSocketConnectionManager : IDisposable
         {
             AppDiagnostics.PushWebSocketConnectionsClosed.Add(1);
             AppDiagnostics.Gauge("push.connections.websocket.active", _connections.Count);
-            connection.SendLock.Release();
+            if (lockAcquired)
+                connection.SendLock.Release();
         }
     }
 
@@ -209,12 +231,19 @@ public class WebSocketConnectionManager : IDisposable
 
     private async Task SendAsync(string connectionId, ManagedWebSocket connection, ArraySegment<byte> bytes, string operation)
     {
-        await connection.SendLock.WaitAsync().ConfigureAwait(false);
+        bool lockAcquired = false;
         bool removeConnection = false;
+        CancellationToken cancellationToken = connection.SendCancellation.Token;
         try
         {
+            await connection.SendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            lockAcquired = true;
             if (CanSend(connection.Socket))
-                await connection.Socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None).ConfigureAwait(false);
+                await connection.Socket.SendAsync(bytes, WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return;
         }
         catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
         {
@@ -230,7 +259,8 @@ public class WebSocketConnectionManager : IDisposable
         }
         finally
         {
-            connection.SendLock.Release();
+            if (lockAcquired)
+                connection.SendLock.Release();
         }
 
         if (removeConnection)
@@ -275,8 +305,32 @@ public class WebSocketConnectionManager : IDisposable
         return socket.State is WebSocketState.Open or WebSocketState.CloseReceived;
     }
 
+    private void Abort(ManagedWebSocket connection, string connectionId, string operation)
+    {
+        try
+        {
+            connection.Socket.Abort();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Error aborting websocket {Operation} for {ConnectionId}", operation, connectionId);
+        }
+    }
+
     private sealed record ManagedWebSocket(WebSocket Socket)
     {
         public SemaphoreSlim SendLock { get; } = new(1, 1);
+        public CancellationTokenSource SendCancellation { get; } = new();
+
+        public void CancelPendingSends()
+        {
+            try
+            {
+                SendCancellation.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
     }
 }

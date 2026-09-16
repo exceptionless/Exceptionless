@@ -121,6 +121,7 @@ public class Bootstrapper
         if (String.Equals(options.Provider, "redis"))
         {
             container.ReplaceSingleton(s => GetRedisConnection(options.ConnectionString!, s.GetRequiredService<ILoggerFactory>()));
+            container.ReplaceSingleton<IConnectionLeaseStore, RedisConnectionLeaseStore>();
 
             container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions
             {

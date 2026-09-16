@@ -66,18 +66,45 @@ export async function installWebSocketTestHarness(page: Page): Promise<void> {
             }
 
             let activeController: ReadableStreamDefaultController<Uint8Array> | undefined;
+            const signal = init?.signal;
+            let abortHandler: (() => void) | undefined;
+
+            const removeController = () => {
+                if (abortHandler) {
+                    signal?.removeEventListener('abort', abortHandler);
+                    abortHandler = undefined;
+                }
+
+                if (activeController) {
+                    const index = controllers.indexOf(activeController);
+                    if (index >= 0) {
+                        controllers.splice(index, 1);
+                    }
+                    activeController = undefined;
+                }
+            };
+
             const stream = new ReadableStream<Uint8Array>({
                 cancel() {
-                    if (activeController) {
-                        const index = controllers.indexOf(activeController);
-                        if (index >= 0) {
-                            controllers.splice(index, 1);
-                        }
-                    }
+                    removeController();
                 },
                 start(controller) {
                     activeController = controller;
                     controllers.push(controller);
+
+                    abortHandler = () => {
+                        try {
+                            controller.error(new DOMException('The operation was aborted', 'AbortError'));
+                        } finally {
+                            removeController();
+                        }
+                    };
+
+                    if (signal?.aborted) {
+                        abortHandler();
+                    } else {
+                        signal?.addEventListener('abort', abortHandler, { once: true });
+                    }
                 }
             });
 

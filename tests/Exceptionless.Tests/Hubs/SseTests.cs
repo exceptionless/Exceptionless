@@ -250,20 +250,20 @@ public sealed class SseBrokerTests : TestWithServices
     [Fact]
     public async Task OnEntityChangedAsync_OrganizationMessage_SentToGroupOnly()
     {
-        const string orgId = "org-1";
-        const string otherOrgId = "org-2";
-        using var responseInOrg = new FakeHttpResponse();
-        using var responseOutOrg = new FakeHttpResponse();
+        const string organizationId = "org-1";
+        const string otherOrganizationId = "org-2";
+        using var responseInOrganization = new FakeHttpResponse();
+        using var responseOutsideOrganization = new FakeHttpResponse();
         using var cts1 = new CancellationTokenSource();
         using var cts2 = new CancellationTokenSource();
 
-        string inOrgConn = "conn-in-org";
-        string outOrgConn = "conn-out-org";
+        string organizationConnectionId = "conn-in-org";
+        string otherOrganizationConnectionId = "conn-out-org";
 
-        _connectionManager.AddConnection(inOrgConn, responseInOrg, cts1.Token);
-        _connectionManager.AddConnection(outOrgConn, responseOutOrg, cts2.Token);
-        Assert.True(_connectionRegistry.TryRegister(inOrgConn, "user-in", "token-in", [orgId]));
-        Assert.True(_connectionRegistry.TryRegister(outOrgConn, "user-out", "token-out", [otherOrgId]));
+        _connectionManager.AddConnection(organizationConnectionId, responseInOrganization, cts1.Token);
+        _connectionManager.AddConnection(otherOrganizationConnectionId, responseOutsideOrganization, cts2.Token);
+        Assert.True(_connectionRegistry.TryRegister(organizationConnectionId, "user-in", "token-in", [organizationId]));
+        Assert.True(_connectionRegistry.TryRegister(otherOrganizationConnectionId, "user-out", "token-out", [otherOrganizationId]));
 
         try
         {
@@ -273,23 +273,23 @@ public sealed class SseBrokerTests : TestWithServices
                 Type = "Stack",
                 ChangeType = ChangeType.Saved
             };
-            entityChanged.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = orgId;
+            entityChanged.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = organizationId;
 
             await _broker.OnEntityChangedAsync(entityChanged, CancellationToken.None);
 
             // Give write loop a moment to process
             await Task.Delay(200, TestContext.Current.CancellationToken);
 
-            // In-org connection should receive message, out-org should not
-            Assert.True(responseInOrg.WrittenData.Length > 0, "In-org connection should receive message");
-            Assert.Equal(0, responseOutOrg.WrittenData.Length);
+            // Only the connection belonging to the organization should receive the message
+            Assert.True(responseInOrganization.WrittenData.Length > 0, "The organization connection should receive the message");
+            Assert.Equal(0, responseOutsideOrganization.WrittenData.Length);
         }
         finally
         {
-            await _connectionManager.RemoveConnectionAsync(inOrgConn);
-            await _connectionManager.RemoveConnectionAsync(outOrgConn);
-            _connectionRegistry.Unregister(inOrgConn);
-            _connectionRegistry.Unregister(outOrgConn);
+            await _connectionManager.RemoveConnectionAsync(organizationConnectionId);
+            await _connectionManager.RemoveConnectionAsync(otherOrganizationConnectionId);
+            _connectionRegistry.Unregister(organizationConnectionId);
+            _connectionRegistry.Unregister(otherOrganizationConnectionId);
         }
     }
 

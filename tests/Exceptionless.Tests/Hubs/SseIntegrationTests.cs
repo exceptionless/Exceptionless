@@ -116,7 +116,7 @@ public sealed class SseIntegrationTests : IntegrationTestsBase
     public async Task ConnectedClient_ReceivesEntityChangedMessage()
     {
         var token = await CreateTokenAsync();
-        var orgId = SampleDataService.TEST_ORG_ID;
+        var organizationId = SampleDataService.TEST_ORG_ID;
 
         using var client = _server.CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v2/push");
@@ -144,7 +144,7 @@ public sealed class SseIntegrationTests : IntegrationTestsBase
             Type = "Stack",
             ChangeType = ChangeType.Saved
         };
-        entityChanged.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = orgId;
+        entityChanged.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = organizationId;
 #pragma warning disable xUnit1051
         await _messagePublisher.PublishAsync(entityChanged);
 #pragma warning restore xUnit1051
