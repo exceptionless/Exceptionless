@@ -1778,7 +1778,7 @@
             }
           },
           "403": {
-            "description": "Account Creation is currently disabled",
+            "description": "Account creation is disabled or the existing account must be signed into before linking Microsoft",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

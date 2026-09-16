@@ -10,6 +10,7 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Repositories;
 using Xunit;
+using ProblemDetails = Microsoft.AspNetCore.Mvc.ProblemDetails;
 
 namespace Exceptionless.Tests.Api.Endpoints;
 
@@ -70,12 +71,17 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         Assert.Equal(TestOAuthProviderClient.GetEmailAddress(code), account.Username);
     }
 
-    [Fact]
-    public async Task MicrosoftAsync_ExistingModernIdentity_RemovesStaleLegacyIdentity()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task MicrosoftAsync_ExistingModernIdentity_PreservesEmailVerification(bool isEmailVerified)
     {
         // Arrange
         const string code = "existing-microsoft-user";
         var user = CreateUser(TestOAuthProviderClient.GetEmailAddress(code));
+        if (!isEmailVerified)
+            user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        string? verificationToken = user.VerifyEmailAddressToken;
         user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
         user.AddOAuthAccount("Microsoft", code, user.EmailAddress);
         await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
@@ -89,10 +95,12 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         var account = Assert.Single(updatedUser.OAuthAccounts);
         Assert.Equal("microsoft", account.Provider);
         Assert.Equal(code, account.ProviderUserId);
+        Assert.Equal(isEmailVerified, updatedUser.IsEmailAddressVerified);
+        Assert.Equal(verificationToken, updatedUser.VerifyEmailAddressToken);
     }
 
     [Fact]
-    public async Task MicrosoftAsync_ExactEmailMatch_ReplacesLegacyIdentityWithoutDuplicateUser()
+    public async Task MicrosoftAsync_ExactEmailMatch_RequiresAuthenticatedLinkWithoutChangingUser()
     {
         // Arrange
         const string code = "matching-email-user";
@@ -101,15 +109,21 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
         // Act
-        await SendMicrosoftLoginAsync(code);
+        var problem = await SendRequestAsAsync<ProblemDetails>(request => request
+            .Post()
+            .AppendPaths("auth", "microsoft")
+            .Content(new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = code, RedirectUri = "http://localhost" })
+            .StatusCodeShouldBeForbidden());
 
         // Assert
         var updatedUser = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
         Assert.NotNull(updatedUser);
         Assert.Equal(user.Id, updatedUser.Id);
         var account = Assert.Single(updatedUser.OAuthAccounts);
-        Assert.Equal("microsoft", account.Provider);
-        Assert.Equal(code, account.ProviderUserId);
+        Assert.Equal("windowslive", account.Provider);
+        Assert.Equal("legacy-user", account.ProviderUserId);
+        Assert.NotNull(problem);
+        Assert.Contains("link Microsoft", problem.Title);
     }
 
     [Fact]
@@ -136,6 +150,9 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         var microsoftAccount = Assert.Single(microsoftUser.OAuthAccounts);
         Assert.Equal("microsoft", microsoftAccount.Provider);
         Assert.Equal(code, microsoftAccount.ProviderUserId);
+        Assert.False(microsoftUser.IsEmailAddressVerified);
+        Assert.False(String.IsNullOrWhiteSpace(microsoftUser.VerifyEmailAddressToken));
+        Assert.True(microsoftUser.VerifyEmailAddressTokenExpiration > TimeProvider.GetUtcNow().UtcDateTime);
     }
 
     private static User CreateUser(string emailAddress)

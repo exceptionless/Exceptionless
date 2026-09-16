@@ -557,7 +557,7 @@ public class AuthEndpointTests : IntegrationTestsBase
         var result = await SendExternalLoginAsync("microsoft", code);
 
         // Assert
-        await AssertExternalLoginAsync(result, "microsoft", code);
+        await AssertExternalLoginAsync(result, "microsoft", code, isEmailVerified: false);
     }
 
     [Fact]
@@ -1554,14 +1554,14 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.False(token.IsSuspended);
     }
 
-    private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId)
+    private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId, bool isEmailVerified = true)
     {
         Assert.NotNull(result);
         Assert.False(String.IsNullOrEmpty(result.Token));
 
         var user = await _userRepository.GetByEmailAddressAsync(TestOAuthProviderClient.GetEmailAddress(providerUserId));
         Assert.NotNull(user);
-        Assert.True(user.IsEmailAddressVerified);
+        Assert.Equal(isEmailVerified, user.IsEmailAddressVerified);
         var account = Assert.Single(user.OAuthAccounts);
         Assert.Equal(providerName, account.Provider);
         Assert.Equal(providerUserId, account.ProviderUserId);

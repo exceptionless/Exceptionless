@@ -536,7 +536,11 @@ public class AuthHandler(
         User? user;
         try
         {
-            user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext);
+            var result = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext);
+            if (!result.IsSuccess)
+                return Result<TokenResult>.FromResult(result);
+
+            user = result.Value;
         }
         catch (ApplicationException ex)
         {
@@ -556,12 +560,13 @@ public class AuthHandler(
         return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
-    private async Task<User> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext)
+    private async Task<Result<User>> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
 
+        bool isMicrosoft = String.Equals(userInfo.ProviderName, MicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase);
         var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(userInfo.ProviderName).Identity(userInfo.Email).SetHttpContext(httpContext));
 
@@ -594,7 +599,7 @@ public class AuthHandler(
         if (existingUser is not null)
         {
             bool hasChanges = RemoveLegacyMicrosoftOAuthAccounts(existingUser, userInfo.ProviderName);
-            if (!existingUser.IsEmailAddressVerified)
+            if (!isMicrosoft && !existingUser.IsEmailAddressVerified)
             {
                 existingUser.MarkEmailAddressVerified();
                 hasChanges = true;
@@ -607,6 +612,10 @@ public class AuthHandler(
         }
 
         var user = !String.IsNullOrEmpty(userInfo.Email) ? await userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
+        // Microsoft Graph mail is editable and does not prove ownership of an existing account.
+        if (isMicrosoft && user is not null)
+            return Result.Forbidden("Sign in to your existing account first, then link Microsoft from your account settings.");
+
         if (user is null)
         {
             if (!await IsAccountCreationEnabledAsync(inviteToken))
@@ -618,14 +627,19 @@ public class AuthHandler(
             await AddGlobalAdminRoleIfFirstUserAsync(user);
         }
 
-        user.MarkEmailAddressVerified();
+        if (isMicrosoft)
+            user.ResetVerifyEmailAddressTokenAndExpiration(timeProvider);
+        else
+            user.MarkEmailAddressVerified();
         user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-        RemoveLegacyMicrosoftOAuthAccounts(user, userInfo.ProviderName);
 
         if (String.IsNullOrEmpty(user.Id))
             await userRepository.AddAsync(user, o => o.Cache());
         else
             await userRepository.SaveAsync(user, o => o.Cache());
+
+        if (isMicrosoft)
+            await mailer.SendUserEmailVerifyAsync(user);
 
         return user;
     }

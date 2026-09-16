@@ -47,7 +47,20 @@ Content-Type: application/json
 }
 
 ### Microsoft OAuth Login
+# Existing accounts must sign in first and link Microsoft with their Bearer token.
+# An email match alone returns 403; new accounts receive an email verification message.
 POST {{apiUrl}}/auth/microsoft
+Content-Type: application/json
+
+{
+    "code": "code",
+    "clientId": "clientId",
+    "redirectUri": "http://localhost"
+}
+
+### Link Microsoft to the authenticated account
+POST {{apiUrl}}/auth/microsoft
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
