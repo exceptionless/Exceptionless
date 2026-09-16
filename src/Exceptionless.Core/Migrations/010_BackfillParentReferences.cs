@@ -23,23 +23,27 @@ public sealed class BackfillParentReferences : MigrationBase
         _timeProvider = timeProvider;
 
         MigrationType = MigrationType.VersionedAndResumable;
-        Version = 6;
+        Version = 10;
     }
 
     public override async Task RunAsync(MigrationContext context)
     {
         string referenceKey = $"@ref:{Event.KnownReferenceNames.Parent}";
         string indexKey = $"{Event.KnownReferenceNames.Parent}-r";
+        // Painless trim() only handles ASCII whitespace; match CopyDataToIndex's String.Trim().
+        string whitespace = String.Concat(Enumerable.Range(Char.MinValue, Char.MaxValue + 1)
+            .Select(value => (char)value).Where(Char.IsWhiteSpace));
         string script = $$"""
             def parentReference = null;
             if (ctx._source.data != null) {
-                parentReference = ctx._source.data['{{referenceKey}}'];
-                if (parentReference == null) {
-                    for (def entry : ctx._source.data.entrySet()) {
-                        if (entry.getKey().equalsIgnoreCase('{{referenceKey}}')) {
-                            parentReference = entry.getValue();
-                            break;
-                        }
+                for (def entry : ctx._source.data.entrySet()) {
+                    String key = entry.getKey();
+                    int start = 0;
+                    int end = key.length();
+                    while (start < end && params.whitespace.indexOf(key.substring(start, start + 1)) >= 0) start++;
+                    while (end > start && params.whitespace.indexOf(key.substring(end - 1, end)) >= 0) end--;
+                    if (key.substring(start, end).equalsIgnoreCase('{{referenceKey}}')) {
+                        parentReference = entry.getValue();
                     }
                 }
             }
@@ -56,8 +60,9 @@ public sealed class BackfillParentReferences : MigrationBase
         var response = await _client.UpdateByQueryAsync<PersistentEvent>(request => request
             .Indices($"{_config.Events.VersionedName}-*")
             .Query(query => query.Bool(filter => filter.MustNot(mustNot => mustNot.Exists(exists => exists.Field($"idx.{indexKey}")))))
-            .Script(value => value.Source(script).Lang(ScriptLanguage.Painless))
-            .WaitForCompletion(false));
+            .Script(value => value.Source(script).Lang(ScriptLanguage.Painless)
+                .Params(new Dictionary<string, object> { ["whitespace"] = whitespace }))
+            .WaitForCompletion(false), context.CancellationToken);
         _logger.LogRequest(response, LogLevel.Information);
 
         if (!response.IsValidResponse || response.Task is null)

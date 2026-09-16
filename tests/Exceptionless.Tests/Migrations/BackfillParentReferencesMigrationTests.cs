@@ -30,8 +30,12 @@ public sealed class BackfillParentReferencesMigrationTests : IntegrationTestsBas
         base.RegisterServices(services);
     }
 
-    [Fact]
-    public async Task RunAsync_WithRetainedEvents_BackfillsOnlyMissingParentIndexes()
+    [Theory]
+    [InlineData("@ref:Parent")]
+    [InlineData(" @ref:parent ")]
+    [InlineData("\t@ref:Parent\r\n")]
+    [InlineData("\u00A0@ref:Parent\u2003")]
+    public async Task RunAsync_WithRetainedEvents_BackfillsOnlyMissingParentIndexes(string parentKey)
     {
         var missingIndexEvent = _eventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, stackId: TestConstants.StackId, generateData: false, occurrenceDate: TimeProvider.GetUtcNow());
         missingIndexEvent.Id = ObjectId.GenerateNewId().ToString();
@@ -50,8 +54,7 @@ public sealed class BackfillParentReferencesMigrationTests : IntegrationTestsBas
 
         var differentlyCasedParentEvent = _eventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, stackId: TestConstants.StackId, generateData: false, occurrenceDate: TimeProvider.GetUtcNow());
         differentlyCasedParentEvent.Id = ObjectId.GenerateNewId().ToString();
-        differentlyCasedParentEvent.Data = new();
-        differentlyCasedParentEvent.SetEventReference("Parent", "cased-parent-reference");
+        differentlyCasedParentEvent.Data = new() { [parentKey] = "cased-parent-reference" };
         differentlyCasedParentEvent.Idx = null;
 
         var unrelatedEvent = _eventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, stackId: TestConstants.StackId, generateData: false, occurrenceDate: TimeProvider.GetUtcNow());
@@ -92,5 +95,28 @@ public sealed class BackfillParentReferencesMigrationTests : IntegrationTestsBas
         var skippedEvent = await _eventRepository.GetByIdAsync(unrelatedEvent.Id, options => options.Include(ev => ev.Idx));
         Assert.NotNull(skippedEvent);
         Assert.Null(skippedEvent.Idx);
+    }
+
+    [Theory]
+    [InlineData("last-parent-reference")]
+    [InlineData(null)]
+    public async Task RunAsync_DuplicateNormalizedParentKeys_PreservesLastValue(string? lastValue)
+    {
+        var ev = _eventData.GenerateEvent(organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, stackId: TestConstants.StackId, generateData: false, occurrenceDate: TimeProvider.GetUtcNow());
+        ev.Id = ObjectId.GenerateNewId().ToString();
+        ev.Data = new() { ["@ref:parent"] = "first-parent-reference", [" @ref:Parent "] = lastValue };
+        ev.Idx = null;
+        await _eventRepository.AddAsync(ev, options => options.ImmediateConsistency());
+        var migration = GetService<BackfillParentReferences>();
+        var context = new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken);
+
+        await migration.RunAsync(context);
+        await RefreshDataAsync();
+        await migration.RunAsync(context);
+        await RefreshDataAsync();
+
+        var backfilledEvent = await _eventRepository.GetByIdAsync(ev.Id, options => options.Include(item => item.Idx));
+        Assert.NotNull(backfilledEvent);
+        Assert.Equal(lastValue, backfilledEvent.Idx?.GetString("parent-r"));
     }
 }

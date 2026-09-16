@@ -15,13 +15,10 @@ vi.mock('$features/events/api.svelte', () => ({
         isPending: false
     })
 }));
-vi.mock('$features/events/components/filters', () => ({
-    ReferenceFilter: class {
-        toFilter() {
-            return 'reference:reference-id';
-        }
-    }
-}));
+vi.mock('$features/events/components/filters', async () => {
+    const { ReferenceFilter } = await import('$features/events/components/filters/models.svelte');
+    return { ReferenceFilter };
+});
 vi.mock('$features/events/components/summary/summary.svelte', () => ({ default: () => undefined }));
 
 import EventReferencePage, { formatReferenceResultCount } from './+page.svelte';
@@ -39,6 +36,8 @@ describe('event reference result count', () => {
         render(EventReferencePage);
 
         expect(screen.getByText('Showing 20 of 25 events for this reference.')).toBeTruthy();
-        expect(screen.getByRole('link', { name: 'View In Events' })).toBeTruthy();
+        const link = screen.getByRole('link', { name: 'View In Events' });
+        const destination = new URL(link.getAttribute('href')!, 'http://localhost');
+        expect(destination.searchParams.get('filter')).toBe('(reference:"reference-id" OR ref.parent:"reference-id")');
     });
 });

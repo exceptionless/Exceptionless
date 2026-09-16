@@ -13,8 +13,11 @@ public class CopySimpleDataToIdxAction : EventPipelineActionBase
     {
         if (!ctx.Organization.HasPremiumFeatures)
         {
-            if (ctx.Event.GetEventReference(Event.KnownReferenceNames.Parent) is not null)
-                ctx.Event.CopyDataToIndex([$"@ref:{Event.KnownReferenceNames.Parent}"]);
+            string[] parentKeys = ctx.Event.Data?.Keys
+                .Where(key => String.Equals(key.Trim(), $"@ref:{Event.KnownReferenceNames.Parent}", StringComparison.OrdinalIgnoreCase))
+                .ToArray() ?? [];
+            if (parentKeys.Length > 0)
+                ctx.Event.CopyDataToIndex(parentKeys);
 
             return Task.CompletedTask;
         }
