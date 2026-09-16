@@ -51,6 +51,53 @@ public class RedisConnectionRegistryTests
     }
 
     [Fact]
+    public async Task GetConnection_ConcurrentRequests_CreateOneConnection()
+    {
+        int creationCount = 0;
+        using var registry = CreateRegistry(_ =>
+        {
+            Interlocked.Increment(ref creationCount);
+            return CreateConnection();
+        });
+
+        IConnectionMultiplexer[] connections = await Task.WhenAll(Enumerable.Range(0, 10)
+            .Select(_ => Task.Run(() => registry.GetConnection("redis:6379"))));
+
+        Assert.Equal(1, creationCount);
+        Assert.All(connections, connection => Assert.Same(connections[0], connection));
+    }
+
+    [Fact]
+    public void GetConnection_FailedCreation_CanRetry()
+    {
+        int creationCount = 0;
+        using var registry = CreateRegistry(_ => ++creationCount == 1
+            ? throw new InvalidOperationException("Connection failed.")
+            : CreateConnection());
+
+        Assert.Throws<InvalidOperationException>(() => registry.GetConnection("redis:6379"));
+        IConnectionMultiplexer connection = registry.GetConnection("redis:6379");
+
+        Assert.Same(connection, registry.GetConnection("redis:6379"));
+        Assert.Equal(2, creationCount);
+    }
+
+    [Fact]
+    public void GetConnection_DisposedRegistry_ThrowsWithoutCreatingConnection()
+    {
+        int creationCount = 0;
+        var registry = CreateRegistry(_ =>
+        {
+            creationCount++;
+            return CreateConnection();
+        });
+        registry.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => registry.GetConnection("redis:6379"));
+        Assert.Equal(0, creationCount);
+    }
+
+    [Fact]
     public void Dispose_RegistryOwnedConnections_DisposesEachConnectionOnce()
     {
         var proxies = new List<MultiplexerProxy>();

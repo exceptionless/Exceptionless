@@ -78,14 +78,22 @@ internal static class ProviderConfigurationResolver
 
         Dictionary<string, string?> roleData = new(StringComparer.OrdinalIgnoreCase);
         string? inlineConnectionString = null;
-        try
+        // URI query delimiters must not be interpreted as selector keys.
+        if (!TryParseInlineConnectionString(selector, roleData, out inlineConnectionString)
+            || !String.Equals(roleData.GetString(ProviderKey)?.Trim(), RabbitMqProvider, StringComparison.OrdinalIgnoreCase)
+            || !IsSupportedAbsoluteUri(inlineConnectionString!))
         {
-            roleData.AddRange(selector.ParseConnectionString());
-        }
-        catch (ArgumentException)
-        {
-            if (!TryParseInlineConnectionString(selector, roleData, out inlineConnectionString))
-                throw CreateInvalidConfigurationException(roleName);
+            roleData.Clear();
+            inlineConnectionString = null;
+            try
+            {
+                roleData.AddRange(selector.ParseConnectionString());
+            }
+            catch (ArgumentException)
+            {
+                if (!TryParseInlineConnectionString(selector, roleData, out inlineConnectionString))
+                    throw CreateInvalidConfigurationException(roleName);
+            }
         }
 
         string? provider = roleData.GetString(ProviderKey);
@@ -130,8 +138,8 @@ internal static class ProviderConfigurationResolver
         if (explicitData.Count == 0 && !String.IsNullOrWhiteSpace(providerConnectionString))
             return CreateConfiguration(candidate, providerConnectionString);
 
-        var data = ParseProviderData(candidate, providerConnectionString);
-        data.AddRange(explicitData);
+        var data = new Dictionary<string, string?>(explicitData, StringComparer.OrdinalIgnoreCase);
+        data.AddRange(ParseProviderData(candidate, providerConnectionString));
         ValidateProviderIdentity(candidate, data);
         data[ProviderKey] = provider;
 
@@ -175,12 +183,12 @@ internal static class ProviderConfigurationResolver
 
     private static string? GetProviderConnectionString(IConfiguration configuration, ProviderCandidate candidate)
     {
-        string? connectionString = configuration.GetConnectionString(candidate.ConnectionStringName);
+        string? connectionString = configuration.GetConnectionString(candidate.Provider);
         if (!String.IsNullOrWhiteSpace(connectionString))
             return connectionString;
 
         if (!String.Equals(candidate.ConnectionStringName, candidate.Provider, StringComparison.OrdinalIgnoreCase))
-            connectionString = configuration.GetConnectionString(candidate.Provider);
+            connectionString = configuration.GetConnectionString(candidate.ConnectionStringName);
 
         return connectionString;
     }

@@ -11,6 +11,9 @@ public class MessageBusOptionsTests
     [InlineData("provider=rabbitmq;amqp://localhost/%2F", "amqp://localhost/%2F")]
     [InlineData("provider=rabbitmq;\"amqp://localhost/%2F\"", "amqp://localhost/%2F")]
     [InlineData("provider=rabbitmq;'amqp://localhost/%2F'", "amqp://localhost/%2F")]
+    [InlineData("provider=rabbitmq;amqp://localhost/%2F?heartbeat=30", "amqp://localhost/%2F?heartbeat=30")]
+    [InlineData("provider=rabbitmq;amqp://localhost/%2F?heartbeat=30;server=value", "amqp://localhost/%2F?heartbeat=30;server=value")]
+    [InlineData("provider=rabbitmq;amqp://localhost/%2F?heartbeat=30;provider=value", "amqp://localhost/%2F?heartbeat=30;provider=value")]
     [InlineData(
         " PROVIDER = \"RABBITMQ\" ; 'amqps://user:p%40ss@rabbit.example.com:5671/team%2Fprod?heartbeat=30&connection_timeout=10000' ",
         "amqps://user:p%40ss@rabbit.example.com:5671/team%2Fprod?heartbeat=30&connection_timeout=10000")]

@@ -88,6 +88,8 @@ Equal effective strings are deduplicated; different legacy role endpoints remain
 
 ### Legacy role controls
 
+Explicit selectors keep their legacy named-provider lookup. For example, `Queue=provider=azurestorage` uses `ConnectionStrings:AzureStorage` when present, falling back to `AzureQueues` only when it is absent. Automatic Queue selection uses `AzureQueues`. For structured providers, shared named-provider values continue to override duplicate inline keys; inline keys supply values missing from the shared string.
+
 ```yaml
 EX_ConnectionStrings__Cache: local
 EX_ConnectionStrings__MessageBus: local
@@ -119,6 +121,8 @@ Elasticsearch, email, OAuth, LDAP, and other fixed-service connection strings ar
 A rolling **version-only** Helm upgrade is compatible with mixed old and new Exceptionless instances when every rendered role selector and every effective connection string remains exactly unchanged. Keep the existing `Cache`, `MessageBus`, `Queue`, and `Storage` values in place while upgrading the images. All overlapping instances then use the same providers and endpoints.
 
 This compatibility statement covers the Exceptionless app and job workloads. A production installation also needs durable, highly available infrastructure; the chart's bundled single-replica Redis and Elasticsearch resources are convenience dependencies, not a zero-downtime production topology.
+
+The updated chart removes the application-config checksum and version-bearing `chart` label from the bundled Redis and Elasticsearch pod templates. Applying that template change replaces those pods once; later app-config or chart-version changes alone no longer restart them. Update any custom monitoring or policy selectors that depend on the pod's `chart` label to use the stable `component` and `release` labels.
 
 Removing a selector is safe during normal operation only when the role resolves to the same provider **and the same effective connection string** before and after removal. Compare the resolved result, not merely the technology name. For example, removing `MessageBus=provider=redis` is safe only if automatic selection still chooses Redis with the identical Redis connection string.
 

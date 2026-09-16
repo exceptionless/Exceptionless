@@ -5,7 +5,7 @@ namespace Exceptionless.Insulation.Redis;
 
 internal sealed class RedisConnectionRegistry : IDisposable
 {
-    private readonly Dictionary<string, Lazy<IConnectionMultiplexer>> _connections = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IConnectionMultiplexer> _connections = new(StringComparer.Ordinal);
     private readonly HashSet<IConnectionMultiplexer> _externallyOwnedConnections = new(ReferenceEqualityComparer.Instance);
     private readonly Func<string, ILoggerFactory, IConnectionMultiplexer> _connectionFactory;
     private readonly ILoggerFactory _loggerFactory;
@@ -40,27 +40,16 @@ internal sealed class RedisConnectionRegistry : IDisposable
         lock (_lock)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            if (!_connections.TryGetValue(connectionString, out Lazy<IConnectionMultiplexer>? connection))
+            if (!_connections.TryGetValue(connectionString, out IConnectionMultiplexer? connection))
             {
-                connection = new Lazy<IConnectionMultiplexer>(
-                    () => _connectionFactory(connectionString, _loggerFactory),
-                    LazyThreadSafetyMode.ExecutionAndPublication);
+                connection = _connectionFactory(connectionString, _loggerFactory);
                 _connections.Add(connectionString, connection);
             }
 
-            try
-            {
-                IConnectionMultiplexer multiplexer = connection.Value;
-                if (externallyOwned)
-                    _externallyOwnedConnections.Add(multiplexer);
+            if (externallyOwned)
+                _externallyOwnedConnections.Add(connection);
 
-                return multiplexer;
-            }
-            catch
-            {
-                _connections.Remove(connectionString);
-                throw;
-            }
+            return connection;
         }
     }
 
@@ -74,8 +63,6 @@ internal sealed class RedisConnectionRegistry : IDisposable
 
             _disposed = true;
             connectionsToDispose = _connections.Values
-                .Where(connection => connection.IsValueCreated)
-                .Select(connection => connection.Value)
                 .Distinct((IEqualityComparer<IConnectionMultiplexer>)ReferenceEqualityComparer.Instance)
                 .Where(connection => !_externallyOwnedConnections.Contains(connection))
                 .ToList();

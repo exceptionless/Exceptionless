@@ -118,7 +118,7 @@ public class ProviderConfigurationTests
     }
 
     [Fact]
-    public void ReadFromConfiguration_LegacyRoleData_OverridesStructuredSharedProviderData()
+    public void ReadFromConfiguration_LegacySharedProviderData_PreservesPrecedence()
     {
         AppOptions options = ReadOptions(new()
         {
@@ -126,8 +126,22 @@ public class ProviderConfigurationTests
             ["ConnectionStrings:Storage"] = "provider=s3;bucket=events"
         });
 
-        Assert.Equal("events", options.StorageOptions.Data["bucket"]);
+        Assert.Equal("shared", options.StorageOptions.Data["bucket"]);
         Assert.Equal("us-east-1", options.StorageOptions.Data["region"]);
+    }
+
+    [Fact]
+    public void ReadFromConfiguration_LegacyAzureQueueSelector_PreservesProviderConnectionString()
+    {
+        AppOptions options = ReadOptions(new()
+        {
+            ["ConnectionStrings:Queue"] = "provider=azurestorage",
+            ["ConnectionStrings:AzureStorage"] = "AccountName=legacy;AccountKey=legacy-key",
+            ["ConnectionStrings:AzureQueues"] = "AccountName=inferred;AccountKey=inferred-key"
+        });
+
+        Assert.Equal("legacy", options.QueueOptions.Data["AccountName"]);
+        Assert.Equal("AccountName=legacy;AccountKey=legacy-key", options.QueueOptions.ConnectionString);
     }
 
     [Fact]
