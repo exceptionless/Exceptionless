@@ -81,7 +81,7 @@
         "@exceptionless/browser": "^3.2.1",
         "@foundatiofx/fetchclient": "^1.3.4",
         "@internationalized/date": "^3.12.4",
-        "@lucide/svelte": "^1.43.0",
+        "@lucide/svelte": "^1.44.0",
         "@shikijs/themes": "^4.4.3",
         "@stripe/stripe-js": "^9.16.0",
         "@tanstack/svelte-form": "^1.33.5",
