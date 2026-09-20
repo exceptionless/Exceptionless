@@ -7,6 +7,7 @@ const syntheticProjects = Array.from({ length: 32 }, (_, index) => ({
 }));
 
 test('project dropdown layout preserves its search and footer while listing many projects', async ({ e2eScenario, page }, testInfo) => {
+    // Arrange
     await page.route(
         (url) => url.pathname.includes(`/organizations/${e2eScenario.organizationId}/projects`),
         async (route) => await route.fulfill({ json: syntheticProjects })
@@ -19,8 +20,10 @@ test('project dropdown layout preserves its search and footer while listing many
 
     const projectFilter = page.getByRole('button', { name: /^Project/ }).first();
     await expect(projectFilter).toBeVisible();
+    // Act
     await projectFilter.click();
 
+    // Assert
     const popover = page.locator('[data-slot="popover-content"]:visible').last();
     const search = popover.getByRole('combobox');
     const commandList = popover.locator('[data-slot="command-list"]');
@@ -61,17 +64,24 @@ test('project dropdown layout preserves its search and footer while listing many
     expect(metrics.listClientHeight).toBeLessThanOrEqual(384);
     expect(metrics.listScrollHeight).toBeGreaterThan(metrics.listClientHeight);
 
+    // Act
     await search.fill('synthetic project 32');
+
+    // Assert
     await expect(popover.getByRole('option', { name: 'Synthetic Project 32' })).toBeVisible();
     const filteredListMetrics = await commandList.evaluate((element) => ({ clientHeight: element.clientHeight, scrollHeight: element.scrollHeight }));
     expect(filteredListMetrics.clientHeight).toBeLessThan(metrics.listClientHeight!);
     expect(filteredListMetrics.scrollHeight).toBeLessThanOrEqual(filteredListMetrics.clientHeight);
 
+    // Act
     await search.fill('');
     await search.press('ArrowDown');
     await search.press('Enter');
+    // Assert
     await expect(popover).toBeVisible();
+    // Act
     await page.keyboard.press('Escape');
+    // Assert
     await expect(popover).toBeHidden();
     await testInfo.attach('project-dropdown-metrics.json', {
         body: JSON.stringify({ filteredListMetrics, metrics }, null, 2),
@@ -80,6 +90,7 @@ test('project dropdown layout preserves its search and footer while listing many
 });
 
 test('project dropdown keeps its controls visible in mobile viewports and a 200% browser-zoom-equivalent CSS viewport', async ({ e2eScenario, page }) => {
+    // Arrange
     await page.route(
         (url) => url.pathname.includes(`/organizations/${e2eScenario.organizationId}/projects`),
         async (route) => await route.fulfill({ json: syntheticProjects })
@@ -91,6 +102,7 @@ test('project dropdown keeps its controls visible in mobile viewports and a 200%
         { compareListHeight: true, height: 844, label: 'tall mobile', width: 390 },
         { compareListHeight: false, height: 360, label: '200% browser zoom equivalent (640x360 CSS viewport)', width: 640 }
     ]) {
+        // Arrange
         await page.setViewportSize({ height: viewport.height, width: viewport.width });
         await page.goto('/next/stack?time=all');
         await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
@@ -98,8 +110,10 @@ test('project dropdown keeps its controls visible in mobile viewports and a 200%
 
         const projectFilter = page.getByRole('button', { name: /^Project/ }).first();
         await expect(projectFilter).toBeVisible();
+        // Act
         await projectFilter.click();
 
+        // Assert
         const popover = page.locator('[data-slot="popover-content"]:visible').last();
         await expect(popover.getByRole('combobox')).toBeVisible();
         await expect(popover.locator('[data-slot="command-list"]')).toBeVisible();
@@ -130,7 +144,9 @@ test('project dropdown keeps its controls visible in mobile viewports and a 200%
             listHeights.push(metrics.listClientHeight!);
         }
 
+        // Act
         await page.keyboard.press('Escape');
+        // Assert
         await expect(popover).toBeHidden();
     }
 
