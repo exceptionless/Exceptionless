@@ -44,6 +44,7 @@ interface E2EFixtures {
     e2eApi: E2EApiClient;
     e2eCleanupPassword: string;
     e2eDismissProductTourWelcome: boolean;
+    e2eInjectBrowserToken: boolean;
     e2eScenario: E2EScenario;
     e2eSecondaryOrganization: E2ESecondaryOrganization;
     e2eSecondaryProject: E2ESecondaryProject;
@@ -62,7 +63,13 @@ export const test = base.extend<E2EFixtures>({
 
     e2eDismissProductTourWelcome: [true, { option: true }],
 
-    e2eScenario: async ({ e2eApi, e2eCleanupPassword, e2eDismissProductTourWelcome, e2eUseGeneratedUser, e2eUserInvitation, page }, use, testInfo) => {
+    e2eInjectBrowserToken: [true, { option: true }],
+
+    e2eScenario: async (
+        { e2eApi, e2eCleanupPassword, e2eDismissProductTourWelcome, e2eInjectBrowserToken, e2eUseGeneratedUser, e2eUserInvitation, page },
+        use,
+        testInfo
+    ) => {
         const run = createRunName(e2eApi.environment.runId, testInfo);
         const userName = `Playwright User ${run}`;
         const email = `playwright-${run}@exceptionless.test`.toLowerCase();
@@ -98,15 +105,17 @@ export const test = base.extend<E2EFixtures>({
                 await e2eApi.recordProductTour(userToken, 'app-welcome');
             }
 
-            await page.addInitScript(
-                ({ organizationId, token }) => {
-                    window.localStorage.setItem('satellizer_token', token);
-                    if (!window.localStorage.getItem('organization')) {
-                        window.localStorage.setItem('organization', JSON.stringify(organizationId));
-                    }
-                },
-                { organizationId: organization.id, token: userToken }
-            );
+            if (e2eInjectBrowserToken) {
+                await page.addInitScript(
+                    ({ organizationId, token }) => {
+                        window.localStorage.setItem('satellizer_token', token);
+                        if (!window.localStorage.getItem('organization')) {
+                            window.localStorage.setItem('organization', JSON.stringify(organizationId));
+                        }
+                    },
+                    { organizationId: organization.id, token: userToken }
+                );
+            }
 
             await use({
                 email,
