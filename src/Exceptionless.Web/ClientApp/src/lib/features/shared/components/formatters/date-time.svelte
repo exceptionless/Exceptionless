@@ -1,9 +1,10 @@
 <script lang="ts">
     interface Props {
+        formatOptions?: Omit<Intl.DateTimeFormatOptions, 'dateStyle' | 'timeStyle'>;
         value: Date | string | undefined;
     }
 
-    let { value }: Props = $props();
+    let { formatOptions, value }: Props = $props();
 
     function formatDate(input: Date | string | undefined) {
         if (!input) {
@@ -11,6 +12,9 @@
         }
 
         const date = typeof input === 'string' ? new Date(input) : input;
+        if (isNaN(date.getTime())) {
+            return '';
+        }
 
         return date.toLocaleString(undefined, {
             day: 'numeric',
@@ -19,7 +23,8 @@
             minute: '2-digit',
             month: 'short',
             second: '2-digit',
-            year: 'numeric'
+            year: 'numeric',
+            ...formatOptions
         });
     }
 </script>

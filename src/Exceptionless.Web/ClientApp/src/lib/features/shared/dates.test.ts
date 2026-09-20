@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDateLabel, formatDateTime, getDifferenceInSeconds, getRelativeTimeFormatUnit, getSetIntervalTime } from './dates';
+import { formatDateLabel, getDifferenceInSeconds, getRelativeTimeFormatUnit, getSetIntervalTime } from './dates';
 
 describe('formatDateLabel', () => {
     it('preserves local date and relative-label behavior without a timezone override', () => {
@@ -50,21 +50,6 @@ describe('formatDateLabel', () => {
         // Assert
         expect(label).toContain(' at ');
         expect(label).toContain(new Intl.DateTimeFormat(undefined, { hour: 'numeric', hour12: true, minute: '2-digit', timeZone }).format(date));
-    });
-});
-
-describe('formatDateTime', () => {
-    it('keeps midnight and zero seconds instead of reducing the value to a date', () => {
-        const formatted = formatDateTime(new Date(2026, 0, 2, 0, 0, 0));
-        expect(formatted).toContain('2026');
-        expect(formatted).toContain('12:00:00');
-    });
-
-    it('preserves nonzero hours, minutes, seconds and the local timezone', () => {
-        const date = new Date(2026, 0, 2, 13, 4, 5);
-        const timezone = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' }).formatToParts(date).find((part) => part.type === 'timeZoneName')!.value;
-        expect(formatDateTime(date)).toContain('1:04:05');
-        expect(formatDateTime(date)).toContain(timezone);
     });
 });
 

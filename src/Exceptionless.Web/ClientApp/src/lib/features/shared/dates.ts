@@ -131,19 +131,6 @@ export function formatDateRangeLabel(start: Date, end: Date, currentDate: Date =
     return `${startLabel} to ${endLabel}`;
 }
 
-export function formatDateTime(date: Date): string {
-    return new Intl.DateTimeFormat(undefined, {
-        day: 'numeric',
-        hour: 'numeric',
-        hour12: true,
-        minute: '2-digit',
-        month: 'short',
-        second: '2-digit',
-        timeZoneName: 'short',
-        year: 'numeric'
-    }).format(date);
-}
-
 export function formatLongDate(value: Date): string {
     return value.toLocaleDateString(undefined, {
         day: 'numeric',
