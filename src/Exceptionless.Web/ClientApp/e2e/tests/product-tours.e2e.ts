@@ -735,6 +735,28 @@ test('the error guide keeps the start of a wide report visible on mobile', async
     await expectCalloutBesideTarget(page);
 });
 
+test('overview navigation survives resizing between desktop and mobile', async ({ e2eScenario, page }) => {
+    await mockAssistantAccess(page);
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto('/next/stack');
+    expect(e2eScenario.email).toContain('@exceptionless.test');
+    await startTourFromCommand(page, 'Explore Exceptionless');
+    const tour = page.locator('.driver-popover');
+
+    for (const [index, title] of ['Spot repeated problems', 'See each report'].entries()) {
+        for (const viewport of [
+            { height: 844, width: 390 },
+            { height: 900, width: 1440 }
+        ]) {
+            await page.setViewportSize(viewport);
+            await expect(tour.getByText(title, { exact: true })).toBeVisible();
+            await expect(tour.getByText(`Step ${index + 1} of 6`, { exact: true })).toBeVisible();
+            await expectCalloutBesideTarget(page);
+        }
+        await tour.getByRole('button', { exact: true, name: 'Next' }).click();
+    }
+});
+
 test('overview arrows stay beside each control on desktop and mobile', async ({ e2eScenario, page }) => {
     // Arrange
     await mockAssistantAccess(page);

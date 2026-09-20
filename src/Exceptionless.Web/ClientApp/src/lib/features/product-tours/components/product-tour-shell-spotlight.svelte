@@ -102,10 +102,13 @@
             return;
         }
 
-        if (isMobile || spotlight?.mobileNavigation) {
-            setMobileNavigationOpen(spotlight?.mobileNavigation ?? false);
-        }
         targetReady = true;
+    });
+
+    $effect(() => {
+        if (targetReady && (isMobile || spotlight?.mobileNavigation)) {
+            untrack(() => setMobileNavigationOpen(spotlight?.mobileNavigation ?? false));
+        }
     });
 
     onDestroy(() => {
