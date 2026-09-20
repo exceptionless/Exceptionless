@@ -8,7 +8,7 @@ import { type ColumnDef, type ColumnVisibilityState, renderComponent, type Stock
 
 import SessionDurationCell from './session-duration-cell.svelte';
 
-export const defaultSessionColumnVisibility: ColumnVisibilityState = {};
+export const defaultSessionColumnVisibility: ColumnVisibilityState = { environment: false };
 
 export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<SummaryTemplateKeys>, unknown>[] {
     return [
@@ -73,6 +73,15 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
             },
             minSize: 112,
             size: 224
+        },
+        {
+            accessorKey: 'environment',
+            cell: (prop) => prop.getValue<string>() ?? 'Unspecified',
+            header: 'Environment',
+            id: 'environment',
+            maxSize: 640,
+            minSize: 96,
+            size: 144
         },
         {
             accessorFn: (row) => row.date,

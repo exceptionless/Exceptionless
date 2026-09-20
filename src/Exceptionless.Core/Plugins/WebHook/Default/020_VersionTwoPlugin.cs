@@ -22,6 +22,7 @@ public sealed class VersionTwoPlugin : WebHookDataPluginBase
             Tags = ev.Tags,
             Message = ev.Message,
             Type = ev.Type,
+            Environment = ev.Environment,
             Source = ev.Source,
             ProjectId = ev.ProjectId,
             ProjectName = ctx.Project.Name,

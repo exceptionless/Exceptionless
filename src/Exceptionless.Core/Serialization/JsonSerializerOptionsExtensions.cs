@@ -67,6 +67,7 @@ public static class JsonSerializerOptionsExtensions
         options.RespectNullableAnnotations = true;
 
         var resolver = new DefaultJsonTypeInfoResolver();
+        resolver.Modifiers.Add(EventEnvironmentConverter.ConfigureProperty);
         if (skipEmptyCollections)
             resolver.Modifiers.Add(EmptyCollectionModifier.SkipEmptyCollections);
 

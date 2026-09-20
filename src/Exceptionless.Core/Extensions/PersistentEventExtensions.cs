@@ -183,6 +183,7 @@ public static class PersistentEventExtensions
     {
         var startEvent = new PersistentEvent
         {
+            Environment = source.Environment,
             Date = source.Date,
             Geo = source.Geo,
             OrganizationId = source.OrganizationId,

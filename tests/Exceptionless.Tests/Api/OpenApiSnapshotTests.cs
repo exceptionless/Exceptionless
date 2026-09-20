@@ -81,6 +81,21 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
             .GetProperty("application/problem+json")
             .GetProperty("schema");
         Assert.Equal("#/components/schemas/HttpValidationProblemDetails", validationProblemSchema.GetProperty("$ref").GetString());
+
+        foreach (string route in new[]
+        {
+            "/api/v2/events/submit",
+            "/api/v2/events/submit/{type}",
+            "/api/v2/projects/{projectId}/events/submit",
+            "/api/v2/projects/{projectId}/events/submit/{type}"
+        })
+        {
+            var environmentParameter = Assert.Single(paths.GetProperty(route).GetProperty("get").GetProperty("parameters").EnumerateArray(),
+                parameter => parameter.GetProperty("name").GetString() == "environment");
+            Assert.Equal("query", environmentParameter.GetProperty("in").GetString());
+            Assert.Equal("string", environmentParameter.GetProperty("schema").GetProperty("type").GetString());
+            Assert.False(environmentParameter.TryGetProperty("required", out var required) && required.GetBoolean());
+        }
     }
 
     [Fact]
@@ -96,6 +111,11 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
 
         // Assert
         Assert.True(schemas.TryGetProperty("Login", out _));
+        var persistentEvent = schemas.GetProperty("PersistentEvent");
+        var eventEnvironment = persistentEvent.GetProperty("properties").GetProperty("environment");
+        Assert.Contains(eventEnvironment.GetProperty("type").EnumerateArray(), type => type.GetString() == "string");
+        Assert.Equal(64, eventEnvironment.GetProperty("maxLength").GetInt32());
+        Assert.DoesNotContain(persistentEvent.GetProperty("required").EnumerateArray(), name => name.GetString() == "environment");
         Assert.True(schemas.TryGetProperty("Signup", out _));
         Assert.True(schemas.TryGetProperty("NewProject", out _));
         Assert.True(schemas.TryGetProperty("SavedViewColumnSettings", out var savedViewColumnSettings));

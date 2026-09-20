@@ -9,6 +9,7 @@ import { SvelteMap } from 'svelte/reactivity';
 import {
     BooleanFilter,
     DateFilter,
+    EnvironmentFilter,
     KeywordFilter,
     LevelFilter,
     NumberFilter,
@@ -295,6 +296,9 @@ function reconstructFilter(data: SerializedFilter): IFilter | null {
             break;
         case 'date':
             filter = new DateFilter(data.term, data.value as Date | string | undefined);
+            break;
+        case 'environment':
+            filter = new EnvironmentFilter(Array.isArray(data.value) ? data.value.filter((value): value is string => typeof value === 'string') : []);
             break;
         case 'keyword':
             filter = new KeywordFilter(data.value as string | undefined);
