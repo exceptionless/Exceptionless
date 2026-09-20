@@ -116,6 +116,7 @@ export const queryKeys = {
     stackEvents: (id: string | undefined, params?: GetStackEventsRequest['params']) => [...queryKeys.stacks(id), 'events', params] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
     stacksCount: (id: string | undefined, params?: GetStackCountRequest['params']) => [...queryKeys.stacks(id), 'count', params] as const,
+    tagSuggestions: (organizationId: string | undefined, search: string, session: number) => ['EventTagSuggestions', organizationId, search, session] as const,
     type: ['PersistentEvent'] as const
 };
 
@@ -283,6 +284,12 @@ export interface GetStackEventsRequest {
     route: {
         stackId: string | undefined;
     };
+}
+
+export interface GetTagSuggestionsRequest {
+    enabled?: () => boolean;
+    params: { search: string };
+    route: { organizationId: string | undefined };
 }
 
 export function createEventWithNavigationQueryOptions(request: GetEventRequest, queryClient: QueryClient) {
@@ -649,14 +656,14 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
     }));
 }
 
-export function getTagSuggestionsQuery(request: { enabled: () => boolean; organizationId: string | undefined; search: string }) {
+export function getTagSuggestionsQuery(request: GetTagSuggestionsRequest) {
     return createQuery<CountResult, ProblemDetails>(() => {
-        const organizationId = request.organizationId;
-        const search = request.search;
+        const organizationId = request.route.organizationId;
+        const search = request.params.search;
         const session = tagSuggestionSession(accessToken.current);
 
         return {
-            enabled: !!accessToken.current && !!organizationId && request.enabled(),
+            enabled: !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
             queryFn: async ({ signal }) => {
                 const response = await useFetchClient().getJSON<CountResult>(`/organizations/${organizationId}/events/count`, {
                     params: {
@@ -667,7 +674,7 @@ export function getTagSuggestionsQuery(request: { enabled: () => boolean; organi
                 });
                 return response.data!;
             },
-            queryKey: ['EventTagSuggestions', session, organizationId, search],
+            queryKey: queryKeys.tagSuggestions(organizationId, search, session),
             refetchOnWindowFocus: false,
             retry: false,
             staleTime: TAG_SUGGESTION_STALE_TIME

@@ -39,7 +39,8 @@ export function tagSuggestions(result: CountResult | undefined) {
     return { complete, tags: buckets.slice(0, TAG_SUGGESTION_LIMIT).map((bucket) => bucket.key) };
 }
 
-// Keep credentials out of query keys while preventing cached suggestions crossing sessions.
+// Authentication redirects invalidate queries but do not always clear the shared cache.
+// Partition suggestions without including credentials in query keys; retain only the latest token.
 let lastToken: null | string | undefined;
 let session = 0;
 export function tagSuggestionSession(token: null | string): number {

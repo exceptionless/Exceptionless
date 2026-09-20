@@ -61,6 +61,12 @@
         updatedValues = values;
     });
 
+    $effect(() => {
+        if (!open) {
+            search = '';
+        }
+    });
+
     export function onClearFilter() {
         updatedValues = [];
         changed(updatedValues);

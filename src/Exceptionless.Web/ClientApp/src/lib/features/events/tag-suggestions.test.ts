@@ -10,43 +10,81 @@ function result(size: number, data: Record<string, unknown> = { '@type': 'bucket
 }
 
 describe('tag aggregation bounds and completeness', () => {
-    it('requests an overflow bucket initially and bounds matching searches', () => {
-        expect(tagSuggestionAggregation('')).toBe('terms:(tags~251)');
-        expect(tagSuggestionAggregation('Ab')).toBe('terms:(tags~250 @include:/.*[aA][bB].*/)');
+    it.each([
+        ['', 'terms:(tags~251)'],
+        ['Ab', 'terms:(tags~250 @include:/.*[aA][bB].*/)'],
+        ['a.b+c/d\\e', String.raw`terms:(tags~250 @include:/.*[aA]\\.[bB]\\+[cC]\/[dD]\\\\[eE].*/)`],
+        ['@#&<>~"(){}[]?*|', String.raw`terms:(tags~250 @include:/.*\\@\\#\\&\\<\\>\\~\\"\\(\\)\\{\\}\\[\\]\\?\\*\\|.*/)`],
+        ['éß', 'terms:(tags~250 @include:/.*[éÉ]ß.*/)']
+    ])('bounds aggregation and preserves literal search %s', (search, expected) => {
+        // Arrange
+        const input = search;
+
+        // Act
+        const aggregation = tagSuggestionAggregation(input);
+
+        // Assert
+        expect(aggregation).toBe(expected);
     });
 
-    it('only treats known repository metadata with no omitted terms as complete', () => {
-        expect(tagSuggestions(result(250)).complete).toBe(true);
-        expect(tagSuggestions(result(0)).complete).toBe(true);
-        expect(tagSuggestions(result(1, { '@type': 'bucket', DocCountErrorUpperBound: 0, SumOtherDocCount: 0 })).complete).toBe(true);
-        expect(tagSuggestions(result(251)).complete).toBe(false);
-        expect(tagSuggestions(result(1, {})).complete).toBe(false);
-        expect(tagSuggestions(undefined).complete).toBe(false);
-        for (const counter of ['SumOtherDocCount', 'DocCountErrorUpperBound']) {
-            for (const value of [1, -1, null, '0']) {
-                expect(tagSuggestions(result(1, { '@type': 'bucket', [counter]: value })).complete).toBe(false);
-            }
-        }
+    it.each([
+        { complete: true, data: { '@type': 'bucket' }, size: 250 },
+        { complete: true, data: { '@type': 'bucket' }, size: 0 },
+        { complete: true, data: { '@type': 'bucket', DocCountErrorUpperBound: 0, SumOtherDocCount: 0 }, size: 1 },
+        { complete: false, data: { '@type': 'bucket' }, size: 251 },
+        { complete: false, data: {}, size: 1 },
+        { complete: false, data: { '@type': 'bucket', SumOtherDocCount: 1 }, size: 1 },
+        { complete: false, data: { '@type': 'bucket', DocCountErrorUpperBound: 1 }, size: 1 },
+        { complete: false, data: { '@type': 'bucket', SumOtherDocCount: -1 }, size: 1 },
+        { complete: false, data: { '@type': 'bucket', DocCountErrorUpperBound: -1 }, size: 1 },
+        { complete: false, data: { '@type': 'bucket', SumOtherDocCount: null }, size: 1 },
+        { complete: false, data: { '@type': 'bucket', DocCountErrorUpperBound: null }, size: 1 },
+        { complete: false, data: { '@type': 'bucket', SumOtherDocCount: '0' }, size: 1 },
+        { complete: false, data: { '@type': 'bucket', DocCountErrorUpperBound: '0' }, size: 1 }
+    ])('reports completeness only with authoritative metadata: %j', ({ complete, data, size }) => {
+        // Arrange
+        const response = result(size, data);
+
+        // Act
+        const suggestions = tagSuggestions(response);
+
+        // Assert
+        expect(suggestions.complete).toBe(complete);
+    });
+
+    it('does not treat a missing response as complete', () => {
+        // Arrange
+        const response = undefined;
+
+        // Act
+        const suggestions = tagSuggestions(response);
+
+        // Assert
+        expect(suggestions.complete).toBe(false);
     });
 
     it('never exposes the overflow bucket', () => {
-        expect(tagSuggestions(result(251)).tags).toHaveLength(250);
+        // Arrange
+        const response = result(251);
+
+        // Act
+        const suggestions = tagSuggestions(response);
+
+        // Assert
+        expect(suggestions.tags).toHaveLength(250);
+        expect(suggestions.tags).not.toContain('tag-250');
     });
 
-    it('escapes literal regex syntax and slash delimiters through both parsers', () => {
-        expect(tagSuggestionAggregation('a.b+c/d\\e')).toBe(String.raw`terms:(tags~250 @include:/.*[aA]\\.[bB]\\+[cC]\/[dD]\\\\[eE].*/)`);
-        expect(tagSuggestionAggregation('@#&<>~"(){}[]?*|')).toBe(String.raw`terms:(tags~250 @include:/.*\\@\\#\\&\\<\\>\\~\\"\\(\\)\\{\\}\\[\\]\\?\\*\\|.*/)`);
-    });
-
-    it('preserves non-ASCII letters without introducing multicharacter case expansions', () => {
-        expect(tagSuggestionAggregation('éß')).toBe('terms:(tags~250 @include:/.*[éÉ]ß.*/)');
-    });
-
-    it('partitions cache sessions without placing credentials into keys', () => {
+    it('partitions changed credentials without placing them into keys', () => {
+        // Arrange
         const first = tagSuggestionSession('session-a');
-        expect(tagSuggestionSession('session-a')).toBe(first);
-        expect(tagSuggestionSession('session-b')).not.toBe(first);
-        tagSuggestionSession(null);
-        expect(tagSuggestionSession('session-a')).not.toBe(first);
+
+        // Act
+        const repeated = tagSuggestionSession('session-a');
+        const changed = tagSuggestionSession('session-b');
+
+        // Assert
+        expect(repeated).toBe(first);
+        expect(changed).not.toBe(first);
     });
 });

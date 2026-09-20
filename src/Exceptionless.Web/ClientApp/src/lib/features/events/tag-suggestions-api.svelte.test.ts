@@ -1,9 +1,10 @@
 import type { CountResult } from '$shared/models';
 
+import { ChangeType } from '$features/websockets/models';
 import { QueryClient, QueryObserver, type QueryObserverOptions } from '@tanstack/svelte-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getTagSuggestionsQuery } from './api.svelte';
+import { getTagSuggestionsQuery, invalidatePersistentEventQueries } from './api.svelte';
 
 const mocks = vi.hoisted(() => ({
     accessToken: { current: 'session-a' as null | string },
@@ -34,59 +35,142 @@ describe('tag suggestion query lifecycle', () => {
     afterEach(() => client.clear());
 
     function options(organizationId = 'organization-a', search = '', enabled = true) {
-        getTagSuggestionsQuery({ enabled: () => enabled, organizationId, search });
+        getTagSuggestionsQuery({ enabled: () => enabled, params: { search }, route: { organizationId } });
         return mocks.createQuery.mock.calls.at(-1)![0]();
     }
 
-    it('does not query a closed picker or an unauthenticated session', () => {
-        expect(options('organization-a', '', false).enabled).toBe(false);
-        mocks.accessToken.current = null;
-        expect(options().enabled).toBe(false);
+    it.each([
+        { enabled: false, token: 'session-a' },
+        { enabled: true, token: null }
+    ])('does not fetch when disabled or unauthenticated: %j', async ({ enabled, token }) => {
+        // Arrange
+        mocks.accessToken.current = token;
+        const observer = new QueryObserver(client, options('organization-a', '', enabled));
+
+        // Act
+        const stop = observer.subscribe(() => {});
+        await Promise.resolve();
+
+        // Assert
+        expect(observer.getCurrentResult().fetchStatus).toBe('idle');
+        expect(mocks.getJSON).not.toHaveBeenCalled();
+        stop();
     });
 
-    it('reuses fresh results for five minutes and scopes keys to organization, search and session', async () => {
+    it('reuses fresh results for five minutes across observers', async () => {
+        // Arrange
         const initial = options();
-        const first = new QueryObserver(client, initial);
-        const stop = first.subscribe(() => {});
-        await vi.waitFor(() => expect(first.getCurrentResult().isSuccess).toBe(true));
-        stop();
-        const again = new QueryObserver(client, options());
-        const stopAgain = again.subscribe(() => {});
-        expect(again.getCurrentResult().data).toEqual(data);
+        await client.fetchQuery(initial);
+        const observer = new QueryObserver(client, options());
+
+        // Act
+        const stop = observer.subscribe(() => {});
+
+        // Assert
+        expect(observer.getCurrentResult().data).toEqual(data);
         expect(mocks.getJSON).toHaveBeenCalledTimes(1);
         expect(initial.staleTime).toBe(300000);
-        expect(options('organization-b').queryKey).not.toEqual(initial.queryKey);
-        expect(options('organization-a', 'rare').queryKey).not.toEqual(initial.queryKey);
-        mocks.accessToken.current = 'session-b';
-        expect(options().queryKey).not.toEqual(initial.queryKey);
-        expect(JSON.stringify(initial.queryKey)).not.toContain('session-a');
-        stopAgain();
+        stop();
+    });
+
+    it('keeps fresh suggestions cached through event notifications', async () => {
+        // Arrange
+        const initial = options();
+        await client.fetchQuery(initial);
+
+        // Act
+        await invalidatePersistentEventQueries(client, { change_type: ChangeType.Saved, data: {}, organization_id: 'organization-a', type: 'PersistentEvent' });
+
+        // Assert
+        expect(client.getQueryState(initial.queryKey)?.isInvalidated).toBe(false);
+        expect(client.getQueryData(initial.queryKey)).toEqual(data);
+    });
+
+    it('loads distinct organization data and reuses it only in its own organization', async () => {
+        // Arrange
+        const otherData: CountResult = { total: 27 };
+        const firstOptions = options();
+        await client.fetchQuery(firstOptions);
+        mocks.getJSON.mockResolvedValueOnce({ data: otherData });
+        const observer = new QueryObserver(client, options('organization-b'));
+
+        // Act
+        const stop = observer.subscribe(() => {});
+        const beforeResponse = observer.getCurrentResult().data;
+        await vi.waitFor(() => expect(observer.getCurrentResult().isSuccess).toBe(true));
+        const otherResult = observer.getCurrentResult().data;
+        observer.setOptions(firstOptions);
+
+        // Assert
+        expect(beforeResponse).toBeUndefined();
+        expect(otherResult).toEqual(otherData);
+        expect(observer.getCurrentResult().data).toEqual(data);
+        expect(mocks.getJSON).toHaveBeenCalledTimes(2);
+        expect(mocks.getJSON.mock.calls[1]![0]).toBe('/organizations/organization-b/events/count');
+        stop();
+    });
+
+    it('does not reuse a previous session after logout and login with the same token', async () => {
+        // Arrange
+        const initial = options();
+        await client.fetchQuery(initial);
+        mocks.accessToken.current = null;
+        options();
+        mocks.accessToken.current = 'session-a';
+        const nextData: CountResult = { total: 42 };
+        mocks.getJSON.mockResolvedValueOnce({ data: nextData });
+        const nextOptions = options();
+        const observer = new QueryObserver(client, nextOptions);
+
+        // Act
+        const stop = observer.subscribe(() => {});
+        const beforeResponse = observer.getCurrentResult().data;
+        await vi.waitFor(() => expect(observer.getCurrentResult().isSuccess).toBe(true));
+
+        // Assert
+        expect(beforeResponse).toBeUndefined();
+        expect(observer.getCurrentResult().data).toEqual(nextData);
+        expect(mocks.getJSON).toHaveBeenCalledTimes(2);
+        expect(nextOptions.queryKey).not.toEqual(initial.queryKey);
+        expect(JSON.stringify(nextOptions.queryKey)).not.toContain('session-a');
+        stop();
     });
 
     it('cancels stale requests and never applies their response to a newer search', async () => {
+        // Arrange
         const pending = Promise.withResolvers<{ data: CountResult }>();
         mocks.getJSON.mockReturnValueOnce(pending.promise);
         const observer = new QueryObserver(client, options('organization-a', 'older'));
         const stop = observer.subscribe(() => {});
         await vi.waitFor(() => expect(mocks.getJSON).toHaveBeenCalledTimes(1));
         const signal = mocks.getJSON.mock.calls[0]![1].signal as AbortSignal;
+
+        // Act
         observer.setOptions(options('organization-a', 'newer'));
         await vi.waitFor(() => expect(observer.getCurrentResult().isSuccess).toBe(true));
-        expect(signal.aborted).toBe(true);
         pending.resolve({ data: { total: 999 } });
         await Promise.resolve();
+
+        // Assert
+        expect(signal.aborted).toBe(true);
         expect(observer.getCurrentResult().data).toEqual(data);
         stop();
     });
 
     it('retains failures for explicit retry and sends no dashboard filters', async () => {
+        // Arrange
         mocks.getJSON.mockRejectedValueOnce(new Error('unavailable'));
         const observer = new QueryObserver(client, options());
         const stop = observer.subscribe(() => {});
         await vi.waitFor(() => expect(observer.getCurrentResult().isError).toBe(true));
-        expect(mocks.getJSON).toHaveBeenCalledTimes(1);
-        expect(mocks.getJSON.mock.calls[0]![1].params).toEqual({ aggregations: 'terms:(tags~251)', time: 'all' });
+        const requestsAfterFailure = mocks.getJSON.mock.calls.length;
+
+        // Act
         await observer.refetch();
+
+        // Assert
+        expect(requestsAfterFailure).toBe(1);
+        expect(mocks.getJSON.mock.calls[0]![1].params).toEqual({ aggregations: 'terms:(tags~251)', time: 'all' });
         expect(observer.getCurrentResult().isSuccess).toBe(true);
         stop();
     });

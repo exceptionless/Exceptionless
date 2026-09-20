@@ -16,19 +16,27 @@
 
     const initialQuery = getTagSuggestionsQuery({
         enabled: () => open,
-        get organizationId() {
-            return organization.current;
+        params: {
+            search: ''
         },
-        search: ''
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
     });
     const initial = $derived(tagSuggestions(initialQuery.data));
     const searchQuery = getTagSuggestionsQuery({
         enabled: () => open && initialQuery.isSuccess && !initial.complete && debouncedSearch.length >= 2 && debouncedSearch === normalizedSearch,
-        get organizationId() {
-            return organization.current;
+        params: {
+            get search() {
+                return debouncedSearch;
+            }
         },
-        get search() {
-            return debouncedSearch;
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
         }
     });
     const remoteSearch = $derived(!initial.complete && normalizedSearch.length >= 2);
@@ -67,15 +75,12 @@
 
     $effect(() => {
         const value = normalizedSearch;
-        const organizationId = organization.current;
         if (!open) {
             debouncedSearch = '';
             return;
         }
         const timer = setTimeout(() => {
-            if (organization.current === organizationId) {
-                debouncedSearch = value;
-            }
+            debouncedSearch = value;
         }, 300);
         return () => clearTimeout(timer);
     });
