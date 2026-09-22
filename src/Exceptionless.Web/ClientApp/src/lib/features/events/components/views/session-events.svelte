@@ -1,12 +1,14 @@
 <script lang="ts">
     import type { PersistentEvent } from '$features/events/models';
 
+    import DateTime from '$comp/formatters/date-time.svelte';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
     import { A } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
+    import * as Tooltip from '$comp/ui/tooltip';
     import { getSessionEventsQuery } from '$features/events/api.svelte';
     import { buildEventDetailsHref } from '$features/events/components/summary';
     import Summary from '$features/events/components/summary/summary.svelte';
@@ -170,19 +172,29 @@
                             </a>
                         </Table.Cell>
                         <Table.Cell class="p-0">
-                            <TimeAgo value={sessionEvent.date}>
-                                {#snippet child({ children, props })}
-                                    <A
-                                        {...props}
-                                        aria-label={`Open event ${sessionEvent.id}`}
-                                        class="text-foreground block p-2"
-                                        href={eventHref}
-                                        variant="ghost"
-                                    >
-                                        {@render children()}
-                                    </A>
-                                {/snippet}
-                            </TimeAgo>
+                            <Tooltip.Root>
+                                <Tooltip.Trigger>
+                                    {#snippet child({ props })}
+                                        <A
+                                            {...props}
+                                            aria-label={`Open event ${sessionEvent.id}`}
+                                            class="text-foreground block p-2"
+                                            href={eventHref}
+                                            variant="ghost"
+                                        >
+                                            <TimeAgo value={sessionEvent.date} showTooltip={false} />
+                                        </A>
+                                    {/snippet}
+                                </Tooltip.Trigger>
+                                <Tooltip.Content role="tooltip" sideOffset={6} collisionPadding={8}>
+                                    <DateTime
+                                        value={sessionEvent.date}
+                                        formatOptions={{
+                                            timeZoneName: 'short'
+                                        }}
+                                    />
+                                </Tooltip.Content>
+                            </Tooltip.Root>
                         </Table.Cell>
                     </Table.Row>
                 {/each}

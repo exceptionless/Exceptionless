@@ -14,11 +14,9 @@
 
 <Tooltip.Provider>
     {#if linked}
-        <TimeAgo {value}>
-            {#snippet child({ children, props })}
-                <A {...props} href="/next/event/test" aria-label="Open event test">{@render children()}</A>
-            {/snippet}
-        </TimeAgo>
+        <A href="/next/event/test" aria-label="Open event test">
+            <TimeAgo {value} showTooltip={false} />
+        </A>
     {:else}
         <TimeAgo {value} />
     {/if}

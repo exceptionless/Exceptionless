@@ -1,17 +1,14 @@
 <script lang="ts">
-    import type { Snippet } from 'svelte';
-    import type { HTMLAttributes } from 'svelte/elements';
-
     import DateTime from '$comp/formatters/date-time.svelte';
     import * as Tooltip from '$comp/ui/tooltip';
     import Time from 'svelte-time';
 
     interface Props {
-        child?: Snippet<[{ children: Snippet; props: HTMLAttributes<HTMLElement> }]>;
+        showTooltip?: boolean;
         value: Date | string | undefined;
     }
 
-    let { child: renderChild, value }: Props = $props();
+    let { showTooltip = true, value }: Props = $props();
 
     const date = $derived.by(() => {
         if (!value) {
@@ -23,29 +20,18 @@
     });
 </script>
 
-{#snippet relativeTime()}
-    <Time live={true} relative={true} timestamp={date} title={undefined} />
-{/snippet}
-
-{#if date}
+{#if date && showTooltip}
     <Tooltip.Root>
         <Tooltip.Trigger>
             {#snippet child({ props })}
-                {#if renderChild}
-                    {@render renderChild({
-                        children: relativeTime,
-                        props
-                    })}
-                {:else}
-                    <Time
-                        {...props}
-                        class="focus-visible:ring-ring inline cursor-help rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                        live={true}
-                        relative={true}
-                        timestamp={date}
-                        title={undefined}
-                    />
-                {/if}
+                <Time
+                    {...props}
+                    class="focus-visible:ring-ring inline cursor-help rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                    live={true}
+                    relative={true}
+                    timestamp={date}
+                    title={undefined}
+                />
             {/snippet}
         </Tooltip.Trigger>
         <Tooltip.Content role="tooltip" sideOffset={6} collisionPadding={8}
@@ -57,4 +43,6 @@
             /></Tooltip.Content
         >
     </Tooltip.Root>
+{:else if date}
+    <Time live={true} relative={true} timestamp={date} title={undefined} />
 {/if}
