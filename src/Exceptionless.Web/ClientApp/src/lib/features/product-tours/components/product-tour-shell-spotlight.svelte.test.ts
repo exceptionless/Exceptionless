@@ -110,6 +110,31 @@ describe('ProductTourShellSpotlight', () => {
         expect(productTourCheckpoint.current).toEqual(checkpoint);
     });
 
+    it.each([
+        ['navigation', 'navigation-stacks'],
+        ['events', 'navigation-events']
+    ] as const)('reopens mobile navigation after following the %s target', async (checkpointName, targetName) => {
+        productTourCheckpoint.start('app-overview', checkpointName, 'user');
+        const checkpoint = productTourCheckpoint.current!;
+        const setMobileNavigationOpen = vi.fn();
+        render(ProductTourShellSpotlight, {
+            checkpoint,
+            isAnyOverlayOpen: false,
+            isMobile: true,
+            openAssistant: vi.fn(),
+            setMobileNavigationOpen
+        });
+        await waitFor(() => expect(setMobileNavigationOpen).toHaveBeenCalledWith(true));
+        setMobileNavigationOpen.mockClear();
+
+        const target = targets.querySelector(`[data-tour="${targetName}"]`)!;
+        target.addEventListener('click', () => setMobileNavigationOpen(false));
+        await fireEvent.click(target);
+
+        await waitFor(() => expect(setMobileNavigationOpen).toHaveBeenLastCalledWith(true));
+        expect(productTourCheckpoint.current).toBe(checkpoint);
+    });
+
     it('keeps navigation closed when a non-navigation step switches to mobile', async () => {
         productTourCheckpoint.start('app-overview', 'filters', 'user');
         const setMobileNavigationOpen = vi.fn();

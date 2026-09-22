@@ -803,6 +803,26 @@ test('overview navigation survives resizing between desktop and mobile', async (
     }
 });
 
+test('mobile overview keeps navigation targets visible after following their links', async ({ page }) => {
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.goto('/next/stack');
+    await startTourFromCommand(page, 'Explore Exceptionless');
+    const guide = page.locator('.driver-popover');
+
+    for (const [target, title, route] of [
+        ['navigation-stacks', 'Spot repeated problems', /\/next\/stack$/],
+        ['navigation-events', 'See each report', /\/next\/event$/]
+    ] as const) {
+        await expect(guide.getByText(title, { exact: true })).toBeVisible();
+        await page.locator(`[data-tour="${target}"]:visible`).click();
+        await expect(page).toHaveURL(route);
+        await expect(guide.getByText(title, { exact: true })).toBeVisible();
+        await guide.getByRole('button', { name: 'Next' }).click();
+    }
+
+    await expect(guide.getByText('Narrow your results', { exact: true })).toBeVisible();
+});
+
 test('overview arrows stay beside each control on desktop and mobile', async ({ e2eScenario, page }) => {
     // Arrange
     await mockAssistantAccess(page);

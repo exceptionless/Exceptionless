@@ -113,6 +113,21 @@
     $effect(() => {
         if (targetReady && (isMobile || spotlight?.mobileNavigation)) {
             let active = true;
+            const onNavigationClick = (event: MouseEvent) => {
+                if (isMobile && spotlight?.mobileNavigation && event.target instanceof Element && event.target.closest(spotlight.target)) {
+                    // Sidebar links close the drawer; keep the highlighted link available after following it.
+                    void tick().then(() => {
+                        if (active) {
+                            setMobileNavigationOpen(true);
+                        }
+                    });
+                }
+            };
+
+            if (isMobile && spotlight?.mobileNavigation) {
+                document.addEventListener('click', onNavigationClick);
+            }
+
             // Let the responsive drawer mount before opening it.
             void tick().then(() => {
                 if (active) {
@@ -121,6 +136,7 @@
             });
             return () => {
                 active = false;
+                document.removeEventListener('click', onNavigationClick);
             };
         }
     });
