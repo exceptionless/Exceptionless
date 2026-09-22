@@ -70,6 +70,7 @@
         if (remoteSearch && result.tags.length === TAG_SUGGESTION_LIMIT) {
             return 'Showing up to 250 tags. Type more to narrow.';
         }
+
         return undefined;
     });
 
