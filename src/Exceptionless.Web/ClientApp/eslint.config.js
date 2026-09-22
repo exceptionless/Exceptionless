@@ -53,7 +53,7 @@ export default ts.config(
             '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
             '@stylistic/object-curly-newline': ['error', { ObjectExpression: { minProperties: 1 } }],
             curly: ['error', 'all'],
-            'padding-line-between-statements': ['error', { blankLine: 'always', next: ['if', 'while', 'for', 'do'], prev: 'block-like' }]
+            'padding-line-between-statements': ['error', { blankLine: 'always', next: ['if', 'while', 'for', 'do', 'return'], prev: 'block-like' }]
         }
     },
     {
