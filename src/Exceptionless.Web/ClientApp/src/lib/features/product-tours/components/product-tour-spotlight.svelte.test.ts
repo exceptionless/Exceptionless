@@ -1,9 +1,10 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ProductTourCheckpoint } from '../models';
 
-import { productTourCheckpoint } from '../state.svelte';
+import { productTourCheckpoint, productTourPresentation } from '../state.svelte';
 import ProductTourSpotlight from './product-tour-spotlight.svelte';
 vi.mock('../activity', () => ({ submitProductTourActivity: vi.fn() }));
 
@@ -28,6 +29,7 @@ describe('ProductTourSpotlight', () => {
     afterEach(() => {
         cleanup();
         productTourCheckpoint.clear();
+        productTourPresentation.suspended = false;
         target.remove();
         vi.unstubAllGlobals();
     });
@@ -182,6 +184,36 @@ describe('ProductTourSpotlight', () => {
 
         await waitFor(() => expect(document.querySelectorAll('.product-tour-popover')).toHaveLength(1));
         expect(target.classList.contains('driver-active-element')).toBe(true);
+        expect(productTourCheckpoint.current).toBe(active);
+    });
+
+    it.each([
+        ['filters', 'event-filters'],
+        ['saved-views', 'saved-view-trigger']
+    ] as const)('preserves a suspended %s step until its target returns', async (checkpointName, targetName) => {
+        const active = productTourCheckpoint.start('app-overview', checkpointName, 'user');
+        const onDismiss = vi.fn(async () => true);
+        target.dataset.tour = targetName;
+        render(ProductTourSpotlight, {
+            props: { checkpoint: active, description: 'Continue the guide', onDismiss, target: `[data-tour="${targetName}"]`, title: 'Overview' }
+        });
+        await waitFor(() => expect(target.classList.contains('driver-active-element')).toBe(true));
+
+        // Search suspends the guide, then browser navigation removes the target before Search closes.
+        productTourPresentation.suspended = true;
+        await waitFor(() => expect(document.querySelector('.product-tour-popover')).toBeNull());
+        target.remove();
+        productTourPresentation.suspended = false;
+        await tick();
+
+        expect(productTourCheckpoint.current).toBe(active);
+        expect(document.querySelector('.driver-overlay')).toBeNull();
+        expect(onDismiss).not.toHaveBeenCalled();
+
+        document.body.append(target);
+
+        await waitFor(() => expect(target.classList.contains('driver-active-element')).toBe(true));
+        expect(document.querySelectorAll('.product-tour-popover')).toHaveLength(1);
         expect(productTourCheckpoint.current).toBe(active);
     });
 

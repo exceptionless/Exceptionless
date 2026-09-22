@@ -1,7 +1,6 @@
 <script lang="ts">
     import { driver, type Driver } from 'driver.js';
     import { mount, type Snippet, tick, unmount, untrack } from 'svelte';
-    import { toast } from 'svelte-sonner';
 
     import type { ProductTourCheckpoint } from '../models';
 
@@ -135,8 +134,7 @@
     function initialize(): void {
         const element = getTarget();
         if (!element) {
-            productTourCheckpoint.clear(checkpoint);
-            toast.warning('This part of the page is unavailable. You can restart the tour from Search.');
+            // A suspended guide can resume on another route. The target watcher will restore it when the control returns.
             return;
         }
 
