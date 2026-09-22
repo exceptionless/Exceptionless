@@ -46,9 +46,9 @@
     let references = $derived.by(() => {
         let refs: { id: string; name: string }[] = [];
         Object.entries(event.data || {}).forEach(([key, value]) => {
-            if (key.startsWith(referencePrefix)) {
+            if (key.startsWith(referencePrefix) && value != null) {
                 refs.push({
-                    id: value as string,
+                    id: String(value),
                     name: key.slice(5)
                 });
             }

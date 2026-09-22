@@ -7,6 +7,11 @@ describe('filterUsesPremiumFeatures', () => {
         expect(filterUsesPremiumFeatures('(reference:"parent-id" OR ref.parent:"parent-id")', 'event')).toBe(false);
     });
 
+    it('keeps the canonical parent index free for event filters', () => {
+        expect(filterUsesPremiumFeatures('idx.parent-r:"parent-id"', 'event')).toBe(false);
+        expect(filterUsesPremiumFeatures('idx.parent-r:"parent-id"', 'event-stack')).toBe(false);
+    });
+
     it('still requires premium features for custom references', () => {
         expect(filterUsesPremiumFeatures('ref.custom:"reference-id"', 'event')).toBe(true);
     });

@@ -35,4 +35,15 @@ describe('Overview', () => {
 
         expect(screen.queryByTitle('Filter ref.𐐀:reference-id')).toBeNull();
     });
+
+    it('filters a numeric legacy parent reference as a string', async () => {
+        const filterChanged = vi.fn();
+        const event = { data: { '@ref:parent': 12345678 } } as unknown as PersistentEvent;
+
+        render(Overview, { event, filterChanged });
+        await fireEvent.click(screen.getByTitle('Filter reference:12345678'));
+
+        const filter = filterChanged.mock.calls[0]?.[0] as ReferenceFilter;
+        expect(filter.toFilter()).toBe('(reference:12345678 OR ref.parent:12345678)');
+    });
 });
