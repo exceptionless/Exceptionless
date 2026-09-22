@@ -34,6 +34,19 @@ test('event and stack timestamps expose full time through keyboard navigation an
             await expect(timestamp).not.toHaveAttribute('title');
             await expect(page.getByRole('tooltip')).toContainText('12:00:00 AM UTC');
             await expect(page.getByRole('tooltip')).toContainText(String(date.getUTCFullYear()));
+            await expect
+                .poll(async () => {
+                    const bounds = await page.getByRole('tooltip').boundingBox();
+                    const viewport = page.viewportSize()!;
+                    return (
+                        bounds !== null &&
+                        bounds.x >= 0 &&
+                        bounds.y >= 0 &&
+                        bounds.x + bounds.width <= viewport.width &&
+                        bounds.y + bounds.height <= viewport.height
+                    );
+                })
+                .toBe(true);
         });
 
         await test.step('Escape dismisses the tooltip and hover reopens it', async () => {

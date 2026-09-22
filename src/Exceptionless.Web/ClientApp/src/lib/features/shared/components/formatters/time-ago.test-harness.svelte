@@ -4,12 +4,17 @@
     import TimeAgo from './time-ago.svelte';
 
     interface Props {
+        linked?: boolean;
         value: Date | string | undefined;
     }
 
-    let { value }: Props = $props();
+    let { linked = false, value }: Props = $props();
 </script>
 
 <Tooltip.Provider>
-    <TimeAgo {value} />
+    {#if linked}
+        <TimeAgo {value} href="/next/event/test" aria-label="Open event test" />
+    {:else}
+        <TimeAgo {value} />
+    {/if}
 </Tooltip.Provider>

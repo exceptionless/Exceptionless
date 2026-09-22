@@ -169,14 +169,12 @@
                             </a>
                         </Table.Cell>
                         <Table.Cell class="p-0">
-                            <a
+                            <TimeAgo
                                 aria-label={`Open event ${sessionEvent.id}`}
                                 class="text-foreground block p-2 no-underline"
                                 href={eventHref}
-                                title="Open event details"
-                            >
-                                <TimeAgo value={sessionEvent.date} />
-                            </a>
+                                value={sessionEvent.date}
+                            />
                         </Table.Cell>
                     </Table.Row>
                 {/each}

@@ -56,6 +56,25 @@ describe('TimeAgo', () => {
         expect(screen.getByText('an hour ago')).toBeTruthy();
     });
 
+    it('uses the event link as the only focus target', () => {
+        const { container } = render(TimeAgoTestHarness, { linked: true, value: '2026-08-11T12:34:56Z' });
+        expect(container.querySelectorAll('a[href], [tabindex="0"]').length).toBe(1);
+    });
+
+    it('formats the full date only when the tooltip opens', async () => {
+        const format = vi.spyOn(Date.prototype, 'toLocaleString');
+        try {
+            const { container } = render(TimeAgoTestHarness, { value: '2026-08-11T12:34:56Z' });
+            await tick();
+            expect(format).not.toHaveBeenCalled();
+            await fireEvent.focus(container.querySelector<HTMLElement>('[data-slot="tooltip-trigger"]')!);
+            await screen.findByRole('tooltip');
+            expect(format).toHaveBeenCalledTimes(1);
+        } finally {
+            format.mockRestore();
+        }
+    });
+
     it('exposes the full timestamp through an accessible tooltip', async () => {
         // Arrange
         const value = new Date('2026-08-11T12:34:56Z');
@@ -85,7 +104,7 @@ describe('TimeAgo', () => {
         expect(trigger?.getAttribute('title')).toBeNull();
     });
 
-    it.each([undefined, 'not a timestamp'] as const)('omits missing and invalid timestamp %s', (value) => {
+    it.each([undefined, '', 'not a timestamp', new Date(NaN)] as const)('omits missing and invalid timestamp %s', (value) => {
         // Arrange
         const props = { value };
 
