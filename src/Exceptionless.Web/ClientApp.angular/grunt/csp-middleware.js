@@ -181,6 +181,8 @@ function removeConditionalRequestHeaders(request) {
 
     delete request.headers["if-modified-since"];
     delete request.headers["if-none-match"];
+    delete request.headers.range;
+    delete request.headers["if-range"];
 }
 
 function removeHeaderFromCollection(headers, name) {
@@ -206,6 +208,7 @@ function prepareHtmlHeaders(response, policy) {
     response.removeHeader("ETag");
     response.removeHeader("Expires");
     response.removeHeader("Last-Modified");
+    response.removeHeader("Accept-Ranges");
 }
 
 function toBuffer(chunk, encoding) {
@@ -251,6 +254,7 @@ function createCspMiddleware() {
             removeHeaderFromCollection(responseHeaders, "etag");
             removeHeaderFromCollection(responseHeaders, "expires");
             removeHeaderFromCollection(responseHeaders, "last-modified");
+            removeHeaderFromCollection(responseHeaders, "accept-ranges");
             prepareHtmlHeaders(response, policy);
 
             return originalWriteHead.apply(response, args);
