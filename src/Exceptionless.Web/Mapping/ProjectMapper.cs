@@ -18,6 +18,9 @@ public partial class ProjectMapper
     [MapperIgnoreTarget(nameof(ViewProject.OrganizationName))]
     [MapperIgnoreTarget(nameof(ViewProject.StackCount))]
     [MapperIgnoreTarget(nameof(ViewProject.EventCount))]
+    [MapperIgnoreTarget(nameof(ViewProject.EffectiveIngestLimit))]
+    [MapperIgnoreTarget(nameof(ViewProject.IsSmartThrottled))]
+    [MapperIgnoreTarget(nameof(ViewProject.SmartThrottleSampleRate))]
     private partial ViewProject MapToViewProjectCore(Project source);
 
     public ViewProject MapToViewProject(Project source)

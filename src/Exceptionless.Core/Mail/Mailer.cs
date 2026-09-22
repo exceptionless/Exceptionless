@@ -247,6 +247,51 @@ public class Mailer : IMailer
         }, template);
     }
 
+    public async Task SendOrganizationBudgetAlertAsync(User user, Organization organization, int threshold, int thresholdEventCount, int currentEventCount, int eventLimit)
+    {
+        const string template = "organization-budget-alert";
+        string subject = $"[{organization.Name}] Budget Alert: {threshold}% of monthly event allowance used";
+        var message = new OrganizationBudgetAlertEmail(
+            subject,
+            organization.Name,
+            threshold,
+            thresholdEventCount,
+            currentEventCount,
+            eventLimit,
+            Math.Max(0, eventLimit - currentEventCount),
+            _appUrls.OrganizationUsage(organization.Id),
+            _appUrls.AccountNotifications());
+
+        await QueueMessageAsync(new MailMessage
+        {
+            To = user.EmailAddress,
+            Subject = subject,
+            Body = await _templateRenderer.RenderAsync(message)
+        }, template);
+    }
+
+    public async Task SendProjectThrottledNoticeAsync(User user, Organization organization, Project project, double sampleRate, int currentEventCount, int eventLimit)
+    {
+        const string template = "project-smart-throttle";
+        string subject = $"[{organization.Name}] Smart Throttling Active: {project.Name}";
+        var message = new ProjectSmartThrottleEmail(
+            subject,
+            organization.Name,
+            project.Name,
+            (int)(sampleRate * 100),
+            currentEventCount,
+            eventLimit,
+            _appUrls.ProjectUsage(project.Id),
+            _appUrls.AccountNotifications());
+
+        await QueueMessageAsync(new MailMessage
+        {
+            To = user.EmailAddress,
+            Subject = subject,
+            Body = await _templateRenderer.RenderAsync(message)
+        }, template);
+    }
+
     public async Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
     {
         const string template = "project-daily-summary";

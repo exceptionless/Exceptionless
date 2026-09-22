@@ -34,11 +34,15 @@ internal sealed class EmailAppUrlBuilder
 
     public string OrganizationManage(string organizationId) => Build($"organization/{organizationId}/manage");
 
+    public string OrganizationUsage(string organizationId) => Build($"organization/{organizationId}/usage");
+
     public string OrganizationBilling(string organizationId) => Build($"organization/{organizationId}/manage?tab=billing");
 
     public string ProjectTimeline(string projectId) => Build($"project/{projectId}/error/timeline");
 
     public string ProjectConfigure(string projectId) => Build($"project/{projectId}/configure");
+
+    public string ProjectUsage(string projectId) => Build($"project/{projectId}/usage");
 
     public string ProjectMostFrequent(string projectId) => Build($"project/{projectId}/error/frequent");
 
