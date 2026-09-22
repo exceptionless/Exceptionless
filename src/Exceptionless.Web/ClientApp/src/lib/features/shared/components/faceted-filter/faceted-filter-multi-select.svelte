@@ -16,6 +16,7 @@
     interface Props {
         changed: (values: string[]) => void;
         hidden?: boolean;
+        layout?: 'default' | 'tall';
         loading?: boolean;
         noOptionsText?: string;
         open: boolean;
@@ -29,6 +30,7 @@
     let {
         changed,
         hidden = false,
+        layout = 'default',
         loading = false,
         noOptionsText = 'No results found.',
         open = $bindable(),
@@ -112,10 +114,18 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" trapFocus={false} {onEscapeKeydown} onFocusOutside={(e) => e.preventDefault()}>
-        <Command.Root {filter}>
+    <Popover.Content
+        align="start"
+        class={cn('p-0', layout === 'tall' && 'grid max-h-[var(--bits-popover-content-available-height)] min-h-0 grid-rows-[minmax(0,1fr)_auto]')}
+        collisionPadding={layout === 'tall' ? 8 : undefined}
+        side="bottom"
+        trapFocus={false}
+        {onEscapeKeydown}
+        onFocusOutside={(e) => e.preventDefault()}
+    >
+        <Command.Root {filter} class={layout === 'tall' ? 'grid h-auto min-h-0 grid-rows-[auto_minmax(0,1fr)]' : undefined}>
             <Command.Input placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
-            <Command.List>
+            <Command.List class={layout === 'tall' ? 'max-h-96 min-h-0' : undefined}>
                 <Command.Empty>{noOptionsText}</Command.Empty>
                 {#if loading}
                     <Command.Loading><div class="flex p-2"><Spinner /> Loading...</div></Command.Loading>
