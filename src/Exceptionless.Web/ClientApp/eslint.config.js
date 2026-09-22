@@ -52,14 +52,14 @@ export default ts.config(
         rules: {
             '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
             '@stylistic/object-curly-newline': ['error', { ObjectExpression: { minProperties: 1 } }],
-            curly: ['error', 'all']
+            curly: ['error', 'all'],
+            'padding-line-between-statements': ['error', { blankLine: 'always', next: ['if', 'while', 'for', 'do', 'return'], prev: 'block-like' }]
         }
     },
     {
         files: ['**/*.svelte', '**/*.ts'],
         rules: {
-            '@typescript-eslint/explicit-member-accessibility': ['error', { accessibility: 'explicit', overrides: { constructors: 'no-public' } }],
-            'padding-line-between-statements': ['error', { blankLine: 'always', next: ['if', 'while', 'for', 'do'], prev: 'block-like' }]
+            '@typescript-eslint/explicit-member-accessibility': ['error', { accessibility: 'explicit', overrides: { constructors: 'no-public' } }]
         }
     },
     {
