@@ -1,3 +1,4 @@
+using System.Globalization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -332,6 +333,49 @@ public class Mailer : IMailer
             Subject = subject,
             Body = await _templateRenderer.RenderAsync(message)
         }, template);
+    }
+
+    public async Task SendRateNotificationAsync(User user, Project project, RateNotificationRule rule, long observedCount, DateTime windowStart, DateTime windowEnd, Stack? stack = null)
+    {
+        const string template = "rate-notification";
+        string subject = $"[{project.Name}] Error rate exceeded";
+        var stackLink = stack is null
+            ? null
+            : new EmailLink(stack.Title, _appUrls.Stack(stack.Id));
+        var message = new RateNotificationEmail(
+            subject,
+            project.Name,
+            rule.Name,
+            observedCount,
+            observedCount == 1 ? "event" : "events",
+            rule.Threshold,
+            FormatWindow(rule.Window),
+            rule.Signal.ToString(),
+            rule.Subject.ToString(),
+            windowStart.ToString("u", CultureInfo.InvariantCulture),
+            windowEnd.ToString("u", CultureInfo.InvariantCulture),
+            FormatWindow(rule.Cooldown),
+            stackLink is null
+                ? new EmailAction("View Project Timeline", _appUrls.ProjectTimeline(project.Id))
+                : new EmailAction("View Stack", stackLink.Url),
+            stackLink,
+            [new("Manage rate notification rules", _appUrls.RateNotificationSettings(project.Id))]);
+
+        await QueueMessageAsync(new MailMessage
+        {
+            To = user.EmailAddress,
+            Subject = subject,
+            Body = await _templateRenderer.RenderAsync(message)
+        }, template);
+    }
+
+    private static string FormatWindow(TimeSpan window)
+    {
+        if (window.TotalHours >= 1 && window.Minutes == 0)
+            return $"{(int)window.TotalHours}h";
+        if (window.TotalMinutes >= 1 && window.Seconds == 0)
+            return $"{(int)window.TotalMinutes}min";
+        return window.ToString();
     }
 
     private Task<string?> QueueMessageAsync(MailMessage message, string metricsName)

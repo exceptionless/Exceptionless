@@ -64,8 +64,9 @@ public static class RequestExtensions
     {
         ArgumentNullException.ThrowIfNull(requestMessage);
 
-        requestMessage.Options.TryGetValue(AppSendBuilder.ExpectedStatusKey, out var propertyValue);
-        return propertyValue;
+        return requestMessage.Options.TryGetValue(AppSendBuilder.ExpectedStatusKey, out var propertyValue)
+            ? propertyValue
+            : null;
     }
 
     public static void SetExpectedStatus(this HttpRequestMessage requestMessage, HttpStatusCode statusCode)

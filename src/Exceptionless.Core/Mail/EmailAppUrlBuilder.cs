@@ -24,6 +24,13 @@ internal sealed class EmailAppUrlBuilder
 
     public string ProjectNotifications(string projectId) => Build($"account/manage?projectId={Uri.EscapeDataString(projectId)}&tab=notifications");
 
+    public string RateNotificationSettings(string projectId)
+    {
+        int fragmentIndex = _baseUrl.IndexOf('#');
+        string baseUrl = fragmentIndex >= 0 ? _baseUrl[..fragmentIndex].TrimEnd('/') : _baseUrl;
+        return $"{baseUrl}/next/account/notifications?project={Uri.EscapeDataString(projectId)}";
+    }
+
     public string OrganizationDashboard(string organizationId) => Build($"organization/{organizationId}/dashboard");
 
     public string Signup(string token) => Build($"signup?token={Uri.EscapeDataString(token)}");
@@ -55,4 +62,5 @@ internal sealed class EmailAppUrlBuilder
     }
 
     private string Build(string relativeUrl) => $"{_baseUrl}/{relativeUrl.TrimStart('/')}";
+
 }
