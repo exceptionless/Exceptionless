@@ -28,8 +28,10 @@ public partial class UsageService
         int maxEventsPerMonth = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
         int effectiveProjectLimit = GetEffectiveProjectLimit(project, maxEventsPerMonth);
 
-        // This is the common self-hosted/unlimited path. It must not take the organization hot-path lock.
-        if (maxEventsPerMonth < 0 && effectiveProjectLimit < 0)
+        // New unlimited posts avoid the organization lock, but retries must finish any tracked
+        // reservation created before the plan or project cap changed.
+        if (maxEventsPerMonth < 0 && effectiveProjectLimit < 0 &&
+            !await _cache.ExistsAsync(GetIngestReservationKey(organization.Id, reservationId)))
             return EventIngestReservation.Unlimited(reservationId, organization.Id, project.Id, GetTotalBucket(utcNow), utcNow.Floor(_bucketSize), candidates);
 
         SmartThrottleResult? smartThrottleToActivate = null;

@@ -147,6 +147,52 @@ public sealed class EventPostRetryTests : TestWithServices
     }
 
     [Fact]
+    public async Task CompletedPostRetry_AfterOrganizationBecomesUnlimited_DoesNotReprocessAcceptedEvents()
+    {
+        _pipeline.ProcessFirstEvent = true;
+        ((FailOnceCacheProxy)(object)GetService<ICacheClient>()).FailCompletionNotificationRead = true;
+        await EnqueueEventPostAsync(
+            new PersistentEvent { Type = Event.KnownTypes.Log, ReferenceId = "processed", Date = TimeProvider.GetUtcNow() },
+            new PersistentEvent { Type = Event.KnownTypes.Log, ReferenceId = "retry", Date = TimeProvider.GetUtcNow() });
+
+        Assert.False((await _job.RunAsync(CancellationToken.None)).IsSuccess);
+        Assert.Single(_eventRepository.SavedEvents);
+        ((OrganizationRepositoryProxy)(object)GetService<IOrganizationRepository>()).Organization.MaxEventsPerMonth = -1;
+
+        Assert.True((await _job.RunAsync(CancellationToken.None)).IsSuccess);
+        Assert.Equal(1, _pipeline.RunCount);
+        Assert.Single(_eventRepository.SavedEvents);
+        Assert.True((await _job.RunAsync(CancellationToken.None)).IsSuccess);
+        Assert.Equal(["processed", "retry"], _eventRepository.SavedEvents.Select(ev => ev.ReferenceId));
+        Assert.Equal(2, (await _usageService.GetUsageAsync(OrganizationId, ProjectId)).CurrentUsage.Total);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReservedPostRetry_AfterProjectCapCleared_PreservesAcceptedSelection(bool releaseReservation)
+    {
+        var organization = ((OrganizationRepositoryProxy)(object)GetService<IOrganizationRepository>()).Organization;
+        var project = ((ProjectRepositoryProxy)(object)GetService<IProjectRepository>()).Project;
+        organization.MaxEventsPerMonth = -1;
+        project.IngestLimit = new ProjectIngestLimit { Type = ProjectIngestLimitType.Fixed, FixedLimit = 2 };
+        EventIngestCandidate[] candidates = [new(0, 0), new(1, 1), new(2, 2)];
+        var reservation = await _usageService.ReserveEventIngestAsync(organization, project, "cap-cleared", candidates, TestContext.Current.CancellationToken);
+        if (releaseReservation)
+            await _usageService.ReleaseEventIngestReservationAsync(reservation);
+
+        project.IngestLimit = null;
+        var retry = await _usageService.ReserveEventIngestAsync(organization, project, "cap-cleared", candidates, TestContext.Current.CancellationToken);
+
+        Assert.True(retry.IsTracked);
+        Assert.Equal([0, 1], retry.AcceptedIndexes);
+        await _usageService.CompleteEventIngestReservationAsync(retry, organization, 2);
+        var usage = (await _usageService.GetUsageAsync(OrganizationId, ProjectId)).CurrentUsage;
+        Assert.Equal(2, usage.Total);
+        Assert.Equal(1, usage.Blocked);
+    }
+
+    [Fact]
     public async Task PendingRetries_AcknowledgementFailure_KeepsEventForAtLeastOnceDelivery()
     {
         var reservation = await CreateCompletedReservationAsync("acknowledgement", [1]);
