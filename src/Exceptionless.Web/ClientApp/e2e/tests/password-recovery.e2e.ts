@@ -3,7 +3,7 @@ import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
 const RESET_PASSWORD = `${E2E_TEST_PASSWORD}-reset`;
 
 test.skip(process.env.E2E_ENV === 'production', 'Password recovery requires local Mailpit.');
-test.use({ e2eCleanupPassword: RESET_PASSWORD, e2eUseGeneratedUser: true });
+test.use({ e2eCleanupPassword: RESET_PASSWORD, e2eInjectBrowserToken: false, e2eUseGeneratedUser: true });
 
 test('user can reset a forgotten password and log in @signup', async ({ e2eApi, e2eScenario, page }) => {
     await test.step('request a password reset through the UI', async () => {
