@@ -1,3 +1,4 @@
+import { FetchClient } from '@foundatiofx/fetchclient';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { accessToken, goto, postJSON, toastError } = vi.hoisted(() => ({
@@ -55,13 +56,17 @@ describe('microsoftLogin', () => {
         await vi.advanceTimersByTimeAsync(500);
         await login;
 
-        expect(postJSON).toHaveBeenCalledExactlyOnceWith('auth/microsoft', {
-            clientId: 'microsoft-client-id',
-            code: 'authorization-code',
-            inviteToken: 'invitation-token',
-            redirectUri: 'http://localhost:7131',
-            state
-        });
+        expect(postJSON).toHaveBeenCalledExactlyOnceWith(
+            'auth/microsoft',
+            {
+                clientId: 'microsoft-client-id',
+                code: 'authorization-code',
+                inviteToken: 'invitation-token',
+                redirectUri: 'http://localhost:7131',
+                state
+            },
+            { expectedStatusCodes: [401, 403, 422] }
+        );
         expect(accessToken.current).toBe('session-token');
         expect(goto).toHaveBeenCalledExactlyOnceWith('/next/organization/invited');
         expect(popup.close).toHaveBeenCalledOnce();
@@ -86,6 +91,33 @@ describe('microsoftLogin', () => {
         expect(accessToken.current).toBe('existing-session');
         expect(goto).not.toHaveBeenCalled();
         expect(popup.close).toHaveBeenCalledOnce();
+    });
+
+    it('displays the 403 with the application error callback enabled', async () => {
+        const message = 'Sign in to your existing account first, then link Microsoft from your account settings.';
+        const client = new FetchClient({
+            baseUrl: 'http://localhost/api/v2',
+            defaultRequestOptions: {
+                errorCallback: (response) => {
+                    throw response.problem ?? response;
+                }
+            },
+            fetch: async () =>
+                new Response(JSON.stringify({ status: 403, title: message }), {
+                    headers: { 'Content-Type': 'application/problem+json' },
+                    status: 403
+                })
+        });
+        postJSON.mockImplementation(client.postJSON.bind(client));
+        vi.stubGlobal('crypto', { randomUUID: () => 'expected-state' });
+        const login = microsoftLogin();
+        const completed = expect(login).resolves.toBeUndefined();
+        popup.location = new URL('http://localhost:7131/?code=authorization-code&state=expected-state');
+        await vi.advanceTimersByTimeAsync(500);
+        await completed;
+        expect(toastError).toHaveBeenCalledExactlyOnceWith(message);
+        expect(accessToken.current).toBeNull();
+        expect(goto).not.toHaveBeenCalled();
     });
 
     it.each(['state=wrong-state', '', 'error=access_denied'])('does not exchange the code when the callback contains %s', async (query) => {

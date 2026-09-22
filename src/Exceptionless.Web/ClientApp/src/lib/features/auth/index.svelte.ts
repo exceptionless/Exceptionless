@@ -180,13 +180,19 @@ async function oauthLogin(options: OAuthLoginOptions) {
     const data = await openOAuthPopup(options);
 
     const client = useFetchClient();
-    const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
-        clientId: options.clientId,
-        code: data.code,
-        inviteToken: options.inviteToken,
-        redirectUri: window.location.origin,
-        state: data.state
-    });
+    const response = await client.postJSON<TokenResult>(
+        `auth/${options.provider}`,
+        {
+            clientId: options.clientId,
+            code: data.code,
+            inviteToken: options.inviteToken,
+            redirectUri: window.location.origin,
+            state: data.state
+        },
+        {
+            expectedStatusCodes: [401, 403, 422]
+        }
+    );
 
     if (response.ok && response.data?.token) {
         accessToken.current = response.data.token;
