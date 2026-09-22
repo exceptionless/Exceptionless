@@ -142,9 +142,9 @@
             <Command.List class={layout === 'tall' ? 'max-h-96 min-h-0' : undefined}>
                 {#if !status}
                     <Command.Empty>{noOptionsText}</Command.Empty>
-                {/if}
-                {#if loading && !status}
-                    <Command.Loading><div class="flex p-2"><Spinner /> Loading...</div></Command.Loading>
+                    {#if loading}
+                        <Command.Loading><div class="flex p-2"><Spinner /> Loading...</div></Command.Loading>
+                    {/if}
                 {/if}
                 {#if options.length > 0}
                     <Command.Group>

@@ -665,7 +665,8 @@ export function getTagSuggestionsQuery(request: GetTagSuggestionsRequest) {
         return {
             enabled: !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
             queryFn: async ({ signal }) => {
-                const response = await useFetchClient().getJSON<CountResult>(`/organizations/${organizationId}/events/count`, {
+                const client = useFetchClient();
+                const response = await client.getJSON<CountResult>(`/organizations/${organizationId}/events/count`, {
                     params: {
                         aggregations: tagSuggestionAggregation(search),
                         time: 'all'

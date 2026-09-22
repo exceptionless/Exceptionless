@@ -14,33 +14,33 @@
     let debouncedSearch = $state('');
     const normalizedSearch = $derived(search.trim().toLowerCase());
 
+    // Store the organizationId to prevent loading when switching organizations.
+    const organizationId = organization.current;
+    const enabled = $derived(open && organization.current === organizationId);
+
     const initialQuery = getTagSuggestionsQuery({
-        enabled: () => open,
+        enabled: () => enabled,
         params: {
             search: ''
         },
         route: {
-            get organizationId() {
-                return organization.current;
-            }
+            organizationId
         }
     });
     const initial = $derived(tagSuggestions(initialQuery.data));
+    const remoteSearch = $derived(!initial.complete && normalizedSearch.length >= 2);
+    const currentSearch = $derived(debouncedSearch === normalizedSearch);
     const searchQuery = getTagSuggestionsQuery({
-        enabled: () => open && initialQuery.isSuccess && !initial.complete && debouncedSearch.length >= 2 && debouncedSearch === normalizedSearch,
+        enabled: () => enabled && initialQuery.isSuccess && remoteSearch && currentSearch,
         params: {
             get search() {
                 return debouncedSearch;
             }
         },
         route: {
-            get organizationId() {
-                return organization.current;
-            }
+            organizationId
         }
     });
-    const remoteSearch = $derived(!initial.complete && normalizedSearch.length >= 2);
-    const currentSearch = $derived(debouncedSearch === normalizedSearch);
     const result = $derived(remoteSearch && currentSearch && searchQuery.isSuccess ? tagSuggestions(searchQuery.data) : initial);
     const options = $derived(
         Array.from(new Set(['Critical', ...filter.value, ...result.tags]))
@@ -75,7 +75,7 @@
 
     $effect(() => {
         const value = normalizedSearch;
-        if (!open) {
+        if (!enabled) {
             debouncedSearch = '';
             return;
         }
@@ -84,6 +84,28 @@
         }, 300);
         return () => clearTimeout(timer);
     });
+
+    function onChanged(values: string[]) {
+        filter.value = values;
+        filterChanged(filter);
+    }
+
+    function onRemove() {
+        filter.value = [];
+        filterRemoved(filter);
+    }
+
+    async function retry() {
+        if (!enabled) {
+            return;
+        }
+
+        if (initialQuery.isError) {
+            await initialQuery.refetch();
+        } else {
+            await searchQuery.refetch();
+        }
+    }
 
     function toggleHidden() {
         filter.hidden = !filter.hidden;
@@ -95,16 +117,10 @@
     bind:open
     bind:search
     shouldFilter={false}
-    changed={(values: string[]) => {
-        filter.value = values;
-        filterChanged(filter);
-    }}
+    changed={onChanged}
     {loading}
     {options}
-    remove={() => {
-        filter.value = [];
-        filterRemoved(filter);
-    }}
+    remove={onRemove}
     hidden={filter.hidden}
     {title}
     {toggleHidden}
@@ -116,13 +132,7 @@
             <div class="text-muted-foreground px-3 py-2 text-xs" role="status">
                 {#if failed}
                     Could not load tags.
-                    <Button
-                        size="sm"
-                        variant="link"
-                        onclick={() => {
-                            void (initialQuery.isError ? initialQuery.refetch() : searchQuery.refetch());
-                        }}>Retry</Button
-                    >
+                    <Button size="sm" variant="link" onclick={retry}>Retry</Button>
                 {:else}
                     {statusMessage}
                 {/if}
