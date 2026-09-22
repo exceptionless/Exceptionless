@@ -1,6 +1,8 @@
 import { expect, test } from '../fixtures/e2e-test';
 import { seedRepresentativeEvent } from '../support/event-data';
 
+test.use({ e2eUseGeneratedUser: true });
+
 test('operator can manage project API keys and follow first-event redirect', async ({ e2eApi, e2eScenario, page }) => {
     await test.step('open API Keys and create another client key', async () => {
         await page.goto(`/next/project/${e2eScenario.projectId}/api-keys`);

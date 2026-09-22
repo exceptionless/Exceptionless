@@ -248,7 +248,7 @@ public class SensitiveDataLoggingTests
             MaximumEventPostSize = 200_000,
             MaximumRetentionDays = 180,
             EnableRepositoryNotifications = true,
-            EnableWebSockets = true,
+            EnablePush = true,
             Version = "1.2.3",
             InformationalVersion = "1.2.3+visible",
             NotificationMessage = "visible notification",

@@ -11528,6 +11528,45 @@
           }
         }
       }
+    },
+    "/api/v2/push": {
+      "get": {
+        "summary": "Subscribe to real-time notifications.",
+        "description": "Returns a long-lived server-sent event stream. Each data event contains a JSON object with type and message fields; comment frames keep the connection alive. Delivery is best-effort without replay: reconnecting clients should refetch current state. WebSocket upgrades remain supported for existing clients. Requires EnablePush (or the legacy EnableWebSockets setting).",
+        "operationId": "GetPushStream",
+        "responses": {
+          "200": {
+            "description": "Server-sent event stream.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication is missing, invalid, or revoked."
+          },
+          "404": {
+            "description": "Push is disabled."
+          },
+          "429": {
+            "description": "The identity has reached its shared SSE and WebSocket connection limit."
+          },
+          "503": {
+            "description": "The connection lease store is unavailable."
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          },
+          {
+            "Token": []
+          }
+        ]
+      }
     }
   },
   "components": {
