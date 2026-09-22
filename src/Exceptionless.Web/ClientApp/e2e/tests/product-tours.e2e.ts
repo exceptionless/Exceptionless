@@ -215,24 +215,26 @@ test.describe('shell and identity checkpoints', () => {
             const closeButton = tour.getByRole('button', { name: 'End guide' });
             // Assert
             await expect(closeButton).toHaveText('×');
-            const closeBounds = await closeButton.boundingBox();
-            const titleBounds = await tour.locator('.driver-popover-title').evaluate((element) => {
-                const range = document.createRange();
-                range.selectNodeContents(element);
-                return range.getBoundingClientRect().toJSON();
-            });
-            const tourBounds = await tour.boundingBox();
-            const descriptionBounds = await tour.locator('.driver-popover-description').boundingBox();
-            const continueBounds = await tour.getByRole('button', { name: 'Next' }).boundingBox();
-            expect(closeBounds).not.toBeNull();
-            expect(titleBounds).not.toBeNull();
-            expect(descriptionBounds).not.toBeNull();
-            expect(continueBounds?.height).toBeGreaterThanOrEqual(32);
-            expect(closeBounds?.height).toBe(32);
-            expect(closeBounds!.x + closeBounds!.width).toBeCloseTo(tourBounds!.x + tourBounds!.width - 5, 0);
-            expect(closeBounds!.y).toBeCloseTo(tourBounds!.y + 5, 0);
-            expect(titleBounds!.x + titleBounds!.width).toBeLessThanOrEqual(closeBounds!.x);
-            expect(closeBounds!.y + closeBounds!.height).toBeLessThanOrEqual(descriptionBounds!.y);
+            await expect(async () => {
+                // Read one layout snapshot: resizing can reposition the entire popover between browser calls.
+                const bounds = await tour.evaluate((element) => {
+                    const range = document.createRange();
+                    range.selectNodeContents(element.querySelector('.driver-popover-title')!);
+                    return {
+                        close: element.querySelector('.driver-popover-close-btn')!.getBoundingClientRect().toJSON(),
+                        continue: element.querySelector('.driver-popover-next-btn')!.getBoundingClientRect().toJSON(),
+                        description: element.querySelector('.driver-popover-description')!.getBoundingClientRect().toJSON(),
+                        title: range.getBoundingClientRect().toJSON(),
+                        tour: element.getBoundingClientRect().toJSON()
+                    };
+                });
+                expect(bounds.continue.height).toBeGreaterThanOrEqual(32);
+                expect(bounds.close.height).toBe(32);
+                expect(bounds.close.right).toBeCloseTo(bounds.tour.right - 5, 0);
+                expect(bounds.close.y).toBeCloseTo(bounds.tour.y + 5, 0);
+                expect(bounds.title.right).toBeLessThanOrEqual(bounds.close.x);
+                expect(bounds.close.bottom).toBeLessThanOrEqual(bounds.description.y);
+            }).toPass();
             // Act
             await tour.getByRole('button', { name: 'Next' }).click();
             // Assert
@@ -734,6 +736,30 @@ test('the error guide keeps the start of a wide report visible on mobile', async
     await expect(page.locator('.driver-popover-title')).toHaveText('See the impact');
     await expectCalloutBesideTarget(page);
 });
+
+for (const [stepTitle, advances] of [
+    ['Narrow your results', 2],
+    ['Keep a useful view', 3]
+] as const) {
+    test(`overview restores ${stepTitle} when its route returns`, async ({ e2eScenario, page }) => {
+        await page.goto(`/next/project/${e2eScenario.projectId}/manage`);
+        await startTourFromCommand(page, 'Explore Exceptionless');
+        await expect(page).toHaveURL(/\/next\/event$/);
+        const guide = page.locator('.driver-popover');
+        for (let step = 0; step < advances; step++) {
+            await guide.getByRole('button', { name: 'Next' }).click();
+        }
+        await expect(guide.getByText(stepTitle)).toBeVisible();
+
+        await page.goBack();
+        await expect(page).toHaveURL(/\/manage$/);
+        await expect(guide).toBeHidden();
+        await page.goForward();
+
+        await expect(page).toHaveURL(/\/next\/event$/);
+        await expect(guide.getByText(stepTitle)).toBeVisible();
+    });
+}
 
 test('overview returns to Events after navigating back to Stacks', async ({ e2eScenario, page }, testInfo) => {
     await page.goto('/next/stack');

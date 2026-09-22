@@ -61,22 +61,20 @@
             function followTarget(): void {
                 const element = activeDriver?.getActiveElement();
                 const popover = activeDriver?.getState().popover?.wrapper;
-                if (!element || !popover) {
+                // A refresh or route change can temporarily remove the highlighted control.
+                if (!element?.isConnected) {
+                    const previousFocus = returnFocus;
+                    destroy();
+                    if (getTarget()?.isConnected) {
+                        initialize();
+                        returnFocus = previousFocus;
+                        previousBounds = '';
+                    }
+                    frame = requestAnimationFrame(followTarget);
                     return;
                 }
 
-                // A refreshed list can replace a row while keeping the same report selected.
-                if (!element.isConnected) {
-                    const previousFocus = returnFocus;
-                    destroy();
-                    if (!getTarget()?.isConnected) {
-                        return;
-                    }
-
-                    initialize();
-                    returnFocus = previousFocus;
-                    previousBounds = '';
-                    frame = requestAnimationFrame(followTarget);
+                if (!popover) {
                     return;
                 }
 

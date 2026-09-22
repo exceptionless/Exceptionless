@@ -151,7 +151,7 @@ describe('ProductTourSpotlight', () => {
         expect(screen.getByText('Open this report')).toBeTruthy();
     });
 
-    it('releases the page when navigation removes its target while preserving the checkpoint', async () => {
+    it('releases the page while its target is absent and resumes when the target returns', async () => {
         // Arrange
         const active = productTourCheckpoint.start('app-overview', 'filters', 'user');
         target.dataset.tour = 'event-filters';
@@ -176,6 +176,12 @@ describe('ProductTourSpotlight', () => {
             expect(!!document.querySelector('.product-tour-popover')).toBe(false);
             expect(document.body.classList.contains('driver-active')).toBe(false);
         });
+        expect(productTourCheckpoint.current).toBe(active);
+
+        document.body.append(target);
+
+        await waitFor(() => expect(document.querySelectorAll('.product-tour-popover')).toHaveLength(1));
+        expect(target.classList.contains('driver-active-element')).toBe(true);
         expect(productTourCheckpoint.current).toBe(active);
     });
 
