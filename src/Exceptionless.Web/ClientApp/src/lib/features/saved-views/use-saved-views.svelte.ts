@@ -998,6 +998,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 pendingDraftKey = '';
                 pendingDraftGeneration = -1;
             }
+
             return;
         }
 

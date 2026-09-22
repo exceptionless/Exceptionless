@@ -178,6 +178,7 @@
             if (!wrappedColumnIds.includes(columnId)) {
                 setWrappedColumnIds([...wrappedColumnIds, columnId]);
             }
+
             return;
         }
 
