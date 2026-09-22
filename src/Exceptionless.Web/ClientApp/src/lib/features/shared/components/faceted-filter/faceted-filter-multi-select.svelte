@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { Snippet } from 'svelte';
+
     import * as FacetedFilter from '$comp/faceted-filter';
     import { Button } from '$comp/ui/button';
     import * as Command from '$comp/ui/command';
@@ -22,6 +24,9 @@
         open: boolean;
         options: Option[];
         remove: () => void;
+        search?: string;
+        shouldFilter?: boolean;
+        status?: Snippet;
         title: string;
         toggleHidden?: () => void;
         values: string[];
@@ -36,6 +41,9 @@
         open = $bindable(),
         options,
         remove,
+        search = $bindable(''),
+        shouldFilter = true,
+        status,
         title,
         toggleHidden,
         values
@@ -51,6 +59,12 @@
 
     $effect.pre(() => {
         updatedValues = values;
+    });
+
+    $effect(() => {
+        if (!open) {
+            search = '';
+        }
     });
 
     export function onClearFilter() {
@@ -123,12 +137,14 @@
         {onEscapeKeydown}
         onFocusOutside={(e) => e.preventDefault()}
     >
-        <Command.Root {filter} class={layout === 'tall' ? 'grid h-auto min-h-0 grid-rows-[auto_minmax(0,1fr)]' : undefined}>
-            <Command.Input placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
+        <Command.Root {filter} {shouldFilter} class={layout === 'tall' ? 'grid h-auto min-h-0 grid-rows-[auto_minmax(0,1fr)]' : undefined}>
+            <Command.Input bind:value={search} placeholder={title} autofocus={open} aria-describedby={`${title}-help`} />
             <Command.List class={layout === 'tall' ? 'max-h-96 min-h-0' : undefined}>
-                <Command.Empty>{noOptionsText}</Command.Empty>
-                {#if loading}
-                    <Command.Loading><div class="flex p-2"><Spinner /> Loading...</div></Command.Loading>
+                {#if !status}
+                    <Command.Empty>{noOptionsText}</Command.Empty>
+                    {#if loading}
+                        <Command.Loading><div class="flex p-2"><Spinner /> Loading...</div></Command.Loading>
+                    {/if}
                 {/if}
                 {#if options.length > 0}
                     <Command.Group>
@@ -151,6 +167,7 @@
                 {/if}
             </Command.List>
         </Command.Root>
+        {@render status?.()}
         <div id={`${title}-help`} class="sr-only">Arrow keys navigate. Space or Enter toggles selection. Escape cancels without saving.</div>
         <FacetedFilter.Actions clear={onClearFilter} {hidden} {remove} showClear={updatedValues.length > 0} {toggleHidden} />
     </Popover.Content>
