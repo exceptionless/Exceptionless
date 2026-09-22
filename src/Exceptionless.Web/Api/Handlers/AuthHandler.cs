@@ -35,6 +35,8 @@ public class AuthHandler(
     TimeProvider timeProvider,
     ILogger<AuthHandler> logger)
 {
+    private sealed record ExternalLoginUser(User User, bool SendVerificationEmail);
+
     private const string LegacyMicrosoftOAuthProvider = "WindowsLive";
     private const string MicrosoftOAuthProvider = "Microsoft";
     private readonly ScopedCacheClient _cache = new(cacheClient, "Auth");
@@ -534,13 +536,15 @@ public class AuthHandler(
         }
 
         User? user;
+        bool sendVerificationEmail;
         try
         {
             var result = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext);
             if (!result.IsSuccess)
                 return Result<TokenResult>.FromResult(result);
 
-            user = result.Value;
+            user = result.Value.User;
+            sendVerificationEmail = result.Value.SendVerificationEmail;
         }
         catch (ApplicationException ex)
         {
@@ -556,11 +560,14 @@ public class AuthHandler(
         if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
             await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext);
 
+        if (sendVerificationEmail && !user.IsEmailAddressVerified)
+            await mailer.SendUserEmailVerifyAsync(user);
+
         logger.UserLoggedIn(user.EmailAddress);
         return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
-    private async Task<Result<User>> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext)
+    private async Task<Result<ExternalLoginUser>> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
@@ -585,15 +592,15 @@ public class AuthHandler(
                 else
                 {
                     if (RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName))
-                        return await userRepository.SaveAsync(currentUser, o => o.Cache());
+                        return new ExternalLoginUser(await userRepository.SaveAsync(currentUser, o => o.Cache()), false);
 
-                    return currentUser;
+                    return new ExternalLoginUser(currentUser, false);
                 }
             }
 
             currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
             RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName);
-            return await userRepository.SaveAsync(currentUser, o => o.Cache());
+            return new ExternalLoginUser(await userRepository.SaveAsync(currentUser, o => o.Cache()), false);
         }
 
         if (existingUser is not null)
@@ -608,7 +615,7 @@ public class AuthHandler(
             if (hasChanges)
                 await userRepository.SaveAsync(existingUser, o => o.Cache());
 
-            return existingUser;
+            return new ExternalLoginUser(existingUser, false);
         }
 
         var user = !String.IsNullOrEmpty(userInfo.Email) ? await userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
@@ -638,10 +645,7 @@ public class AuthHandler(
         else
             await userRepository.SaveAsync(user, o => o.Cache());
 
-        if (isMicrosoft)
-            await mailer.SendUserEmailVerifyAsync(user);
-
-        return user;
+        return new ExternalLoginUser(user, isMicrosoft);
     }
 
     private static bool RemoveLegacyMicrosoftOAuthAccounts(User user, string providerName)

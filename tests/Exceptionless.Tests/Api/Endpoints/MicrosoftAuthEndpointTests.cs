@@ -1,14 +1,17 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Repositories;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using ProblemDetails = Microsoft.AspNetCore.Mvc.ProblemDetails;
 
@@ -21,6 +24,8 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
     private readonly string? _originalMicrosoftId;
     private readonly string? _originalMicrosoftSecret;
     private readonly IUserRepository _userRepository;
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly CountingMailer _mailer;
 
     public MicrosoftAuthEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -29,6 +34,15 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         _originalMicrosoftId = _authOptions.MicrosoftId;
         _originalMicrosoftSecret = _authOptions.MicrosoftSecret;
         _userRepository = GetService<IUserRepository>();
+        _organizationRepository = GetService<IOrganizationRepository>();
+        _mailer = GetService<CountingMailer>();
+    }
+
+    protected override void RegisterServices(IServiceCollection services)
+    {
+        base.RegisterServices(services);
+        services.AddSingleton<CountingMailer>();
+        services.ReplaceSingleton<IMailer>(provider => provider.GetRequiredService<CountingMailer>());
     }
 
     protected override async Task ResetDataAsync()
@@ -38,6 +52,7 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         _authOptions.MicrosoftId = "microsoft-client-id";
         _authOptions.MicrosoftSecret = "microsoft-client-secret";
         await GetService<SampleDataService>().CreateDataAsync();
+        _mailer.Reset();
     }
 
     public override ValueTask DisposeAsync()
@@ -153,6 +168,34 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         Assert.False(microsoftUser.IsEmailAddressVerified);
         Assert.False(String.IsNullOrWhiteSpace(microsoftUser.VerifyEmailAddressToken));
         Assert.True(microsoftUser.VerifyEmailAddressTokenExpiration > TimeProvider.GetUtcNow().UtcDateTime);
+        Assert.Equal(1, _mailer.UserEmailVerificationCount);
+    }
+
+    [Fact]
+    public async Task MicrosoftAsync_MatchingInvitation_VerifiesWithoutSendingExpiredEmail()
+    {
+        // Arrange
+        const string code = "invited-microsoft-user";
+        string emailAddress = TestOAuthProviderClient.GetEmailAddress(code);
+        var organization = (await _organizationRepository.GetAllAsync()).Documents.First();
+        var invite = new Invite {
+            Token = StringExtensions.GetNewToken(),
+            EmailAddress = emailAddress,
+            DateAdded = TimeProvider.GetUtcNow().UtcDateTime
+        };
+        organization.Invites.Add(invite);
+        await _organizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
+
+        // Act
+        await SendMicrosoftLoginAsync(code, inviteToken: invite.Token);
+
+        // Assert
+        var user = await _userRepository.GetByEmailAddressAsync(emailAddress);
+        Assert.NotNull(user);
+        Assert.True(user.IsEmailAddressVerified);
+        Assert.Null(user.VerifyEmailAddressToken);
+        Assert.Contains(organization.Id, user.OrganizationIds);
+        Assert.Equal(0, _mailer.UserEmailVerificationCount);
     }
 
     private static User CreateUser(string emailAddress)
@@ -167,7 +210,7 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         return user;
     }
 
-    private Task<TokenResult?> SendMicrosoftLoginAsync(string code, bool isAuthenticated = false)
+    private Task<TokenResult?> SendMicrosoftLoginAsync(string code, bool isAuthenticated = false, string? inviteToken = null)
     {
         return SendRequestAsAsync<TokenResult>(request =>
         {
@@ -178,6 +221,7 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
                 {
                     ClientId = "microsoft-client-id",
                     Code = code,
+                    InviteToken = inviteToken,
                     RedirectUri = "http://localhost/callback"
                 })
                 .StatusCodeShouldBeOk();
