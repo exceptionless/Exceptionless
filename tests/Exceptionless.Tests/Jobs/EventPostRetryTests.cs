@@ -147,6 +147,25 @@ public sealed class EventPostRetryTests : TestWithServices
     }
 
     [Fact]
+    public async Task FirstUnlimitedPost_DoesNotReadReservationState()
+    {
+        ((OrganizationRepositoryProxy)(object)GetService<IOrganizationRepository>()).Organization.MaxEventsPerMonth = -1;
+        var cache = (FailOnceCacheProxy)(object)GetService<ICacheClient>();
+        cache.FailReservationLookup = true;
+        await EnqueueEventPostAsync(new PersistentEvent
+        {
+            Type = Event.KnownTypes.Log,
+            ReferenceId = "unlimited",
+            Date = TimeProvider.GetUtcNow()
+        });
+
+        Assert.True((await _job.RunAsync(TestContext.Current.CancellationToken)).IsSuccess);
+        cache.FailReservationLookup = false;
+        Assert.True((await _job.RunAsync(TestContext.Current.CancellationToken)).IsSuccess);
+        Assert.Single(_eventRepository.SavedEvents);
+    }
+
+    [Fact]
     public async Task CompletedPostRetry_AfterOrganizationBecomesUnlimited_DoesNotReprocessAcceptedEvents()
     {
         _pipeline.ProcessFirstEvent = true;
@@ -182,7 +201,7 @@ public sealed class EventPostRetryTests : TestWithServices
             await _usageService.ReleaseEventIngestReservationAsync(reservation);
 
         project.IngestLimit = null;
-        var retry = await _usageService.ReserveEventIngestAsync(organization, project, "cap-cleared", candidates, TestContext.Current.CancellationToken);
+        var retry = await _usageService.ReserveEventIngestAsync(organization, project, "cap-cleared", candidates, TestContext.Current.CancellationToken, isRedelivery: true);
 
         Assert.True(retry.IsTracked);
         Assert.Equal([0, 1], retry.AcceptedIndexes);
@@ -380,11 +399,14 @@ public sealed class EventPostRetryTests : TestWithServices
         public bool FailDiscardedIncrement { get; set; }
         public bool FailReservationAcknowledgement { get; set; }
         public bool FailCompletionNotificationRead { get; set; }
+        public bool FailReservationLookup { get; set; }
         private bool HasCompletedReservation { get; set; }
 
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
             ArgumentNullException.ThrowIfNull(targetMethod);
+            if (FailReservationLookup && targetMethod.Name == "ExistsAsync" && args?[0] is string lookupKey && lookupKey.Contains("ingest-reservation:", StringComparison.Ordinal))
+                throw new InvalidOperationException("New unlimited posts must not query reservation state.");
             if (FailCompletionNotificationRead && HasCompletedReservation && targetMethod.Name == "GetAllAsync" && targetMethod.GetGenericArguments().FirstOrDefault() == typeof(int))
             {
                 FailCompletionNotificationRead = false;

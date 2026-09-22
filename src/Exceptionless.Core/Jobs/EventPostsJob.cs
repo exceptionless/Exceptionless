@@ -173,7 +173,8 @@ public class EventPostsJob : QueueJobBase<EventPost>
             project,
             entry.Id,
             candidates,
-            context.CancellationToken);
+            context.CancellationToken,
+            isRedelivery: entry.Attempts > 1);
         if (reservation.IsCompleted)
         {
             await _usageService.CompleteEventIngestReservationAsync(reservation, organization, reservation.ProcessedCount);

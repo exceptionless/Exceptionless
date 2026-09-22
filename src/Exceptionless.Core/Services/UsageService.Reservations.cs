@@ -15,7 +15,7 @@ public partial class UsageService
     private static readonly TimeSpan IngestReservationRetention = TimeSpan.FromDays(35);
 
     internal async Task<EventIngestReservation> ReserveEventIngestAsync(Organization organization, Project project, string reservationId,
-        IReadOnlyCollection<EventIngestCandidate> candidates, CancellationToken cancellationToken = default)
+        IReadOnlyCollection<EventIngestCandidate> candidates, CancellationToken cancellationToken = default, bool isRedelivery = false)
     {
         using var reservationTimer = AppDiagnostics.IngestReservationReserveTime.StartTimer();
         ArgumentNullException.ThrowIfNull(organization);
@@ -28,10 +28,10 @@ public partial class UsageService
         int maxEventsPerMonth = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
         int effectiveProjectLimit = GetEffectiveProjectLimit(project, maxEventsPerMonth);
 
-        // New unlimited posts avoid the organization lock, but retries must finish any tracked
-        // reservation created before the plan or project cap changed.
+        // New unlimited posts need no cache or organization lock. A redelivery must finish any
+        // tracked reservation created before the plan or project cap changed.
         if (maxEventsPerMonth < 0 && effectiveProjectLimit < 0 &&
-            !await _cache.ExistsAsync(GetIngestReservationKey(organization.Id, reservationId)))
+            (!isRedelivery || !await _cache.ExistsAsync(GetIngestReservationKey(organization.Id, reservationId))))
             return EventIngestReservation.Unlimited(reservationId, organization.Id, project.Id, GetTotalBucket(utcNow), utcNow.Floor(_bucketSize), candidates);
 
         SmartThrottleResult? smartThrottleToActivate = null;
