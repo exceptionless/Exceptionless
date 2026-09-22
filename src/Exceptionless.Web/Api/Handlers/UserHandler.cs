@@ -4,6 +4,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
@@ -17,6 +18,7 @@ using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -29,6 +31,7 @@ public class UserHandler(
     ICacheClient cacheClient,
     IMailer mailer,
     ApiMapper mapper,
+    MiniValidationValidator validator,
     IntercomOptions intercomOptions,
     TimeProvider timeProvider,
     IHttpContextAccessor httpContextAccessor,
@@ -205,8 +208,19 @@ public class UserHandler(
             return permission;
 
         message.Changes.Patch(original);
-        await repository.SaveAsync(original, o => o.Cache());
-        return Result<object>.Success(MapToView(original));
+        await validator.ValidateAndThrowAsync(original);
+
+        var fields = new Dictionary<string, object?>();
+        if (message.Changes.ContainsChangedProperty(u => u.FullName))
+            fields["full_name"] = original.FullName;
+        if (message.Changes.ContainsChangedProperty(u => u.EmailNotificationsEnabled))
+            fields["email_notifications_enabled"] = original.EmailNotificationsEnabled;
+
+        await repository.PatchAsync(original.Id, new PartialPatch(fields));
+        // Server-side patches invalidate by ID; also clear the email lookup cache.
+        await repository.InvalidateCacheAsync(original);
+        var updated = await repository.GetByIdAsync(original.Id, o => o.Cache(false));
+        return updated is null ? Result.NotFound("User not found.") : Result<object>.Success(MapToView(updated));
     }
 
     public async Task<Result<ProfileImageUpdate<object>>> Handle(SetUserAvatar message)
