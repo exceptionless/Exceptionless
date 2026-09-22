@@ -5,6 +5,7 @@ import type { E2EEnvironment } from './environment';
 export interface E2ECurrentUser {
     email_address?: string;
     id: string;
+    product_tours?: Record<string, unknown>;
 }
 
 export interface E2EEvent {
@@ -463,7 +464,8 @@ function toCurrentUser(value: unknown): E2ECurrentUser {
 
     return {
         email_address: getOptionalString(record, 'email_address'),
-        id: getRequiredString(record, 'id', 'current user response')
+        id: getRequiredString(record, 'id', 'current user response'),
+        product_tours: record.product_tours == null ? undefined : toRecord(record.product_tours, 'current user product tours')
     };
 }
 

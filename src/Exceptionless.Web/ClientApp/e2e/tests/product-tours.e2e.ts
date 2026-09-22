@@ -37,13 +37,11 @@ test.describe('first-run welcome', () => {
                     }
                 })
             );
-            const reloadedUser = page
-                .waitForResponse((response) => new URL(response.url()).pathname === '/api/v2/users/me' && response.status() === 200)
-                .then((response) => response.json());
             const reloadedProjects = page.waitForResponse(
                 (response) => new URL(response.url()).pathname === `/api/v2/organizations/${e2eScenario.organizationId}/projects` && response.status() === 200
             );
-            const [, currentUser] = await Promise.all([page.reload(), reloadedUser, reloadedProjects]);
+            await Promise.all([page.reload(), reloadedProjects]);
+            const currentUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
 
             // Assert
             expect(currentUser).toMatchObject({
