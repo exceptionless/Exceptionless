@@ -267,30 +267,63 @@ if (ctx._source.redirect_to_stack_id != null) {
         ArgumentNullException.ThrowIfNull(tags);
         var tagsToAdd = tags.ToArray();
 
-        string? redirectToStackId = null;
+        var canonicalStack = await GetCanonicalStackAsync(stackId);
+        if (canonicalStack is null)
+            return false;
+
+        // A script updates only tags on the current document. A read/modify/save patch can
+        // repeatedly conflict with concurrent counter updates and eventually drop the tag write.
+        const string script = @"
+boolean containsIgnoreCase(def values, def candidate) {
+    for (def value : values) {
+        if (value.equalsIgnoreCase(candidate)) return true;
+    }
+    return false;
+}
+
+def original = ctx._source.tags == null ? new ArrayList() : ctx._source.tags;
+def merged = new ArrayList();
+for (def tag : original) {
+    if (tag != null && tag.length() > 0 && tag.length() <= 100 && !containsIgnoreCase(merged, tag)) {
+        merged.add(tag);
+    }
+}
+for (def tag : params.tags) {
+    if (tag != null && tag.length() > 0 && tag.length() <= 100 && !containsIgnoreCase(merged, tag)) {
+        merged.add(tag);
+    }
+}
+for (int i = 0; merged.size() > 50 && i < merged.size();) {
+    def tag = merged.get(i);
+    if (tag.equalsIgnoreCase('Critical') || tag.equalsIgnoreCase('Internal')) {
+        i++;
+    } else {
+        merged.remove(i);
+    }
+}
+
+if (ctx._source.redirect_to_stack_id != null || merged.equals(original)) {
+    ctx.op = 'noop';
+} else {
+    ctx._source.tags = merged;
+}";
+
         bool modified = await PatchAsync(
-            stackId,
-            new ActionPatch<Stack>(stack =>
+            canonicalStack.Id,
+            new ScriptPatch(script.TrimScript())
             {
-                if (!String.IsNullOrEmpty(stack.RedirectToStackId))
-                {
-                    redirectToStackId = stack.RedirectToStackId;
-                    return false;
-                }
+                Params = new Dictionary<string, object> { ["tags"] = tagsToAdd }
+            },
+            o => o.Notifications(false).Retry(100));
 
-                stack.Tags ??= new TagSet();
-                var originalTags = new TagSet(stack.Tags);
-                stack.Tags.UnionWith(tagsToAdd);
-                stack.Tags.RemoveExcessTags();
-                return !stack.Tags.SetEquals(originalTags);
-            }),
-            o => o.Notifications(false).Retry(10));
-
-        if (String.IsNullOrEmpty(redirectToStackId))
+        if (modified)
             return modified;
 
-        var canonicalStack = await GetCanonicalStackAsync(redirectToStackId);
-        return canonicalStack is not null && await AddEventTagsAsync(canonicalStack.Id, tagsToAdd);
+        // The target may have become a redirect between resolution and the patch. Read it
+        // without the cache so a stale cached canonical stack cannot discard these tags.
+        var currentStack = await GetByIdAsync(canonicalStack.Id, o => o.SoftDeleteMode(SoftDeleteQueryMode.All));
+        return !String.IsNullOrEmpty(currentStack?.RedirectToStackId)
+            && await AddEventTagsAsync(currentStack.RedirectToStackId, tagsToAdd);
     }
 
     public Task<long> MarkOpenAsync(IEnumerable<string> stackIds)

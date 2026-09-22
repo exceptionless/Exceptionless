@@ -551,6 +551,26 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AddEventTagsAsync_WithExcessAndInvalidTags_PreservesLimitsAndProtectedTags()
+    {
+        var stack = _stackData.GenerateSampleStack();
+        stack.Tags = new TagSet([Event.KnownTags.Critical, Event.KnownTags.Internal]);
+        await _repository.AddAsync(stack, o => o.ImmediateConsistency());
+
+        await _repository.AddEventTagsAsync(
+            stack.Id,
+            Enumerable.Range(0, 55).Select(index => $"tag-{index}")
+                .Concat(["critical", "", null, new string('x', 101)]));
+
+        var updated = await _repository.GetByIdAsync(stack.Id, o => o.ImmediateConsistency());
+        Assert.NotNull(updated);
+        Assert.Equal(50, updated.Tags.Count);
+        Assert.Contains(Event.KnownTags.Critical, updated.Tags);
+        Assert.Contains(Event.KnownTags.Internal, updated.Tags);
+        Assert.DoesNotContain(updated.Tags, tag => String.IsNullOrEmpty(tag) || tag.Length > 100);
+    }
+
+    [Fact]
     public async Task AddEventTagsAsync_WithConcurrentCounterUpdates_PreservesBothChanges()
     {
         var stack = _stackData.GenerateSampleStack();
