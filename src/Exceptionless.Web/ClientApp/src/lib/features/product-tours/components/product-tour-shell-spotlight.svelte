@@ -1,11 +1,15 @@
 <script lang="ts">
     import type { AssistantAccess } from '$features/assistant/models';
 
-    import { onDestroy, onMount, untrack } from 'svelte';
+    import { goto } from '$app/navigation';
+    import { resolve } from '$app/paths';
+    import { page } from '$app/state';
+    import { onDestroy, onMount, tick, untrack } from 'svelte';
 
     import type { ProductTourCheckpoint, ProductTourCheckpointName } from '../models';
 
     import { createProductTourActions } from '../actions.svelte';
+    import { productTourCatalog } from '../catalog';
     import { tryUseProductTourControls } from '../controls.svelte';
     import { productTourCheckpoint } from '../state.svelte';
     import ProductTourSpotlight from './product-tour-spotlight.svelte';
@@ -90,6 +94,7 @@
             title: 'Search and take action'
         }
     ];
+    const tour = productTourCatalog.find((item) => item.name === currentCheckpoint.tourName)!;
     const steps = currentCheckpoint.tourName === 'app-overview' ? appOverviewSteps : exieOverviewSteps;
     const stepIndex = steps.findIndex((step) => step.checkpointName === currentCheckpoint.checkpointName);
     const spotlight = steps[stepIndex];
@@ -107,7 +112,16 @@
 
     $effect(() => {
         if (targetReady && (isMobile || spotlight?.mobileNavigation)) {
-            untrack(() => setMobileNavigationOpen(spotlight?.mobileNavigation ?? false));
+            let active = true;
+            // Let the responsive drawer mount before opening it.
+            void tick().then(() => {
+                if (active) {
+                    setMobileNavigationOpen(spotlight?.mobileNavigation ?? false);
+                }
+            });
+            return () => {
+                active = false;
+            };
         }
     });
 
@@ -126,17 +140,25 @@
 
         const next = steps[stepIndex + 1];
         if (next) {
-            productTourCheckpoint.advance(currentCheckpoint, next.checkpointName);
+            await moveTo(next);
         } else {
             await actions.complete(currentCheckpoint);
         }
     }
 
-    function back(): void {
+    async function back(): Promise<void> {
         const previous = steps[stepIndex - 1];
         if (previous) {
-            productTourCheckpoint.advance(currentCheckpoint, previous.checkpointName);
+            await moveTo(previous);
         }
+    }
+
+    async function moveTo(step: ShellStep): Promise<void> {
+        if (!tour.canResume(step.checkpointName, page.route.id)) {
+            await goto(resolve('/(app)/event'));
+        }
+
+        productTourCheckpoint.advance(currentCheckpoint, step.checkpointName);
     }
 </script>
 

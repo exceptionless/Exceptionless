@@ -16,7 +16,10 @@ vi.mock('./controls.svelte', () => ({ tryUseProductTourControls: () => ({ openCa
 vi.mock('svelte-sonner', () => ({ toast: { error: mocks.error, success: mocks.success } }));
 
 describe('product tour completion', () => {
-    beforeEach(() => mocks.mutateAsync.mockResolvedValue(undefined));
+    beforeEach(() => {
+        mocks.mutateAsync.mockResolvedValue(undefined);
+        mocks.submitFeatureUsage.mockResolvedValue(undefined);
+    });
 
     it('finishes without waiting for telemetry', async () => {
         // Arrange
@@ -35,6 +38,19 @@ describe('product tour completion', () => {
     afterEach(() => {
         productTourCheckpoint.clear();
         vi.resetAllMocks();
+    });
+
+    it.each(['complete', 'dismiss'] as const)('consumes rejected telemetry on %s', async (action) => {
+        const checkpoint = productTourCheckpoint.start('app-overview', 'command-search', 'user');
+        const submission = Promise.reject(new Error('Telemetry unavailable'));
+        const handled = vi.spyOn(submission, 'catch');
+        mocks.submitFeatureUsage.mockReturnValueOnce(submission);
+
+        expect(await createProductTourActions()[action](checkpoint)).toBe(true);
+        expect(handled).toHaveBeenCalledOnce();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(productTourCheckpoint.current).toBeUndefined();
     });
 
     it('offers an actionable next step when the guide finishes', async () => {

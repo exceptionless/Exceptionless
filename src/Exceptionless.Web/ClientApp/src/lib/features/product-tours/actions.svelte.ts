@@ -39,10 +39,11 @@ export function createProductTourActions() {
                 })
                 .catch(() => undefined);
         }
-        void submitProductTourActivity(action, checkpoint.tourName);
+        void submitProductTourActivity(action, checkpoint.tourName).catch(() => undefined);
         if (action === 'completed') {
             showCompletion(checkpoint);
         }
+
         return true;
     }
 

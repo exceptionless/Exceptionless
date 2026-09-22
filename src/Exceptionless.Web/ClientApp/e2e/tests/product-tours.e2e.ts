@@ -735,6 +735,26 @@ test('the error guide keeps the start of a wide report visible on mobile', async
     await expectCalloutBesideTarget(page);
 });
 
+test('overview returns to Events after navigating back to Stacks', async ({ e2eScenario, page }, testInfo) => {
+    await page.goto('/next/stack');
+    await expect(page.getByRole('button', { name: new RegExp(e2eScenario.userName) })).toBeVisible();
+    await startTourFromCommand(page, 'Explore Exceptionless');
+    const guide = page.locator('.driver-popover');
+    await expect(guide.getByText('Spot repeated problems')).toBeVisible();
+
+    await expect(page).toHaveURL(/\/next\/event$/);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/next\/stack$/);
+    await guide.getByRole('button', { name: 'Next' }).click();
+    await expect(guide.getByText('See each report')).toBeVisible();
+    await guide.getByRole('button', { name: 'Next' }).click();
+
+    await expect(page).toHaveURL(/\/next\/event$/);
+    await expect(guide.getByText('Narrow your results')).toBeVisible();
+    await expectActiveProductTour(page, true);
+    await page.screenshot({ path: testInfo.outputPath('interactive-stacks-next.png') });
+});
+
 test('overview navigation survives resizing between desktop and mobile', async ({ e2eScenario, page }) => {
     await mockAssistantAccess(page);
     await page.setViewportSize({ height: 900, width: 1440 });

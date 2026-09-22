@@ -1,4 +1,5 @@
-import { cleanup, render, waitFor } from '@testing-library/svelte';
+import { page } from '$app/state';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { productTourCheckpoint } from '../state.svelte';
@@ -7,9 +8,16 @@ import ProductTourShellSpotlight from './product-tour-shell-spotlight.svelte';
 vi.mock('../actions.svelte', () => ({ createProductTourActions: () => ({ complete: vi.fn(), dismiss: vi.fn() }) }));
 vi.mock('../activity', () => ({ submitProductTourActivity: vi.fn() }));
 
+const navigation = vi.hoisted(() => ({ goto: vi.fn() }));
+vi.mock('$app/navigation', () => navigation);
+vi.mock('$app/state', () => ({ page: { route: { id: '/(app)/stack' } } }));
+vi.mock('$app/paths', () => ({ resolve: () => '/next/event' }));
+
 let targets: HTMLDivElement;
 
 beforeEach(() => {
+    navigation.goto.mockReset();
+    page.route.id = '/(app)/stack';
     vi.stubGlobal(
         'ResizeObserver',
         class {
@@ -18,7 +26,7 @@ beforeEach(() => {
         }
     );
     targets = document.createElement('div');
-    for (const name of ['navigation-stacks', 'navigation-events', 'event-filters']) {
+    for (const name of ['navigation-stacks', 'navigation-events', 'event-filters', 'saved-view-trigger']) {
         const target = document.createElement('button');
         target.dataset.tour = name;
         target.scrollIntoView = vi.fn();
@@ -35,6 +43,47 @@ afterEach(() => {
 });
 
 describe('ProductTourShellSpotlight', () => {
+    it.each([
+        ['events', 'Next'],
+        ['saved-views', 'Back']
+    ] as const)('returns to Events before moving from %s to filters', async (step, button) => {
+        productTourCheckpoint.start('app-overview', step, 'user');
+        const checkpoint = productTourCheckpoint.current!;
+        const pending = Promise.withResolvers<void>();
+        navigation.goto.mockReturnValueOnce(pending.promise);
+        render(ProductTourShellSpotlight, {
+            checkpoint,
+            isAnyOverlayOpen: false,
+            isMobile: false,
+            openAssistant: vi.fn(),
+            setMobileNavigationOpen: vi.fn()
+        });
+
+        await fireEvent.click(await screen.findByRole('button', { name: button }));
+
+        expect(navigation.goto).toHaveBeenCalledWith('/next/event');
+        expect(productTourCheckpoint.current).toBe(checkpoint);
+        pending.resolve();
+        await waitFor(() => expect(productTourCheckpoint.current?.checkpointName).toBe('filters'));
+    });
+
+    it.each(['/(app)/event', '/(app)/event/[slug=savedview]'] as const)('preserves the current event view on %s', async (routeId) => {
+        page.route.id = routeId;
+        productTourCheckpoint.start('app-overview', 'events', 'user');
+        render(ProductTourShellSpotlight, {
+            checkpoint: productTourCheckpoint.current!,
+            isAnyOverlayOpen: false,
+            isMobile: false,
+            openAssistant: vi.fn(),
+            setMobileNavigationOpen: vi.fn()
+        });
+
+        await fireEvent.click(await screen.findByRole('button', { name: 'Next' }));
+
+        expect(navigation.goto).not.toHaveBeenCalled();
+        expect(productTourCheckpoint.current?.checkpointName).toBe('filters');
+    });
+
     it.each(['navigation', 'events'] as const)('opens navigation when %s switches to mobile', async (checkpointName) => {
         productTourCheckpoint.start('app-overview', checkpointName, 'user');
         const checkpoint = productTourCheckpoint.current!;
