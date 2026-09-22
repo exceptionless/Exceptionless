@@ -138,11 +138,7 @@
     }
 
     function getPersistedStackSort(): string | undefined {
-        if (queryParams.sort != null) {
-            return getStackSortMode(queryParams.sort) ?? 'stack_frequent';
-        }
-
-        return savedViewsState.activeSavedView?.sort ?? undefined;
+        return queryParams.sort ?? savedViewsState.activeSavedView?.sort ?? undefined;
     }
 
     function getQueryFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] | null {

@@ -40,11 +40,17 @@ test('stack sort survives reload and resets pagination and selection without sen
     expect(requests.every((url) => !url.searchParams.has('sort'))).toBe(true);
 });
 
-for (const [sort, label, mode] of [
-    ['-events', 'Events', 'stack_frequent'],
-    ['-last', 'Last', 'stack_recent']
+for (const [sort, label, mode, explicitSort] of [
+    ['-events', 'Events', 'stack_frequent', false],
+    ['-last', 'Last', 'stack_recent', false],
+    ['-events', 'Events', 'stack_frequent', true],
+    ['-last', 'Last', 'stack_recent', true]
 ] as const) {
-    test(`legacy ${sort} stack views preserve their sort through reset and save`, async ({ e2eScenario, page, request }) => {
+    test(`legacy ${sort} stack views ${explicitSort ? 'with an explicit URL sort ' : ''}preserve their sort through reset and save`, async ({
+        e2eScenario,
+        page,
+        request
+    }) => {
         const headers = { Authorization: `Bearer ${e2eScenario.userToken}` };
         const slug = `sort-${label.toLowerCase()}`;
         const createResponse = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
@@ -62,7 +68,7 @@ for (const [sort, label, mode] of [
         const savedView = (await createResponse.json()) as { id: string };
 
         const initialResponse = waitForStackMode(page, mode);
-        await page.goto(`/next/stack/${slug}`);
+        await page.goto(`/next/stack/${slug}${explicitSort ? `?sort=${sort}` : ''}`);
         expect((await initialResponse).ok()).toBe(true);
         await expect(page.getByRole('button', { name: `Sort by ${label} descending` })).toHaveAttribute('aria-pressed', 'true');
         await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
