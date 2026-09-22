@@ -28,6 +28,9 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
         _timeProvider = timeProvider;
     }
 
+    private static string CacheKey(string organizationId, string projectId, string clientIpAddress, long period) =>
+        String.Concat("Organization:", organizationId, ":Project:", projectId, ":bot:", period, ":", clientIpAddress);
+
     public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
     {
         if (_options.AppMode == AppMode.Development)
@@ -51,7 +54,7 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
             }
 
             var clientIpContexts = clientIpAddressGroup.ToList();
-            string throttleCacheKey = $"bot:{scope.OrganizationId}:{scope.ProjectId}:{scope.ClientIpAddress}:{_timeProvider.GetUtcNow().UtcDateTime.Floor(_throttlingPeriod).Ticks}";
+            string throttleCacheKey = CacheKey(scope.OrganizationId, scope.ProjectId, scope.ClientIpAddress, _timeProvider.GetUtcNow().UtcDateTime.Floor(_throttlingPeriod).Ticks);
             int? requestCount = await _cache.GetAsync<int?>(throttleCacheKey, null);
             if (requestCount.HasValue)
             {

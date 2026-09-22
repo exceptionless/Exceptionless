@@ -77,6 +77,28 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return RemoveAllAsync(q => query, options);
     }
 
+    public Task<long> RemoveAllAsync(string organizationId, string projectId, string clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent>? options = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(organizationId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientIpAddress);
+
+        var query = new RepositoryQuery<PersistentEvent>()
+            .Organization(organizationId)
+            .Project(projectId)
+            .FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
+        if (utcStart.HasValue || utcEnd.HasValue)
+        {
+            query = query.DateRange(utcStart, utcEnd, InferField(e => e.Date));
+        }
+        if (utcStart.HasValue && utcEnd.HasValue)
+        {
+            query = query.Index(utcStart, utcEnd);
+        }
+
+        return RemoveAllAsync(q => query, options);
+    }
+
     public Task<FindResults<PersistentEvent>> GetByReferenceIdAsync(string projectId, string referenceId)
     {
         return FindAsync(q => q.Project(projectId).FieldEquals(e => e.ReferenceId, referenceId).SortDescending(e => e.Date), o => o.PageLimit(10));

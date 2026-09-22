@@ -8,23 +8,24 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Serializer;
+using Foundatio.Xunit;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace Exceptionless.Tests.Plugins;
 
-public sealed class ThrottleBotsPluginTests : IDisposable
+public sealed class ThrottleBotsPluginTests : TestWithLoggingBase
 {
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 9, 21, 2, 25, 0, TimeSpan.Zero));
     private readonly InMemoryCacheClient _cache;
-    private readonly InMemoryQueue<WorkItemData> _queue = new();
+    private readonly InMemoryQueue<WorkItemData> _queue;
     private readonly ThrottleBotsPlugin _plugin;
 
-    public ThrottleBotsPluginTests()
+    public ThrottleBotsPluginTests(ITestOutputHelper output) : base(output)
     {
-        _cache = new InMemoryCacheClient(new InMemoryCacheClientOptions { TimeProvider = _time });
+        _cache = new InMemoryCacheClient(new InMemoryCacheClientOptions { TimeProvider = _time, LoggerFactory = Log });
+        _queue = new InMemoryQueue<WorkItemData>(new InMemoryQueueOptions<WorkItemData> { TimeProvider = _time, LoggerFactory = Log });
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             [nameof(AppOptions.BaseURL)] = "http://localhost",
@@ -33,7 +34,7 @@ public sealed class ThrottleBotsPluginTests : IDisposable
         }).Build();
         var serializer = new SystemTextJsonSerializer(new JsonSerializerOptions().ConfigureExceptionlessDefaults());
         _plugin = new ThrottleBotsPlugin(_cache, _queue, serializer, _time,
-            AppOptions.ReadFromConfiguration(configuration), NullLoggerFactory.Instance);
+            AppOptions.ReadFromConfiguration(configuration), Log);
     }
 
     [Theory]
@@ -87,9 +88,10 @@ public sealed class ThrottleBotsPluginTests : IDisposable
             new Project { Id = projectId, OrganizationId = organizationId, DeleteBotDataEnabled = enabled });
     }
 
-    public void Dispose()
+    public override ValueTask DisposeAsync()
     {
         _queue.Dispose();
         _cache.Dispose();
+        return base.DisposeAsync();
     }
 }

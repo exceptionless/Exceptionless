@@ -1,11 +1,8 @@
 using System.Reflection;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Options;
 using Foundatio.Jobs;
-using Foundatio.Repositories;
 using Foundatio.Utility;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -19,11 +16,15 @@ public sealed class RemoveBotEventsWorkItemHandlerTests
     {
         var repository = DispatchProxy.Create<IEventRepository, RecordingRepository>();
         var handler = new RemoveBotEventsWorkItemHandler(repository, null!, NullLoggerFactory.Instance);
-        await handler.HandleItemAsync(CreateContext(CreateWorkItem()));
+        var item = CreateWorkItem();
+        await handler.HandleItemAsync(CreateContext(item));
 
-        var query = Assert.IsAssignableFrom<IRepositoryQuery>(((RecordingRepository)repository).Query);
-        Assert.Equal(["organization-a"], query.GetOrganizations());
-        Assert.Equal(["project-a"], query.GetProjects());
+        var arguments = Assert.IsType<object[]>(((RecordingRepository)repository).DeleteArguments);
+        Assert.Equal(item.OrganizationId, arguments[0]);
+        Assert.Equal(item.ProjectId, arguments[1]);
+        Assert.Equal(item.ClientIpAddress, arguments[2]);
+        Assert.Equal(item.UtcStartDate, arguments[3]);
+        Assert.Equal(item.UtcEndDate, arguments[4]);
     }
 
     [Theory]
@@ -53,7 +54,7 @@ public sealed class RemoveBotEventsWorkItemHandlerTests
 
     private class RecordingRepository : DispatchProxy
     {
-        public IRepositoryQuery? Query { get; private set; }
+        public object?[]? DeleteArguments { get; private set; }
         public int DeleteCalls { get; private set; }
 
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
@@ -61,9 +62,7 @@ public sealed class RemoveBotEventsWorkItemHandlerTests
             if (targetMethod?.Name == nameof(IEventRepository.RemoveAllAsync))
             {
                 DeleteCalls++;
-                Query = args![0] is RepositoryQueryDescriptor<PersistentEvent> descriptor
-                    ? descriptor(new RepositoryQuery<PersistentEvent>())
-                    : args[0] as IRepositoryQuery;
+                DeleteArguments = args;
                 return Task.FromResult(1L);
             }
 
