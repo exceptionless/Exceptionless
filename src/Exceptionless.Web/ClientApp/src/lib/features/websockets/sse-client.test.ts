@@ -1,3 +1,4 @@
+import { env } from '$env/dynamic/public';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { accessToken } from '../auth/index.svelte';
@@ -421,6 +422,22 @@ describe('SseClient', () => {
         it('should construct correct SSE URL with base URL', () => {
             const client = trackedClient({ baseUrl: 'http://localhost:5200' });
             expect(client.url).toBe('http://localhost:5200/api/v2/push');
+        });
+
+        it('uses the configured API origin for push while keeping an explicit override', () => {
+            const configuredUrl = env.PUBLIC_EXCEPTIONLESS_SERVER_URL;
+            env.PUBLIC_EXCEPTIONLESS_SERVER_URL = 'https://api-ex.dev.localhost:7111/';
+
+            try {
+                const client = new SseClient();
+                activeClients.push(client);
+                expect(client.url).toBe('https://api-ex.dev.localhost:7111/api/v2/push');
+
+                const overridden = trackedClient({ baseUrl: 'http://localhost:5200' });
+                expect(overridden.url).toBe('http://localhost:5200/api/v2/push');
+            } finally {
+                env.PUBLIC_EXCEPTIONLESS_SERVER_URL = configuredUrl;
+            }
         });
     });
 });

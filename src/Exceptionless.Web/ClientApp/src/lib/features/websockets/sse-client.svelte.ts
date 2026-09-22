@@ -1,11 +1,12 @@
+import { env } from '$env/dynamic/public';
 import { DocumentVisibility } from '$shared/document-visibility.svelte';
 
 import { accessToken } from '../auth/index.svelte';
 
 export interface SseClientOptions {
     /**
-     * Base URL for SSE connection (e.g., 'http://localhost:5200')
-     * If not provided, constructs from window.location
+     * Base URL for SSE connection (e.g., 'http://localhost:5200').
+     * Defaults to the configured API origin, then the page origin.
      */
     baseUrl?: string;
     /**
@@ -39,8 +40,9 @@ export class SseClient {
      */
     public get url(): string {
         if (this._url === null) {
-            if (this._options.baseUrl) {
-                this._url = `${this._options.baseUrl}${this._path}`;
+            const baseUrl = this._options.baseUrl ?? env.PUBLIC_EXCEPTIONLESS_SERVER_URL;
+            if (baseUrl) {
+                this._url = `${baseUrl.replace(/\/$/, '')}${this._path}`;
             } else {
                 const { host, protocol } = window.location;
                 this._url = `${protocol}//${host}${this._path}`;
