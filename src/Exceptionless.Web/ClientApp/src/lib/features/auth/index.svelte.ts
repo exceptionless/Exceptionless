@@ -2,7 +2,9 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
+import { getProblemMessage } from '$shared/validation';
 import { useFetchClient } from '@foundatiofx/fetchclient';
+import { toast } from 'svelte-sonner';
 
 import type { TokenResult } from './models';
 
@@ -189,6 +191,8 @@ async function oauthLogin(options: OAuthLoginOptions) {
     if (response.ok && response.data?.token) {
         accessToken.current = response.data.token;
         await goto(options.redirectUrl || resolve('/'));
+    } else {
+        toast.error(getProblemMessage(response.problem, 'Unable to sign in. Please try again.'));
     }
 }
 

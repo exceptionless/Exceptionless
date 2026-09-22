@@ -1,16 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { accessToken, goto, postJSON } = vi.hoisted(() => ({
+const { accessToken, goto, postJSON, toastError } = vi.hoisted(() => ({
     accessToken: { current: null as null | string },
     goto: vi.fn(),
-    postJSON: vi.fn()
+    postJSON: vi.fn(),
+    toastError: vi.fn()
 }));
 
 vi.mock('$app/navigation', () => ({ goto }));
 vi.mock('$app/paths', () => ({ resolve: (path: string) => `/next${path}` }));
 vi.mock('$app/state', () => ({ page: {} }));
 vi.mock('$env/dynamic/public', () => ({ env: { PUBLIC_MICROSOFT_APPID: 'microsoft-client-id' } }));
-vi.mock('@foundatiofx/fetchclient', () => ({ useFetchClient: () => ({ postJSON }) }));
+vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({ ...(await importOriginal<object>()), useFetchClient: () => ({ postJSON }) }));
+vi.mock('svelte-sonner', () => ({ toast: { error: toastError } }));
 vi.mock('./api.svelte', () => ({}));
 vi.mock('./state.svelte', () => ({ accessToken }));
 vi.mock('./validators', () => ({ validateEmailAvailability: vi.fn() }));
@@ -62,6 +64,27 @@ describe('microsoftLogin', () => {
         });
         expect(accessToken.current).toBe('session-token');
         expect(goto).toHaveBeenCalledExactlyOnceWith('/next/organization/invited');
+        expect(popup.close).toHaveBeenCalledOnce();
+    });
+
+    it.each([
+        [
+            { status: 403, title: 'Sign in to your existing account first, then link Microsoft from your account settings.' },
+            'Sign in to your existing account first, then link Microsoft from your account settings.'
+        ],
+        [undefined, 'Unable to sign in. Please try again.']
+    ])('displays an unsuccessful exchange without changing the session', async (problem, message) => {
+        vi.stubGlobal('crypto', { randomUUID: () => 'expected-state' });
+        accessToken.current = 'existing-session';
+        postJSON.mockResolvedValue({ ok: false, problem });
+        const login = microsoftLogin();
+        popup.location = new URL('http://localhost:7131/?code=authorization-code&state=expected-state');
+        await vi.advanceTimersByTimeAsync(500);
+        await login;
+
+        expect(toastError).toHaveBeenCalledExactlyOnceWith(message);
+        expect(accessToken.current).toBe('existing-session');
+        expect(goto).not.toHaveBeenCalled();
         expect(popup.close).toHaveBeenCalledOnce();
     });
 
