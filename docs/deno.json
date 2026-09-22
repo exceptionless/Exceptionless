@@ -12,7 +12,8 @@
   },
   "imports": {
     "@exceptionless/browser": "npm:@exceptionless/browser@3.2.1",
-    "lume/": "https://cdn.jsdelivr.net/gh/lumeland/lume@3.2.6/"
+    "lume/": "https://cdn.jsdelivr.net/gh/lumeland/lume@3.3.1/",
+    "npm:sharp@0.35.3": "npm:sharp@0.35.4"
   },
   "nodeModulesDir": "auto",
   "permissions": {

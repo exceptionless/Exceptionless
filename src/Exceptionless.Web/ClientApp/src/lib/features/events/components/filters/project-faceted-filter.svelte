@@ -60,6 +60,7 @@
         filterRemoved(filter);
     }}
     hidden={filter.hidden}
+    layout="tall"
     {title}
     {toggleHidden}
     values={filter.value}
