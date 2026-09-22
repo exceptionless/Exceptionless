@@ -72,6 +72,25 @@ describe('InvestigationListTour', () => {
         expect(onOpenError).toHaveBeenCalledExactlyOnceWith('loaded-error');
     });
 
+    it('waits for an initial load before showing the empty state', async () => {
+        const onOpenError = vi.fn();
+        const component = render(InvestigationListTour, { isLoading: true, onOpenError });
+        expect(screen.queryByText('There are no errors in this list yet. Try a different time range or project.')).toBeNull();
+        expect(productTourCheckpoint.current?.checkpointName).toBe('choose-error');
+
+        await component.rerender({ isLoading: false, onOpenError });
+        await screen.findByText('There are no errors in this list yet. Try a different time range or project.');
+    });
+
+    it('keeps a visible error actionable during a background fetch', async () => {
+        const onOpenError = vi.fn();
+        render(InvestigationListTour, { firstErrorId: 'first-error', isLoading: true, onOpenError });
+
+        await fireEvent.click(await screen.findByRole('button', { name: 'Open error' }));
+
+        expect(onOpenError).toHaveBeenCalledExactlyOnceWith('first-error');
+    });
+
     it('highlights the same error as its action when resuming on a mixed list', async () => {
         // Arrange: the event list has a newer log before the selected error.
         const errorId = '507f1f77bcf86cd799439012';

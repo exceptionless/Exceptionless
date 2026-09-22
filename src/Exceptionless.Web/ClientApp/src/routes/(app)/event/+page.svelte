@@ -1053,9 +1053,8 @@
 />
 
 <InvestigationListTour
-    firstErrorId={eventsQuery.isFetching || isSavedViewRoutePending
-        ? undefined
-        : table.getRowModel().rows.find((row) => row.original.type === 'error')?.original.id}
+    firstErrorId={isSavedViewRoutePending ? undefined : table.getRowModel().rows.find((row) => row.original.type === 'error')?.original.id}
+    isLoading={eventsQuery.isFetching || isSavedViewRoutePending}
     onOpenError={(eventId) => {
         selectedEventId = eventId;
     }}

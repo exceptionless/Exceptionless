@@ -216,7 +216,14 @@ public class UserHandler(
         if (message.Changes.ContainsChangedProperty(u => u.EmailNotificationsEnabled))
             fields["email_notifications_enabled"] = original.EmailNotificationsEnabled;
 
-        await repository.PatchAsync(original.Id, new PartialPatch(fields));
+        try
+        {
+            await repository.PatchAsync(original.Id, new PartialPatch(fields));
+        }
+        catch (DocumentNotFoundException)
+        {
+            return Result.NotFound("User not found.");
+        }
         // Server-side patches invalidate by ID; also clear the email lookup cache.
         await repository.InvalidateCacheAsync(original);
         var updated = await repository.GetByIdAsync(original.Id, o => o.Cache(false));

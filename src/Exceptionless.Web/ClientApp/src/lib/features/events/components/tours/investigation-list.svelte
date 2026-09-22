@@ -6,10 +6,11 @@
 
     interface Props {
         firstErrorId?: string;
+        isLoading?: boolean;
         onOpenError: (eventId: string) => void;
     }
 
-    let { firstErrorId, onOpenError }: Props = $props();
+    let { firstErrorId, isLoading = false, onOpenError }: Props = $props();
     const actions = createProductTourActions();
     const checkpoint = $derived(productTourCheckpoint.current?.tourName === 'event-investigate' ? productTourCheckpoint.current : undefined);
 
@@ -20,7 +21,7 @@
     }
 </script>
 
-{#if checkpoint?.checkpointName === 'choose-error'}
+{#if checkpoint?.checkpointName === 'choose-error' && (!isLoading || firstErrorId)}
     {#key firstErrorId}
         <ProductTourSpotlight
             {checkpoint}

@@ -835,6 +835,36 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UpdateUserAsync_DeletedAfterProfileRead_ReturnsNotFound(bool usePut)
+    {
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        Assert.NotNull(user);
+        var repository = Assert.IsType<PausingProfileUserRepository>(_userRepository);
+        var pause = repository.PauseNextRead(user.Id);
+        var request = SendRequestAsync(r =>
+        {
+            r = usePut ? r.Put() : r.Patch();
+            r.AsGlobalAdminUser().AppendPaths("users", user.Id)
+                .Content(new { FullName = "Updated Name" }).StatusCodeShouldBeNotFound();
+        });
+
+        try
+        {
+            await pause.SnapshotRead.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellationToken);
+            await _userRepository.RemoveAsync(user);
+        }
+        finally
+        {
+            pause.ResumeRead.TrySetResult();
+        }
+
+        await request;
+    }
+
     [Fact]
     public Task PatchAsync_WithNonExistentId_ReturnsNotFound()
     {
