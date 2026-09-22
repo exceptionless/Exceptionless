@@ -1,4 +1,5 @@
 import { DocumentVisibility } from '$shared/document-visibility.svelte';
+import { SvelteURL } from 'svelte/reactivity';
 
 import { accessToken } from '../auth/index.svelte';
 
@@ -13,6 +14,8 @@ export interface WebSocketClientOptions {
      * Default: 10000ms (10 seconds)
      */
     connectionTimeout?: number;
+    /** Current organization for global administrator impersonation notifications. */
+    organizationId?: string;
     /**
      * Custom reconnection delay calculator
      * Default uses exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s
@@ -129,7 +132,12 @@ export class WebSocketClient {
         let socket: WebSocket;
 
         try {
-            socket = new WebSocket(`${this.url}?access_token=${this.accessToken}`);
+            const url = new SvelteURL(this.url);
+            url.searchParams.set('access_token', this.accessToken!);
+            if (this._options.organizationId) {
+                url.searchParams.set('organization_id', this._options.organizationId);
+            }
+            socket = new WebSocket(url.toString());
             this.ws = socket;
             this.onConnecting(isReconnect);
         } catch (error) {

@@ -106,12 +106,14 @@
                             })
                         )}
                 >
-                    <Avatar.Root class="size-8" shape="square" title="Organization Icon">
-                        {#if activeOrganization.icon_url}
-                            <Avatar.Image alt={`${activeOrganization.name} icon`} src={activeOrganization.icon_url} />
-                        {/if}
-                        <Avatar.Fallback>{getInitials(activeOrganization.name)}</Avatar.Fallback>
-                    </Avatar.Root>
+                    {#key activeOrganization.icon_url}
+                        <Avatar.Root class="size-8" shape="square" title="Organization Icon">
+                            {#if activeOrganization.icon_url}
+                                <Avatar.Image alt={`${activeOrganization.name} icon`} src={activeOrganization.icon_url} />
+                            {/if}
+                            <Avatar.Fallback>{getInitials(activeOrganization.name)}</Avatar.Fallback>
+                        </Avatar.Root>
+                    {/key}
                     <div class="grid flex-1 text-left text-sm leading-tight">
                         <span class="truncate font-semibold">Organization</span>
                         <span class="truncate text-xs">{activeOrganization.name}</span>
@@ -130,14 +132,16 @@
                                     isImpersonating && 'bg-violet-100 dark:bg-violet-900/30'
                                 ]}
                             >
-                                <Avatar.Root class={['size-8', isImpersonating && 'after:border-violet-500']} shape="square" title="Organization Avatar">
-                                    {#if activeOrganization?.icon_url}
-                                        <Avatar.Image alt={`${activeOrganization.name} icon`} src={activeOrganization.icon_url} />
-                                    {/if}
-                                    <Avatar.Fallback class={[isImpersonating && 'bg-violet-200 text-violet-900 dark:bg-violet-800 dark:text-violet-100']}>
-                                        {getInitials(activeOrganization?.name ?? '?')}
-                                    </Avatar.Fallback>
-                                </Avatar.Root>
+                                {#key activeOrganization?.icon_url}
+                                    <Avatar.Root class={['size-8', isImpersonating && 'after:border-violet-500']} shape="square" title="Organization Avatar">
+                                        {#if activeOrganization?.icon_url}
+                                            <Avatar.Image alt={`${activeOrganization.name} icon`} src={activeOrganization.icon_url} />
+                                        {/if}
+                                        <Avatar.Fallback class={[isImpersonating && 'bg-violet-200 text-violet-900 dark:bg-violet-800 dark:text-violet-100']}>
+                                            {getInitials(activeOrganization?.name ?? '?')}
+                                        </Avatar.Fallback>
+                                    </Avatar.Root>
+                                {/key}
                                 <div class="grid flex-1 text-left text-sm leading-tight">
                                     <span class="truncate font-semibold">
                                         {activeOrganization?.name ?? 'Select an organization'}
@@ -169,12 +173,14 @@
                                     data-current-organization={organization.id === currentOrganizationId && !isImpersonating ? 'true' : undefined}
                                     class="gap-2 p-2"
                                 >
-                                    <Avatar.Root class="size-6" shape="square" title={organization.name}>
-                                        {#if organization.icon_url}
-                                            <Avatar.Image alt={`${organization.name} icon`} src={organization.icon_url} />
-                                        {/if}
-                                        <Avatar.Fallback>{getInitials(organization.name)}</Avatar.Fallback>
-                                    </Avatar.Root>
+                                    {#key organization.icon_url}
+                                        <Avatar.Root class="size-6" shape="square" title={organization.name}>
+                                            {#if organization.icon_url}
+                                                <Avatar.Image alt={`${organization.name} icon`} src={organization.icon_url} />
+                                            {/if}
+                                            <Avatar.Fallback>{getInitials(organization.name)}</Avatar.Fallback>
+                                        </Avatar.Root>
+                                    {/key}
                                     {organization.name}
                                 </DropdownMenu.Item>
                             {/each}

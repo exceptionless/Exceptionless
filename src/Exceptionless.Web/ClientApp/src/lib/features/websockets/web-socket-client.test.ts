@@ -413,6 +413,16 @@ describe('WebSocketClient', () => {
     });
 
     describe('URL Construction', () => {
+        it('includes the selected organization in the connection', async () => {
+            const client = createClient(undefined, { organizationId: 'impersonated-organization' });
+            client.connect();
+            const connection = await server.connected;
+            const url = new URL(connection.url);
+
+            expect(url.searchParams.get('organization_id')).toBe('impersonated-organization');
+            client.close();
+        });
+
         it('should construct correct WebSocket URL', () => {
             const client = createClient('/api/v2/push');
 

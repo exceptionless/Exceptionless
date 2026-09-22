@@ -121,6 +121,7 @@ export interface GetOrganizationProjectsParams {
 export interface GetOrganizationProjectsRequest {
     enabled?: () => boolean;
     params?: GetOrganizationProjectsParams;
+    refetchInterval?: false | number;
     route: {
         organizationId: string | undefined;
     };
@@ -401,7 +402,8 @@ export function getOrganizationProjectsQuery(request: GetOrganizationProjectsReq
             {
                 params: request.params
             }
-        ]
+        ],
+        refetchInterval: request.refetchInterval
     }));
 }
 

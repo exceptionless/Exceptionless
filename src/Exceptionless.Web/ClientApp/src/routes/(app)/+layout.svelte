@@ -51,7 +51,7 @@
     import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@foundatiofx/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
-    import { useInterval } from 'runed';
+    import { useInterval, watch } from 'runed';
     import { tick } from 'svelte';
     import { SvelteURLSearchParams } from 'svelte/reactivity';
     import { fade } from 'svelte/transition';
@@ -394,10 +394,8 @@
         }
     });
 
-    // WebSocket + keyboard shortcuts — only depends on token, not navigation
-    $effect(() => {
-        const currentToken = accessToken.current;
-
+    // Keep lifecycle dependencies explicit; setup helpers must not add reactive inputs.
+    watch([() => accessToken.current, () => organization.current], ([currentToken, currentOrganizationId]) => {
         function handleKeydown(e: KeyboardEvent) {
             if (
                 e.defaultPrevented ||
@@ -460,7 +458,10 @@
 
         const organizationEventRefresher = createOrganizationEventNotificationRefresher(queryClient);
         const projectStackRefresher = createProjectStackNotificationRefresher(queryClient);
-        const ws = new WebSocketClient();
+        const ws = new WebSocketClient(undefined, {
+            // Reconnect with the selected organization's notification subscription.
+            organizationId: currentOrganizationId
+        });
         ws.onMessage = (message) => void onMessage(message, organizationEventRefresher, projectStackRefresher);
         ws.onOpen = (_, isReconnect) => {
             if (isReconnect) {
@@ -500,9 +501,9 @@
     const organizations = $derived(organizationsQuery.data?.data ?? []);
 
     const impersonatingOrganizationId = $derived.by(() => {
-        // Only consider impersonation if user data is loaded and user has organizations
+        // Impersonation does not require the administrator to have organization memberships.
         const userOrganizationIds = meQuery.data?.organization_ids;
-        if (!isGlobalAdmin || !userOrganizationIds || userOrganizationIds.length === 0 || !organization.current) {
+        if (!isGlobalAdmin || !userOrganizationIds || !organization.current) {
             return undefined;
         }
 
@@ -542,12 +543,13 @@
     $effect(() => {
         void page.url.pathname;
 
-        if (!organizationsQuery.isSuccess) {
+        if (!organizationsQuery.isSuccess || !meQuery.isSuccess) {
             return;
         }
 
         const hasOrganizations = organizations.length > 0;
-        if (!hasOrganizations) {
+        const hasInvalidImpersonatedOrganization = !!impersonatingOrganizationId && impersonatedOrganizationQuery.isError;
+        if (!hasOrganizations && (!impersonatingOrganizationId || hasInvalidImpersonatedOrganization)) {
             organization.current = undefined;
 
             if (shouldRedirectToSetup()) {
@@ -558,7 +560,6 @@
         }
 
         const hasSelectedOrganization = !!organization.current && organizations.some((organizationItem) => organizationItem.id === organization.current);
-        const hasInvalidImpersonatedOrganization = !!impersonatingOrganizationId && impersonatedOrganizationQuery.isError;
         if ((!hasSelectedOrganization && !impersonatingOrganizationId) || hasInvalidImpersonatedOrganization) {
             organization.current = organizations[0]!.id;
         }
@@ -735,7 +736,6 @@
                 isLoading={meQuery.isLoading}
                 user={meQuery.data}
                 {gravatar}
-                {organizations}
                 {openChat}
                 {openKeyboardShortcuts}
                 {intercomUnreadCount}

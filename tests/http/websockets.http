@@ -1,0 +1,27 @@
+@apiUrl = http://localhost:7110/api/v2
+@email = admin@exceptionless.test
+@password = tester
+@organizationId = 537650f3b77efe23a47914f3
+
+### Authenticate before opening the WebSocket connection
+# @name login
+POST {{apiUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "{{email}}",
+    "password": "{{password}}"
+}
+
+### Organization notifications (requires a client that supports WebSocket upgrade)
+# The optional organization_id adds an impersonated organization subscription for
+# global administrators. Membership subscriptions and notification formats remain
+# unchanged. Other users cannot add subscriptions outside their memberships.
+# Reconnect when the selected organization changes. Omitting organization_id keeps
+# the existing membership-only behavior.
+GET {{apiUrl}}/push?organization_id={{organizationId}}
+Authorization: Bearer {{login.response.body.$.token}}
+Connection: Upgrade
+Upgrade: websocket
+Sec-WebSocket-Version: 13
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==

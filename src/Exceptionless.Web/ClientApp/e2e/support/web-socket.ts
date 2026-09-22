@@ -18,6 +18,19 @@ export async function dispatchWebSocketMessages(page: Page, messages: unknown[])
     }, messages);
 }
 
+export async function getWebSocketConnectionState(page: Page): Promise<{ activeOrganizationIds: (null | string)[]; created: number; pending: number }> {
+    return await page.evaluate(() => {
+        const sockets = ((window as TrackedWebSocketWindow).__exceptionlessE2EWebSockets ?? []).filter((socket) => socket.url.includes('/api/v2/push'));
+        return {
+            activeOrganizationIds: sockets
+                .filter((socket) => socket.readyState !== WebSocket.CLOSED)
+                .map((socket) => new URL(socket.url).searchParams.get('organization_id')),
+            created: sockets.length,
+            pending: sockets.filter((socket) => socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.CLOSING).length
+        };
+    });
+}
+
 export async function installWebSocketTestHarness(page: Page): Promise<void> {
     await page.addInitScript(() => {
         const trackedWindow = window as TrackedWebSocketWindow;

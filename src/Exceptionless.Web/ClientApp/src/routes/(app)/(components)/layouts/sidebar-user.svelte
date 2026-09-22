@@ -1,5 +1,4 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
     import type { Gravatar } from '$features/users/gravatar.svelte';
     import type { ViewCurrentUser } from '$features/users/models';
 
@@ -37,25 +36,14 @@
         open?: boolean;
         openChat: () => void;
         openKeyboardShortcuts: () => Promise<void> | void;
-        organizations?: ViewOrganization[];
         user: undefined | ViewCurrentUser;
     }
 
-    let {
-        gravatar,
-        intercomUnreadCount = 0,
-        isChatEnabled,
-        isLoading,
-        open = $bindable(false),
-        openChat,
-        openKeyboardShortcuts,
-        organizations = [],
-        user
-    }: Props = $props();
+    let { gravatar, intercomUnreadCount = 0, isChatEnabled, isLoading, open = $bindable(false), openChat, openKeyboardShortcuts, user }: Props = $props();
     const sidebar = useSidebar();
     const client = useFetchClient();
     const queryClient = useQueryClient();
-    const currentOrganizationId = $derived(organizations.find((organizationItem) => organizationItem.id === organization.current)?.id);
+    const currentOrganizationId = $derived(organization.current);
 
     function getUnreadCountLabel(unreadCount: number): string {
         return unreadCount > 99 ? '99+' : unreadCount.toString();

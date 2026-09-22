@@ -19,6 +19,7 @@ internal sealed class TestWebSocket : WebSocket
     public WebSocketCloseStatus? RequestedCloseStatus { get; private set; }
     public string? RequestedCloseStatusDescription { get; private set; }
     public List<string> SentMessages { get; } = [];
+    public Func<Task<WebSocketReceiveResult>>? OnReceive { get; set; }
     public override WebSocketCloseStatus? CloseStatus { get; } = WebSocketCloseStatus.NormalClosure;
     public override string? CloseStatusDescription { get; } = "Closed";
     public override string? SubProtocol { get; } = null;
@@ -51,7 +52,7 @@ internal sealed class TestWebSocket : WebSocket
 
     public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new WebSocketReceiveResult(0, WebSocketMessageType.Text, true));
+        return OnReceive?.Invoke() ?? Task.FromResult(new WebSocketReceiveResult(0, WebSocketMessageType.Text, true));
     }
 
     public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken)
