@@ -11,6 +11,8 @@ import { SvelteSet } from 'svelte/reactivity';
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
 
+import { TAG_SUGGESTION_STALE_TIME, tagSuggestionAggregation, tagSuggestionSession } from './tag-suggestions';
+
 export interface OrganizationEventNotificationRefresher {
     cancel: () => void;
     schedule: (organizationId?: string, refreshImmediately?: boolean) => void;
@@ -114,6 +116,7 @@ export const queryKeys = {
     stackEvents: (id: string | undefined, params?: GetStackEventsRequest['params']) => [...queryKeys.stacks(id), 'events', params] as const,
     stacks: (id: string | undefined) => [...queryKeys.type, 'stacks', id] as const,
     stacksCount: (id: string | undefined, params?: GetStackCountRequest['params']) => [...queryKeys.stacks(id), 'count', params] as const,
+    tagSuggestions: (organizationId: string | undefined, search: string, session: number) => ['EventTagSuggestions', organizationId, search, session] as const,
     type: ['PersistentEvent'] as const
 };
 
@@ -281,6 +284,12 @@ export interface GetStackEventsRequest {
     route: {
         stackId: string | undefined;
     };
+}
+
+export interface GetTagSuggestionsRequest {
+    enabled?: () => boolean;
+    params: { search: string };
+    route: { organizationId: string | undefined };
 }
 
 export function createEventWithNavigationQueryOptions(request: GetEventRequest, queryClient: QueryClient) {
@@ -645,6 +654,33 @@ export function getStackEventsQuery(request: GetStackEventsRequest) {
         },
         queryKey: queryKeys.stackEvents(request.route.stackId, request.params)
     }));
+}
+
+export function getTagSuggestionsQuery(request: GetTagSuggestionsRequest) {
+    return createQuery<CountResult, ProblemDetails>(() => {
+        const organizationId = request.route.organizationId;
+        const search = request.params.search;
+        const session = tagSuggestionSession(accessToken.current);
+
+        return {
+            enabled: !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
+            queryFn: async ({ signal }) => {
+                const client = useFetchClient();
+                const response = await client.getJSON<CountResult>(`/organizations/${organizationId}/events/count`, {
+                    params: {
+                        aggregations: tagSuggestionAggregation(search),
+                        time: 'all'
+                    },
+                    signal
+                });
+                return response.data!;
+            },
+            queryKey: queryKeys.tagSuggestions(organizationId, search, session),
+            refetchOnWindowFocus: false,
+            retry: false,
+            staleTime: TAG_SUGGESTION_STALE_TIME
+        };
+    });
 }
 
 export function retainPreviousOrganizationQueryData<T>(
