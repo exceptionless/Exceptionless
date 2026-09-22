@@ -56,6 +56,7 @@
                 signal: controller.signal
             });
             let frame = 0;
+            let retry = 0;
             let previousBounds = '';
             function followTarget(): void {
                 const element = activeDriver?.getActiveElement();
@@ -68,8 +69,12 @@
                         initialize();
                         returnFocus = previousFocus;
                         previousBounds = '';
+                        frame = requestAnimationFrame(followTarget);
+                    } else {
+                        // An invisible guide does not need to poll at the display refresh rate.
+                        retry = window.setTimeout(followTarget, 250);
                     }
-                    frame = requestAnimationFrame(followTarget);
+
                     return;
                 }
 
@@ -91,6 +96,7 @@
             return () => {
                 controller.abort();
                 cancelAnimationFrame(frame);
+                window.clearTimeout(retry);
                 destroy();
             };
         });
