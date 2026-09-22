@@ -35,6 +35,7 @@
         .config(
             function (
                 $authProvider,
+                $httpProvider,
                 $stateProvider,
                 BASE_URL,
                 FACEBOOK_APPID,
@@ -43,6 +44,28 @@
                 MICROSOFT_APPID
             ) {
                 $authProvider.baseUrl = BASE_URL + "/api/v2";
+                var microsoftLoginUrl = BASE_URL.replace(/\/$/, "") + "/api/v2/auth/microsoft";
+                $httpProvider.interceptors.push(function ($q, SatellizerStorage) {
+                    return {
+                        request: function (config) {
+                            if (config.method !== "POST" || config.url !== microsoftLoginUrl) {
+                                return config;
+                            }
+
+                            var expectedState = SatellizerStorage.get("microsoft_state");
+                            if (!expectedState || !config.data || config.data.state !== expectedState) {
+                                return $q.reject({
+                                    status: 400,
+                                    data: { message: "Microsoft authentication state is missing or invalid." },
+                                });
+                            }
+
+                            SatellizerStorage.remove("microsoft_state");
+                            return config;
+                        },
+                    };
+                });
+
                 $authProvider.facebook({
                     clientId: FACEBOOK_APPID,
                 });
