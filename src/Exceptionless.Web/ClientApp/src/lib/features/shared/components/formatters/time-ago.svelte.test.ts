@@ -1,32 +1,37 @@
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import Time from 'svelte-time';
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import TimeAgoTestHarness from './time-ago.test-harness.svelte';
+import TimeAgo from './time-ago.svelte';
 
 describe('TimeAgo', () => {
-    beforeAll(() => {
-        vi.stubGlobal(
-            'ResizeObserver',
-            class {
-                disconnect() {}
-                observe() {}
-                unobserve() {}
-            }
-        );
-    });
-
-    afterAll(() => {
-        vi.unstubAllGlobals();
-    });
-
     afterEach(() => {
         vi.useRealTimers();
     });
 
+    it.each([new Date(2026, 7, 11, 12, 34, 56), '2026-08-11T12:34:56'])('includes the full local timestamp in the native hover title', (value) => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date(2026, 7, 11, 12, 35, 56));
+        const { container } = render(TimeAgo, { value });
+        const time = container.querySelector('time');
+        expect(time?.textContent).toBe('a minute ago');
+        expect(time?.title).toMatch(/^Aug 11, 2026 12:34:56 PM UTC[+-]\d{2}:\d{2}$/);
+        expect(time?.hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('keeps midnight and zero seconds in the hover title', () => {
+        const { container } = render(TimeAgo, { value: new Date(2026, 0, 2, 0, 0, 0) });
+        expect(container.querySelector('time')?.title).toMatch(/^Jan 2, 2026 12:00:00 AM UTC[+-]\d{2}:\d{2}$/);
+    });
+
+    it('updates the hover title when the timestamp changes', async () => {
+        const { container, rerender } = render(TimeAgo, { value: new Date(2026, 0, 2, 0, 0, 0) });
+        await rerender({ value: new Date(2026, 0, 3, 13, 4, 5) });
+        expect(container.querySelector('time')?.title).toMatch(/^Jan 3, 2026 1:04:05 PM UTC[+-]\d{2}:\d{2}$/);
+    });
+
     it('does not loop when adaptive clocks straddle an age boundary', async () => {
-        // Arrange
         vi.useFakeTimers();
         const base = new Date('2026-08-11T12:00:00Z');
         vi.setSystemTime(base);
@@ -38,7 +43,6 @@ describe('TimeAgo', () => {
         });
         await tick();
 
-        // Act
         vi.setSystemTime(new Date(base.getTime() + 2_000));
         render(Time, {
             live: true,
@@ -47,76 +51,11 @@ describe('TimeAgo', () => {
         });
         await tick();
 
-        render(TimeAgoTestHarness, {
+        render(TimeAgo, {
             value: new Date(base.getTime() - (60 * 60 * 1_000 - 1_000))
         });
         await tick();
 
-        // Assert
         expect(screen.getByText('an hour ago')).toBeTruthy();
-    });
-
-    it('uses the event link as the only focus target', () => {
-        const { container } = render(TimeAgoTestHarness, { linked: true, value: '2026-08-11T12:34:56Z' });
-        const link = screen.getByRole('link', { name: 'Open event test' });
-        expect(link.getAttribute('href')).toBe('/next/event/test');
-        expect(link.querySelector('time')).not.toBeNull();
-        expect(link.querySelector('time')?.getAttribute('tabindex')).toBeNull();
-        expect(container.querySelectorAll('a[href], [tabindex="0"]').length).toBe(1);
-    });
-
-    it('formats the full date only when the tooltip opens', async () => {
-        const format = vi.spyOn(Date.prototype, 'toLocaleString');
-        try {
-            const { container } = render(TimeAgoTestHarness, { value: '2026-08-11T12:34:56Z' });
-            await tick();
-            expect(format).not.toHaveBeenCalled();
-            await fireEvent.focus(container.querySelector<HTMLElement>('[data-slot="tooltip-trigger"]')!);
-            await screen.findByRole('tooltip');
-            expect(format).toHaveBeenCalledTimes(1);
-        } finally {
-            format.mockRestore();
-        }
-    });
-
-    it('exposes the full timestamp through an accessible tooltip', async () => {
-        // Arrange
-        const value = new Date('2026-08-11T12:34:56Z');
-        const { container } = render(TimeAgoTestHarness, { value });
-
-        const trigger = container.querySelector<HTMLElement>('[data-slot="tooltip-trigger"]');
-        expect(trigger).not.toBeNull();
-
-        // Act
-        await fireEvent.focus(trigger!);
-
-        const tooltip = await screen.findByRole('tooltip');
-        const expectedTimestamp = new Intl.DateTimeFormat(undefined, {
-            day: 'numeric',
-            hour: 'numeric',
-            hour12: true,
-            minute: '2-digit',
-            month: 'short',
-            second: '2-digit',
-            timeZoneName: 'short',
-            year: 'numeric'
-        }).format(value);
-
-        // Assert
-        expect(tooltip.textContent).toContain(expectedTimestamp);
-        expect(trigger?.getAttribute('tabindex')).toBe('0');
-        expect(trigger?.getAttribute('title')).toBeNull();
-    });
-
-    it.each([undefined, '', 'not a timestamp', new Date(NaN)] as const)('omits missing and invalid timestamp %s', (value) => {
-        // Arrange
-        const props = { value };
-
-        // Act
-        const { container } = render(TimeAgoTestHarness, props);
-
-        // Assert
-        expect(container.textContent).toBe('');
-        expect(container.querySelector('[data-slot="tooltip-trigger"]')).toBeNull();
     });
 });

@@ -2,7 +2,7 @@ import { createReferenceId, expect, test } from '../fixtures/e2e-test';
 import { getVisibleRow, getVisibleText } from '../support/page-helpers';
 import { createRepresentativeEvent, createSessionEvent } from '../support/synthetic-event';
 
-test('operator can find and inspect a user session', async ({ e2eApi, e2eScenario, page, request }, testInfo) => {
+test('operator can find and inspect a user session', async ({ e2eApi, e2eScenario, page, request }) => {
     const sessionId = createReferenceId(e2eScenario.run, '-session');
     const eventReferenceId = createReferenceId(e2eScenario.run, '-session-error');
     const identity = `session-${e2eScenario.run}@exceptionless.test`;
@@ -68,20 +68,6 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
         const eventSheet = page.getByRole('dialog', { name: 'Event' });
         await expect(eventSheet).toBeVisible();
         await expect(eventSheet.getByText(name).filter({ visible: true }).first()).toBeVisible();
-        await eventSheet.getByRole('tab', { name: 'Session Events' }).click();
-        const sheetTimestamp = eventSheet.getByRole('link', { exact: true, name: `Open event ${relatedEventId}` });
-        await sheetTimestamp.hover();
-        const sheetTooltip = page.getByRole('tooltip');
-        await expect(sheetTooltip).toBeVisible();
-        await expect
-            .poll(() =>
-                sheetTooltip.evaluate((element) => {
-                    const bounds = element.getBoundingClientRect();
-                    return element.contains(document.elementFromPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2));
-                })
-            )
-            .toBe(true);
-        await page.keyboard.press('Escape');
         await eventSheet.getByRole('link', { name: 'Open details in new window' }).click();
 
         await expect(page).toHaveURL(/\/next\/(?:event|stack\/[^/]+\/event)\//);
@@ -112,41 +98,15 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
         expect(eventsUrl.searchParams.get('time')).toBe('all');
     });
 
-    await test.step('timestamp link owns keyboard focus, navigation, and a visible tooltip', async () => {
-        const timestampLink = page.getByRole('link', { exact: true, name: `Open event ${relatedEventId}` });
-        await expect(timestampLink.locator('time')).not.toHaveAttribute('tabindex');
-        await expect(timestampLink).not.toHaveAttribute('title');
-
-        // Enter the timestamp from the preceding user link with real keyboard navigation.
-        const row = timestampLink.locator('xpath=ancestor::tr');
-        await row.getByRole('link').nth(1).focus();
+    await test.step('timestamp remains inside a single navigable link with its own hover title', async () => {
+        const link = page.getByRole('link', { exact: true, name: `Open event ${relatedEventId}` });
+        const time = link.locator('time');
+        await time.hover();
+        await expect(time).toHaveAttribute('title', /\d{1,2}:\d{2}:\d{2} [AP]M UTC[+-]\d{2}:\d{2}$/);
+        await expect(time).not.toHaveAttribute('tabindex');
+        await link.locator('xpath=ancestor::tr').getByRole('link').nth(1).focus();
         await page.keyboard.press('Tab');
-        await expect(timestampLink).toBeFocused();
-        const tooltip = page.getByRole('tooltip');
-        await expect(tooltip).toBeVisible();
-        await page.keyboard.press('Escape');
-        await expect(tooltip).toBeHidden();
-        await page.keyboard.press('Tab');
-        await expect(timestampLink.locator('time')).not.toBeFocused();
-        await timestampLink.hover();
-        await expect(tooltip).toBeVisible();
-
-        await testInfo.attach('timestamp-tooltip-desktop', { body: await page.screenshot(), contentType: 'image/png' });
-
-        // The session table can scroll horizontally; its tooltip must escape clipping.
-        await page.setViewportSize({ height: 360, width: 640 });
-        await timestampLink.hover();
-        await expect(tooltip).toBeVisible();
-        await expect
-            .poll(async () => {
-                const bounds = await tooltip.boundingBox();
-                return bounds !== null && bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= 640 && bounds.y + bounds.height <= 360;
-            })
-            .toBe(true);
-        await testInfo.attach('timestamp-tooltip-small-viewport', { body: await page.screenshot(), contentType: 'image/png' });
-        expect(await tooltip.evaluate((element) => element.closest('[data-slot="table-container"]'))).toBeNull();
-        await page.setViewportSize({ height: 720, width: 1280 });
-        await timestampLink.focus();
+        await expect(link).toBeFocused();
         await page.keyboard.press('Enter');
         await expect(page).toHaveURL(new RegExp(`/event/${relatedEventId}(?:[?#]|$)`));
     });
