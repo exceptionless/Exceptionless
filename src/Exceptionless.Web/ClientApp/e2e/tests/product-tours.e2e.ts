@@ -829,6 +829,11 @@ test('overview navigation survives resizing between desktop and mobile', async (
 });
 
 test('mobile overview keeps navigation targets visible after following their links', async ({ e2eScenario, page }) => {
+    // Without saved views, these navigation targets are links rather than expandable group buttons.
+    await page.route(
+        (url) => url.pathname === `/api/v2/organizations/${e2eScenario.organizationId}/saved-views`,
+        (route) => route.fulfill({ json: [] })
+    );
     await page.setViewportSize({ height: 900, width: 1440 });
     await page.goto(`/next/project/${e2eScenario.projectId}/manage`);
     await startTourFromCommand(page, 'Explore Exceptionless');
@@ -840,7 +845,9 @@ test('mobile overview keeps navigation targets visible after following their lin
         ['navigation-events', 'See each report', /\/next\/event$/]
     ] as const) {
         await expect(guide.getByText(title, { exact: true })).toBeVisible();
-        await page.locator(`[data-tour="${target}"]:visible`).click();
+        const link = page.locator(`a[data-tour="${target}"]:visible`);
+        await expect(link).toHaveAttribute('href', route);
+        await link.click();
         await expect(page).toHaveURL(route);
         await expect(guide.getByText(title, { exact: true })).toBeVisible();
         await guide.getByRole('button', { name: 'Next' }).click();
