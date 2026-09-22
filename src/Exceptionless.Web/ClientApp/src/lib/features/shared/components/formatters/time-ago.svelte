@@ -1,15 +1,17 @@
 <script lang="ts">
-    import type { HTMLAnchorAttributes } from 'svelte/elements';
+    import type { Snippet } from 'svelte';
+    import type { HTMLAttributes } from 'svelte/elements';
 
     import DateTime from '$comp/formatters/date-time.svelte';
     import * as Tooltip from '$comp/ui/tooltip';
     import Time from 'svelte-time';
 
-    interface Props extends Pick<HTMLAnchorAttributes, 'aria-label' | 'class' | 'href'> {
+    interface Props {
+        child?: Snippet<[{ children: Snippet; props: HTMLAttributes<HTMLElement> }]>;
         value: Date | string | undefined;
     }
 
-    let { 'aria-label': ariaLabel, class: className, href, value }: Props = $props();
+    let { child: renderChild, value }: Props = $props();
 
     const date = $derived.by(() => {
         if (!value) {
@@ -21,27 +23,23 @@
     });
 </script>
 
+{#snippet relativeTime()}
+    <Time live={true} relative={true} timestamp={date} title={undefined} />
+{/snippet}
+
 {#if date}
     <Tooltip.Root>
         <Tooltip.Trigger>
             {#snippet child({ props })}
-                {#if href}
-                    <a
-                        {...props}
-                        {href}
-                        aria-label={ariaLabel}
-                        class={['focus-visible:ring-ring rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2', className]}
-                    >
-                        <Time live={true} relative={true} timestamp={date} title={undefined} />
-                    </a>
+                {#if renderChild}
+                    {@render renderChild({
+                        children: relativeTime,
+                        props
+                    })}
                 {:else}
                     <Time
                         {...props}
-                        aria-label={ariaLabel}
-                        class={[
-                            'focus-visible:ring-ring inline cursor-help rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
-                            className
-                        ]}
+                        class="focus-visible:ring-ring inline cursor-help rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                         live={true}
                         relative={true}
                         timestamp={date}

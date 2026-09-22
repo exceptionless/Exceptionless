@@ -58,6 +58,10 @@ describe('TimeAgo', () => {
 
     it('uses the event link as the only focus target', () => {
         const { container } = render(TimeAgoTestHarness, { linked: true, value: '2026-08-11T12:34:56Z' });
+        const link = screen.getByRole('link', { name: 'Open event test' });
+        expect(link.getAttribute('href')).toBe('/next/event/test');
+        expect(link.querySelector('time')).not.toBeNull();
+        expect(link.querySelector('time')?.getAttribute('tabindex')).toBeNull();
         expect(container.querySelectorAll('a[href], [tabindex="0"]').length).toBe(1);
     });
 

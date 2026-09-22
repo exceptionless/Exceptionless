@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { A } from '$comp/typography';
     import * as Tooltip from '$comp/ui/tooltip';
 
     import TimeAgo from './time-ago.svelte';
@@ -13,7 +14,11 @@
 
 <Tooltip.Provider>
     {#if linked}
-        <TimeAgo {value} href="/next/event/test" aria-label="Open event test" />
+        <TimeAgo {value}>
+            {#snippet child({ children, props })}
+                <A {...props} href="/next/event/test" aria-label="Open event test">{@render children()}</A>
+            {/snippet}
+        </TimeAgo>
     {:else}
         <TimeAgo {value} />
     {/if}

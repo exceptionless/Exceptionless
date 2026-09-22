@@ -2,6 +2,7 @@
     import type { PersistentEvent } from '$features/events/models';
 
     import TimeAgo from '$comp/formatters/time-ago.svelte';
+    import { A } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import { Skeleton } from '$comp/ui/skeleton';
@@ -169,12 +170,19 @@
                             </a>
                         </Table.Cell>
                         <Table.Cell class="p-0">
-                            <TimeAgo
-                                aria-label={`Open event ${sessionEvent.id}`}
-                                class="text-foreground block p-2 no-underline"
-                                href={eventHref}
-                                value={sessionEvent.date}
-                            />
+                            <TimeAgo value={sessionEvent.date}>
+                                {#snippet child({ children, props })}
+                                    <A
+                                        {...props}
+                                        aria-label={`Open event ${sessionEvent.id}`}
+                                        class="text-foreground block p-2"
+                                        href={eventHref}
+                                        variant="ghost"
+                                    >
+                                        {@render children()}
+                                    </A>
+                                {/snippet}
+                            </TimeAgo>
                         </Table.Cell>
                     </Table.Row>
                 {/each}
