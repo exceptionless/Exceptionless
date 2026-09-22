@@ -829,9 +829,10 @@ test('overview navigation survives resizing between desktop and mobile', async (
 });
 
 test('mobile overview keeps navigation targets visible after following their links', async ({ page }) => {
-    await page.setViewportSize({ height: 844, width: 390 });
+    await page.setViewportSize({ height: 900, width: 1440 });
     await page.goto('/next/stack');
     await startTourFromCommand(page, 'Explore Exceptionless');
+    await page.setViewportSize({ height: 844, width: 390 });
     const guide = page.locator('.driver-popover');
 
     for (const [target, title, route] of [
