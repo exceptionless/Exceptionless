@@ -8,6 +8,9 @@ var http = require("node:http");
 var path = require("node:path");
 var test = require("node:test");
 var livereload = require("connect-livereload");
+// Exercise the static-file handler installed with grunt-contrib-connect.
+// eslint-disable-next-line import/no-extraneous-dependencies
+var serveStatic = require("serve-static");
 var csp = require("./csp-middleware");
 
 function getScriptDirective(policy) {
@@ -61,6 +64,36 @@ function startServer() {
 function getServerUrl(server) {
     return "http://127.0.0.1:" + server.address().port + "/";
 }
+
+test("serves complete nonced HTML for range requests", async function (context) {
+    var middleware = csp.createCspMiddleware();
+    var staticFiles = serveStatic(path.join(__dirname, ".."));
+    var server = http.createServer(function (request, response) {
+        middleware(request, response, function () {
+            staticFiles(request, response, function () {
+                response.statusCode = 404;
+                response.end();
+            });
+        });
+    });
+    await new Promise(function (resolve) {
+        server.listen(0, "127.0.0.1", resolve);
+    });
+    context.after(function () {
+        server.close();
+    });
+
+    var response = await fetch(getServerUrl(server) + "index.html", {
+        headers: { Accept: "text/html", Range: "bytes=0-15" },
+    });
+    var body = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("accept-ranges"), null);
+    assert.equal(response.headers.get("content-range"), null);
+    assert.ok(body.includes('nonce="' + getNonce(response.headers.get(csp.CSP_HEADER)) + '"'));
+    assert.match(body, /<\/html>/);
+});
 
 test("creates a unique cryptographic nonce for each HTML response", async function (context) {
     var server = await startServer();
