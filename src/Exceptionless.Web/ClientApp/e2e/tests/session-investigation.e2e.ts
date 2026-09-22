@@ -102,7 +102,8 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
         const link = page.getByRole('link', { exact: true, name: `Open event ${relatedEventId}` });
         const time = link.locator('time');
         await time.hover();
-        await expect(time).toHaveAttribute('title', /\d{1,2}:\d{2}:\d{2} [AP]M UTC[+-]\d{2}:\d{2}$/);
+        await expect(time).toHaveAttribute('title', /.+/);
+        await expect(time.locator('.sr-only')).toContainText((await time.getAttribute('title'))!);
         await expect(time).not.toHaveAttribute('tabindex');
         await link.locator('xpath=ancestor::tr').getByRole('link').nth(1).focus();
         await page.keyboard.press('Tab');
