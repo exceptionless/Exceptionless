@@ -7,6 +7,7 @@ namespace Exceptionless.Core.Repositories;
 public interface IUserRepository : ISearchableRepository<User>
 {
     Task<User?> RecordProductTourAsync(User user, string stateKey, DateTime recordedUtc);
+    Task<User?> UpdateProfileAsync(User user, string? fullName, bool? emailNotificationsEnabled);
     Task<bool> SetSavedViewOrdersAsync(User user, CommandOptionsDescriptor<User>? options = null);
     Task<User?> GetByEmailAddressAsync(string emailAddress);
     Task<User?> GetByPasswordResetTokenAsync(string token);

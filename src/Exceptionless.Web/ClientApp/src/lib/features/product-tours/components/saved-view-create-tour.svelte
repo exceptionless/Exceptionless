@@ -1,4 +1,6 @@
 <script lang="ts">
+    import type { ProductTourCheckpoint } from '../models';
+
     import { createProductTourActions } from '../actions.svelte';
     import { productTourCheckpoint } from '../state.svelte';
     import ProductTourSpotlight from './product-tour-spotlight.svelte';
@@ -45,6 +47,16 @@
     export function shouldDefaultPrivate(): boolean {
         return Boolean(checkpoint);
     }
+
+    async function openSaveViewDialog(): Promise<void> {
+        closeMenu();
+        await openSaveDialog();
+    }
+
+    function returnToViewMenu(active: ProductTourCheckpoint): void {
+        closeMenu();
+        productTourCheckpoint.advance(active, 'open-view-menu');
+    }
 </script>
 
 {#if checkpoint?.checkpointName === 'open-view-menu'}
@@ -62,14 +74,8 @@
         {checkpoint}
         continueLabel="Save As…"
         onDismiss={actions.dismiss}
-        onPrevious={(active) => {
-            closeMenu();
-            productTourCheckpoint.advance(active, 'open-view-menu');
-        }}
-        onNext={async () => {
-            closeMenu();
-            await openSaveDialog();
-        }}
+        onPrevious={returnToViewMenu}
+        onNext={openSaveViewDialog}
         target="[data-tour='saved-view-save-as']"
         title="Save your current view"
     >

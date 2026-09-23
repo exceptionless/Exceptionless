@@ -210,24 +210,17 @@ public class UserHandler(
         message.Changes.Patch(original);
         await validator.ValidateAndThrowAsync(original);
 
-        var fields = new Dictionary<string, object?>();
-        if (message.Changes.ContainsChangedProperty(u => u.FullName))
-            fields["full_name"] = original.FullName;
-        if (message.Changes.ContainsChangedProperty(u => u.EmailNotificationsEnabled))
-            fields["email_notifications_enabled"] = original.EmailNotificationsEnabled;
-
         try
         {
-            await repository.PatchAsync(original.Id, new PartialPatch(fields));
+            var updated = await repository.UpdateProfileAsync(original,
+                message.Changes.ContainsChangedProperty(u => u.FullName) ? original.FullName : null,
+                message.Changes.ContainsChangedProperty(u => u.EmailNotificationsEnabled) ? original.EmailNotificationsEnabled : null);
+            return updated is null ? Result.NotFound("User not found.") : Result<object>.Success(MapToView(updated));
         }
         catch (DocumentNotFoundException)
         {
             return Result.NotFound("User not found.");
         }
-        // Server-side patches invalidate by ID; also clear the email lookup cache.
-        await repository.InvalidateCacheAsync(original);
-        var updated = await repository.GetByIdAsync(original.Id, o => o.Cache(false));
-        return updated is null ? Result.NotFound("User not found.") : Result<object>.Success(MapToView(updated));
     }
 
     public async Task<Result<ProfileImageUpdate<object>>> Handle(SetUserAvatar message)

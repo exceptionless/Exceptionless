@@ -52,6 +52,23 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return updatedUser;
     }
 
+    public async Task<User?> UpdateProfileAsync(User user, string? fullName, bool? emailNotificationsEnabled)
+    {
+        var fields = new Dictionary<string, object?>();
+        if (fullName is not null)
+            fields[InferField(u => u.FullName)] = fullName;
+        if (emailNotificationsEnabled.HasValue)
+            fields[InferField(u => u.EmailNotificationsEnabled)] = emailNotificationsEnabled.Value;
+
+        if (fields.Count == 0)
+            return user;
+
+        await PatchAsync(user.Id, new PartialPatch(fields));
+        // Server-side patches invalidate by ID; also clear the email lookup cache.
+        await InvalidateCacheAsync(user);
+        return await GetByIdAsync(user.Id, o => o.Cache(false));
+    }
+
     public Task<bool> SetSavedViewOrdersAsync(User user, CommandOptionsDescriptor<User>? options = null)
     {
         var savedViewOrders = user.SavedViewOrders.ToList();
