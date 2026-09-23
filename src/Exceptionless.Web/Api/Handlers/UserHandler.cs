@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -69,9 +70,10 @@ public class UserHandler(
 
         // Keep the existing JSON keys while letting the UI define new tour identifiers.
         string stateKey = message.TourName.Replace('-', '_');
+        var recordedUtc = timeProvider.GetUtcNow().UtcDateTime;
         try
         {
-            currentUser = await repository.RecordProductTourAsync(currentUser, stateKey, timeProvider.GetUtcNow().UtcDateTime);
+            currentUser = await repository.RecordProductTourAsync(currentUser, stateKey, recordedUtc);
         }
         catch (DocumentNotFoundException)
         {
@@ -83,12 +85,10 @@ public class UserHandler(
             return Result.NotFound("User not found.");
         }
 
-        if (!currentUser.ProductTours.TryGetValue(stateKey, out var recorded))
-        {
-            return Result.Invalid(ValidationError.Create("tour_name", "The maximum number of recorded product tours has been reached."));
-        }
-
-        return new RecordProductTourResult(recorded.GetDateTime());
+        // A later completion may have pruned this entry before the follow-up read.
+        return new RecordProductTourResult(currentUser.ProductTours.TryGetValue(stateKey, out var recorded)
+            && recorded.ValueKind == JsonValueKind.String && recorded.TryGetDateTime(out var persistedUtc)
+                ? persistedUtc : recordedUtc);
     }
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)

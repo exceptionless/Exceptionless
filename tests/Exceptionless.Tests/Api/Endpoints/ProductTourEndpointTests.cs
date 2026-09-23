@@ -221,23 +221,22 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     [Theory]
     [InlineData(100)]
     [InlineData(101)]
-    public async Task RecordCurrentUserProductTourAsync_AtOrAboveLimit_PreservesExistingEntries(int count)
+    [InlineData(105)]
+    public async Task RecordCurrentUserProductTourAsync_AtOrAboveLimit_RemovesOldestEntriesAndRecordsNewTour(int count)
     {
         // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
         var user = await _userRepository.GetByIdAsync(currentUser.Id);
         Assert.NotNull(user);
         var recordedUtc = new DateTime(2026, 9, 8, 20, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(new DateTimeOffset(recordedUtc));
         for (int i = 0; i < count; i++)
-            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(recordedUtc);
+            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(recordedUtc.AddDays(-i - 1));
         await _userRepository.SaveAsync(user);
 
         // Act
-        await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "new-guide", "record")
-            .StatusCodeShouldBeUnprocessableEntity());
         var result = await SendRequestAsAsync<RecordProductTourResult>(r => r.Put().AsTestOrganizationUser()
-            .AppendPaths("users", "me", "product-tours", "guide-0", "record")
+            .AppendPaths("users", "me", "product-tours", "new-guide", "record")
             .StatusCodeShouldBeOk());
 
         // Assert
@@ -245,12 +244,14 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         Assert.Equal(recordedUtc, result.RecordedUtc);
         var persistedUser = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
         Assert.NotNull(persistedUser);
-        Assert.Equal(count, persistedUser.ProductTours.Count);
-        Assert.False(persistedUser.ProductTours.ContainsKey("new_guide"));
+        Assert.Equal(100, persistedUser.ProductTours.Count);
+        Assert.Equal(recordedUtc, persistedUser.ProductTours["new_guide"].GetDateTime());
+        for (int i = 0; i < 99; i++)
+            Assert.Equal(recordedUtc.AddDays(-i - 1), persistedUser.ProductTours[$"guide_{i}"].GetDateTime());
     }
 
     [Fact]
-    public async Task RecordProductTourAsync_ConcurrentNewKeys_EnforcesLimitAtomically()
+    public async Task RecordCurrentUserProductTourAsync_ConcurrentNewKeys_RecordsEveryTourAndBoundsHistory()
     {
         // Arrange
         var currentUser = await GetTestOrganizationUserAsync();
@@ -258,19 +259,167 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
         Assert.NotNull(user);
         var recordedUtc = TimeProvider.GetUtcNow().UtcDateTime;
         for (int i = 0; i < 99; i++)
-            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(recordedUtc);
+            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(recordedUtc.AddDays(-1));
         await _userRepository.SaveAsync(user);
-        string[] names = ["future_1", "future_2", "future_3", "future_4"];
+        string[] names = ["future-1", "future-2", "future-3", "future-4"];
 
         // Act
-        await Task.WhenAll(names.Select(name => _userRepository.RecordProductTourAsync(user, name, recordedUtc)));
+        await Task.WhenAll(names.Select(name => SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", name, "record").StatusCodeShouldBeOk())));
 
         // Assert
         var persistedUser = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
         Assert.NotNull(persistedUser);
         Assert.Equal(100, persistedUser.ProductTours.Count);
-        Assert.Single(names, persistedUser.ProductTours.ContainsKey);
-        Assert.Equal(recordedUtc, persistedUser.ProductTours["guide_0"].GetDateTime());
+        foreach (string name in names)
+            Assert.True(persistedUser.ProductTours[name.Replace('-', '_')].TryGetDateTime(out _));
+        Assert.Equal(96, persistedUser.ProductTours.Keys.Count(key => key.StartsWith("guide_", StringComparison.Ordinal)));
+    }
+
+    [Theory]
+    [InlineData(100)]
+    [InlineData(101)]
+    public async Task RecordCurrentUserProductTourAsync_RepeatedAtLimit_PreservesTimestampAndOtherEntries(int count)
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        var recordedUtc = TimeProvider.GetUtcNow().UtcDateTime.AddDays(-1);
+        for (int i = 0; i < count; i++)
+            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(recordedUtc.AddMinutes(i));
+        await _userRepository.SaveAsync(user);
+
+        // Act
+        var result = await SendRequestAsAsync<RecordProductTourResult>(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "guide-0", "record").StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(recordedUtc, result.RecordedUtc);
+        var persistedUser = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(count, persistedUser.ProductTours.Count);
+        foreach (var entry in user.ProductTours)
+            Assert.True(JsonElement.DeepEquals(entry.Value, persistedUser.ProductTours[entry.Key]));
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("42")]
+    [InlineData("\"not-a-timestamp\"")]
+    [InlineData("{\"status\":\"completed\",\"updated_utc\":\"2024-01-15T12:00:00Z\"}")]
+    public async Task RecordCurrentUserProductTourAsync_AtLimitWithLegacyValue_RemovesLegacyValueFirst(string legacyJson)
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        var recordedUtc = TimeProvider.GetUtcNow().UtcDateTime.AddDays(-1);
+        for (int i = 0; i < 99; i++)
+            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(recordedUtc);
+        user.ProductTours["legacy"] = JsonSerializer.Deserialize<JsonElement>(legacyJson);
+        await _userRepository.SaveAsync(user);
+
+        // Act
+        await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "new-guide", "record").StatusCodeShouldBeOk());
+
+        // Assert
+        var persistedUser = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(100, persistedUser.ProductTours.Count);
+        Assert.False(persistedUser.ProductTours.ContainsKey("legacy"));
+        Assert.True(persistedUser.ProductTours["new_guide"].TryGetDateTime(out _));
+        for (int i = 0; i < 99; i++)
+            Assert.Equal(recordedUtc, persistedUser.ProductTours[$"guide_{i}"].GetDateTime());
+    }
+
+    [Fact]
+    public async Task RecordCurrentUserProductTourAsync_AtLimit_OrdersTimestampsByInstant()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        for (int i = 0; i < 98; i++)
+            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(TimeProvider.GetUtcNow().UtcDateTime);
+        user.ProductTours["older"] = JsonSerializer.SerializeToElement("2024-01-15T08:00:00+08:00");
+        user.ProductTours["newer"] = JsonSerializer.SerializeToElement("2024-01-15T01:00:00Z");
+        await _userRepository.SaveAsync(user);
+
+        // Act
+        await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "new-guide", "record").StatusCodeShouldBeOk());
+
+        // Assert
+        var persistedUser = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(100, persistedUser.ProductTours.Count);
+        Assert.False(persistedUser.ProductTours.ContainsKey("older"));
+        Assert.True(persistedUser.ProductTours.ContainsKey("newer"));
+        Assert.True(persistedUser.ProductTours.ContainsKey("new_guide"));
+    }
+
+    [Fact]
+    public async Task RecordCurrentUserProductTourAsync_AtLimitWithFutureDates_KeepsNewlyRecordedTour()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        var futureUtc = TimeProvider.GetUtcNow().UtcDateTime.AddDays(1);
+        for (int i = 0; i < 100; i++)
+            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(futureUtc.AddMinutes(i));
+        await _userRepository.SaveAsync(user);
+
+        // Act
+        await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "new-guide", "record").StatusCodeShouldBeOk());
+
+        // Assert
+        var persistedUser = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(100, persistedUser.ProductTours.Count);
+        Assert.False(persistedUser.ProductTours.ContainsKey("guide_0"));
+        Assert.True(persistedUser.ProductTours.ContainsKey("new_guide"));
+    }
+
+    [Fact]
+    public async Task RecordCurrentUserProductTourAsync_PrunedBeforeResponse_StillReturnsSuccess()
+    {
+        // Arrange
+        var currentUser = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(currentUser.Id);
+        Assert.NotNull(user);
+        var recordedUtc = new DateTime(2026, 9, 23, 12, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(new DateTimeOffset(recordedUtc));
+        for (int i = 0; i < 100; i++)
+            user.ProductTours[$"guide_{i}"] = JsonSerializer.SerializeToElement(recordedUtc.AddDays(1));
+        await _userRepository.SaveAsync(user);
+        var repository = Assert.IsType<UserRepository>(_userRepository);
+        bool recordedLaterTour = false;
+        using var handler = repository.DocumentsChanged.AddHandler(async (_, _) =>
+        {
+            if (recordedLaterTour)
+                return;
+
+            recordedLaterTour = true;
+            await repository.RecordProductTourAsync(user, "later_guide", recordedUtc.AddDays(2));
+        });
+
+        // Act: a later completion prunes this entry before the handler reads the result.
+        var result = await SendRequestAsAsync<RecordProductTourResult>(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "new-guide", "record").StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(recordedUtc, result.RecordedUtc);
+        var persistedUser = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(persistedUser);
+        Assert.Equal(100, persistedUser.ProductTours.Count);
+        Assert.False(persistedUser.ProductTours.ContainsKey("new_guide"));
+        Assert.True(persistedUser.ProductTours.ContainsKey("later_guide"));
     }
 
     [Fact]

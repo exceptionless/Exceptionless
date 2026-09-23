@@ -22,14 +22,38 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
     public async Task<User?> RecordProductTourAsync(User user, string stateKey, DateTime recordedUtc)
     {
         const string script = """
+            Instant recordedAt(def value) {
+                if (value instanceof String) {
+                    try {
+                        return Instant.parse(value);
+                    } catch (DateTimeParseException e) {}
+                }
+                return Instant.MIN;
+            }
+
             if (ctx._source.product_tours == null) {
                 ctx._source.product_tours = [:];
             }
-            if (ctx._source.product_tours[params.key] instanceof String ||
-                (!ctx._source.product_tours.containsKey(params.key) && ctx._source.product_tours.size() >= params.maximum_entries)) {
+            if (ctx._source.product_tours[params.key] instanceof String) {
                 ctx.op = 'none';
             } else {
                 ctx._source.product_tours[params.key] = params.recorded_utc;
+                while (ctx._source.product_tours.size() > params.maximum_entries) {
+                    def oldestKey = null;
+                    def oldestDate = Instant.MAX;
+                    for (def entry : ctx._source.product_tours.entrySet()) {
+                        if (entry.getKey() == params.key) {
+                            continue;
+                        }
+                        def date = recordedAt(entry.getValue());
+                        if (oldestKey == null || date.isBefore(oldestDate) ||
+                            (date.equals(oldestDate) && entry.getKey().compareTo(oldestKey) < 0)) {
+                            oldestKey = entry.getKey();
+                            oldestDate = date;
+                        }
+                    }
+                    ctx._source.product_tours.remove(oldestKey);
+                }
             }
             """;
 

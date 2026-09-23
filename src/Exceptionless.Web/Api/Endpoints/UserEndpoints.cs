@@ -48,7 +48,8 @@ public static class UserEndpoints
                 ["tourName"] = "A UI-defined product tour identifier using lowercase letters, digits, and hyphens (up to 64 characters).",
             },
             ResponseDescriptions = new() {
-                ["422"] = "The product tour name is invalid or the limit of 100 recorded product tour entries has been reached.",
+                ["200"] = "The tour was recorded. New completions replace the oldest entries at the 100-entry limit; values without a valid timestamp are removed first.",
+                ["422"] = "The product tour name is invalid.",
                 ["404"] = "The current user could not be found.",
             }
         });

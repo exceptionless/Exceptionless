@@ -3973,7 +3973,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The tour was recorded. New completions replace the oldest entries at the 100-entry limit; values without a valid timestamp are removed first.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3983,7 +3983,7 @@
             }
           },
           "422": {
-            "description": "The product tour name is invalid or the limit of 100 recorded product tour entries has been reached.",
+            "description": "The product tour name is invalid.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
