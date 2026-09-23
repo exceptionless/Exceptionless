@@ -626,6 +626,13 @@ export const ProblemDetailsSchema = object({
 });
 export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
 
+export const RecordProductTourResultSchema = object({
+  recorded_utc: iso.datetime(),
+});
+export type RecordProductTourResultFormData = Infer<
+  typeof RecordProductTourResultSchema
+>;
+
 export const ResetPasswordModelSchema = object({
   password_reset_token: string().length(
     40,
@@ -862,6 +869,7 @@ export const UserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
   saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
+  product_tours: record(string(), unknown()),
   full_name: string().min(1, "Full name is required"),
   email_address: email(),
   avatar_file_name: string()
@@ -919,6 +927,7 @@ export const ViewCurrentUserSchema = object({
   o_auth_accounts: array(lazy(() => OAuthAccountSchema)),
   organization_preferences: array(lazy(() => UserOrganizationPreferenceSchema)),
   saved_view_orders: array(lazy(() => UserSavedViewOrderPreferenceSchema)),
+  product_tours: record(string(), unknown()),
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),

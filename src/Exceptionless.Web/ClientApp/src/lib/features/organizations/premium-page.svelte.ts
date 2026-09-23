@@ -4,15 +4,15 @@
  * Follows the same getter/setter pattern as CachedPersistedState.
  */
 class PremiumPageState {
-    get current(): string | undefined {
+    public get current(): string | undefined {
         return this.#value;
     }
 
-    set current(featureName: string | undefined) {
+    public set current(featureName: string | undefined) {
         this.#value = featureName;
     }
 
-    get requiresPremium() {
+    public get requiresPremium() {
         return this.#value !== undefined;
     }
 

@@ -33,9 +33,9 @@ describe('tag picker organization lifecycle', () => {
         vi.stubGlobal(
             'ResizeObserver',
             class {
-                disconnect() {}
-                observe() {}
-                unobserve() {}
+                public disconnect() {}
+                public observe() {}
+                public unobserve() {}
             }
         );
         Element.prototype.scrollIntoView = vi.fn();

@@ -10,11 +10,87 @@ namespace Exceptionless.Core.Repositories;
 
 public class UserRepository : RepositoryBase<User>, IUserRepository
 {
+    private const int MaximumProductTourEntries = 100;
+
     public UserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Users, validator, options)
     {
         DefaultConsistency = Consistency.Immediate;
         AddRequiredField(u => u.EmailAddress, u => u.OrganizationIds);
+    }
+
+    public async Task<User?> RecordProductTourAsync(User user, string stateKey, DateTime recordedUtc)
+    {
+        const string script = """
+            Instant recordedAt(def value) {
+                if (value instanceof String) {
+                    try {
+                        return Instant.parse(value);
+                    } catch (DateTimeParseException e) {}
+                }
+                return Instant.MIN;
+            }
+
+            if (ctx._source.product_tours == null) {
+                ctx._source.product_tours = [:];
+            }
+            if (ctx._source.product_tours[params.key] instanceof String) {
+                ctx.op = 'none';
+            } else {
+                ctx._source.product_tours[params.key] = params.recorded_utc;
+                while (ctx._source.product_tours.size() > params.maximum_entries) {
+                    def oldestKey = null;
+                    def oldestDate = Instant.MAX;
+                    for (def entry : ctx._source.product_tours.entrySet()) {
+                        if (entry.getKey() == params.key) {
+                            continue;
+                        }
+                        def date = recordedAt(entry.getValue());
+                        if (oldestKey == null || date.isBefore(oldestDate) ||
+                            (date.equals(oldestDate) && entry.getKey().compareTo(oldestKey) < 0)) {
+                            oldestKey = entry.getKey();
+                            oldestDate = date;
+                        }
+                    }
+                    ctx._source.product_tours.remove(oldestKey);
+                }
+            }
+            """;
+
+        await PatchAsync(user.Id, new ScriptPatch(script)
+        {
+            Params = new Dictionary<string, object>
+            {
+                ["key"] = stateKey,
+                ["maximum_entries"] = MaximumProductTourEntries,
+                ["recorded_utc"] = recordedUtc.ToString("O")
+            }
+        });
+        await Cache.RemoveAsync(EmailCacheKey(user.EmailAddress));
+
+        var updatedUser = await GetByIdAsync(user.Id, o => o.Cache(false));
+        // A concurrent writer may have advanced the document since this read; do not cache this snapshot.
+        if (updatedUser is not null)
+            await InvalidateCacheAsync(updatedUser);
+
+        return updatedUser;
+    }
+
+    public async Task<User?> UpdateProfileAsync(User user, string? fullName, bool? emailNotificationsEnabled)
+    {
+        var fields = new Dictionary<string, object?>();
+        if (fullName is not null)
+            fields[InferField(u => u.FullName)] = fullName;
+        if (emailNotificationsEnabled.HasValue)
+            fields[InferField(u => u.EmailNotificationsEnabled)] = emailNotificationsEnabled.Value;
+
+        if (fields.Count == 0)
+            return user;
+
+        await PatchAsync(user.Id, new PartialPatch(fields));
+        // Server-side patches invalidate by ID; also clear the email lookup cache.
+        await InvalidateCacheAsync(user);
+        return await GetByIdAsync(user.Id, o => o.Cache(false));
     }
 
     public Task<bool> SetSavedViewOrdersAsync(User user, CommandOptionsDescriptor<User>? options = null)
