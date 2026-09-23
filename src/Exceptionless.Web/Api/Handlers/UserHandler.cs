@@ -44,8 +44,7 @@ public class UserHandler(
 
     public async Task<Result<ViewCurrentUser>> Handle(GetCurrentUser message)
     {
-        // Preferences must reflect completed writes even if an in-flight lookup repopulates an older cache entry.
-        var currentUser = await GetModelAsync(GetCurrentUserId(), useCache: false);
+        var currentUser = await GetModelAsync(GetCurrentUserId());
         if (currentUser is null)
             return Result.NotFound("User not found.");
 

@@ -423,33 +423,25 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetCurrentUserAsync_CacheReadFinishesAfterCompletion_ReturnsRecordedProgress()
+    public async Task GetCurrentUserAsync_TourRecordedAfterCachedRead_ReturnsRecordedProgress()
     {
-        // Arrange
+        // Arrange: warm the current-user cache before recording a tour.
         var currentUser = await GetTestOrganizationUserAsync();
-        var user = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
-        Assert.NotNull(user);
-        await _userRepository.InvalidateCacheAsync(user);
-        var repository = new PausingCacheUserRepository(GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), GetService<AppOptions>());
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 9, 8, 20, 0, 0, TimeSpan.Zero));
         var recordedUtc = TimeProvider.GetUtcNow().UtcDateTime;
 
-        // Act: a lookup writes its old snapshot after the completion has invalidated the cache.
-        var read = repository.GetByIdAsync(user.Id, o => o.Cache());
-        try
-        {
-            await repository.CacheWriteReady.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellationToken);
-            await _userRepository.RecordProductTourAsync(user, "app_overview", recordedUtc);
-        }
-        finally
-        {
-            repository.ResumeCacheWrite.TrySetResult();
-            await read;
-        }
+        // Act
+        await SendRequestAsync(r => r.Put().AsTestOrganizationUser()
+            .AppendPaths("users", "me", "product-tours", "app-overview", "record")
+            .StatusCodeShouldBeOk());
         var result = await SendRequestAsAsync<JsonElement>(r => r.AsTestOrganizationUser()
             .AppendPath("users/me").StatusCodeShouldBeOk());
 
         // Assert
         Assert.Equal(recordedUtc, result.GetProperty("product_tours").GetProperty("app_overview").GetDateTime());
+        var byEmail = await _userRepository.GetByEmailAddressAsync(currentUser.EmailAddress);
+        Assert.NotNull(byEmail);
+        Assert.Equal(recordedUtc, byEmail.ProductTours["app_overview"].GetDateTime());
     }
 
     [Theory]
@@ -529,19 +521,4 @@ public sealed class ProductTourEndpointTests : IntegrationTestsBase
             return user;
         }
     }
-
-    private sealed class PausingCacheUserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
-        : UserRepository(configuration, validator, options)
-    {
-        public TaskCompletionSource CacheWriteReady { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public TaskCompletionSource ResumeCacheWrite { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<User>> findHits, ICommandOptions options, bool isDirtyRead)
-        {
-            CacheWriteReady.TrySetResult();
-            await ResumeCacheWrite.Task;
-            await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead);
-        }
-    }
-
 }

@@ -424,6 +424,27 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetCurrentUserAsync_CachedUser_ReturnsCachedProfileUntilInvalidated()
+    {
+        // Arrange: give the cache a distinct profile without changing the stored user.
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        string persistedName = user.FullName;
+        user.FullName = "Cached profile";
+        var repository = Assert.IsType<PausingProfileUserRepository>(_userRepository);
+        await repository.CacheUserAsync(user);
+
+        // Act
+        var cached = await GetTestOrganizationUserAsync();
+        await _userRepository.InvalidateCacheAsync(user);
+        var refreshed = await GetTestOrganizationUserAsync();
+
+        // Assert
+        Assert.Equal("Cached profile", cached.FullName);
+        Assert.Equal(persistedName, refreshed.FullName);
+    }
+
+    [Fact]
     public async Task GetCurrentUserAsync_WithAvatar_ReturnsRoutableAvatarUrl()
     {
         // Arrange
@@ -1196,6 +1217,8 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         private ProfileReadPause? _pause;
 
         public ProfileReadPause PauseNextRead(string userId) => _pause = new ProfileReadPause(userId);
+
+        public Task CacheUserAsync(User user) => AddDocumentsToCacheAsync(user, new CommandOptions<User>().Cache(), false);
 
         public override async Task<User?> GetByIdAsync(Id id, ICommandOptions? options = null)
         {
