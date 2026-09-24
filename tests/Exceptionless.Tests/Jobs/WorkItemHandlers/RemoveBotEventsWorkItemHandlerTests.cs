@@ -59,7 +59,7 @@ public sealed class RemoveBotEventsWorkItemHandlerTests
 
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
-            if (targetMethod?.Name == nameof(IEventRepository.RemoveAllAsync))
+            if (targetMethod?.Name == nameof(IEventRepository.RemoveAllByProjectAndClientIpAsync))
             {
                 DeleteCalls++;
                 DeleteArguments = args;

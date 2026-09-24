@@ -221,7 +221,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RemoveAllByClientIpAndDateAsync()
+    public async Task RemoveAllByOrganizationAndClientIpAsync_WithDateRange_RemovesMatchingEvents()
     {
         const string _clientIpAddress = "123.123.12.255";
         const int NUMBER_OF_EVENTS_TO_CREATE = 50;
@@ -239,7 +239,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
         });
 
-        await _repository.RemoveAllAsync(TestConstants.OrganizationId, _clientIpAddress, DateTime.UtcNow.SubtractDays(3), DateTime.UtcNow.AddDays(2), o => o.ImmediateConsistency());
+        await _repository.RemoveAllByOrganizationAndClientIpAsync(TestConstants.OrganizationId, _clientIpAddress, DateTime.UtcNow.SubtractDays(3), DateTime.UtcNow.AddDays(2), o => o.ImmediateConsistency());
 
         events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
         Assert.Empty(events);
@@ -250,7 +250,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(false, false)]
-    public async Task RemoveAllAsync_WithProjectScope_PreservesOtherScopesAndFilters(bool hasStart, bool hasEnd)
+    public async Task RemoveAllByProjectAndClientIpAsync_WithProjectScope_PreservesOtherScopesAndFilters(bool hasStart, bool hasEnd)
     {
         const string clientIpAddress = "203.0.113.10";
         var start = DateTime.UtcNow.Date.AddHours(1);
@@ -273,7 +273,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         var after = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, clientIpAddress, end.AddMinutes(1));
         await _repository.AddAsync([matching, otherProject, otherOrganization, otherIp, before, after], o => o.ImmediateConsistency());
 
-        long deleted = await _repository.RemoveAllAsync(TestConstants.OrganizationId, TestConstants.ProjectId,
+        long deleted = await _repository.RemoveAllByProjectAndClientIpAsync(TestConstants.OrganizationId, TestConstants.ProjectId,
             clientIpAddress, hasStart ? start : null, hasEnd ? end : null, o => o.ImmediateConsistency());
 
         Assert.Equal(1 + (hasStart ? 0 : 1) + (hasEnd ? 0 : 1), deleted);
