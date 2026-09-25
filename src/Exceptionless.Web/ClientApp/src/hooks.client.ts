@@ -7,6 +7,9 @@ import { normalizePath, normalizeRouteId } from '$lib/telemetry';
 import { installSvelteEffectDepthDiagnostics } from '$lib/telemetry/svelte-effect-depth-diagnostics';
 import { Exceptionless, guid, toError } from '@exceptionless/browser';
 import { useMiddleware } from '@foundatiofx/fetchclient';
+import { config } from 'zod';
+
+config({ jitless: true });
 
 installSvelteEffectDepthDiagnostics();
 
