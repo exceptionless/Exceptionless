@@ -464,7 +464,7 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
             : undefined;
 
         return {
-            enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
+            enabled: () => (request.enabled?.() ?? true) && !!accessToken.current && !!organizationId,
             placeholderData: keepPreviousData,
             queryFn: async () => {
                 const client = useFetchClient();
