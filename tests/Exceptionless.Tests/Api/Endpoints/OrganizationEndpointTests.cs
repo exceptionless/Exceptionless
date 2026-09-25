@@ -1504,10 +1504,13 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Equal("Billing information was not set.", result.Message);
     }
 
-    [Fact]
-    public async Task ChangePlanAsync_WithNewCustomer_CreatesStripeCustomerAndSubscription()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ChangePlanAsync_WithNewCustomer_CreatesStripeCustomerAndSubscription(bool yearly)
     {
         // Arrange
+        var plan = yearly ? _plans.SmallYearlyPlan : _plans.SmallPlan;
         StripeBillingClient.CustomerToReturn = new Customer { Id = "cus_created" };
 
         // Act
@@ -1518,7 +1521,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
                 .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
                 .Content(new ChangePlanRequest
                 {
-                    PlanId = _plans.SmallPlan.Id,
+                    PlanId = plan.Id,
                     StripeToken = "tok_visa",
                     Last4 = "4242",
                     CouponId = "coupon_10"
@@ -1536,15 +1539,22 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var subscription = Assert.Single(StripeBillingClient.CreatedSubscriptionOptions);
         Assert.Equal("cus_created", subscription.Customer);
         var item = Assert.Single(subscription.Items);
-        Assert.Equal(_plans.SmallPlan.Id, item.Price);
+        Assert.Equal(plan.Id, item.Price);
         Assert.Equal("coupon_10", Assert.Single(subscription.Discounts).Coupon);
+        Assert.Equal("create_prorations", subscription.ProrationBehavior);
+        Assert.NotNull(subscription.BillingCycleAnchorConfig);
+        Assert.Equal(1, subscription.BillingCycleAnchorConfig.DayOfMonth);
+        Assert.Null(subscription.BillingCycleAnchorConfig.Month);
+        Assert.Equal(0, subscription.BillingCycleAnchorConfig.Hour);
+        Assert.Equal(0, subscription.BillingCycleAnchorConfig.Minute);
+        Assert.Equal(0, subscription.BillingCycleAnchorConfig.Second);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
         Assert.Equal("cus_created", organization.StripeCustomerId);
         Assert.Equal("sub_created", organization.StripeSubscriptionId);
         Assert.Equal("4242", organization.CardLast4);
-        Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
+        Assert.Equal(plan.Id, organization.PlanId);
         Assert.Equal(BillingStatus.Active, organization.BillingStatus);
     }
 
@@ -1592,6 +1602,9 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Equal("si_active", item.Id);
         Assert.Equal(_plans.SmallPlan.Id, item.Price);
         Assert.Equal("coupon_10", Assert.Single(updatedSubscription.Options.Discounts).Coupon);
+        Assert.Equal("create_prorations", updatedSubscription.Options.ProrationBehavior);
+        Assert.Null(updatedSubscription.Options.BillingCycleAnchor);
+        Assert.Null(updatedSubscription.Options.TrialEnd);
         Assert.Empty(StripeBillingClient.CreatedSubscriptionOptions);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
@@ -1601,6 +1614,44 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Equal(subscribeDate, organization.SubscribeDate);
         Assert.Equal(_plans.SmallPlan.Id, organization.PlanId);
         Assert.Equal(BillingStatus.Active, organization.BillingStatus);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ChangePlanAsync_ExistingCustomerWithoutSubscription_CreatesMonthAlignedSubscription(bool yearly)
+    {
+        var plan = yearly ? _plans.SmallYearlyPlan : _plans.SmallPlan;
+        await SetStripeCustomerIdAsync(SampleDataService.FREE_ORG_ID, "cus_existing");
+
+        var result = await WithBillingEnabledAsync(() =>
+            SendRequestAsAsync<ChangePlanResult>(r => r
+                .AsFreeOrganizationUser()
+                .Post()
+                .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "change-plan")
+                .Content(new ChangePlanRequest
+                {
+                    PlanId = plan.Id,
+                    StripeToken = "pm_card_visa",
+                    Last4 = "4242"
+                })
+                .StatusCodeShouldBeOk()
+            ));
+
+        Assert.NotNull(result);
+        Assert.True(result.Success, result.Message);
+
+        var subscription = Assert.Single(StripeBillingClient.CreatedSubscriptionOptions);
+        Assert.Equal("cus_existing", subscription.Customer);
+        Assert.Equal(plan.Id, Assert.Single(subscription.Items).Price);
+        Assert.Equal("create_prorations", subscription.ProrationBehavior);
+        Assert.NotNull(subscription.BillingCycleAnchorConfig);
+        Assert.Equal(1, subscription.BillingCycleAnchorConfig.DayOfMonth);
+        Assert.Null(subscription.BillingCycleAnchorConfig.Month);
+        Assert.Equal(0, subscription.BillingCycleAnchorConfig.Hour);
+        Assert.Equal(0, subscription.BillingCycleAnchorConfig.Minute);
+        Assert.Equal(0, subscription.BillingCycleAnchorConfig.Second);
+        Assert.Empty(StripeBillingClient.UpdatedSubscriptions);
     }
 
     [Fact]
