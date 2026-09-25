@@ -125,16 +125,6 @@ public static class ProjectExtensions
 
     public static UsageInfo GetUsage(this Project project, DateTime date)
     {
-        var usage = project.Usage.FirstOrDefault(o => o.Date == date.ToUniversalTime().StartOfMonth());
-        if (usage is not null)
-            return usage;
-
-        usage = new UsageInfo
-        {
-            Date = date.ToUniversalTime().StartOfMonth(),
-        };
-        project.Usage.Add(usage);
-
-        return usage;
+        return project.Usage.GetOrAddMonthlyUsage(date, 0);
     }
 }
