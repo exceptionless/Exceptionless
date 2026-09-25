@@ -2,7 +2,6 @@ import type { ProductTourKey } from '$features/product-tours/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 import type { WorkInProgressResult } from '$shared/models';
 
-import { setUserIdentity } from '$features/auth/exceptionless-session';
 import { accessToken } from '$features/auth/index.svelte';
 import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
@@ -137,9 +136,8 @@ export function getMeQuery() {
 
     return createQuery<ViewCurrentUser, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current,
-        onSuccess: async (data: ViewCurrentUser) => {
+        onSuccess: (data: ViewCurrentUser) => {
             queryClient.setQueryData(queryKeys.id(data.id!), data);
-            await setUserIdentity(data.id, data.full_name);
         },
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {

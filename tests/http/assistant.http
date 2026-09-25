@@ -19,7 +19,23 @@ Content-Type: application/json
 GET {{apiUrl}}/assistant/access?organization_id={{organizationId}}
 Authorization: Bearer {{login.response.body.$.token}}
 
+### Get your effective conversation sharing choice
+GET {{apiUrl}}/assistant/conversation-sharing
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Turn off conversation sharing for your account (true enables; null follows the admin default)
+PUT {{apiUrl}}/assistant/conversation-sharing
+Authorization: Bearer {{login.response.body.$.token}}
+Content-Type: application/json
+
+{
+    "enabled": false
+}
+
 ### Stream an assistant response
+# X-Exie-Full-Logging reflects the saved user choice, falling back to the admin default.
+# The browser also requires the visible sharing control to be enabled.
+# A missing or false header keeps transcript logging off. Usage and error events continue.
 POST {{apiUrl}}/assistant/chat
 Authorization: Bearer {{login.response.body.$.token}}
 Content-Type: application/json

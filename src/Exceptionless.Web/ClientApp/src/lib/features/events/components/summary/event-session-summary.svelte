@@ -27,11 +27,9 @@
     {/if}
 
     <EventSummaryLink eventId={source.id} {linkToDetails}>
-        {#if source.data.Name || source.data.Identity || source.data.SessionId}
-            {source.data.Name || source.data.Identity || source.data.SessionId}
-            {#if source.data.Name && source.data.Identity}
-                <span class="text-muted-foreground"> ({source.data.Identity})</span>
-            {/if}
+        {source.data.Name || source.data.Identity || source.data.SessionId || 'Anonymous session'}
+        {#if source.data.Name && source.data.Identity}
+            <span class="text-muted-foreground"> ({source.data.Identity})</span>
         {/if}
     </EventSummaryLink>
 </div>

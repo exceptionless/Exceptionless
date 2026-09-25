@@ -58,6 +58,24 @@ Authorization: Bearer {{token}}
 GET {{apiUrl}}/admin/assistant-settings
 Authorization: Bearer {{token}}
 
+### Enable Exie Conversation Sharing by Default (enabled Is Required; Saved User Choices Take Precedence)
+PUT {{apiUrl}}/admin/assistant-settings/conversation-sharing
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "enabled": true
+}
+
+### Disable Exie Conversation Sharing by Default (Usage and Error Diagnostics Continue)
+PUT {{apiUrl}}/admin/assistant-settings/conversation-sharing
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "enabled": false
+}
+
 ### Set Exie Model Override
 PUT {{apiUrl}}/admin/assistant-settings
 Authorization: Bearer {{token}}

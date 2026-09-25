@@ -19,3 +19,95 @@ dotnet tests/Exceptionless.Tests/bin/Debug/net10.0/Exceptionless.Tests.dll \
 ```
 
 Set `EX_Assistant__Model` and `EX_Assistant__Endpoint` to evaluate a candidate model or compatible provider. Use a dedicated provider key with a small monthly hard limit; the tests never print the key.
+
+## Runtime diagnostics
+
+Every accepted Exie turn emits one structured completion log with `Outcome` (`completed`, `failed`, or `cancelled`), `FailureReason`, `Stage`, duration, time to first answer text, model, provider request count, and tool failures. Tool rounds and malformed-response retries remain on the turn span. `AssistantTurnId`, `OrganizationId`, `ConversationId`, `RequestId`, and `TraceId` correlate a turn across logs and traces. These identifiers are also included in the rendered message so Kubernetes console logs remain useful without a structured log viewer.
+
+The `Exceptionless.Web.Assistant` logging override retains Information-level turn and provider summaries even when the production default is Warning. Assistant spans use the dedicated `Exceptionless.Assistant` activity source, leaving the shared Core ingestion activity source unchanged. Failed turns log at Warning; unexpected/provider exceptions log at Error. Client disconnects remain cancellations and log at Information. A `completed` turn means the response finished without a streamed error; it does not establish that the answer was useful or correct. Keep running the quality evaluations above when changing the model, prompt, or tools.
+
+Provider summaries include the generation ID (from `X-Generation-Id` or the stream), resolved model, provider, HTTP status, normalized finish reason, token counts including reasoning tokens when supplied, header latency, first-chunk latency, and structured provider error fields. Error records retain numeric/string error codes, error type, upstream code, and the top-level provider message; arbitrary `metadata.raw` and flagged input are excluded. Thrown transport, parsing, stream, and timeout errors record explicit provider outcomes before propagating to the turn handler. Provider outcomes distinguish browser disconnects (`cancelled`), the shared turn deadline (`turn_timeout`), and provider-only cancellation (`provider_timeout`). See the [OpenRouter streaming contract](https://openrouter.ai/docs/api/reference/streaming). A request can return HTTP 200 and subsequently fail inside the stream, so HTTP error rates alone do not measure Exie reliability. Generation IDs can be used for provider-side investigation without logging the conversation.
+
+Server diagnostics exclude conversation text, reasoning text, tool arguments/results, arbitrary provider metadata, and general exception messages. Provider error messages are retained as error diagnostics; they are not processed by a general-purpose sanitizer. Exception type and stack trace remain available. Tool names and error codes used as metric dimensions come from a fixed allowlist. Turn/provider latency metrics include the configured model; organization, conversation, and generation identifiers stay in logs/traces. Browser session events record usage and error details, with optional conversation logging controlled by the global admin setting below.
+
+| Failure reason | Investigation |
+| --- | --- |
+| `turn_timeout` | The shared 120-second turn deadline expired; inspect the last stage, provider duration, and tool progress. |
+| `provider_timeout` | A provider operation was cancelled before the shared turn deadline expired. |
+| `operation_cancelled` | A non-provider operation was cancelled before the shared turn deadline expired; inspect the stage. |
+| `provider_http_error`, `provider_error`, `provider_transport_error`, `provider_stream_error` | Check status, generation ID, provider, and whether the stream completed. |
+| `empty_response` | The provider returned neither answer text nor tool calls. |
+| `output_limit` | The provider stopped at its output limit (`finish_reason=length`); inspect reasoning and completion tokens before changing budgets. |
+| `content_filter` | The provider stopped because of content filtering, possibly after partial text. |
+| `malformed_response` | Internal provider markup remained after the existing recovery retry. |
+| `tool_round_limit` | The provider continued requesting tools after the final-answer instruction. |
+| `usage_limit`, `context_limit` | A turn reached an organization usage limit or the conversation context bound. |
+| `invalid_provider_response`, `response_write_error`, `tool_execution_error`, `internal_error` | Inspect the stage, exception type/stack, and correlated trace. |
+
+Returned tool errors are logged with the tool name and error code, even when the model recovers and completes the turn. Thrown tool exceptions and deadlines also increment tool failures and record duration; browser disconnects record a separate `cancelled` duration with `client_disconnected`. Tool cancellation reasons distinguish the shared deadline (`turn_timeout`) from other operation cancellation (`operation_cancelled`). Provider error objects inside an HTTP 200 stream record `provider_error` even without a finish reason. Provider finish reasons `length`, `content_filter`, and `error` fail the turn even when partial text was returned; that text remains visible alongside the error. An `incomplete_stream` warning can accompany a completed turn when text was returned without a terminal marker. Diagnostics do not automatically retry tools or change output budgets.
+
+The existing `ex.assistant.turn.outcomes` metric remains unchanged. Additional histograms provide immediate duration and outcome counts:
+
+| Instrument | Dimensions |
+| --- | --- |
+| `ex.assistant.turn.duration` (ms) | `model`, `outcome`, `reason`, `stage` |
+| `ex.assistant.turn.first_text.duration` (ms) | `model` |
+| `ex.assistant.provider.duration` (ms) | `model`, `outcome` |
+| `ex.assistant.tool.duration` (ms) | `tool`, `outcome`, `reason` |
+
+First-text timing is recorded once when visible text is emitted after response validation. Provider timing ends before browser output or tool execution. Duration histograms use buckets from 50 ms to 120 seconds.
+
+Track the completed share of completed + failed turns, failure counts by reason, cancellation rate separately, and turn/provider latency percentiles. Histogram counts can supply the immediate success-rate denominator; durable usage totals may lag. Failed `assistant.turn` spans carry error status even though the enclosing HTTP response is 200. Traces follow the deployment's existing sampling policy, so use logs and metrics for unsampled failures.
+
+In the hosted Helm deployment, the `ex-prod-app` workload runs `Exceptionless.Web` and serves in-app Exie requests; `ex-prod-api` primarily serves collector API traffic. Start with organization and UTC time, then follow the turn ID and generation IDs. Retained pod logs may not cover replaced pods or old conversations, and counters alone cannot reconstruct a historical failure reason.
+
+The diagnostics and provider-stream tests run locally without Aspire or billable provider requests:
+
+```powershell
+dotnet build tests/Exceptionless.Tests/Exceptionless.Tests.csproj --maxcpucount:1
+dotnet tests/Exceptionless.Tests/bin/Debug/net10.0/Exceptionless.Tests.dll --filter-namespace Exceptionless.Tests.Assistant --filter-not-class Exceptionless.Tests.Assistant.AssistantQualityEvaluationTests --progress off
+```
+
+## Conversation session events
+
+The Svelte app submits Exie events through the existing Exceptionless browser client. They share the signed-in user's session, client configuration, queue, tags, and event exclusions. They go to the app's configured telemetry project. Starting a conversation does not create a separate user session.
+
+Session starts wait for an identified user: anonymous SDK startup/resume session events are discarded, while ordinary errors, logs, and usage events remain enabled. The telemetry component owns the identity update so profile loading cannot race a second identity writer. Older session rows without identity or session metadata display **Anonymous session**.
+
+The Aspire development app automatically reports to the seeded **Exceptionless → Exceptionless** project (named **API** in older development data). It waits for the API to be ready and uses the browser's current origin through Vite's API proxy, including forwarded localhost ports. No `.env.local` setup is required. Override `PUBLIC_EXCEPTIONLESS_API_KEY` and `PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL` in the AppHost environment to use another telemetry destination; an empty key disables automatic browser reporting. For a standalone frontend, set those values in `ClientApp/.env.local`, with an empty telemetry URL to use the current origin. The advertised client setup URL stays unchanged. Omitting the telemetry URL override preserves the existing server URL behavior; a browser local-storage server URL override still takes precedence. Keep local keys out of source control.
+
+Each submitted prompt produces an `assistant.MessageSent` feature usage event. A turn produces one `assistant.ResponseCompleted`, `assistant.ResponseFailed`, or `assistant.ResponseCancelled` feature usage event. These events record character counts and outcomes. Failure events retain the error displayed to the user in `error_message`, capped at 2,048 characters for diagnosis. Existing application error collection is unchanged.
+
+Global admins control **Conversation sharing default** beside Exie availability and model settings. It defaults to off for new and legacy settings records. Enable it during the early rollout through the settings page or `PUT /api/v2/admin/assistant-settings/conversation-sharing` with `{ "enabled": true }`; set it to false to stop sharing by default later.
+
+Users see a compact **Chat sharing: On/Off** control beside the composer disclaimer. It opens a popover where they can change sharing for their account across conversations and devices. `GET /api/v2/assistant/conversation-sharing` returns the effective setting, default, and whether the user has chosen. The authenticated user's `PUT` at the same route saves `{ "enabled": true }` or `{ "enabled": false }`; `{ "enabled": null }` restores the default. Existing users have no override and follow the admin default. Explicit choices always win, even when originally saved equal to the default. Enabling the default therefore uses opt-out sharing; the visible control identifies inherited defaults and allows an immediate change.
+
+Each accepted turn reads the saved user choice and returns `X-Exie-Full-Logging`. Transcript capture requires both an explicit true header and an enabled, loaded sharing control. Turning sharing off discards the active reply buffer and prevents subsequent transcript capture; already submitted events are retained. If saving an opt-out fails, capture stays paused on the current page and the UI asks the user to retry saving for other devices. Changes elsewhere are read for the next turn; a reply already in progress on another device retains the choice selected at its start. Usage, feedback, and error diagnostics continue regardless of sharing.
+
+When enabled, full logging adds an `assistant.Prompt` log event and one assembled `assistant.Response` log event in the existing session. Each message is capped at 16,384 characters, with original character count and truncation metadata. When disabled, prompt and response text is not copied into telemetry. Drafts, individual streamed chunks, reasoning, raw tool arguments/results, and generated suggestion labels/destinations are never submitted. Suggestion events record only whether the action navigated or submitted a prompt.
+
+Events carry an `exie` extended-data object with `schema_version: 1`, conversation and message IDs, organization/project context, page path without query/fragment, and page/sheet mode. The conversation ID matches the server diagnostics. Turn summaries also include outcome, elapsed time, time to first text, tool counts/failures, and whether the chat was visible when the turn finished. Retries link the new server conversation back through `previous_conversation_id` and `retry_of_message_id`.
+
+Other feature usage events describe interactions:
+
+| Event source | Meaning |
+| --- | --- |
+| `assistant.Opened`, `assistant.Closed`, `assistant.ViewChanged` | One open event when Exie becomes visible, including loading or reloading the full Exie page; one close when hidden. Switching panel/page mode emits a view change. Typing, other state updates, and opening the sharing menu do not emit opens. Closing the panel does not cancel an ongoing response. |
+| `assistant.ResponseHelpful`, `assistant.ResponseNotHelpful`, `assistant.ResponseFeedbackCleared` | Explicit feedback linked to the response. |
+| `assistant.ResponseRegenerated` | Retry or regenerate, linked to the previous response. |
+| `assistant.MessageCopied`, `assistant.SuggestedActionSelected` | Copy a message or act on an Exie suggestion. |
+| `assistant.ConversationCleared`, `assistant.ConversationLeft`, `assistant.PageLeft` | Clear, switch organization, unmount, or leave the browser page, with the last outcome/feedback, message count, and whether a turn was still streaming. |
+
+Filter the app telemetry project by `source:assistant.*`, then open an event's session timeline and use the `exie` IDs in event details to follow a conversation. Use `type:usage` when counting turns or interactions so optional transcript logs do not inflate the counts. Compare explicit positive/negative feedback, repeated retries, response latency, and departures while waiting. A completed response only means text arrived without an error; it does not prove the answer helped. Copying and continuing are useful signals, while closing the chat alone does not establish frustration.
+
+The SDK generates session identifiers independently of user identity and preserves them across profile refreshes. Unidentified assistant events are skipped until identity is available; ordinary application diagnostics remain enabled.
+
+These browser events are best effort. Page-leave events may be lost during unload, network failure, or a browser crash, and configured client filtering still applies. Use server metrics for operational failure rates; use session events to understand the user journey. A missing terminal event alone is not proof of cancellation or abandonment.
+
+Focused frontend tests exercise the real SDK builders with the queue intercepted, verify transcript capture is controlled by the server flag, and cover settings changes, streamed success/failure, retries, feedback, context changes, and panel visibility. They do not submit events to a running collector:
+
+```powershell
+Set-Location src/Exceptionless.Web/ClientApp
+npm run test:unit -- src/lib/features/assistant/assistant-telemetry.test.ts src/lib/features/assistant/components/assistant-panel.svelte.test.ts src/lib/features/assistant/components/assistant-message-actions.svelte.test.ts src/lib/features/auth/exceptionless-session.test.ts src/lib/features/admin/components/assistant-settings.svelte.test.ts
+npm run check
+```

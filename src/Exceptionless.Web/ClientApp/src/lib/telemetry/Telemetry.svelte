@@ -1,6 +1,7 @@
 <script lang="ts">
     import { afterNavigate } from '$app/navigation';
     import { page } from '$app/state';
+    import { endSession, setUserIdentity } from '$features/auth/exceptionless-session';
     import { Exceptionless } from '@exceptionless/browser';
 
     import { normalizePath, normalizeRouteId } from './route';
@@ -23,6 +24,10 @@
     });
 
     $effect(() => {
-        Exceptionless.config.setUserIdentity(userId ?? '', userName ?? '');
+        if (userId) {
+            void setUserIdentity(userId, userName);
+        } else {
+            void endSession();
+        }
     });
 </script>

@@ -3,6 +3,7 @@ import type { ClientInit, HandleClientError } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
+import { configureSessions } from '$features/auth/exceptionless-session';
 import { normalizePath, normalizeRouteId } from '$lib/telemetry';
 import { installSvelteEffectDepthDiagnostics } from '$lib/telemetry/svelte-effect-depth-diagnostics';
 import { Exceptionless, guid, toError } from '@exceptionless/browser';
@@ -34,7 +35,8 @@ export const init: ClientInit = async () => {
 
     await Exceptionless.startup((c) => {
         c.apiKey = env.PUBLIC_EXCEPTIONLESS_API_KEY;
-        c.serverUrl = env.PUBLIC_EXCEPTIONLESS_SERVER_URL || window.location.origin;
+        c.serverUrl =
+            PUBLIC_EXCEPTIONLESS_SERVER_URL || (env.PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL ?? env.PUBLIC_EXCEPTIONLESS_SERVER_URL) || window.location.origin;
         c.defaultTags.push('UI', 'Svelte');
 
         if (env.PUBLIC_APP_VERSION) {
@@ -46,7 +48,7 @@ export const init: ClientInit = async () => {
             c.settings['@@log:*'] = 'debug';
         }
 
-        c.useSessions();
+        configureSessions(c);
 
         c.addPlugin('route-context', 10, async (ctx) => {
             if (ctx.event.type !== 'usage') {

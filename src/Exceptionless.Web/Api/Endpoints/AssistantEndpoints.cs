@@ -12,10 +12,27 @@ namespace Exceptionless.Web.Api.Endpoints;
 
 public static class AssistantEndpoints
 {
+    internal const string FullLoggingHeaderName = "X-Exie-Full-Logging";
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
 
     public static IEndpointRouteBuilder MapAssistantEndpoints(this IEndpointRouteBuilder endpoints)
     {
+        endpoints.MapGet("api/v2/assistant/conversation-sharing", GetConversationSharingAsync)
+            .WithName("GetAssistantConversationSharing")
+            .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .Produces<AssistantConversationSharingSettings>()
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound);
+
+        endpoints.MapPut("api/v2/assistant/conversation-sharing", SetConversationSharingAsync)
+            .WithName("SetAssistantConversationSharing")
+            .WithDescription("Saves the current user's choice. Null follows the admin default; true and false remain explicit choices when the default changes.")
+            .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .Produces<AssistantConversationSharingSettings>()
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound);
+
         endpoints.MapGet("api/v2/assistant/access", GetAccessAsync)
             .WithName("GetAssistantAccess")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
@@ -26,6 +43,7 @@ public static class AssistantEndpoints
 
         endpoints.MapPost("api/v2/assistant/chat", StreamChatAsync)
             .WithName("StreamAssistantChat")
+            .WithDescription("The X-Exie-Full-Logging response header indicates whether the browser should record prompts and responses for this turn. Missing or false disables conversation logging.")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
             .WithMetadata(new RequestSizeLimitAttribute(256 * 1024))
             .Produces(StatusCodes.Status200OK, contentType: "application/x-ndjson")
@@ -46,6 +64,7 @@ public static class AssistantEndpoints
         AssistantAccessService assistantAccessService,
         AssistantUsageService assistantUsageService,
         AssistantService assistantService,
+        AssistantConversationSharingService conversationSharingService,
         TimeProvider timeProvider,
         ILogger<AssistantService> logger)
     {
@@ -74,6 +93,7 @@ public static class AssistantEndpoints
             OrganizationId = organizationId,
             ConversationId = conversationId ?? Guid.NewGuid().ToString("N")
         };
+        bool fullLoggingEnabled = (await conversationSharingService.GetAsync(userId))?.Enabled == true;
         var planOptions = access.PlanOptions!;
         await using var turnReservation = await assistantUsageService.TryStartTurnAsync(organizationId, planOptions);
         if (!turnReservation.Allowed)
@@ -99,17 +119,39 @@ public static class AssistantEndpoints
 
         using var turnCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
         turnCancellationSource.CancelAfter(TimeSpan.FromSeconds(AssistantLimits.MaximumTurnDurationSeconds));
+        using var diagnostics = new AssistantTurnDiagnostics(logger, timeProvider, organizationId!, request.ConversationId!, httpContext.TraceIdentifier, httpContext.RequestAborted);
+        var response = assistantService.StreamAsync(request, userId, planOptions, diagnostics, turnCancellationSource.Token);
+        await WriteResponseAsync(httpContext, response, assistantUsageService, organizationId!, diagnostics, turnCancellationSource.Token, fullLoggingEnabled);
+
+        return HttpResults.Empty;
+    }
+
+    internal static async Task WriteResponseAsync(
+        HttpContext httpContext,
+        IAsyncEnumerable<AssistantStreamEvent> response,
+        AssistantUsageService assistantUsageService,
+        string organizationId,
+        AssistantTurnDiagnostics diagnostics,
+        CancellationToken cancellationToken,
+        bool fullLoggingEnabled = false)
+    {
+        httpContext.Response.Headers[FullLoggingHeaderName] = fullLoggingEnabled ? "true" : "false";
         bool responseFailed = false;
         try
         {
-            await foreach (var item in assistantService.StreamAsync(request, userId, planOptions, turnCancellationSource.Token))
+            await foreach (var item in response.WithCancellation(cancellationToken))
             {
+                diagnostics.Observe(item);
                 responseFailed |= item.Type == "error";
-                await JsonSerializer.SerializeAsync(httpContext.Response.Body, item, s_jsonOptions, turnCancellationSource.Token);
-                await httpContext.Response.WriteAsync("\n", turnCancellationSource.Token);
-                await httpContext.Response.Body.FlushAsync(turnCancellationSource.Token);
+                string stage = diagnostics.Stage;
+                diagnostics.Stage = "response_write";
+                await JsonSerializer.SerializeAsync(httpContext.Response.Body, item, s_jsonOptions, cancellationToken);
+                await httpContext.Response.WriteAsync("\n", cancellationToken);
+                await httpContext.Response.Body.FlushAsync(cancellationToken);
+                diagnostics.Stage = stage;
             }
 
+            diagnostics.Finish(responseFailed ? "failed" : "completed");
             if (responseFailed)
                 await assistantUsageService.RecordTurnFailedAsync(organizationId);
             else
@@ -118,10 +160,14 @@ public static class AssistantEndpoints
         catch (OperationCanceledException) when (httpContext.RequestAborted.IsCancellationRequested)
         {
             // The browser closing or stopping the stream is expected.
+            diagnostics.Finish("cancelled", "client_disconnected");
             await assistantUsageService.RecordTurnCancelledAsync(organizationId);
         }
         catch (OperationCanceledException)
         {
+            string failureCode = cancellationToken.IsCancellationRequested ? "turn_timeout"
+                : diagnostics.Stage is "provider_request" or "provider_stream" ? "provider_timeout" : "operation_cancelled";
+            diagnostics.Finish("failed", failureCode);
             await assistantUsageService.RecordTurnFailedAsync(organizationId);
             var error = AssistantStreamEvent.Error("Exie took too long to complete this response. Try narrowing the question.");
             await JsonSerializer.SerializeAsync(httpContext.Response.Body, error, s_jsonOptions, CancellationToken.None);
@@ -129,14 +175,22 @@ public static class AssistantEndpoints
         }
         catch (Exception ex)
         {
+            string failureCode = ex switch
+            {
+                AssistantProviderException providerException => providerException.FailureCode,
+                _ when diagnostics.Stage == "response_write" => "response_write_error",
+                _ when diagnostics.Stage == "tool_execution" => "tool_execution_error",
+                HttpRequestException when diagnostics.Stage is "provider_request" or "provider_stream" => "provider_transport_error",
+                JsonException when diagnostics.Stage == "provider_stream" => "invalid_provider_response",
+                IOException when diagnostics.Stage == "provider_stream" => "provider_stream_error",
+                _ => "internal_error"
+            };
+            diagnostics.Finish("failed", failureCode, ex);
             await assistantUsageService.RecordTurnFailedAsync(organizationId);
-            logger.LogError(ex, "Unable to stream an in-app assistant response");
             var error = AssistantStreamEvent.Error(ex is AssistantProviderException ? ex.Message : "Exie could not complete this request.");
             await JsonSerializer.SerializeAsync(httpContext.Response.Body, error, s_jsonOptions, CancellationToken.None);
             await httpContext.Response.WriteAsync("\n", CancellationToken.None);
         }
-
-        return HttpResults.Empty;
     }
 
     private static async Task<IResult> GetAccessAsync(
@@ -146,6 +200,26 @@ public static class AssistantEndpoints
     {
         var access = await assistantAccessService.GetAccessAsync(httpContext.Request, organizationId);
         return HttpResults.Ok(access.ToResponse());
+    }
+
+    private static async Task<IResult> GetConversationSharingAsync(HttpContext httpContext, AssistantConversationSharingService service)
+    {
+        string? userId = httpContext.User.GetUserId();
+        if (String.IsNullOrWhiteSpace(userId))
+            return HttpResults.Unauthorized();
+
+        var settings = await service.GetAsync(userId);
+        return settings is null ? HttpResults.NotFound() : HttpResults.Ok(settings);
+    }
+
+    private static async Task<IResult> SetConversationSharingAsync(UpdateAssistantConversationSharing request, HttpContext httpContext, AssistantConversationSharingService service)
+    {
+        string? userId = httpContext.User.GetUserId();
+        if (String.IsNullOrWhiteSpace(userId))
+            return HttpResults.Unauthorized();
+
+        var settings = await service.SetAsync(userId, request.Enabled);
+        return settings is null ? HttpResults.NotFound() : HttpResults.Ok(settings);
     }
 
     internal static IResult? MapAccessFailure(AssistantAccessDecision access) => access.Reason switch

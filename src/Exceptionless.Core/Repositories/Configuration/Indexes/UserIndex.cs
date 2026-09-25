@@ -27,6 +27,7 @@ public sealed class UserIndex : VersionedIndex<User>
                 .Text(e => e.FullName, t => t.AddKeywordField())
                 .Text(e => e.EmailAddress, t => t.Analyzer(KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
                 .Boolean(e => e.IsEmailAddressVerified)
+                .Boolean(e => e.AssistantConversationSharingEnabled)
                 .Keyword(e => e.VerifyEmailAddressToken)
                 .Date(e => e.VerifyEmailAddressTokenExpiration)
                 .Keyword(e => e.PasswordResetToken)

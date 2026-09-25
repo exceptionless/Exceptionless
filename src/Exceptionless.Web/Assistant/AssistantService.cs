@@ -36,14 +36,24 @@ public sealed class AssistantService(
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
     private static readonly Regex s_rawDsmlPattern = new(@"<\s*/?\s*[|｜]\s*DSML\s*[|｜]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
-    public async IAsyncEnumerable<AssistantStreamEvent> StreamAsync(
+    public IAsyncEnumerable<AssistantStreamEvent> StreamAsync(
         AssistantChatRequest request,
         string userId,
         AssistantPlanOptions planOptions,
+        CancellationToken cancellationToken = default)
+        => StreamAsync(request, userId, planOptions, null, cancellationToken);
+
+    internal async IAsyncEnumerable<AssistantStreamEvent> StreamAsync(
+        AssistantChatRequest request,
+        string userId,
+        AssistantPlanOptions planOptions,
+        AssistantTurnDiagnostics? diagnostics,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var options = appOptions.AssistantOptions;
         string model = (await assistantModelSettingsService.GetAsync()).Model;
+        if (diagnostics is not null)
+            diagnostics.Model = model;
         AssistantConversationState? conversationState = null;
         if (!String.IsNullOrWhiteSpace(request.OrganizationId) && !String.IsNullOrWhiteSpace(request.ConversationId))
         {
@@ -71,10 +81,12 @@ public sealed class AssistantService(
         {
             if (completedToolRounds > 0)
             {
+                if (diagnostics is not null)
+                    diagnostics.Stage = "usage_check";
                 var usageDecision = await assistantUsageService.TryContinueTurnAsync(request.OrganizationId, planOptions);
                 if (!usageDecision.Allowed)
                 {
-                    yield return AssistantStreamEvent.Error(usageDecision.Message ?? "Exie reached this organization's usage limit.");
+                    yield return AssistantStreamEvent.Error(usageDecision.Message ?? "Exie reached this organization's usage limit.", "usage_limit");
                     yield return AssistantStreamEvent.Done();
                     yield break;
                 }
@@ -101,6 +113,8 @@ public sealed class AssistantService(
 
             var toolCalls = new Dictionary<int, PendingToolCall>();
             var assistantContent = new StringBuilder();
+            var assistantReasoning = new StringBuilder();
+            var assistantReasoningDetails = new List<JsonElement>();
             // A streamed response cannot be retracted after malformed provider markup reaches the
             // browser, so hold this provider round until its content is known to be safe.
             var assistantContentChunks = new List<string>();
@@ -110,87 +124,144 @@ public sealed class AssistantService(
             if (providerInputCharacters > AssistantLimits.MaximumProviderInputCharacters)
             {
                 throw new AssistantProviderException(
-                    "This conversation contains too much context for one response. Clear the conversation or narrow the question.");
+                    "This conversation contains too much context for one response. Clear the conversation or narrow the question.") { FailureCode = "context_limit" };
             }
 
+            if (diagnostics is not null)
+                diagnostics.Stage = "usage_reservation";
             await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
-            using var response = await SendRequestAsync(messages, options, model, allowTools, request, cancellationToken);
-            providerRequest.MarkAccepted();
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            using var reader = new StreamReader(stream);
-
-            while (await reader.ReadLineAsync(cancellationToken) is { } line)
+            using var providerDiagnostics = diagnostics?.StartProviderRequest(cancellationToken);
+            bool receivedDone = false;
+            string? providerFailureCode = null;
+            try
             {
-                if (!line.StartsWith("data:", StringComparison.Ordinal))
-                    continue;
+                using var response = await SendRequestAsync(messages, options, model, allowTools, request, providerDiagnostics, cancellationToken);
+                providerRequest.MarkAccepted();
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                using var reader = new StreamReader(stream);
 
-                string payload = line[5..].Trim();
-                if (payload.Length == 0 || payload == "[DONE]")
-                    continue;
-
-                using var document = JsonDocument.Parse(payload);
-                if (document.RootElement.TryGetProperty("error", out var error))
-                    throw new AssistantProviderException(GetProviderError(error));
-
-                if (!usageRecorded && TryGetProviderUsage(document.RootElement, out var usage))
+                while (await reader.ReadLineAsync(cancellationToken) is { } line)
                 {
-                    usageRecorded = true;
-                    try
-                    {
-                        await providerRequest.ReconcileAsync(usage);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Disposal records the conservative reservation when detailed provider
-                        // accounting cannot be reconciled.
-                        logger.LogError(ex, "Unable to record assistant provider usage for organization {OrganizationId}", request.OrganizationId);
-                    }
-                }
-
-                if (!document.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
-                    continue;
-
-                var delta = choices[0].GetProperty("delta");
-                if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String)
-                {
-                    string? text = content.GetString();
-                    if (!String.IsNullOrEmpty(text))
-                    {
-                        assistantContent.Append(text);
-                        assistantContentChunks.Add(text);
-                    }
-                }
-
-                if (!delta.TryGetProperty("tool_calls", out var toolCallUpdates))
-                    continue;
-
-                foreach (var update in toolCallUpdates.EnumerateArray())
-                {
-                    int index = update.GetProperty("index").GetInt32();
-                    if (!toolCalls.TryGetValue(index, out var pending))
-                    {
-                        pending = new PendingToolCall();
-                        toolCalls[index] = pending;
-                    }
-
-                    if (update.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
-                        pending.Id = id.GetString() ?? pending.Id;
-
-                    if (!update.TryGetProperty("function", out var function))
+                    if (!line.StartsWith("data:", StringComparison.Ordinal))
                         continue;
 
-                    if (function.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
-                        pending.Name += name.GetString();
-                    if (function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String)
-                        pending.Arguments.Append(arguments.GetString());
+                    string payload = line[5..].Trim();
+                    if (payload == "[DONE]")
+                    {
+                        receivedDone = true;
+                        continue;
+                    }
+                    if (payload.Length == 0)
+                        continue;
+
+                    try
+                    {
+                        using var document = JsonDocument.Parse(payload);
+                        providerDiagnostics?.ObserveChunk(document.RootElement);
+                        if (document.RootElement.TryGetProperty("error", out var error))
+                            throw new AssistantProviderException(GetProviderError(error));
+
+                        if (!usageRecorded && TryGetProviderUsage(document.RootElement, out var usage))
+                        {
+                            usageRecorded = true;
+                            try
+                            {
+                                await providerRequest.ReconcileAsync(usage);
+                            }
+                            catch (Exception ex)
+                            {
+                                // Disposal records the conservative reservation when detailed provider
+                                // accounting cannot be reconciled.
+                                logger.LogError(ex, "Unable to record assistant provider usage for organization {OrganizationId}", request.OrganizationId);
+                            }
+                        }
+
+                        if (!document.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
+                            continue;
+
+                        if (choices[0].TryGetProperty("finish_reason", out var finishReason) && finishReason.ValueKind == JsonValueKind.String)
+                        {
+                            providerFailureCode ??= finishReason.GetString() switch
+                            {
+                                "length" => "output_limit",
+                                "content_filter" => "content_filter",
+                                "error" => "provider_error",
+                                _ => null
+                            };
+                        }
+
+                        var delta = choices[0].GetProperty("delta");
+                        if ((delta.TryGetProperty("reasoning", out var reasoning) || delta.TryGetProperty("reasoning_content", out reasoning))
+                            && reasoning.ValueKind == JsonValueKind.String)
+                        {
+                            assistantReasoning.Append(reasoning.GetString());
+                        }
+
+                        if (delta.TryGetProperty("reasoning_details", out var reasoningDetails) && reasoningDetails.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var detail in reasoningDetails.EnumerateArray())
+                            {
+                                assistantReasoningDetails.Add(detail.Clone());
+                            }
+                        }
+
+                        if (delta.TryGetProperty("content", out var content) && content.ValueKind == JsonValueKind.String)
+                        {
+                            string? text = content.GetString();
+                            if (!String.IsNullOrEmpty(text))
+                            {
+                                assistantContent.Append(text);
+                                assistantContentChunks.Add(text);
+                            }
+                        }
+
+                        if (!delta.TryGetProperty("tool_calls", out var toolCallUpdates))
+                            continue;
+
+                        foreach (var update in toolCallUpdates.EnumerateArray())
+                        {
+                            int index = update.GetProperty("index").GetInt32();
+                            if (!toolCalls.TryGetValue(index, out var pending))
+                            {
+                                pending = new PendingToolCall();
+                                toolCalls[index] = pending;
+                            }
+
+                            if (update.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
+                                pending.Id = id.GetString() ?? pending.Id;
+
+                            if (!update.TryGetProperty("function", out var function))
+                                continue;
+
+                            if (function.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
+                                pending.Name += name.GetString();
+                            if (function.TryGetProperty("arguments", out var arguments) && arguments.ValueKind == JsonValueKind.String)
+                                pending.Arguments.Append(arguments.GetString());
+                        }
+                    }
+                    catch (Exception ex) when (ex is InvalidOperationException or KeyNotFoundException or FormatException)
+                    {
+                        throw new JsonException("The AI provider returned an invalid response structure.", ex);
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                providerDiagnostics?.RecordException(ex);
+                throw;
+            }
+
+            if (diagnostics is not null)
+                diagnostics.Stage = "response_validation";
 
             if (s_rawDsmlPattern.IsMatch(assistantContent.ToString()))
             {
+                providerDiagnostics?.Reject("malformed_response");
                 if (malformedResponseRetries < AssistantLimits.MaximumMalformedResponseRetries)
                 {
                     malformedResponseRetries++;
+                    if (diagnostics is not null)
+                        diagnostics.MalformedResponseRetries = malformedResponseRetries;
                     logger.LogWarning(
                         "Assistant provider returned raw DSML content for organization {OrganizationId}; retrying response",
                         request.OrganizationId);
@@ -206,7 +277,7 @@ public sealed class AssistantService(
                 logger.LogWarning(
                     "Assistant provider returned raw DSML content again for organization {OrganizationId}",
                     request.OrganizationId);
-                yield return AssistantStreamEvent.Error("Exie received a malformed response from the AI provider. Please try again.");
+                yield return AssistantStreamEvent.Error("Exie received a malformed response from the AI provider. Please try again.", "malformed_response");
                 yield return AssistantStreamEvent.Done();
                 yield break;
             }
@@ -217,16 +288,28 @@ public sealed class AssistantService(
                 malformedResponseCorrection = null;
             }
 
+            if (providerFailureCode is null && !allowTools && toolCalls.Count > 0)
+                providerDiagnostics?.Reject("tool_round_limit");
+            else
+                providerDiagnostics?.Complete(assistantContent.Length, toolCalls.Count, receivedDone);
+
             foreach (string text in assistantContentChunks)
             {
                 yield return AssistantStreamEvent.TextDelta(text);
+            }
+
+            if (providerFailureCode is not null)
+            {
+                yield return AssistantStreamEvent.Error("Exie stopped before completing the answer. Please try again.", providerFailureCode);
+                yield return AssistantStreamEvent.Done();
+                yield break;
             }
 
             if (toolCalls.Count == 0)
             {
                 if (assistantContent.Length == 0)
                 {
-                    yield return AssistantStreamEvent.Error("Exie stopped before providing an answer. Please try again.");
+                    yield return AssistantStreamEvent.Error("Exie stopped before providing an answer. Please try again.", "empty_response");
                 }
                 else if (pendingSuggestedActions.Count > 0)
                 {
@@ -239,7 +322,7 @@ public sealed class AssistantService(
 
             if (!allowTools)
             {
-                yield return AssistantStreamEvent.Error("Exie could not finish using the available tool results. Try narrowing the question.");
+                yield return AssistantStreamEvent.Error("Exie could not finish using the available tool results. Try narrowing the question.", "tool_round_limit");
                 yield return AssistantStreamEvent.Done();
                 yield break;
             }
@@ -269,17 +352,7 @@ public sealed class AssistantService(
                 }
 
                 pendingSuggestedActions = suggestedActions;
-                messages.Add(new
-                {
-                    role = "assistant",
-                    content = (string?)null,
-                    tool_calls = suggestedActionCalls.Select(call => new
-                    {
-                        id = call.Id,
-                        type = "function",
-                        function = new { name = call.Name, arguments = call.Arguments.ToString() }
-                    }).ToArray()
-                });
+                messages.Add(CreateAssistantToolMessage(suggestedActionCalls, assistantContent, assistantReasoning, assistantReasoningDetails));
 
                 string suggestionResult = JsonSerializer.Serialize(new
                 {
@@ -293,6 +366,8 @@ public sealed class AssistantService(
 
                 requireFinalAnswer = true;
                 completedToolRounds++;
+                if (diagnostics is not null)
+                    diagnostics.ToolRounds = completedToolRounds;
                 continue;
             }
 
@@ -300,24 +375,16 @@ public sealed class AssistantService(
             // let the model offer fresh suggestions with its final answer after the tool results.
             pendingSuggestedActions = [];
             await assistantUsageService.RecordToolCallsAsync(request.OrganizationId, executableToolCalls.Length);
-            messages.Add(new
-            {
-                role = "assistant",
-                content = assistantContent.Length == 0 ? null : assistantContent.ToString(),
-                tool_calls = executableToolCalls.Select(call => new
-                {
-                    id = call.Id,
-                    type = "function",
-                    function = new { name = call.Name, arguments = call.Arguments.ToString() }
-                }).ToArray()
-            });
+            messages.Add(CreateAssistantToolMessage(executableToolCalls, assistantContent, assistantReasoning, assistantReasoningDetails));
 
             var conversationToolResults = new List<AssistantConversationToolResult>();
             foreach (var toolCall in executableToolCalls)
             {
                 string arguments = toolCall.Arguments.ToString();
+                diagnostics?.StartTool(toolCall.Name);
                 yield return AssistantStreamEvent.ToolCall(toolCall.Id, toolCall.Name, arguments);
 
+                long toolStarted = timeProvider.GetTimestamp();
                 string result;
                 if (remainingToolCalls <= 0)
                 {
@@ -350,9 +417,18 @@ public sealed class AssistantService(
                     if (toolCall.Name == SearchStacksTool)
                         remainingProjectSearches--;
 
-                    result = await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
+                    try
+                    {
+                        result = await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        diagnostics?.RecordToolException(ex, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds, cancellationToken);
+                        throw;
+                    }
                 }
 
+                diagnostics?.RecordToolResult(result, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds);
                 if (toolCall.Name == GetProjectSetupTool)
                     configureHref = AssistantSuggestedActionParser.GetProjectSetupHref(result) ?? configureHref;
 
@@ -372,6 +448,8 @@ public sealed class AssistantService(
                 && !String.IsNullOrWhiteSpace(request.OrganizationId)
                 && !String.IsNullOrWhiteSpace(request.ConversationId))
             {
+                if (diagnostics is not null)
+                    diagnostics.Stage = "conversation_save";
                 await assistantConversationService.AppendToolResultsAsync(
                     userId,
                     request.OrganizationId,
@@ -381,10 +459,12 @@ public sealed class AssistantService(
             }
 
             completedToolRounds++;
+            if (diagnostics is not null)
+                diagnostics.ToolRounds = completedToolRounds;
         }
     }
 
-    private async Task<HttpResponseMessage> SendRequestAsync(List<object> messages, AssistantOptions options, string model, bool allowTools, AssistantChatRequest chatRequest, CancellationToken cancellationToken)
+    private async Task<HttpResponseMessage> SendRequestAsync(List<object> messages, AssistantOptions options, string model, bool allowTools, AssistantChatRequest chatRequest, AssistantProviderDiagnostics? diagnostics, CancellationToken cancellationToken)
     {
         var client = httpClientFactory.CreateClient(nameof(AssistantService));
         using var providerRequest = new HttpRequestMessage(HttpMethod.Post, options.Endpoint);
@@ -407,19 +487,63 @@ public sealed class AssistantService(
                 }
             }
         };
-        if (allowTools)
-            payload["tools"] = AssistantToolDefinitions.Create(tools, chatRequest);
+        // Tool results still require their schemas when the model must produce a final answer.
+        payload["tools"] = AssistantToolDefinitions.Create(tools, chatRequest);
+        if (!allowTools)
+            payload["tool_choice"] = "none";
 
         providerRequest.Content = JsonContent.Create(payload);
 
         var response = await client.SendAsync(providerRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        diagnostics?.ObserveResponse(response);
         if (response.IsSuccessStatusCode)
             return response;
 
-        string detail = await response.Content.ReadAsStringAsync(cancellationToken);
-        logger.LogWarning("Assistant provider returned {StatusCode}: {Detail}", (int)response.StatusCode, detail);
-        response.Dispose();
-        throw new AssistantProviderException($"The AI provider returned status {(int)response.StatusCode}.");
+        using (response)
+        {
+            try
+            {
+                using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+                diagnostics?.ObserveError(document.RootElement);
+            }
+            catch (JsonException)
+            {
+                // Proxy/HTML errors still retain their HTTP status and correlation IDs.
+            }
+        }
+        throw new AssistantProviderException($"The AI provider returned status {(int)response.StatusCode}.") { FailureCode = "provider_http_error" };
+    }
+
+    private static Dictionary<string, object?> CreateAssistantToolMessage(
+        PendingToolCall[] toolCalls,
+        StringBuilder content,
+        StringBuilder reasoning,
+        List<JsonElement> reasoningDetails)
+    {
+        var message = new Dictionary<string, object?>
+        {
+            ["role"] = "assistant",
+            ["content"] = content.Length == 0 ? null : content.ToString(),
+            ["tool_calls"] = toolCalls.Select(call => new
+            {
+                id = call.Id,
+                type = "function",
+                function = new { name = call.Name, arguments = call.Arguments.ToString() }
+            }).ToArray()
+        };
+
+        // Reasoning belongs only to this turn's provider conversation. Never send it to the
+        // browser or persist it with tool results. Structured blocks retain signatures and order.
+        if (reasoningDetails.Count > 0)
+        {
+            message["reasoning_details"] = reasoningDetails;
+        }
+        else if (reasoning.Length > 0)
+        {
+            message["reasoning"] = reasoning.ToString();
+        }
+
+        return message;
     }
 
     private async Task<string> ExecuteToolAsync(
@@ -692,7 +816,8 @@ public sealed class AssistantService(
     }
 
     private static string GetProviderError(JsonElement error)
-        => error.TryGetProperty("message", out var message) ? message.GetString() ?? "The AI provider returned an error." : "The AI provider returned an error.";
+        => error.ValueKind == JsonValueKind.Object && error.TryGetProperty("message", out var message) && message.ValueKind == JsonValueKind.String
+            ? message.GetString() ?? "The AI provider returned an error." : "The AI provider returned an error.";
 
     private sealed class PendingToolCall
     {

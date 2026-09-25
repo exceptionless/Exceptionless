@@ -193,6 +193,7 @@ public partial class Program
             builder.Services.AddHttpClient(nameof(AssistantService), client => client.Timeout = TimeSpan.FromMinutes(2));
             builder.Services.AddScoped<AssistantToolContext>();
             builder.Services.AddScoped<AssistantAccessService>();
+            builder.Services.AddScoped<AssistantConversationSharingService>();
             builder.Services.AddScoped<AssistantConversationService>();
             builder.Services.AddSingleton<AssistantModelSettingsService>();
             builder.Services.AddScoped<AssistantUsageService>();
