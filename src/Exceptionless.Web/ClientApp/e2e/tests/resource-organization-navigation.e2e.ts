@@ -37,11 +37,19 @@ for (const resource of ['project', 'stack', 'event', 'stack event', 'project sta
                 break;
         }
 
+        await page.goto('/next/stack/all');
+        await expectOrganization(page, e2eScenario.organizationId);
         await page.goto(href);
         await expectOrganization(page, e2eSecondaryOrganization.organizationId);
         if (event) {
             await expect(page.getByText(e2eSecondaryOrganization.message, { exact: true }).filter({ visible: true }).first()).toBeVisible();
             await expect(page).toHaveURL(resource === 'project stack' ? href : new RegExp(`/stack/${event.stack_id}/event/${event.id}$`));
+            if (resource === 'stack event') {
+                await expect(
+                    page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.organizationName }).filter({ visible: true }).first()
+                ).toBeVisible();
+                await test.info().attach('stack-event-destination-organization', { body: await page.screenshot(), contentType: 'image/png' });
+            }
         } else {
             await expect(page.getByRole('heading', { exact: true, name: `${e2eSecondaryOrganization.projectName} Settings` })).toBeVisible();
         }
