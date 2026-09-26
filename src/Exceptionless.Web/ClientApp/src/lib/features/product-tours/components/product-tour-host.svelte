@@ -99,7 +99,7 @@
         }
     });
     const errorEventAvailability = $derived.by((): ProductTourContext['errorEventAvailability'] => {
-        if (!organizationId || !catalogOpen || errorEventsQuery.isPending) {
+        if (!organizationId || !catalogOpen || errorEventsQuery.isPending || errorEventsQuery.isPlaceholderData) {
             return 'loading';
         }
 
