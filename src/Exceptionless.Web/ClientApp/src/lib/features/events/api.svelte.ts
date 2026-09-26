@@ -456,6 +456,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
 
 export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest) {
     return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => {
+        const requestEnabled = request.enabled?.() ?? true;
         const organizationId = request.route.organizationId;
         const params = request.params
             ? {
@@ -464,7 +465,7 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
             : undefined;
 
         return {
-            enabled: () => (request.enabled?.() ?? true) && !!accessToken.current && !!organizationId,
+            enabled: () => !!accessToken.current && !!organizationId && requestEnabled,
             placeholderData: keepPreviousData,
             queryFn: async () => {
                 const client = useFetchClient();
