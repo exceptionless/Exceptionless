@@ -19,12 +19,13 @@
         children?: Snippet;
         onAutoFillColumnResized?: (columnId: string) => void;
         rowClick?: (row: TData, event?: MouseEvent) => void;
+        rowDetails?: Snippet<[TData]>;
         rowHref?: (row: TData) => string;
         table: SvelteTable<StockFeatures, TData>;
         wrappedColumnIds?: readonly string[];
     }
 
-    let { autoFillColumnId, children, onAutoFillColumnResized, rowClick, rowHref, table, wrappedColumnIds = [] }: Props = $props();
+    let { autoFillColumnId, children, onAutoFillColumnResized, rowClick, rowDetails, rowHref, table, wrappedColumnIds = [] }: Props = $props();
 
     const selectColumnClass = 'w-8 min-w-8 max-w-8';
     const selectColumnWidth = 32;
@@ -373,6 +374,13 @@
                             <Table.Cell aria-hidden="true" class="w-full p-0"></Table.Cell>
                         {/if}
                     </Table.Row>
+                    {#if rowDetails && row.getIsExpanded()}
+                        <Table.Row class="bg-muted/30 hover:bg-muted/30">
+                            <Table.Cell colspan={table.getVisibleLeafColumns().length + getFillerColumnCount()} class="whitespace-normal">
+                                {@render rowDetails(row.original)}
+                            </Table.Cell>
+                        </Table.Row>
+                    {/if}
                 {/each}
             </Table.Body>
         </Table.Root>

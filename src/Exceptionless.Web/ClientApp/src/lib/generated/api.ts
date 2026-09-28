@@ -501,6 +501,11 @@ export interface ProblemDetails {
   instance?: null | string;
 }
 
+export interface RecordProductTourResult {
+  /** @format date-time */
+  recorded_utc: string;
+}
+
 export interface ResetPasswordModel {
   password_reset_token: string;
   password: string;
@@ -752,6 +757,7 @@ export interface User {
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
+  product_tours: object;
   /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */
@@ -800,6 +806,7 @@ export interface ViewCurrentUser {
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
+  product_tours: object;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];

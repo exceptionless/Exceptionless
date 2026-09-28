@@ -1,11 +1,9 @@
 <script lang="ts">
-    import type { OAuthApplication } from '$features/admin/models';
-
-    import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { Muted, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { Input } from '$comp/ui/input';
+    import * as Select from '$comp/ui/select';
     import { type GetOAuthApplicationsParams, getOAuthApplicationsQuery } from '$features/admin/api.svelte';
     import OAuthApplicationsDataTable from '$features/admin/components/oauth-applications/table/oauth-applications-data-table.svelte';
     import { getTableOptions } from '$features/admin/components/oauth-applications/table/options.svelte';
@@ -15,6 +13,7 @@
     import { createTable } from '@tanstack/svelte-table';
 
     const DEFAULT_PARAMS = {
+        authorization: 'authorized',
         criteria: '',
         limit: DEFAULT_LIMIT,
         organization: '',
@@ -25,6 +24,7 @@
         defaults: DEFAULT_PARAMS,
         history: 'push',
         schema: {
+            authorization: 'string',
             criteria: 'string',
             limit: 'number',
             organization: 'string',
@@ -33,6 +33,9 @@
     });
 
     const applicationQueryParameters: GetOAuthApplicationsParams = $state({
+        get authorized() {
+            return queryParams.authorization === 'all' ? undefined : queryParams.authorization !== 'unauthorized';
+        },
         get criteria() {
             return queryParams.criteria!;
         },
@@ -56,7 +59,8 @@
         },
         set page(value) {
             queryParams.page = value;
-        }
+        },
+        sort: '-updated_utc'
     });
 
     const applicationsQuery = getOAuthApplicationsQuery({
@@ -72,14 +76,28 @@
         queryParams.page ??= 1;
     });
 
-    async function rowClick(application: OAuthApplication) {
-        await goto(rowHref(application));
-    }
+    const authorizationOptions = [
+        {
+            label: 'Authorized',
+            value: 'authorized'
+        },
+        {
+            label: 'Not authorized',
+            value: 'unauthorized'
+        },
+        {
+            label: 'All applications',
+            value: 'all'
+        }
+    ];
 
-    function rowHref(application: OAuthApplication) {
-        return resolve('/(app)/system/oauth-applications/[id=objectid]', {
-            id: application.id
-        });
+    function setAuthorization(value: string) {
+        if (!value) {
+            return;
+        }
+
+        queryParams.page = 1;
+        queryParams.authorization = value;
     }
 
     function setCriteria(value: string) {
@@ -95,13 +113,7 @@
 
 <div class="space-y-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="space-y-1">
-            <Muted>Manage public OAuth clients that can request access to the Exceptionless API and MCP tools.</Muted>
-            <P class="text-muted-foreground text-xs">
-                Dynamic clients are registered before consent. Organizations appear after a user authorizes access, and the historical associations are retained
-                for administration. One client may be authorized for several organizations.
-            </P>
-        </div>
+        <Muted>Manage public OAuth clients that can request access to the Exceptionless API and MCP tools.</Muted>
         <Button href={newApplicationHref} variant="outline">
             <Plus class="size-4" aria-hidden="true" />
             New OAuth App
@@ -111,8 +123,20 @@
     {#if applicationsQuery.isError}
         <P class="text-destructive py-8 text-sm">Failed to load OAuth applications.</P>
     {:else}
-        <OAuthApplicationsDataTable bind:limit={applicationQueryParameters.limit!} isLoading={applicationsQuery.isPending} {rowClick} {rowHref} {table}>
+        <OAuthApplicationsDataTable bind:limit={applicationQueryParameters.limit!} isLoading={applicationsQuery.isPending} {table}>
             {#snippet toolbarChildren()}
+                <Select.Root type="single" value={queryParams.authorization ?? 'authorized'} onValueChange={setAuthorization}>
+                    <Select.Trigger aria-label="Filter by authorization" class="w-44">
+                        {authorizationOptions.find((option) => option.value === queryParams.authorization)?.label ?? 'Authorized'}
+                    </Select.Trigger>
+                    <Select.Content>
+                        <Select.Group>
+                            {#each authorizationOptions as option (option.value)}
+                                <Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
+                            {/each}
+                        </Select.Group>
+                    </Select.Content>
+                </Select.Root>
                 <Input
                     type="search"
                     aria-label="Filter OAuth applications"

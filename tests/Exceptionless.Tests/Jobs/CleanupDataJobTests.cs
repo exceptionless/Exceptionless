@@ -83,6 +83,84 @@ public class CleanupDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_AbandonedOAuthApplications_RemovesOnlyOldAutomaticRegistrationsWithoutAuthorization()
+    {
+        var repository = GetService<IOAuthApplicationRepository>();
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var abandoned = CreateApplication("abandoned");
+        var legacy = CreateApplication("legacy");
+        var recent = CreateApplication("recent");
+        var authorized = CreateApplication("authorized");
+        authorized.OrganizationIds.Add(TestConstants.OrganizationId);
+        var manual = CreateApplication("manual");
+        manual.CreatedByUserId = TestConstants.UserId;
+        var edited = CreateApplication("edited");
+        edited.UpdatedByUserId = TestConstants.UserId;
+        var disabled = CreateApplication("disabled");
+        disabled.IsDisabled = true;
+        var legacyWithToken = CreateApplication("legacy-with-token");
+        var missingDate = CreateApplication("missing-date");
+        var applications = new[] { abandoned, legacy, recent, authorized, manual, edited, disabled, legacyWithToken, missingDate };
+        await repository.AddAsync(applications);
+        foreach (var application in applications)
+            await repository.PatchAsync(application.Id, new PartialPatch(new { updated_utc = utcNow.AddHours(-25) }));
+        await repository.PatchAsync(recent.Id, new PartialPatch(new { updated_utc = utcNow.AddHours(-23) }));
+        await repository.PatchAsync(legacy.Id, new ScriptPatch("ctx._source.remove('organization_ids'); ctx._source.remove('updated_by_user_id');"));
+        // Preserve the old timestamp explicitly because patches normally advance it.
+        await repository.PatchAsync(legacy.Id, new PartialPatch(new { updated_utc = utcNow.AddHours(-25) }));
+        await repository.PatchAsync(missingDate.Id, new PartialPatch(new Dictionary<string, object?> { ["updated_utc"] = null }));
+        var legacyToken = await _oauthTokenRepository.AddAsync(new OAuthToken
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            ClientId = legacyWithToken.ClientId,
+            UserId = TestConstants.UserId,
+            GrantId = StringExtensions.GetNewToken(),
+            AccessTokenHash = OAuthService.CreateTokenHash(StringExtensions.GetNewToken()),
+            Scopes = [AuthorizationRoles.McpRead],
+            OrganizationIds = [TestConstants.OrganizationId],
+            Resource = "http://localhost:7110/mcp",
+            ExpiresUtc = utcNow.AddHours(-2),
+            IsDisabled = true,
+            CreatedBy = TestConstants.UserId,
+            CreatedUtc = utcNow.AddDays(-2),
+            UpdatedUtc = utcNow
+        });
+        await _oauthTokenRepository.PatchAsync(legacyToken.Id, new PartialPatch(new { updated_utc = utcNow.AddDays(-2) }));
+
+        await _job.RunAsync(TestCancellationToken);
+
+        Assert.Null(await repository.GetByIdAsync(abandoned.Id));
+        Assert.Null(await repository.GetByIdAsync(legacy.Id));
+        foreach (var application in new[] { recent, authorized, manual, edited, disabled, legacyWithToken, missingDate })
+            Assert.NotNull(await repository.GetByIdAsync(application.Id));
+        Assert.Null(await _oauthTokenRepository.GetByIdAsync(legacyToken.Id));
+        var backfilled = await repository.GetByIdAsync(legacyWithToken.Id);
+        Assert.NotNull(backfilled);
+        Assert.Contains(TestConstants.OrganizationId, backfilled.OrganizationIds);
+
+        // The deleted registration can be recreated normally on a subsequent connection attempt.
+        var registration = await GetService<OAuthService>().RegisterClientAsync(new OAuthClientRegistrationRequest
+        {
+            ClientName = abandoned.Name,
+            RedirectUris = abandoned.RedirectUris
+        });
+        Assert.NotNull(registration.Response);
+        Assert.NotNull(await repository.GetByClientIdAsync(registration.Response.ClientId));
+
+        OAuthApplication CreateApplication(string name) => new()
+        {
+            ClientId = $"dcr_cleanup-{name}",
+            Name = name,
+            RedirectUris = ["http://localhost:54321/callback"],
+            Scopes = [AuthorizationRoles.McpRead],
+            CreatedByUserId = OAuthApplication.SystemUserId,
+            UpdatedByUserId = OAuthApplication.SystemUserId,
+            CreatedUtc = utcNow.AddDays(-2),
+            UpdatedUtc = utcNow.AddHours(-25)
+        };
+    }
+
+    [Fact]
     public async Task CanCleanupExpiredDisabledOAuthTokens()
     {
         var utcNow = DateTime.UtcNow;

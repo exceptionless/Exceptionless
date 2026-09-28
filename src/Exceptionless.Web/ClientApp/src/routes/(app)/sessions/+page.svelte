@@ -134,6 +134,7 @@
         if (queryParams.sort != null) {
             return queryParams.sort || undefined;
         }
+
         return savedViewsState.activeSavedView?.sort ?? undefined;
     }
 
@@ -205,6 +206,7 @@
         if (value === 'false') {
             return false;
         }
+
         return undefined;
     }
 
@@ -586,6 +588,7 @@
             if (currentValue === baseValue) {
                 return null;
             }
+
             return currentValue ?? (baseValue ? '' : null);
         };
 
@@ -641,6 +644,7 @@
         if (filter.type === 'version' && filter instanceof VersionFilter && filter.term !== 'version') {
             return false;
         }
+
         return ['level', 'project', 'reference', 'session', 'status', 'tag', 'version'].includes(filter.type);
     }
 
@@ -876,6 +880,7 @@
         if (dateHistogramBuckets.length === 0) {
             return buildZeroFilledSeries();
         }
+
         return dateHistogramBuckets.map((bucket) => ({
             date: new Date(bucket.key),
             sessions: bucket.total ?? 0,

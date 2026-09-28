@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models;
 
@@ -24,6 +25,7 @@ public record ViewCurrentUser : ViewUser
         Hash = HMACSHA256HashString(user.Id, options);
         HasLocalAccount = !String.IsNullOrWhiteSpace(user.Password);
         OAuthAccounts = user.OAuthAccounts;
+        ProductTours = user.ProductTours;
     }
 
     public string? Hash { get; set; }
@@ -31,6 +33,7 @@ public record ViewCurrentUser : ViewUser
     public ICollection<OAuthAccount> OAuthAccounts { get; set; }
     public ICollection<UserOrganizationPreference> OrganizationPreferences { get; set; }
     public ICollection<UserSavedViewOrderPreference> SavedViewOrders { get; set; }
+    public IDictionary<string, JsonElement> ProductTours { get; set; } = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
 
     private static string? HMACSHA256HashString(string value, IntercomOptions options)
     {

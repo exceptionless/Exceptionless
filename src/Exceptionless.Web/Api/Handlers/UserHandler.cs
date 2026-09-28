@@ -1,9 +1,11 @@
+using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
@@ -14,8 +16,10 @@ using Exceptionless.Web.Models;
 using Exceptionless.Web.Models.OAuth;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
-using Foundatio.Repositories;
 using Foundatio.Mediator;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
+using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Web.Api.Handlers;
 
@@ -28,6 +32,7 @@ public class UserHandler(
     ICacheClient cacheClient,
     IMailer mailer,
     ApiMapper mapper,
+    MiniValidationValidator validator,
     IntercomOptions intercomOptions,
     TimeProvider timeProvider,
     IHttpContextAccessor httpContextAccessor,
@@ -47,6 +52,42 @@ public class UserHandler(
         {
             AvatarUrl = GetUserAvatarUrl(currentUser.Id, currentUser.AvatarFileName)
         };
+    }
+
+    public async Task<Result<RecordProductTourResult>> Handle(RecordCurrentUserProductTour message)
+    {
+        if (message.TourName.Length is < 1 or > 64 || message.TourName.Any(c => !Char.IsAsciiLetterLower(c) && !Char.IsAsciiDigit(c) && c != '-'))
+        {
+            return Result.Invalid(ValidationError.Create("tour_name", "Use lowercase letters, digits, and hyphens for the product tour name."));
+        }
+
+        var currentUser = await GetModelAsync(GetCurrentUserId());
+        if (currentUser is null)
+        {
+            return Result.NotFound("User not found.");
+        }
+
+        // Keep the existing JSON keys while letting the UI define new tour identifiers.
+        string stateKey = message.TourName.Replace('-', '_');
+        var recordedUtc = timeProvider.GetUtcNow().UtcDateTime;
+        try
+        {
+            currentUser = await repository.RecordProductTourAsync(currentUser, stateKey, recordedUtc);
+        }
+        catch (DocumentNotFoundException)
+        {
+            return Result.NotFound("User not found.");
+        }
+
+        if (currentUser is null)
+        {
+            return Result.NotFound("User not found.");
+        }
+
+        // A later completion may have pruned this entry before the follow-up read.
+        return new RecordProductTourResult(currentUser.ProductTours.TryGetValue(stateKey, out var recorded)
+            && recorded.ValueKind == JsonValueKind.String && recorded.TryGetDateTime(out var persistedUtc)
+                ? persistedUtc : recordedUtc);
     }
 
     public async Task<Result<IReadOnlyCollection<ViewOAuthGrant>>> Handle(GetCurrentUserOAuthGrants message)
@@ -166,8 +207,19 @@ public class UserHandler(
             return permission;
 
         message.Changes.Patch(original);
-        await repository.SaveAsync(original, o => o.Cache());
-        return Result<object>.Success(MapToView(original));
+        await validator.ValidateAndThrowAsync(original);
+
+        try
+        {
+            var updated = await repository.UpdateProfileAsync(original,
+                message.Changes.ContainsChangedProperty(u => u.FullName) ? original.FullName : null,
+                message.Changes.ContainsChangedProperty(u => u.EmailNotificationsEnabled) ? original.EmailNotificationsEnabled : null);
+            return updated is null ? Result.NotFound("User not found.") : Result<object>.Success(MapToView(updated));
+        }
+        catch (DocumentNotFoundException)
+        {
+            return Result.NotFound("User not found.");
+        }
     }
 
     public async Task<Result<ProfileImageUpdate<object>>> Handle(SetUserAvatar message)

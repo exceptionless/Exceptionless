@@ -51,8 +51,15 @@
 
                 const f = builder.create(filter);
                 // Reuse existing facet to preserve open state and avoid component recreation
-                const existing = facets.find((facet) => facet.filter.id === f.id);
+                // Raw-filter drafts can contain multiple filters with the same key.
+                const sameKeyFacets = facets.filter((facet) => facet.filter.key === f.key);
+                const existing =
+                    facets.find((facet) => facet.filter.id === f.id) ??
+                    (sameKeyFacets.length === 1 && filters.filter((candidate) => candidate.key === f.key).length === 1 ? sameKeyFacets[0] : undefined);
                 if (existing) {
+                    if (lastOpenFilterId === existing.filter.id) {
+                        lastOpenFilterId = f.id;
+                    }
                     existing.filter = f;
                     existing.component = builder.component;
                     existing.title = builder.title;
@@ -198,7 +205,7 @@
     {@render children()}
 {/if}
 
-{#each visibleFacets as facet (facet.filter.id)}
+{#each visibleFacets as facet (facet)}
     {@const Facet = facet.component}
     <div class:opacity-70={facet.filter.hidden}>
         <Facet

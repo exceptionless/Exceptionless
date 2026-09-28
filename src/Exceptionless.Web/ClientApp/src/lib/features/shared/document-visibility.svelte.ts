@@ -1,7 +1,7 @@
 import { useEventListener } from 'runed';
 
 export class DocumentVisibility {
-    get visible(): boolean {
+    public get visible(): boolean {
         return this.#visible;
     }
 

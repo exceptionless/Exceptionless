@@ -23,10 +23,12 @@ import type {
 } from './models';
 
 export type GetOAuthApplicationsParams = {
+    authorized?: boolean;
     criteria?: string;
     limit?: number;
     organization?: string;
     page?: number;
+    sort?: string;
 };
 
 export type GetOAuthApplicationsRequest = {
