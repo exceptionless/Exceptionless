@@ -132,6 +132,7 @@ public sealed class AssistantService(
             await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
             using var providerDiagnostics = diagnostics?.StartProviderRequest(cancellationToken);
             bool receivedDone = false;
+            bool receivedFinishReason = false;
             string? providerFailureCode = null;
             try
             {
@@ -181,7 +182,9 @@ public sealed class AssistantService(
 
                         if (choices[0].TryGetProperty("finish_reason", out var finishReason) && finishReason.ValueKind == JsonValueKind.String)
                         {
-                            providerFailureCode ??= finishReason.GetString() switch
+                            string? reason = finishReason.GetString();
+                            receivedFinishReason |= !String.IsNullOrWhiteSpace(reason);
+                            providerFailureCode ??= reason switch
                             {
                                 "length" => "output_limit",
                                 "content_filter" => "content_filter",
@@ -253,6 +256,14 @@ public sealed class AssistantService(
 
             if (diagnostics is not null)
                 diagnostics.Stage = "response_validation";
+
+            if (!receivedDone && !receivedFinishReason)
+            {
+                providerDiagnostics?.Reject("incomplete_stream");
+                yield return AssistantStreamEvent.Error("Exie received an incomplete response from the AI provider. Please try again.", "incomplete_stream");
+                yield return AssistantStreamEvent.Done();
+                yield break;
+            }
 
             if (s_rawDsmlPattern.IsMatch(assistantContent.ToString()))
             {

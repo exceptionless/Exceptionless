@@ -78,16 +78,18 @@ public sealed class AssistantServiceTests
         Assert.True(context.AllowsOrganization("organization-b"));
     }
 
-    [Fact]
-    public async Task StreamAsync_TextResponse_EmitsDeltasAndCompletion()
+    [Theory]
+    [InlineData("data: [DONE]")]
+    [InlineData("""data: {"choices":[{"delta":{},"finish_reason":"stop"}]}""")]
+    public async Task StreamAsync_TextResponse_EmitsDeltasAndCompletion(string terminalFrame)
     {
         var handler = new StubHttpMessageHandler(
-            """
+            $$$"""
             data: {"choices":[{"delta":{"content":"Hello"}}]}
 
             data: {"choices":[{"delta":{"content":" world"}}]}
 
-            data: [DONE]
+            {{{terminalFrame}}}
 
             """);
         var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
@@ -377,7 +379,7 @@ public sealed class AssistantServiceTests
 
             data: {"choices":[{"delta":{ {{{secondReasoning}}}, "tool_calls":[{"index":0,"id":"call-1","function":{"name":"{{{toolName}}}","arguments":"{}"}}] }}]}
 
-            data: [DONE]
+            data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}]}
 
             """,
             """
@@ -1244,6 +1246,60 @@ public sealed class AssistantServiceTests
         Assert.Equal(2048, diagnostics.Provider?.ReasoningTokens);
         Assert.Equal(1, diagnostics.ProviderRequests);
         Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("private question", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task StreamAsync_IncompleteProviderStream_FailsBeforeEmittingTextOrExecutingTools(bool includesToolCall, bool recordDiagnostics)
+    {
+        string delta = includesToolCall
+            ? """{"tool_calls":[{"index":0,"id":"call-1","function":{"name":"unknown_tool","arguments":"{\"status\":"}}]}"""
+            : """{"content":"Partial answer"}""";
+        var handler = new StubHttpMessageHandler(
+            $$"""data: {"choices":[{"delta":{{delta}},"finish_reason":null}]}""" + "\n\n",
+            """
+            data: {"choices":[{"delta":{"content":"Final answer"}}]}
+
+            data: [DONE]
+
+            """);
+        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
+            .Build());
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+        using var cache = new InMemoryCacheClient();
+        var usageService = new AssistantUsageService(cache, CreateLockProvider(cache, TimeProvider.System),
+            new RecordingAssistantUsageRecorder(), options, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, options, cache, usageService: usageService);
+        var context = new DefaultHttpContext();
+        using var response = new MemoryStream();
+        context.Response.Body = response;
+
+        await AssistantEndpoints.WriteResponseAsync(context,
+            service.StreamAsync(new AssistantChatRequest([new AssistantChatMessage("user", "question")]),
+                "user-id", CreatePlanOptions(), recordDiagnostics ? diagnostics : null, TestContext.Current.CancellationToken),
+            usageService, "organization-id", diagnostics, TestContext.Current.CancellationToken);
+
+        var events = Encoding.UTF8.GetString(response.ToArray()).Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => JsonSerializer.Deserialize<AssistantStreamEvent>(line, new JsonSerializerOptions(JsonSerializerDefaults.Web))!);
+        Assert.Collection(events,
+            item =>
+            {
+                Assert.Equal("error", item.Type);
+                Assert.Equal("Exie received an incomplete response from the AI provider. Please try again.", item.Message);
+            },
+            item => Assert.Equal("done", item.Type));
+        Assert.Single(handler.RequestBodies);
+        Assert.Equal(0, diagnostics.ToolCalls);
+        if (recordDiagnostics)
+            Assert.Equal("incomplete_stream", Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("ProviderOutcome")).Properties["ProviderOutcome"]);
+        var turn = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("Outcome"));
+        Assert.Equal("failed", turn.Properties["Outcome"]);
+        Assert.Equal("incomplete_stream", turn.Properties["FailureReason"]);
     }
 
     [Theory]
