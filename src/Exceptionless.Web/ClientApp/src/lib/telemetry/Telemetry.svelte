@@ -7,11 +7,12 @@
     import { normalizePath, normalizeRouteId } from './route';
 
     interface Props {
+        authenticated: boolean;
         userId?: string;
         userName?: string;
     }
 
-    let { userId, userName }: Props = $props();
+    let { authenticated, userId, userName }: Props = $props();
 
     afterNavigate(async ({ to }) => {
         if (page.status === 404) {
@@ -24,10 +25,10 @@
     });
 
     $effect(() => {
-        if (userId) {
-            void setUserIdentity(userId, userName);
-        } else {
+        if (!authenticated) {
             void endSession();
+        } else if (userId) {
+            void setUserIdentity(userId, userName);
         }
     });
 </script>

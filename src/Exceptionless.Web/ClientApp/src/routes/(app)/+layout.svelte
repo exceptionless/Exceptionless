@@ -906,4 +906,8 @@
     <UpgradeRequiredDialog />
 {/if}
 
-<Telemetry userId={isAuthenticated ? meQuery.data?.email_address : undefined} userName={isAuthenticated ? meQuery.data?.full_name : undefined} />
+<Telemetry
+    authenticated={isAuthenticated}
+    userId={isAuthenticated ? meQuery.data?.email_address : undefined}
+    userName={isAuthenticated ? meQuery.data?.full_name : undefined}
+/>
