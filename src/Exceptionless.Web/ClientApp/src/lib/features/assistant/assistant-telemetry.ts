@@ -34,7 +34,7 @@ export class AssistantTurnTelemetry {
     private toolFailures = 0;
 
     constructor(
-        readonly context: AssistantTelemetryContext,
+        public readonly context: AssistantTelemetryContext,
         promptCharacters: number,
         source: AssistantPromptSource,
         details: Record<string, unknown> = {}
@@ -43,11 +43,11 @@ export class AssistantTurnTelemetry {
         trackAssistantEvent('assistant.MessageSent', context, this.promptDetails);
     }
 
-    disableFullLogging(): void {
+    public disableFullLogging(): void {
         this.responseContent = undefined;
     }
 
-    enableFullLogging(prompt: string): void {
+    public enableFullLogging(prompt: string): void {
         if (this.finished || this.responseContent !== undefined) {
             return;
         }
@@ -59,12 +59,12 @@ export class AssistantTurnTelemetry {
         });
     }
 
-    fail(message: string, reason: 'request_error' | 'stream_error' | `http_${number}`): void {
+    public fail(message: string, reason: 'request_error' | 'stream_error' | `http_${number}`): void {
         this.errorMessage ??= message.slice(0, 2048);
         this.failureReason ??= reason;
     }
 
-    finish(stopReason?: AssistantStopReason, details: Record<string, unknown> = {}): AssistantTurnOutcome | undefined {
+    public finish(stopReason?: AssistantStopReason, details: Record<string, unknown> = {}): AssistantTurnOutcome | undefined {
         if (this.finished) {
             return;
         }
@@ -98,7 +98,7 @@ export class AssistantTurnTelemetry {
         return outcome;
     }
 
-    observe(event: AssistantStreamEvent): void {
+    public observe(event: AssistantStreamEvent): void {
         if (this.finished) {
             return;
         }

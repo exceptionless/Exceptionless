@@ -47,6 +47,7 @@ export function getAssistantConversationSharingQuery(request: { enabled: boolean
             if (!response.ok) {
                 throw response.problem;
             }
+
             return response.data!;
         },
         queryKey: queryKeys.conversationSharing
@@ -67,6 +68,7 @@ export function putAssistantConversationSharingMutation() {
             if (!response.ok) {
                 throw response.problem;
             }
+
             return response.data!;
         },
         onMutate: async () => {

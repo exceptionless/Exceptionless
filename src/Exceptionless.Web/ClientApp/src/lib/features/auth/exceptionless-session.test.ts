@@ -58,7 +58,7 @@ describe('Exceptionless session events', () => {
         expect(Exceptionless.config.currentSessionIdentifier).toMatch(/^[a-f0-9]{32}$/);
     });
 
-    it('does not clear a newer identity when an earlier logout finishes', async () => {
+    it.each(['next-user', 'previous-user'])('preserves the restored %s session when an earlier logout finishes', async (nextUserId) => {
         await setUserIdentity('previous-user');
         const previousSessionId = Exceptionless.config.currentSessionIdentifier;
         let finishSessionEnd: () => void = () => {};
@@ -70,14 +70,48 @@ describe('Exceptionless session events', () => {
         );
         const ending = endSession();
         await vi.waitFor(() => expect(Exceptionless.submitSessionEnd).toHaveBeenCalledWith(previousSessionId));
-        await setUserIdentity('next-user');
+        await setUserIdentity(nextUserId);
         const nextSessionId = Exceptionless.config.currentSessionIdentifier;
+        await setUserIdentity(nextUserId, 'Updated Name');
+        expect(Exceptionless.config.currentSessionIdentifier).toBe(nextSessionId);
         finishSessionEnd();
         await ending;
 
-        expect(Exceptionless.config.defaultData['@user']).toMatchObject({ identity: 'next-user' });
+        expect(Exceptionless.config.defaultData['@user']).toMatchObject({ identity: nextUserId });
         expect(nextSessionId).not.toBe(previousSessionId);
         expect(Exceptionless.config.currentSessionIdentifier).toBe(nextSessionId);
+        await submitFeatureUsage('assistant.Opened');
+        const events = vi.mocked(Exceptionless.config.services.queue.enqueue).mock.calls.map(([event]) => event);
+        expect(events.filter((event) => event.type === 'session')).toHaveLength(2);
+        expect(events.at(-1)).toMatchObject({
+            data: { '@ref:session': nextSessionId, '@user': { identity: nextUserId } },
+            source: 'assistant.Opened'
+        });
+    });
+
+    it('preserves a restored login when an earlier session end fails', async () => {
+        await setUserIdentity('returning-user');
+        const previousSessionId = Exceptionless.config.currentSessionIdentifier;
+        let failSessionEnd: (error: Error) => void = () => {};
+        vi.mocked(Exceptionless.submitSessionEnd).mockImplementationOnce(
+            () =>
+                new Promise<void>((_, reject) => {
+                    failSessionEnd = reject;
+                })
+        );
+        const ending = endSession();
+        await vi.waitFor(() => expect(Exceptionless.submitSessionEnd).toHaveBeenCalledWith(previousSessionId));
+        await setUserIdentity('returning-user');
+        const nextSessionId = Exceptionless.config.currentSessionIdentifier;
+        const rejection = expect(ending).rejects.toThrow('Session end failed');
+        failSessionEnd(new Error('Session end failed'));
+        await rejection;
+
+        expect(Exceptionless.config.defaultData['@user']).toMatchObject({ identity: 'returning-user' });
+        expect(nextSessionId).not.toBe(previousSessionId);
+        expect(Exceptionless.config.currentSessionIdentifier).toBe(nextSessionId);
+        await endSession();
+        expect(Exceptionless.config.currentSessionIdentifier).toBeNull();
     });
 
     it('clears the heartbeat identity on logout and suppresses anonymous resume sessions', async () => {
