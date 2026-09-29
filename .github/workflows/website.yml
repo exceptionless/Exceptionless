@@ -33,7 +33,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
-          deno-version: 2.5.7
+          deno-version: 2.9.7
           cache: true
 
       - name: Require telemetry configuration for deployment
