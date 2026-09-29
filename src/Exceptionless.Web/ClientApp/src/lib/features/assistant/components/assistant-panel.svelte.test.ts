@@ -6,7 +6,12 @@ vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-
 vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled: () => true }));
 vi.mock('katex/dist/katex.min.css', () => ({}));
 const goto = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+const submitFeatureUsage = vi.hoisted(() => vi.fn<(feature: string, properties?: Record<string, unknown>) => Promise<void>>().mockResolvedValue(undefined));
+const submitLog = vi.hoisted(() =>
+    vi.fn<(source: string, message: string, properties?: Record<string, unknown>) => Promise<void>>().mockResolvedValue(undefined)
+);
 vi.mock('$app/navigation', () => ({ goto }));
+vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage, submitLog }));
 
 import AssistantPanel from './assistant-panel.svelte';
 
@@ -28,6 +33,307 @@ describe('AssistantPanel', () => {
         ).not.toThrow();
 
         expect(screen.getByText('Bring Exie onto your team')).toBeTruthy();
+    });
+
+    it('records opens only when becoming visible, not when typing or changing views', async () => {
+        const props = { open: true, organizationId: 'organization-1', path: '/next/stack' };
+        const view = render(AssistantPanel, { props });
+        await screen.findByRole('textbox', { name: 'Message Exie' });
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.Opened')).toHaveLength(1);
+
+        await fireEvent.input(screen.getByRole('textbox', { name: 'Message Exie' }), { target: { value: 'Unsent draft' } });
+        await view.rerender({ ...props, mode: 'page', path: '/next/event' });
+        await waitFor(() => expect(submitFeatureUsage).toHaveBeenCalledWith('assistant.ViewChanged', expect.anything()));
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.Opened')).toHaveLength(1);
+
+        await view.rerender({ ...props, mode: 'sheet', open: false });
+        await waitFor(() => expect(submitFeatureUsage).toHaveBeenCalledWith('assistant.Closed', expect.anything()));
+        await view.rerender(props);
+        await waitFor(() => expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.Opened')).toHaveLength(2));
+    });
+
+    it('correlates message outcomes and feedback without recording chat text', async () => {
+        const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response('{"type":"text_delta","text":"The answer"}\n{"type":"done"}\n'));
+        vi.stubGlobal('fetch', fetchMock);
+        render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                path: '/next/stack/stack-1?filter=private',
+                promptRequest: { id: 'prompt-request', prompt: 'My question' }
+            }
+        });
+        await screen.findByText('The answer');
+        await screen.findByRole('button', { name: 'Good response' });
+        await fireEvent.click(screen.getByRole('button', { name: 'Good response' }));
+        await waitFor(() => expect(submitFeatureUsage).toHaveBeenCalledWith('assistant.ResponseHelpful', expect.anything()));
+
+        const prompt = eventData('assistant.MessageSent');
+        expect(prompt.conversation_id).toMatch(/^[0-9a-f]{32}$/);
+        expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string).conversation_id).toBe(prompt.conversation_id);
+        expect(prompt).toMatchObject({ organization_id: 'organization-1', path: '/next/stack/stack-1', prompt_source: 'queued', role: 'user' });
+        expect(eventData('assistant.ResponseCompleted')).toMatchObject({
+            assistant_message_id: prompt.assistant_message_id,
+            conversation_id: prompt.conversation_id,
+            is_visible: true,
+            outcome: 'completed'
+        });
+        expect(eventData('assistant.ResponseHelpful')).toMatchObject({
+            assistant_message_id: prompt.assistant_message_id,
+            conversation_id: prompt.conversation_id
+        });
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.ResponseHelpful')).toHaveLength(1);
+        const telemetry = JSON.stringify([...submitFeatureUsage.mock.calls, ...submitLog.mock.calls]);
+        expect(telemetry).not.toContain('My question');
+        expect(telemetry).not.toContain('The answer');
+    });
+
+    it('links a retry to the failed response across the new server conversation', async () => {
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(new Response('{"type":"error","message":"Provider timed out"}\n{"type":"done"}\n'))
+            .mockResolvedValueOnce(new Response('{"type":"text_delta","text":"Recovered answer"}\n{"type":"done"}\n'));
+        vi.stubGlobal('fetch', fetchMock);
+        render(AssistantPanel, {
+            props: { open: true, organizationId: 'organization-1', promptRequest: { id: 'prompt-request', prompt: 'My question' } }
+        });
+        await screen.findByText('Provider timed out');
+        await fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
+        await screen.findByText('Recovered answer');
+        await waitFor(() => expect(eventData('assistant.ResponseCompleted').outcome).toBe('completed'));
+
+        const failed = eventData('assistant.ResponseFailed');
+        const retried = eventData('assistant.MessageSent', 1);
+        expect(retried).toMatchObject({
+            previous_conversation_id: failed.conversation_id,
+            prompt_source: 'retry',
+            retry_of_message_id: failed.assistant_message_id
+        });
+        expect(retried.conversation_id).not.toBe(failed.conversation_id);
+        expect(retried.conversation_id).toMatch(/^[0-9a-f]{32}$/);
+        expect(JSON.parse(fetchMock.mock.calls[1]?.[1]?.body as string).conversation_id).toBe(retried.conversation_id);
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.ResponseFailed')).toHaveLength(1);
+        expect(failed.error_message).toBe('Provider timed out');
+    });
+
+    it.each([
+        [undefined, true],
+        ['false', true],
+        ['true', true],
+        ['true', false],
+        ['true', undefined]
+    ] as const)('requires both server permission (%s) and the visible sharing choice (%s)', async (flag, enabled) => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(
+                async () =>
+                    new Response('{"type":"text_delta","text":"Full answer"}\n{"type":"done"}\n', {
+                        headers: flag === undefined ? {} : { 'X-Exie-Full-Logging': flag }
+                    })
+            )
+        );
+        render(AssistantPanel, {
+            props: {
+                conversationSharing: enabled === undefined ? undefined : { default_enabled: true, enabled, is_overridden: !enabled },
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Full question' }
+            }
+        });
+        await waitFor(() => expect(eventData('assistant.ResponseCompleted').outcome).toBe('completed'));
+        if (flag === 'true' && enabled) {
+            expect(submitLog).toHaveBeenCalledWith('assistant.Prompt', 'Full question', expect.anything());
+            expect(submitLog).toHaveBeenCalledWith('assistant.Response', 'Full answer', expect.anything());
+            expect(submitLog).toHaveBeenCalledTimes(2);
+        } else {
+            expect(submitLog).not.toHaveBeenCalled();
+        }
+    });
+
+    it('stops recording transcript text when full logging is disabled for the next turn', async () => {
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(
+                new Response('{"type":"text_delta","text":"First answer"}\n{"type":"done"}\n', { headers: { 'X-Exie-Full-Logging': 'true' } })
+            )
+            .mockResolvedValueOnce(
+                new Response('{"type":"text_delta","text":"Second answer"}\n{"type":"done"}\n', { headers: { 'X-Exie-Full-Logging': 'false' } })
+            );
+        vi.stubGlobal('fetch', fetchMock);
+        render(AssistantPanel, {
+            props: {
+                conversationSharing: { default_enabled: true, enabled: true, is_overridden: false },
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'First question' }
+            }
+        });
+        await screen.findByText('First answer');
+        const composer = screen.getByRole('textbox', { name: 'Message Exie' });
+        await screen.findByRole('button', { name: 'Send message' });
+        await fireEvent.input(composer, { target: { value: 'Second question' } });
+        await fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+        await waitFor(() => expect(eventData('assistant.ResponseCompleted', 1).outcome).toBe('completed'));
+        expect(submitLog).toHaveBeenCalledTimes(2);
+        expect(JSON.stringify(submitLog.mock.calls)).not.toContain('Second');
+    });
+
+    it('shows the inherited default and saves an explicit choice or a reset', async () => {
+        const save = vi
+            .fn()
+            .mockResolvedValueOnce({ default_enabled: false, enabled: true, is_overridden: true })
+            .mockResolvedValueOnce({ default_enabled: false, enabled: false, is_overridden: false });
+        render(AssistantPanel, {
+            props: {
+                conversationSharing: { default_enabled: false, enabled: false, is_overridden: false },
+                onConversationSharingChange: save,
+                open: true,
+                organizationId: 'organization-1'
+            }
+        });
+        expect(screen.queryByRole('switch', { name: 'Share conversations to improve Exie' })).toBeNull();
+        await fireEvent.click(screen.getByRole('button', { name: 'Chat sharing: Off' }));
+        expect(screen.getByText(/Using the default: off/)).toBeTruthy();
+        await fireEvent.click(screen.getByRole('switch', { name: 'Share conversations to improve Exie' }));
+        await waitFor(() => expect(save).toHaveBeenCalledWith(true));
+        await fireEvent.click(await screen.findByRole('button', { name: 'Use default (off)' }));
+        await waitFor(() => expect(save).toHaveBeenLastCalledWith(null));
+        await waitFor(() => expect(screen.getByRole('switch', { name: 'Share conversations to improve Exie' }).getAttribute('aria-checked')).toBe('false'));
+        await fireEvent.click(screen.getByRole('button', { name: 'Chat sharing: Off' }));
+        await waitFor(() => expect(screen.queryByRole('switch', { name: 'Share conversations to improve Exie' })).toBeNull());
+    });
+
+    it.each([false, true])('stops collecting the active reply and subsequent prompts when opting out (save fails: %s)', async (saveFails) => {
+        let controller!: ReadableStreamDefaultController<Uint8Array>;
+        const stream = new ReadableStream<Uint8Array>({
+            start(value) {
+                controller = value;
+            }
+        });
+        vi.stubGlobal(
+            'fetch',
+            vi
+                .fn()
+                .mockResolvedValueOnce(new Response(stream, { headers: { 'X-Exie-Full-Logging': 'true' } }))
+                .mockResolvedValueOnce(
+                    new Response('{"type":"text_delta","text":"Later answer"}\n{"type":"done"}\n', { headers: { 'X-Exie-Full-Logging': 'true' } })
+                )
+        );
+        const saved = { default_enabled: true, enabled: false, is_overridden: true };
+        const save = saveFails ? vi.fn().mockRejectedValueOnce(new Error('Offline')).mockResolvedValue(saved) : vi.fn().mockResolvedValue(saved);
+        render(AssistantPanel, {
+            props: {
+                conversationSharing: { default_enabled: true, enabled: true, is_overridden: false },
+                onConversationSharingChange: save,
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'sharing-request', prompt: 'Initial question' }
+            }
+        });
+        await waitFor(() => expect(submitLog).toHaveBeenCalledWith('assistant.Prompt', 'Initial question', expect.anything()));
+        controller.enqueue(new TextEncoder().encode('{"type":"text_delta","text":"Active reply"}\n'));
+        await screen.findByText('Active reply');
+        await fireEvent.click(screen.getByRole('button', { name: 'Chat sharing: On' }));
+        await fireEvent.click(screen.getByRole('switch', { name: 'Share conversations to improve Exie' }));
+        await waitFor(() => expect(save).toHaveBeenCalledWith(false));
+        if (saveFails) {
+            await screen.findByText(/Sharing is paused on this page/);
+            await fireEvent.click(screen.getByRole('button', { name: 'Chat sharing: Off · Not saved' }));
+        }
+        controller.enqueue(new TextEncoder().encode('{"type":"done"}\n'));
+        controller.close();
+        await waitFor(() => expect(eventData('assistant.ResponseCompleted').outcome).toBe('completed'));
+        await fireEvent.input(screen.getByRole('textbox', { name: 'Message Exie' }), { target: { value: 'Later question' } });
+        await fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+        await waitFor(() => expect(eventData('assistant.ResponseCompleted', 1).outcome).toBe('completed'));
+        expect(submitLog).toHaveBeenCalledTimes(1);
+        expect(JSON.stringify(submitLog.mock.calls)).not.toContain('Active reply');
+        expect(JSON.stringify(submitLog.mock.calls)).not.toContain('Later');
+        if (saveFails) {
+            await fireEvent.click(screen.getByRole('button', { name: 'Chat sharing: Off · Not saved' }));
+            await fireEvent.click(screen.getByRole('button', { name: 'Retry saving' }));
+            await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
+            expect(save).toHaveBeenLastCalledWith(false);
+        }
+    });
+
+    it('records closing while waiting without cancelling a response that finishes in the background', async () => {
+        let streamController: ReadableStreamDefaultController<Uint8Array>;
+        const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+                streamController = controller;
+            }
+        });
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async () => new Response(stream))
+        );
+        const props = { open: true, organizationId: 'organization-1', promptRequest: { id: 'prompt-request', prompt: 'My question' } };
+        const view = render(AssistantPanel, { props });
+        await screen.findByRole('button', { name: 'Stop generating' });
+        await view.rerender({ ...props, open: false });
+        await waitFor(() => expect(eventData('assistant.Closed').is_streaming).toBe(true));
+        streamController!.enqueue(new TextEncoder().encode('{"type":"text_delta","text":"Background answer"}\n{"type":"done"}\n'));
+        streamController!.close();
+        await waitFor(() => expect(eventData('assistant.ResponseCompleted').is_visible).toBe(false));
+        expect(submitFeatureUsage.mock.calls.some(([feature]) => feature === 'assistant.ResponseCancelled')).toBe(false);
+    });
+
+    it('records one cancellation with the original organization when organization context changes', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(
+                async (_input: RequestInfo | URL, init?: RequestInit) =>
+                    new Response(
+                        new ReadableStream<Uint8Array>({
+                            start(controller) {
+                                controller.enqueue(new TextEncoder().encode('{"type":"text_delta","text":"Partial answer"}\n'));
+                                init?.signal?.addEventListener('abort', () => controller.error(new DOMException('Aborted', 'AbortError')));
+                            }
+                        })
+                    )
+            )
+        );
+        const view = render(AssistantPanel, {
+            props: { open: true, organizationId: 'organization-1', promptRequest: { id: 'prompt-request', prompt: 'My question' } }
+        });
+        await screen.findByText('Partial answer');
+        await view.rerender({ open: true, organizationId: 'organization-2' });
+        await waitFor(() => expect(eventData('assistant.ResponseCancelled').reason).toBe('organization_changed'));
+        expect(eventData('assistant.ResponseCancelled')).toMatchObject({ organization_id: 'organization-1' });
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.ResponseCancelled')).toHaveLength(1);
+        expect(submitFeatureUsage.mock.calls.some(([feature]) => feature === 'assistant.ResponseCompleted')).toBe(false);
+        expect(screen.queryByText('Partial answer')).toBeNull();
+    });
+
+    it('records an explicit stop once and distinguishes it from leaving the page', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(
+                async (_input: RequestInfo | URL, init?: RequestInit) =>
+                    new Response(
+                        new ReadableStream<Uint8Array>({
+                            start(controller) {
+                                controller.enqueue(new TextEncoder().encode('{"type":"text_delta","text":"Partial answer"}\n'));
+                                init?.signal?.addEventListener('abort', () => controller.error(new DOMException('Aborted', 'AbortError')));
+                            }
+                        })
+                    )
+            )
+        );
+        render(AssistantPanel, {
+            props: { open: true, organizationId: 'organization-1', promptRequest: { id: 'prompt-request', prompt: 'My question' } }
+        });
+        await screen.findByText('Partial answer');
+        await fireEvent(window, new Event('pagehide'));
+        expect(eventData('assistant.PageLeft')).toMatchObject({ is_streaming: true });
+        expect(submitFeatureUsage.mock.calls.some(([feature]) => feature === 'assistant.ResponseCancelled')).toBe(false);
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Stop generating' }));
+        await screen.findByRole('button', { name: 'Send message' });
+        expect(eventData('assistant.ResponseCancelled')).toMatchObject({ outcome: 'cancelled', reason: 'user_stopped' });
+        expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.ResponseCancelled')).toHaveLength(1);
+        expect(screen.getByText('Partial answer')).toBeTruthy();
     });
 
     it('renders as a full-page chat and opens the side panel when collapsed', async () => {
@@ -83,6 +389,7 @@ describe('AssistantPanel', () => {
         expect(screen.getByText('The conversation is still here.')).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Clear conversation' }).hasAttribute('disabled')).toBe(false);
         expect(fetchMock).toHaveBeenCalledOnce();
+        expect(submitFeatureUsage.mock.calls.some(([feature]) => feature === 'assistant.Closed')).toBe(false);
     });
 
     afterEach(() => {
@@ -234,5 +541,15 @@ describe('AssistantPanel', () => {
 
         await waitFor(() => expect(goto).toHaveBeenCalledWith(configureHref));
         expect(fetchMock).toHaveBeenCalledOnce();
+        expect(eventData('assistant.SuggestedActionSelected')).toMatchObject({ action_type: 'navigation' });
+        const telemetry = JSON.stringify(submitFeatureUsage.mock.calls);
+        expect(telemetry).not.toContain('Open Client Setup');
+        expect(telemetry).not.toContain('How do I configure');
+        expect(telemetry).not.toContain(configureHref);
     });
 });
+
+function eventData(feature: string, index = 0): Record<string, unknown> {
+    const properties = submitFeatureUsage.mock.calls.filter(([name]) => name === feature)[index]?.[1];
+    return (properties?.exie ?? {}) as Record<string, unknown>;
+}
