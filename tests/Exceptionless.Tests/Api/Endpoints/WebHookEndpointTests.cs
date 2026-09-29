@@ -568,6 +568,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
     public async Task UnsubscribeAsync_ExistingZapierHook_RemovesWebHook()
     {
         // Arrange - create a zapier hook via subscribe
+        var logger = Assert.IsType<Foundatio.Xunit.TestLogger>(GetService<ILoggerFactory>());
         const string zapierUrl = "https://hooks.zapier.com/hooks/unsubtest";
         var webHook = await SendRequestAsAsync<WebHook>(r => r
             .Post()
@@ -597,6 +598,74 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
         await RefreshDataAsync();
         var results = await _webHookRepository.GetByUrlAsync(zapierUrl);
         Assert.Empty(results.Documents);
+        var unsubscribeLogs = logger.LogEntries.Where(entry => entry.EventId.Name == "RemovingZapierUrls").ToList();
+        Assert.NotEmpty(unsubscribeLogs);
+        Assert.All(unsubscribeLogs, entry =>
+        {
+            Assert.DoesNotContain(zapierUrl, entry.Message);
+            Assert.DoesNotContain(entry.Properties.Values, value => String.Equals(value?.ToString(), zapierUrl, StringComparison.Ordinal));
+        });
+    }
+
+    [Theory]
+    [InlineData("api/v2/webhooks/subscribe", "[]")]
+    [InlineData("api/v2/webhooks/subscribe", "{\"event\":42,\"target_url\":\"https://hooks.zapier.com/hooks/test\"}")]
+    [InlineData("api/v2/webhooks/subscribe", "{\"event\":\"NewError\",\"target_url\":false}")]
+    [InlineData("api/v1/projecthook/subscribe", "[]")]
+    public async Task SubscribeAsync_MalformedShape_ReturnsBadRequest(string path, string json)
+    {
+        // Act
+        var response = await SendRequestAsync(request => request.Post().AsTestOrganizationClientUser()
+            .BaseUri(_server.BaseAddress).AppendPath(path).Content(json, "application/json").StatusCodeShouldBeBadRequest());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("api/v2/webhooks/unsubscribe", "[]")]
+    [InlineData("api/v2/webhooks/unsubscribe", "{\"target_url\":42}")]
+    [InlineData("api/v1/projecthook/unsubscribe", "[]")]
+    public async Task UnsubscribeAsync_MalformedShape_ReturnsNotFound(string path, string json)
+    {
+        // Act
+        var response = await SendRequestAsync(request => request.Post().BaseUri(_server.BaseAddress)
+            .AppendPath(path).Content(json, "application/json").StatusCodeShouldBeNotFound());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("https://hooks.zapier.com.evil.example/hooks/test")]
+    [InlineData("https://hooks.zapier.com@evil.example/hooks/test")]
+    [InlineData("https://hooks.zapier.com:444/hooks/test")]
+    public async Task SubscribeAsync_LookalikeZapierTarget_ReturnsNotFound(string targetUrl)
+    {
+        // Arrange
+        var subscription = new { @event = WebHook.KnownEventTypes.NewError, target_url = targetUrl };
+
+        // Act
+        var response = await SendRequestAsync(request => request.Post().AsTestOrganizationClientUser()
+            .AppendPath("webhooks/subscribe").Content(subscription).StatusCodeShouldBeNotFound());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Empty((await _webHookRepository.GetByUrlAsync(targetUrl)).Documents);
+    }
+
+    [Theory]
+    [InlineData("https://hooks.zapier.com.evil.example/hooks/test")]
+    [InlineData("https://hooks.zapier.com@evil.example/hooks/test")]
+    [InlineData("https://hooks.zapier.com:444/hooks/test")]
+    public async Task UnsubscribeAsync_LookalikeZapierTarget_ReturnsNotFound(string targetUrl)
+    {
+        // Act
+        var response = await SendRequestAsync(request => request.Post().AppendPath("webhooks/unsubscribe")
+            .Content(new { target_url = targetUrl }).StatusCodeShouldBeNotFound());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]

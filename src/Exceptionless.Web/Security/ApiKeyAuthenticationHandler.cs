@@ -32,17 +32,19 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     private readonly ITokenRepository _tokenRepository;
     private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly ICacheClient _cacheClient;
+    private readonly AuthService _authService;
     private readonly IUserRepository _userRepository;
     private readonly OAuthService _oauthService;
     private readonly TimeProvider _timeProvider;
     private readonly AppOptions _appOptions;
 
-    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, ICacheClient cacheClient, IUserRepository userRepository, OAuthService oauthService, AppOptions appOptions, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
+    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, ICacheClient cacheClient, AuthService authService, IUserRepository userRepository, OAuthService oauthService, AppOptions appOptions, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
         TimeProvider timeProvider, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder)
     {
         _tokenRepository = tokenRepository;
         _oauthTokenRepository = oauthTokenRepository;
         _cacheClient = cacheClient;
+        _authService = authService;
         _userRepository = userRepository;
         _oauthService = oauthService;
         _appOptions = appOptions;
@@ -67,36 +69,46 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         else if (authHeader is not null && scheme == BasicScheme)
         {
             var authInfo = Request.GetBasicAuth();
-            if (authInfo is not null)
+            if (authInfo is null)
             {
-                if (authInfo.Username.ToLower() == "client")
-                    token = authInfo.Password;
-                else if (authInfo.Password.ToLower() == "x-oauth-basic" || String.IsNullOrEmpty(authInfo.Password))
-                    token = authInfo.Username;
-                else
+                Logger.LogDebug("Invalid Basic authentication credentials on {Path}", Request.Path);
+                return AuthenticateResult.NoResult();
+            }
+
+            if (String.Equals(authInfo.Username, "client", StringComparison.OrdinalIgnoreCase))
+                token = authInfo.Password;
+            else if (String.Equals(authInfo.Password, "x-oauth-basic", StringComparison.OrdinalIgnoreCase) || String.IsNullOrEmpty(authInfo.Password))
+                token = authInfo.Username;
+            else
+            {
+                string emailAddress = authInfo.Username.Trim().ToLowerInvariant();
+                string? ipAddress = Request.GetClientIpAddress();
+                var loginAttempt = await _authService.TryBeginLoginAsync(emailAddress, ipAddress, Context.RequestAborted);
+                if (loginAttempt is null)
                 {
-                    User? user;
-                    try
-                    {
-                        user = await _userRepository.GetByEmailAddressAsync(authInfo.Username);
-                    }
-                    catch (Exception ex)
-                    {
-                        return AuthenticateResult.Fail(ex);
-                    }
-
-                    if (user is not { IsActive: true })
-                        return AuthenticateResult.Fail("User is not valid");
-
-                    if (String.IsNullOrEmpty(user.Salt))
-                        return AuthenticateResult.Fail("User is not valid");
-
-                    string encodedPassword = authInfo.Password.ToSaltedHash(user.Salt);
-                    if (!String.Equals(encodedPassword, user.Password))
-                        return AuthenticateResult.Fail("User is not valid");
-
-                    return AuthenticateResult.Success(CreateUserAuthenticationTicket(user));
+                    Logger.LogError("Login denied for {EmailAddress}", emailAddress);
+                    return AuthenticateResult.Fail("Login denied.");
                 }
+
+                User? user;
+                try
+                {
+                    user = await _userRepository.GetByEmailAddressAsync(emailAddress);
+                }
+                catch (Exception ex)
+                {
+                    return AuthenticateResult.Fail(ex);
+                }
+
+                if (user is not { IsActive: true } || !user.IsCorrectPassword(authInfo.Password))
+                {
+                    await _authService.RecordLoginFailureAsync(loginAttempt);
+                    return AuthenticateResult.Fail("User is not valid");
+                }
+
+                await _authService.RecordLoginSuccessAsync(loginAttempt);
+
+                return AuthenticateResult.Success(CreateUserAuthenticationTicket(user));
             }
         }
         else
@@ -144,6 +156,12 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             if (user is null)
             {
                 Logger.LogInformation("Could not find user {UserId} for token on {Path}", tokenRecord.UserId, Request.Path);
+                return AuthenticateResult.Fail("Token is not valid");
+            }
+
+            if (!user.IsActive)
+            {
+                Logger.LogInformation("Inactive user {UserId} for token on {Path}", tokenRecord.UserId, Request.Path);
                 return AuthenticateResult.Fail("Token is not valid");
             }
 

@@ -68,9 +68,10 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.OfflineAccess
     ];
 
-    private const string AuthorizationCodeCachePrefix = "oauth:code:";
+    private const string AuthorizationCodeCachePrefix = "code:";
     private const string RefreshTokenLockPrefix = "oauth:refresh:";
-    private const string AccessTokenClientValidityCachePrefix = "oauth:client-valid:";
+    private const string AccessTokenClientValidityCachePrefix = "client-valid:";
+    private readonly ScopedCacheClient _cache = new(cacheClient, "oauth");
     private const int OAuthGrantFamilyPageLimit = 1000;
     private static readonly TimeSpan AccessTokenClientValidityCacheLifetime = TimeSpan.FromSeconds(30);
     private const string ClientMetadataNotes = "Discovered from OAuth client metadata document.";
@@ -176,13 +177,13 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         clientId = clientId.Trim();
         string cacheKey = GetAccessTokenClientValidityCacheKey(clientId);
-        bool? cached = await cacheClient.GetAsync<bool?>(cacheKey, null);
+        bool? cached = await _cache.GetAsync<bool?>(cacheKey, null);
         if (cached.HasValue)
             return cached.Value;
 
         var application = await oauthApplicationRepository.GetByClientIdAsync(clientId);
         bool isValid = application is { IsDisabled: false };
-        await cacheClient.SetAsync(cacheKey, isValid, AccessTokenClientValidityCacheLifetime);
+        await _cache.SetAsync(cacheKey, isValid, AccessTokenClientValidityCacheLifetime);
         return isValid;
     }
 
@@ -190,7 +191,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     {
         return String.IsNullOrWhiteSpace(clientId)
             ? Task.CompletedTask
-            : cacheClient.RemoveAsync(GetAccessTokenClientValidityCacheKey(clientId.Trim()));
+            : _cache.RemoveAsync(GetAccessTokenClientValidityCacheKey(clientId.Trim()));
     }
 
     private async Task<OAuthClientOptions?> GetClientFromMetadataDocumentAsync(string clientId)
@@ -392,7 +393,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             OrganizationIds = organizationIds,
             CreatedUtc = timeProvider.GetUtcNow().UtcDateTime
         };
-        await cacheClient.SetAsync(GetAuthorizationCodeCacheKey(code), authorizationCode, options.AuthorizationCodeLifetime);
+        await _cache.SetAsync(GetAuthorizationCodeCacheKey(code), authorizationCode, options.AuthorizationCodeLifetime);
         return code;
     }
 
@@ -411,12 +412,15 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Invalid PKCE verifier.");
 
         string cacheKey = GetAuthorizationCodeCacheKey(request.Code);
-        var codeResult = await cacheClient.GetAsync<OAuthAuthorizationCode>(cacheKey);
+        var codeResult = await _cache.GetAsync<OAuthAuthorizationCode>(cacheKey);
         if (!codeResult.HasValue)
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code is invalid or expired.");
 
-        await cacheClient.RemoveAsync(cacheKey);
+        if (!await _cache.RemoveAsync(cacheKey))
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code is invalid or expired.");
+
         var code = codeResult.Value;
+
         if (!String.Equals(code.ClientId, request.ClientId, StringComparison.Ordinal) || !String.Equals(code.RedirectUri, request.RedirectUri, StringComparison.Ordinal) || !String.Equals(code.Resource, request.Resource, StringComparison.Ordinal))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code does not match the token request.");
 
@@ -763,6 +767,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     }
 
+    // Preserve existing keys so codes issued before deployment remain redeemable.
     private static string GetAuthorizationCodeCacheKey(string code) => AuthorizationCodeCachePrefix + code;
     private static string GetRefreshTokenLockKey(string refreshToken) => RefreshTokenLockPrefix + CreateTokenHash(refreshToken);
     private static string GetAccessTokenClientValidityCacheKey(string clientId) => AccessTokenClientValidityCachePrefix + Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(clientId))).TrimEnd('=').Replace('+', '-').Replace('/', '_');

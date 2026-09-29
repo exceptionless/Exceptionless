@@ -1,5 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -13,10 +18,13 @@ using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
+using Exceptionless.Web.Security;
 using FluentRest;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 using User = Exceptionless.Core.Models.User;
@@ -558,6 +566,505 @@ public class AuthEndpointTests : IntegrationTestsBase
 
         // Assert
         await AssertExternalLoginAsync(result, "windowslive", code);
+    }
+
+    [Fact]
+    public async Task AuthenticateAsync_InactiveUserToken_ReturnsUnauthorized()
+    {
+        // Arrange
+        const string email = "inactive-token-user@exceptionless.test";
+        const string password = "Password1$";
+        const string salt = "1234567890123456";
+
+        var user = new User
+        {
+            EmailAddress = email,
+            Password = password.ToSaltedHash(salt),
+            Salt = salt,
+            FullName = "Inactive Token User",
+            Roles = AuthorizationRoles.AllScopes
+        };
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
+
+        var login = await SendRequestAsAsync<TokenResult>(r => r
+            .Post()
+            .AppendPath("auth/login")
+            .Content(new Login { Email = email, Password = password })
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(login);
+        Assert.False(String.IsNullOrEmpty(login.Token));
+
+        var storedUser = await _userRepository.GetByEmailAddressAsync(email);
+        Assert.NotNull(storedUser);
+        await _userRepository.SaveAsync(storedUser with { IsActive = false }, o => o.ImmediateConsistency());
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .BearerToken(login.Token)
+            .AppendPath("users/me")
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExternalLogin_InactiveUser_IsRejectedWithoutChangingAccountOrInvite(bool hasExistingLink)
+    {
+        // Arrange
+        const string code = "github-inactive-user";
+        string email = TestOAuthProviderClient.GetEmailAddress(code);
+        var user = new User
+        {
+            EmailAddress = email,
+            FullName = "Inactive User",
+            IsActive = false,
+            Roles = new HashSet<string>([AuthorizationRoles.Client, AuthorizationRoles.User])
+        };
+        user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        if (hasExistingLink)
+            user.AddOAuthAccount("github", code, email);
+        await _userRepository.AddAsync(user, options => options.ImmediateConsistency());
+        var organization = (await _organizationRepository.GetAllAsync()).Documents.First();
+        var invite = new Invite
+        {
+            Token = StringExtensions.GetNewToken(),
+            EmailAddress = email,
+            DateAdded = TimeProvider.GetUtcNow().UtcDateTime
+        };
+        organization.Invites.Add(invite);
+        await _organizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
+
+        // Act
+        await SendRequestAsync(request => request
+            .Post()
+            .AppendPaths("auth", "github")
+            .Content(new ExternalAuthInfo
+            {
+                ClientId = "client-id",
+                Code = code,
+                InviteToken = invite.Token,
+                RedirectUri = "http://localhost/callback"
+            })
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        var storedUser = await _userRepository.GetByIdAsync(user.Id, options => options.ImmediateConsistency());
+        Assert.NotNull(storedUser);
+        Assert.False(storedUser.IsActive);
+        Assert.False(storedUser.IsEmailAddressVerified);
+        Assert.Equal(user.VerifyEmailAddressToken, storedUser.VerifyEmailAddressToken);
+        Assert.Equal(user.VerifyEmailAddressTokenExpiration, storedUser.VerifyEmailAddressTokenExpiration);
+        Assert.Equal(user.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)),
+            storedUser.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)));
+        Assert.Empty(storedUser.OrganizationIds);
+        var tokens = await _tokenRepository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id, options => options.ImmediateConsistency());
+        Assert.Empty(tokens.Documents);
+        var storedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.ImmediateConsistency());
+        Assert.NotNull(storedOrganization);
+        Assert.Contains(storedOrganization.Invites, candidate => candidate.Token == invite.Token);
+    }
+
+    [Fact]
+    public async Task ExternalLogin_InactiveProviderOwner_DoesNotTransferAccount()
+    {
+        // Arrange
+        const string code = "github-inactive-provider-owner";
+        var owner = new User
+        {
+            EmailAddress = TestOAuthProviderClient.GetEmailAddress(code),
+            FullName = "Inactive Owner",
+            IsActive = false
+        };
+        owner.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        owner.AddOAuthAccount("github", code, owner.EmailAddress);
+        await _userRepository.AddAsync(owner, options => options.ImmediateConsistency());
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(currentUser);
+        var originalAccounts = currentUser.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)).ToArray();
+        long originalTokenCount = (await _tokenRepository.CountAsync()).Total;
+
+        // Act
+        await SendRequestAsync(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("auth", "github")
+            .Content(new ExternalAuthInfo
+            {
+                ClientId = "client-id",
+                Code = code,
+                RedirectUri = "http://localhost/callback"
+            })
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        var storedOwner = await _userRepository.GetByIdAsync(owner.Id, options => options.ImmediateConsistency());
+        Assert.NotNull(storedOwner);
+        Assert.False(storedOwner.IsEmailAddressVerified);
+        Assert.Equal(owner.VerifyEmailAddressToken, storedOwner.VerifyEmailAddressToken);
+        Assert.Equal(code, Assert.Single(storedOwner.OAuthAccounts).ProviderUserId);
+        var storedCurrentUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.ImmediateConsistency());
+        Assert.NotNull(storedCurrentUser);
+        Assert.Equal(originalAccounts, storedCurrentUser.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)));
+        Assert.Equal(originalTokenCount, (await _tokenRepository.CountAsync()).Total);
+    }
+
+    [Fact]
+    public async Task PasswordLogin_MissingRemoteIpAddress_StillEnforcesUserLimit()
+    {
+        // Arrange
+        using var client = _server.CreateClient();
+        long originalTokenCount = (await _tokenRepository.CountAsync()).Total;
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            using var failedResponse = await client.PostAsJsonAsync("api/v2/auth/login",
+                new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = "wrong-password" },
+                TestCancellationToken);
+            Assert.Equal(HttpStatusCode.Unauthorized, failedResponse.StatusCode);
+        }
+
+        // Act
+        using var response = await client.PostAsJsonAsync("api/v2/auth/login",
+            new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = SampleDataService.TEST_USER_PASSWORD },
+            TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(originalTokenCount, (await _tokenRepository.CountAsync()).Total);
+    }
+
+    [Fact]
+    public async Task PasswordLogin_ThrottlingExpires_LogsInWithoutPasswordResetOrReactivation()
+    {
+        // Arrange
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 14, 0, TimeSpan.Zero));
+        using var client = _server.CreateClient();
+        for (int failure = 0; failure < 5; failure++)
+        {
+            using var response = await client.PostAsJsonAsync("api/v2/auth/login",
+                new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = "wrong-password" },
+                TestCancellationToken);
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        var credentials = new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = SampleDataService.TEST_USER_PASSWORD };
+
+        // Act
+        using var blocked = await client.PostAsJsonAsync("api/v2/auth/login", credentials, TestCancellationToken);
+        var throttledUser = await _userRepository.GetByEmailAddressAsync(credentials.Email);
+        TimeProvider.Advance(TimeSpan.FromMinutes(1));
+        using var allowed = await client.PostAsJsonAsync("api/v2/auth/login", credentials, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, blocked.StatusCode);
+        Assert.NotNull(throttledUser);
+        Assert.True(throttledUser.IsActive);
+        Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(false, HttpStatusCode.Unauthorized)]
+    [InlineData(true, HttpStatusCode.OK)]
+    public async Task ResetPassword_PreservesActiveState_OnlyActiveUsersCanLogIn(bool isActive, HttpStatusCode expectedStatus)
+    {
+        // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user = user with { IsActive = isActive };
+        user.CreatePasswordResetToken(TimeProvider);
+        Assert.NotNull(user.PasswordResetToken);
+        await _userRepository.SaveAsync(user, options => options.ImmediateConsistency());
+        using var client = _server.CreateClient();
+        const string newPassword = "Password2$";
+
+        // Act
+        using var reset = await client.PostAsJsonAsync("api/v2/auth/reset-password",
+            new ResetPasswordModel { PasswordResetToken = user.PasswordResetToken, Password = newPassword },
+            GetService<JsonSerializerOptions>(), TestCancellationToken);
+        var storedUser = await _userRepository.GetByIdAsync(user.Id, options => options.ImmediateConsistency());
+        using var login = await client.PostAsJsonAsync("api/v2/auth/login",
+            new Login { Email = user.EmailAddress, Password = newPassword }, TestCancellationToken);
+        using var basicRequest = new HttpRequestMessage(HttpMethod.Get, "api/v2/users/me");
+        basicRequest.Headers.Authorization = new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user.EmailAddress}:{newPassword}")));
+        using var basicLogin = await client.SendAsync(basicRequest, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, reset.StatusCode);
+        Assert.NotNull(storedUser);
+        Assert.Equal(isActive, storedUser.IsActive);
+        Assert.True(storedUser.IsCorrectPassword(newPassword));
+        Assert.Equal(expectedStatus, login.StatusCode);
+        Assert.Equal(expectedStatus, basicLogin.StatusCode);
+    }
+
+    [Fact]
+    public async Task ResetPassword_MissingRemoteIpAddress_ClearsUserLoginAttempts()
+    {
+        // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.CreatePasswordResetToken(TimeProvider);
+        Assert.NotNull(user.PasswordResetToken);
+        await _userRepository.SaveAsync(user, options => options.ImmediateConsistency());
+        var authService = GetService<AuthService>();
+        for (int failure = 0; failure < 5; failure++)
+        {
+            var loginAttempt = await authService.TryBeginLoginAsync(user.EmailAddress, "192.0.2.1", TestCancellationToken);
+            Assert.NotNull(loginAttempt);
+            await authService.RecordLoginFailureAsync(loginAttempt);
+        }
+        using var client = _server.CreateClient();
+
+        // Act
+        using var response = await client.PostAsJsonAsync("api/v2/auth/reset-password",
+            new ResetPasswordModel { PasswordResetToken = user.PasswordResetToken, Password = "Password2$" },
+            GetService<JsonSerializerOptions>(),
+            TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(await authService.TryBeginLoginAsync(user.EmailAddress, "192.0.2.1", TestCancellationToken));
+    }
+
+    [Fact]
+    public async Task BasicPasswordLogin_ConcurrentValidRequests_AllSucceed()
+    {
+        // Arrange
+        using var client = _server.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SampleDataService.TEST_USER_EMAIL}:{SampleDataService.TEST_USER_PASSWORD}")));
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var requests = Enumerable.Range(0, 30).Select(async request =>
+        {
+            await start.Task;
+            using var response = await client.GetAsync("api/v2/users/me", TestCancellationToken);
+            return response.StatusCode;
+        }).ToArray();
+
+        // Act
+        start.SetResult();
+        var results = await Task.WhenAll(requests);
+
+        // Assert
+        Assert.All(results, statusCode => Assert.Equal(HttpStatusCode.OK, statusCode));
+    }
+
+    [Fact]
+    public async Task BasicPasswordLogin_MissingRemoteIpAddress_ReturnsCurrentUser()
+    {
+        // Arrange
+        using var client = _server.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "api/v2/users/me");
+        string credentials = $"{SampleDataService.TEST_USER_EMAIL}:{SampleDataService.TEST_USER_PASSWORD}";
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic",
+            Convert.ToBase64String(Encoding.UTF8.GetBytes(credentials)));
+
+        // Act
+        using var response = await client.SendAsync(request, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PasswordLogin_FailuresThroughBasic_AreThrottled()
+    {
+        // Arrange
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            await SendRequestAsync(request => request
+                .BasicAuthorization(SampleDataService.TEST_USER_EMAIL, "wrong-password")
+                .AppendPath("users/me")
+                .StatusCodeShouldBeUnauthorized());
+        }
+
+        // Act
+        var response = await SendRequestAsync(request => request
+            .Post()
+            .AppendPath("auth/login")
+            .Content(new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = SampleDataService.TEST_USER_PASSWORD })
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task BasicPasswordLogin_FailuresThroughLogin_AreThrottled()
+    {
+        // Arrange
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            await SendRequestAsync(request => request
+                .Post()
+                .AppendPath("auth/login")
+                .Content(new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = "wrong-password" })
+                .StatusCodeShouldBeUnauthorized());
+        }
+
+        // Act
+        var response = await SendRequestAsync(request => request
+            .BasicAuthorization(SampleDataService.TEST_USER_EMAIL, SampleDataService.TEST_USER_PASSWORD)
+            .AppendPath("users/me")
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task BasicPasswordLogin_AfterRepeatedFailures_IsThrottled()
+    {
+        // Arrange
+        const string email = "basic-throttle-user@exceptionless.test";
+        const string password = "Password1$";
+        const string salt = "1234567890123456";
+
+        var user = new User
+        {
+            EmailAddress = email,
+            Password = password.ToSaltedHash(salt),
+            Salt = salt,
+            FullName = "Basic Throttle User",
+            Roles = AuthorizationRoles.AllScopes
+        };
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
+
+        for (int attempt = 0; attempt < 5; attempt++)
+        {
+            await SendRequestAsync(r => r
+                .BasicAuthorization(email, "wrong-password")
+                .AppendPath("users/me")
+                .StatusCodeShouldBeUnauthorized());
+        }
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .BasicAuthorization(email, password)
+            .AppendPath("users/me")
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Basic !!!not-base64!!!")]
+    [InlineData("Basic")]
+    [InlineData("Basic ")]
+    [InlineData("Basic Og==")]
+    [InlineData("Basic ICA6cGFzc3dvcmQ=")]
+    public async Task BasicAuthentication_MalformedHeader_ReturnsUnauthorized(string authorization)
+    {
+        // Arrange
+        using var client = CreateHttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "users/me");
+        request.Headers.TryAddWithoutValidation("Authorization", authorization);
+
+        // Act
+        using var response = await client.SendAsync(request, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Basic")]
+    [InlineData("Basic !!!not-base64!!!")]
+    [InlineData("Basic Og==")]
+    public async Task BasicAuthentication_UnparseableCredentials_ReturnsNoResult(string authorization)
+    {
+        // Arrange
+        using var scope = _server.Services.CreateScope();
+        var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+        context.Request.Headers.Authorization = authorization;
+        context.Request.QueryString = new QueryString("?api_key=" + SampleDataService.TEST_API_KEY);
+
+        // Act
+        var result = await context.AuthenticateAsync(ApiKeyAuthenticationOptions.ApiKeySchema);
+
+        // Assert
+        Assert.True(result.None);
+        Assert.Null(result.Failure);
+        Assert.Null(result.Principal);
+    }
+
+    [Theory]
+    [InlineData(null, "hash")]
+    [InlineData("", "hash")]
+    [InlineData("salt", null)]
+    [InlineData("salt", "")]
+    public async Task BasicPasswordLogin_MissingStoredCredentials_ReturnsUnauthorized(string? salt, string? passwordHash)
+    {
+        // Arrange
+        var user = new User
+        {
+            EmailAddress = "missing-credentials@exceptionless.test",
+            FullName = "Missing Credentials",
+            Salt = salt,
+            Password = passwordHash,
+            Roles = new HashSet<string>([AuthorizationRoles.Client, AuthorizationRoles.User])
+        };
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user, options => options.ImmediateConsistency());
+
+        // Act
+        var response = await SendRequestAsync(request => request
+            .BasicAuthorization(user.EmailAddress, "Password1$")
+            .AppendPath("users/me")
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Basic", "client:{token}")]
+    [InlineData("Basic", "{token}:")]
+    [InlineData("bAsIc", "{token}:x-oauth-basic")]
+    [InlineData("Basic   ", "client:{token}")]
+    public async Task BasicAuthentication_AuthenticationToken_ReturnsCurrentUser(string scheme, string credentialsTemplate)
+    {
+        // Arrange
+        var login = await SendRequestAsAsync<TokenResult>(request => request
+            .Post()
+            .AppendPath("auth/login")
+            .Content(new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = SampleDataService.TEST_USER_PASSWORD })
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(login);
+        string credentials = credentialsTemplate.Replace("{token}", login.Token, StringComparison.Ordinal);
+        using var client = CreateHttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "users/me");
+        request.Headers.TryAddWithoutValidation("Authorization", $"{scheme} {Convert.ToBase64String(Encoding.UTF8.GetBytes(credentials))}");
+
+        // Act
+        using var response = await client.SendAsync(request, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task BasicAuthentication_PasswordContainingColons_ReturnsCurrentUser()
+    {
+        // Arrange
+        const string password = "Pass:word:1$";
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        Assert.NotNull(user.Salt);
+        user.Password = password.ToSaltedHash(user.Salt);
+        await _userRepository.SaveAsync(user, options => options.ImmediateConsistency());
+
+        // Act
+        var response = await SendRequestAsync(request => request
+            .BasicAuthorization(user.EmailAddress, password).AppendPath("users/me").StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]

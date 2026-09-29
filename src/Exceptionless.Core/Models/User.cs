@@ -48,7 +48,7 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public DateTime VerifyEmailAddressTokenExpiration { get; set; }
 
     /// <summary>
-    /// Gets or sets the users active state.
+    /// Whether this account is enabled for authentication. Defaults to true.
     /// </summary>
     public bool IsActive { get; init; } = true;
 

@@ -14,6 +14,7 @@ using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models.Admin;
 using Exceptionless.Web.Models.OAuth;
 using FluentRest;
+using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Microsoft.AspNetCore.WebUtilities;
@@ -1545,6 +1546,67 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
             .AppendPath("projects")
             .StatusCodeShouldBeUnauthorized()
         );
+    }
+
+    [Fact]
+    public void MetadataClient_Transport_UsesPublicAddressConnectionWithoutProxyCookiesOrRedirects()
+    {
+        // Arrange
+        var factory = GetService<IHttpMessageHandlerFactory>();
+
+        // Act
+        HttpMessageHandler handler = factory.CreateHandler(nameof(IOAuthClientMetadataService));
+        while (handler is DelegatingHandler delegatingHandler)
+            handler = Assert.IsAssignableFrom<HttpMessageHandler>(delegatingHandler.InnerHandler);
+
+        // Assert
+        var socketsHandler = Assert.IsType<SocketsHttpHandler>(handler);
+        Assert.False(socketsHandler.AllowAutoRedirect);
+        Assert.False(socketsHandler.UseCookies);
+        Assert.False(socketsHandler.UseProxy);
+        Assert.NotNull(socketsHandler.ConnectCallback);
+    }
+
+    [Fact]
+    public async Task TokenAsync_AuthorizationCodeCache_KeepsExistingKeyFormat()
+    {
+        // Arrange
+        string code = await CreateAuthorizationCodeAsync(PkceVerifier);
+        string cacheKey = $"oauth:code:{code}";
+        var cache = GetService<ICacheClient>();
+        Assert.True((await cache.GetAsync<OAuthAuthorizationCode>(cacheKey)).HasValue);
+        using var client = CreateHttpClient();
+        using var exchangeContent = CreateTokenExchangeContent(code, PkceVerifier);
+
+        // Act
+        using var response = await client.PostAsync("oauth/token", exchangeContent, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.False((await cache.GetAsync<OAuthAuthorizationCode>(cacheKey)).HasValue);
+    }
+
+    [Fact]
+    public async Task TokenAsync_ConcurrentAuthorizationCodeUse_OnlyOneSucceeds()
+    {
+        // Arrange
+        string code = await CreateAuthorizationCodeAsync(PkceVerifier);
+        using var client = CreateHttpClient();
+        using var firstExchangeContent = CreateTokenExchangeContent(code, PkceVerifier);
+        using var secondExchangeContent = CreateTokenExchangeContent(code, PkceVerifier);
+
+        // Act
+        var responses = await Task.WhenAll(
+            client.PostAsync("oauth/token", firstExchangeContent, TestCancellationToken),
+            client.PostAsync("oauth/token", secondExchangeContent, TestCancellationToken));
+
+        // Assert
+        Assert.Equal(1, responses.Count(r => r.StatusCode == HttpStatusCode.OK));
+        Assert.Equal(1, responses.Count(r => r.StatusCode == HttpStatusCode.BadRequest));
+        var failedResponse = responses.Single(r => r.StatusCode == HttpStatusCode.BadRequest);
+        var error = await failedResponse.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_grant", error.Error);
     }
 
     private async Task RemoveTestUserFromOrganizationAsync(string organizationId)
