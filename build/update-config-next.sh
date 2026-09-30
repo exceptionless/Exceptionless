@@ -9,7 +9,7 @@ IFS=';' read -a oauthParts <<< "$OAuth"
 for part in ${oauthParts[@]}
 do
   key="$( cut -d '=' -f 1 <<< $part )"; echo "key: $key"
-  value="$( cut -d '=' -f 2- <<< $part )"; echo "value: $value"
+  value="$( cut -d '=' -f 2- <<< $part )"
 
   if [ "$key" == "FacebookId" ]; then
     FacebookAppId=$value

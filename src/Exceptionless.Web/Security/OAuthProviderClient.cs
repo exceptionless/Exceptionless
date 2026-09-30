@@ -52,8 +52,8 @@ public sealed class OAuthProviderClient(SlackService slackService) : IOAuthProvi
     {
         return GetUserInfoAsync(authInfo, appId, appSecret, (factory, configuration) =>
         {
-            configuration.Scope = "wl.emails";
-            return new WindowsLiveClient(factory, configuration);
+            configuration.Scope = "User.Read";
+            return new MicrosoftClient(factory, configuration);
         });
     }
 

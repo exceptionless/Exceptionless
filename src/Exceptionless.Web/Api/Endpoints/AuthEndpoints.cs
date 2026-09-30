@@ -151,9 +151,9 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("live", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
+        group.MapPost("microsoft", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
-            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.LiveLogin(value, httpContext))).ToHttpResult(resultMapper);
+            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.MicrosoftLogin(value, httpContext))).ToHttpResult(resultMapper);
         })
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
@@ -164,7 +164,7 @@ public static class AuthEndpoints
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
-                ["403"] = "Account Creation is currently disabled",
+                ["403"] = "Account creation is disabled or the existing account must be signed into before linking Microsoft",
                 ["422"] = "Validation error",
             }
         });

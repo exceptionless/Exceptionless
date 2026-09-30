@@ -10,7 +10,7 @@ IFS=';' read -a oauthParts <<< "$OAuth"
 for part in ${oauthParts[@]}
 do
   key="$( cut -d '=' -f 1 <<< $part )"; echo "key: $key"
-  value="$( cut -d '=' -f 2- <<< $part )"; echo "value: $value"
+  value="$( cut -d '=' -f 2- <<< $part )"
 
   if [ "$key" == "FacebookId" ]; then
     FacebookAppId=$value
@@ -45,7 +45,7 @@ config="
     .constant('GITHUB_APPID', '$GitHubAppId')
     .constant('GOOGLE_APPID', '$GoogleAppId')
     .constant('INTERCOM_APPID', '$IntercomAppId')
-    .constant('LIVE_APPID', '$MicrosoftAppId')
+    .constant('MICROSOFT_APPID', '$MicrosoftAppId')
     .constant('SLACK_APPID', '$SlackAppId')
     .constant('STRIPE_PUBLISHABLE_KEY', '$EX_StripePublishableApiKey')
     .constant('SYSTEM_NOTIFICATION_MESSAGE', '$EX_NotificationMessage')

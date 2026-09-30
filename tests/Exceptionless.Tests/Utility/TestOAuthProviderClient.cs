@@ -24,7 +24,7 @@ public sealed class TestOAuthProviderClient : IOAuthProviderClient
 
     public Task<UserInfo> GetMicrosoftUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        return GetUserInfoAsync("WindowsLive", authInfo);
+        return GetUserInfoAsync("Microsoft", authInfo);
     }
 
     public Task<SlackToken?> GetSlackAccessTokenAsync(string code)

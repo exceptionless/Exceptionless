@@ -1,6 +1,19 @@
 (function () {
     "use strict";
 
+    function createOAuthState() {
+        if (typeof window.crypto.randomUUID === "function") {
+            return window.crypto.randomUUID();
+        }
+
+        var bytes = window.crypto.getRandomValues(new Uint8Array(16));
+        return Array.prototype.map
+            .call(bytes, function (value) {
+                return ("0" + value.toString(16)).slice(-2);
+            })
+            .join("");
+    }
+
     angular
         .module("app.auth", [
             "directives.inputMatch",
@@ -20,8 +33,39 @@
             "exceptionless.validators",
         ])
         .config(
-            function ($authProvider, $stateProvider, BASE_URL, FACEBOOK_APPID, GOOGLE_APPID, GITHUB_APPID, LIVE_APPID) {
+            function (
+                $authProvider,
+                $httpProvider,
+                $stateProvider,
+                BASE_URL,
+                FACEBOOK_APPID,
+                GOOGLE_APPID,
+                GITHUB_APPID,
+                MICROSOFT_APPID
+            ) {
                 $authProvider.baseUrl = BASE_URL + "/api/v2";
+                var microsoftLoginUrl = BASE_URL.replace(/\/$/, "") + "/api/v2/auth/microsoft";
+                $httpProvider.interceptors.push(function ($q, SatellizerStorage) {
+                    return {
+                        request: function (config) {
+                            if (config.method !== "POST" || config.url !== microsoftLoginUrl) {
+                                return config;
+                            }
+
+                            var expectedState = SatellizerStorage.get("microsoft_state");
+                            if (!expectedState || !config.data || config.data.state !== expectedState) {
+                                return $q.reject({
+                                    status: 400,
+                                    data: { message: "Microsoft authentication state is missing or invalid." },
+                                });
+                            }
+
+                            SatellizerStorage.remove("microsoft_state");
+                            return config;
+                        },
+                    };
+                });
+
                 $authProvider.facebook({
                     clientId: FACEBOOK_APPID,
                 });
@@ -34,9 +78,19 @@
                     clientId: GITHUB_APPID,
                 });
 
-                $authProvider.live({
-                    clientId: LIVE_APPID,
-                    scope: ["wl.emails"],
+                $authProvider.oauth2({
+                    name: "microsoft",
+                    url: "/auth/microsoft",
+                    authorizationEndpoint: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+                    clientId: MICROSOFT_APPID,
+                    redirectUri: window.location.origin,
+                    requiredUrlParams: ["scope", "state"],
+                    scope: ["User.Read"],
+                    scopeDelimiter: " ",
+                    state: function () {
+                        return createOAuthState();
+                    },
+                    popupOptions: { width: 500, height: 560 },
                 });
 
                 $stateProvider.state("auth", {
