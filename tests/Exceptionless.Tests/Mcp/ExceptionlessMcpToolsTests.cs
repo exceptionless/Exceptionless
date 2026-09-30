@@ -465,6 +465,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             Path = "/broken"
         };
         ev.Data!["custom"] = "custom-value";
+        ev.Environment = "production";
         await _eventRepository.SaveAsync(ev, o => o.ImmediateConsistency());
         await RefreshDataAsync();
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
@@ -481,6 +482,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Equal("at Test.Throw() in Test.cs:line 42", error.StackTrace);
         Assert.Equal("/broken", item.Details.Request?.Path);
         Assert.Equal("custom-value", item.Details.Data?["custom"]);
+        Assert.Equal("production", item.Environment);
     }
 
     [Fact]
@@ -701,6 +703,23 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.NotNull(data.Groups);
         Assert.Contains(data.Groups, g => g.Key == "1.0.2" && g.Events >= 1);
         Assert.Contains(data.Groups, g => g.Key == "1.0.3" && g.Events >= 1);
+    }
+
+    [Fact]
+    public async Task CountEventsAsync_GroupByEnvironment_ReturnsFilteredDeploymentCounts()
+    {
+        const string referenceId = "mcp-count-environments";
+        await CreateDataAsync(data =>
+        {
+            data.Event().TestProject().ReferenceId(referenceId).Mutate(ev => ev.Environment = "production");
+            data.Event().TestProject().ReferenceId(referenceId).Mutate(ev => ev.Environment = "staging");
+        });
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId} environment:production", groupBy: "environment");
+        Assert.True(result.Ok);
+        var group = Assert.Single(Data(result).Groups!);
+        Assert.Equal("production", group.Key);
+        Assert.Equal(1, group.Events);
     }
 
     [Fact]

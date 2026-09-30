@@ -11,6 +11,25 @@ namespace Exceptionless.Core.Models;
 [DebuggerDisplay("Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
 public class Event : IData, IJsonOnDeserialized
 {
+    private string? _environment;
+
+    /// <summary>
+    /// The deployment environment, such as production, staging, or development.
+    /// Missing or invalid names remain unspecified. Machine and runtime information is stored separately in data.@environment.
+    /// </summary>
+    [StringLength(64)]
+    public string? Environment
+    {
+        get => _environment;
+        set
+        {
+            string? name = value?.Trim();
+            _environment = String.IsNullOrEmpty(name) || name.Length > 64 || name.Any(Char.IsControl)
+                ? null
+                : name;
+        }
+    }
+
     /// <summary>
     /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.
     /// Nullable in transit; the pipeline infers a default before save. Validated as required on repository save.
@@ -112,7 +131,7 @@ public class Event : IData, IJsonOnDeserialized
 
     protected bool Equals(Event other)
     {
-        return String.Equals(Type, other.Type) && String.Equals(Source, other.Source) && Tags.CollectionEquals(other.Tags) && String.Equals(Message, other.Message) && String.Equals(Geo, other.Geo) && Value == other.Value && Equals(Data, other.Data);
+        return String.Equals(Environment, other.Environment) && String.Equals(Type, other.Type) && String.Equals(Source, other.Source) && Tags.CollectionEquals(other.Tags) && String.Equals(Message, other.Message) && String.Equals(Geo, other.Geo) && Value == other.Value && Equals(Data, other.Data);
     }
 
     public override bool Equals(object? obj)
@@ -138,6 +157,10 @@ public class Event : IData, IJsonOnDeserialized
             hashCode = (hashCode * 397) ^ (Geo?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ Value.GetHashCode();
             hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode(_exclusions) ?? 0);
+            if (Environment is not null)
+            {
+                hashCode = (hashCode * 397) ^ Environment.GetHashCode();
+            }
             return hashCode;
         }
     }

@@ -70,6 +70,8 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 .Keyword(e => e.ReferenceId)
                     .FieldAlias(Alias.ReferenceId, a => a.Path(f => f.ReferenceId))
                 .Text(e => e.Type, t => t.Analyzer(LOWER_KEYWORD_ANALYZER).AddKeywordField())
+                .Text(e => e.Environment, t => t.Analyzer(LOWER_KEYWORD_ANALYZER)
+                    .Fields(fields => fields.Keyword("keyword", keyword => keyword.Normalizer("lowercase"))))
                 .Text(e => e.Source, t => t.Analyzer(STANDARDPLUS_ANALYZER).SearchAnalyzer(WHITESPACE_LOWERCASE_ANALYZER).AddKeywordField())
                 .Date(e => e.Date)
                 .Text(e => e.Message)
@@ -260,6 +262,7 @@ ctx.error.code = codes;";
 
     public sealed class Alias
     {
+        public const string Environment = "environment";
         public const string OrganizationId = "organization";
         public const string ProjectId = "project";
         public const string StackId = "stack";

@@ -17,6 +17,8 @@
 
     interface Props {
         changed: (values: string[]) => void;
+        createOption?: (search: string) => Option | undefined;
+        emptyText?: string;
         hidden?: boolean;
         layout?: 'default' | 'tall';
         loading?: boolean;
@@ -34,6 +36,8 @@
 
     let {
         changed,
+        createOption,
+        emptyText = 'No Value',
         hidden = false,
         layout = 'default',
         loading = false,
@@ -48,6 +52,9 @@
         toggleHidden,
         values
     }: Props = $props();
+
+    const customOption = $derived(createOption?.(search));
+    const showCustomOption = $derived(customOption && !options.some((option) => option.value === customOption.value));
 
     // eslint-disable-next-line svelte/prefer-writable-derived
     let updatedValues = $state<string[]>([]);
@@ -84,6 +91,8 @@
     }
 
     function filter(value: string, search: string) {
+        search = search.trim().toLowerCase();
+        value = value.toLowerCase();
         if (value.includes(search)) {
             return 1;
         }
@@ -123,7 +132,7 @@
                         {/snippet}
                     </FacetedFilter.BadgeValues>
                 {:else}
-                    <FacetedFilter.BadgeValue>No Value</FacetedFilter.BadgeValue>
+                    <FacetedFilter.BadgeValue>{emptyText}</FacetedFilter.BadgeValue>
                 {/if}
             </Button>
         {/snippet}
@@ -146,10 +155,17 @@
                         <Command.Loading><div class="flex p-2"><Spinner /> Loading...</div></Command.Loading>
                     {/if}
                 {/if}
+                {#if showCustomOption && customOption}
+                    <Command.Group>
+                        <Command.Item value={customOption.value} onSelect={() => customOption && onValueSelected(customOption.value)}>
+                            Use {customOption.label}
+                        </Command.Item>
+                    </Command.Group>
+                {/if}
                 {#if options.length > 0}
                     <Command.Group>
                         {#each options as option (option.value)}
-                            <Command.Item id={option.value} onSelect={() => onValueSelected(option.value)} value={option.value}>
+                            <Command.Item id={option.value || undefined} onSelect={() => onValueSelected(option.value)} value={option.value || option.label}>
                                 <div
                                     class={cn(
                                         'border-primary mr-2 flex size-4 items-center justify-center rounded-sm border',

@@ -159,7 +159,8 @@ public sealed record McpEventResult(
     string? Source = null,
     string? Message = null,
     string? ReferenceId = null,
-    McpEventDetails? Details = null);
+    McpEventDetails? Details = null,
+    string? Environment = null);
 
 public sealed record McpEventDetails(
     bool IsTruncated = false,
