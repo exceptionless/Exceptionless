@@ -201,6 +201,24 @@ public sealed class CspResponseTests
     }
 
     [Fact]
+    public void ConfigureContentSecurityPolicy_IntercomMessenger_AllowsHttpsAndWebSocketConnections()
+    {
+        var builder = new CspBuilder();
+        FrontendContentSecurityPolicy.Configure(builder);
+        (_, string policy) = builder.BuildCspOptions().ToString(new TestNonceService("intercom-nonce"));
+
+        IReadOnlyDictionary<string, string[]> directives = NormalizePolicy(policy);
+        string[] messengerSources = directives["connect-src"]
+            .Where(source => source.Contains("intercom-messenger.com", StringComparison.Ordinal))
+            .ToArray();
+
+        Assert.Equal(["https://*.intercom-messenger.com", "wss://*.intercom-messenger.com"], messengerSources);
+        Assert.Contains("'strict-dynamic'", directives["script-src"]);
+        Assert.DoesNotContain("'unsafe-inline'", directives["script-src"]);
+        Assert.DoesNotContain("'unsafe-eval'", directives["script-src"]);
+    }
+
+    [Fact]
     public void AddCsp_SeparateScopes_ProvidesDistinct32ByteNonces()
     {
         var services = new ServiceCollection();
