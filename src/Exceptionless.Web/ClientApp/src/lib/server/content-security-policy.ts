@@ -45,7 +45,7 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
             'https://js.intercomcdn.com'
         ]
     ],
-    ['style-src', ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net']],
+    ['style-src', ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net']],
     [
         'img-src',
         [
@@ -62,11 +62,10 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
             ...intercomDownloadSources,
             ...intercomUploadSources,
             ...intercomAttachmentSources,
-            'https://user-images.githubusercontent.com',
             'https://www.gravatar.com'
         ]
     ],
-    ['font-src', ["'self'", 'https://fonts.gstatic.com', 'https://js.intercomcdn.com', 'https://fonts.intercomcdn.com', 'https://cdn.jsdelivr.net']],
+    ['font-src', ["'self'", 'https://js.intercomcdn.com', 'https://fonts.intercomcdn.com', 'https://cdn.jsdelivr.net']],
     [
         'connect-src',
         [
@@ -114,6 +113,7 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
 
 interface ContentSecurityPolicyOptions {
     allowDevelopmentConnections?: boolean;
+    siteBaseUrl?: string;
 }
 
 export function addNonceToScripts(html: string, nonce: string): string {
@@ -138,6 +138,10 @@ export function createContentSecurityPolicy(nonce: string, options: ContentSecur
                 effectiveSources = [...sources, 'ws:', 'wss:'];
             }
 
+            if (directive === 'connect-src' && options.siteBaseUrl !== undefined) {
+                effectiveSources = [...effectiveSources, getWebSocketOrigin(options.siteBaseUrl)];
+            }
+
             return `${directive} ${effectiveSources.join(' ')}`;
         })
         .join('; ');
@@ -145,6 +149,16 @@ export function createContentSecurityPolicy(nonce: string, options: ContentSecur
 
 export function createNonce(): string {
     return randomBytes(NONCE_BYTE_LENGTH).toString('base64');
+}
+
+export function getWebSocketOrigin(siteBaseUrl: string): string {
+    const url = new URL(siteBaseUrl);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.hostname.includes('*')) {
+        throw new Error('The CSP site base URL must be an absolute HTTP(S) URL without credentials or wildcard hosts.');
+    }
+
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    return url.origin;
 }
 
 export async function secureHtmlResponse(response: Response, options: ContentSecurityPolicyOptions = {}): Promise<Response> {

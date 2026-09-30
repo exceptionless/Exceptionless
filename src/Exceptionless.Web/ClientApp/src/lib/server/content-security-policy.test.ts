@@ -2,7 +2,32 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { addNonceToScripts, createContentSecurityPolicy, createNonce, secureHtmlResponse } from './content-security-policy';
+import { addNonceToScripts, createContentSecurityPolicy, createNonce, getWebSocketOrigin, secureHtmlResponse } from './content-security-policy';
+
+describe('configured WebSocket origin', () => {
+    it.each([
+        ['https://app.example.test/next/?query=value#fragment', 'wss://app.example.test'],
+        ['https://app.example.test:8443/next', 'wss://app.example.test:8443'],
+        ['http://localhost:7110', 'ws://localhost:7110'],
+        ['http://localhost:80', 'ws://localhost'],
+        ['https://[::1]:8443/next', 'wss://[::1]:8443']
+    ])('allows only the configured origin for %s', (siteBaseUrl, expectedOrigin) => {
+        const policy = createContentSecurityPolicy(createNonce(), { siteBaseUrl });
+
+        expect(getWebSocketOrigin(siteBaseUrl)).toBe(expectedOrigin);
+        expect(getDirective(policy, 'connect-src')).toContain(expectedOrigin);
+        expect(getDirective(policy, 'connect-src')).not.toContain('ws:');
+        expect(getDirective(policy, 'connect-src')).not.toContain('wss:');
+        expect(policy).not.toContain('query=value');
+    });
+
+    it.each(['', '/next', 'ftp://app.example.test', 'https://user:password@app.example.test', 'https://*.example.test'])(
+        'rejects invalid configuration %s',
+        (siteBaseUrl) => {
+            expect(() => createContentSecurityPolicy(createNonce(), { siteBaseUrl })).toThrow();
+        }
+    );
+});
 
 describe('createNonce', () => {
     it('creates unique base64-encoded 32-byte nonces', () => {
@@ -49,6 +74,17 @@ describe('addNonceToScripts', () => {
 });
 
 describe('createContentSecurityPolicy', () => {
+    it('excludes unused legacy sources while preserving modern payment dependencies', () => {
+        const policy = createContentSecurityPolicy(createNonce());
+
+        expect(policy).not.toContain('fonts.googleapis.com');
+        expect(policy).not.toContain('fonts.gstatic.com');
+        expect(policy).not.toContain('user-images.githubusercontent.com');
+        expect(getDirective(policy, 'connect-src')).toContain('https://maps.googleapis.com');
+        expect(getDirective(policy, 'connect-src')).toContain('https://*.intercom-messenger.com');
+        expect(getDirective(policy, 'connect-src')).toContain('wss://*.intercom-messenger.com');
+    });
+
     it('matches the canonical cross-runtime policy contract', () => {
         const nonce = createNonce();
         const policy = normalizeDevelopmentPolicy(createContentSecurityPolicy(nonce, { allowDevelopmentConnections: true }));

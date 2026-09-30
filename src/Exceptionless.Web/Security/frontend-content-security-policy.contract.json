@@ -10,7 +10,7 @@
         "https://widget.intercom.io",
         "https://js.intercomcdn.com"
     ],
-    "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+    "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
     "img-src": [
         "'self'",
         "blob:",
@@ -34,12 +34,10 @@
         "https://*.intercom-attachments-7.com",
         "https://*.intercom-attachments-8.com",
         "https://*.intercom-attachments-9.com",
-        "https://user-images.githubusercontent.com",
         "https://www.gravatar.com"
     ],
     "font-src": [
         "'self'",
-        "https://fonts.gstatic.com",
         "https://js.intercomcdn.com",
         "https://fonts.intercomcdn.com",
         "https://cdn.jsdelivr.net"
