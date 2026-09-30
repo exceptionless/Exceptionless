@@ -11,5 +11,6 @@ export const handle: Handle = async ({ event, resolve }) => {
         return response;
     }
 
-    return secureHtmlResponse(response, { allowDevelopmentConnections: dev, siteBaseUrl: env.PUBLIC_BASE_URL });
+    // The checked-in .env uses an empty value for the same-origin default.
+    return secureHtmlResponse(response, { allowDevelopmentConnections: dev, siteBaseUrl: env.PUBLIC_BASE_URL || undefined });
 };
