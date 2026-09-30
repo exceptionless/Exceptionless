@@ -46,7 +46,7 @@ public static class ElasticsearchBuilderExtensions
               tags: null,
               timeout: null));
 
-        return builder.AddResource(elasticsearch)
+        var resource = builder.AddResource(elasticsearch)
             .WithImage(ElasticsearchContainerImageTags.Image, ElasticsearchContainerImageTags.Tag)
             .WithImageRegistry(ElasticsearchContainerImageTags.ElasticsearchRegistry)
             .WithHttpEndpoint(targetPort: ElasticsearchPort, port: port, name: ElasticsearchResource.PrimaryEndpointName)
@@ -56,8 +56,12 @@ public static class ElasticsearchBuilderExtensions
             .WithEnvironment("xpack.security.enabled", "false")
             .WithEnvironment("action.destructive_requires_name", "false")
             .WithEnvironment("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
-            .WithHealthCheck(healthCheckKey)
-            .PublishAsConnectionString();
+            .WithHealthCheck(healthCheckKey);
+
+        // Preserve the existing manifest contract for consumers of this custom resource.
+#pragma warning disable CS0618 // PublishAsConnectionString remains necessary for the legacy manifest publisher.
+        return resource.PublishAsConnectionString();
+#pragma warning restore CS0618
     }
 
     public static IResourceBuilder<ElasticsearchResource> WithKibana(this IResourceBuilder<ElasticsearchResource> builder, Action<IResourceBuilder<KibanaResource>>? configureContainer = null, string? containerName = null)

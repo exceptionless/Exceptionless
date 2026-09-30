@@ -46,6 +46,7 @@ Notes:
 
 1. Running `Exceptionless.AppHost` starts the app and required infrastructure together.
 2. Backend tests bootstrap required infrastructure automatically.
+3. Use Aspire CLI 13.6.0 or newer (`aspire update --self` to update). The AppHost uses the CLI bundle for the dashboard and resource orchestrator; when no CLI is installed, the SDK downloads the matching version through DNX.
 
 ![image](https://user-images.githubusercontent.com/282584/223168564-6518d509-d292-4078-a61f-ab493d2bb812.png)
 
