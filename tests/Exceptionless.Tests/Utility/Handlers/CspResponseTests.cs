@@ -255,6 +255,7 @@ public sealed class CspResponseTests
             "downloads.intercom", "gifs.intercom", "video-messages.intercom", "messenger-apps.intercom", "intercom.help"
         })
             Assert.DoesNotContain(unusedSource, policy, StringComparison.Ordinal);
+        Assert.DoesNotContain("https://*.stripe.com", directives["img-src"]);
         Assert.Contains("https://api.stripe.com", directives["connect-src"]);
         Assert.Equal(["'self'"], directives["form-action"]);
         Assert.Equal(["'self'"], directives["worker-src"]);
