@@ -7,6 +7,11 @@ internal static class FrontendContentSecurityPolicy
 {
     public static void Configure(CspBuilder csp)
     {
+        Configure(csp, null);
+    }
+
+    public static void Configure(CspBuilder csp, string? siteBaseUrl)
+    {
         // Exceptionless uses Intercom's US endpoints. Keep region-specific sources scoped to that workspace.
         csp.ByDefaultAllow.FromSelf();
 
@@ -22,7 +27,6 @@ internal static class FrontendContentSecurityPolicy
 
         csp.AllowStyles.FromSelf()
             .AllowUnsafeInline()
-            .From("https://fonts.googleapis.com")
             .From("https://cdn.jsdelivr.net");
 
         csp.AllowImages.FromSelf()
@@ -47,11 +51,9 @@ internal static class FrontendContentSecurityPolicy
             .From("https://*.intercom-attachments-7.com")
             .From("https://*.intercom-attachments-8.com")
             .From("https://*.intercom-attachments-9.com")
-            .From("https://user-images.githubusercontent.com")
             .From("https://www.gravatar.com");
 
         csp.AllowFonts.FromSelf()
-            .From("https://fonts.gstatic.com")
             .From("https://js.intercomcdn.com")
             .From("https://fonts.intercomcdn.com")
             .From("https://cdn.jsdelivr.net");
@@ -76,6 +78,11 @@ internal static class FrontendContentSecurityPolicy
             .To("wss://nexus-websocket-b.intercom.io")
             .To("https://uploads.intercomcdn.com")
             .To("https://uploads.intercomusercontent.com");
+
+        // Use administrator configuration, never request Host or forwarded headers.
+        // Some browsers do not match WebSocket schemes against connect-src 'self'.
+        if (siteBaseUrl is not null)
+            csp.AllowConnections.To(GetWebSocketOrigin(siteBaseUrl));
 
         csp.AllowFrames.FromSelf()
             .From("https://*.js.stripe.com")
@@ -115,5 +122,18 @@ internal static class FrontendContentSecurityPolicy
             context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
             return Task.CompletedTask;
         };
+    }
+
+    internal static string GetWebSocketOrigin(string siteBaseUrl)
+    {
+        if (!Uri.TryCreate(siteBaseUrl, UriKind.Absolute, out Uri? uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            || !String.IsNullOrEmpty(uri.UserInfo)
+            || uri.HostNameType is not (UriHostNameType.Dns or UriHostNameType.IPv4 or UriHostNameType.IPv6)
+            || uri.Host.Contains('*'))
+            throw new ArgumentException("The CSP site base URL must be an absolute HTTP(S) URL without credentials or wildcard hosts.", nameof(siteBaseUrl));
+
+        var origin = new UriBuilder(uri.Scheme == Uri.UriSchemeHttps ? "wss" : "ws", uri.Host, uri.IsDefaultPort ? -1 : uri.Port);
+        return origin.Uri.GetLeftPart(UriPartial.Authority);
     }
 }

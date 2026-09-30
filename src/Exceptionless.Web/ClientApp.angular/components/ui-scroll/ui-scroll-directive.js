@@ -6,7 +6,6 @@
             restrict: "AC",
             link: function (scope, el, attr) {
                 el.on("click", function (e) {
-                    e.preventDefault();
                     $location.hash(attr.uiScroll);
                     $anchorScroll();
                 });

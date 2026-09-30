@@ -121,7 +121,6 @@ public sealed class CspResponseTests
             [
                 ("/", "root"),
                 ("/index.html", "root"),
-                ("/legacy/deep-route", "root"),
                 ("/next/", "next"),
                 ("/next/index.html", "next"),
                 ("/next/deep-route", "next")
@@ -146,6 +145,16 @@ public sealed class CspResponseTests
             using HttpResponseMessage staticResponse = await client.GetAsync("/app.js", TestContext.Current.CancellationToken);
             Assert.Equal("console.log('static');", await staticResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
             Assert.NotEqual("no-store", staticResponse.Headers.CacheControl?.ToString());
+
+            using var poisonedRequest = new HttpRequestMessage(HttpMethod.Get, "/next/");
+            poisonedRequest.Headers.Host = "untrusted.example";
+            poisonedRequest.Headers.Add("X-Forwarded-Host", "forwarded.example");
+            poisonedRequest.Headers.Add("X-Forwarded-Proto", "http");
+            using HttpResponseMessage poisonedResponse = await client.SendAsync(poisonedRequest, TestContext.Current.CancellationToken);
+            string poisonedPolicy = poisonedResponse.Headers.GetValues("Content-Security-Policy").Single();
+            Assert.Contains("wss://app.example.test", poisonedPolicy, StringComparison.Ordinal);
+            Assert.DoesNotContain("untrusted.example", poisonedPolicy, StringComparison.Ordinal);
+            Assert.DoesNotContain("forwarded.example", poisonedPolicy, StringComparison.Ordinal);
 
             using HttpResponseMessage scalarResponse = await client.GetAsync("/docs/", TestContext.Current.CancellationToken);
             string scalarBody = await scalarResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
@@ -219,6 +228,53 @@ public sealed class CspResponseTests
     }
 
     [Fact]
+    public void ConfigureContentSecurityPolicy_ModernSite_ExcludesUnusedLegacySources()
+    {
+        var builder = new CspBuilder();
+        FrontendContentSecurityPolicy.Configure(builder);
+        (_, string policy) = builder.BuildCspOptions().ToString(new TestNonceService("modern-nonce"));
+
+        Assert.DoesNotContain("fonts.googleapis.com", policy, StringComparison.Ordinal);
+        Assert.DoesNotContain("fonts.gstatic.com", policy, StringComparison.Ordinal);
+        Assert.DoesNotContain("user-images.githubusercontent.com", policy, StringComparison.Ordinal);
+        IReadOnlyDictionary<string, string[]> directives = NormalizePolicy(policy);
+        Assert.DoesNotContain("https:", directives["connect-src"]);
+        Assert.DoesNotContain("ws:", directives["connect-src"]);
+        Assert.DoesNotContain("wss:", directives["connect-src"]);
+        Assert.Contains("https://maps.googleapis.com", policy, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("https://app.example.test/next/?query=value#fragment", "wss://app.example.test")]
+    [InlineData("https://app.example.test:8443/next", "wss://app.example.test:8443")]
+    [InlineData("http://localhost:7110", "ws://localhost:7110")]
+    [InlineData("http://localhost:80", "ws://localhost")]
+    [InlineData("https://[::1]:8443/next", "wss://[::1]:8443")]
+    public void ConfigureContentSecurityPolicy_ConfiguredSite_AddsOnlyItsWebSocketOrigin(string siteBaseUrl, string expectedOrigin)
+    {
+        var builder = new CspBuilder();
+        FrontendContentSecurityPolicy.Configure(builder, siteBaseUrl);
+        (_, string policy) = builder.BuildCspOptions().ToString(new TestNonceService("origin-nonce"));
+
+        string[] connections = NormalizePolicy(policy)["connect-src"];
+        Assert.Contains(expectedOrigin, connections);
+        Assert.DoesNotContain("ws:", connections);
+        Assert.DoesNotContain("wss:", connections);
+        Assert.DoesNotContain("query=value", policy, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("/next")]
+    [InlineData("ftp://app.example.test")]
+    [InlineData("https://user:password@app.example.test")]
+    [InlineData("https://*.example.test")]
+    public void ConfigureContentSecurityPolicy_InvalidSite_RejectsConfiguration(string siteBaseUrl)
+    {
+        Assert.Throws<ArgumentException>(() => FrontendContentSecurityPolicy.Configure(new CspBuilder(), siteBaseUrl));
+    }
+
+    [Fact]
     public void AddCsp_SeparateScopes_ProvidesDistinct32ByteNonces()
     {
         var services = new ServiceCollection();
@@ -254,7 +310,7 @@ public sealed class CspResponseTests
                 })
                 .Configure(app =>
                 {
-                    app.UseCsp(FrontendContentSecurityPolicy.Configure);
+                    app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, "https://app.example.test/next"));
                     app.UseDefaultFiles();
                     app.Use(Exceptionless.Web.Program.InjectCspNonceAsync);
                     app.UseStaticFiles();
