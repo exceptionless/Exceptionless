@@ -42,8 +42,6 @@ internal static class FrontendContentSecurityPolicy
 
         csp.AllowConnections.ToSelf()
             .To("https://collector.exceptionless.io")
-            .To("https://config.exceptionless.io")
-            .To("https://heartbeat.exceptionless.io")
             .To("https://api.stripe.com")
             .To("https://link.com")
             .To("https://*.link.com")
@@ -74,8 +72,7 @@ internal static class FrontendContentSecurityPolicy
             .From("blob:")
             .From("https://js.intercomcdn.com");
 
-        csp.AllowWorkers.FromSelf()
-            .From("blob:");
+        csp.AllowWorkers.FromSelf();
 
         csp.AllowFormActions.ToSelf();
         csp.AllowManifest.FromSelf();

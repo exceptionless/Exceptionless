@@ -81,6 +81,8 @@ describe('createContentSecurityPolicy', () => {
         expect(policy).not.toContain('fonts.gstatic.com');
         expect(policy).not.toContain('user-images.githubusercontent.com');
         for (const unusedSource of [
+            'config.exceptionless.io',
+            'heartbeat.exceptionless.io',
             'maps.googleapis.com',
             'cdn.jsdelivr.net',
             'intercom-sheets.com',
@@ -100,7 +102,7 @@ describe('createContentSecurityPolicy', () => {
         }
         expect(getDirective(policy, 'connect-src')).toContain('https://api.stripe.com');
         expect(getDirective(policy, 'form-action')).toEqual(["'self'"]);
-        expect(getDirective(policy, 'worker-src')).toEqual(["'self'", 'blob:']);
+        expect(getDirective(policy, 'worker-src')).toEqual(["'self'"]);
         expect(getDirective(policy, 'connect-src')).toContain('https://*.intercom-messenger.com');
         expect(getDirective(policy, 'connect-src')).toContain('wss://*.intercom-messenger.com');
     });
