@@ -74,13 +74,33 @@ describe('addNonceToScripts', () => {
 });
 
 describe('createContentSecurityPolicy', () => {
-    it('excludes unused legacy sources while preserving modern payment dependencies', () => {
+    it('excludes unused vendor capabilities while preserving core payment and messenger dependencies', () => {
         const policy = createContentSecurityPolicy(createNonce());
 
         expect(policy).not.toContain('fonts.googleapis.com');
         expect(policy).not.toContain('fonts.gstatic.com');
         expect(policy).not.toContain('user-images.githubusercontent.com');
-        expect(getDirective(policy, 'connect-src')).toContain('https://maps.googleapis.com');
+        for (const unusedSource of [
+            'maps.googleapis.com',
+            'cdn.jsdelivr.net',
+            'intercom-sheets.com',
+            'intercom-reporting.com',
+            'youtube.com',
+            'vimeo.com',
+            'wistia.net',
+            'intercom-attachments-',
+            'uploads.intercom',
+            'downloads.intercom',
+            'gifs.intercom',
+            'video-messages.intercom',
+            'messenger-apps.intercom',
+            'intercom.help'
+        ]) {
+            expect(policy).not.toContain(unusedSource);
+        }
+        expect(getDirective(policy, 'connect-src')).toContain('https://api.stripe.com');
+        expect(getDirective(policy, 'form-action')).toEqual(["'self'"]);
+        expect(getDirective(policy, 'worker-src')).toEqual(["'self'", 'blob:']);
         expect(getDirective(policy, 'connect-src')).toContain('https://*.intercom-messenger.com');
         expect(getDirective(policy, 'connect-src')).toContain('wss://*.intercom-messenger.com');
     });

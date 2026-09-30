@@ -323,7 +323,8 @@ public partial class Program
             app.MapOpenApi("/docs/v2/openapi.json");
             app.MapScalarApiReference("/docs", o =>
             {
-                o.WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
+                o.DisableDefaultFonts()
+                    .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
                     .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
                     .AddPreferredSecuritySchemes("Bearer");
             });

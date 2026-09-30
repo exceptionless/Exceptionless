@@ -5,12 +5,11 @@
         "'self'",
         "https://js.stripe.com",
         "https://*.js.stripe.com",
-        "https://maps.googleapis.com",
         "https://app.intercom.io",
         "https://widget.intercom.io",
         "https://js.intercomcdn.com"
     ],
-    "style-src": ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+    "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": [
         "'self'",
         "blob:",
@@ -19,28 +18,12 @@
         "https://*.link.com",
         "https://js.intercomcdn.com",
         "https://static.intercomassets.com",
-        "https://gifs.intercomcdn.com",
-        "https://video-messages.intercomcdn.com",
-        "https://messenger-apps.intercom.io",
-        "https://downloads.intercomcdn.com",
-        "https://uploads.intercomcdn.com",
-        "https://uploads.intercomusercontent.com",
-        "https://*.intercom-attachments-1.com",
-        "https://*.intercom-attachments-2.com",
-        "https://*.intercom-attachments-3.com",
-        "https://*.intercom-attachments-4.com",
-        "https://*.intercom-attachments-5.com",
-        "https://*.intercom-attachments-6.com",
-        "https://*.intercom-attachments-7.com",
-        "https://*.intercom-attachments-8.com",
-        "https://*.intercom-attachments-9.com",
         "https://www.gravatar.com"
     ],
     "font-src": [
         "'self'",
         "https://js.intercomcdn.com",
-        "https://fonts.intercomcdn.com",
-        "https://cdn.jsdelivr.net"
+        "https://fonts.intercomcdn.com"
     ],
     "connect-src": [
         "'self'",
@@ -48,7 +31,6 @@
         "https://config.exceptionless.io",
         "https://heartbeat.exceptionless.io",
         "https://api.stripe.com",
-        "https://maps.googleapis.com",
         "https://link.com",
         "https://*.link.com",
         "https://via.intercom.io",
@@ -60,9 +42,7 @@
         "https://nexus-websocket-a.intercom.io",
         "wss://nexus-websocket-a.intercom.io",
         "https://nexus-websocket-b.intercom.io",
-        "wss://nexus-websocket-b.intercom.io",
-        "https://uploads.intercomcdn.com",
-        "https://uploads.intercomusercontent.com"
+        "wss://nexus-websocket-b.intercom.io"
     ],
     "frame-src": [
         "'self'",
@@ -70,24 +50,11 @@
         "https://*.js.stripe.com",
         "https://hooks.stripe.com",
         "https://link.com",
-        "https://*.link.com",
-        "https://intercom-sheets.com",
-        "https://www.intercom-reporting.com",
-        "https://www.youtube.com",
-        "https://player.vimeo.com",
-        "https://fast.wistia.net"
+        "https://*.link.com"
     ],
-    "media-src": ["'self'", "blob:", "https://js.intercomcdn.com", "https://downloads.intercomcdn.com"],
-    "worker-src": [
-        "'self'",
-        "blob:",
-        "https://intercom-sheets.com",
-        "https://www.intercom-reporting.com",
-        "https://www.youtube.com",
-        "https://player.vimeo.com",
-        "https://fast.wistia.net"
-    ],
-    "form-action": ["'self'", "https://intercom.help", "https://api-iam.intercom.io"],
+    "media-src": ["'self'", "blob:", "https://js.intercomcdn.com"],
+    "worker-src": ["'self'", "blob:"],
+    "form-action": ["'self'"],
     "manifest-src": ["'self'"],
     "base-uri": ["'none'"],
     "object-src": ["'none'"],
