@@ -27,6 +27,7 @@ GET {{apiUrl}}/organizations?filter=Acme
 Authorization: Bearer {{token}}
 
 ### By Id
+# Missing usage months inherit recorded limits, starting at the organization's creation month.
 GET {{apiUrl}}/organizations/{{organizationId}}
 Authorization: Bearer {{token}}
 
