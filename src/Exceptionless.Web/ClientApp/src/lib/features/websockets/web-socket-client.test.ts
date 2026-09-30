@@ -14,7 +14,7 @@ vi.mock('../auth/index.svelte', () => ({
 vi.mock('$shared/document-visibility.svelte', () => {
     return {
         DocumentVisibility: class {
-            visible = true;
+            public visible = true;
         }
     };
 });

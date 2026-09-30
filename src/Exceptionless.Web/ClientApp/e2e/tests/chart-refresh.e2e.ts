@@ -3,7 +3,9 @@ import type { Page, Route } from '@playwright/test';
 import { expect, test } from '../fixtures/e2e-test';
 
 test('dashboard charts stay mounted while list data refreshes', async ({ e2eApi, page }) => {
+    // Arrange
     const userToken = await e2eApi.login();
+    await e2eApi.recordProductTour(userToken, 'app-welcome');
     const organizations = await e2eApi.getOrganizations(userToken);
     const organizationId = organizations[0]?.id;
     expect(organizationId).toBeTruthy();
@@ -16,9 +18,10 @@ test('dashboard charts stay mounted while list data refreshes', async ({ e2eApi,
         { organizationId, token: userToken }
     );
 
-    await verifyChartRefresh(page, '/next/stack', (route) => isOrganizationEventListRequest(route, organizationId!, 'stack_frequent'));
-    await verifyChartRefresh(page, '/next/event', (route) => isOrganizationEventListRequest(route, organizationId!, 'summary'));
-    await verifyChartRefresh(page, '/next/sessions', (route) => {
+    // Act & Assert: the helper refreshes each dashboard and checks that its chart stays mounted.
+    await verifyChartRefresh(page, '/next/stack/all', (route) => isOrganizationEventListRequest(route, organizationId!, 'stack_frequent'));
+    await verifyChartRefresh(page, '/next/event/all', (route) => isOrganizationEventListRequest(route, organizationId!, 'summary'));
+    await verifyChartRefresh(page, '/next/sessions/all', (route) => {
         return new URL(route.request().url()).pathname === `/api/v2/organizations/${organizationId}/events/sessions`;
     });
 });
@@ -29,6 +32,7 @@ function isOrganizationEventListRequest(route: Route, organizationId: string, mo
 }
 
 async function verifyChartRefresh(page: Page, path: string, matchesRefreshRequest: (route: Route) => boolean): Promise<void> {
+    // Arrange
     await page.goto(path);
     const chart = page.locator('[data-slot="chart"]').first();
     await expect(chart).toBeVisible();
@@ -68,8 +72,10 @@ async function verifyChartRefresh(page: Page, path: string, matchesRefreshReques
 
     await page.route('**/api/v2/organizations/**', holdRefresh);
     try {
+        // Act
         await page.getByTitle('Refresh results').click();
         await refreshIntercepted;
+        // Assert
         await expect(page.getByTitle('Refresh results').locator('svg')).toHaveClass(/animate-spin/);
         expect(await chartElement!.evaluate((element) => element.isConnected)).toBe(true);
         await expect(chart).toBeVisible();

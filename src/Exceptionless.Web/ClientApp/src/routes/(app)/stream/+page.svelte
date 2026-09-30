@@ -145,6 +145,7 @@
                 return restored;
             }
         }
+
         return cached;
     }
 

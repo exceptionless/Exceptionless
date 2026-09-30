@@ -1,16 +1,18 @@
 <script lang="ts">
     import { afterNavigate } from '$app/navigation';
     import { page } from '$app/state';
+    import { endSession, setUserIdentity } from '$features/auth/exceptionless-session';
     import { Exceptionless } from '@exceptionless/browser';
 
     import { normalizePath, normalizeRouteId } from './route';
 
     interface Props {
+        authenticated: boolean;
         userId?: string;
         userName?: string;
     }
 
-    let { userId, userName }: Props = $props();
+    let { authenticated, userId, userName }: Props = $props();
 
     afterNavigate(async ({ to }) => {
         if (page.status === 404) {
@@ -23,6 +25,10 @@
     });
 
     $effect(() => {
-        Exceptionless.config.setUserIdentity(userId ?? '', userName ?? '');
+        if (!authenticated) {
+            void endSession();
+        } else if (userId) {
+            void setUserIdentity(userId, userName);
+        }
     });
 </script>

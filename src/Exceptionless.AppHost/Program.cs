@@ -62,7 +62,7 @@ var mail = builder.AddContainer("Mail", "axllent/mailpit")
     .WithImageTag("v1.27.10")
     .WithEndpointProxySupport(false)
     .WithHttpEndpoint(port: 8026, targetPort: 8025, name: "http")
-    .WithUrlForEndpoint("http", u => { u.DisplayText = "Mail"; u.DisplayOrder = 100; })
+    .WithUrlForEndpoint("http", u => { u.DisplayText = "Mail"; })
     .WithHttpHealthCheck("/readyz")
     .WithEndpoint(targetPort: 1025, port: 1026)
     .WithUrlForEndpoint("tcp", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly);
@@ -115,9 +115,12 @@ if (!servicesOnly)
         .WaitFor(cache)
         .WaitFor(mail)
         .WithExternalHttpEndpoints()
-        .WithUrlForEndpoint("https", u => { u.DisplayText = "Open API"; u.DisplayOrder = 100; })
+        .WithUrlForEndpoint("https", u => { u.DisplayText = "Open API"; })
         .WithUrlForEndpoint("http", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly)
         .WithHttpHealthCheck("/health");
+
+    api.WithEnvironment("EX_ExceptionlessApiKey", builder.Configuration["ExceptionlessApiKey"])
+        .WithEnvironment("EX_ExceptionlessServerUrl", api.GetEndpoint("http"));
 
     if (assistantApiKey is not null)
     {
@@ -138,6 +141,9 @@ if (!servicesOnly)
         .WithReference(storageBlobs, "AzureStorage")
         .WithReference(storageQueues, "AzureQueues")
         .WithEnvironment("ConnectionStrings:Email", SharedEmailConnectionString)
+        .WithEnvironment("EX_ExceptionlessApiKey", builder.Configuration["ExceptionlessApiKey"])
+        .WithEnvironment("EX_ExceptionlessServerUrl", api.GetEndpoint("http"))
+        .WaitFor(api)
         .WaitFor(elastic)
         .WaitFor(cache)
         .WaitFor(mail)
@@ -178,7 +184,6 @@ if (!servicesOnly)
         .WithUrlForEndpoint("https", u =>
         {
             u.DisplayText = "Open App (Old)";
-            u.DisplayOrder = 100;
         })
         .WithParentRelationship(api);
 
@@ -192,7 +197,9 @@ if (!servicesOnly)
         .WithBrowserLogs()
         .WithReference(api)
         .WithReference(oldApp)
+        .WithEnvironment("PUBLIC_EXCEPTIONLESS_API_KEY", builder.Configuration["PUBLIC_EXCEPTIONLESS_API_KEY"])
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
+        .WithEnvironment("PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL", builder.Configuration["PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL"] ?? String.Empty)
         .WithEnvironment("PORT", appPort.ToString())
         .WithEndpoint("http", e =>
         {
@@ -203,10 +210,10 @@ if (!servicesOnly)
             e.IsProxied = false;
         })
         .WithHttpsDeveloperCertificate()
+        .WaitFor(api)
         .WithUrlForEndpoint("http", u =>
         {
             u.DisplayText = "Open App";
-            u.DisplayOrder = 100;
             u.Url = $"{u.Url.TrimEnd('/')}/next/";
         })
         .WithParentRelationship(api);
@@ -221,7 +228,9 @@ if (!servicesOnly)
 
     if (includeDevTools)
     {
-        builder.AddDenoTask("Docs", "../../docs", "serve")
+#pragma warning disable ASPIREDENO001
+        builder.AddJavaScriptApp("Docs", "../../docs", "serve")
+            .WithDeno()
             .WithBrowserLogs()
             .WithHttpEndpoint(port: docsPort, targetPort: docsPort, name: "http", env: "PORT", isProxied: false)
             .WithEndpoint("http", e =>
@@ -232,9 +241,9 @@ if (!servicesOnly)
             .WithUrlForEndpoint("http", u =>
             {
                 u.DisplayText = "Open Docs";
-                u.DisplayOrder = 100;
             })
             .WithParentRelationship(api);
+#pragma warning restore ASPIREDENO001
     }
 #pragma warning restore ASPIREBROWSERLOGS001
 }

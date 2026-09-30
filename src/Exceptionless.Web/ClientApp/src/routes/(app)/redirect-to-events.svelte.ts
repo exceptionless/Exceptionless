@@ -76,6 +76,7 @@ export function deserializeEnvironmentQueryParam(value: string): string[] {
     } catch {
         // Single names are also accepted in hand-written URLs.
     }
+
     return [value];
 }
 

@@ -97,6 +97,12 @@ export interface AssistantChatRequest {
   conversation_id?: null | string;
 }
 
+export interface AssistantConversationSharingSettings {
+  enabled: boolean;
+  default_enabled: boolean;
+  is_overridden: boolean;
+}
+
 export interface AssistantModelSettings {
   model: string;
   configured_model: string;
@@ -105,6 +111,7 @@ export interface AssistantModelSettings {
   configured_enabled: boolean;
   is_enabled_overridden: boolean;
   is_configured: boolean;
+  conversation_sharing_default_enabled: boolean;
 }
 
 export interface BillingPlan {
@@ -499,6 +506,11 @@ export interface ProblemDetails {
   instance?: null | string;
 }
 
+export interface RecordProductTourResult {
+  /** @format date-time */
+  recorded_utc: string;
+}
+
 export interface ResetPasswordModel {
   password_reset_token: string;
   password: string;
@@ -630,6 +642,14 @@ export interface TokenResult {
   token: string;
 }
 
+export interface UpdateAssistantConversationSharing {
+  enabled?: null | boolean;
+}
+
+export interface UpdateAssistantConversationSharingSettings {
+  enabled: boolean;
+}
+
 export interface UpdateAssistantEnabledSettings {
   enabled?: null | boolean;
 }
@@ -742,12 +762,14 @@ export interface User {
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
+  product_tours: object;
   /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */
   email_address: string;
   avatar_file_name?: null | string;
   email_notifications_enabled: boolean;
+  assistant_conversation_sharing_enabled?: null | boolean;
   is_email_address_verified: boolean;
   verify_email_address_token?: null | string;
   /** @format date-time */
@@ -789,6 +811,7 @@ export interface ViewCurrentUser {
   o_auth_accounts: OAuthAccount[];
   organization_preferences: UserOrganizationPreference[];
   saved_view_orders: UserSavedViewOrderPreference[];
+  product_tours: object;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];

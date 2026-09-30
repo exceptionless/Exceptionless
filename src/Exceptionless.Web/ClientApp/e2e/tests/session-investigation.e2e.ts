@@ -98,6 +98,20 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
         expect(eventsUrl.searchParams.get('time')).toBe('all');
     });
 
+    await test.step('timestamp remains inside a single navigable link with its own hover title', async () => {
+        const link = page.getByRole('link', { exact: true, name: `Open event ${relatedEventId}` });
+        const time = link.locator('time');
+        await time.hover();
+        await expect(time).toHaveAttribute('title', /.+/);
+        await expect(time.locator('.sr-only')).toContainText((await time.getAttribute('title'))!);
+        await expect(time).not.toHaveAttribute('tabindex');
+        await link.locator('xpath=ancestor::tr').getByRole('link').nth(1).focus();
+        await page.keyboard.press('Tab');
+        await expect(link).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(page).toHaveURL(new RegExp(`/event/${relatedEventId}(?:[?#]|$)`));
+    });
+
     await test.step('event detail messages wrap and small alignment fixes render consistently', async () => {
         await page.goto(`/next/stack/${relatedStackId}/event/${relatedEventId}`);
         await expect(page.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');

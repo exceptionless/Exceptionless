@@ -256,7 +256,7 @@ public class SampleDataService
         var project = new Project
         {
             Id = INTERNAL_PROJECT_ID,
-            Name = "API",
+            Name = "Exceptionless",
             OrganizationId = organization.Id,
             NextSummaryEndOfDayTicks = _timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         };

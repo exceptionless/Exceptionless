@@ -6,6 +6,20 @@
     }
 
     let { value }: Props = $props();
+
+    const title = $derived(
+        value
+            ? new Date(value).toLocaleString(undefined, {
+                  dateStyle: 'medium',
+                  timeStyle: 'long'
+              })
+            : undefined
+    );
 </script>
 
-<Time live={true} relative={true} timestamp={value}></Time>
+<Time {title} live={true} relative={true} timestamp={value}>
+    {#snippet children(relativeTime)}
+        {relativeTime}
+        {#if title}<span class="sr-only"> ({title})</span>{/if}
+    {/snippet}
+</Time>
