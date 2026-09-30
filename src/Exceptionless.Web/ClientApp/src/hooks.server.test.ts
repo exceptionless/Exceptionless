@@ -13,6 +13,7 @@ describe('server CSP hook', () => {
     beforeEach(() => {
         environment.building = false;
         environment.dev = false;
+        publicEnvironment.PUBLIC_BASE_URL = 'https://app.example.test/next';
     });
 
     it.each([false, true])('limits scheme-wide WebSockets to development (dev=%s)', async (dev) => {
@@ -42,6 +43,31 @@ describe('server CSP hook', () => {
 
         expect(response).toBe(original);
         expect(response.headers.has('content-security-policy')).toBe(false);
+    });
+
+    it('serves HTML with a restrictive policy when the public URL uses the empty same-origin default', async () => {
+        publicEnvironment.PUBLIC_BASE_URL = '';
+        const original = new Response('<script>start()</script>', { headers: { 'content-type': 'text/html' } });
+
+        const response = await handle({ event: {} as Parameters<Handle>[0]['event'], resolve: async () => original });
+        const connections = response.headers
+            .get('content-security-policy')!
+            .split('; ')
+            .find((directive) => directive.startsWith('connect-src '))!
+            .split(' ');
+
+        expect(response.status).toBe(200);
+        expect(connections).toContain("'self'");
+        expect(connections).not.toContain('ws:');
+        expect(connections).not.toContain('wss:');
+        expect(connections).not.toContain('wss://app.example.test');
+    });
+
+    it('rejects a supplied non-HTTP public URL instead of broadening production sources', async () => {
+        publicEnvironment.PUBLIC_BASE_URL = 'ftp://app.example.test';
+        const original = new Response('<script>start()</script>', { headers: { 'content-type': 'text/html' } });
+
+        await expect(handle({ event: {} as Parameters<Handle>[0]['event'], resolve: async () => original })).rejects.toThrow();
     });
 
     it('does not trust request or forwarded hosts for the production WebSocket origin', async () => {
