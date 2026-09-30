@@ -250,14 +250,14 @@ public sealed class CspResponseTests
         Assert.DoesNotContain("wss:", directives["connect-src"]);
         foreach (string unusedSource in new[]
         {
-            "maps.googleapis.com", "cdn.jsdelivr.net", "intercom-sheets.com", "intercom-reporting.com",
+            "config.exceptionless.io", "heartbeat.exceptionless.io", "maps.googleapis.com", "cdn.jsdelivr.net", "intercom-sheets.com", "intercom-reporting.com",
             "youtube.com", "vimeo.com", "wistia.net", "intercom-attachments-", "uploads.intercom",
             "downloads.intercom", "gifs.intercom", "video-messages.intercom", "messenger-apps.intercom", "intercom.help"
         })
             Assert.DoesNotContain(unusedSource, policy, StringComparison.Ordinal);
         Assert.Contains("https://api.stripe.com", directives["connect-src"]);
         Assert.Equal(["'self'"], directives["form-action"]);
-        Assert.Equal(["'self'", "blob:"], directives["worker-src"]);
+        Assert.Equal(["'self'"], directives["worker-src"]);
     }
 
     [Theory]

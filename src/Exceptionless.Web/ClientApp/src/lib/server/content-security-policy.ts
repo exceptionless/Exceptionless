@@ -40,8 +40,6 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
         [
             "'self'",
             'https://collector.exceptionless.io',
-            'https://config.exceptionless.io',
-            'https://heartbeat.exceptionless.io',
             'https://api.stripe.com',
             'https://link.com',
             'https://*.link.com',
@@ -59,7 +57,7 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
     ],
     ['frame-src', ["'self'", 'https://js.stripe.com', 'https://*.js.stripe.com', 'https://hooks.stripe.com', 'https://link.com', 'https://*.link.com']],
     ['media-src', ["'self'", 'blob:', 'https://js.intercomcdn.com']],
-    ['worker-src', ["'self'", 'blob:']],
+    ['worker-src', ["'self'"]],
     ['form-action', ["'self'"]],
     ['manifest-src', ["'self'"]],
     ['base-uri', ["'none'"]],
