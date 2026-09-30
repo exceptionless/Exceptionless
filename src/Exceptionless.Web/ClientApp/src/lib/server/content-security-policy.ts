@@ -23,16 +23,7 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
     ['style-src', ["'self'", "'unsafe-inline'"]],
     [
         'img-src',
-        [
-            "'self'",
-            'blob:',
-            'data:',
-            'https://*.stripe.com',
-            'https://*.link.com',
-            'https://js.intercomcdn.com',
-            'https://static.intercomassets.com',
-            'https://www.gravatar.com'
-        ]
+        ["'self'", 'blob:', 'data:', 'https://*.link.com', 'https://js.intercomcdn.com', 'https://static.intercomassets.com', 'https://www.gravatar.com']
     ],
     ['font-src', ["'self'", 'https://js.intercomcdn.com', 'https://fonts.intercomcdn.com']],
     [

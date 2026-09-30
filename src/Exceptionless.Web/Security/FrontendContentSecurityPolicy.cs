@@ -30,7 +30,6 @@ internal static class FrontendContentSecurityPolicy
         csp.AllowImages.FromSelf()
             .From("data:")
             .From("blob:")
-            .From("https://*.stripe.com")
             .From("https://*.link.com")
             .From("https://js.intercomcdn.com")
             .From("https://static.intercomassets.com")

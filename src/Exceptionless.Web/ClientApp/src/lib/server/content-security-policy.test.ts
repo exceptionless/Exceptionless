@@ -100,6 +100,7 @@ describe('createContentSecurityPolicy', () => {
         ]) {
             expect(policy).not.toContain(unusedSource);
         }
+        expect(getDirective(policy, 'img-src')).not.toContain('https://*.stripe.com');
         expect(getDirective(policy, 'connect-src')).toContain('https://api.stripe.com');
         expect(getDirective(policy, 'form-action')).toEqual(["'self'"]);
         expect(getDirective(policy, 'worker-src')).toEqual(["'self'"]);
