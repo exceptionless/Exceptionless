@@ -50,7 +50,7 @@ this source.
 These configured URLs must match the externally served application origin,
 including the public port, in reverse-proxy and self-hosted deployments. ASP.NET
 already requires `BaseURL`; invalid HTTP(S) origin configuration now fails
-explicitly rather than widening the policy. A missing `PUBLIC_BASE_URL` leaves
+explicitly rather than widening the policy. A missing or empty `PUBLIC_BASE_URL` leaves
 the Svelte hook restrictive (`'self'` and provider sources only); it never enables
 production `ws:`/`wss:`. If a public URL is supplied but invalid, generation fails
 explicitly. Static Svelte builds still use the ASP.NET runtime configuration.
