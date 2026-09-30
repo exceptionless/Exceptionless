@@ -108,7 +108,7 @@ public static class PersistentEventExtensions
 
     public static string? GetSessionId(this PersistentEvent ev)
     {
-        return ev.IsSessionStart() ? ev.ReferenceId : ev.GetEventReference("session");
+        return ev.IsSessionStart() ? ev.ReferenceId : ev.GetEventReference(Event.KnownReferenceNames.Session);
     }
 
     public static void SetSessionId(this PersistentEvent ev, string sessionId)
@@ -119,7 +119,7 @@ public static class PersistentEventExtensions
         if (ev.IsSessionStart())
             ev.ReferenceId = sessionId;
         else
-            ev.SetEventReference("session", sessionId);
+            ev.SetEventReference(Event.KnownReferenceNames.Session, sessionId);
     }
 
     public static bool HasSessionEndTime(this PersistentEvent ev)

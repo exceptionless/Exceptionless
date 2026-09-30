@@ -131,7 +131,7 @@ public static class StringExtensions
 
     public static bool IsValidFieldName(this string? value)
     {
-        if (value is null || value.Length > 25)
+        if (String.IsNullOrEmpty(value) || value.Length > 25)
             return false;
 
         return IsValidIdentifier(value);

@@ -46,15 +46,19 @@
     let references = $derived.by(() => {
         let refs: { id: string; name: string }[] = [];
         Object.entries(event.data || {}).forEach(([key, value]) => {
-            if (key.startsWith(referencePrefix)) {
+            if (key.startsWith(referencePrefix) && value != null) {
                 refs.push({
-                    id: value as string,
+                    id: String(value),
                     name: key.slice(5)
                 });
             }
         });
         return refs;
     });
+
+    function isValidReferenceName(name: string): boolean {
+        return !/[\uD800-\uDFFF]/.test(name) && /^[\p{L}\p{Nd}-]{1,25}$/u.test(name);
+    }
 
     let level = $derived(event.data?.['@level']?.toLowerCase());
     let location = $derived(getLocation(event));
@@ -102,12 +106,20 @@
         {/if}
         {#each references as reference (reference.id)}
             <Table.Row class="group">
-                {#if reference.name === 'session'}
+                {#if reference.name.toLowerCase() === 'session'}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">Session</Table.Head>
                     <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.SessionTrigger changed={filterChanged} value={reference.id} /></Table.Cell>
-                {:else}
+                {:else if reference.name.toLowerCase() === 'parent'}
                     <Table.Head class="w-40 font-semibold whitespace-nowrap">{reference.name}</Table.Head>
                     <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.ReferenceTrigger changed={filterChanged} value={reference.id} /></Table.Cell>
+                {:else if isValidReferenceName(reference.name)}
+                    <Table.Head class="w-40 font-semibold whitespace-nowrap">{reference.name}</Table.Head>
+                    <Table.Cell class="w-4 pr-0"
+                        ><EventsFacetedFilter.StringTrigger changed={filterChanged} term={`ref.${reference.name}`} value={reference.id} /></Table.Cell
+                    >
+                {:else}
+                    <Table.Head class="w-40 font-semibold whitespace-nowrap">{reference.name}</Table.Head>
+                    <Table.Cell class="w-4 pr-0"></Table.Cell>
                 {/if}
                 <Table.Cell
                     ><A

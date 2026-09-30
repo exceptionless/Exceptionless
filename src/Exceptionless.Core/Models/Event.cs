@@ -159,6 +159,12 @@ public class Event : IData, IJsonOnDeserialized
         public const string Internal = "Internal";
     }
 
+    public static class KnownReferenceNames
+    {
+        public const string Parent = "parent";
+        public const string Session = "session";
+    }
+
     public static class KnownDataKeys
     {
         public const string Error = "@error";

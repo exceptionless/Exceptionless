@@ -73,7 +73,7 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
             return null;
 
         string[] parts = field.Split('.');
-        if (parts.Length != 2 || (parts.Length == 2 && parts[1].StartsWith("@")))
+        if (parts.Length != 2 || parts[1].StartsWith("@") || !parts[1].IsValidFieldName())
             return field;
 
         if (String.Equals(parts[0], "data", StringComparison.OrdinalIgnoreCase))
