@@ -20,14 +20,12 @@ internal static class FrontendContentSecurityPolicy
             .WithStrictDynamic()
             .From("https://*.js.stripe.com")
             .From("https://js.stripe.com")
-            .From("https://maps.googleapis.com")
             .From("https://app.intercom.io")
             .From("https://widget.intercom.io")
             .From("https://js.intercomcdn.com");
 
         csp.AllowStyles.FromSelf()
-            .AllowUnsafeInline()
-            .From("https://cdn.jsdelivr.net");
+            .AllowUnsafeInline();
 
         csp.AllowImages.FromSelf()
             .From("data:")
@@ -36,34 +34,17 @@ internal static class FrontendContentSecurityPolicy
             .From("https://*.link.com")
             .From("https://js.intercomcdn.com")
             .From("https://static.intercomassets.com")
-            .From("https://downloads.intercomcdn.com")
-            .From("https://uploads.intercomcdn.com")
-            .From("https://uploads.intercomusercontent.com")
-            .From("https://gifs.intercomcdn.com")
-            .From("https://video-messages.intercomcdn.com")
-            .From("https://messenger-apps.intercom.io")
-            .From("https://*.intercom-attachments-1.com")
-            .From("https://*.intercom-attachments-2.com")
-            .From("https://*.intercom-attachments-3.com")
-            .From("https://*.intercom-attachments-4.com")
-            .From("https://*.intercom-attachments-5.com")
-            .From("https://*.intercom-attachments-6.com")
-            .From("https://*.intercom-attachments-7.com")
-            .From("https://*.intercom-attachments-8.com")
-            .From("https://*.intercom-attachments-9.com")
             .From("https://www.gravatar.com");
 
         csp.AllowFonts.FromSelf()
             .From("https://js.intercomcdn.com")
-            .From("https://fonts.intercomcdn.com")
-            .From("https://cdn.jsdelivr.net");
+            .From("https://fonts.intercomcdn.com");
 
         csp.AllowConnections.ToSelf()
             .To("https://collector.exceptionless.io")
             .To("https://config.exceptionless.io")
             .To("https://heartbeat.exceptionless.io")
             .To("https://api.stripe.com")
-            .To("https://maps.googleapis.com")
             .To("https://link.com")
             .To("https://*.link.com")
             .To("https://via.intercom.io")
@@ -75,9 +56,7 @@ internal static class FrontendContentSecurityPolicy
             .To("https://nexus-websocket-a.intercom.io")
             .To("wss://nexus-websocket-a.intercom.io")
             .To("https://nexus-websocket-b.intercom.io")
-            .To("wss://nexus-websocket-b.intercom.io")
-            .To("https://uploads.intercomcdn.com")
-            .To("https://uploads.intercomusercontent.com");
+            .To("wss://nexus-websocket-b.intercom.io");
 
         // Use administrator configuration, never request Host or forwarded headers.
         // Some browsers do not match WebSocket schemes against connect-src 'self'.
@@ -89,29 +68,16 @@ internal static class FrontendContentSecurityPolicy
             .From("https://js.stripe.com")
             .From("https://hooks.stripe.com")
             .From("https://link.com")
-            .From("https://*.link.com")
-            .From("https://intercom-sheets.com")
-            .From("https://www.intercom-reporting.com")
-            .From("https://www.youtube.com")
-            .From("https://player.vimeo.com")
-            .From("https://fast.wistia.net");
+            .From("https://*.link.com");
 
         csp.AllowAudioAndVideo.FromSelf()
             .From("blob:")
-            .From("https://js.intercomcdn.com")
-            .From("https://downloads.intercomcdn.com");
+            .From("https://js.intercomcdn.com");
 
         csp.AllowWorkers.FromSelf()
-            .From("blob:")
-            .From("https://intercom-sheets.com")
-            .From("https://www.intercom-reporting.com")
-            .From("https://www.youtube.com")
-            .From("https://player.vimeo.com")
-            .From("https://fast.wistia.net");
+            .From("blob:");
 
-        csp.AllowFormActions.ToSelf()
-            .To("https://intercom.help")
-            .To("https://api-iam.intercom.io");
+        csp.AllowFormActions.ToSelf();
         csp.AllowManifest.FromSelf();
         csp.AllowPlugins.FromNowhere();
         csp.AllowBaseUri.FromNowhere();

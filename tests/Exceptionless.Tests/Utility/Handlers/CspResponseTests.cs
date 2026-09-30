@@ -162,6 +162,13 @@ public sealed class CspResponseTests
             string scalarPolicy = scalarResponse.Headers.GetValues("Content-Security-Policy").Single();
             Assert.Equal("no-store", scalarResponse.Headers.CacheControl?.ToString());
             Assert.Contains($"'nonce-{scalarNonce}'", scalarPolicy, StringComparison.Ordinal);
+            Assert.Contains("scalar.js", scalarBody, StringComparison.Ordinal);
+            Assert.Contains("scalar.aspnetcore.js", scalarBody, StringComparison.Ordinal);
+            Assert.Contains("\"withDefaultFonts\":false", scalarBody, StringComparison.Ordinal);
+            Assert.DoesNotContain("cdn.jsdelivr.net", scalarBody, StringComparison.Ordinal);
+            using HttpResponseMessage scalarScriptResponse = await client.GetAsync("/docs/scalar.js", TestContext.Current.CancellationToken);
+            Assert.Equal(StatusCodes.Status200OK, (int)scalarScriptResponse.StatusCode);
+            Assert.StartsWith("text/javascript", scalarScriptResponse.Content.Headers.ContentType?.ToString());
         }
         finally
         {
@@ -228,7 +235,7 @@ public sealed class CspResponseTests
     }
 
     [Fact]
-    public void ConfigureContentSecurityPolicy_ModernSite_ExcludesUnusedLegacySources()
+    public void ConfigureContentSecurityPolicy_ModernSite_ExcludesUnusedVendorSources()
     {
         var builder = new CspBuilder();
         FrontendContentSecurityPolicy.Configure(builder);
@@ -241,7 +248,16 @@ public sealed class CspResponseTests
         Assert.DoesNotContain("https:", directives["connect-src"]);
         Assert.DoesNotContain("ws:", directives["connect-src"]);
         Assert.DoesNotContain("wss:", directives["connect-src"]);
-        Assert.Contains("https://maps.googleapis.com", policy, StringComparison.Ordinal);
+        foreach (string unusedSource in new[]
+        {
+            "maps.googleapis.com", "cdn.jsdelivr.net", "intercom-sheets.com", "intercom-reporting.com",
+            "youtube.com", "vimeo.com", "wistia.net", "intercom-attachments-", "uploads.intercom",
+            "downloads.intercom", "gifs.intercom", "video-messages.intercom", "messenger-apps.intercom", "intercom.help"
+        })
+            Assert.DoesNotContain(unusedSource, policy, StringComparison.Ordinal);
+        Assert.Contains("https://api.stripe.com", directives["connect-src"]);
+        Assert.Equal(["'self'"], directives["form-action"]);
+        Assert.Equal(["'self'", "blob:"], directives["worker-src"]);
     }
 
     [Theory]
@@ -317,7 +333,7 @@ public sealed class CspResponseTests
                     app.UseRouting();
                     app.UseEndpoints(endpoints =>
                     {
-                        endpoints.MapScalarApiReference("/docs");
+                        endpoints.MapScalarApiReference("/docs", options => options.DisableDefaultFonts());
                         endpoints.MapFallback("{**slug:nonfile}", Exceptionless.Web.Program.CreateRequestDelegate(endpoints, "/index.html"));
                     });
                 }))

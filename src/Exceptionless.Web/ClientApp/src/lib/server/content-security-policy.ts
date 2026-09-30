@@ -6,30 +6,6 @@ const NONCE_ATTRIBUTE_PATTERN = /("[^"]*"|'[^']*')|\s+nonce(?=[\s=>/]|$)(?:\s*=\
 const SCRIPT_ELEMENT_PATTERN = /(<script\b)((?:"[^"]*"|'[^']*'|[^'">])*)>([\s\S]*?)(<\/script\s*>)/gi;
 
 // Exceptionless uses Intercom's US endpoints. Keep region-specific sources scoped to that workspace.
-const intercomChildSources = [
-    'https://intercom-sheets.com',
-    'https://www.intercom-reporting.com',
-    'https://www.youtube.com',
-    'https://player.vimeo.com',
-    'https://fast.wistia.net'
-] as const;
-
-const intercomDownloadSources = ['https://downloads.intercomcdn.com'] as const;
-
-const intercomUploadSources = ['https://uploads.intercomcdn.com', 'https://uploads.intercomusercontent.com'] as const;
-
-const intercomAttachmentSources = [
-    'https://*.intercom-attachments-1.com',
-    'https://*.intercom-attachments-2.com',
-    'https://*.intercom-attachments-3.com',
-    'https://*.intercom-attachments-4.com',
-    'https://*.intercom-attachments-5.com',
-    'https://*.intercom-attachments-6.com',
-    'https://*.intercom-attachments-7.com',
-    'https://*.intercom-attachments-8.com',
-    'https://*.intercom-attachments-9.com'
-] as const;
-
 const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly string[]]> = [
     ['default-src', ["'self'"]],
     [
@@ -39,13 +15,12 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
             "'self'",
             'https://js.stripe.com',
             'https://*.js.stripe.com',
-            'https://maps.googleapis.com',
             'https://app.intercom.io',
             'https://widget.intercom.io',
             'https://js.intercomcdn.com'
         ]
     ],
-    ['style-src', ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net']],
+    ['style-src', ["'self'", "'unsafe-inline'"]],
     [
         'img-src',
         [
@@ -56,16 +31,10 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
             'https://*.link.com',
             'https://js.intercomcdn.com',
             'https://static.intercomassets.com',
-            'https://gifs.intercomcdn.com',
-            'https://video-messages.intercomcdn.com',
-            'https://messenger-apps.intercom.io',
-            ...intercomDownloadSources,
-            ...intercomUploadSources,
-            ...intercomAttachmentSources,
             'https://www.gravatar.com'
         ]
     ],
-    ['font-src', ["'self'", 'https://js.intercomcdn.com', 'https://fonts.intercomcdn.com', 'https://cdn.jsdelivr.net']],
+    ['font-src', ["'self'", 'https://js.intercomcdn.com', 'https://fonts.intercomcdn.com']],
     [
         'connect-src',
         [
@@ -74,7 +43,6 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
             'https://config.exceptionless.io',
             'https://heartbeat.exceptionless.io',
             'https://api.stripe.com',
-            'https://maps.googleapis.com',
             'https://link.com',
             'https://*.link.com',
             'https://via.intercom.io',
@@ -86,25 +54,13 @@ const contentSecurityPolicyDirectives: ReadonlyArray<readonly [string, readonly 
             'https://nexus-websocket-a.intercom.io',
             'wss://nexus-websocket-a.intercom.io',
             'https://nexus-websocket-b.intercom.io',
-            'wss://nexus-websocket-b.intercom.io',
-            ...intercomUploadSources
+            'wss://nexus-websocket-b.intercom.io'
         ]
     ],
-    [
-        'frame-src',
-        [
-            "'self'",
-            'https://js.stripe.com',
-            'https://*.js.stripe.com',
-            'https://hooks.stripe.com',
-            'https://link.com',
-            'https://*.link.com',
-            ...intercomChildSources
-        ]
-    ],
-    ['media-src', ["'self'", 'blob:', 'https://js.intercomcdn.com', ...intercomDownloadSources]],
-    ['worker-src', ["'self'", 'blob:', ...intercomChildSources]],
-    ['form-action', ["'self'", 'https://intercom.help', 'https://api-iam.intercom.io']],
+    ['frame-src', ["'self'", 'https://js.stripe.com', 'https://*.js.stripe.com', 'https://hooks.stripe.com', 'https://link.com', 'https://*.link.com']],
+    ['media-src', ["'self'", 'blob:', 'https://js.intercomcdn.com']],
+    ['worker-src', ["'self'", 'blob:']],
+    ['form-action', ["'self'"]],
     ['manifest-src', ["'self'"]],
     ['base-uri', ["'none'"]],
     ['object-src', ["'none'"]],
