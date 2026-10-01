@@ -311,6 +311,18 @@ public partial class Program
                     .To("https://uploads.intercomcdn.com")
                     .To("https://uploads.intercomusercontent.com");
 
+                // The UI can use a separately hosted API through EX_ApiUrl.
+                if (Uri.TryCreate(configuration.GetValue<string>("ApiUrl"), UriKind.Absolute, out var apiUri) &&
+                    apiUri.Scheme is "http" or "https")
+                {
+                    csp.AllowConnections.To(apiUri.GetComponents(UriComponents.SchemeAndServer, UriFormat.UriEscaped));
+                    var webSocketUri = new UriBuilder(apiUri)
+                    {
+                        Scheme = apiUri.Scheme == "https" ? "wss" : "ws"
+                    }.Uri;
+                    csp.AllowConnections.To(webSocketUri.GetComponents(UriComponents.SchemeAndServer, UriFormat.UriEscaped));
+                }
+
                 csp.OnSendingHeader = new Func<CspSendingHeaderContext, Task>(context =>
                 {
                     context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
