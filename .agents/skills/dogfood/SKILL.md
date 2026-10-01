@@ -3,8 +3,7 @@ name: dogfood
 description: >
   Systematically dogfood Exceptionless locally. Use when asked to dogfood, QA, exploratory test,
   bug hunt, browser-test, or validate frontend/full-stack behavior in this repo. Start from the
-  AppHost/Aspire local URLs and choose the Svelte or legacy Angular app based on the changed
-  surface. External Exceptionless URLs require an explicit user-provided URL and confirmation.
+  AppHost/Aspire local URLs and use the Svelte application. External Exceptionless URLs require an explicit user-provided URL and confirmation.
 ---
 
 # Dogfood
@@ -16,8 +15,7 @@ Systematically explore Exceptionless as a local user, find issues, and produce a
 Local targets:
 
 - Aspire dashboard: `https://ex.dev.localhost:7101`
-- Svelte app: `https://web-ex.dev.localhost:7131/next/`
-- Legacy Angular app: `https://angular-ex.dev.localhost:7121`
+- Svelte app: `https://web-ex.dev.localhost:7131/`
 - API health check: `https://api-ex.dev.localhost:7111/api/v2/about`
 - API health fallback for command-line tools with local TLS issues: `http://api-ex.dev.localhost:7110/api/v2/about`
 

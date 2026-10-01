@@ -8257,6 +8257,7 @@
         "tags": [
           "OAuth"
         ],
+        "description": "Redirects to /oauth/authorize, preserving the authorization request query string.",
         "parameters": [
           {
             "name": "client_id",

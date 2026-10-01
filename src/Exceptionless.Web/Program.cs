@@ -379,6 +379,9 @@ public partial class Program
                 .RequireAuthorization(AuthorizationRoles.McpPolicy)
                 .ExcludeFromDescription();
             app.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
+            // Reference IDs can contain dots; they are application routes, not static files.
+            app.MapFallback("/event/by-ref/{referenceId}", CreateRequestDelegate(app, "/index.html"));
+            app.MapFallback("/next/event/by-ref/{referenceId}", CreateRequestDelegate(app, "/index.html"));
             app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"));
 
             await app.RunAsync();
@@ -428,20 +431,17 @@ public partial class Program
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
     {
         var app = endpoints.CreateApplicationBuilder();
-        var apiPathSegment = new PathString("/api");
-        var docsPathSegment = new PathString("/docs");
-        var nextPathSegment = new PathString("/next");
+        string[] reservedPrefixes = ["/api", "/docs", "/health", "/ready", "/mcp", "/.well-known", "/_app"];
         app.Use(next => context =>
         {
-            bool isApiRequest = context.Request.Path.StartsWithSegments(apiPathSegment);
-            bool isDocsRequest = context.Request.Path.StartsWithSegments(docsPathSegment);
-            bool isNextRequest = context.Request.Path.StartsWithSegments(nextPathSegment);
+            if ((!HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method)) ||
+                reservedPrefixes.Any(prefix => context.Request.Path.StartsWithSegments(prefix)))
+            {
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
+                return Task.CompletedTask;
+            }
 
-            if (!isApiRequest && !isDocsRequest && !isNextRequest)
-                context.Request.Path = "/" + filePath;
-            else if (!isApiRequest && !isDocsRequest)
-                context.Request.Path = "/next/" + filePath;
-
+            context.Request.Path = filePath;
             context.SetEndpoint(null);
             return next(context);
         });

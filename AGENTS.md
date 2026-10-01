@@ -35,8 +35,7 @@ src/
 ├── Exceptionless.Core         # Domain logic
 ├── Exceptionless.Insulation   # Elasticsearch, Redis, Azure infrastructure
 ├── Exceptionless.Web          # API host
-│   ├── ClientApp.angular/     # Legacy Angular UI
-│   └── ClientApp/             # Svelte 5 UI
+│   └── ClientApp/             # Svelte 5 UI at /
 └── Exceptionless.Job          # Background workers
 tests/                         # C# tests and HTTP samples
 ```
@@ -44,15 +43,13 @@ tests/                         # C# tests and HTTP samples
 ## Frontend Direction
 
 - `src/Exceptionless.Web/ClientApp` is the default target for all new frontend UI work.
-- `src/Exceptionless.Web/ClientApp.angular` is legacy. Touch it only when the user explicitly asks for Angular/legacy UI work or the bug exists only there.
 - Do not copy Angular patterns into Svelte. Use the frontend skills for Svelte architecture, TanStack Query/Form, and shadcn-svelte details.
 
 ## Testing and Safety
 
 - Local app URLs:
   - Aspire dashboard: `https://ex.dev.localhost:7101`
-  - Svelte app: `https://web-ex.dev.localhost:7131/next/`
-  - Legacy Angular app: `https://angular-ex.dev.localhost:7121`
+  - Svelte app: `https://web-ex.dev.localhost:7131/`
   - API health: `https://api-ex.dev.localhost:7111/api/v2/about`
   - API health fallback for command-line tools with local TLS issues: `http://api-ex.dev.localhost:7110/api/v2/about`
 - Aspire may assign dynamic local ports; when it does, use the endpoints emitted by the AppHost rather than assuming the fixed URLs above.

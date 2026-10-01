@@ -56,7 +56,7 @@ public sealed class OAuthHandler(
 
     public Task<IResult> Handle(RedirectToAuthorizeBridge message)
     {
-        return Task.FromResult<IResult>(HttpResults.Redirect("/next/oauth/authorize" + HttpContext.Request.QueryString));
+        return Task.FromResult<IResult>(HttpResults.Redirect("/oauth/authorize" + HttpContext.Request.QueryString));
     }
 
     public Task<IResult> Handle(CompleteOAuthAuthorization message)

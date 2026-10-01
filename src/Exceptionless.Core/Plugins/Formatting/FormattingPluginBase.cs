@@ -64,7 +64,7 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
             $"• <{baseUrl}/stack/{ev.StackId}/mark-fixed|Mark event as fixed>",
             $"• <{baseUrl}/stack/{ev.StackId}/ignored|Stop sending notifications for this event>",
             $"• <{baseUrl}/stack/{ev.StackId}/discarded|Discard future event occurrences>",
-            $"• <{baseUrl}/project/{ev.ProjectId}/manage?tab=integrations|Change your notification settings for this project>"
+            $"• <{baseUrl}/project/{ev.ProjectId}/integrations|Change your notification settings for this project>"
         };
 
         attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });

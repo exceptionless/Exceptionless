@@ -52,10 +52,7 @@ Notes:
 
 ## UI Development
 
-Frontend work currently spans two apps:
-
-1. The legacy Angular UI in `src/Exceptionless.Web/ClientApp.angular` is still the main site UI. Most of that app lives in `app/`, `components/`, `less/`, `img/`, `lang/`, and `grunt/`.
-2. The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is still under development.
+The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` serves the application at `/`. Aspire starts it together with the API. Existing `/next/` links and primary Angular bookmarks are redirected to the current pages.
 
 For examples of API requests, see `exceptionless.http`. If you use that file in Visual Studio Code, install the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
 

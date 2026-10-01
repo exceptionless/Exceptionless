@@ -40,7 +40,7 @@ test('saved views choose which event or stack column auto-fills', async ({ e2eAp
         expect(response.status(), await response.text()).toBe(201);
 
         await page.setViewportSize({ height: 900, width: 1600 });
-        await page.goto(`/next/event/${viewSlug}`);
+        await page.goto(`/event/${viewSlug}`);
         await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
 
         await page.getByRole('button', { name: /^View/ }).filter({ visible: true }).first().click();
@@ -123,7 +123,7 @@ test('saved views choose which event or stack column auto-fills', async ({ e2eAp
         await page.getByRole('dialog', { name: 'Column Picker' }).getByRole('button', { name: 'Done' }).click();
     });
 
-    for (const route of ['/next/event/all', '/next/stack/all']) {
+    for (const route of ['/event/all', '/stack/all']) {
         await test.step(`${route} predefined view auto-fills Summary`, async () => {
             await page.setViewportSize({ height: 900, width: 1600 });
             await page.goto(route);

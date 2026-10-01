@@ -45,6 +45,7 @@ public static class OAuthEndpoints
             [FromQuery] string? resource = null)
                 => await mediator.InvokeAsync<HttpIResult>(new RedirectToAuthorizeBridge()))
             .AllowAnonymous()
+            .WithDescription("Redirects to /oauth/authorize, preserving the authorization request query string.")
             .Produces(StatusCodes.Status302Found);
 
         group.MapPost("authorize", async (IMediator mediator, [FromBody] OAuthAuthorizeForm form)

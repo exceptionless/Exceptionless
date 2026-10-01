@@ -1,13 +1,14 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { goto } from '$app/navigation';
+    import { beforeNavigate, goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
     import { handleUnexpectedUnauthorized } from '$features/auth/unauthorized';
+    import { canonicalAppUrl } from '$features/navigation/legacy-links';
     import { buildServiceStatusUrl, createServiceStatusRedirector } from '$features/status/service-status-redirect';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
@@ -25,6 +26,19 @@
     }
 
     let { children }: Props = $props();
+
+    beforeNavigate(({ cancel, to }) => {
+        if (!to || to.url.origin !== page.url.origin) {
+            return;
+        }
+        const canonical = canonicalAppUrl(to.url);
+        if (canonical.href !== to.url.href) {
+            cancel();
+            void goto(canonical, {
+                replaceState: true
+            });
+        }
+    });
 
     setBaseUrl('api/v2');
     setRequestOptions({

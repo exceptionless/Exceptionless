@@ -1,3 +1,4 @@
+# The GET authorize bridge redirects to /oauth/authorize with the original query string.
 @apiUrl = http://localhost:7110/api/v2
 @rootUrl = http://localhost:7110
 @email = admin@exceptionless.test

@@ -25,7 +25,7 @@ test('operator can refresh Events after a transient load failure', async ({ e2eA
     });
 
     await test.step('encounter a transient Events request failure', async () => {
-        await page.goto(`/next/event?reference=${encodeURIComponent(e2eScenario.referenceId)}&time=all`);
+        await page.goto(`/event?reference=${encodeURIComponent(e2eScenario.referenceId)}&time=all`);
         await expect.poll(() => eventsRequestFailureCount).toBeGreaterThan(0);
 
         const refreshButton = page.getByTitle('Refresh results');

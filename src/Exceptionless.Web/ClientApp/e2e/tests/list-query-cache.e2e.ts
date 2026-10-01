@@ -88,13 +88,13 @@ function isListRequest(request: Request): boolean {
 
 async function navigateToList(page: Page, name: 'Events' | 'Stacks'): Promise<void> {
     if (page.url() === 'about:blank') {
-        await page.goto(`/next/${name.toLowerCase().replace(/s$/, '')}/all`);
+        await page.goto(`/${name.toLowerCase().replace(/s$/, '')}/all`);
     } else {
         const directLink = page.getByRole('link', { exact: true, name });
         if ((await directLink.count()) > 0) {
             await directLink.click();
         } else {
-            const allLink = page.locator(`a[href="/next/${name.toLowerCase().replace(/s$/, '')}/all"]`);
+            const allLink = page.locator(`a[href="/${name.toLowerCase().replace(/s$/, '')}/all"]`);
             if (!(await allLink.isVisible())) {
                 await page.getByRole('button', { exact: true, name }).click();
             }
@@ -104,18 +104,18 @@ async function navigateToList(page: Page, name: 'Events' | 'Stacks'): Promise<vo
     }
 
     const path = name.toLowerCase().replace(/s$/, '');
-    await expect(page).toHaveURL(new RegExp(`/next/${path}(?:/all)?(?:[?#]|$)`));
+    await expect(page).toHaveURL(new RegExp(`/${path}(?:/all)?(?:[?#]|$)`));
     await waitForListRefresh(page);
 }
 
 async function navigateToStackView(page: Page, name: string, slug: string): Promise<void> {
-    const link = page.locator(`a[href="/next/stack/${slug}"]`);
+    const link = page.locator(`a[href="/stack/${slug}"]`);
     if (!(await link.isVisible())) {
         await page.getByRole('button', { exact: true, name: 'Stacks' }).click();
     }
 
     await link.click();
-    await expect(page).toHaveURL(new RegExp(`/next/stack/${slug}(?:[?#]|$)`));
+    await expect(page).toHaveURL(new RegExp(`/stack/${slug}(?:[?#]|$)`));
     await expect(page.getByRole('heading', { exact: true, name })).toBeVisible();
     await waitForListRefresh(page);
 }

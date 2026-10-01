@@ -19,9 +19,9 @@ test('dashboard charts stay mounted while list data refreshes', async ({ e2eApi,
     );
 
     // Act & Assert: the helper refreshes each dashboard and checks that its chart stays mounted.
-    await verifyChartRefresh(page, '/next/stack/all', (route) => isOrganizationEventListRequest(route, organizationId!, 'stack_frequent'));
-    await verifyChartRefresh(page, '/next/event/all', (route) => isOrganizationEventListRequest(route, organizationId!, 'summary'));
-    await verifyChartRefresh(page, '/next/sessions/all', (route) => {
+    await verifyChartRefresh(page, '/stack/all', (route) => isOrganizationEventListRequest(route, organizationId!, 'stack_frequent'));
+    await verifyChartRefresh(page, '/event/all', (route) => isOrganizationEventListRequest(route, organizationId!, 'summary'));
+    await verifyChartRefresh(page, '/sessions/all', (route) => {
         return new URL(route.request().url()).pathname === `/api/v2/organizations/${organizationId}/events/sessions`;
     });
 });

@@ -4,7 +4,7 @@ import { expect, test } from '../fixtures/e2e-test';
 import { seedRepresentativeEvent } from '../support/event-data';
 
 test('organization deep links select the destination organization', async ({ e2eScenario, e2eSecondaryOrganization, page }) => {
-    await page.goto(`/next/organization/${e2eSecondaryOrganization.organizationId}/manage?from=link#settings`);
+    await page.goto(`/organization/${e2eSecondaryOrganization.organizationId}/manage?from=link#settings`);
 
     await expect(page).toHaveURL(new RegExp(`/organization/${e2eSecondaryOrganization.organizationId}/manage\\?from=link#settings$`));
     await expect(page.getByRole('heading', { exact: true, name: `${e2eSecondaryOrganization.organizationName} Settings` })).toBeVisible();
@@ -18,26 +18,26 @@ for (const resource of ['project', 'stack', 'event', 'stack event', 'project sta
         let href: string;
         switch (resource) {
             case 'event':
-                href = `/next/event/${event!.id}`;
+                href = `/event/${event!.id}`;
                 break;
             case 'mismatched project stack':
-                href = `/next/project/${e2eScenario.projectId}/stacks/${event!.stack_id}`;
+                href = `/project/${e2eScenario.projectId}/stacks/${event!.stack_id}`;
                 break;
             case 'project':
-                href = `/next/project/${e2eSecondaryOrganization.projectId}/settings`;
+                href = `/project/${e2eSecondaryOrganization.projectId}/settings`;
                 break;
             case 'project stack':
-                href = `/next/project/${e2eSecondaryOrganization.projectId}/stacks/${event!.stack_id}`;
+                href = `/project/${e2eSecondaryOrganization.projectId}/stacks/${event!.stack_id}`;
                 break;
             case 'stack':
-                href = `/next/stack/${event!.stack_id}`;
+                href = `/stack/${event!.stack_id}`;
                 break;
             case 'stack event':
-                href = `/next/stack/${event!.stack_id}/event/${event!.id}`;
+                href = `/stack/${event!.stack_id}/event/${event!.id}`;
                 break;
         }
 
-        await page.goto('/next/stack/all');
+        await page.goto('/stack/all');
         await expectOrganization(page, e2eScenario.organizationId);
         await page.goto(href);
         await expectOrganization(page, e2eSecondaryOrganization.organizationId);
@@ -59,7 +59,7 @@ for (const resource of ['project', 'stack', 'event', 'stack event', 'project sta
         await page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.organizationName }).filter({ visible: true }).first().click();
         await page.getByRole('menuitem').filter({ hasText: e2eScenario.organizationName }).click();
         await expectOrganization(page, e2eScenario.organizationId);
-        await expect(page).toHaveURL(/\/next\/stack\/all$/);
+        await expect(page).toHaveURL(/\/stack\/all$/);
     });
 }
 
@@ -104,14 +104,14 @@ test('Exie usage organization links switch context and support browser history',
         });
     });
 
-    await page.goto('/next/system/exie');
+    await page.goto('/system/exie');
     await page.getByRole('link', { exact: true, name: e2eSecondaryOrganization.organizationName }).click();
     await expect(page.getByRole('heading', { exact: true, name: `${e2eSecondaryOrganization.organizationName} Settings` })).toBeVisible();
     await expectOrganization(page, e2eSecondaryOrganization.organizationId);
     await expect(page).toHaveURL(new RegExp(`/organization/${e2eSecondaryOrganization.organizationId}/manage$`));
 
     await test.info().attach('organization-link-destination', { body: await page.screenshot(), contentType: 'image/png' });
-    await page.goto(`/next/organization/${e2eScenario.organizationId}/manage`);
+    await page.goto(`/organization/${e2eScenario.organizationId}/manage`);
     await expectOrganization(page, e2eScenario.organizationId);
     await expect(page.getByRole('heading', { exact: true, name: `${e2eScenario.organizationName} Settings` })).toBeVisible();
     await page.goBack();
@@ -124,22 +124,22 @@ test('Exie usage organization links switch context and support browser history',
 
 test('organization users and billing links request the destination organization', async ({ e2eScenario, e2eSecondaryOrganization, page }) => {
     const usersResponse = page.waitForResponse((response) => response.url().includes(`/organizations/${e2eSecondaryOrganization.organizationId}/users`));
-    await page.goto(`/next/organization/${e2eSecondaryOrganization.organizationId}/users`);
+    await page.goto(`/organization/${e2eSecondaryOrganization.organizationId}/users`);
     expect((await usersResponse).ok()).toBe(true);
     await expectOrganization(page, e2eSecondaryOrganization.organizationId);
     await expect(page.getByRole('button', { name: 'Invite User' })).toBeVisible();
 
     const billingResponse = page.waitForResponse((response) => response.url().includes(`/organizations/${e2eScenario.organizationId}/invoices`));
-    await page.goto(`/next/organization/${e2eScenario.organizationId}/billing`);
+    await page.goto(`/organization/${e2eScenario.organizationId}/billing`);
     expect([200, 404]).toContain((await billingResponse).status());
     await expectOrganization(page, e2eScenario.organizationId);
     await expect(page).toHaveURL(new RegExp(`/organization/${e2eScenario.organizationId}/billing$`));
 });
 
 test('organization project links switch before redirecting to the project list', async ({ e2eSecondaryOrganization, page }) => {
-    await page.goto(`/next/organization/${e2eSecondaryOrganization.organizationId}/projects`);
+    await page.goto(`/organization/${e2eSecondaryOrganization.organizationId}/projects`);
     await expectOrganization(page, e2eSecondaryOrganization.organizationId);
-    await expect(page).toHaveURL(/\/next\/project\/list/);
+    await expect(page).toHaveURL(/\/project\/list/);
     await expect(page.getByText(e2eSecondaryOrganization.projectName, { exact: true }).filter({ visible: true }).first()).toBeVisible();
 });
 
@@ -148,7 +148,7 @@ test('stack links select the owner when no events remain', async ({ e2eApi, e2eS
     await page.route(`**/api/v2/stacks/${event.stack_id}/events?*`, async (route) => {
         await route.fulfill({ json: [] });
     });
-    await page.goto(`/next/stack/${event.stack_id}`);
+    await page.goto(`/stack/${event.stack_id}`);
     await expect(page.getByText('No events available for this stack.')).toBeVisible();
     await expectOrganization(page, e2eSecondaryOrganization.organizationId);
     await expect(page).toHaveURL(new RegExp(`/stack/${event.stack_id}$`));
@@ -170,7 +170,7 @@ test('authorized invoice links select their organization', async ({ e2eSecondary
             }
         });
     });
-    await page.goto(`/next/payment/${invoiceId}`);
+    await page.goto(`/payment/${invoiceId}`);
     await expect(page.getByRole('cell', { exact: true, name: e2eSecondaryOrganization.organizationName })).toBeVisible();
     await expectOrganization(page, e2eSecondaryOrganization.organizationId);
     await expect(page).toHaveURL(new RegExp(`/payment/${invoiceId}$`));
@@ -180,10 +180,10 @@ test.describe('member access', () => {
     test.use({ e2eUseGeneratedUser: true });
 
     test('members can follow links to another organization they belong to', async ({ e2eScenario, e2eSecondaryOrganization, page }) => {
-        await page.goto(`/next/organization/${e2eSecondaryOrganization.organizationId}/manage`);
+        await page.goto(`/organization/${e2eSecondaryOrganization.organizationId}/manage`);
         await expect(page.getByRole('heading', { exact: true, name: `${e2eSecondaryOrganization.organizationName} Settings` })).toBeVisible();
         await expectOrganization(page, e2eSecondaryOrganization.organizationId);
-        await page.goto(`/next/project/${e2eScenario.projectId}/settings`);
+        await page.goto(`/project/${e2eScenario.projectId}/settings`);
         await expect(page.getByRole('heading', { exact: true, name: `${e2eScenario.projectName} Settings` })).toBeVisible();
         await expectOrganization(page, e2eScenario.organizationId);
     });
@@ -197,7 +197,7 @@ test.describe('member access', () => {
             for (const resource of ['organization', 'project', 'stack', 'event']) {
                 const response = page.waitForResponse((item) => item.url().includes(`/api/v2/${resource}s/${resourceId}`));
                 const suffix = resource === 'organization' ? '/manage' : resource === 'project' ? '/settings' : '';
-                await page.goto(`/next/${resource}/${resourceId}${suffix}`);
+                await page.goto(`/${resource}/${resourceId}${suffix}`);
                 expect((await response).status()).toBe(status);
                 await expect(
                     page

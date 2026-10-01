@@ -21,7 +21,7 @@ test.describe('first-run welcome', () => {
                 await e2eApi.recordProductTour(e2eScenario.userToken, 'app-welcome');
             }
             await mockAssistantAccess(page);
-            await page.goto('/next/stack');
+            await page.goto('/stack');
             const dismiss = page.getByRole('button', { name: dismissLabel });
             await expect(dismiss).toBeVisible();
 
@@ -60,7 +60,7 @@ test.describe('first-run welcome', () => {
         // Arrange
         const welcome = page.getByRole('region', { name: 'Welcome to Exceptionless' });
         await test.step(`show the pending welcome for ${e2eScenario.email}`, async () => {
-            await page.goto('/next/stack/all');
+            await page.goto('/stack/all');
             await expect(welcome).toBeVisible();
         });
         const invitationWrites: Request[] = [];
@@ -86,7 +86,7 @@ test.describe('first-run welcome', () => {
     test('Browse Guides saves acknowledgment and opens the catalog', async ({ e2eScenario, page }, testInfo) => {
         // Arrange
         await test.step(`show the first-run prompt for ${e2eScenario.email}`, async () => {
-            await page.goto('/next/stack');
+            await page.goto('/stack');
             await expect(page.getByRole('region', { name: 'Welcome to Exceptionless' })).toBeVisible();
             await expect(page.getByRole('dialog')).toBeHidden();
             await page.screenshot({ path: testInfo.outputPath('welcome-desktop.png') });
@@ -117,7 +117,7 @@ test.describe('first-run welcome', () => {
         // Arrange
         await page.setViewportSize({ height: 844, width: 390 });
         await page.emulateMedia({ reducedMotion: 'reduce' });
-        await page.goto('/next/stack');
+        await page.goto('/stack');
         const welcome = page.getByRole('region', { name: 'Welcome to Exceptionless' });
         await expect(welcome).toBeVisible();
 
@@ -138,7 +138,7 @@ test.describe('first-run welcome', () => {
         const persisted = page.waitForResponse(isSuccessfulTourProgress('app-welcome'));
         await welcome.getByRole('button', { name: 'Continue setup' }).click();
         await persisted;
-        await expect(page).toHaveURL(new RegExp(`/next/project/(?:add|${e2eScenario.projectId}/configure)`));
+        await expect(page).toHaveURL(new RegExp(`/project/(?:add|${e2eScenario.projectId}/configure)`));
         await expect(welcome).toBeHidden();
     });
 
@@ -146,7 +146,7 @@ test.describe('first-run welcome', () => {
         // Arrange
         const welcome = page.getByRole('region', { name: 'Welcome to Exceptionless' });
         await test.step(`show the welcome for ${e2eScenario.email}`, async () => {
-            await page.goto('/next/stack');
+            await page.goto('/stack');
             await expect(welcome).toBeVisible();
         });
         const progressRoute = '**/api/v2/users/me/product-tours/app-welcome/record';
@@ -186,7 +186,7 @@ test.describe('shell and identity checkpoints', () => {
         // Act & Assert: each step checks a responsive or identity transition.
         await test.step('closing the welcome persists dismissal', async () => {
             // Arrange
-            await page.goto('/next/stack');
+            await page.goto('/stack');
             const welcome = page.getByRole('region', { name: 'Welcome to Exceptionless' });
             await expect(welcome).toBeVisible();
             const dismissed = page.waitForResponse(isSuccessfulTourProgress('app-welcome'));
@@ -306,7 +306,7 @@ test.describe('shell and identity checkpoints', () => {
 
             // Act
             const identityTab = await page.context().newPage();
-            await identityTab.goto('/next/stack');
+            await identityTab.goto('/stack');
             await identityTab.evaluate((organizationId) => {
                 window.localStorage.setItem('organization', JSON.stringify(organizationId));
             }, e2eSecondaryOrganization.organizationId);
@@ -343,7 +343,7 @@ test.describe('shell and identity checkpoints', () => {
             await page.getByRole('button', { name: new RegExp(e2eScenario.userName) }).dispatchEvent('click');
             await page.getByRole('menuitem', { name: 'Log Out' }).dispatchEvent('click');
             // Assert
-            await expect(page).toHaveURL(/\/next\/login/);
+            await expect(page).toHaveURL(/\/login/);
             await expectActiveProductTour(page, false);
             expect(progressWrites).toHaveLength(writesBeforeLogout);
 
@@ -357,7 +357,7 @@ for (const title of ['Explore Exceptionless', 'Create a saved view', 'Meet Exie'
         // Arrange
         await mockAssistantAccess(page);
         await test.step(`start ${title} for ${e2eScenario.email}`, async () => {
-            await page.goto('/next/event');
+            await page.goto('/event');
             await startTourFromCommand(page, title);
         });
         const calloutTitle = page.locator('.driver-popover-title');
@@ -394,12 +394,12 @@ for (const [list, stepTitle, advances] of [
 ] as const) {
     test(`the overview continues ${stepTitle} on a ${list} saved view`, async ({ e2eScenario, page }) => {
         // Arrange
-        const savedViewPath = `/next/${list}/all`;
+        const savedViewPath = `/${list}/all`;
         await page.goto(savedViewPath);
         await expect(page.getByRole('button', { name: new RegExp(e2eScenario.userName) })).toBeVisible();
         await expect(page.locator('[data-tour="saved-view-trigger"]')).toBeVisible();
         await startTourFromCommand(page, 'Explore Exceptionless');
-        await expect(page).toHaveURL(/\/next\/event$/);
+        await expect(page).toHaveURL(/\/event$/);
         const callout = page.locator('.driver-popover');
         const stepTitles = ['Spot repeated problems', 'See each report', 'Narrow your results'];
         for (let step = 0; step < advances; step++) {
@@ -430,10 +430,10 @@ for (const [stepTitle, advances] of [
 ] as const) {
     test(`the overview offers Restart when leaving ${stepTitle}`, async ({ e2eScenario, page }) => {
         // Arrange: start from a page without event filters or a View menu.
-        const projectPath = `/next/project/${e2eScenario.projectId}/manage`;
+        const projectPath = `/project/${e2eScenario.projectId}/manage`;
         await page.goto(projectPath);
         await startTourFromCommand(page, 'Explore Exceptionless');
-        await expect(page).toHaveURL(/\/next\/event$/);
+        await expect(page).toHaveURL(/\/event$/);
         await expect(page.locator('[data-tour="event-filters"]')).toBeVisible();
         const callout = page.locator('.driver-popover');
         const stepTitles = ['Spot repeated problems', 'See each report', 'Narrow your results'];
@@ -456,7 +456,7 @@ for (const [stepTitle, advances] of [
         const restart = catalog.getByRole('button', { exact: true, name: 'Restart Explore Exceptionless' });
         await expect(restart).toBeVisible();
         await restart.click();
-        await expect(page).toHaveURL(/\/next\/event$/);
+        await expect(page).toHaveURL(/\/event$/);
         await expect(page.locator('.driver-popover-title')).toHaveText('Spot repeated problems');
     });
 }
@@ -466,7 +466,7 @@ test('project guide preserves the current SDK selection', async ({ e2eScenario, 
     await page.route('**/api/v2/organizations/*/projects*', async (route) => {
         await route.fulfill({ json: [] });
     });
-    await page.goto(`/next/project/${e2eScenario.projectId}/configure?type=dotnet-legacy-mvc`);
+    await page.goto(`/project/${e2eScenario.projectId}/configure?type=dotnet-legacy-mvc`);
     await expect(page.locator('[data-tour="project-configure-platform"]')).toContainText('ASP.NET MVC');
 
     // Act
@@ -478,12 +478,12 @@ test('project guide preserves the current SDK selection', async ({ e2eScenario, 
     await expect(page.locator('[data-tour="project-configure-platform"]')).toContainText('ASP.NET MVC');
     expect(new URL(page.url()).searchParams.get('type')).toBe('dotnet-legacy-mvc');
     expect(new URL(page.url()).searchParams.get('redirect')).toBe('true');
-    expect(new URL(page.url()).pathname).toBe(`/next/project/${e2eScenario.projectId}/configure`);
+    expect(new URL(page.url()).pathname).toBe(`/project/${e2eScenario.projectId}/configure`);
 });
 
 test('a saved-view guide allows submitting the form before finishing its steps', async ({ e2eScenario, page }) => {
     // Arrange
-    await page.goto('/next/event');
+    await page.goto('/event');
     await startTourFromCommand(page, 'Create a saved view');
     const guide = page.locator('.driver-popover');
     await guide.getByRole('button', { name: 'Open View' }).click();
@@ -508,9 +508,9 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
     // Act & Assert: each workflow below exercises and verifies its own transitions.
     await test.step('project configuration advances after setup and the first event', async () => {
         // Arrange
-        await page.goto('/next/stack');
+        await page.goto('/stack');
         await startTourFromCommand(page, 'Configure a project');
-        await page.waitForURL(/\/next\/project\/(?:add|[^/]+\/configure)/);
+        await page.waitForURL(/\/project\/(?:add|[^/]+\/configure)/);
 
         let createdProject = false;
         let projectId = page.url().match(/\/project\/([^/]+)\/configure/)?.[1];
@@ -519,7 +519,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             await expect(page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
             await page.getByLabel('Project Name', { exact: true }).fill(`Tour Project ${e2eScenario.run}`);
             await page.getByRole('button', { name: 'Continue to Client Setup' }).click();
-            await page.waitForURL(/\/next\/project\/[^/]+\/configure\?redirect=true/);
+            await page.waitForURL(/\/project\/[^/]+\/configure\?redirect=true/);
             projectId = page.url().match(/\/project\/([^/]+)\/configure/)?.[1];
         } else {
             expect(projectId).toBe(e2eScenario.projectId);
@@ -572,14 +572,14 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
                 })
             );
             // Assert
-            await expect(page).toHaveURL(/\/next\/event/);
+            await expect(page).toHaveURL(/\/event/);
             await expectActiveProductTour(page, false);
             await expect.poll(() => projectProgressRequests).toBe(1);
             await expect.poll(async () => (await e2eApi.getProject(e2eScenario.userToken, projectId!))?.is_configured).toBe(true);
 
             // Act
             await page.unroute(projectProgressRoute);
-            await page.goto(`/next/project/${projectId}/configure`);
+            await page.goto(`/project/${projectId}/configure`);
             // Assert
             await expectActiveProductTour(page, false);
             expect(projectProgressRequests).toBe(1);
@@ -615,7 +615,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         });
 
         try {
-            await page.goto('/next/event');
+            await page.goto('/event');
             // Act
             await startTourFromCommand(page, 'Create a saved view');
             // Assert
@@ -658,7 +658,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             projectToken: e2eScenario.projectToken,
             referenceId: e2eScenario.referenceId
         });
-        await page.goto('/next/event?time=all&type=error');
+        await page.goto('/event?time=all&type=error');
         await expect(page.getByText(e2eScenario.message).first()).toBeVisible({ timeout: 30_000 });
         // Act
         await startTourFromCommand(page, 'Investigate an error');
@@ -698,7 +698,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         page.on('request', countChatRequest);
 
         try {
-            await page.goto('/next/stack');
+            await page.goto('/stack');
             // Act
             await startTourFromCommand(page, 'Meet Exie');
             const tour = page.locator('.driver-popover');
@@ -721,7 +721,7 @@ test('the error guide keeps the start of a wide report visible on mobile', async
         referenceId: e2eScenario.referenceId
     });
     await page.setViewportSize({ height: 844, width: 390 });
-    await page.goto('/next/event?time=all&type=error');
+    await page.goto('/event?time=all&type=error');
     await expect(page.getByText(e2eScenario.message).first()).toBeVisible();
 
     // Act
@@ -741,9 +741,9 @@ for (const [stepTitle, advances] of [
     ['Keep a useful view', 3]
 ] as const) {
     test(`overview restores ${stepTitle} when its route returns`, async ({ e2eScenario, page }) => {
-        await page.goto(`/next/project/${e2eScenario.projectId}/manage`);
+        await page.goto(`/project/${e2eScenario.projectId}/manage`);
         await startTourFromCommand(page, 'Explore Exceptionless');
-        await expect(page).toHaveURL(/\/next\/event$/);
+        await expect(page).toHaveURL(/\/event$/);
         const guide = page.locator('.driver-popover');
         for (let step = 0; step < advances; step++) {
             await guide.getByRole('button', { name: 'Next' }).click();
@@ -755,14 +755,14 @@ for (const [stepTitle, advances] of [
         await expect(guide).toBeHidden();
         await page.goForward();
 
-        await expect(page).toHaveURL(/\/next\/event$/);
+        await expect(page).toHaveURL(/\/event$/);
         await expect(guide.getByText(stepTitle)).toBeVisible();
     });
 
     test(`overview restores ${stepTitle} after navigating while Search is open`, async ({ e2eScenario, page }) => {
-        await page.goto(`/next/project/${e2eScenario.projectId}/manage`);
+        await page.goto(`/project/${e2eScenario.projectId}/manage`);
         await startTourFromCommand(page, 'Explore Exceptionless');
-        await expect(page).toHaveURL(/\/next\/event$/);
+        await expect(page).toHaveURL(/\/event$/);
         const guide = page.locator('.driver-popover');
         for (let step = 0; step < advances; step++) {
             await guide.getByRole('button', { name: 'Next' }).click();
@@ -780,26 +780,26 @@ for (const [stepTitle, advances] of [
         }
         await page.goForward();
 
-        await expect(page).toHaveURL(/\/next\/event$/);
+        await expect(page).toHaveURL(/\/event$/);
         await expect(guide.getByText(stepTitle)).toBeVisible();
     });
 }
 
 test('overview returns to Events after navigating back to Stacks', async ({ e2eScenario, page }, testInfo) => {
-    await page.goto('/next/stack');
+    await page.goto('/stack');
     await expect(page.getByRole('button', { name: new RegExp(e2eScenario.userName) })).toBeVisible();
     await startTourFromCommand(page, 'Explore Exceptionless');
     const guide = page.locator('.driver-popover');
     await expect(guide.getByText('Spot repeated problems')).toBeVisible();
 
-    await expect(page).toHaveURL(/\/next\/event$/);
+    await expect(page).toHaveURL(/\/event$/);
     await page.goBack();
-    await expect(page).toHaveURL(/\/next\/stack$/);
+    await expect(page).toHaveURL(/\/stack$/);
     await guide.getByRole('button', { name: 'Next' }).click();
     await expect(guide.getByText('See each report')).toBeVisible();
     await guide.getByRole('button', { name: 'Next' }).click();
 
-    await expect(page).toHaveURL(/\/next\/event$/);
+    await expect(page).toHaveURL(/\/event$/);
     await expect(guide.getByText('Narrow your results')).toBeVisible();
     await expectActiveProductTour(page, true);
     await page.screenshot({ path: testInfo.outputPath('interactive-stacks-next.png') });
@@ -808,7 +808,7 @@ test('overview returns to Events after navigating back to Stacks', async ({ e2eS
 test('overview navigation survives resizing between desktop and mobile', async ({ e2eScenario, page }) => {
     await mockAssistantAccess(page);
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto('/next/stack');
+    await page.goto('/stack');
     expect(e2eScenario.email).toContain('@exceptionless.test');
     await startTourFromCommand(page, 'Explore Exceptionless');
     const tour = page.locator('.driver-popover');
@@ -834,14 +834,14 @@ test('mobile overview keeps navigation targets visible after following their lin
         (route) => route.fulfill({ json: [] })
     );
     await page.setViewportSize({ height: 900, width: 1440 });
-    await page.goto(`/next/project/${e2eScenario.projectId}/manage`);
+    await page.goto(`/project/${e2eScenario.projectId}/manage`);
     await startTourFromCommand(page, 'Explore Exceptionless');
     await page.setViewportSize({ height: 844, width: 390 });
     const guide = page.locator('.driver-popover');
 
     for (const [target, title, route] of [
-        ['navigation-stacks', 'Spot repeated problems', /\/next\/stack$/],
-        ['navigation-events', 'See each report', /\/next\/event$/]
+        ['navigation-stacks', 'Spot repeated problems', /\/stack$/],
+        ['navigation-events', 'See each report', /\/event$/]
     ] as const) {
         await expect(guide.getByText(title, { exact: true })).toBeVisible();
         const link = page.locator(`a[data-tour="${target}"]:visible`);
@@ -858,7 +858,7 @@ test('mobile overview keeps navigation targets visible after following their lin
 test('overview arrows stay beside each control on desktop and mobile', async ({ e2eScenario, page }) => {
     // Arrange
     await mockAssistantAccess(page);
-    await page.goto('/next/stack');
+    await page.goto('/stack');
     expect(e2eScenario.email).toContain('@exceptionless.test');
     const titles = ['Spot repeated problems', 'See each report', 'Narrow your results', 'Keep a useful view', 'Get help from Exie', 'Search and take action'];
 
@@ -903,7 +903,7 @@ test('completion survives unavailable telemetry and session storage', async ({ e
         })
     );
     await mockAssistantAccess(page);
-    await page.goto('/next/stack');
+    await page.goto('/stack');
     // Act
     await startTourFromCommand(page, 'Explore Exceptionless');
     for (const title of ['Spot repeated problems', 'See each report', 'Narrow your results', 'Keep a useful view', 'Get help from Exie']) {

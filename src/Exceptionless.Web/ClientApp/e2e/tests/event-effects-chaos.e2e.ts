@@ -63,7 +63,7 @@ test('event list and detail effects stay bounded through paging and background c
 
     await test.step('load the Events list with one page of results', async () => {
         const response = page.waitForResponse((candidate) => isEventListResponse(candidate, e2eScenario.organizationId));
-        await page.goto('/next/event?filter=type%3Aerror&limit=5');
+        await page.goto('/event?filter=type%3Aerror&limit=5');
         const listResponse = await response;
         expect(listResponse.ok()).toBe(true);
         const events = (await listResponse.json()) as { id?: string }[];
@@ -184,7 +184,7 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'event detail alias route remounts', async () => {
         for (let index = 0; index < 5; index++) {
-            await page.goto(`/next/event/${journey.eventId}`);
+            await page.goto(`/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         }
     });
@@ -193,7 +193,7 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'stack detail discovery route remounts', async () => {
         for (let index = 0; index < 5; index++) {
-            await page.goto(`/next/stack/${journey.stackId}`);
+            await page.goto(`/stack/${journey.stackId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         }
     });
@@ -203,7 +203,7 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'canonical stack event route remounts', async () => {
         for (let index = 0; index < 5; index++) {
-            await page.goto(`/next/stack/${journey.stackId}/event/${journey.eventId}`);
+            await page.goto(`/stack/${journey.stackId}/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         }
     });
