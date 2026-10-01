@@ -6,9 +6,13 @@ declare -A oauth_ids=()
 IFS=';' read -ra oauth_parts <<< "${EX_ConnectionStrings__OAuth:-}"
 for part in "${oauth_parts[@]}"; do
     key="${part%%=*}"
+    key="${key//[[:space:]]/}"
+    value="${part#*=}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
     case "$key" in
         FacebookId|GitHubId|GoogleId|IntercomId|MicrosoftId|SlackId)
-            oauth_ids[$key]="${part#*=}" ;;
+            oauth_ids[$key]="$value" ;;
     esac
 done
 
