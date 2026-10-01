@@ -26,7 +26,7 @@ export function validate(expected, actual) {
     }
     if (actual.errors?.length) throw new Error('Playwright reported errors outside individual tests');
     for (const [, spec, test] of cases(actual)) {
-        if (!test.results?.length || !['expected', 'flaky'].includes(test.status)) {
+        if (!test.results?.length || test.status !== 'expected') {
             throw new Error(`Browser test did not pass: ${spec.title} (${test.status})`);
         }
     }

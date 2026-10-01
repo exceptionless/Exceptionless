@@ -92,7 +92,7 @@ test('browser gate checks discovery, results, and retries', () => {
         else if (['skipped', 'unexpected', 'flaky'].includes(defect)) spec.tests[0].status = defect;
         else if (defect === 'no-result') spec.tests[0].results = [];
         else if (defect === 'global-error') actual.errors = [{ message: 'worker crashed' }];
-        if ([null, 'flaky'].includes(defect)) validate(expected, actual);
+        if (defect === null) validate(expected, actual);
         else assert.throws(() => validate(expected, actual), undefined, defect);
     }
 });

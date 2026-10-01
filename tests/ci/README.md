@@ -13,9 +13,18 @@ The normal build targets a roughly **10-minute critical path**. Track elapsed wo
 - E2E startup lets Aspire build its referenced applications once. The former Release solution build was unused by Aspire's Debug startup and also built the unused .NET test assembly.
 - Browser shards use GitHub's Ubuntu 24.04 image (with its installed browser libraries) and install only Playwright's headless Chromium shell. This avoids unrelated apt upgrades and font downloads that added several minutes to individual runners. Browser versions still come from the locked Playwright package; all layout/locale tests remain enabled.
 - Backend fixtures request `--test-services`, starting only Elasticsearch. Their queues/cache are in memory and storage is scoped to local files. The general `--services-only` mode still starts all development services. This also prevents backend tests from replacing a live preview's shared Azurite container with different dynamic ports.
+- `--ci-e2e` uses temporary Redis and storage containers with allocated ports. This prevents concurrent local AppHosts from replacing shared containers or changing credentials/TLS configuration during a test run. Normal development retains its persistent containers and volumes.
 - Superseded PR runs are cancelled; push/tag runs are not interrupted by newer runs.
 
-Playwright's unsharded local and synthetic-monitoring configurations retain their existing reports, retry settings, and scheduling. All development verification uses localhost.
+Playwright's unsharded local and synthetic-monitoring configurations retain their existing reports, retry settings, and scheduling. CI rejects flaky passes with Playwright's `failOnFlakyTests` and the aggregate result gate; retries collect diagnostics but cannot turn a flaky build green. Traces capture the first failing attempt. All development verification uses localhost.
+
+## Stability
+
+The chaos tests measure requests with controlled notifications while retaining real WebSocket connections. Background jobs can publish delayed seed-data notifications, so the request-budget scenarios intercept those messages and inject explicit bursts. The existing event-visibility journey separately verifies that a real server push updates the visible list without navigation or manual refresh.
+
+Thirty hide/resume cycles can complete different numbers of WebSocket handshakes on different machines. Each completed reconnect legitimately refreshes active queries. Visibility assertions therefore enforce at most one fetch per observed reconnect and at most one reconnect per resume, with a bounded observation window for late repeated work. Navigation has a separate request budget and waits for each URL transition. These checks still detect repeated listeners, query loops, and excess requests without assuming a particular handshake speed.
+
+The chart refresh scenario waits for the initial list request and loading indicator before holding a refresh response. Its interception assertion has a bounded timeout instead of waiting until the entire test expires.
 
 ## Timing reports and rebalancing
 

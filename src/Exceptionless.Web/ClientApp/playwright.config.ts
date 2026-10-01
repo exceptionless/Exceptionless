@@ -9,6 +9,8 @@ export default defineConfig({
         timeout: 10_000
     },
 
+    failOnFlakyTests: isCi,
+
     forbidOnly: isCi,
 
     // Distribute individual tests, including large spec files, across isolated CI runners.
@@ -42,7 +44,7 @@ export default defineConfig({
         baseURL: appUrl,
         ignoreHTTPSErrors: true,
         screenshot: 'only-on-failure',
-        trace: 'on-first-retry',
+        trace: 'retain-on-first-failure',
         video: 'retain-on-failure'
     },
 
