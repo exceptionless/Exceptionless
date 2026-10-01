@@ -12,7 +12,8 @@ const manifest = (index) => ({
     session: `session-${index}`,
     identity: expected,
     source_root: '/checkout',
-    sha256: 'a'.repeat(64)
+    sha256: 'a'.repeat(64),
+    timings: { startup_seconds: 1, test_seconds: 1, shutdown_seconds: 1, total_seconds: 3, peak_process_tree_rss_kib: 1, peak_host_used_kib: 1 }
 });
 
 test('coverage completeness rejects stale, missing, duplicate and unfinished artifacts', () => {
@@ -29,7 +30,10 @@ test('coverage completeness rejects stale, missing, duplicate and unfinished art
         'collector',
         'count',
         'incomplete',
-        'checksum'
+        'checksum',
+        'measurement',
+        'missing-measurement',
+        'invalid-session'
     ]) {
         const manifests = structuredClone([manifest(1), manifest(2)]);
         if (defect === 'missing') manifests.pop();
@@ -39,6 +43,9 @@ test('coverage completeness rejects stale, missing, duplicate and unfinished art
         else if (defect === 'count') manifests[1].count = 3;
         else if (defect === 'incomplete') manifests[1].complete = false;
         else if (defect === 'checksum') manifests[1].sha256 = 'invalid';
+        else if (defect === 'measurement') manifests[1].timings.test_seconds = 'invalid';
+        else if (defect === 'missing-measurement') delete manifests[1].timings.peak_host_used_kib;
+        else if (defect === 'invalid-session') manifests[1].session = {};
         if (defect === null) validateManifests(manifests, expected, 'e2e', 2);
         else assert.throws(() => validateManifests(manifests, expected, 'e2e', 2), undefined, defect);
     }

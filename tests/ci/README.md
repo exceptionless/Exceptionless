@@ -141,6 +141,8 @@ On failure, the runner captures API, Jobs, App, and OldApp logs before shutdown 
 
 If API is running but Jobs/App remain waiting for API health, check certificate trust and the saved resource-state summary before changing timeouts. The first hosted probe exposed the missing CLI trust preparation that an already-trusted local machine hid. The collector output format is explicitly `coverage`; its implicit default can log an `Invalid outputType: default` error even while producing a file. Collector error-level diagnostics fail collection instead of being ignored.
 
+Both .NET and browser runners install the same pinned Aspire CLI before building. Aspire embeds discovered CLI/bundle paths in AppHost assembly metadata: installing it on only the browser runners produced different AppHost module IDs despite identical source and Release configuration. The aggregate rejected that hosted probe. Keep the installation consistent; do not bypass the module-identity check.
+
 ### Reports, completeness, and limitations
 
 The `api-coverage` artifact retains .NET-only coverage and measured test timings. The final `backend-coverage` artifact contains `dotnet/`, `e2e/`, and `combined/`, each with native `.coverage`, Microsoft XML, canonical source-line Cobertura, HTML, and JSON summaries. `e2e-added-lines.json` lists the exact source locations covered by browser execution but not by the .NET suite. The PR comment and final job summary label all three components.

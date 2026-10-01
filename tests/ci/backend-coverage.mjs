@@ -128,13 +128,22 @@ export function validateManifests(manifests, expected, kind, count) {
             manifest.kind !== kind ||
             manifest.count !== count ||
             manifest.complete !== true ||
+            typeof manifest.session !== 'string' ||
             !manifest.session ||
             sessions.has(manifest.session) ||
             !isDeepStrictEqual(manifest.identity, expected) ||
-            !/^[a-f\d]{64}$/.test(manifest.sha256 ?? '') ||
+            typeof manifest.sha256 !== 'string' ||
+            !/^[a-f\d]{64}$/.test(manifest.sha256) ||
             typeof manifest.source_root !== 'string'
         ) {
             throw new Error('Malformed, stale, incompatible or incomplete coverage manifest');
+        }
+        const measurements =
+            kind === 'e2e'
+                ? ['startup_seconds', 'test_seconds', 'shutdown_seconds', 'total_seconds', 'peak_process_tree_rss_kib', 'peak_host_used_kib']
+                : ['test_seconds'];
+        if (measurements.some((name) => !Number.isFinite(manifest.timings?.[name]) || manifest.timings[name] < 0)) {
+            throw new Error('Missing or malformed coverage measurements');
         }
         sessions.add(manifest.session);
     }
@@ -308,11 +317,14 @@ function aggregate(directory, output, apiCount, e2eCount) {
             `E2E adds **${added.length.toLocaleString('en-US')} source lines** beyond the .NET suite. Full source locations are in \`e2e-added-lines.json\`.`,
             ''
         );
-        summary.push('| E2E shard | Startup seconds | Tests seconds | Shutdown seconds | Peak process RSS MiB |', '| --- | ---: | ---: | ---: | ---: |');
+        summary.push(
+            '| E2E shard | Startup seconds | Tests seconds | Shutdown seconds | Process tree RSS MiB | Host used MiB |',
+            '| --- | ---: | ---: | ---: | ---: | ---: |'
+        );
         for (const { manifest } of e2e.sort((a, b) => a.manifest.index - b.manifest.index)) {
             const t = manifest.timings;
             summary.push(
-                `| ${manifest.index} | ${t.startup_seconds.toFixed(1)} | ${t.test_seconds.toFixed(1)} | ${t.shutdown_seconds.toFixed(1)} | ${(t.peak_process_tree_rss_kib / 1024).toFixed(0)} |`
+                `| ${manifest.index} | ${t.startup_seconds.toFixed(1)} | ${t.test_seconds.toFixed(1)} | ${t.shutdown_seconds.toFixed(1)} | ${(t.peak_process_tree_rss_kib / 1024).toFixed(0)} | ${(t.peak_host_used_kib / 1024).toFixed(0)} |`
             );
         }
     }
