@@ -1,5 +1,7 @@
 test-results
 playwright-report
+blob-report
+blob-reports
 node_modules
 
 # Output

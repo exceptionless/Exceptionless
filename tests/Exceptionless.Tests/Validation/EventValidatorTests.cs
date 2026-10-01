@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Validation;
@@ -9,17 +8,11 @@ namespace Exceptionless.Tests.Validation;
 public sealed class EventValidatorTests : TestWithServices
 {
     private const string ValidObjectId = "123456789012345678901234";
-    private readonly PersistentEvent _benchmarkEvent;
     private readonly MiniValidationValidator _validator;
 
     public EventValidatorTests(ITestOutputHelper output) : base(output)
     {
         _validator = GetService<MiniValidationValidator>();
-
-        string path = Path.Combine("..", "..", "..", "Search", "Data", "event1.json");
-        var parserPluginManager = GetService<EventParserPluginManager>();
-        var events = parserPluginManager.ParseEvents(File.ReadAllText(path), 2, "exceptionless/2.0.0.0");
-        _benchmarkEvent = events[0];
     }
 
     private PersistentEvent CreateValidEvent()
@@ -35,25 +28,19 @@ public sealed class EventValidatorTests : TestWithServices
         };
     }
 
-
     [Fact]
-    public async Task Validate_WhenRunningBenchmark_CompletesInReasonableTime()
+    public async Task Validate_ParsedClientEvent_ReturnsSuccess()
     {
         // Arrange
-        const int iterations = 10000;
-        var sw = Stopwatch.StartNew();
+        string path = Path.Combine("..", "..", "..", "Search", "Data", "event1.json");
+        var parserPluginManager = GetService<EventParserPluginManager>();
+        var events = parserPluginManager.ParseEvents(await File.ReadAllTextAsync(path, TestCancellationToken), 2, "exceptionless/2.0.0.0");
 
         // Act
-        for (int i = 0; i < iterations; i++)
-        {
-            var (isValid, _) = await _validator.ValidateAsync(_benchmarkEvent);
-            Assert.True(isValid);
-        }
-
-        sw.Stop();
+        var (isValid, _) = await _validator.ValidateAsync(events[0]);
 
         // Assert
-        _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
+        Assert.True(isValid);
     }
 
     [Fact]

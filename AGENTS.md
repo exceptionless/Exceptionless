@@ -49,6 +49,12 @@ tests/                         # C# tests and HTTP samples
 
 ## Testing and Safety
 
+- **Test value and runtime:** Before adding a test, identify the distinct failure it catches and check existing coverage. Extend an existing test or use parameterized cases when the setup and behavior are the same. Combine related assertions in one scenario when they share expensive setup; keep independent behaviors separately diagnosable. Do not add tests for trivial accessors, framework behavior, implementation details, or duplicate coverage merely to increase test counts.
+- Use the cheapest reliable layer: pure logic in unit tests, service/API contracts in integration tests, and browser tests for user journeys or behavior that requires a real browser. Keep a representative browser integration case when moving a data matrix to unit/component tests.
+- Keep fixtures and generated data minimal, but cross the actual pagination/batch boundary when that is the behavior under test. Use controlled time and observable conditions instead of fixed sleeps. Keep benchmarks with no correctness assertions out of the normal test suite.
+- Treat test duration as a maintenance cost. Inspect CI timing reports when adding expensive coverage; preserve automatic shard discovery, isolation, complete coverage reporting, and required check names. Aim for the normal build's critical path to stay around 10 minutes; do not achieve this by silently skipping tests or reducing assertions/retries.
+- Use the existing JavaScript/Node.js runtime for CI and test orchestration scripts. Do not introduce another language runtime for tooling the project can already support.
+- Treat flaky tests as failures to investigate and fix. Retries are for diagnostics, not acceptance; preserve CI's flaky-test gate. Reproduce timing failures with retries disabled and repeat affected scenarios after fixing the cause. Synchronize on observable state and isolate unrelated background activity instead of widening assertions or adding arbitrary sleeps.
 - Local app URLs:
   - Aspire dashboard: `https://ex.dev.localhost:7101`
   - Svelte app: `https://web-ex.dev.localhost:7131/next/`

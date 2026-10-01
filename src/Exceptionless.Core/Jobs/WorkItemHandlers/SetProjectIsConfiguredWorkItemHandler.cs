@@ -3,6 +3,7 @@ using Exceptionless.Core.Repositories;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -37,7 +38,9 @@ public class SetProjectIsConfiguredWorkItemHandler : WorkItemHandlerBase
         if (project is null || project.IsConfigured.GetValueOrDefault())
             return;
 
-        project.IsConfigured = workItem.IsConfigured || await _eventRepository.CountAsync(q => q.Project(project.Id)) > 0;
-        await _projectRepository.SaveAsync(project, o => o.Cache());
+        bool isConfigured = workItem.IsConfigured || await _eventRepository.CountAsync(q => q.Project(project.Id)) > 0;
+        // A project can be edited or deleted while this work item runs. Updating only
+        // this field preserves those changes instead of saving an outdated snapshot.
+        await _projectRepository.PatchAsync(project.Id, new PartialPatch(new { is_configured = isConfigured }));
     }
 }

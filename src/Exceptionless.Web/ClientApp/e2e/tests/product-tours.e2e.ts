@@ -740,7 +740,7 @@ for (const [stepTitle, advances] of [
     ['Narrow your results', 2],
     ['Keep a useful view', 3]
 ] as const) {
-    test(`overview restores ${stepTitle} when its route returns`, async ({ e2eScenario, page }) => {
+    test(`overview restores ${stepTitle} through history with and without Search`, async ({ e2eScenario, page }) => {
         await page.goto(`/next/project/${e2eScenario.projectId}/manage`);
         await startTourFromCommand(page, 'Explore Exceptionless');
         await expect(page).toHaveURL(/\/next\/event$/);
@@ -757,31 +757,22 @@ for (const [stepTitle, advances] of [
 
         await expect(page).toHaveURL(/\/next\/event$/);
         await expect(guide.getByText(stepTitle)).toBeVisible();
-    });
 
-    test(`overview restores ${stepTitle} after navigating while Search is open`, async ({ e2eScenario, page }) => {
-        await page.goto(`/next/project/${e2eScenario.projectId}/manage`);
-        await startTourFromCommand(page, 'Explore Exceptionless');
-        await expect(page).toHaveURL(/\/next\/event$/);
-        const guide = page.locator('.driver-popover');
-        for (let step = 0; step < advances; step++) {
-            await guide.getByRole('button', { name: 'Next' }).click();
-        }
-        await expect(guide.getByText(stepTitle)).toBeVisible();
+        await test.step('restore the checkpoint after navigating with Search open', async () => {
+            await page.keyboard.press('/');
+            await expect(page.getByRole('combobox')).toBeVisible();
+            await expect(guide).toBeHidden();
+            await page.goBack();
+            await expect(page).toHaveURL(/\/manage$/);
+            await expect(guide).toBeHidden();
+            if (await page.getByRole('combobox').isVisible()) {
+                await page.keyboard.press('Escape');
+            }
+            await page.goForward();
 
-        await page.keyboard.press('/');
-        await expect(page.getByRole('combobox')).toBeVisible();
-        await expect(guide).toBeHidden();
-        await page.goBack();
-        await expect(page).toHaveURL(/\/manage$/);
-        await expect(guide).toBeHidden();
-        if (await page.getByRole('combobox').isVisible()) {
-            await page.keyboard.press('Escape');
-        }
-        await page.goForward();
-
-        await expect(page).toHaveURL(/\/next\/event$/);
-        await expect(guide.getByText(stepTitle)).toBeVisible();
+            await expect(page).toHaveURL(/\/next\/event$/);
+            await expect(guide.getByText(stepTitle)).toBeVisible();
+        });
     });
 }
 
