@@ -298,7 +298,7 @@ jobs:
 
   test-e2e-shard:
     name: test-e2e-shard (${{ matrix.shard }}/6)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -354,7 +354,9 @@ jobs:
 
       - name: Install Playwright Chromium
         working-directory: src/Exceptionless.Web/ClientApp
-        run: npx playwright install chromium --with-deps
+        # The hosted Ubuntu image includes Chromium's system libraries. Avoid apt
+        # upgrades/font downloads on every shard and install the headless binary used here.
+        run: npx playwright install --only-shell chromium
 
       - name: Start AppHost
         run: |
