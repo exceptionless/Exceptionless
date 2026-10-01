@@ -38,13 +38,13 @@ internal sealed class EmailAppUrlBuilder
 
     public string OrganizationBilling(string organizationId) => Build($"organization/{organizationId}/billing");
 
-    public string ProjectTimeline(string projectId) => Build($"event?project={Uri.EscapeDataString(projectId)}&type=error");
+    public string ProjectTimeline(string projectId, string organizationId) => Build($"event?organization={Uri.EscapeDataString(organizationId)}&project={Uri.EscapeDataString(projectId)}&type=error");
 
     public string ProjectConfigure(string projectId) => Build($"project/{projectId}/configure");
 
-    public string ProjectMostFrequent(string projectId) => Build($"stack?project={Uri.EscapeDataString(projectId)}&type=error");
+    public string ProjectMostFrequent(string projectId, string organizationId) => Build($"stack?organization={Uri.EscapeDataString(organizationId)}&project={Uri.EscapeDataString(projectId)}&type=error");
 
-    public string ProjectNewest(string projectId) => Build($"stack?project={Uri.EscapeDataString(projectId)}&mode=stack_new&type=error");
+    public string ProjectNewest(string projectId, string organizationId) => Build($"stack?organization={Uri.EscapeDataString(organizationId)}&project={Uri.EscapeDataString(projectId)}&mode=stack_new&type=error");
 
     public string AccountNotifications() => Build("account/notifications");
 

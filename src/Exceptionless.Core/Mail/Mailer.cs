@@ -251,7 +251,7 @@ public class Mailer : IMailer
     {
         const string template = "project-daily-summary";
         string subject = $"[{project.Name}] Summary for {startDate.ToLongDateString()}";
-        string timelineUrl = _appUrls.ProjectTimeline(project.Id);
+        string timelineUrl = _appUrls.ProjectTimeline(project.Id, project.OrganizationId);
         string configureUrl = _appUrls.ProjectConfigure(project.Id);
         var message = new ProjectDailySummaryEmail(
             subject,
@@ -269,8 +269,8 @@ public class Mailer : IMailer
             timelineUrl,
             configureUrl,
             _appUrls.OrganizationUpgrade(project.OrganizationId),
-            _appUrls.ProjectMostFrequent(project.Id),
-            _appUrls.ProjectNewest(project.Id),
+            _appUrls.ProjectMostFrequent(project.Id, project.OrganizationId),
+            _appUrls.ProjectNewest(project.Id, project.OrganizationId),
             _appUrls.ProjectNotifications(project.Id));
 
         await QueueMessageAsync(new MailMessage

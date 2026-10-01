@@ -540,6 +540,11 @@
 
     const organizationsQuery = getOrganizationsQuery({});
     const organizations = $derived(organizationsQuery.data?.data ?? []);
+    // Select an organization from a notification link before list pages initialize their filters.
+    const isOrganizationNavigationPending = $derived(
+        !!navigationParams.organization &&
+            (organizationsQuery.isPending || organizations.some((item) => item.id === navigationParams.organization && item.id !== organization.current))
+    );
 
     const impersonatingOrganizationId = $derived.by(() => {
         // Only consider impersonation if user data is loaded and user has organizations
@@ -880,7 +885,7 @@
     </div>
 {/snippet}
 
-{#if isAuthenticated}
+{#if isAuthenticated && !isOrganizationNavigationPending}
     <ProductTourHost
         {assistantAccess}
         bind:this={productToursComponent}

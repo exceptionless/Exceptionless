@@ -111,10 +111,10 @@ public sealed class MailerTests : TestWithServices
             ("stack?organization=organization-1&type=error", appUrls.OrganizationFrequent("organization-1")),
             ("organization/organization-1/usage", appUrls.OrganizationUsage("organization-1")),
             ("organization/organization-1/billing", appUrls.OrganizationBilling("organization-1")),
-            ("event?project=project-1&type=error", appUrls.ProjectTimeline("project-1")),
+            ("event?organization=organization-1&project=project-1&type=error", appUrls.ProjectTimeline("project-1", "organization-1")),
             ("project/project-1/configure", appUrls.ProjectConfigure("project-1")),
-            ("stack?project=project-1&type=error", appUrls.ProjectMostFrequent("project-1")),
-            ("stack?project=project-1&mode=stack_new&type=error", appUrls.ProjectNewest("project-1")),
+            ("stack?organization=organization-1&project=project-1&type=error", appUrls.ProjectMostFrequent("project-1", "organization-1")),
+            ("stack?organization=organization-1&project=project-1&mode=stack_new&type=error", appUrls.ProjectNewest("project-1", "organization-1")),
             ("account/notifications", appUrls.AccountNotifications()),
             ("account/verify?token=token-1", appUrls.VerifyEmail("token-1")),
             ("reset-password/token-1", appUrls.PasswordReset("token-1")),
@@ -803,7 +803,7 @@ public sealed class MailerTests : TestWithServices
         else if (Regex.IsMatch(uri.AbsolutePath, @"^/reset-password/[^/]+$"))
             Assert.Matches(@"^(?:|\?cancel=true)$", uri.Query);
         else if (uri.AbsolutePath == "/event" || uri.AbsolutePath == "/stack")
-            Assert.Matches(@"^\?(?:organization|project)=[^?&#]+(?:&mode=stack_new)?(?:&type=error)?$", uri.Query);
+            Assert.Matches(@"^\?organization=[^?&#]+(?:&project=[^?&#]+)?(?:&mode=stack_new)?(?:&type=error)?$", uri.Query);
         else if (uri.AbsolutePath.StartsWith("/stack/", StringComparison.Ordinal))
             Assert.Matches(@"^(?:|\?action=(?:fixed|ignored|discarded))$", uri.Query);
         else

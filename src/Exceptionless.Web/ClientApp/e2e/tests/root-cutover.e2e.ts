@@ -1,8 +1,6 @@
 import { expect, test } from '../fixtures/e2e-test';
 import { seedRepresentativeEvent } from '../support/event-data';
 
-test.use({ e2eUseGeneratedUser: true });
-
 test('old next links retain query and fragment through authentication', async ({ page }) => {
     const destination = '/account/notifications?project=123&from=email%2Blink#notification-settings';
     await page.goto(`/next${destination}`);
@@ -74,4 +72,34 @@ test('newest stack notifications use the new-stack query mode after reload', asy
     const reloadResponse = page.waitForResponse((response) => isNewest(response.url()));
     await page.reload();
     expect((await reloadResponse).ok()).toBe(true);
+});
+
+test('project summary links select their organization and retain project scope', async ({ e2eScenario, e2eSecondaryOrganization, page }) => {
+    for (const view of ['event', 'stack']) {
+        await page.goto('/stack');
+        await page.evaluate((id) => localStorage.setItem('organization', JSON.stringify(id)), e2eScenario.organizationId);
+        const destination = `/${view}?organization=${e2eSecondaryOrganization.organizationId}&project=${e2eSecondaryOrganization.projectId}&type=error${view === 'stack' ? '&mode=stack_new' : ''}`;
+        await page.goto(destination);
+        await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('organization') ?? 'null'))).toBe(e2eSecondaryOrganization.organizationId);
+        await expect(page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.projectName }).filter({ visible: true }).first()).toBeVisible();
+        expect(new URL(page.url()).searchParams.get('project')).toBe(e2eSecondaryOrganization.projectId);
+        if (view === 'stack') {
+            expect(new URL(page.url()).searchParams.get('mode')).toBe('stack_new');
+        }
+        await page.reload();
+        await expect(page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.projectName }).filter({ visible: true }).first()).toBeVisible();
+        expect(new URL(page.url()).searchParams.get('project')).toBe(e2eSecondaryOrganization.projectId);
+    }
+
+    await page.goto(`/event?organization=${e2eScenario.organizationId}&project=${e2eScenario.projectId}&type=error`);
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('organization') ?? 'null'))).toBe(e2eScenario.organizationId);
+    await page.evaluate((destination) => {
+        const link = document.createElement('a');
+        link.href = destination;
+        document.body.append(link);
+        link.click();
+        link.remove();
+    }, `/event?organization=${e2eSecondaryOrganization.organizationId}&project=${e2eSecondaryOrganization.projectId}&type=error`);
+    await expect(page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.projectName }).filter({ visible: true }).first()).toBeVisible();
+    expect(new URL(page.url()).searchParams.get('project')).toBe(e2eSecondaryOrganization.projectId);
 });
