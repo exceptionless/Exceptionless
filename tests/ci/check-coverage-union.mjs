@@ -1,5 +1,5 @@
 // Real collector contract check: two complementary executions must merge to the union.
-// Keep this outside product tests; run once in the final CI aggregate.
+// Keep this outside product tests; run once alongside the first .NET shard.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

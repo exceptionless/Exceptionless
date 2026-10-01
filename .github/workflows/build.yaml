@@ -190,6 +190,10 @@ jobs:
           dotnet tool restore
           node --test tests/ci/shards.test.mjs tests/ci/backend-coverage.test.mjs
 
+      - name: Verify native collector union
+        if: matrix.shard == 1
+        run: node tests/ci/check-coverage-union.mjs
+
       - name: Run .NET shard with coverage
         run: node tests/ci/backend-shards.mjs run --index ${{ matrix.shard }} --count 4 --output coverage --coverage
 
@@ -467,12 +471,11 @@ jobs:
         with:
           dotnet-version: 10.0.401
 
-      - name: Restore and verify coverage tooling
+      - name: Restore coverage tooling
         working-directory: .
         run: |
           npm ci --prefix tests/ci
           dotnet tool restore
-          node tests/ci/check-coverage-union.mjs
 
       - name: Download .NET coverage inputs
         uses: actions/download-artifact@v6

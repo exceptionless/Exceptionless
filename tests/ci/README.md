@@ -175,4 +175,28 @@ The complete local .NET suite passed 3,083 tests with three existing skips. Merg
 
 The historical final sharding run [36908874514](https://github.com/exceptionless/Exceptionless/actions/runs/36908874514) had a 500-second job critical path (about 8m 22s including workflow overhead) and 71.4 summed runner minutes. Use the same completed-job timestamps to compare hosted runs of this change.
 
+The first complete green coverage run, [36916411343](https://github.com/exceptionless/Exceptionless/actions/runs/36916411343) at `f8ec4f5df`, passed 3,083 .NET tests (three existing skips), 960 frontend tests, and all 99 E2E tests with zero retries. All ten native reports passed revision, module, checksum, completion, and union checks:
+
+| Execution | Covered source lines | Covered IL blocks |
+| --- | ---: | ---: |
+| .NET tests | 26,249/32,905 (79.77%) | 61,336/80,091 (76.58%) |
+| E2E backend | 14,720/32,905 (44.73%) | 31,609/80,091 (39.47%) |
+| Combined | 27,115/32,905 (82.40%) | 63,554/80,091 (79.35%) |
+
+This adds 866 lines beyond the .NET suite: for example, 71 in `EventNotificationsJob`, 22 in `SavedViewHandler`, and 16 in `EventHandler`. It also adds startup/wiring execution, including 139 AppHost and 123 Job `Program.cs` lines. The hosted Release data confirms ingestion itself: shard 1 covered 16 IL blocks in `SubmitEventByPostAsync` and 134 blocks/59 lines in `EventPostsJob.ProcessQueueEntryAsync`. Counts can vary slightly between complete runs because background work also executes during collection.
+
+| Measurement | Historical baseline | First complete coverage run |
+| --- | ---: | ---: |
+| Workflow elapsed | 8m 22s | 10m 43s |
+| Job critical path | 500s | 641s |
+| Summed executed runner minutes | 71.4 | 77.0 |
+| Sum of six E2E startup times | 635s | 778s |
+| Sum of six E2E test execution times | 1,381s | 1,501s |
+| Sum of six shutdown times | about 5s | 13.5s |
+| Final aggregate job | 27s | 67s |
+
+Coverage validation/native merging took 13.4 seconds and 496 MiB Node peak RSS; validation, merging, and all three HTML reports occupied a 16-second step. Browser-shard process-tree RSS peaks ranged from 4,100–4,744 MiB, with host used-memory peaks of 9,268–9,896 MiB. RSS samples include descendant build/application/browser processes but not Docker container processes; host used memory includes containers and runner services. The baseline did not collect equivalent memory samples, so these are absolute peaks, not a claimed memory-overhead delta.
+
+The 10m 43s characterization run exceeded the roughly ten-minute goal. Shard 5 was the critical path: 147.2s startup, 308.0s tests, and 2.2s shutdown. Its test slowdown was spread across scenarios; there were no retries or isolated timeout outliers. The earlier coverage probe ran that same shard in 95.6s startup/245.2s tests, so this comparison alone cannot separate instrumentation cost from runner variation. To reduce a measured avoidable cost, the real collector union contract check now runs once on .NET shard 1, parallel with the browser shards, instead of delaying final aggregation (that check took 32s in the earlier probe). The final-commit repeated-run evidence and resulting elapsed/runner-minute measurements are recorded in the PR; the figures above identify the measured characterization commit and do not claim to be those final runs.
+
 References: [Microsoft collector lifecycle and merging](https://learn.microsoft.com/en-us/dotnet/core/additional-tools/dotnet-coverage), [native formats versus branches](https://github.com/microsoft/codecoverage/issues/147), [Cobertura merge ambiguity](https://github.com/microsoft/codecoverage/issues/11).
