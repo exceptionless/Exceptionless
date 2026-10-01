@@ -51,8 +51,8 @@ export function getCanonicalAppUrl(url: URL): URL {
     } else if (/^\/organization\/[^/]+\/upgrade\/?$/.test(path)) {
         result.pathname = path.replace(/\/upgrade\/?$/, '/billing');
         result.searchParams.set('changePlan', 'true');
-    } else if (/^\/organization\/[^/]+\/manage\/?$/.test(path) && (!result.searchParams.has('tab') || result.searchParams.get('tab') === 'billing')) {
-        result.pathname = path.replace(/\/manage\/?$/, result.searchParams.has('tab') ? '/billing' : '/usage');
+    } else if (/^\/organization\/[^/]+\/manage\/?$/.test(path) && result.searchParams.get('tab') === 'billing') {
+        result.pathname = path.replace(/\/manage\/?$/, '/billing');
         result.searchParams.delete('tab');
     } else if (/^\/project\/[^/]+\/manage\/?$/.test(path) && result.searchParams.get('tab') === 'integrations') {
         result.pathname = path.replace(/\/manage\/?$/, '/integrations');

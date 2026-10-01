@@ -25,7 +25,6 @@ describe('legacy app destinations', () => {
         ['/organization/123/dashboard', '/event?organization=123'],
         ['/account/manage?tab=notifications&projectId=123', '/account/notifications?project=123'],
         ['/organization/123/manage?tab=billing', '/organization/123/billing'],
-        ['/organization/123/manage', '/organization/123/usage'],
         ['/organization/123/upgrade', '/organization/123/billing?changePlan=true'],
         ['/project/123/manage?tab=integrations', '/project/123/integrations']
     ])('translates %s to %s', (input, expected) => {
@@ -35,11 +34,20 @@ describe('legacy app destinations', () => {
         expect(getCanonicalAppUrl(url).href).toBe(url.href);
     });
 
-    it.each(['/nextdoor/stack/123', '/api/v2/about', '/docs', '/?code=123#state=abc', '/#details', '/#!//example.com/path', '/#!/\\example.com/path'])(
-        'leaves unrelated or unsafe destinations unchanged: %s',
-        (input) => {
-            const url = new URL(input, 'https://localhost');
-            expect(getCanonicalAppUrl(url).href).toBe(url.href);
-        }
-    );
+    it.each([
+        '/account/manage',
+        '/organization/123/manage',
+        '/organization/123/manage?from=link#settings',
+        '/project/123/manage',
+        '/nextdoor/stack/123',
+        '/api/v2/about',
+        '/docs',
+        '/?code=123#state=abc',
+        '/#details',
+        '/#!//example.com/path',
+        '/#!/\\example.com/path'
+    ])('leaves unrelated or unsafe destinations unchanged: %s', (input) => {
+        const url = new URL(input, 'https://localhost');
+        expect(getCanonicalAppUrl(url).href).toBe(url.href);
+    });
 });
