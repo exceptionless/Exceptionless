@@ -1,3 +1,6 @@
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
+
 import { expect, test } from '../fixtures/e2e-test';
 import { seedRepresentativeEvent } from '../support/event-data';
 
@@ -160,4 +163,78 @@ test.describe('legacy link browser history', () => {
         await page.goBack();
         await expect(page).toHaveURL(/\/stack\/all$/);
     });
+});
+
+test.describe('legacy project reports', () => {
+    test.use({ e2eUseInvitedUser: true });
+
+    for (const [report, destination, mode] of [
+        ['error/new', 'stack', 'stack_new'],
+        ['log/timeline', 'event', undefined]
+    ] as const) {
+        test(`old project report ${report} selects its owner before filtering and preserves history`, async ({
+            e2eScenario,
+            e2eSecondaryOrganization,
+            page
+        }) => {
+            await page.goto('/stack/all');
+            await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
+            await page.evaluate((href) => {
+                const link = document.createElement('a');
+                link.href = href;
+                link.textContent = 'Saved project report';
+                document.querySelector('main')!.prepend(link);
+            }, `/?from=old-email#!/project/${e2eSecondaryOrganization.projectId}/${report}`);
+            await page.getByRole('link', { exact: true, name: 'Saved project report' }).click();
+            await expect(page).toHaveURL(new RegExp(`/${destination}\\?`));
+            await expect
+                .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('organization') ?? 'null')))
+                .toBe(e2eSecondaryOrganization.organizationId);
+            await expect(page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.projectName }).filter({ visible: true }).first()).toBeVisible();
+            expect(new URL(page.url()).searchParams.get('project')).toBe(e2eSecondaryOrganization.projectId);
+            expect(new URL(page.url()).searchParams.get('from')).toBe('old-email');
+            if (mode) {
+                expect(new URL(page.url()).searchParams.get('mode')).toBe(mode);
+            }
+            await page.reload();
+            await expect(page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.projectName }).filter({ visible: true }).first()).toBeVisible();
+            const canonicalDestination = page.url();
+            await page.goBack();
+            await expect(page).toHaveURL(/\/stack\/all$/);
+            await page.goForward();
+            await expect(page).toHaveURL(canonicalDestination);
+            expect(await page.evaluate(() => localStorage.getItem('satellizer_token'))).toBe(e2eScenario.userToken);
+        });
+    }
+
+    for (const status of [403, 404]) {
+        test(`denied old project reports (${status}) keep the current organization and session`, async ({ e2eScenario, page }) => {
+            const projectId = '00000000000000000000aaaa';
+            await page.route(`**/api/v2/projects/${projectId}`, async (route) => {
+                await route.fulfill({ json: { status, title: 'Project unavailable' }, status });
+            });
+            await page.goto(`/#!/project/${projectId}/error/new`);
+            await expect(page.getByRole('heading', { exact: true, name: 'Projects' })).toBeVisible();
+            expect(await page.evaluate(() => JSON.parse(localStorage.getItem('organization') ?? 'null'))).toBe(e2eScenario.organizationId);
+            expect(await page.evaluate(() => localStorage.getItem('satellizer_token'))).toBe(e2eScenario.userToken);
+        });
+    }
+});
+test('next compatibility redirects stay on the local origin for raw separators', async ({ baseURL }) => {
+    const origin = new URL(baseURL!);
+    const request = origin.protocol === 'https:' ? httpsRequest : httpRequest;
+    for (const path of ['/next//example.com/path', '/next/\\example.com/path']) {
+        const response = await new Promise<{ location?: string; status?: number }>((resolveResponse, reject) => {
+            const options = { hostname: origin.hostname, path, port: origin.port, rejectUnauthorized: false };
+            const call = request(options, (result) => {
+                result.resume();
+                resolveResponse({ location: result.headers.location, status: result.statusCode });
+            });
+            call.on('error', reject);
+            call.end();
+        });
+        expect(response.status).toBe(308);
+        expect(response.location).toMatch(/^\/(?!\/)/);
+        expect(new URL(response.location!, origin).origin).toBe(origin.origin);
+    }
 });

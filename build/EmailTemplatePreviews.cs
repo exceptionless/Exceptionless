@@ -118,10 +118,10 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
     const string appUrl = "https://app.exceptionless.test";
     EmailLink[] GetActionLinks(string stackId) =>
     [
-        new EmailLink("Mark event as fixed", $"{appUrl}/stack/{stackId}/mark-fixed"),
-        new EmailLink("Stop sending notifications for this event", $"{appUrl}/stack/{stackId}/ignored"),
-        new EmailLink("Discard future event occurrences", $"{appUrl}/stack/{stackId}/discarded"),
-        new EmailLink("Change your notification settings for this project", $"{appUrl}/account/manage?projectId=project-1&tab=notifications")
+        new EmailLink("Mark event as fixed", $"{appUrl}/stack/{stackId}?action=fixed"),
+        new EmailLink("Stop sending notifications for this event", $"{appUrl}/stack/{stackId}?action=ignored"),
+        new EmailLink("Discard future event occurrences", $"{appUrl}/stack/{stackId}?action=discarded"),
+        new EmailLink("Change your notification settings for this project", $"{appUrl}/account/notifications?project=project-1")
     ];
     var stacks = new[]
     {
@@ -173,7 +173,7 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             new EmailAction("View Event Details", $"{appUrl}/event/event-2"))),
         new("organization-added", "Added to organization", new OrganizationAddedEmail(
             "Grace Hopper added you to the organization \"Engineering\" on Exceptionless",
-            new EmailAction("View Organization", $"{appUrl}/organization/organization-1/dashboard"))),
+            new EmailAction("View Organization", $"{appUrl}/event?organization=organization-1"))),
         new("organization-invited", "Organization invitation", new OrganizationInvitedEmail(
             "Grace Hopper invited you to join the organization \"Engineering\" on Exceptionless",
             new EmailAction("Join Organization", $"{appUrl}/signup?token=preview-token"))),
@@ -183,24 +183,24 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             true,
             false,
             "11:00 PM",
-            $"{appUrl}/organization/organization-1/upgrade",
-            $"{appUrl}/organization/organization-1/frequent",
+            $"{appUrl}/organization/organization-1/billing?changePlan=true",
+            $"{appUrl}/stack?organization=organization-1&type=error",
             "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-what-happens-if-the-organization-plan-limit-is-reached",
-            [new("View usage", $"{appUrl}/organization/organization-1/manage"), new("Change your notification settings", $"{appUrl}/account/manage?tab=notifications")])),
+            [new("View usage", $"{appUrl}/organization/organization-1/usage"), new("Change your notification settings", $"{appUrl}/account/notifications")])),
         new("organization-hourly-limit", "Hourly throttling", new OrganizationNoticeEmail(
             "[Engineering] Events are currently being throttled.",
             "Engineering",
             false,
             true,
             "11:00 PM",
-            $"{appUrl}/organization/organization-1/upgrade",
-            $"{appUrl}/organization/organization-1/frequent",
+            $"{appUrl}/organization/organization-1/billing?changePlan=true",
+            $"{appUrl}/stack?organization=organization-1&type=error",
             "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled",
-            [new("View usage", $"{appUrl}/organization/organization-1/manage"), new("Change your notification settings", $"{appUrl}/account/manage?tab=notifications")])),
+            [new("View usage", $"{appUrl}/organization/organization-1/usage"), new("Change your notification settings", $"{appUrl}/account/notifications")])),
         new("organization-payment-failed", "Payment failed", new OrganizationPaymentFailedEmail(
             "[Engineering] Payment failed! Update billing information to avoid service interruption!",
             "Engineering",
-            $"{appUrl}/organization/organization-1/manage?tab=billing")),
+            $"{appUrl}/organization/organization-1/billing")),
         new("project-daily-summary", "Daily summary", new ProjectDailySummaryEmail(
             "[Storefront API] Summary for August 24, 2026",
             "Storefront API",
@@ -214,12 +214,12 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             false,
             stacks,
             stacks[..2],
-            $"{appUrl}/project/project-1/error/timeline",
+            $"{appUrl}/event?organization=organization-1&project=project-1&type=error",
             $"{appUrl}/project/project-1/configure",
-            $"{appUrl}/organization/organization-1/upgrade",
-            $"{appUrl}/project/project-1/error/frequent",
-            $"{appUrl}/project/project-1/error/new",
-            $"{appUrl}/account/manage?projectId=project-1&tab=notifications")),
+            $"{appUrl}/organization/organization-1/billing?changePlan=true",
+            $"{appUrl}/stack?organization=organization-1&project=project-1&type=error",
+            $"{appUrl}/stack?organization=organization-1&project=project-1&type=error&mode=stack_new",
+            $"{appUrl}/account/notifications?project=project-1")),
         new("project-daily-summary-throttled", "Daily summary with throttling", new ProjectDailySummaryEmail(
             "[Storefront API] Summary for August 24, 2026",
             "Storefront API",
@@ -233,12 +233,12 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             true,
             stacks,
             stacks[..2],
-            $"{appUrl}/project/project-1/error/timeline",
+            $"{appUrl}/event?organization=organization-1&project=project-1&type=error",
             $"{appUrl}/project/project-1/configure",
-            $"{appUrl}/organization/organization-1/upgrade",
-            $"{appUrl}/project/project-1/error/frequent",
-            $"{appUrl}/project/project-1/error/new",
-            $"{appUrl}/account/manage?projectId=project-1&tab=notifications")),
+            $"{appUrl}/organization/organization-1/billing?changePlan=true",
+            $"{appUrl}/stack?organization=organization-1&project=project-1&type=error",
+            $"{appUrl}/stack?organization=organization-1&project=project-1&type=error&mode=stack_new",
+            $"{appUrl}/account/notifications?project=project-1")),
         new("project-not-configured", "Project not configured", new ProjectDailySummaryEmail(
             "[Storefront API] Summary for August 24, 2026",
             "Storefront API",
@@ -252,12 +252,12 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             false,
             [],
             [],
-            $"{appUrl}/project/project-1/error/timeline",
+            $"{appUrl}/event?organization=organization-1&project=project-1&type=error",
             $"{appUrl}/project/project-1/configure",
-            $"{appUrl}/organization/organization-1/upgrade",
-            $"{appUrl}/project/project-1/error/frequent",
-            $"{appUrl}/project/project-1/error/new",
-            $"{appUrl}/account/manage?projectId=project-1&tab=notifications")),
+            $"{appUrl}/organization/organization-1/billing?changePlan=true",
+            $"{appUrl}/stack?organization=organization-1&project=project-1&type=error",
+            $"{appUrl}/stack?organization=organization-1&project=project-1&type=error&mode=stack_new",
+            $"{appUrl}/account/notifications?project=project-1")),
         new("user-email-verify", "Email verification", new UserEmailVerifyEmail(
             "Exceptionless Account Confirmation",
             "Ada Lovelace",

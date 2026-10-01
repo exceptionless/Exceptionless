@@ -29,7 +29,7 @@ function clientAppRedirects(): Plugin {
             server.middlewares.use((request, response, next) => {
                 const url = request.url ?? '/';
                 if (/^\/next(?:[/?]|$)/i.test(url)) {
-                    const destination = url.replace(/^\/next/i, '').replace(/^\/+/, '/');
+                    const destination = url.replace(/^\/next/i, '').replace(/^[/\\]+/, '/');
                     response.writeHead(308, { Location: destination.startsWith('/') ? destination : `/${destination}` });
                     response.end();
                     return;
