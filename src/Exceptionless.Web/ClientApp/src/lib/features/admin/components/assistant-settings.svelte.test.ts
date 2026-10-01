@@ -5,7 +5,8 @@ const state = vi.hoisted(() => ({
     enabled: false,
     error: vi.fn(),
     success: vi.fn(),
-    update: vi.fn()
+    update: vi.fn(),
+    updateModel: vi.fn()
 }));
 vi.mock('svelte-sonner', () => ({ toast: { error: state.error, success: state.success } }));
 vi.mock('$features/admin/api.svelte', () => ({
@@ -25,18 +26,49 @@ vi.mock('$features/admin/api.svelte', () => ({
     }),
     putAdminAssistantConversationSharingSettingsMutation: () => ({ isPending: false, mutateAsync: state.update }),
     putAdminAssistantEnabledSettingsMutation: () => ({ isPending: false, mutateAsync: vi.fn() }),
-    putAdminAssistantSettingsMutation: () => ({ isPending: false, mutateAsync: vi.fn() })
+    putAdminAssistantSettingsMutation: () => ({ isPending: false, mutateAsync: state.updateModel })
 }));
 
 import AssistantSettings from './assistant-settings.svelte';
 
-describe('Exie conversation sharing default settings', () => {
+describe('Exie settings', () => {
     beforeEach(() => {
         state.enabled = false;
         state.update.mockReset();
+        state.updateModel.mockReset();
         state.success.mockClear();
         state.error.mockClear();
         state.update.mockImplementation(async ({ enabled }: { enabled: boolean }) => ({ conversation_sharing_default_enabled: enabled }));
+        state.updateModel.mockImplementation(async ({ model }: { model: string }) => ({ is_overridden: true, model }));
+    });
+
+    it('saves repeated model changes with Enter without inserting line breaks', async () => {
+        render(AssistantSettings);
+        const model = screen.getByRole('textbox', { name: 'Exie model' });
+        await waitFor(() => expect(model).toHaveValue('example/model'));
+
+        for (const name of ['openai/gpt-6.1-sol', 'anthropic/claude-sonnet-5.5']) {
+            await fireEvent.input(model, { target: { value: name } });
+            await fireEvent.keyDown(model, { key: 'Enter' });
+            await waitFor(() => expect(state.updateModel).toHaveBeenLastCalledWith({ model: name }));
+            await waitFor(() => expect(screen.getByRole('button', { name: 'Save Exie model' })).not.toBeDisabled());
+            expect(model).toHaveValue(name);
+        }
+
+        expect(state.updateModel).toHaveBeenCalledTimes(2);
+    });
+
+    it('preserves single-line model IDs on paste and does not submit during composition', async () => {
+        render(AssistantSettings);
+        const model = screen.getByRole('textbox', { name: 'Exie model' });
+        await waitFor(() => expect(model).toHaveValue('example/model'));
+        await fireEvent.input(model, { target: { value: 'anthropic/claude-sonnet-5.5\r\n' } });
+        await fireEvent.keyDown(model, { isComposing: true, key: 'Enter' });
+        expect(state.updateModel).not.toHaveBeenCalled();
+        expect(model).toHaveValue('anthropic/claude-sonnet-5.5');
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Save Exie model' }));
+        await waitFor(() => expect(state.updateModel).toHaveBeenCalledWith({ model: 'anthropic/claude-sonnet-5.5' }));
     });
 
     it.each([false, true])('loads and saves the full logging switch from %s', async (enabled) => {
