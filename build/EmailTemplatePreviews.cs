@@ -118,10 +118,8 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
     const string appUrl = "https://app.exceptionless.test";
     EmailLink[] GetActionLinks(string stackId) =>
     [
-        new EmailLink("Mark event as fixed", $"{appUrl}/stack/{stackId}/mark-fixed"),
-        new EmailLink("Stop sending notifications for this event", $"{appUrl}/stack/{stackId}/ignored"),
-        new EmailLink("Discard future event occurrences", $"{appUrl}/stack/{stackId}/discarded"),
-        new EmailLink("Change your notification settings for this project", $"{appUrl}/account/manage?projectId=project-1&tab=notifications")
+        new EmailLink("Manage this stack", $"{appUrl}/stack/{stackId}"),
+        new EmailLink("Change your notification settings for this project", $"{appUrl}/account/notifications?project=project-1")
     ];
     var stacks = new[]
     {
