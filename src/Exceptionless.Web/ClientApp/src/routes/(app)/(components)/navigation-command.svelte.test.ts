@@ -19,6 +19,7 @@ const project = vi.hoisted(() => ({
     organization_id: 'organization-id'
 }));
 
+vi.mock('$env/dynamic/public', () => ({ env: {} }));
 vi.mock('$app/navigation', () => ({ goto }));
 vi.mock('$features/auth/api.svelte', () => ({ logout }));
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
