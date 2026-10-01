@@ -218,7 +218,7 @@ public class Mailer : IMailer
             _appUrls.OrganizationFrequent(organization.Id),
             learnMoreUrl,
             [
-                new("View usage", _appUrls.OrganizationManage(organization.Id)),
+                new("View usage", _appUrls.OrganizationUsage(organization.Id)),
                 new("Change your notification settings", _appUrls.AccountNotifications())
             ]);
 

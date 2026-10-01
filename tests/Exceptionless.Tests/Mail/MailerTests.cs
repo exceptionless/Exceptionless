@@ -109,7 +109,7 @@ public sealed class MailerTests : TestWithServices
             ("signup?token=token-1", appUrls.Signup("token-1")),
             ("organization/organization-1/billing?changePlan=true", appUrls.OrganizationUpgrade("organization-1")),
             ("stack?organization=organization-1&type=error", appUrls.OrganizationFrequent("organization-1")),
-            ("organization/organization-1/manage", appUrls.OrganizationManage("organization-1")),
+            ("organization/organization-1/usage", appUrls.OrganizationUsage("organization-1")),
             ("organization/organization-1/billing", appUrls.OrganizationBilling("organization-1")),
             ("event?project=project-1&type=error", appUrls.ProjectTimeline("project-1")),
             ("project/project-1/configure", appUrls.ProjectConfigure("project-1")),
@@ -792,7 +792,7 @@ public sealed class MailerTests : TestWithServices
     private static void AssertValidInternalUrl(Uri uri)
     {
         Assert.Empty(uri.Fragment);
-        Assert.Matches(@"^/(?:event(?:/[^/]+)?|stack(?:/[^/]+)?|project/[^/]+/configure|account/(?:notifications|verify)|organization/[^/]+/(?:billing|manage)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
+        Assert.Matches(@"^/(?:event(?:/[^/]+)?|stack(?:/[^/]+)?|project/[^/]+/configure|account/(?:notifications|verify)|organization/[^/]+/(?:billing|usage)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
 
         if (uri.AbsolutePath is "/account/verify" or "/signup")
             Assert.Matches(@"^\?token=[^?&#]+$", uri.Query);

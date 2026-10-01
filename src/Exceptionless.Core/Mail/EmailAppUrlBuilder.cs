@@ -34,7 +34,7 @@ internal sealed class EmailAppUrlBuilder
 
     public string OrganizationFrequent(string organizationId) => Build($"stack?organization={Uri.EscapeDataString(organizationId)}&type=error");
 
-    public string OrganizationManage(string organizationId) => Build($"organization/{organizationId}/manage");
+    public string OrganizationUsage(string organizationId) => Build($"organization/{organizationId}/usage");
 
     public string OrganizationBilling(string organizationId) => Build($"organization/{organizationId}/billing");
 
