@@ -2,6 +2,9 @@ import { resolve } from '$app/paths';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { env } = vi.hoisted(() => ({ env: { PUBLIC_BASE_URL: '' } }));
+vi.mock('$env/dynamic/public', () => ({ env }));
+
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
 vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled: () => true }));
 vi.mock('katex/dist/katex.min.css', () => ({}));
@@ -17,6 +20,7 @@ import AssistantPanel from './assistant-panel.svelte';
 
 describe('AssistantPanel', () => {
     beforeEach(() => {
+        env.PUBLIC_BASE_URL = '';
         HTMLElement.prototype.scrollIntoView = vi.fn();
         HTMLElement.prototype.scrollTo = vi.fn();
     });
@@ -50,6 +54,15 @@ describe('AssistantPanel', () => {
         await waitFor(() => expect(submitFeatureUsage).toHaveBeenCalledWith('assistant.Closed', expect.anything()));
         await view.rerender(props);
         await waitFor(() => expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.Opened')).toHaveLength(2));
+    });
+
+    it('streams responses from the configured API origin', async () => {
+        env.PUBLIC_BASE_URL = 'https://localhost:8443';
+        const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response('{"type":"text_delta","text":"Configured origin response"}\n{"type":"done"}\n'));
+        vi.stubGlobal('fetch', fetchMock);
+        render(AssistantPanel, { props: { open: true, organizationId: 'organization-1', promptRequest: { id: 'origin-prompt', prompt: 'Hello' } } });
+        await screen.findByText('Configured origin response');
+        expect(fetchMock.mock.calls[0]?.[0]).toBe('https://localhost:8443/api/v2/assistant/chat');
     });
 
     it('correlates message outcomes and feedback without recording chat text', async () => {

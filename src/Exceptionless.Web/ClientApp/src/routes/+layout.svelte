@@ -10,6 +10,7 @@
     import { handleUnexpectedUnauthorized } from '$features/auth/unauthorized';
     import { canonicalAppUrl } from '$features/navigation/legacy-links';
     import { buildServiceStatusUrl, createServiceStatusRedirector } from '$features/status/service-status-redirect';
+    import { getApiUrl, getServerUrl } from '$shared/api/urls';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
@@ -40,7 +41,7 @@
         }
     });
 
-    setBaseUrl('api/v2');
+    setBaseUrl(getApiUrl());
     setRequestOptions({
         errorCallback: (response) => {
             throw response.problem ?? response;
@@ -51,7 +52,7 @@
 
     const redirectToServiceStatus = createServiceStatusRedirector({
         checkHealth: async () => {
-            const response = await fetch('/health', {
+            const response = await fetch(getServerUrl('health'), {
                 cache: 'no-store',
                 signal: AbortSignal.timeout(5000)
             });
