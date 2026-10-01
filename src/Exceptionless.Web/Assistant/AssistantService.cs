@@ -244,6 +244,12 @@ public sealed class AssistantService(
             catch (Exception ex)
             {
                 providerDiagnostics?.RecordException(ex);
+                if (ex is OperationCanceledException cancellationException && assistantContent.Length > 0)
+                {
+                    string partialResponse = assistantContent.ToString();
+                    if (!s_rawDsmlPattern.IsMatch(partialResponse))
+                        throw new AssistantProviderCanceledException(partialResponse, cancellationException);
+                }
                 throw;
             }
             finally
