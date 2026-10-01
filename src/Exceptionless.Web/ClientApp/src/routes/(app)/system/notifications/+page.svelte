@@ -150,20 +150,18 @@
                 <Muted>HTML is supported and will be sanitized before display.</Muted>
             </div>
 
-            <div>
-                <div class="space-y-2">
-                    <Label>Level</Label>
-                    <Select.Root type="single" bind:value={systemLevel}>
-                        <Select.Trigger class="w-40">
-                            {systemLevel}
-                        </Select.Trigger>
-                        <Select.Content>
-                            <Select.Item value="Info">Info</Select.Item>
-                            <Select.Item value="Warning">Warning</Select.Item>
-                            <Select.Item value="Error">Error</Select.Item>
-                        </Select.Content>
-                    </Select.Root>
-                </div>
+            <div class="space-y-2">
+                <Label>Level</Label>
+                <Select.Root type="single" bind:value={systemLevel}>
+                    <Select.Trigger class="w-40">
+                        {systemLevel}
+                    </Select.Trigger>
+                    <Select.Content>
+                        <Select.Item value="Info">Info</Select.Item>
+                        <Select.Item value="Warning">Warning</Select.Item>
+                        <Select.Item value="Error">Error</Select.Item>
+                    </Select.Content>
+                </Select.Root>
             </div>
         </Card.Content>
         <Card.Footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

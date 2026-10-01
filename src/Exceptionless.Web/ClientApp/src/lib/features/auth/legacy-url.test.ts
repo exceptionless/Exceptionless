@@ -12,6 +12,7 @@ describe('legacy app destinations', () => {
         ['/#!/account/verify?token=a%2Bb', '/account/verify?token=a%2Bb'],
         ['/#/stack/123/mark-fixed', '/stack/123?action=fixed'],
         ['/stack/123/ignored', '/stack/123?action=ignored'],
+        ['/stack/123/stop-notifications', '/stack/123?action=ignored'],
         ['/stack/123/discarded', '/stack/123?action=discarded'],
         ['/#!/project/123/new', '/project/123/dashboard?type=error&view=stacks&mode=stack_new'],
         ['/project/123/frequent', '/project/123/dashboard?type=error&view=stacks'],
@@ -24,6 +25,7 @@ describe('legacy app destinations', () => {
         ['/organization/123/dashboard', '/event?organization=123'],
         ['/account/manage?tab=notifications&projectId=123', '/account/notifications?project=123'],
         ['/organization/123/manage?tab=billing', '/organization/123/billing'],
+        ['/organization/123/manage', '/organization/123/usage'],
         ['/organization/123/upgrade', '/organization/123/billing?changePlan=true'],
         ['/project/123/manage?tab=integrations', '/project/123/integrations']
     ])('translates %s to %s', (input, expected) => {

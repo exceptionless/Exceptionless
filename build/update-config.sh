@@ -45,6 +45,7 @@ mkdir -p _app
     write_setting PUBLIC_INTERCOM_APPID "${IntercomAppId:-}"
     write_setting PUBLIC_SLACK_APPID "${SlackAppId:-}"
     printf '};\n'
+    printf 'env.PUBLIC_BASE_URL ||= window.location.origin;\n'
 } > _app/env.js
 
 checksum=$(md5sum _app/env.js | cut -c 1-32)

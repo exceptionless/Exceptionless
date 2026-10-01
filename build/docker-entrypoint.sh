@@ -20,9 +20,7 @@ else
     mkdir -p /var/log/supervisor
     mkdir -p Temp/
 
-    pushd /app/wwwroot
-    update-config
-    popd
+    (cd /app/wwwroot && update-config) || exit $?
 
     supervisord -c /etc/supervisord.conf
 
