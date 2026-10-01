@@ -63,7 +63,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     await test.step('load the stack page with one page of results', async () => {
         const response = page.waitForResponse((candidate) => isStackListResponse(candidate, e2eScenario.organizationId));
-        await page.goto('/next/stack/all?limit=5');
+        await page.goto('/stack/all?limit=5');
         expect((await response).ok()).toBe(true);
         await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
         await expect(page.locator('tbody tr:visible').first()).toBeVisible();
@@ -85,15 +85,15 @@ test('stack effects stay bounded through background, paging, and navigation chao
         page.on('requestfailed', recordFailedDetailRequest);
 
         try {
-            await page.goto(`/next/stack/${journey.stackId}`);
-            await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}$`));
+            await page.goto(`/stack/${journey.stackId}`);
+            await expect(page).toHaveURL(new RegExp(`/stack/${journey.stackId}$`));
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         } finally {
             page.off('requestfailed', recordFailedDetailRequest);
         }
 
         expect(failedDetailRequests).toEqual([]);
-        await page.goto('/next/stack/all?limit=5');
+        await page.goto('/stack/all?limit=5');
         await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
     });
 
@@ -228,9 +228,9 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     await measureAction(diagnostics, 'route remounts', async () => {
         for (let index = 0; index < 5; index++) {
-            await page.goto(`/next/event/${journey.eventId}`);
+            await page.goto(`/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
-            await page.goto('/next/stack?limit=5');
+            await page.goto('/stack?limit=5');
             await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
         }
     });

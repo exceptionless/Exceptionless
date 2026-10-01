@@ -111,6 +111,7 @@
         first: undefined as string | undefined,
         level: undefined as string | undefined,
         limit: undefined as number | undefined,
+        mode: undefined as 'stack_frequent' | 'stack_new' | undefined,
         page: undefined as number | undefined,
         project: undefined as string | undefined,
         reference: undefined as string | undefined,
@@ -225,6 +226,7 @@
             first: 'string',
             level: 'string',
             limit: 'number',
+            mode: '<stack_frequent,stack_new>',
             page: 'number',
             project: 'string',
             reference: 'string',
@@ -659,7 +661,9 @@
         set limit(value) {
             setPageSize(value);
         },
-        mode: 'stack_frequent',
+        get mode() {
+            return queryParams.mode ?? 'stack_frequent';
+        },
         offset: DEFAULT_OFFSET,
         get page() {
             return queryParams.page ?? undefined;

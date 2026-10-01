@@ -1,14 +1,17 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { goto } from '$app/navigation';
+    import { beforeNavigate, goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
+    import { getCanonicalAppUrl } from '$features/auth/legacy-url';
+    import { isOAuthPopupCallback } from '$features/auth/oauth-callback';
     import { handleUnexpectedUnauthorized } from '$features/auth/unauthorized';
     import { buildServiceStatusUrl, createServiceStatusRedirector } from '$features/status/service-status-redirect';
+    import { getApiUrl } from '$shared/api/url';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
     import { error } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
@@ -26,7 +29,20 @@
 
     let { children }: Props = $props();
 
-    setBaseUrl('api/v2');
+    beforeNavigate((navigation) => {
+        if (!navigation.to || navigation.to.url.origin !== window.location.origin) {
+            return;
+        }
+        const url = getCanonicalAppUrl(navigation.to.url);
+        if (url.href !== navigation.to.url.href) {
+            navigation.cancel();
+            void goto(url, {
+                replaceState: true
+            });
+        }
+    });
+
+    setBaseUrl(getApiUrl('/api/v2'));
     setRequestOptions({
         errorCallback: (response) => {
             throw response.problem ?? response;
@@ -37,7 +53,7 @@
 
     const redirectToServiceStatus = createServiceStatusRedirector({
         checkHealth: async () => {
-            const response = await fetch('/health', {
+            const response = await fetch(getApiUrl('/health'), {
                 cache: 'no-store',
                 signal: AbortSignal.timeout(5000)
             });
@@ -129,16 +145,20 @@
     });
 </script>
 
-<div class="bg-background text-foreground">
-    <ModeWatcher defaultMode="dark" />
+{#if isOAuthPopupCallback(page.url, !!window.opener)}
+    <p role="status">Completing sign in...</p>
+{:else}
+    <div class="bg-background text-foreground">
+        <ModeWatcher defaultMode="dark" />
 
-    <QueryClientProvider client={queryClient}>
-        <Sidebar.Provider>
-            {@render children()}
-        </Sidebar.Provider>
+        <QueryClientProvider client={queryClient}>
+            <Sidebar.Provider>
+                {@render children()}
+            </Sidebar.Provider>
 
-        <SvelteQueryDevtools />
-    </QueryClientProvider>
+            <SvelteQueryDevtools />
+        </QueryClientProvider>
 
-    <Toaster position="bottom-right" />
-</div>
+        <Toaster position="bottom-right" />
+    </div>
+{/if}

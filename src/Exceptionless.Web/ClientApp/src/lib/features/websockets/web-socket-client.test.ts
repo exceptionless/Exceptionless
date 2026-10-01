@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import WS from 'vitest-websocket-mock';
 
+const { env } = vi.hoisted(() => ({ env: { PUBLIC_BASE_URL: '' } }));
+vi.mock('$env/dynamic/public', () => ({ env }));
+
 import { WebSocketClient, type WebSocketClientOptions } from './web-socket-client.svelte';
 
 // Mock the auth module
@@ -22,11 +25,13 @@ vi.mock('$shared/document-visibility.svelte', () => {
 let server: WS;
 
 beforeEach(() => {
+    env.PUBLIC_BASE_URL = '';
     server = new WS('ws://localhost:1234/api/v2/push');
 });
 
 afterEach(() => {
     WS.clean();
+    vi.unstubAllGlobals();
 });
 
 function createClient(path?: string, options?: WebSocketClientOptions): WebSocketClient {
@@ -413,6 +418,17 @@ describe('WebSocketClient', () => {
     });
 
     describe('URL Construction', () => {
+        it.each([
+            ['', 'wss://app.localhost:7131/api/v2/push'],
+            ['https://api.localhost:7111/', 'wss://api.localhost:7111/api/v2/push'],
+            ['http://api.localhost:7110', 'ws://api.localhost:7110/api/v2/push']
+        ])('uses the configured API host for push: %s', (baseUrl, expected) => {
+            env.PUBLIC_BASE_URL = baseUrl;
+            vi.stubGlobal('window', { location: { origin: 'https://app.localhost:7131' } });
+            const client = new WebSocketClient();
+            expect(client.url).toBe(expected);
+        });
+
         it('should construct correct WebSocket URL', () => {
             const client = createClient('/api/v2/push');
 

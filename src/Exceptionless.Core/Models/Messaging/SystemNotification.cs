@@ -21,6 +21,7 @@ public enum SystemNotificationLevel
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum SystemNotificationTarget
 {
+    // Retain serialized values for existing settings, API clients, and WebSocket messages.
     Both,
     Legacy,
     Modern

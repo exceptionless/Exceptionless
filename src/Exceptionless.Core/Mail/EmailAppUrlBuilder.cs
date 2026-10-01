@@ -1,7 +1,7 @@
 namespace Exceptionless.Core.Mail;
 
 /// <summary>
-/// Centralizes the existing email destinations. Update these mappings when the Svelte UI moves to the application root.
+/// Centralizes notification destinations in the Svelte application.
 /// </summary>
 internal sealed class EmailAppUrlBuilder
 {
@@ -9,42 +9,44 @@ internal sealed class EmailAppUrlBuilder
 
     public EmailAppUrlBuilder(string baseUrl)
     {
-        _baseUrl = baseUrl.TrimEnd('/');
+        _baseUrl = new Uri(baseUrl).GetLeftPart(UriPartial.Authority);
     }
 
     public string Event(string eventId) => Build($"event/{eventId}");
 
     public string Stack(string stackId) => Build($"stack/{stackId}");
 
-    public string MarkStackFixed(string stackId) => Build($"stack/{stackId}/mark-fixed");
+    public string MarkStackFixed(string stackId) => Build($"stack/{stackId}?action=fixed");
 
-    public string IgnoreStack(string stackId) => Build($"stack/{stackId}/ignored");
+    public string IgnoreStack(string stackId) => Build($"stack/{stackId}?action=ignored");
 
-    public string DiscardStack(string stackId) => Build($"stack/{stackId}/discarded");
+    public string DiscardStack(string stackId) => Build($"stack/{stackId}?action=discarded");
 
-    public string ProjectNotifications(string projectId) => Build($"account/manage?projectId={Uri.EscapeDataString(projectId)}&tab=notifications");
+    public string ProjectNotifications(string projectId) => Build($"account/notifications?project={Uri.EscapeDataString(projectId)}");
 
-    public string OrganizationDashboard(string organizationId) => Build($"organization/{organizationId}/dashboard");
+    public string ProjectIntegrations(string projectId) => Build($"project/{projectId}/integrations");
+
+    public string OrganizationDashboard(string organizationId) => Build($"event?organization={Uri.EscapeDataString(organizationId)}");
 
     public string Signup(string token) => Build($"signup?token={Uri.EscapeDataString(token)}");
 
-    public string OrganizationUpgrade(string organizationId) => Build($"organization/{organizationId}/upgrade");
+    public string OrganizationUpgrade(string organizationId) => Build($"organization/{organizationId}/billing?changePlan=true");
 
-    public string OrganizationFrequent(string organizationId) => Build($"organization/{organizationId}/frequent");
+    public string OrganizationFrequent(string organizationId) => Build($"stack?organization={Uri.EscapeDataString(organizationId)}&type=error");
 
     public string OrganizationManage(string organizationId) => Build($"organization/{organizationId}/manage");
 
-    public string OrganizationBilling(string organizationId) => Build($"organization/{organizationId}/manage?tab=billing");
+    public string OrganizationBilling(string organizationId) => Build($"organization/{organizationId}/billing");
 
-    public string ProjectTimeline(string projectId) => Build($"project/{projectId}/error/timeline");
+    public string ProjectTimeline(string projectId) => Build($"event?project={Uri.EscapeDataString(projectId)}&type=error");
 
     public string ProjectConfigure(string projectId) => Build($"project/{projectId}/configure");
 
-    public string ProjectMostFrequent(string projectId) => Build($"project/{projectId}/error/frequent");
+    public string ProjectMostFrequent(string projectId) => Build($"stack?project={Uri.EscapeDataString(projectId)}&type=error");
 
-    public string ProjectNewest(string projectId) => Build($"project/{projectId}/error/new");
+    public string ProjectNewest(string projectId) => Build($"stack?project={Uri.EscapeDataString(projectId)}&mode=stack_new&type=error");
 
-    public string AccountNotifications() => Build("account/manage?tab=notifications");
+    public string AccountNotifications() => Build("account/notifications");
 
     public string VerifyEmail(string token) => Build($"account/verify?token={Uri.EscapeDataString(token)}");
 

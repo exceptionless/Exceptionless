@@ -74,9 +74,10 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Theory]
-    [InlineData("http://localhost:9001", "http://localhost:9001/organization/organization-1/manage?tab=billing")]
-    [InlineData("http://localhost:9001/#!", "http://localhost:9001/#!/organization/organization-1/manage?tab=billing")]
-    public void OrganizationBilling_BaseUrlVariant_MatchesExistingTemplate(string baseUrl, string expected)
+    [InlineData("http://localhost:9001", "http://localhost:9001/organization/organization-1/billing")]
+    [InlineData("http://localhost:9001/#!", "http://localhost:9001/organization/organization-1/billing")]
+    [InlineData("http://localhost:9001/next/#!", "http://localhost:9001/organization/organization-1/billing")]
+    public void OrganizationBilling_BaseUrlVariant_MatchesSvelteRoute(string baseUrl, string expected)
     {
         // Arrange
         var appUrls = new EmailAppUrlBuilder(baseUrl);
@@ -89,7 +90,7 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
-    public void EmailAppUrlBuilder_ProductionBaseUrl_MatchesExistingTemplates()
+    public void EmailAppUrlBuilder_ProductionBaseUrl_MatchesSvelteRoutes()
     {
         // Arrange
         const string baseUrl = "https://be.exceptionless.io";
@@ -100,21 +101,21 @@ public sealed class MailerTests : TestWithServices
         [
             ("event/event-1", appUrls.Event("event-1")),
             ("stack/stack-1", appUrls.Stack("stack-1")),
-            ("stack/stack-1/mark-fixed", appUrls.MarkStackFixed("stack-1")),
-            ("stack/stack-1/ignored", appUrls.IgnoreStack("stack-1")),
-            ("stack/stack-1/discarded", appUrls.DiscardStack("stack-1")),
-            ("account/manage?projectId=project-1&tab=notifications", appUrls.ProjectNotifications("project-1")),
-            ("organization/organization-1/dashboard", appUrls.OrganizationDashboard("organization-1")),
+            ("stack/stack-1?action=fixed", appUrls.MarkStackFixed("stack-1")),
+            ("stack/stack-1?action=ignored", appUrls.IgnoreStack("stack-1")),
+            ("stack/stack-1?action=discarded", appUrls.DiscardStack("stack-1")),
+            ("account/notifications?project=project-1", appUrls.ProjectNotifications("project-1")),
+            ("event?organization=organization-1", appUrls.OrganizationDashboard("organization-1")),
             ("signup?token=token-1", appUrls.Signup("token-1")),
-            ("organization/organization-1/upgrade", appUrls.OrganizationUpgrade("organization-1")),
-            ("organization/organization-1/frequent", appUrls.OrganizationFrequent("organization-1")),
+            ("organization/organization-1/billing?changePlan=true", appUrls.OrganizationUpgrade("organization-1")),
+            ("stack?organization=organization-1&type=error", appUrls.OrganizationFrequent("organization-1")),
             ("organization/organization-1/manage", appUrls.OrganizationManage("organization-1")),
-            ("organization/organization-1/manage?tab=billing", appUrls.OrganizationBilling("organization-1")),
-            ("project/project-1/error/timeline", appUrls.ProjectTimeline("project-1")),
+            ("organization/organization-1/billing", appUrls.OrganizationBilling("organization-1")),
+            ("event?project=project-1&type=error", appUrls.ProjectTimeline("project-1")),
             ("project/project-1/configure", appUrls.ProjectConfigure("project-1")),
-            ("project/project-1/error/frequent", appUrls.ProjectMostFrequent("project-1")),
-            ("project/project-1/error/new", appUrls.ProjectNewest("project-1")),
-            ("account/manage?tab=notifications", appUrls.AccountNotifications()),
+            ("stack?project=project-1&type=error", appUrls.ProjectMostFrequent("project-1")),
+            ("stack?project=project-1&mode=stack_new&type=error", appUrls.ProjectNewest("project-1")),
+            ("account/notifications", appUrls.AccountNotifications()),
             ("account/verify?token=token-1", appUrls.VerifyEmail("token-1")),
             ("reset-password/token-1", appUrls.PasswordReset("token-1")),
             ("reset-password/token-1?cancel=true", appUrls.PasswordReset("token-1", cancel: true))
@@ -791,33 +792,22 @@ public sealed class MailerTests : TestWithServices
     private static void AssertValidInternalUrl(Uri uri)
     {
         Assert.Empty(uri.Fragment);
-        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|error/(?:timeline|frequent|new))|account/(?:manage|verify)|organization/[^/]+/(?:dashboard|upgrade|frequent|manage)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
+        Assert.Matches(@"^/(?:event(?:/[^/]+)?|stack(?:/[^/]+)?|project/[^/]+/configure|account/(?:notifications|verify)|organization/[^/]+/(?:billing|manage)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
 
         if (uri.AbsolutePath is "/account/verify" or "/signup")
-        {
             Assert.Matches(@"^\?token=[^?&#]+$", uri.Query);
-            return;
-        }
-
-        if (uri.AbsolutePath == "/account/manage")
-        {
-            Assert.Matches(@"^\?(?:tab=notifications|projectId=[^?&#]+&tab=notifications)$", uri.Query);
-            return;
-        }
-
-        if (Regex.IsMatch(uri.AbsolutePath, @"^/organization/[^/]+/manage$"))
-        {
-            Assert.Matches(@"^(?:|\?tab=billing)$", uri.Query);
-            return;
-        }
-
-        if (Regex.IsMatch(uri.AbsolutePath, @"^/reset-password/[^/]+$"))
-        {
+        else if (uri.AbsolutePath == "/account/notifications")
+            Assert.Matches(@"^(?:|\?project=[^?&#]+)$", uri.Query);
+        else if (Regex.IsMatch(uri.AbsolutePath, @"^/organization/[^/]+/billing$"))
+            Assert.Matches(@"^(?:|\?changePlan=true)$", uri.Query);
+        else if (Regex.IsMatch(uri.AbsolutePath, @"^/reset-password/[^/]+$"))
             Assert.Matches(@"^(?:|\?cancel=true)$", uri.Query);
-            return;
-        }
-
-        Assert.Empty(uri.Query);
+        else if (uri.AbsolutePath == "/event" || uri.AbsolutePath == "/stack")
+            Assert.Matches(@"^\?(?:organization|project)=[^?&#]+(?:&mode=stack_new)?(?:&type=error)?$", uri.Query);
+        else if (uri.AbsolutePath.StartsWith("/stack/", StringComparison.Ordinal))
+            Assert.Matches(@"^(?:|\?action=(?:fixed|ignored|discarded))$", uri.Query);
+        else
+            Assert.Empty(uri.Query);
     }
 
     private static string[] GetHrefs(string body)

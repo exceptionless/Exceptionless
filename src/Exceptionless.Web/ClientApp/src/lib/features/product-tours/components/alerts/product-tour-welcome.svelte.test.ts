@@ -9,7 +9,7 @@ const recommended = {
     currentAvailability: { available: true },
     description: 'Learn navigation and search.',
     name: 'app-overview' as const,
-    start: vi.fn(() => ({ checkpointName: 'navigation' as const, route: '/next' })),
+    start: vi.fn(() => ({ checkpointName: 'navigation' as const, route: '' })),
     stateKey: 'app_overview' as const,
     title: 'Explore Exceptionless'
 };

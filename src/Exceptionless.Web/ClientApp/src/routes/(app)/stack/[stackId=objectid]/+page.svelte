@@ -37,7 +37,7 @@
     async function handleEventLoaded(event: PersistentEvent) {
         organization.current = event.organization_id;
         assistantPageContext.setPageEvent(event);
-        await goto(buildEventDetailsHref(event.id, event.stack_id), {
+        await goto(`${buildEventDetailsHref(event.id, event.stack_id)}${page.url.search}${page.url.hash}`, {
             replaceState: true
         });
     }

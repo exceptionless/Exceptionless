@@ -4,6 +4,7 @@ import { dev } from '$app/environment';
 import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
 import { configureSessions } from '$features/auth/exceptionless-session';
+import { getCanonicalAppUrl } from '$features/auth/legacy-url';
 import { normalizePath, normalizeRouteId } from '$lib/telemetry';
 import { installSvelteEffectDepthDiagnostics } from '$lib/telemetry/svelte-effect-depth-diagnostics';
 import { Exceptionless, guid, toError } from '@exceptionless/browser';
@@ -29,6 +30,11 @@ if (PUBLIC_EXCEPTIONLESS_SERVER_URL) {
 }
 
 export const init: ClientInit = async () => {
+    const canonicalUrl = getCanonicalAppUrl(new URL(window.location.href));
+    if (canonicalUrl.href !== window.location.href) {
+        window.history.replaceState(window.history.state, '', canonicalUrl);
+    }
+
     if (!env.PUBLIC_EXCEPTIONLESS_API_KEY) {
         return;
     }

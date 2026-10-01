@@ -58,6 +58,7 @@
     import { ChangeType, isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '$features/websockets/models';
     import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
     import { Telemetry } from '$lib/telemetry';
+    import { createQueryParameters } from '$shared/query-params';
     import { useMiddleware } from '@foundatiofx/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { useInterval } from 'runed';
@@ -79,6 +80,11 @@
     }
 
     let { children }: Props = $props();
+    const navigationParams = createQueryParameters({
+        schema: {
+            organization: 'string'
+        }
+    });
     const assistantPageHref = resolve('/(app)/exie');
     let isAuthenticated = $derived(!!accessToken.current);
     let requiresPremium = $derived(
@@ -580,6 +586,12 @@
 
         if (!organizationsQuery.isSuccess) {
             return;
+        }
+
+        const requestedOrganization = organizations.find((item) => item.id === navigationParams.organization);
+        if (requestedOrganization) {
+            organization.current = requestedOrganization.id;
+            navigationParams.organization = null;
         }
 
         const hasOrganizations = organizations.length > 0;

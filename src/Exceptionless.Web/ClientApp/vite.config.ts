@@ -12,9 +12,6 @@ import { defineConfig } from 'vitest/config';
 const apiTarget = process.env.API_HTTPS || process.env.API_HTTP;
 const apiProxy = { changeOrigin: true, target: apiTarget };
 
-const oldAppTarget = process.env.OLDAPP_HTTPS || process.env.OLDAPP_HTTP;
-const oldAppProxy = { changeOrigin: true, secure: false, target: oldAppTarget };
-
 const port = Number(process.env.PORT) || 7131;
 const codespaceName = process.env.CODESPACE_NAME;
 const codespaceDomain = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
@@ -25,6 +22,25 @@ if (codespaceName && codespaceDomain) {
 }
 
 const SVELTE_RUNTIME_DIAGNOSTICS_GLOBAL = '__exceptionlessSvelteEffectDepthDiagnostics';
+
+function clientAppRedirects(): Plugin {
+    return {
+        configureServer(server) {
+            server.middlewares.use((request, response, next) => {
+                const url = request.url ?? '/';
+                if (/^\/next(?:[/?]|$)/i.test(url)) {
+                    const destination = url.replace(/^\/next/i, '').replace(/^\/+/, '/');
+                    response.writeHead(308, { Location: destination.startsWith('/') ? destination : `/${destination}` });
+                    response.end();
+                    return;
+                }
+
+                next();
+            });
+        },
+        name: 'exceptionless-client-app-redirects'
+    };
+}
 
 // Svelte's useful effect-depth diagnostics are development-only. Preserve the
 // minimal state-write tracking needed to diagnose production-only loops.
@@ -137,17 +153,18 @@ export default defineConfig({
     },
     clearScreen: false,
     logLevel: 'info',
-    plugins: [tailwindcss(), sveltekit(), svelteKitRuntimeDefines(), svelteEffectDepthDiagnostics()],
+    plugins: [clientAppRedirects(), tailwindcss(), sveltekit(), svelteKitRuntimeDefines(), svelteEffectDepthDiagnostics()],
     server: {
         allowedHosts,
         hmr,
         port,
         proxy: {
+            '/.well-known': apiProxy,
             '/api': { ...apiProxy, ws: true },
             '/docs': apiProxy,
             '/health': apiProxy,
-            '/ready': apiProxy,
-            '^/(?!(next|api|docs|health|ready|_)).*': oldAppProxy
+            '/mcp': apiProxy,
+            '/ready': apiProxy
         },
         strictPort: true,
         warmup: {

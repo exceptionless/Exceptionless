@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom/vitest';
 import { beforeEach, vi } from 'vitest';
 
+// The browser's runtime environment module is injected by SvelteKit outside unit tests.
+vi.mock('$env/dynamic/public', () => ({ env: {} }));
+
 // required for svelte5 + jsdom as jsdom does not support matchMedia
 Object.defineProperty(window, 'matchMedia', {
     enumerable: true,

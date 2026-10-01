@@ -24,7 +24,6 @@
 
     let systemMessage = $state('');
     let systemLevel = $state<'Error' | 'Info' | 'Warning'>('Info');
-    let systemTarget = $state<'Both' | 'Legacy' | 'Modern'>('Both');
     let loadedNotificationKey = $state<null | string>(null);
 
     const currentNotification = $derived(currentNotificationQuery.data);
@@ -54,12 +53,6 @@
         Warning: AlertTriangle
     } as const;
 
-    const targetLabelMap = {
-        Both: 'Both UIs',
-        Legacy: 'Legacy UI only',
-        Modern: 'New UI only'
-    } as const;
-
     $effect(() => {
         if (loadedNotificationKey === currentNotificationKey) {
             return;
@@ -70,14 +63,12 @@
         if (currentNotification?.message) {
             systemMessage = currentNotification.message;
             systemLevel = currentNotification.level ?? 'Info';
-            systemTarget = currentNotification.target ?? 'Both';
             return;
         }
 
         if (!currentNotificationQuery.isLoading) {
             systemMessage = '';
             systemLevel = 'Info';
-            systemTarget = 'Both';
         }
     });
 
@@ -87,7 +78,6 @@
             toast.success('System notification cleared.');
             systemMessage = '';
             systemLevel = 'Info';
-            systemTarget = 'Both';
         } catch {
             toast.error('Failed to clear system notification.');
         }
@@ -97,8 +87,7 @@
         try {
             await setSystemNotification.mutateAsync({
                 level: systemLevel,
-                message: systemMessage,
-                target: systemTarget
+                message: systemMessage
             });
             toast.success('System notification set successfully.');
         } catch {
@@ -141,7 +130,7 @@
                             <NotificationDescription>{@html previewNotificationHtml}</NotificationDescription>
                         </Notification>
                         <Muted>
-                            Level: {systemLevel} &middot; Target: {targetLabelMap[systemTarget]}
+                            Level: {systemLevel}
                             {#if currentNotification?.date}
                                 &middot; Set {new Date(currentNotification.date).toLocaleString()}
                             {/if}
@@ -154,11 +143,14 @@
 
             <div class="space-y-2">
                 <Label for="system-message">Message</Label>
+                {#if currentNotification?.target === 'Legacy'}
+                    <Muted>This saved notification targeted the retired UI. Updating it will display it in the app.</Muted>
+                {/if}
                 <Textarea id="system-message" bind:value={systemMessage} placeholder="Enter notification message..." rows={4} />
                 <Muted>HTML is supported and will be sanitized before display.</Muted>
             </div>
 
-            <div class="grid gap-6 lg:grid-cols-2">
+            <div>
                 <div class="space-y-2">
                     <Label>Level</Label>
                     <Select.Root type="single" bind:value={systemLevel}>
@@ -169,20 +161,6 @@
                             <Select.Item value="Info">Info</Select.Item>
                             <Select.Item value="Warning">Warning</Select.Item>
                             <Select.Item value="Error">Error</Select.Item>
-                        </Select.Content>
-                    </Select.Root>
-                </div>
-
-                <div class="space-y-2">
-                    <Label>Target</Label>
-                    <Select.Root type="single" bind:value={systemTarget}>
-                        <Select.Trigger class="w-40">
-                            {targetLabelMap[systemTarget]}
-                        </Select.Trigger>
-                        <Select.Content>
-                            <Select.Item value="Both">Both UIs</Select.Item>
-                            <Select.Item value="Legacy">Legacy UI only</Select.Item>
-                            <Select.Item value="Modern">New UI only</Select.Item>
                         </Select.Content>
                     </Select.Root>
                 </div>

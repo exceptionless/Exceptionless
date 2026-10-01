@@ -1,6 +1,6 @@
 # Svelte ClientApp
 
-This directory is the Svelte 5 frontend. For frontend/UI/page/component/form/route work, use this app unless the user explicitly asks for Angular or legacy UI changes.
+This directory is the Svelte 5 frontend. Use this app for frontend/UI/page/component/form/route work.
 
 ## Tooling
 
@@ -30,7 +30,6 @@ Use focused verification while iterating. Do not run broad Svelte validation aft
 - Use `createQueryParameters` from `$shared/query-params` for route query parameters instead of ad-hoc URL parsing.
 - Prefer shared components and formatters from `$comp`, `$shared`, and `$lib` before creating new primitives.
 - Use installed shadcn-svelte components from `$comp/ui/*`; check `components.json` and the `src/lib/features/shared/components/ui` directory before importing a component.
-- Do not copy structure, state patterns, or styling patterns from `../ClientApp.angular`.
 
 ## Applying Installed Skills
 
@@ -40,7 +39,7 @@ Use focused verification while iterating. Do not run broad Svelte validation aft
 
 ## Local URLs
 
-- Svelte app: `https://web-ex.dev.localhost:7131/next/`
+- Svelte app: `https://web-ex.dev.localhost:7131/`
 - API health: `https://api-ex.dev.localhost:7111/api/v2/about`
 - API health fallback for command-line tools with local TLS issues: `http://api-ex.dev.localhost:7110/api/v2/about`
 

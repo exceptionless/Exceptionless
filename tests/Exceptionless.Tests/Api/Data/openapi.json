@@ -8257,6 +8257,7 @@
         "tags": [
           "OAuth"
         ],
+        "description": "Redirects to /oauth/authorize at the configured application origin, preserving the authorization query parameters.",
         "parameters": [
           {
             "name": "client_id",

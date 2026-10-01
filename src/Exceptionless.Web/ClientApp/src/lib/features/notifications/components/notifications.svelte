@@ -46,6 +46,7 @@
         return JSON.stringify([getSystemNotificationDateKey(date), level, target, message]);
     }
 
+    // Preserve the audience and dismissal identity of notifications saved before the root cutover.
     function normalizeSystemNotificationTarget(target: null | string | undefined): SystemNotificationTarget {
         const normalizedTarget = (target ?? 'Both').replace(/[^a-z]/gi, '').toLowerCase();
 
@@ -97,7 +98,7 @@
 
     const queryTarget = $derived<SystemNotificationTarget>(normalizeSystemNotificationTarget(currentNotificationQuery.data?.target));
     const effectiveTarget = $derived(hasRealtimeSystemNotification ? systemTarget : queryTarget);
-    const showForModern = $derived(effectiveTarget === 'Both' || effectiveTarget === 'Modern');
+    const isSystemNotificationVisible = $derived(effectiveTarget === 'Both' || effectiveTarget === 'Modern');
 
     const displayMessage = $derived(
         hasRealtimeSystemNotification ? systemMessage || fallbackMessage : currentNotificationQuery.data?.message || fallbackMessage
@@ -140,7 +141,7 @@
     });
 </script>
 
-{#if displayMessage && showForModern && systemNotificationKey !== dismissedSystemNotificationKey}
+{#if displayMessage && isSystemNotificationVisible && systemNotificationKey !== dismissedSystemNotificationKey}
     {@const LevelIcon = levelIconMap[displayLevel]}
     <Notification variant={levelVariantMap[displayLevel]} role="alert" aria-live="assertive" class="mb-4">
         {#snippet icon()}

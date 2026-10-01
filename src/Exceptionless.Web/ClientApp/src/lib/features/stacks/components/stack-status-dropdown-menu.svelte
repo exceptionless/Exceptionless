@@ -1,8 +1,11 @@
 <script lang="ts">
     import type { DropdownItem } from '$features/shared/options';
 
+    import { page } from '$app/state';
+    import * as AlertDialog from '$comp/ui/alert-dialog';
     import Button from '$comp/ui/button/button.svelte';
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
+    import { createQueryParameters } from '$shared/query-params';
     import { getProblemMessage } from '$shared/validation';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { toast } from 'svelte-sonner';
@@ -21,7 +24,13 @@
     }
 
     let { stack }: Props = $props();
+    const queryParams = createQueryParameters({
+        schema: {
+            action: '<fixed,ignored,discarded>'
+        }
+    });
 
+    let openMarkStackIgnoredDialog = $state(false);
     let openMarkStackDiscardedDialog = $state<boolean>(false);
     let openMarkStackFixedInVersionDialog = $state<boolean>(false);
     let selected = $derived(
@@ -50,6 +59,18 @@
                 return [stack?.id].filter(Boolean);
             }
         }
+    });
+
+    $effect(() => {
+        if (!queryParams.action || page.params.stackId !== stack.id) {
+            return;
+        }
+
+        const action = queryParams.action;
+        queryParams.action = null;
+        openMarkStackFixedInVersionDialog = action === 'fixed';
+        openMarkStackDiscardedDialog = action === 'discarded';
+        openMarkStackIgnoredDialog = action === 'ignored';
     });
 
     async function markDiscarded() {
@@ -151,6 +172,20 @@
 
 {#if openMarkStackDiscardedDialog}
     <MarkStackDiscardedDialog bind:open={openMarkStackDiscardedDialog} discard={markDiscarded} />
+{/if}
+{#if openMarkStackIgnoredDialog}
+    <AlertDialog.Root bind:open={openMarkStackIgnoredDialog}>
+        <AlertDialog.Content>
+            <AlertDialog.Header>
+                <AlertDialog.Title>Ignore Stack</AlertDialog.Title>
+                <AlertDialog.Description>Stop sending occurrence notifications for this stack?</AlertDialog.Description>
+            </AlertDialog.Header>
+            <AlertDialog.Footer>
+                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                <AlertDialog.Action onclick={() => markIgnored()}>Ignore</AlertDialog.Action>
+            </AlertDialog.Footer>
+        </AlertDialog.Content>
+    </AlertDialog.Root>
 {/if}
 {#if openMarkStackFixedInVersionDialog}
     <MarkStackFixedInVersionDialog bind:open={openMarkStackFixedInVersionDialog} save={markFixed} />

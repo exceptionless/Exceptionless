@@ -94,7 +94,7 @@ public class SnakeCaseLowerNamingPolicyTests : TestWithLoggingBase
     [Fact]
     public void NamingPolicy_OAuthAccounts_ProducesClientCompatibleFieldName()
     {
-        // Arrange — the Angular client reads vm.user.o_auth_accounts.
+        // Arrange — preserve the published o_auth_accounts field name.
         var model = new OAuthAccountsModel
         {
             OAuthAccounts = ["github"]

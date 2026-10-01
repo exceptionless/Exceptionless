@@ -39,7 +39,7 @@ Start here:
 
 After startup:
 
-1. Open `https://localhost:7121/` if a browser does not open automatically.
+1. Open `https://web-ex.dev.localhost:7131/` if a browser does not open automatically.
 2. In `Development` mode, a global administrator user `admin@exceptionless.test` with password `tester` is created automatically.
 
 Notes:
@@ -52,10 +52,7 @@ Notes:
 
 ## UI Development
 
-Frontend work currently spans two apps:
-
-1. The legacy Angular UI in `src/Exceptionless.Web/ClientApp.angular` is still the main site UI. Most of that app lives in `app/`, `components/`, `less/`, `img/`, `lang/`, and `grunt/`.
-2. The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is still under development.
+The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` serves the application root. Existing `/next` URLs redirect to the same path at the root.
 
 For a quick API walkthrough, start with [exceptionless.http](exceptionless.http). The [tests/http](tests/http) folder contains additional examples for manual use, such as querying events, uploading source maps, and obtaining OAuth tokens. These are curated examples, not an automated test suite or an exhaustive endpoint catalog. Set the local API URL and sample variables, then run the requests you need. In Visual Studio Code, use the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
 

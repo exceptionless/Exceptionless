@@ -7,11 +7,11 @@ test.use({ e2eCleanupPassword: RESET_PASSWORD, e2eInjectBrowserToken: false, e2e
 
 test('user can reset a forgotten password and log in @signup', async ({ e2eApi, e2eScenario, page }) => {
     await test.step('request a password reset through the UI', async () => {
-        await page.goto('/next/forgot-password');
+        await page.goto('/forgot-password');
         await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
         await page.getByRole('button', { name: 'Send Reset Email' }).click();
 
-        await expect(page).toHaveURL(/\/next\/login(?:[?#]|$)/);
+        await expect(page).toHaveURL(/\/login(?:[?#]|$)/);
         await expect(page.getByText('Please check your inbox for the password reset email.')).toBeVisible();
     });
 
@@ -20,12 +20,12 @@ test('user can reset a forgotten password and log in @signup', async ({ e2eApi, 
     });
 
     await test.step('change the password through the emailed route', async () => {
-        await page.goto(`/next/reset-password/${encodeURIComponent(resetToken)}`);
+        await page.goto(`/reset-password/${encodeURIComponent(resetToken)}`);
         await page.getByLabel('New Password', { exact: true }).fill(RESET_PASSWORD);
         await page.getByLabel('Confirm Password', { exact: true }).fill(RESET_PASSWORD);
         await page.getByRole('button', { name: 'Change Password' }).click();
 
-        await expect(page).toHaveURL(/\/next\/login(?:[?#]|$)/);
+        await expect(page).toHaveURL(/\/login(?:[?#]|$)/);
         await expect(page.getByText('You have successfully changed your password.')).toBeVisible();
     });
 
@@ -35,6 +35,6 @@ test('user can reset a forgotten password and log in @signup', async ({ e2eApi, 
         await page.getByRole('button', { exact: true, name: 'Login' }).click();
 
         await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
-        await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
+        await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
     });
 });

@@ -341,6 +341,7 @@ public partial class Program
                 };
             });
 
+            app.UseClientAppRedirects();
             app.UseStaticFiles();
             app.UseDefaultFiles();
             app.UseFileServer();
@@ -379,7 +380,7 @@ public partial class Program
                 .RequireAuthorization(AuthorizationRoles.McpPolicy)
                 .ExcludeFromDescription();
             app.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
-            app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"));
+            app.MapClientAppFallback();
 
             await app.RunAsync();
             return 0;
@@ -423,31 +424,6 @@ public partial class Program
         return TypedResults
             .Problem(statusCode: statusCodeContext.HttpContext.Response.StatusCode)
             .ExecuteAsync(statusCodeContext.HttpContext);
-    }
-
-    private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
-    {
-        var app = endpoints.CreateApplicationBuilder();
-        var apiPathSegment = new PathString("/api");
-        var docsPathSegment = new PathString("/docs");
-        var nextPathSegment = new PathString("/next");
-        app.Use(next => context =>
-        {
-            bool isApiRequest = context.Request.Path.StartsWithSegments(apiPathSegment);
-            bool isDocsRequest = context.Request.Path.StartsWithSegments(docsPathSegment);
-            bool isNextRequest = context.Request.Path.StartsWithSegments(nextPathSegment);
-
-            if (!isApiRequest && !isDocsRequest && !isNextRequest)
-                context.Request.Path = "/" + filePath;
-            else if (!isApiRequest && !isDocsRequest)
-                context.Request.Path = "/next/" + filePath;
-
-            context.SetEndpoint(null);
-            return next(context);
-        });
-
-        app.UseStaticFiles();
-        return app.Build();
     }
 
     private static void SetClientEnvironmentVariablesInDevelopmentMode(AppOptions options)
