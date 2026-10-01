@@ -311,6 +311,8 @@ public partial class Program
                     .To("https://uploads.intercomcdn.com")
                     .To("https://uploads.intercomusercontent.com");
 
+                ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, configuration.GetValue<string>("ApiUrl"));
+
                 csp.OnSendingHeader = new Func<CspSendingHeaderContext, Task>(context =>
                 {
                     context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
