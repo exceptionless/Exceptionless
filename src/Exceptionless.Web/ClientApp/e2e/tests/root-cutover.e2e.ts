@@ -220,6 +220,36 @@ test.describe('legacy project reports', () => {
         });
     }
 });
+test('old project reports select an authorized owner outside administrator memberships', async ({ e2eSecondaryOrganization, page }) => {
+    await page.route('**/api/v2/users/me', async (route) => {
+        const response = await route.fetch();
+        const user = (await response.json()) as { organization_ids: string[]; roles: string[] };
+        expect(user.roles).toContain('global');
+        user.organization_ids = user.organization_ids.filter((id) => id !== e2eSecondaryOrganization.organizationId);
+        await route.fulfill({ json: user, response });
+    });
+    await page.route('**/api/v2/organizations', async (route) => {
+        const response = await route.fetch();
+        const organizations = (await response.json()) as { id: string }[];
+        await route.fulfill({ json: organizations.filter((item) => item.id !== e2eSecondaryOrganization.organizationId), response });
+    });
+    await page.goto('/stack/all');
+    await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
+    await page.evaluate((href) => {
+        const link = document.createElement('a');
+        link.href = href;
+        link.textContent = 'Saved administrator project report';
+        document.querySelector('main')!.prepend(link);
+    }, `/#!/project/${e2eSecondaryOrganization.projectId}/error/new`);
+    await page.getByRole('link', { exact: true, name: 'Saved administrator project report' }).click();
+    await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('organization') ?? 'null'))).toBe(e2eSecondaryOrganization.organizationId);
+    await expect(page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.projectName }).filter({ visible: true }).first()).toBeVisible();
+    expect(new URL(page.url()).searchParams.get('project')).toBe(e2eSecondaryOrganization.projectId);
+    expect(new URL(page.url()).searchParams.get('mode')).toBe('stack_new');
+    await page.reload();
+    await expect(page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.projectName }).filter({ visible: true }).first()).toBeVisible();
+});
+
 test('next compatibility redirects stay on the local origin for raw separators', async ({ baseURL }) => {
     const origin = new URL(baseURL!);
     const request = origin.protocol === 'https:' ? httpsRequest : httpRequest;

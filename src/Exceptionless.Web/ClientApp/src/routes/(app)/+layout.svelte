@@ -541,9 +541,20 @@
     const organizationsQuery = getOrganizationsQuery({});
     const organizations = $derived(organizationsQuery.data?.data ?? []);
     // Select an organization from a notification link before list pages initialize their filters.
+    const requestedOrganizationId = $derived(page.url.searchParams.get('organization'));
+    const requestedOrganizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return isGlobalAdmin ? (requestedOrganizationId ?? undefined) : undefined;
+            }
+        }
+    });
     const isOrganizationNavigationPending = $derived(
-        !!navigationParams.organization &&
-            (organizationsQuery.isPending || organizations.some((item) => item.id === navigationParams.organization && item.id !== organization.current))
+        !!requestedOrganizationId &&
+            (organizationsQuery.isPending ||
+                meQuery.isPending ||
+                (requestedOrganizationId !== organization.current &&
+                    (organizations.some((item) => item.id === requestedOrganizationId) || (isGlobalAdmin && !requestedOrganizationQuery.isError))))
     );
 
     const impersonatingOrganizationId = $derived.by(() => {
@@ -589,18 +600,22 @@
     $effect(() => {
         void page.url.pathname;
 
-        if (!organizationsQuery.isSuccess) {
+        if (!organizationsQuery.isSuccess || !meQuery.isSuccess) {
             return;
         }
 
-        const requestedOrganization = organizations.find((item) => item.id === navigationParams.organization);
+        const requestedOrganization =
+            organizations.find((item) => item.id === navigationParams.organization) ??
+            (isGlobalAdmin && requestedOrganizationQuery.isSuccess && requestedOrganizationQuery.data.id === navigationParams.organization
+                ? requestedOrganizationQuery.data
+                : undefined);
         if (requestedOrganization) {
             organization.current = requestedOrganization.id;
             navigationParams.organization = null;
         }
 
         const hasOrganizations = organizations.length > 0;
-        if (!hasOrganizations) {
+        if (!hasOrganizations && !impersonatingOrganizationId) {
             organization.current = undefined;
 
             if (shouldRedirectToSetup()) {
