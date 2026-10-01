@@ -25,6 +25,10 @@ Content-Type: application/json
 GET {{apiUrl}}/events?limit=1
 Authorization: Bearer {{token}}
 
+### Calendar month (January 1 through January 31, inclusive, subject to retention)
+GET {{apiUrl}}/events?time=%5B2025-01%20TO%2025-01%5D&offset=-5h
+Authorization: Bearer {{token}}
+
 ### Stack summaries (includes project and tags)
 GET {{apiUrl}}/events?mode=stack_frequent&limit=10
 Authorization: Bearer {{token}}
