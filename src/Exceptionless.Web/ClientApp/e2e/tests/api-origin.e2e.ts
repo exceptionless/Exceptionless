@@ -2,6 +2,21 @@ import { expect, test } from '../fixtures/e2e-test';
 
 test.skip(process.env.E2E_ENV === 'production', 'API origin configuration coverage is local only.');
 
+test('the OAuth bridge opens the application login and preserves the authorization return URL', async ({ e2eApi, page, request }) => {
+    const query = '?client_id=local-client&state=local-cutover-check';
+    const response = await request.get(`${e2eApi.environment.apiUrl}/oauth/authorize${query}`, { maxRedirects: 0 });
+    expect(response.status()).toBe(302);
+    const destination = new URL(response.headers().location);
+    expect(destination.pathname).toBe('/oauth/authorize');
+    expect(destination.search).toBe(query);
+    expect(destination.hash).toBe('');
+    expect(destination.port).toBe(new URL(e2eApi.environment.appUrl).port);
+
+    await page.goto(destination.href);
+    await expect(page).toHaveURL((url) => url.pathname === '/login' && url.searchParams.get('redirect') === `/oauth/authorize${query}`);
+    await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
+});
+
 test('status waits for the configured API to recover before returning to the application', async ({ page }) => {
     const apiOrigin = 'https://localhost:65533';
     await page.addInitScript((origin) => localStorage.setItem('PUBLIC_BASE_URL', origin), apiOrigin);

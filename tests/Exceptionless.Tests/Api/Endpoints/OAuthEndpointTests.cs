@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -386,18 +387,32 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.MethodNotAllowed, response.StatusCode);
     }
 
-    [Fact]
-    public async Task AuthorizeAsync_SeparateApiOrigin_RedirectsToConfiguredApplicationWithOriginalQuery()
+    [Theory]
+    [InlineData("http://localhost:7110")]
+    [InlineData("http://localhost:7110/#!")]
+    [InlineData("http://localhost:7110/#")]
+    public async Task AuthorizeAsync_SeparateApiOrigin_RedirectsToConfiguredApplicationWithOriginalQuery(string applicationBaseUrl)
     {
+        var options = GetService<AppOptions>();
+        string originalBaseUrl = options.BaseURL;
         using var client = CreateHttpClient();
         using var request = CreateAuthorizeRequest(PkceVerifier, authenticate: false);
         request.RequestUri = new Uri(new Uri("http://api.localhost:7110/api/v2/"), request.RequestUri!);
         string query = request.RequestUri.Query;
 
-        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        try
+        {
+            options.BaseURL = applicationBaseUrl;
 
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.Equal("http://localhost:7110/oauth/authorize" + query, response.Headers.Location?.OriginalString);
+            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+            Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+            Assert.Equal("http://localhost:7110/oauth/authorize" + query, response.Headers.Location?.OriginalString);
+        }
+        finally
+        {
+            options.BaseURL = originalBaseUrl;
+        }
     }
 
     [Fact]

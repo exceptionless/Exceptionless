@@ -4,7 +4,7 @@ This is the only Exceptionless application frontend: Svelte 5 and SvelteKit, ser
 
 ## Developing
 
-For full-stack development, run `aspire run` from the repository root. Open the `App` endpoint reported by Aspire, normally `https://web-ex.dev.localhost:7131/`. Worktrees may use dynamic ports. Vite proxies API requests and WebSockets to the API resource.
+For full-stack development, run `aspire run` from the repository root. Open the `App` endpoint reported by Aspire, normally `https://web-ex.dev.localhost:7131/`. Worktrees may use dynamic ports. Aspire supplies this frontend address to both the API and background jobs for OAuth and email links. Vite proxies API requests and WebSockets to the API resource.
 
 For frontend commands, run from this directory and install dependencies with `npm ci`:
 
