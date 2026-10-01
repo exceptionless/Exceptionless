@@ -53,6 +53,7 @@ tests/                         # C# tests and HTTP samples
 - Use the cheapest reliable layer: pure logic in unit tests, service/API contracts in integration tests, and browser tests for user journeys or behavior that requires a real browser. Keep a representative browser integration case when moving a data matrix to unit/component tests.
 - Keep fixtures and generated data minimal, but cross the actual pagination/batch boundary when that is the behavior under test. Use controlled time and observable conditions instead of fixed sleeps. Keep benchmarks with no correctness assertions out of the normal test suite.
 - Treat test duration as a maintenance cost. Inspect CI timing reports when adding expensive coverage; preserve automatic shard discovery, isolation, complete coverage reporting, and required check names. Aim for the normal build's critical path to stay around 10 minutes; do not achieve this by silently skipping tests or reducing assertions/retries.
+- Use the existing JavaScript/Node.js runtime for CI and test orchestration scripts. Do not introduce another language runtime for tooling the project can already support.
 - Local app URLs:
   - Aspire dashboard: `https://ex.dev.localhost:7101`
   - Svelte app: `https://web-ex.dev.localhost:7131/next/`

@@ -78,7 +78,6 @@ k8s/ex-*-snapshots.yaml
 *secrets*
 
 # Agent / temp
-__pycache__/
 tmpclaude*
 dogfood-output/
 debug-storybook.log
