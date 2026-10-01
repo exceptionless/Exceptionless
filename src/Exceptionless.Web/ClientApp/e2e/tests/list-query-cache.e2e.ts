@@ -94,17 +94,14 @@ async function navigateToList(page: Page, name: 'Events' | 'Stacks'): Promise<vo
     if (page.url() === 'about:blank') {
         await page.goto(`/${name.toLowerCase().replace(/s$/, '')}/all`);
     } else {
-        const directLink = page.getByRole('link', { exact: true, name });
-        if ((await directLink.count()) > 0) {
-            await directLink.click();
-        } else {
-            const allLink = page.locator(`a[href="/${name.toLowerCase().replace(/s$/, '')}/all"]`);
-            if (!(await allLink.isVisible())) {
-                await page.getByRole('button', { exact: true, name }).click();
-            }
-
-            await allLink.click();
+        // Predefined views turn the temporary direct link into a group after loading.
+        // Wait for that group's All link instead of choosing a transient control.
+        const allLink = page.locator(`a[href="/${name.toLowerCase().replace(/s$/, '')}/all"]`);
+        if (!(await allLink.isVisible())) {
+            await page.getByRole('button', { exact: true, name }).click();
         }
+
+        await allLink.click();
     }
 
     const path = name.toLowerCase().replace(/s$/, '');

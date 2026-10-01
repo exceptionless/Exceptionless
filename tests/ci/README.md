@@ -22,7 +22,7 @@ Playwright's unsharded local and synthetic-monitoring configurations retain thei
 
 The chaos tests measure requests with controlled notifications while retaining real WebSocket connections. Background jobs can publish delayed seed-data notifications, so the request-budget scenarios intercept those messages and inject explicit bursts. The existing event-visibility journey separately verifies that a real server push updates the visible list without navigation or manual refresh.
 
-The navigation-cache scenario also intercepts server broadcasts. First-time saved-view creation legitimately invalidates those queries, so its notifications must not affect the scenario's unchanged-data request counts. Saved-view invalidation and live updates retain separate coverage.
+The navigation-cache scenario also intercepts server broadcasts. First-time saved-view creation legitimately invalidates those queries, so its notifications must not affect the scenario's unchanged-data request counts. Its navigation helper waits for saved-view groups instead of selecting the temporary direct links shown before the sidebar data loads. Saved-view invalidation and live updates retain separate coverage.
 
 Thirty hide/resume cycles can complete different numbers of WebSocket handshakes on different machines. Each completed reconnect legitimately refreshes active queries. Visibility assertions therefore enforce at most one fetch per observed reconnect and at most one reconnect per resume, with a bounded observation window for late repeated work. Navigation has a separate request budget and waits for each URL transition. These checks still detect repeated listeners, query loops, and excess requests without assuming a particular handshake speed.
 
