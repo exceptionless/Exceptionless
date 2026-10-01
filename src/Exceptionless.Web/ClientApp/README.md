@@ -25,6 +25,8 @@ npm run build
 
 The static output goes to `build/`. Publishing `Exceptionless.Web` includes it directly in `wwwroot`; Docker app images use `build/update-config.sh` from the repository root to write public runtime configuration. `EX_ApiUrl` selects a separate API origin when configured, otherwise requests use the app origin.
 
+Set the backend's `EX_BaseURL` to the public UI URL. Email links and OAuth authorization redirects use this address, including when the API has a separate origin.
+
 `npm run preview` previews the static build only; use Aspire for full-stack testing.
 
 ## Testing

@@ -2,6 +2,34 @@ import { expect, test } from '../fixtures/e2e-test';
 
 test.skip(process.env.E2E_ENV === 'production', 'API origin configuration coverage is local only.');
 
+test('status waits for the configured API to recover before returning to the application', async ({ page }) => {
+    const apiOrigin = 'https://localhost:65533';
+    await page.addInitScript((origin) => localStorage.setItem('PUBLIC_BASE_URL', origin), apiOrigin);
+    let apiHealthy = false;
+    let apiHealthRequests = 0;
+    let sameOriginHealthRequests = 0;
+    await page.route('**/health', async (route) => {
+        if (new URL(route.request().url()).origin === apiOrigin) {
+            apiHealthRequests++;
+            await route.fulfill({ body: apiHealthy ? 'Healthy' : 'Unhealthy', status: apiHealthy ? 200 : 503 });
+        } else {
+            sameOriginHealthRequests++;
+            await route.fulfill({ body: 'Healthy' });
+        }
+    });
+
+    await page.goto('/status?redirect=%2Flogin');
+    await expect.poll(() => apiHealthRequests).toBeGreaterThan(0);
+    await expect(page).toHaveURL(/\/status\?redirect=/);
+    await expect(page.getByText('Service Status', { exact: true })).toBeVisible();
+    expect(sameOriginHealthRequests).toBe(0);
+
+    apiHealthy = true;
+    await expect(page).toHaveURL(/\/login$/, { timeout: 40_000 });
+    expect(apiHealthRequests).toBeGreaterThan(1);
+    expect(sameOriginHealthRequests).toBe(0);
+});
+
 test('the application sends API requests and push connections to its configured origin', async ({ e2eApi, e2eScenario, page }) => {
     const apiOrigin = 'https://localhost:65533';
     await page.addInitScript((origin) => localStorage.setItem('PUBLIC_BASE_URL', origin), apiOrigin);

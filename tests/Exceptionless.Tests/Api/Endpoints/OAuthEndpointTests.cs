@@ -387,6 +387,20 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AuthorizeAsync_SeparateApiOrigin_RedirectsToConfiguredApplicationWithOriginalQuery()
+    {
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeRequest(PkceVerifier, authenticate: false);
+        request.RequestUri = new Uri(new Uri("http://api.localhost:7110/api/v2/"), request.RequestUri!);
+        string query = request.RequestUri.Query;
+
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal("http://localhost:7110/oauth/authorize" + query, response.Headers.Location?.OriginalString);
+    }
+
+    [Fact]
     public async Task AuthorizeAsync_AnonymousUser_RedirectsToAuthorizeBridge()
     {
         using var client = CreateHttpClient();
@@ -398,7 +412,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         var locationHeader = response.Headers.Location;
         Assert.NotNull(locationHeader);
         string location = locationHeader.ToString();
-        Assert.StartsWith("/oauth/authorize?", location);
+        Assert.StartsWith("http://localhost:7110/oauth/authorize?", location);
         var bridgeQuery = QueryHelpers.ParseQuery(location[(location.IndexOf('?') + 1)..]);
         Assert.Equal(ClientId, bridgeQuery["client_id"].ToString());
         Assert.Equal("code", bridgeQuery["response_type"].ToString());
@@ -418,7 +432,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         var locationHeader = response.Headers.Location;
         Assert.NotNull(locationHeader);
         string location = locationHeader.ToString();
-        Assert.StartsWith("/oauth/authorize?", location);
+        Assert.StartsWith("http://localhost:7110/oauth/authorize?", location);
         var bridgeQuery = QueryHelpers.ParseQuery(location[(location.IndexOf('?') + 1)..]);
         Assert.False(bridgeQuery.ContainsKey("resource"));
     }
@@ -433,7 +447,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.NotNull(response.Headers.Location);
-        Assert.StartsWith("/oauth/authorize?", response.Headers.Location.ToString());
+        Assert.StartsWith("http://localhost:7110/oauth/authorize?", response.Headers.Location.ToString());
     }
 
     [Fact]
