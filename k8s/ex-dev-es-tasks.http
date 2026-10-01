@@ -1,42 +1,28 @@
-@apiUrl = http://elastic:{{elasticPassword}}@elastic-ex-dev.localtest.me:9200/
+# Manual Elasticsearch inspection and snapshot restore examples for a local instance.
+@elasticsearchUrl = http://localhost:9200
+@repository = replace-with-snapshot-repository
+@snapshot = replace-with-snapshot-name
+@sourceIndices = replace-with-source-index-pattern
 
-GET {{apiUrl}}_cat/indices/dev-*?v
+### Inspect development indexes
+GET {{elasticsearchUrl}}/_cat/indices/dev-*?v
 
-###
+### List snapshots in an existing repository
+GET {{elasticsearchUrl}}/_cat/snapshots/{{repository}}?v
 
-DELETE {{apiUrl}}dev-*
+### Inspect a snapshot before choosing sourceIndices
+GET {{elasticsearchUrl}}/_snapshot/{{repository}}/{{snapshot}}
 
-###
-
-GET {{apiUrl}}_cat/snapshots/prod-hourly
-
-###
-
-POST {{apiUrl}}dev-*/_close
-
-###
-
-GET {{apiUrl}}_snapshot/prod-hourly/hourly-2020.09.05-10-sknpvrrjr0-0ahbpgopbfw
-
-###
-
-POST {{apiUrl}}_snapshot/prod-hourly/hourly-2020.09.05-10-sknpvrrjr0-0ahbpgopbfw/_restore?wait_for_completion=false
+### Restore selected indexes with a dev- prefix
+POST {{elasticsearchUrl}}/_snapshot/{{repository}}/{{snapshot}}/_restore?wait_for_completion=false
 Content-Type: application/json
 
 {
-  "include_global_state": true,
-  "indices": "prod-*,-prod-events-*,prod-events-v1-2020.09.*,prod-events-v1-2020.08.2*,prod-events-v1-2020.08.3*",
-  "rename_pattern": "prod-(.+)",
-  "rename_replacement": "dev-$1"
-}
-
-###
-
-PUT {{apiUrl}}dev-*/_settings
-Content-Type: application/json
-
-{
-    "index" : {
-        "number_of_replicas" : 0
+    "include_global_state": false,
+    "indices": "{{sourceIndices}}",
+    "rename_pattern": "(.+)",
+    "rename_replacement": "dev-$1",
+    "index_settings": {
+        "index.number_of_replicas": 0
     }
 }

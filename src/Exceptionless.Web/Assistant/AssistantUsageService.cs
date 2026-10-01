@@ -153,8 +153,8 @@ public sealed class AssistantUsageService(
         long promptTokens = providerInputCharacters;
         long completionTokens = AssistantLimits.MaximumOutputTokens;
         long costInMicrodollars = ToMicrodollars(
-            promptTokens * AssistantLimits.MaximumProviderPromptPricePerMillionTokens / 1_000_000m
-            + completionTokens * AssistantLimits.MaximumProviderCompletionPricePerMillionTokens / 1_000_000m);
+            promptTokens * AssistantLimits.EstimatedProviderPromptPricePerMillionTokens / 1_000_000m
+            + completionTokens * AssistantLimits.EstimatedProviderCompletionPricePerMillionTokens / 1_000_000m);
         var reservationExpiresAtUtc = month.ResetAtUtc.AddSeconds(AssistantLimits.MaximumTurnDurationSeconds + 30);
         await Task.WhenAll(
             _cache.IncrementAsync(GetUsageKey(organizationId, month.Id, "reserved-prompt-tokens"), promptTokens, reservationExpiresAtUtc.UtcDateTime),
@@ -201,7 +201,7 @@ public sealed class AssistantUsageService(
             return;
 
         logger.LogWarning(
-            "Recording conservative assistant provider usage for organization {OrganizationId} because actual usage was not received",
+            "Recording estimated assistant provider usage for organization {OrganizationId} because actual usage was not received",
             organizationId);
 
         await RecordProviderUsageAsync(

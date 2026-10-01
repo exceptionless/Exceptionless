@@ -1,8 +1,7 @@
 @url = http://localhost:7110
-@apiUrl = {url}/api/v2
+@apiUrl = {{url}}/api/v2
 @email = admin@exceptionless.test
 @password = tester
-@organizationId = 537650f3b77efe23a47914f3
 
 ### login to test account
 # @name login
@@ -18,181 +17,63 @@ Content-Type: application/json
 
 @token = {{login.response.body.$.token}}
 
-### Get Current User
-# @name currentUser
-GET {{apiUrl}}/users/me
-Authorization: Bearer {{token}}
-
-### Get OpenApi schema
-# @name openapi
-GET {{url}}/docs/v2/openapi.json
-
-###
-@userId = {{currentUser.response.body.$.id}}
-
-### All Organizations
-GET {{apiUrl}}/admin/organizations
-Authorization: Bearer {{token}}
-
 ### Organizations By Criteria
 GET {{apiUrl}}/admin/organizations?criteria=acme
-Authorization: Bearer {{token}}
-
-### Paid Organizations
-GET {{apiUrl}}/admin/organizations?paid=true
-Authorization: Bearer {{token}}
-
-### Suspended Organizations
-GET {{apiUrl}}/admin/organizations?suspended=true
-Authorization: Bearer {{token}}
-
-### Plan Stats
-GET {{apiUrl}}/admin/organizations/stats
-Authorization: Bearer {{token}}
-
-### Exie Usage
-GET {{apiUrl}}/admin/assistant-usage
-Authorization: Bearer {{token}}
-
-### Get Exie Settings
-GET {{apiUrl}}/admin/assistant-settings
-Authorization: Bearer {{token}}
-
-### Enable Exie Conversation Sharing by Default (enabled Is Required; Saved User Choices Take Precedence)
-PUT {{apiUrl}}/admin/assistant-settings/conversation-sharing
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "enabled": true
-}
-
-### Disable Exie Conversation Sharing by Default (Usage and Error Diagnostics Continue)
-PUT {{apiUrl}}/admin/assistant-settings/conversation-sharing
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "enabled": false
-}
-
-### Set Exie Model Override
-PUT {{apiUrl}}/admin/assistant-settings
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "model": "z-ai/glm-5.3-flash"
-}
-
-### Reset Exie Model Override
-PUT {{apiUrl}}/admin/assistant-settings
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "model": null
-}
-
-### Disable Exie at Runtime
-PUT {{apiUrl}}/admin/assistant-settings/enabled
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "enabled": false
-}
-
-### Reset Exie Availability to Deployment Default
-PUT {{apiUrl}}/admin/assistant-settings/enabled
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "enabled": null
-}
-
-### Get Event Submission Settings
-GET {{apiUrl}}/admin/event-submission-settings
-Authorization: Bearer {{token}}
-
-### Disable Event Submission at Runtime
-PUT {{apiUrl}}/admin/event-submission-settings
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "enabled": false
-}
-
-### Reset Event Submission to Deployment Default
-PUT {{apiUrl}}/admin/event-submission-settings
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-    "enabled": null
-}
-
-### Suspend
-POST {{apiUrl}}/organizations/{{organizationId}}/suspend?code=1
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### Unsuspend
-DELETE {{apiUrl}}/organizations/{{organizationId}}/suspend
-Authorization: Bearer {{token}}
-
-### Add Admin Role
-POST {{apiUrl}}/users/{{userId}}/admin-role
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### Delete Admin Role
-DELETE {{apiUrl}}/users/{{userId}}/admin-role
-Authorization: Bearer {{token}}
-
-### Requeue
-GET {{apiUrl}}/admin/requeue?archive=true
-Authorization: Bearer {{token}}
-
-### Set Bonus
-POST {{apiUrl}}/admin/set-bonus?organizationId={{organizationId}}&bonusEvents=1500&expires=12-31-2023
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### Update Organization Plans
-GET {{apiUrl}}/admin/maintenance/update-organization-plans
-Authorization: Bearer {{token}}
-
-### Update Project Default Bot Lists
-GET {{apiUrl}}/admin/maintenance/update-project-default-bot-lists
-Authorization: Bearer {{token}}
-
-### Fix Stack Stats (defaults: utcStart=now-90d, utcEnd=null=>now)
-GET {{apiUrl}}/admin/maintenance/fix-stack-stats
-Authorization: Bearer {{token}}
-
-### Fix Stack Stats (explicit UTC window)
-GET {{apiUrl}}/admin/maintenance/fix-stack-stats?utcStart=2026-02-10T00:00:00Z&utcEnd=2026-02-23T00:00:00Z
 Authorization: Bearer {{token}}
 
 ### Admin Stats
 GET {{apiUrl}}/admin/stats
 Authorization: Bearer {{token}}
 
-### Migrations
-GET {{apiUrl}}/admin/migrations
+### Get Exie Settings
+GET {{apiUrl}}/admin/assistant-settings
 Authorization: Bearer {{token}}
 
-### Rerun Migration
-# @name rerunMigration
-POST {{apiUrl}}/admin/migrations/5/rerun
+### Set the Exie model (use model: null to restore the configured default)
+PUT {{apiUrl}}/admin/assistant-settings
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "confirmation": "RERUN 5"
+    "model": "replace-with-model-id"
+}
+
+### Get Event Submission Settings
+GET {{apiUrl}}/admin/event-submission-settings
+Authorization: Bearer {{token}}
+
+### Pause event submission (use enabled: null to restore the configured default)
+PUT {{apiUrl}}/admin/event-submission-settings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "enabled": false
+}
+
+### Requeue
+GET {{apiUrl}}/admin/requeue?archive=true
+Authorization: Bearer {{token}}
+
+### Recalculate stack statistics
+# Optional query parameters: utcStart and utcEnd (UTC timestamps).
+GET {{apiUrl}}/admin/maintenance/fix-stack-stats
+Authorization: Bearer {{token}}
+
+### Migrations
+GET {{apiUrl}}/admin/migrations
+Authorization: Bearer {{token}}
+
+### Rerun a migration
+# Set the version from the migrations list before running this request.
+@migrationVersion = replace-with-migration-version
+# @name rerunMigration
+POST {{apiUrl}}/admin/migrations/{{migrationVersion}}/rerun
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "confirmation": "RERUN {{migrationVersion}}"
 }
 
 ### Get Migration Rerun Status
