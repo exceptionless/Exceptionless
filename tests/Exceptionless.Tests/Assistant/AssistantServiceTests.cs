@@ -177,15 +177,15 @@ public sealed class AssistantServiceTests
     }
 
     [Fact]
-    public async Task StreamAsync_RuntimeModelOverride_UsesOverride()
+    public async Task StreamAsync_RuntimeModelChanges_UsesLatestModelWithoutPriceFilter()
     {
-        var handler = new StubHttpMessageHandler(
-            """
+        const string response = """
             data: {"choices":[{"delta":{"content":"Hello"}}]}
 
             data: [DONE]
 
-            """);
+            """;
+        var handler = new StubHttpMessageHandler(response, response, response, response, response);
         var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -199,19 +199,34 @@ public sealed class AssistantServiceTests
             TimeProvider = TimeProvider.System
         });
         var settingsService = CreateAssistantModelSettingsService(appOptions);
-        await settingsService.SetModelAsync("z-ai/glm-5.3-flash", "000000000000000000000001");
         var service = CreateAssistantService(handler, appOptions, cache, modelSettingsService: settingsService);
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", "Say hello")],
+            OrganizationId: "organization-id",
+            ConversationId: "conversation-id");
 
-        await foreach (var _ in service.StreamAsync(
-            new AssistantChatRequest([new AssistantChatMessage("user", "Say hello")]),
-            "user-id",
-            CreatePlanOptions(),
-            TestContext.Current.CancellationToken))
+        string?[] models = [null, "openai/gpt-6.1-sol", "anthropic/claude-sonnet-5.5", "openai/gpt-6.1-sol", null];
+        foreach (string? model in models)
         {
+            await settingsService.SetModelAsync(model, "000000000000000000000001");
+            var events = new List<AssistantStreamEvent>();
+            await foreach (var item in service.StreamAsync(request, "user-id", CreatePlanOptions(), TestContext.Current.CancellationToken))
+                events.Add(item);
+
+            Assert.Contains(events, item => item.Text == "Hello");
+            Assert.Equal("done", events[^1].Type);
         }
 
-        using var providerRequest = JsonDocument.Parse(handler.RequestBody);
-        Assert.Equal("z-ai/glm-5.3-flash", providerRequest.RootElement.GetProperty("model").GetString());
+        Assert.Equal(models.Length, handler.RequestBodies.Count);
+        for (int index = 0; index < models.Length; index++)
+        {
+            using var providerRequest = JsonDocument.Parse(handler.RequestBodies[index]);
+            var payload = providerRequest.RootElement;
+            Assert.Equal(models[index] ?? appOptions.AssistantOptions.Model, payload.GetProperty("model").GetString());
+            Assert.False(payload.TryGetProperty("provider", out var provider) && provider.TryGetProperty("max_price", out _));
+            Assert.Equal(AssistantLimits.MaximumOutputTokens, payload.GetProperty("max_tokens").GetInt32());
+            Assert.NotEmpty(payload.GetProperty("tools").EnumerateArray());
+        }
     }
 
     [Fact]

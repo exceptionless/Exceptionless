@@ -171,7 +171,7 @@ public sealed class AssistantService(
                             }
                             catch (Exception ex)
                             {
-                                // Disposal records the conservative reservation when detailed provider
+                                // Disposal records the estimated reservation when detailed provider
                                 // accounting cannot be reconciled.
                                 logger.LogError(ex, "Unable to record assistant provider usage for organization {OrganizationId}", request.OrganizationId);
                             }
@@ -488,15 +488,7 @@ public sealed class AssistantService(
             ["messages"] = messages,
             ["stream"] = true,
             ["max_tokens"] = AssistantLimits.MaximumOutputTokens,
-            ["temperature"] = 0.2,
-            ["provider"] = new
-            {
-                max_price = new
-                {
-                    prompt = AssistantLimits.MaximumProviderPromptPricePerMillionTokens,
-                    completion = AssistantLimits.MaximumProviderCompletionPricePerMillionTokens
-                }
-            }
+            ["temperature"] = 0.2
         };
         // Tool results still require their schemas when the model must produce a final answer.
         payload["tools"] = AssistantToolDefinitions.Create(tools, chatRequest);

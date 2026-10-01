@@ -16,6 +16,8 @@ These tests require neither running infrastructure nor a provider API key. The e
 
 For new provider failure cases, use the synthetic streams in [AssistantServiceTests.cs](AssistantServiceTests.cs) and the log, trace, and metric assertions in [AssistantDiagnosticsTests.cs](AssistantDiagnosticsTests.cs).
 
+The runtime model setting is read at the start of every turn, including turns in an existing conversation. Model selection does not impose a provider price filter. Organization token and cost limits still apply using reported provider usage; in-flight reservations and interrupted requests without usage use estimated prices, which may differ from the selected model's prices.
+
 ## Provider evaluations
 
 [AssistantQualityEvaluationTests.cs](AssistantQualityEvaluationTests.cs) calls the configured AI provider through the local test HTTP host, authentication, seeded Elasticsearch data, and MCP tools. Docker must be available; [AppWebHostFactory](../AppWebHostFactory.cs) starts the local test infrastructure automatically.
