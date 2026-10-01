@@ -38,6 +38,9 @@ test('frontend union distinguishes opposite arms and validates original source m
     assert.throws(() => normalizeFile(malformed, 'src/choose.ts', source), /counter/);
     assert.equal(sourcePath('C:\\checkout\\src\\choose.ts', 'C:\\checkout'), 'src/choose.ts');
     assert.throws(() => sourcePath('src/../choose.ts', '/checkout'), /Unexpected/);
+    for (const path of ['src/component.test-harness.svelte', 'src/change-plan-dialog-harness.svelte']) {
+        assert.throws(() => sourcePath(path, '/checkout'), /Unexpected/, 'Test and Storybook harnesses must not enter the application denominator');
+    }
 });
 
 test('frontend aggregation rejects missing, duplicate, stale and incomplete artifacts', () => {

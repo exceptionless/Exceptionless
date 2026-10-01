@@ -211,8 +211,9 @@ collector reports retain their branch details. The PR comment shows the
 backend and frontend figures separately. No minimum percentages are imposed.
 
 The frontend denominator includes tracked application `.ts`, `.js`, and `.svelte`
-files under `ClientApp/src`, including untouched files. Tests, stories, declarations,
-generated API/schema output, dependencies, legacy Angular, and CSS are excluded.
+files under `ClientApp/src`, including untouched files. Tests, stories, test/demo
+`*-harness.svelte` components, declarations, generated API/schema output,
+dependencies, legacy Angular, and CSS are excluded.
 Files containing only erased types, imports, and re-exports are retained in the
 inventory with no executable counters. Missing executable files fail aggregation.
 Server-only SvelteKit files (`+server`, `.server`, and `/server/`) belong to the
@@ -315,7 +316,7 @@ inspect the affected original source and collector outputs instead of merging
 their percentages. `collection-start.json`, `collection-end.json`, worker JSON, and `collection-error.txt`
 are diagnostic artifacts, not substitutes for a complete manifest.
 
-A complete local run of all 960 existing unit/component tests covered 5,814/21,692
+An initial local prototype of all 960 existing unit/component tests covered 5,814/21,692
 lines (26.80%) in the unit compiler's footprint and 3,291/11,908 mapped branch arms
 (27.63%), in 62.86 seconds with two workers. The browser source plan contributes
 260 additional executable source lines to the canonical denominator: the comparable
@@ -352,8 +353,17 @@ report failure; it is not a successful-build timing. Across the six browser shar
 startup totaled 903s, test execution 1,770s, and shutdown 13.5s. Process-tree RSS
 peaks were 4,393–4,848 MiB; host used-memory peaks were 9,922–11,658 MiB.
 The frontend unit command took 112.0s plus 39.0s finalization (38.5s for the source
-plan), with 1,724 MiB collector-helper peak RSS. Broad route warmup was subsequently
-disabled for browser coverage to avoid instrumenting unvisited routes in every
-shard. Final successful-build overhead and the two final-commit hosted runs are
+plan), with 1,724 MiB collector-helper peak RSS. Disabling browser route warmup was
+evaluated in run 36932758977, but caused the first sessions-page journey to time out
+waiting for signed-in navigation and pass only on retry. The flaky-test gate rejected
+that run; browser warmup was restored without changing tests or assertion timeouts.
+Final successful-build overhead and the two final-commit hosted runs are
 recorded in PR #2620; baseline memory telemetry is insufficient to claim a precise
 memory-overhead delta.
+
+These characterization figures preceded exclusion of ten test/Storybook harness
+components (111 executable lines, 96 covered). With the final application-only
+policy, all 960 local tests passed in 43.87s plus 23.11s finalization; the collector
+helper peaked at 1,661 MiB RSS. The inventory contains 854 files, with a comparable
+unit baseline of 5,719/21,841 lines (26.18%) and 3,269/11,881 mapped branch arms
+(27.51%). Final hosted unit/browser/combined figures use this same exclusion policy.
