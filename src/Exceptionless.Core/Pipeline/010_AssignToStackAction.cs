@@ -111,7 +111,7 @@ public class AssignToStackAction : EventPipelineActionBase
             }
             else
             {
-                ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId, o => o.Cache());
+                ctx.Stack = await _stackRepository.GetCanonicalStackAsync(ctx.Event.StackId);
                 if (ctx.Stack is null || ctx.Stack.ProjectId != ctx.Event.ProjectId)
                 {
                     ctx.SetError("Invalid StackId.");
@@ -168,8 +168,8 @@ public class AssignToStackAction : EventPipelineActionBase
         }
 
         var stacksToSave = stacks.Where(s => s.Value.ShouldSave).Select(kvp => kvp.Value.Stack).ToList();
-        if (stacksToSave.Count > 0)
-            await _stackRepository.SaveAsync(stacksToSave, o => o.Cache().Notifications(false)); // notification will get sent later in the update stats step
+        foreach (var stack in stacksToSave)
+            await _stackRepository.AddEventTagsAsync(stack.Id, stack.Tags); // notification will get sent later in the update stats step
 
         // Set stack ids after they have been saved and created
         contexts.ForEach(ctx =>
