@@ -244,7 +244,8 @@ public sealed class AssistantService(
             catch (Exception ex)
             {
                 providerDiagnostics?.RecordException(ex);
-                if (ex is OperationCanceledException cancellationException && assistantContent.Length > 0)
+                // A cancelled tool round can describe actions that have not executed yet.
+                if (ex is OperationCanceledException cancellationException && assistantContent.Length > 0 && toolCalls.Count == 0)
                 {
                     string partialResponse = assistantContent.ToString();
                     if (!s_rawDsmlPattern.IsMatch(partialResponse))

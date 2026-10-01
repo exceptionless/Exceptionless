@@ -1524,13 +1524,15 @@ public sealed class AssistantServiceTests
     }
 
     [Theory]
-    [InlineData("turn", "private partial answer", "private partial answer", "failed", "turn_timeout")]
-    [InlineData("provider", "private partial answer", "private partial answer", "failed", "provider_timeout")]
-    [InlineData("client", "private partial answer", "", "cancelled", "client_disconnected")]
-    [InlineData("turn", "private partial answer <｜DSML｜invoke>", "", "failed", "turn_timeout")]
-    [InlineData("turn", "", "", "failed", "turn_timeout")]
+    [InlineData("turn", "private partial answer", false, "private partial answer", "failed", "turn_timeout")]
+    [InlineData("provider", "private partial answer", false, "private partial answer", "failed", "provider_timeout")]
+    [InlineData("client", "private partial answer", false, "", "cancelled", "client_disconnected")]
+    [InlineData("turn", "private partial answer <｜DSML｜invoke>", false, "", "failed", "turn_timeout")]
+    [InlineData("turn", "", false, "", "failed", "turn_timeout")]
+    [InlineData("turn", "I marked the private stack critical.", true, "", "failed", "turn_timeout")]
+    [InlineData("provider", "I marked the private stack critical.", true, "", "failed", "provider_timeout")]
     public async Task StreamAsync_CancelledProvider_PreservesSafePartialAnswerAndRecordsUsage(
-        string cancellationSource, string content, string expectedText, string outcome, string failureReason)
+        string cancellationSource, string content, bool hasPendingToolCall, string expectedText, string outcome, string failureReason)
     {
         var timeProvider = new FakeTimeProvider();
         using var requestAborted = new CancellationTokenSource();
@@ -1552,10 +1554,10 @@ public sealed class AssistantServiceTests
                     {
                         content,
                         reasoning = "private reasoning",
-                        tool_calls = new[]
+                        tool_calls = hasPendingToolCall ? new[]
                         {
-                            new { index = 0, id = "pending-tool", function = new { name = "set_stack_critical", arguments = "{\"critical\":" } }
-                        }
+                            new { index = 0, id = "pending-tool", function = new { name = "set_stack_critical", arguments = "{\"stack_id\":\"private-stack\",\"critical\":true}" } }
+                        } : []
                     }
                 }
             },
