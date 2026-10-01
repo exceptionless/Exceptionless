@@ -238,6 +238,14 @@ if (!servicesOnly)
         })
         .WithParentRelationship(api);
 
+    if (ciE2E)
+    {
+        // CI/local test runners install the locked dependencies before startup.
+        // A second npm install can rewrite the lockfile with a different npm version.
+        oldApp.WithNpm(install: false);
+        app.WithNpm(install: false);
+    }
+
     if (worktreePorts is not null)
     {
         app.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)

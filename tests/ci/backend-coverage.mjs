@@ -233,7 +233,7 @@ function statistics(report) {
 
 // One class per canonical source file avoids counting linked files twice across modules.
 // Branch attributes are deliberately absent: native Microsoft reports carry blocks, not branches.
-export function writeCobertura(report, output) {
+export function writeCobertura(report, output, packageName = 'Backend') {
     const files = new Map();
     for (const [key, covered] of [...report.lines].sort(([a], [b]) => a.localeCompare(b))) {
         const separator = key.lastIndexOf(':');
@@ -245,10 +245,15 @@ export function writeCobertura(report, output) {
     const xml = [
         '<?xml version="1.0" encoding="utf-8"?>',
         `<coverage line-rate="${stats.lines_covered / stats.lines_total}" lines-covered="${stats.lines_covered}" lines-valid="${stats.lines_total}" version="1.0">`,
-        '<sources><source>.</source></sources><packages><package name="Backend"><classes>'
+        `<sources><source>.</source></sources><packages><package name="${escapeXml(packageName)}"><classes>`
     ];
+    const classNames = new Set();
     for (const [file, lines] of files) {
-        const className = file.replace(/\.[^.]+$/, '').replaceAll('/', '.');
+        // Preserve the complete path: e.g. button.ts and button.svelte must not
+        // collide, nor may a dotted filename collide with nested directories.
+        const className = file.replaceAll('/', '.');
+        if (classNames.has(className)) throw new Error(`Ambiguous coverage class name: ${file}`);
+        classNames.add(className);
         xml.push(`<class name="${escapeXml(className)}" filename="${escapeXml(file)}"><methods/><lines>`);
         for (const { line, covered } of lines.sort((a, b) => a.line - b.line)) xml.push(`<line number="${line}" hits="${Number(covered)}"/>`);
         xml.push('</lines></class>');

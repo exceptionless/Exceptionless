@@ -159,7 +159,9 @@ export default defineConfig({
         },
         strictPort: true,
         warmup: {
-            clientFiles: ['src/routes/**/*.svelte']
+            // Warmup runs before Vitest initializes coverage and can cache
+            // uninstrumented components. Tests load their own modules.
+            clientFiles: process.env.VITEST ? [] : ['src/routes/**/*.svelte']
         }
     },
     test: {

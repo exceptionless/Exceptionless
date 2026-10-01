@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import test from 'node:test';
-import { normalizeFile, sourcePath, union, validateManifests } from './frontend-coverage.mjs';
+import { normalizeFile, sourceLines, sourcePath, union, validateBrowserPlan, validateManifests, verifyHtmlSummary } from './frontend-coverage.mjs';
 
 const source = 'export function choose(flag) {\n    if (flag) return 1;\n    return 2;\n}\n';
 const span = (line, start = 0, end = 10) => ({ start: { line, column: start }, end: { line, column: end } });
@@ -23,6 +23,16 @@ test('frontend union distinguishes opposite arms and validates original source m
     const changed = structuredClone(right);
     changed['src/choose.ts'].branchMap[0].loc.end.column++;
     assert.throws(() => union([left, changed]), /Incompatible frontend branchMap/);
+    // Server and browser compilation can disagree on branches. Their original
+    // line union is still exact, including duplicate statements on one line.
+    changed['src/choose.ts'].statementMap[2] = span(3, 1, 9);
+    changed['src/choose.ts'].s[2] = 0;
+    assert.deepEqual(sourceLines([left, changed]), new Map([['src/choose.ts:2', true], ['src/choose.ts:3', true]]));
+    assert.deepEqual(sourceLines([left, left]), new Map([['src/choose.ts:2', true], ['src/choose.ts:3', false]]));
+    const rendered = { coveredlines: 2, coverablelines: 3, coveredbranches: 0, totalbranches: 0 };
+    verifyHtmlSummary(rendered, { covered: 2, total: 3 });
+    assert.throws(() => verifyHtmlSummary({ ...rendered, coverablelines: 4 }, { covered: 2, total: 3 }), /differs/);
+    assert.throws(() => verifyHtmlSummary({ ...rendered, totalbranches: 1 }, { covered: 2, total: 3 }), /differs/);
     const malformed = file(1, 0);
     malformed.s[0] = -1;
     assert.throws(() => normalizeFile(malformed, 'src/choose.ts', source), /counter/);
@@ -34,15 +44,22 @@ test('frontend aggregation rejects missing, duplicate, stale and incomplete arti
     const identity = { commit: 'current', run: '1', attempt: '2' };
     const manifests = [1, 2].map((index) => ({
         schema: 1, kind: 'e2e', index, count: 2, complete: true, session: `session-${index}`,
-        identity, sha256: 'a'.repeat(64), source_root: '/checkout', seconds: 1
+        identity, sha256: 'a'.repeat(64), source_root: '/checkout', seconds: 1, finalize_seconds: 1, peak_node_rss_kib: 1
     }));
     validateManifests(manifests, identity, 'e2e', 2);
     for (const invalid of [manifests.slice(1), [manifests[0], manifests[0]]]) {
         assert.throws(() => validateManifests(invalid, identity, 'e2e', 2), /Missing or duplicate/);
     }
-    for (const change of [{ complete: false }, { identity: { ...identity, commit: 'stale' } }, { seconds: null }, { sha256: 'bad' }]) {
+    for (const change of [{ complete: false }, { identity: { ...identity, commit: 'stale' } }, { seconds: null }, { finalize_seconds: null }, { sha256: 'bad' }]) {
         assert.throws(() => validateManifests([{ ...manifests[0], ...change }, manifests[1]], identity, 'e2e', 2), /Malformed, stale/);
     }
+    const sources = { 'src/choose.ts': 'hash', 'src/example.server.ts': 'hash' };
+    const plan = { 'src/choose.ts': file(0, 0) };
+    validateBrowserPlan(plan, sources);
+    assert.throws(() => validateBrowserPlan({}, sources), /missing or unexpected/);
+    assert.throws(() => validateBrowserPlan({ ...plan, 'src/example.server.ts': file(0, 0) }, sources), /missing or unexpected/);
+    assert.throws(() => validateBrowserPlan({ 'src/choose.ts': file(1, 0) }, sources), /unexecuted/);
+    assert.throws(() => validateBrowserPlan({ 'src/choose.ts': file(-1, 0) }, sources), /counter/);
 });
 
 test('every existing browser test uses the coverage-aware fixture', () => {

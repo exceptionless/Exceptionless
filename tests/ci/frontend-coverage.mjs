@@ -24,7 +24,7 @@ export function identity() {
         attempt: process.env.GITHUB_RUN_ATTEMPT ?? '1',
         collector: 'istanbul-5.0.3/1.0.2',
         settings: hash(
-            ['package-lock.json', 'vite.config.ts', 'scripts/test-coverage/policy.ts', 'scripts/test-coverage/vite.ts']
+            ['package-lock.json', 'vite.config.ts', 'svelte.config.js', 'scripts/test-coverage/policy.ts', 'scripts/test-coverage/vite.ts']
                 .map((path) => readFileSync(join(client, path), 'utf8'))
                 .join('\n')
         )
@@ -165,6 +165,38 @@ function includeUntouched(coverage, sources) {
     return coverage;
 }
 
+export async function browserPlan(sources = inventory()) {
+    const { createServer } = require('vite');
+    const { frontendCoverage } = await import('../../src/Exceptionless.Web/ClientApp/scripts/test-coverage/vite.ts');
+    const raw = {};
+    const previousDirectory = process.cwd();
+    process.chdir(client);
+    let server;
+    try {
+        server = await createServer({
+            configFile: join(client, 'vite.config.ts'),
+            root: client,
+            optimizeDeps: { noDiscovery: true, include: [] },
+            server: { middlewareMode: true, watch: null },
+            plugins: [
+                frontendCoverage((file) => { raw[file.path] = structuredClone(file); }),
+                {
+                    name: 'coverage-plan-without-warmup',
+                    configResolved(config) { config.server.warmup = { clientFiles: [], ssrFiles: [] }; }
+                }
+            ]
+        });
+        for (const path of Object.keys(sources).filter(browserSource)) {
+            await server.environments.client.transformRequest('/' + path);
+        }
+        const mapped = (await createSourceMapStore().transformCoverage(createCoverageMap(raw))).toJSON();
+        return includeUntouched(normalize(mapped, client, sources), Object.fromEntries(Object.entries(sources).filter(([path]) => browserSource(path))));
+    } finally {
+        await server?.close();
+        process.chdir(previousDirectory);
+    }
+}
+
 export function union(reports) {
     const merged = {};
     for (const report of reports) {
@@ -198,7 +230,8 @@ export function validateManifests(manifests, expected, kind, count) {
         if (manifest.schema !== 1 || manifest.kind !== kind || manifest.count !== count || manifest.complete !== true ||
             !isDeepStrictEqual(manifest.identity, expected) || typeof manifest.session !== 'string' || !manifest.session ||
             sessions.has(manifest.session) || !/^[a-f\d]{64}$/.test(manifest.sha256 ?? '') ||
-            !Number.isFinite(manifest.seconds) || manifest.seconds < 0 || typeof manifest.source_root !== 'string') {
+            !['seconds', 'finalize_seconds', 'peak_node_rss_kib'].every((key) => Number.isFinite(manifest[key]) && manifest[key] >= 0) ||
+            typeof manifest.source_root !== 'string') {
             throw new Error('Malformed, stale, incompatible or incomplete frontend coverage manifest');
         }
         sessions.add(manifest.session);
@@ -206,15 +239,19 @@ export function validateManifests(manifests, expected, kind, count) {
 }
 
 export async function seal(directory, { kind, index, count, session, complete, seconds }) {
+    const started = performance.now();
     const sources = inventory();
     const start = readJson(join(directory, 'collection-start.json'));
-    if (start.session !== session || !isDeepStrictEqual(start.identity, identity()) || !isDeepStrictEqual(start.sources, sources)) {
-        throw new Error('Frontend source or collection identity changed during execution');
-    }
     let coverage;
     let documents;
+    let planSha;
+    let planSeconds;
     if (kind === 'unit') {
         coverage = includeUntouched(normalize(readJson(join(directory, 'coverage-final.json')), client, sources), sources);
+        const planStarted = performance.now();
+        writeJson(join(directory, 'browser-plan.json'), await browserPlan(sources));
+        planSeconds = (performance.now() - planStarted) / 1000;
+        planSha = hash(readFileSync(join(directory, 'browser-plan.json')));
     } else {
         const workers = readdirSync(directory).filter((name) => /^worker-\d+-[a-f\d-]+\.json$/.test(name)).sort();
         if (!workers.length) throw new Error('No browser coverage workers finalized');
@@ -233,12 +270,31 @@ export async function seal(directory, { kind, index, count, session, complete, s
         }
         coverage = union(reports);
     }
+    const end = { identity: identity(), sources: inventory(), session };
+    writeJson(join(directory, 'collection-end.json'), end);
+    if (start.session !== session || !isDeepStrictEqual(start.identity, end.identity) || !isDeepStrictEqual(start.sources, end.sources)) {
+        throw new Error('Frontend source or collection identity changed during execution');
+    }
     writeJson(join(directory, 'frontend.json'), coverage);
     writeJson(join(directory, 'manifest.json'), {
         schema: 1, kind, index, count, session, complete, seconds, documents,
+        finalize_seconds: (performance.now() - started) / 1000,
+        peak_node_rss_kib: process.resourceUsage().maxRSS,
         identity: start.identity, source_root: client, sources,
-        sha256: hash(readFileSync(join(directory, 'frontend.json')))
+        sha256: hash(readFileSync(join(directory, 'frontend.json'))),
+        browser_plan_sha256: planSha,
+        browser_plan_seconds: planSeconds
     });
+}
+
+export function validateBrowserPlan(plan, sources) {
+    if (!isDeepStrictEqual(Object.keys(plan).sort(), Object.keys(sources).filter(browserSource).sort())) {
+        throw new Error('Browser source plan has missing or unexpected files');
+    }
+    if (Object.values(plan).some((file) =>
+        [...Object.values(file.s), ...Object.values(file.f), ...Object.values(file.b).flat()].some((value) => counter(value) !== 0))) {
+        throw new Error('Browser source plan must contain only unexecuted source');
+    }
 }
 
 function load(directory, kind, count) {
@@ -252,7 +308,21 @@ function load(directory, kind, count) {
         const raw = readFileSync(join(directory, 'frontend.json'));
         if (hash(raw) !== manifest.sha256) throw new Error('Frontend coverage checksum mismatch');
         const coverage = normalize(JSON.parse(raw), manifest.source_root, sources);
-        return { manifest, coverage };
+        let plan;
+        if (kind === 'unit') {
+            if (!isDeepStrictEqual(Object.keys(coverage).sort(), Object.keys(sources).sort())) {
+                throw new Error('Unit coverage has missing source files');
+            }
+            const rawPlan = readFileSync(join(directory, 'browser-plan.json'));
+            if (hash(rawPlan) !== manifest.browser_plan_sha256 || !Number.isFinite(manifest.browser_plan_seconds) || manifest.browser_plan_seconds < 0) {
+                throw new Error('Missing, malformed or corrupt browser source plan');
+            }
+            plan = normalize(JSON.parse(rawPlan), manifest.source_root, sources);
+            validateBrowserPlan(plan, sources);
+        } else if (Object.keys(coverage).some((path) => !browserSource(path))) {
+            throw new Error('Browser collected server-only source');
+        }
+        return { manifest, coverage, plan };
     });
 }
 
@@ -265,35 +335,67 @@ function report(directory, data) {
     return coverageMap.getCoverageSummary().toJSON();
 }
 
-export function aggregate(input, output, count) {
+export function sourceLines(reports) {
+    const lines = new Map();
+    for (const report of reports) {
+        for (const [path, file] of Object.entries(report)) {
+            for (const [id, span] of Object.entries(file.statementMap)) {
+                const key = `${path}:${span.start.line}`;
+                lines.set(key, (lines.get(key) ?? false) || counter(file.s[id]) > 0);
+            }
+        }
+    }
+    return lines;
+}
+
+export function verifyHtmlSummary(actual, expected) {
+    if (actual.coveredlines !== expected.covered || actual.coverablelines !== expected.total ||
+        actual.coveredbranches !== 0 || actual.totalbranches !== 0) {
+        throw new Error('Frontend HTML coverage differs from the canonical line union');
+    }
+}
+
+export async function aggregate(input, output, count) {
     const started = performance.now();
     const units = load(join(input, 'unit'), 'unit', 1);
     const browsers = load(join(input, 'e2e'), 'e2e', count);
     const unit = union(units.map((entry) => entry.coverage));
-    // Vitest's explicitly included, untouched sources supply the browser's zero
-    // counters as well. Browser-only source can extend this map only if present
-    // in the sealed source inventory.
-    const emptyBrowser = Object.fromEntries(Object.entries(unit).filter(([path]) => browserSource(path)).map(([path, file]) => {
-        const empty = structuredClone(file);
-        for (const kind of ['s', 'f']) for (const key of Object.keys(empty[kind])) empty[kind][key] = 0;
-        for (const key of Object.keys(empty.b)) empty.b[key].fill(0);
-        return [path, empty];
-    }));
-    const e2e = union([emptyBrowser, ...browsers.map((entry) => entry.coverage)]);
-    const combined = union([unit, e2e]);
+    const e2e = union([units[0].plan, ...browsers.map((entry) => entry.coverage)]);
+    const unitLines = sourceLines([unit]);
+    const e2eLines = sourceLines([e2e]);
+    const combinedLines = sourceLines([unit, e2e]);
+    // All line reports use the same eligible source locations, including the
+    // client-only locations removed by Svelte's server-side unit compilation.
+    for (const key of combinedLines.keys()) {
+        if (!unitLines.has(key)) unitLines.set(key, false);
+        const path = key.slice(0, key.lastIndexOf(':'));
+        if (browserSource(path) && !e2eLines.has(key)) e2eLines.set(key, false);
+    }
     mkdirSync(output, { recursive: false });
-    const summaries = {
-        unit: report(join(output, 'unit'), unit),
-        e2e: report(join(output, 'e2e'), e2e),
-        combined: report(join(output, 'combined'), combined)
-    };
-    const unitMap = createCoverageMap(unit);
+    const { writeCobertura } = await import('./backend-coverage.mjs');
+    const summaries = {};
+    for (const [name, lines, data] of [['unit', unitLines, unit], ['e2e', e2eLines, e2e], ['combined', combinedLines, undefined]]) {
+        const directory = join(output, name);
+        mkdirSync(directory);
+        const collectorSummary = data ? report(join(directory, 'collector'), data) : undefined;
+        const covered = [...lines.values()].filter(Boolean).length;
+        summaries[name] = {
+            lines: { covered, total: lines.size, pct: Number((100 * covered / lines.size).toFixed(2)) },
+            branches: collectorSummary?.branches ?? null
+        };
+        writeCobertura({
+            modules: [],
+            lines: new Map([...lines].map(([key, covered]) => [`src/Exceptionless.Web/ClientApp/${key}`, covered]))
+        }, join(directory, 'Cobertura.xml'), 'Frontend');
+        writeJson(join(directory, 'lines.json'), Object.fromEntries([...lines].sort(([a], [b]) => a.localeCompare(b))));
+        writeJson(join(directory, 'summary.json'), summaries[name]);
+    }
     const added = {};
-    for (const file of createCoverageMap(combined).files()) {
-        const lines = createCoverageMap(combined).fileCoverageFor(file).getLineCoverage();
-        const before = unit[file] ? unitMap.fileCoverageFor(file).getLineCoverage() : {};
-        const hits = Object.entries(lines).filter(([line, hits]) => hits > 0 && !(before[line] > 0)).map(([line]) => Number(line));
-        if (hits.length) added[file] = hits;
+    for (const [key, covered] of combinedLines) {
+        if (!covered || unitLines.get(key)) continue;
+        const separator = key.lastIndexOf(':');
+        const file = key.slice(0, separator);
+        (added[file] ??= []).push(Number(key.slice(separator + 1)));
     }
     writeJson(join(output, 'e2e-added-lines.json'), added);
     writeJson(join(output, 'summary.json'), summaries);
@@ -302,12 +404,13 @@ export function aggregate(input, output, count) {
         seconds: (performance.now() - started) / 1000, peak_node_rss_kib: process.resourceUsage().maxRSS
     });
     const rows = Object.entries(summaries).map(([name, summary]) =>
-        `| ${name === 'unit' ? 'Unit/component' : name === 'e2e' ? 'E2E browser' : '**Combined frontend**'} | ${summary.lines.pct}% (${summary.lines.covered}/${summary.lines.total}) | ${summary.branches.pct}% (${summary.branches.covered}/${summary.branches.total}) |`
+        `| ${name === 'unit' ? 'Unit/component' : name === 'e2e' ? 'E2E browser' : '**Combined frontend**'} | ${summary.lines.pct}% (${summary.lines.covered}/${summary.lines.total}) | ${summary.branches ? `${summary.branches.pct}% (${summary.branches.covered}/${summary.branches.total})` : '**Unavailable**'} |`
     );
     writeFileSync(join(output, 'summary.md'), [
-        '### Frontend source coverage', '', '| Execution | Lines | Mapped branches |', '| --- | ---: | ---: |', ...rows, '',
+        '### Frontend source coverage', '', '| Execution | Canonical source lines | Collector-reported branches |', '| --- | ---: | ---: |', ...rows, '',
         `E2E adds **${Object.values(added).reduce((sum, lines) => sum + lines.length, 0)}** covered source lines beyond unit/component tests.`,
-        '', 'Counters are source-location unions, not averaged percentages. Svelte compiler control flow without an original-source mapping is not counted as a mapped branch.',
+        '', 'Line coverage is an exact source-location union, not averaged percentages. Svelte server/unit and browser compilation emit incompatible branch maps; their branch figures remain separate and are not directly comparable. Combined branches are unavailable.',
+        'Canonical HTML/Cobertura reports contain lines only. Component collector reports retain their own branch maps and compiler-specific line footprints; unmapped Svelte compiler control flow is not counted.',
         ''
     ].join('\n'));
     return summaries;
@@ -318,8 +421,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
         allowPositionals: true,
         options: { count: { type: 'string', default: '6' } }
     });
-    if (positionals[0] !== 'aggregate' || positionals.length !== 3) {
-        throw new Error('Usage: frontend-coverage.mjs aggregate INPUT OUTPUT --count 6');
+    if (positionals[0] === 'verify-html' && positionals.length === 2) {
+        const directory = resolve(positionals[1]);
+        const summaries = readJson(join(directory, 'summary.json'));
+        for (const [name, summary] of Object.entries(summaries)) {
+            verifyHtmlSummary(readJson(join(directory, name, 'html/Summary.json')).summary, summary.lines);
+        }
+    } else if (positionals[0] === 'aggregate' && positionals.length === 3) {
+        await aggregate(resolve(positionals[1]), resolve(positionals[2]), Number(values.count));
+    } else {
+        throw new Error('Usage: frontend-coverage.mjs aggregate INPUT OUTPUT --count 6 | verify-html OUTPUT');
     }
-    aggregate(resolve(positionals[1]), resolve(positionals[2]), Number(values.count));
 }

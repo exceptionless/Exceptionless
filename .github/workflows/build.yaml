@@ -568,6 +568,10 @@ jobs:
         working-directory: .
         run: |
           node tests/ci/frontend-coverage.mjs aggregate frontend-shards frontend-coverage --count 6
+          for component in unit e2e combined; do
+            dotnet tool run reportgenerator -- "-reports:frontend-coverage/$component/Cobertura.xml" "-targetdir:frontend-coverage/$component/html" '-reporttypes:Html;JsonSummary'
+          done
+          node tests/ci/frontend-coverage.mjs verify-html frontend-coverage
           cat frontend-coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
           cat backend-coverage/summary.md frontend-coverage/summary.md > coverage-summary.md
 

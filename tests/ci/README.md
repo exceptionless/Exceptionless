@@ -206,7 +206,8 @@ Frontend coverage is separate from backend coverage. `test-client` runs the exis
 Vitest projects once with the pinned Istanbul provider; each existing Chromium E2E
 shard collects the opted-in Vite instrumentation during its normal test run.
 `test-e2e` waits for all three suites and publishes unit/component, E2E browser, and
-combined frontend HTML, JSON, and Cobertura reports. The PR comment shows the
+combined frontend line reports in HTML, JSON, and Cobertura. Separate unit/browser
+collector reports retain their branch details. The PR comment shows the
 backend and frontend figures separately. No minimum percentages are imposed.
 
 The frontend denominator includes tracked application `.ts`, `.js`, and `.svelte`
@@ -241,17 +242,42 @@ Source line coverage follows Istanbul's original mapped statement starting lines
 Svelte can reorder template expressions, so mapped range endpoints are preserved,
 not sorted into invented source spans. Unmapped compiler-generated control flow
 (including some template decisions) is not represented as original-source branch
-coverage. The branch figure is explicitly **mapped branches**, not a claim to
+coverage. Each component's branch figure is explicitly **mapped branches**, not a claim to
 measure every Svelte compiler decision. An implicit `if` false arm keeps its own
 counter even when it has no explicit `else` source span.
 
-Counters are reduced to covered/uncovered unions, not summed execution counts or
-averaged percentages. Function body spans identify anonymous functions whose
-generated names can vary between environments. Statement and ordered branch maps
-must agree before a shared file is merged. The initial and final source inventory,
-lock/config fingerprint, commit, run, attempt, session, shard count/index, worker
-completion, and artifact checksum are checked. Missing, duplicate, incompatible,
-stale, malformed, or incomplete inputs fail aggregation.
+Svelte's server-side unit compilation and browser compilation emit different
+statement and branch maps. The combined report therefore uses the exact union of
+covered original source lines and explicitly marks **combined branch coverage
+unavailable**. Unit and browser branch figures remain separate; their denominators
+are not directly comparable. Canonical HTML/Cobertura reports contain no branch
+records. The `unit/collector/` and `e2e/collector/` reports retain their respective
+compiler-specific maps, so their line denominators can differ from the canonical
+line reports. HTML totals are checked against the canonical union before publication.
+Coverage class names retain file extensions so TypeScript and Svelte files with
+the same basename cannot be conflated.
+
+Route warmup is disabled during Vitest runs. With an empty Vite cache, warmup can
+compile and cache components before the coverage provider initializes, silently
+losing their counters. The existing navigation-command and source-map-page tests
+reproduced this: all assertions passed, but 263 exercised source lines were missing.
+Disabling warmup preserves the tests' compilation modes and records those hits on
+the first cold run.
+
+After the existing unit run, Vite compiles every browser-eligible file through the
+same instrumentation plugin without executing application modules. This produces
+the zero-hit `browser-plan.json`, including untouched browser source. Its statement,
+function-body, and ordered branch maps must agree exactly with every E2E shard.
+Canonical unit and combined line reports share the union of server/unit and browser
+source locations; browser reports exclude server-only files. Counters are reduced
+to covered/uncovered unions, never averaged percentages.
+
+The initial and final source inventory, lock/config fingerprint, commit, run,
+attempt, session, shard count/index, worker completion, source-plan hash, and
+artifact checksum are checked. Missing, duplicate, incompatible, stale, malformed,
+or incomplete inputs fail aggregation. In `--ci-e2e` mode, Aspire skips its implicit
+dependency installation: CI and local callers install locked dependencies before
+startup. This prevents npm from rewriting the lockfile during collection.
 
 ### Local frontend collection
 
@@ -260,6 +286,8 @@ existing Aspire prerequisites and localhost restrictions above still apply.
 
 ```powershell
 npm ci --prefix src/Exceptionless.Web/ClientApp
+npm ci --prefix src/Exceptionless.Web/ClientApp.angular
+npm ci --prefix tests/ci
 node --test tests/ci/frontend-coverage.test.mjs
 node tests/ci/check-frontend-coverage.mjs
 
@@ -273,18 +301,28 @@ directories under `INPUT/e2e/`, then run
 `node tests/ci/frontend-coverage.mjs aggregate INPUT OUTPUT --count N`.
 All inputs must have matching collection identity and unchanged source/config.
 `e2e-added-lines.json` lists source lines covered only by browser execution.
+Generate each canonical HTML report with the pinned ReportGenerator, for example
+`dotnet tool run reportgenerator -- "-reports:OUTPUT/combined/Cobertura.xml" "-targetdir:OUTPUT/combined/html" "-reporttypes:Html;JsonSummary"`.
+After generating all three reports, run
+`node tests/ci/frontend-coverage.mjs verify-html OUTPUT`.
 
 If a document fails to finalize, inspect its worker artifact and the Playwright
 failure report; do not accept retries or omit the worker. If source maps differ,
 inspect the affected original source and collector outputs instead of merging
-their percentages. `collection-start.json`, worker JSON, and `collection-error.txt`
+their percentages. `collection-start.json`, `collection-end.json`, worker JSON, and `collection-error.txt`
 are diagnostic artifacts, not substitutes for a complete manifest.
 
-The initial local baseline ran all 960 existing unit/component tests: 5,551/21,692
-lines (25.59%) and 3,227/11,908 mapped branch arms (27.09%), in 50.73 seconds with
-four workers. The source inventory contained 864 files, including 70 files with no
-executable counters. The focused browser contract finalized seven documents across
+A complete local run of all 960 existing unit/component tests covered 5,814/21,692
+lines (26.80%) in the unit compiler's footprint and 3,291/11,908 mapped branch arms
+(27.63%), in 62.86 seconds with two workers. The browser source plan contributes
+260 additional executable source lines to the canonical denominator: the comparable
+unit-only baseline is 5,814/21,952 (26.49%). This denominator change does not add
+covered lines. The local browser-plan prototype took 23.0 seconds and 2.02 GiB peak
+Node RSS; it compiles sources without rerunning tests. The source inventory
+contained 864 files, including 70 files with no unit executable counters.
+The focused browser contract finalized seven documents across
 reload, full navigation, popup closure, manual contexts, and early page teardown.
 Hosted combined figures, resource measurements, overhead, and exact final-commit
-run links belong in the phase's PR evidence; local unit numbers are not a hosted
+run links are recorded in [Phase 2 PR #2620](https://github.com/exceptionless/Exceptionless/pull/2620);
+local unit numbers are not a hosted
 E2E or performance result.
