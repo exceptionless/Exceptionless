@@ -520,8 +520,8 @@ jobs:
       - name: Download frontend unit coverage inputs
         uses: actions/download-artifact@v6
         with:
-          pattern: frontend-unit-${{ github.run_id }}-${{ github.run_attempt }}
-          path: frontend-shards/unit
+          name: frontend-unit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: frontend-shards/unit/frontend-unit-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Download frontend E2E coverage inputs
         uses: actions/download-artifact@v6

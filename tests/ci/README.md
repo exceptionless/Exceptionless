@@ -263,6 +263,9 @@ losing their counters. The existing navigation-command and source-map-page tests
 reproduced this: all assertions passed, but 263 exercised source lines were missing.
 Disabling warmup preserves the tests' compilation modes and records those hits on
 the first cold run.
+Browser coverage also disables broad route warmup so each shard compiles only
+the routes it visits. The separate browser source plan still includes every
+eligible untouched file in the denominator.
 
 After the existing unit run, Vite compiles every browser-eligible file through the
 same instrumentation plugin without executing application modules. This produces
@@ -326,3 +329,31 @@ Hosted combined figures, resource measurements, overhead, and exact final-commit
 run links are recorded in [Phase 2 PR #2620](https://github.com/exceptionless/Exceptionless/pull/2620);
 local unit numbers are not a hosted
 E2E or performance result.
+
+Hosted characterization run [36930609850](https://github.com/exceptionless/Exceptionless/actions/runs/36930609850)
+at `f235bf87b` passed all .NET/frontend test jobs and all 99 browser tests with zero
+retries. Its final report job rejected an incorrectly flattened unit-artifact
+directory; the download now names that directory explicitly. Local reaggregation
+of all seven complete, matching frontend artifacts passed source-map, revision,
+union, and HTML-total validation:
+
+| Execution | Canonical source lines |
+| --- | ---: |
+| Unit/component | 5,815/21,952 (26.49%) |
+| E2E browser | 11,939/21,952 (54.39%) |
+| Combined | 13,439/21,952 (61.22%) |
+
+E2E added 7,624 lines, including 439 in `use-saved-views.svelte.ts`, 347 in the
+Events page, and 310 in the Sessions page. These are execution contributions,
+not a claim that every behavior on those lines has assertions.
+
+That characterization consumed 11m 24s and 85.75 summed runner minutes before the
+report failure; it is not a successful-build timing. Across the six browser shards,
+startup totaled 903s, test execution 1,770s, and shutdown 13.5s. Process-tree RSS
+peaks were 4,393–4,848 MiB; host used-memory peaks were 9,922–11,658 MiB.
+The frontend unit command took 112.0s plus 39.0s finalization (38.5s for the source
+plan), with 1,724 MiB collector-helper peak RSS. Broad route warmup was subsequently
+disabled for browser coverage to avoid instrumenting unvisited routes in every
+shard. Final successful-build overhead and the two final-commit hosted runs are
+recorded in PR #2620; baseline memory telemetry is insufficient to claim a precise
+memory-overhead delta.
