@@ -71,7 +71,7 @@
         "swagger-typescript-api": "^13.13.0",
         "tslib": "^2.8.1",
         "typescript": "^6.0.3",
-        "typescript-eslint": "^8.70.0",
+        "typescript-eslint": "^8.70.1",
         "vite": "^8.3.2",
         "vitest": "5.0.3",
         "vitest-websocket-mock": "^0.8.0",
