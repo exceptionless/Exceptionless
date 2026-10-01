@@ -118,7 +118,8 @@ public sealed class AssistantService(
             // A streamed response cannot be retracted after malformed provider markup reaches the
             // browser, so hold this provider round until its content is known to be safe.
             var assistantContentChunks = new List<string>();
-            bool usageRecorded = false;
+            AssistantProviderUsage? providerUsage = null;
+            bool hasReportedCost = false;
 
             int providerInputCharacters = JsonSerializer.Serialize(messages, s_jsonOptions).Length;
             if (providerInputCharacters > AssistantLimits.MaximumProviderInputCharacters)
@@ -162,19 +163,11 @@ public sealed class AssistantService(
                         if (document.RootElement.TryGetProperty("error", out var error))
                             throw new AssistantProviderException(GetProviderError(error));
 
-                        if (!usageRecorded && TryGetProviderUsage(document.RootElement, out var usage))
+                        if (!hasReportedCost && TryGetProviderUsage(document.RootElement, out var usage, out bool costReported))
                         {
-                            usageRecorded = true;
-                            try
-                            {
-                                await providerRequest.ReconcileAsync(usage);
-                            }
-                            catch (Exception ex)
-                            {
-                                // Disposal records the conservative reservation when detailed provider
-                                // accounting cannot be reconciled.
-                                logger.LogError(ex, "Unable to record assistant provider usage for organization {OrganizationId}", request.OrganizationId);
-                            }
+                            // Keep token-only usage as a fallback until an authoritative cost arrives.
+                            providerUsage = usage;
+                            hasReportedCost = costReported;
                         }
 
                         if (!document.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
@@ -252,6 +245,28 @@ public sealed class AssistantService(
             {
                 providerDiagnostics?.RecordException(ex);
                 throw;
+            }
+            finally
+            {
+                if (providerUsage is not null)
+                {
+                    if (!hasReportedCost)
+                    {
+                        logger.LogWarning(
+                            "Recording estimated assistant provider cost for organization {OrganizationId} because reported usage did not include a valid cost",
+                            request.OrganizationId);
+                    }
+
+                    try
+                    {
+                        await providerRequest.ReconcileAsync(providerUsage);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Disposal records the estimated reservation if reconciliation fails.
+                        logger.LogError(ex, "Unable to record assistant provider usage for organization {OrganizationId}", request.OrganizationId);
+                    }
+                }
             }
 
             if (diagnostics is not null)
@@ -488,15 +503,7 @@ public sealed class AssistantService(
             ["messages"] = messages,
             ["stream"] = true,
             ["max_tokens"] = AssistantLimits.MaximumOutputTokens,
-            ["temperature"] = 0.2,
-            ["provider"] = new
-            {
-                max_price = new
-                {
-                    prompt = AssistantLimits.MaximumProviderPromptPricePerMillionTokens,
-                    completion = AssistantLimits.MaximumProviderCompletionPricePerMillionTokens
-                }
-            }
+            ["temperature"] = 0.2
         };
         // Tool results still require their schemas when the model must produce a final answer.
         payload["tools"] = AssistantToolDefinitions.Create(tools, chatRequest);
@@ -758,9 +765,10 @@ public sealed class AssistantService(
         return null;
     }
 
-    internal static bool TryGetProviderUsage(JsonElement payload, out AssistantProviderUsage usage)
+    internal static bool TryGetProviderUsage(JsonElement payload, out AssistantProviderUsage usage, out bool hasReportedCost)
     {
         usage = new AssistantProviderUsage(0, 0, 0);
+        hasReportedCost = false;
         if (!payload.TryGetProperty("usage", out var value) || value.ValueKind != JsonValueKind.Object)
             return false;
 
@@ -770,12 +778,23 @@ public sealed class AssistantService(
         long completionTokens = value.TryGetProperty("completion_tokens", out var completion) && completion.TryGetInt64(out long completionValue)
             ? Math.Max(0, completionValue)
             : 0;
-        decimal costUsd = value.TryGetProperty("cost", out var cost) && cost.TryGetDecimal(out decimal costValue)
-            ? Math.Max(0, costValue)
-            : 0;
+        decimal costUsd;
+        if (value.TryGetProperty("cost", out var cost)
+            && cost.ValueKind == JsonValueKind.Number
+            && cost.TryGetDecimal(out decimal costValue)
+            && costValue >= 0)
+        {
+            costUsd = costValue;
+            hasReportedCost = true;
+        }
+        else
+        {
+            costUsd = promptTokens * AssistantLimits.EstimatedProviderPromptPricePerMillionTokens / 1_000_000m
+                + completionTokens * AssistantLimits.EstimatedProviderCompletionPricePerMillionTokens / 1_000_000m;
+        }
 
         usage = new AssistantProviderUsage(promptTokens, completionTokens, costUsd);
-        return promptTokens > 0 || completionTokens > 0 || costUsd > 0;
+        return hasReportedCost || promptTokens > 0 || completionTokens > 0;
     }
 
     private static JsonDocument ParseArguments(string arguments)
