@@ -3,7 +3,7 @@ import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
-import { dispatchWebSocketMessages, installWebSocketTestHarness } from '../support/web-socket';
+import { dispatchWebSocketMessages, installWebSocketTestHarness, pauseServerWebSocketMessages } from '../support/web-socket';
 
 const STACK_NOTIFICATION_TRAILING_REFRESH_MS = 5_000;
 
@@ -168,6 +168,9 @@ test('stack effects stay bounded through background, paging, and navigation chao
     });
     expect(actionSample(diagnostics, 'background ingestion and resume').listRequests).toBeLessThanOrEqual(2);
 
+    // Keep live ingestion above, but isolate synthetic notifications from delayed server messages.
+    // Drain refreshes already scheduled by the live messages before measuring the leading window.
+    await pauseServerWebSocketMessages(page);
     await page.waitForTimeout(STACK_NOTIFICATION_TRAILING_REFRESH_MS);
     await measureAction(diagnostics, 'removal notification leading window', async () => {
         await dispatchWebSocketMessages(page, [

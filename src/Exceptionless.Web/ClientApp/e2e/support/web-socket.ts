@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 
 interface TrackedWebSocketWindow extends Window {
+    __exceptionlessE2EPauseServerMessages?: boolean;
     __exceptionlessE2EWebSockets?: WebSocket[];
 }
 
@@ -37,10 +38,26 @@ export async function installWebSocketTestHarness(page: Page): Promise<void> {
                 }
 
                 sockets.push(this);
+                this.addEventListener(
+                    'message',
+                    (event) => {
+                        // Native frames are trusted; dispatchWebSocketMessages creates untrusted test messages.
+                        if (trackedWindow.__exceptionlessE2EPauseServerMessages && event.isTrusted && this.url.includes('/api/v2/push')) {
+                            event.stopImmediatePropagation();
+                        }
+                    },
+                    { capture: true }
+                );
             }
         }
 
         trackedWindow.__exceptionlessE2EWebSockets = sockets;
         window.WebSocket = TrackedWebSocket;
+    });
+}
+
+export async function pauseServerWebSocketMessages(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        (window as TrackedWebSocketWindow).__exceptionlessE2EPauseServerMessages = true;
     });
 }
