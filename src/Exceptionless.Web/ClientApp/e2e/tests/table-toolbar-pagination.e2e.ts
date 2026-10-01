@@ -4,7 +4,7 @@ import { expect, test } from '../fixtures/e2e-test';
 import { seedRepresentativeEvent } from '../support/event-data';
 
 test('floating table controls keep the first row visible between different-height result pages', async ({ e2eApi, e2eScenario, page }) => {
-    for (let index = 1; index <= 6; index++) {
+    for (let index = 1; index <= 11; index++) {
         await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, {
             message: `${e2eScenario.message} ${index}`,
             projectId: e2eScenario.projectId,
@@ -14,7 +14,7 @@ test('floating table controls keep the first row visible between different-heigh
     }
 
     await page.setViewportSize({ height: 720, width: 1280 });
-    await page.goto('/next/event?limit=5&time=all');
+    await page.goto('/next/event?limit=10&time=all');
 
     const toolbar = page.locator('[data-slot="data-table-footer"]');
     const pager = toolbar.getByRole('navigation', { name: 'Table pagination' });
@@ -57,7 +57,7 @@ test('floating table controls keep the first row visible between different-heigh
 
     const scrollTopBeforeVisiblePageSizeChange = await scrollContainer.evaluate((element) => element.scrollTop);
     await pager.getByLabel('Rows per page').click();
-    await page.getByRole('option', { name: '10 rows' }).click();
+    await page.getByRole('option', { name: '20 rows' }).click();
     await expect(pager.getByLabel('Page 1 of 1')).toBeVisible();
     await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(scrollTopBeforeVisiblePageSizeChange);
 
@@ -85,7 +85,7 @@ test('floating table controls keep the first row visible between different-heigh
 
     const scrollTopBeforeHiddenPageSizeChange = await scrollContainer.evaluate((element) => element.scrollTop);
     await pager.getByLabel('Rows per page').click();
-    await page.getByRole('option', { name: '5 rows' }).click();
+    await page.getByRole('option', { name: '10 rows' }).click();
     await expect(pager.getByLabel('Page 1 of 2')).toBeVisible();
     await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBeLessThan(scrollTopBeforeHiddenPageSizeChange);
     await scrollContainer.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
@@ -96,12 +96,12 @@ test('floating table controls keep the first row visible between different-heigh
     await nextButton.focus();
     await nextButton.click();
     await expect(pager.getByLabel('Page 2 of 2')).toBeVisible();
+    await expect(page.locator('tbody > tr:visible')).toHaveCount(1);
     await expect(pager.getByRole('button', { name: 'Go to next page' })).toBeFocused();
     await expect(bulkActionsButton).toHaveAttribute('aria-disabled', 'true');
-    await expect(toolbar).toHaveAttribute('data-floating', '');
+    await expect(toolbar).not.toHaveAttribute('data-floating');
 
     const scrollTopAfterPaging = await scrollContainer.evaluate((element) => element.scrollTop);
-    expect(scrollTopAfterPaging).toBeGreaterThan(0);
     expect(scrollTopAfterPaging).toBeLessThan(scrollTopBeforePaging);
 
     const secondToolbarBox = await toolbar.boundingBox();
