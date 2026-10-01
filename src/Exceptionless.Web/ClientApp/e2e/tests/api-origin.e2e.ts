@@ -80,7 +80,21 @@ test('status waits for the configured API to recover before returning to the app
 
 test('the application sends API requests and push connections to its configured origin', async ({ e2eApi, e2eScenario, page }) => {
     const apiOrigin = 'https://localhost:65533';
-    await page.addInitScript((origin) => localStorage.setItem('PUBLIC_BASE_URL', origin), apiOrigin);
+    const telemetryOrigin = 'https://localhost:65534';
+    await page.addInitScript(
+        ({ apiOrigin, telemetryOrigin }) => {
+            localStorage.setItem('PUBLIC_BASE_URL', apiOrigin);
+            localStorage.setItem('PUBLIC_EXCEPTIONLESS_SERVER_URL', telemetryOrigin);
+            localStorage.setItem('PUBLIC_EXCEPTIONLESS_API_KEY', '00000000000000000000000000000000');
+        },
+        { apiOrigin, telemetryOrigin }
+    );
+    // Telemetry has a separate destination and must not affect the application API-origin assertion.
+    const telemetryRequests: string[] = [];
+    await page.route(`${telemetryOrigin}/api/v2/**`, async (route) => {
+        telemetryRequests.push(new URL(route.request().url()).pathname);
+        await route.fulfill({ json: { settings: {}, version: 1 } });
+    });
     // Intercept a distinct local origin and forward HTTP requests to this test's actual API.
     await page.route(`${apiOrigin}/api/v2/**`, async (route) => {
         const url = new URL(route.request().url());
@@ -103,5 +117,6 @@ test('the application sends API requests and push connections to its configured 
     await expect(page.getByRole('heading', { name: 'All' })).toBeVisible();
     await expect(page.getByRole('button').filter({ hasText: e2eScenario.organizationName }).filter({ visible: true }).first()).toBeVisible();
     await expect.poll(() => pushConnections.length).toBeGreaterThan(0);
+    await expect.poll(() => telemetryRequests).toContain('/api/v2/projects/config');
     expect(sameOriginApiRequests).toEqual([]);
 });

@@ -22,7 +22,9 @@ Playwright's unsharded local and synthetic-monitoring configurations retain thei
 
 The chaos tests measure requests with controlled notifications while retaining real WebSocket connections. Background jobs can publish delayed seed-data notifications, so the request-budget scenarios intercept those messages and inject explicit bursts. The existing event-visibility journey separately verifies that a real server push updates the visible list without navigation or manual refresh.
 
-The sustained stack-notification phase advances a controlled browser clock. Four waves spaced 1.6 seconds apart must stay inside one five-second throttle window; browser round-trip overhead can otherwise push the last wave into a new window and correctly trigger an extra refresh. The request budget is unchanged, and the other chaos phases continue to use real time.
+The sustained stack-notification phase advances a controlled browser clock. Four waves spaced 1.6 seconds apart must stay inside one five-second throttle window; browser round-trip overhead can otherwise push the last wave into a new window and correctly trigger an extra refresh. It waits for real HTTP responses to finish before advancing to another invalidation or navigating. The request budget is unchanged, and the other chaos phases continue to use real time.
+
+The API-origin scenario gives application traffic and telemetry distinct localhost origins. It verifies that the telemetry SDK checks configuration at its own mocked endpoint while every application request and push connection uses the configured API origin.
 
 The navigation-cache scenario also intercepts server broadcasts. First-time saved-view creation legitimately invalidates those queries, so its notifications must not affect the scenario's unchanged-data request counts. Its navigation helper waits for saved-view groups instead of selecting the temporary direct links shown before the sidebar data loads. Saved-view invalidation and live updates retain separate coverage.
 

@@ -1,4 +1,4 @@
-import type { ConsoleMessage, Request, Response } from '@playwright/test';
+import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
@@ -204,21 +204,33 @@ test('stack effects stay bounded through background, paging, and navigation chao
     await page.clock.pauseAt(new Date(Date.now() + 1_000));
     await measureAction(diagnostics, 'sustained stack change notifications', async () => {
         for (let wave = 0; wave < 4; wave++) {
-            await dispatchWebSocketMessages(
-                page,
-                Array.from({ length: 30 }, (_, index) => ({
-                    message: {
-                        change_type: 1,
-                        data: {},
-                        id: `chaos-missing-stack-${wave}-${index}`,
-                        organization_id: e2eScenario.organizationId,
-                        project_id: e2eScenario.projectId,
-                        type: 'Stack'
-                    },
-                    type: 'StackChanged'
-                }))
-            );
-            await page.clock.runFor(1_600);
+            const dispatchWave = () =>
+                dispatchWebSocketMessages(
+                    page,
+                    Array.from({ length: 30 }, (_, index) => ({
+                        message: {
+                            change_type: 1,
+                            data: {},
+                            id: `chaos-missing-stack-${wave}-${index}`,
+                            organization_id: e2eScenario.organizationId,
+                            project_id: e2eScenario.projectId,
+                            type: 'Stack'
+                        },
+                        type: 'StackChanged'
+                    }))
+                );
+            if (wave === 0) {
+                await runAndWaitForDashboardRefresh(page, e2eScenario.organizationId, dispatchWave);
+            } else {
+                await dispatchWave();
+            }
+
+            const advanceWave = () => page.clock.runFor(1_600);
+            if (wave === 3) {
+                await runAndWaitForDashboardRefresh(page, e2eScenario.organizationId, advanceWave);
+            } else {
+                await advanceWave();
+            }
         }
 
         await page.clock.runFor(2_000);
@@ -347,4 +359,18 @@ function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request)
         method: request.method(),
         url: request.url()
     });
+}
+
+async function runAndWaitForDashboardRefresh(page: Page, organizationId: string, action: () => Promise<void>): Promise<void> {
+    const responses = Promise.all([
+        page.waitForResponse((response) => isStackListResponse(response, organizationId)),
+        page.waitForResponse((response) => new URL(response.url()).pathname === `/api/v2/organizations/${organizationId}/events/count`)
+    ]);
+
+    await action();
+    for (const response of await responses) {
+        expect(response.ok()).toBe(true);
+        // Browser time advances independently of real HTTP; finish the response before the next invalidation or navigation.
+        expect(await response.finished()).toBeNull();
+    }
 }
