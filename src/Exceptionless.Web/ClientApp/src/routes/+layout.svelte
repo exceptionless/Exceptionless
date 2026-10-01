@@ -37,7 +37,8 @@
         if (url.href !== navigation.to.url.href) {
             navigation.cancel();
             void goto(url, {
-                replaceState: true
+                // Keep followed links in history, while reusing an entry reached through Back/Forward.
+                replaceState: navigation.type === 'popstate'
             });
         }
     });

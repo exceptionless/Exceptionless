@@ -29,11 +29,17 @@ if (PUBLIC_EXCEPTIONLESS_SERVER_URL) {
     env.PUBLIC_EXCEPTIONLESS_SERVER_URL = PUBLIC_EXCEPTIONLESS_SERVER_URL;
 }
 
-export const init: ClientInit = async () => {
+function normalizeCurrentAppUrl() {
     const canonicalUrl = getCanonicalAppUrl(new URL(window.location.href));
     if (canonicalUrl.href !== window.location.href) {
         window.history.replaceState(window.history.state, '', canonicalUrl);
     }
+}
+
+export const init: ClientInit = async () => {
+    normalizeCurrentAppUrl();
+    // Normalize an existing history entry before the router reads it. Cancelling popstate would undo Back/Forward.
+    window.addEventListener('popstate', normalizeCurrentAppUrl, { capture: true });
 
     if (!env.PUBLIC_EXCEPTIONLESS_API_KEY) {
         return;

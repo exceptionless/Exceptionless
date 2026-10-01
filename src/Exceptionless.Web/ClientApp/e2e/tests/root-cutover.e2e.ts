@@ -103,3 +103,61 @@ test('project summary links select their organization and retain project scope',
     await expect(page.getByRole('button').filter({ hasText: e2eSecondaryOrganization.projectName }).filter({ visible: true }).first()).toBeVisible();
     expect(new URL(page.url()).searchParams.get('project')).toBe(e2eSecondaryOrganization.projectId);
 });
+
+test.describe('legacy link browser history', () => {
+    test.use({ e2eUseInvitedUser: true });
+
+    for (const prefix of ['/next', '/#!', '/#', '']) {
+        test(`following a ${prefix || 'root'} bookmark keeps the previous page and supports Forward`, async ({ e2eScenario, page }) => {
+            await page.goto('/stack/all');
+            await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
+            await page.goto('/project/list');
+            await expect(page.getByRole('heading', { exact: true, name: 'Projects' })).toBeVisible();
+            await page.evaluate((destination) => {
+                const link = document.createElement('a');
+                link.href = destination;
+                link.textContent = 'Saved notification settings';
+                document.querySelector('main')!.prepend(link);
+            }, `${prefix}/account/manage?projectId=${e2eScenario.projectId}&tab=notifications&from=saved-link`);
+            await page.getByRole('link', { exact: true, name: 'Saved notification settings' }).click();
+
+            await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
+            await expect(page.getByRole('button', { exact: true, name: e2eScenario.projectName })).toBeVisible();
+            const destination = page.url();
+            expect(new URL(destination).searchParams.get('from')).toBe('saved-link');
+            await page.goBack();
+            await expect(page).toHaveURL(/\/project\/list$/);
+            await expect(page.getByRole('heading', { exact: true, name: 'Projects' })).toBeVisible();
+            await page.goForward();
+            await expect(page).toHaveURL(destination);
+            await expect(page.getByRole('button', { exact: true, name: e2eScenario.projectName })).toBeVisible();
+            expect(await page.evaluate(() => localStorage.getItem('satellizer_token'))).toBe(e2eScenario.userToken);
+        });
+    }
+
+    test('Back normalizes an existing old history entry without adding another entry', async ({ e2eScenario, page }) => {
+        await page.goto('/stack/all');
+        await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
+        await page.goto(`/account/notifications?project=${e2eScenario.projectId}`);
+        await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
+        const destination = page.url();
+        await page.evaluate((oldUrl) => {
+            window.history.replaceState(window.history.state, '', oldUrl);
+            const link = document.createElement('a');
+            link.href = '/project/list';
+            link.textContent = 'Open project list';
+            document.querySelector('main')!.prepend(link);
+        }, `/account/manage?projectId=${e2eScenario.projectId}&tab=notifications`);
+        await page.getByRole('link', { exact: true, name: 'Open project list' }).click();
+        await expect(page).toHaveURL(/\/project\/list$/);
+        await page.goBack();
+        await expect(page).toHaveURL(destination);
+        await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
+        await page.goForward();
+        await expect(page).toHaveURL(/\/project\/list$/);
+        await page.goBack();
+        await expect(page).toHaveURL(destination);
+        await page.goBack();
+        await expect(page).toHaveURL(/\/stack\/all$/);
+    });
+});
