@@ -39,7 +39,7 @@ Start here:
 
 After startup:
 
-1. Open `https://localhost:7121/` if a browser does not open automatically.
+1. Open `https://web-ex.dev.localhost:7131/` if a browser does not open automatically. If Aspire assigns a dynamic port, use the App endpoint shown in its dashboard.
 2. In `Development` mode, a global administrator user `admin@exceptionless.test` with password `tester` is created automatically.
 
 Notes:
