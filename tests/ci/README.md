@@ -316,54 +316,49 @@ inspect the affected original source and collector outputs instead of merging
 their percentages. `collection-start.json`, `collection-end.json`, worker JSON, and `collection-error.txt`
 are diagnostic artifacts, not substitutes for a complete manifest.
 
-An initial local prototype of all 960 existing unit/component tests covered 5,814/21,692
-lines (26.80%) in the unit compiler's footprint and 3,291/11,908 mapped branch arms
-(27.63%), in 62.86 seconds with two workers. The browser source plan contributes
-260 additional executable source lines to the canonical denominator: the comparable
-unit-only baseline is 5,814/21,952 (26.49%). This denominator change does not add
-covered lines. The local browser-plan prototype took 23.0 seconds and 2.02 GiB peak
-Node RSS; it compiles sources without rerunning tests. The source inventory
-contained 864 files, including 70 files with no unit executable counters.
-The focused browser contract finalized seven documents across
-reload, full navigation, popup closure, manual contexts, and early page teardown.
-Hosted combined figures, resource measurements, overhead, and exact final-commit
-run links are recorded in [Phase 2 PR #2620](https://github.com/exceptionless/Exceptionless/pull/2620);
-local unit numbers are not a hosted
-E2E or performance result.
+All 960 existing unit/component tests pass with the application-only source policy.
+A local run covered 5,719/21,841 canonical lines (26.18%) and 3,269/11,881 mapped
+branch arms (27.51%), taking 43.87s plus 23.11s finalization. The collector helper
+peaked at 1,661 MiB RSS; this excludes separate Vitest child processes. The inventory
+contains 854 files, including eligible files with no executable counters. The real
+collector contract finalized seven documents across reload, full navigation,
+popup closure, manual contexts, and early page teardown.
 
-Hosted characterization run [36930609850](https://github.com/exceptionless/Exceptionless/actions/runs/36930609850)
-at `f235bf87b` passed all .NET/frontend test jobs and all 99 browser tests with zero
-retries. Its final report job rejected an incorrectly flattened unit-artifact
-directory; the download now names that directory explicitly. Local reaggregation
-of all seven complete, matching frontend artifacts passed source-map, revision,
-union, and HTML-total validation:
+Hosted characterization [36933791892, attempt 1](https://github.com/exceptionless/Exceptionless/actions/runs/36933791892/attempts/1)
+at `1b5988e29` passed all suites and all 99 browser tests with zero retries.
+Completeness, revision, source-map, union, and HTML-total validation all passed:
 
 | Execution | Canonical source lines |
 | --- | ---: |
-| Unit/component | 5,815/21,952 (26.49%) |
-| E2E browser | 11,939/21,952 (54.39%) |
-| Combined | 13,439/21,952 (61.22%) |
+| Unit/component | 5,718/21,841 (26.18%) |
+| E2E browser | 11,918/21,841 (54.57%) |
+| Combined | 13,312/21,841 (60.95%) |
 
-E2E added 7,624 lines, including 439 in `use-saved-views.svelte.ts`, 347 in the
+E2E added 7,594 lines, including 442 in `use-saved-views.svelte.ts`, 347 in the
 Events page, and 310 in the Sessions page. These are execution contributions,
-not a claim that every behavior on those lines has assertions.
+not a claim that every behavior on those lines has assertions. Small differences
+between runs include timer callbacks and transient rendering/navigation paths;
+the complete source denominator and collection checks remain fixed.
 
-That characterization consumed 11m 24s and 85.75 summed runner minutes before the
-report failure; it is not a successful-build timing. Across the six browser shards,
-startup totaled 903s, test execution 1,770s, and shutdown 13.5s. Process-tree RSS
-peaks were 4,393–4,848 MiB; host used-memory peaks were 9,922–11,658 MiB.
-The frontend unit command took 112.0s plus 39.0s finalization (38.5s for the source
-plan), with 1,724 MiB collector-helper peak RSS. Disabling browser route warmup was
-evaluated in run 36932758977, but caused the first sessions-page journey to time out
-waiting for signed-in navigation and pass only on retry. The flaky-test gate rejected
-that run; browser warmup was restored without changing tests or assertion timeouts.
-Final successful-build overhead and the two final-commit hosted runs are
-recorded in PR #2620; baseline memory telemetry is insufficient to claim a precise
-memory-overhead delta.
+That run used 84.85 summed runner minutes. Its jobs spanned 11m 47s; 89s of initial
+queueing increased total elapsed time to 13m 16s. Across six browser shards,
+startup ranged from 127.9–169.4s, test execution from 249.0–356.2s, and shutdown
+from 2.1–3.5s. Process-tree RSS peaks were 4,547–4,968 MiB; host used-memory peaks
+were 9,921–11,319 MiB. The unit command took 105.5s plus 37.1s finalization, with
+1,886 MiB collector-helper peak RSS. Backend native aggregation took 20.9s/495 MiB;
+frontend aggregation took 3.1s/406 MiB, excluding HTML generation.
 
-These characterization figures preceded exclusion of ten test/Storybook harness
-components (111 executable lines, 96 covered). With the final application-only
-policy, all 960 local tests passed in 43.87s plus 23.11s finalization; the collector
-helper peaked at 1,661 MiB RSS. The inventory contains 854 files, with a comparable
-unit baseline of 5,719/21,841 lines (26.18%) and 3,269/11,881 mapped branch arms
-(27.51%). Final hosted unit/browser/combined figures use this same exclusion policy.
+Performance follow-up reuses `test-client`'s exact-lockfile dependency cache in
+browser shards and the final report job; cache misses still run `npm ci`.
+`coverage-reports.mjs` generates independent backend/frontend reports concurrently,
+waits for both, and publishes their summary only if both finish successfully.
+It accepts an optional workspace directory containing `coverage-shards` and
+`frontend-shards`; output stays in that directory. Missing inputs were verified to
+fail both collectors and produce no successful summary.
+
+Disabling browser route warmup was evaluated in run 36932758977, but caused a cold
+first-page load to exceed the existing assertion deadline. The flaky-test gate
+rejected that run; browser warmup was restored without changing tests or timeouts.
+Final overhead and two successful final-commit runs are recorded in
+[Phase 2 PR #2620](https://github.com/exceptionless/Exceptionless/pull/2620).
+Baseline memory telemetry is insufficient to claim a precise memory-overhead delta.

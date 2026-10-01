@@ -383,7 +383,15 @@ jobs:
           restore-keys: |
             nuget-${{ runner.os }}-
 
+      - name: Restore Client node_modules
+        uses: actions/cache/restore@v6
+        id: cache-node-modules
+        with:
+          path: src/Exceptionless.Web/ClientApp/node_modules
+          key: node-modules-${{ hashFiles('src/Exceptionless.Web/ClientApp/package-lock.json') }}
+
       - name: Install Client Npm Packages
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         working-directory: src/Exceptionless.Web/ClientApp
         run: npm ci
 
@@ -491,7 +499,15 @@ jobs:
           cache: npm
           cache-dependency-path: src/Exceptionless.Web/ClientApp/package-lock.json
 
+      - name: Restore Client node_modules
+        uses: actions/cache/restore@v6
+        id: cache-node-modules
+        with:
+          path: src/Exceptionless.Web/ClientApp/node_modules
+          key: node-modules-${{ hashFiles('src/Exceptionless.Web/ClientApp/package-lock.json') }}
+
       - name: Install Client Npm Packages
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Setup .NET Core
@@ -555,25 +571,9 @@ jobs:
           CLIENT_RESULT: ${{ needs.test-client.result }}
         run: test "$API_RESULT" = success && test "$BROWSER_RESULT" = success && test "$CLIENT_RESULT" = success
 
-      - name: Merge backend coverage
+      - name: Merge backend and frontend coverage
         working-directory: .
-        run: |
-          node tests/ci/backend-coverage.mjs aggregate coverage-shards --output backend-coverage --api 4 --e2e 6
-          for component in dotnet e2e combined; do
-            dotnet tool run reportgenerator -- "-reports:backend-coverage/$component/Cobertura.xml" "-targetdir:backend-coverage/$component/html" '-reporttypes:Html'
-          done
-          cat backend-coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Merge frontend coverage
-        working-directory: .
-        run: |
-          node tests/ci/frontend-coverage.mjs aggregate frontend-shards frontend-coverage --count 6
-          for component in unit e2e combined; do
-            dotnet tool run reportgenerator -- "-reports:frontend-coverage/$component/Cobertura.xml" "-targetdir:frontend-coverage/$component/html" '-reporttypes:Html;JsonSummary'
-          done
-          node tests/ci/frontend-coverage.mjs verify-html frontend-coverage
-          cat frontend-coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
-          cat backend-coverage/summary.md frontend-coverage/summary.md > coverage-summary.md
+        run: node tests/ci/coverage-reports.mjs
 
       - name: Add Coverage PR Comment
         uses: marocchino/sticky-pull-request-comment@v3
