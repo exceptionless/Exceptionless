@@ -15,6 +15,10 @@ permissions:
   packages: write
   pull-requests: write
 
+concurrency:
+  group: build-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   DOTNET_NOLOGO: true
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -129,15 +133,25 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
           echo "### $version" >> $GITHUB_STEP_SUMMARY
 
-  test-api:
+  test-api-shard:
+    name: test-api-shard (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
@@ -147,7 +161,7 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'NuGet.Config', '**/*.csproj', '**/Directory.Build.props', '**/packages.lock.json') }}
           restore-keys: |
             nuget-${{ runner.os }}-
 
@@ -157,13 +171,61 @@ jobs:
       - name: Build
         run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
 
-      - name: Run .NET Tests with Coverage
-        run: dotnet test --no-restore --no-build --configuration Release --results-directory coverage --max-parallel-test-modules 1 -- --report-github --report-xunit-trx --report-xunit-trx-filename test-results.trx --coverage --coverage-settings ${{ github.workspace }}/tests/CodeCoverage.config --coverage-output coverage.cobertura.xml --coverage-output-format cobertura
+      - name: Verify CI test tooling
+        run: node --test tests/ci/shards.test.mjs
+
+      - name: Run .NET shard with coverage
+        run: node tests/ci/backend-shards.mjs run --index ${{ matrix.shard }} --count 4 --output coverage --coverage
+
+      - name: Upload .NET shard results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: api-results-${{ matrix.shard }}
+          path: coverage/
+          if-no-files-found: error
+          retention-days: 14
+
+  # Preserve the required check name and fail closed if any shard fails or is skipped.
+  test-api:
+    needs: [test-api-shard]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Download .NET results
+        uses: actions/download-artifact@v6
+        with:
+          pattern: api-results-*
+          path: coverage-shards
+
+      - name: Verify complete shard coverage and report timings
+        run: node tests/ci/backend-shards.mjs report coverage-shards --count 4 --coverage --write-timings coverage-shards/backend-durations.json
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.401
+
+      - name: Merge coverage
+        run: |
+          dotnet tool install dotnet-reportgenerator-globaltool --tool-path .tools --version 5.5.11
+          .tools/reportgenerator '-reports:coverage-shards/**/coverage.cobertura.xml' '-targetdir:coverage' '-reporttypes:Cobertura'
 
       - name: Code Coverage Summary Report
         uses: irongut/CodeCoverageSummary@v1.3.0
         with:
-          filename: coverage/coverage.cobertura.xml
+          filename: coverage/Cobertura.xml
           badge: true
           format: "markdown"
           output: "both"
@@ -176,7 +238,23 @@ jobs:
           path: code-coverage-results.md
 
       - name: Write Coverage to Job Summary
-        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+        run: cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload combined .NET coverage and timings
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: api-coverage
+          path: |
+            coverage/
+            coverage-shards/backend-durations.json
+          retention-days: 14
+
+      - name: Require all .NET shards
+        if: ${{ always() }}
+        env:
+          SHARD_RESULT: ${{ needs.test-api-shard.result }}
+        run: test "$SHARD_RESULT" = success
 
   test-client:
     runs-on: ubuntu-latest
@@ -217,14 +295,25 @@ jobs:
         run: npm run build
 
       - name: Run Unit Tests
-        run: npm run test:unit
+        run: npm run test:unit -- --maxWorkers=2 --reporter=default --reporter=junit --outputFile.junit=test-results/unit-junit-results.xml
 
-      - name: Run Integration Tests
-        run: echo "npm run test:integration"
+      - name: Upload Unit Test Results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: client-test-results
+          path: src/Exceptionless.Web/ClientApp/test-results/unit-junit-results.xml
+          if-no-files-found: error
+          retention-days: 14
 
-  test-e2e:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+  test-e2e-shard:
+    name: test-e2e-shard (${{ matrix.shard }}/6)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
 
     steps:
       - name: Checkout
@@ -253,19 +342,15 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 24
+          cache: npm
+          cache-dependency-path: src/Exceptionless.Web/ClientApp/package-lock.json
 
       - uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
-          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('global.json', 'NuGet.Config', '**/*.csproj', '**/Directory.Build.props', '**/packages.lock.json') }}
           restore-keys: |
             nuget-${{ runner.os }}-
-
-      - name: Nuget Restore
-        run: dotnet restore ./Exceptionless.slnx
-
-      - name: Build
-        run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
 
       - name: Install Client Npm Packages
         working-directory: src/Exceptionless.Web/ClientApp
@@ -273,12 +358,16 @@ jobs:
 
       - name: Install Playwright Chromium
         working-directory: src/Exceptionless.Web/ClientApp
-        run: npx playwright install chromium --with-deps
+        # The hosted Ubuntu image includes Chromium's system libraries. Avoid apt
+        # upgrades/font downloads on every shard and install the headless binary used here.
+        run: npx playwright install --only-shell chromium
 
       - name: Start AppHost
         run: |
           mkdir -p "$HOME/.aspnet/https"
-          aspire run --non-interactive --nologo -- --ci-e2e > aspire-run.log 2>&1 &
+          # Aspire builds the AppHost and its referenced projects in Debug. Do not build
+          # the entire solution in Release first (including an unused test assembly).
+          aspire run --apphost src/Exceptionless.AppHost --non-interactive --nologo -- --ci-e2e > aspire-run.log 2>&1 &
           echo "$!" > aspire-run.pid
           sleep 5
           if ! kill -0 "$(cat aspire-run.pid)" 2>/dev/null; then
@@ -317,8 +406,9 @@ jobs:
         working-directory: src/Exceptionless.Web/ClientApp
         env:
           E2E_URL: https://web-ex.dev.localhost:7131
-          E2E_RUN_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
-        run: npm run test:e2e:ci
+          E2E_RUN_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}-s${{ matrix.shard }}
+          E2E_SHARD: ${{ matrix.shard }}
+        run: npm run test:e2e:ci -- --shard=${{ matrix.shard }}/6
 
       - name: Capture E2E Failure Diagnostics
         if: ${{ failure() }}
@@ -355,19 +445,20 @@ jobs:
             cp -r "$HOME/.aspire/logs/." aspire-logs/
           fi
 
-      - name: Upload Playwright Report
+      - name: Upload Playwright Blob Report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: playwright-report
-          path: src/Exceptionless.Web/ClientApp/playwright-report/
+          name: playwright-blob-${{ matrix.shard }}
+          path: src/Exceptionless.Web/ClientApp/blob-report/
+          if-no-files-found: error
           retention-days: 14
 
       - name: Upload Playwright Test Results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: playwright-test-results
+          name: playwright-test-results-${{ matrix.shard }}
           path: src/Exceptionless.Web/ClientApp/test-results/
           retention-days: 14
 
@@ -375,9 +466,75 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: aspire-logs
+          name: aspire-logs-${{ matrix.shard }}
           path: aspire-logs/
           retention-days: 14
+
+  test-e2e:
+    needs: [test-e2e-shard]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: src/Exceptionless.Web/ClientApp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Exceptionless.Web/ClientApp/package-lock.json
+
+      - name: Install Client Npm Packages
+        run: npm ci
+
+      - name: Download Playwright Blob Reports
+        uses: actions/download-artifact@v6
+        with:
+          pattern: playwright-blob-*
+          path: src/Exceptionless.Web/ClientApp/blob-reports
+          merge-multiple: true
+
+      - name: Merge Playwright reports
+        run: |
+          test "$(find blob-reports -name '*.zip' | wc -l)" -eq 6
+          npx playwright merge-reports --config=playwright.merge.config.ts blob-reports
+
+      - name: Verify complete browser coverage and report timings
+        env:
+          E2E_SHARD: report
+        run: |
+          npx playwright test --project=chromium --list --reporter=json > test-results/discovery.json
+          node ../../../tests/ci/browser-report.mjs test-results/discovery.json test-results/e2e-results.json
+
+      - name: Upload combined Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: src/Exceptionless.Web/ClientApp/playwright-report/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload combined Playwright results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-test-results
+          path: src/Exceptionless.Web/ClientApp/test-results/
+          retention-days: 14
+
+      - name: Require all browser shards
+        if: ${{ always() }}
+        env:
+          SHARD_RESULT: ${{ needs.test-e2e-shard.result }}
+        run: test "$SHARD_RESULT" = success
 
   docker-build:
     runs-on: ubuntu-latest

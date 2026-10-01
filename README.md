@@ -54,7 +54,7 @@ The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is the only application fro
 
 See the [frontend README](src/Exceptionless.Web/ClientApp/README.md) for development, build, and test commands. Published app images contain the Svelte build at the web root; API-only images retain their API landing page.
 
-For examples of API requests, see `exceptionless.http`. If you use that file in Visual Studio Code, install the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
+For a quick API walkthrough, start with [exceptionless.http](exceptionless.http). The [tests/http](tests/http) folder contains additional examples for manual use, such as querying events, uploading source maps, and obtaining OAuth tokens. These are curated examples, not an automated test suite or an exhaustive endpoint catalog. Set the local API URL and sample variables, then run the requests you need. In Visual Studio Code, use the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
 
 ## Thanks
 

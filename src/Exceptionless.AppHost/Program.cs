@@ -24,6 +24,17 @@ var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
     .WithDataVolume("exceptionless.data.v1")
     .WithEndpointProxySupport(false);
 
+// Backend tests use in-memory queues/cache and scoped file storage. Starting the
+// other shared containers wastes CI resources and can replace a running app's
+// Azurite container when Aspire assigns different dynamic ports.
+if (HasArgument("--test-services"))
+{
+    elastic.WithLifetime(ContainerLifetime.Persistent)
+        .WithContainerName("Exceptionless-Elasticsearch");
+    await builder.Build().RunAsync();
+    return;
+}
+
 var storage = builder.AddAzureStorage("Storage")
     .RunAsEmulator(c =>
     {
@@ -32,18 +43,21 @@ var storage = builder.AddAzureStorage("Storage")
         c.WithUrlForEndpoint("queue", u => { u.DisplayText = "Queues"; u.DisplayLocation = UrlDisplayLocation.DetailsOnly; });
         c.WithUrlForEndpoint("table", u => { u.DisplayText = "Tables"; u.DisplayLocation = UrlDisplayLocation.DetailsOnly; });
 
-        c.WithLifetime(ContainerLifetime.Persistent);
-        c.WithContainerName("Exceptionless-Storage");
-        c.WithDataVolume("exceptionless.storage.data.v1");
+        // Test runs must not replace another AppHost's emulator or share its queues.
+        if (!ciE2E)
+        {
+            c.WithLifetime(ContainerLifetime.Persistent);
+            c.WithContainerName("Exceptionless-Storage");
+            c.WithDataVolume("exceptionless.storage.data.v1");
+        }
     });
 
 var storageBlobs = storage.AddBlobs("StorageBlobs");
 var storageQueues = storage.AddQueues("StorageQueues");
 
 // Aspire reserves 6380 for Redis's secondary non-TLS endpoint when proxying is disabled.
-var cache = builder.AddRedis("Redis", port: 6381)
+var cache = builder.AddRedis("Redis", port: ciE2E ? null : 6381)
     .WithImageTag("8.6")
-    .WithDataVolume("exceptionless.redis.data.v1")
     .WithEndpointProxySupport(false)
     .WithClearCommand()
     .WithUrls(c =>
@@ -78,9 +92,15 @@ if (!servicesOnly && includeDevTools)
 }
 
 var ownedCache = cache;
-cache = ownedCache
-    .WithLifetime(ContainerLifetime.Persistent)
-    .WithContainerName("Exceptionless-Redis");
+// Redis credentials and TLS configuration belong to one AppHost. CI sessions
+// use isolated containers and allocated ports, including in local worktrees.
+if (!ciE2E)
+{
+    cache = ownedCache
+        .WithDataVolume("exceptionless.redis.data.v1")
+        .WithLifetime(ContainerLifetime.Persistent)
+        .WithContainerName("Exceptionless-Redis");
+}
 
 if (!servicesOnly && includeDevTools)
 {

@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test';
+import type { Page, Request, Route } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
 
@@ -21,21 +21,24 @@ test('dashboard charts stay mounted while list data refreshes', async ({ e2eApi,
     // Act & Assert: the helper refreshes each dashboard and checks that its chart stays mounted.
     await verifyChartRefresh(page, '/stack/all', (route) => isOrganizationEventListRequest(route, organizationId!, 'stack_frequent'));
     await verifyChartRefresh(page, '/event/all', (route) => isOrganizationEventListRequest(route, organizationId!, 'summary'));
-    await verifyChartRefresh(page, '/sessions/all', (route) => {
-        return new URL(route.request().url()).pathname === `/api/v2/organizations/${organizationId}/events/sessions`;
+    await verifyChartRefresh(page, '/sessions/all', (request) => {
+        return new URL(request.url()).pathname === `/api/v2/organizations/${organizationId}/events/sessions`;
     });
 });
 
-function isOrganizationEventListRequest(route: Route, organizationId: string, mode: string): boolean {
-    const url = new URL(route.request().url());
+function isOrganizationEventListRequest(request: Request, organizationId: string, mode: string): boolean {
+    const url = new URL(request.url());
     return url.pathname === `/api/v2/organizations/${organizationId}/events` && url.searchParams.get('mode') === mode;
 }
 
-async function verifyChartRefresh(page: Page, path: string, matchesRefreshRequest: (route: Route) => boolean): Promise<void> {
+async function verifyChartRefresh(page: Page, path: string, matchesRefreshRequest: (request: Request) => boolean): Promise<void> {
     // Arrange
+    const initialResponse = page.waitForResponse((response) => matchesRefreshRequest(response.request()));
     await page.goto(path);
+    expect((await initialResponse).ok()).toBe(true);
     const chart = page.locator('[data-slot="chart"]').first();
     await expect(chart).toBeVisible();
+    await expect(page.getByTitle('Refresh results').locator('svg')).not.toHaveClass(/animate-spin/);
 
     const chartElement = await chart.elementHandle();
     expect(chartElement).not.toBeNull();
@@ -44,10 +47,6 @@ async function verifyChartRefresh(page: Page, path: string, matchesRefreshReques
     const refreshReleased = new Promise<void>((resolve) => {
         releaseRefresh = resolve;
     });
-    let markRefreshIntercepted: () => void = () => {};
-    const refreshIntercepted = new Promise<void>((resolve) => {
-        markRefreshIntercepted = resolve;
-    });
     let markRefreshFinished: () => void = () => {};
     const refreshFinished = new Promise<void>((resolve) => {
         markRefreshFinished = resolve;
@@ -55,13 +54,12 @@ async function verifyChartRefresh(page: Page, path: string, matchesRefreshReques
     let refreshWasIntercepted = false;
 
     const holdRefresh = async (route: Route) => {
-        if (!matchesRefreshRequest(route)) {
+        if (!matchesRefreshRequest(route.request())) {
             await route.fallback();
             return;
         }
 
         refreshWasIntercepted = true;
-        markRefreshIntercepted();
         try {
             await refreshReleased;
             await route.continue();
@@ -74,7 +72,7 @@ async function verifyChartRefresh(page: Page, path: string, matchesRefreshReques
     try {
         // Act
         await page.getByTitle('Refresh results').click();
-        await refreshIntercepted;
+        await expect.poll(() => refreshWasIntercepted, { message: 'The refresh action must request the dashboard list' }).toBe(true);
         // Assert
         await expect(page.getByTitle('Refresh results').locator('svg')).toHaveClass(/animate-spin/);
         expect(await chartElement!.evaluate((element) => element.isConnected)).toBe(true);
