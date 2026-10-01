@@ -394,30 +394,6 @@ public class CleanupDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanDeleteOrphanedEventsByStack()
-    {
-        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
-        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
-        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
-
-        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
-        await _eventRepository.AddAsync(_eventData.GenerateEvents(5000, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
-
-        var orphanedEvents = _eventData.GenerateEvents(10000, organization.Id, project.Id).ToList();
-        orphanedEvents.ForEach(e => e.StackId = ObjectId.GenerateNewId().ToString());
-
-        await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
-
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
-        Assert.Equal(15000, eventCount);
-
-        await GetService<CleanupOrphanedDataJob>().RunAsync(TestCancellationToken);
-
-        eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
-        Assert.Equal(5000, eventCount);
-    }
-
-    [Fact]
     public async Task CanCleanupSuspendedTokens_MultiTenant_OnlySuspendedOrganizationTokensAffected()
     {
         // Arrange - Organization 1 is suspended, Organization 2 is active

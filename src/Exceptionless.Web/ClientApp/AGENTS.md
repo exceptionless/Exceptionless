@@ -20,6 +20,9 @@ Use focused verification while iterating. Do not run broad Svelte validation aft
 
 ## App Rules
 
+- Before adding tests, check existing coverage and name the distinct regression being protected. Extend or parameterize an existing scenario where possible; do not duplicate coverage or test framework/implementation details just to add tests.
+- Prefer Vitest for logic, data matrices, and component state; reserve Playwright for real browser integration, layout, and user journeys. Share expensive setup within a coherent journey using `test.step`, while retaining useful failure diagnostics. Keep representative browser coverage when moving repeated cases to Vitest.
+- Browser shards use isolated application instances and one worker each because some tests change the shared administrator's preferences. New tests must own and clean up their data and must not depend on file order. Use condition-based waits and bounded request assertions; retain intentional observation windows only when testing the absence of repeated work.
 - Use Svelte 5 patterns: runes, snippets, Svelte event attributes such as `onclick`, and typed TypeScript.
 - Organize code by feature under `src/lib/features`; match the nearest existing feature before adding files.
 - Use generated API types and feature-local `api.svelte.ts`, `models.ts`, `schemas.ts`, and `validators.ts` patterns.

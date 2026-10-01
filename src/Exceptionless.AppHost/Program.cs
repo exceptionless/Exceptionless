@@ -28,6 +28,17 @@ var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
     .WithDataVolume("exceptionless.data.v1")
     .WithEndpointProxySupport(false);
 
+// Backend tests use in-memory queues/cache and scoped file storage. Starting the
+// other shared containers wastes CI resources and can replace a running app's
+// Azurite container when Aspire assigns different dynamic ports.
+if (HasArgument("--test-services"))
+{
+    elastic.WithLifetime(ContainerLifetime.Persistent)
+        .WithContainerName("Exceptionless-Elasticsearch");
+    await builder.Build().RunAsync();
+    return;
+}
+
 var storage = builder.AddAzureStorage("Storage")
     .RunAsEmulator(c =>
     {
