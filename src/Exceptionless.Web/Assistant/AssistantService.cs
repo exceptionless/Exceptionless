@@ -326,7 +326,10 @@ public sealed class AssistantService(
 
             if (providerFailureCode is not null)
             {
-                yield return AssistantStreamEvent.Error("Exie stopped before completing the answer. Please try again.", providerFailureCode);
+                string message = providerFailureCode == "output_limit"
+                    ? "Exie reached its response length limit. Ask for a shorter answer or split the question into smaller parts."
+                    : "Exie stopped before completing the answer. Please try again.";
+                yield return AssistantStreamEvent.Error(message, providerFailureCode);
                 yield return AssistantStreamEvent.Done();
                 yield break;
             }

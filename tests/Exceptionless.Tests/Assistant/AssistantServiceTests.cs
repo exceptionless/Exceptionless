@@ -1376,13 +1376,13 @@ public sealed class AssistantServiceTests
     }
 
     [Theory]
-    [InlineData("length", "output_limit", true)]
-    [InlineData("content_filter", "content_filter", true)]
-    [InlineData("error", "provider_error", true)]
-    [InlineData("length", "output_limit", false)]
-    [InlineData("content_filter", "content_filter", false)]
-    [InlineData("error", "provider_error", false)]
-    public async Task StreamAsync_PartialProviderFailure_PreservesTextAndFailsTurn(string finishReason, string failureCode, bool recordDiagnostics)
+    [InlineData("length", "output_limit", "Exie reached its response length limit. Ask for a shorter answer or split the question into smaller parts.", true)]
+    [InlineData("content_filter", "content_filter", "Exie stopped before completing the answer. Please try again.", true)]
+    [InlineData("error", "provider_error", "Exie stopped before completing the answer. Please try again.", true)]
+    [InlineData("length", "output_limit", "Exie reached its response length limit. Ask for a shorter answer or split the question into smaller parts.", false)]
+    [InlineData("content_filter", "content_filter", "Exie stopped before completing the answer. Please try again.", false)]
+    [InlineData("error", "provider_error", "Exie stopped before completing the answer. Please try again.", false)]
+    public async Task StreamAsync_PartialProviderFailure_PreservesTextAndFailsTurn(string finishReason, string failureCode, string expectedMessage, bool recordDiagnostics)
     {
         string payload = JsonSerializer.Serialize(new
         {
@@ -1411,7 +1411,11 @@ public sealed class AssistantServiceTests
             .Select(line => JsonSerializer.Deserialize<AssistantStreamEvent>(line, new JsonSerializerOptions(JsonSerializerDefaults.Web))!);
         Assert.Collection(events,
             item => Assert.Equal("Partial answer", item.Text),
-            item => Assert.Equal("error", item.Type),
+            item =>
+            {
+                Assert.Equal("error", item.Type);
+                Assert.Equal(expectedMessage, item.Message);
+            },
             item => Assert.Equal("done", item.Type));
         if (recordDiagnostics)
             Assert.Equal(failureCode, Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("ProviderOutcome")).Properties["ProviderOutcome"]);
