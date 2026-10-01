@@ -265,6 +265,8 @@ jobs:
         run: test "$SHARD_RESULT" = success
 
   test-client:
+    env:
+      FRONTEND_COVERAGE_DIRECTORY: frontend-unit-${{ github.run_id }}-${{ github.run_attempt }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     defaults:
@@ -303,7 +305,23 @@ jobs:
         run: npm run build
 
       - name: Run Unit Tests
-        run: npm run test:unit -- --maxWorkers=2 --reporter=default --reporter=junit --outputFile.junit=test-results/unit-junit-results.xml
+        working-directory: .
+        run: node tests/ci/frontend-unit-coverage.mjs --output "$FRONTEND_COVERAGE_DIRECTORY" -- --maxWorkers=2 --reporter=default --reporter=junit --outputFile.junit=test-results/unit-junit-results.xml
+
+      - name: Verify frontend coverage tooling
+        run: |
+          node --test ../../../tests/ci/frontend-coverage.test.mjs
+          npx playwright install --only-shell chromium
+          node ../../../tests/ci/check-frontend-coverage.mjs
+
+      - name: Upload frontend unit coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: frontend-unit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.FRONTEND_COVERAGE_DIRECTORY }}/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload Unit Test Results
         if: ${{ !cancelled() }}
@@ -320,6 +338,7 @@ jobs:
     timeout-minutes: 15
     env:
       BACKEND_COVERAGE_DIRECTORY: e2e-backend-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
+      FRONTEND_COVERAGE_DIRECTORY: frontend-e2e-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
     strategy:
       fail-fast: false
       matrix:
@@ -384,8 +403,8 @@ jobs:
           dotnet tool restore
           mkdir -p "$HOME/.aspnet/https"
 
-      - name: Run Playwright E2E Tests with backend coverage
-        run: node tests/ci/e2e-backend-coverage.mjs --output "$BACKEND_COVERAGE_DIRECTORY" --index ${{ matrix.shard }} --count 6
+      - name: Run Playwright E2E Tests with backend and frontend coverage
+        run: node tests/ci/e2e-backend-coverage.mjs --output "$BACKEND_COVERAGE_DIRECTORY" --frontend-output "$FRONTEND_COVERAGE_DIRECTORY" --index ${{ matrix.shard }} --count 6
 
       - name: Capture E2E Failure Diagnostics
         if: ${{ failure() }}
@@ -442,8 +461,17 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Upload E2E frontend coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: frontend-e2e-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
+          path: ${{ env.FRONTEND_COVERAGE_DIRECTORY }}/
+          if-no-files-found: error
+          retention-days: 14
+
   test-e2e:
-    needs: [test-e2e-shard, test-api]
+    needs: [test-e2e-shard, test-api, test-client]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -489,6 +517,18 @@ jobs:
           pattern: e2e-backend-${{ github.run_id }}-${{ github.run_attempt }}-*
           path: coverage-shards/e2e
 
+      - name: Download frontend unit coverage inputs
+        uses: actions/download-artifact@v6
+        with:
+          pattern: frontend-unit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: frontend-shards/unit
+
+      - name: Download frontend E2E coverage inputs
+        uses: actions/download-artifact@v6
+        with:
+          pattern: frontend-e2e-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: frontend-shards/e2e
+
       - name: Download Playwright Blob Reports
         uses: actions/download-artifact@v6
         with:
@@ -508,11 +548,12 @@ jobs:
           npx playwright test --project=chromium --list --reporter=json > test-results/discovery.json
           node ../../../tests/ci/browser-report.mjs test-results/discovery.json test-results/e2e-results.json
 
-      - name: Require complete successful backend and browser suites
+      - name: Require complete successful backend, frontend and browser suites
         env:
           API_RESULT: ${{ needs.test-api.result }}
           BROWSER_RESULT: ${{ needs.test-e2e-shard.result }}
-        run: test "$API_RESULT" = success && test "$BROWSER_RESULT" = success
+          CLIENT_RESULT: ${{ needs.test-client.result }}
+        run: test "$API_RESULT" = success && test "$BROWSER_RESULT" = success && test "$CLIENT_RESULT" = success
 
       - name: Merge backend coverage
         working-directory: .
@@ -523,18 +564,33 @@ jobs:
           done
           cat backend-coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Merge frontend coverage
+        working-directory: .
+        run: |
+          node tests/ci/frontend-coverage.mjs aggregate frontend-shards frontend-coverage --count 6
+          cat frontend-coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
+          cat backend-coverage/summary.md frontend-coverage/summary.md > coverage-summary.md
+
       - name: Add Coverage PR Comment
         uses: marocchino/sticky-pull-request-comment@v3
         if: github.event_name == 'pull_request'
         with:
           recreate: true
-          path: backend-coverage/summary.md
+          path: coverage-summary.md
 
       - name: Upload backend coverage reports
         uses: actions/upload-artifact@v5
         with:
           name: backend-coverage
           path: backend-coverage/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload frontend coverage reports
+        uses: actions/upload-artifact@v5
+        with:
+          name: frontend-coverage
+          path: frontend-coverage/
           if-no-files-found: error
           retention-days: 14
 

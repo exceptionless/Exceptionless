@@ -1,4 +1,6 @@
-import { expect, type Route, test } from '@playwright/test';
+import { expect, type Route } from '@playwright/test';
+
+import { test } from '../fixtures/coverage-test';
 
 const ORGANIZATION_ID = '000000000000000000000001';
 const USER_ID = '000000000000000000000002';

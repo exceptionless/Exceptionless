@@ -1,7 +1,8 @@
-import { test as base, expect, type TestInfo } from '@playwright/test';
+import { expect, type TestInfo } from '@playwright/test';
 
 import { runCleanupStep, throwIfCleanupFailed } from '../support/cleanup';
 import { E2EApiClient } from './api-client';
+import { test as base } from './coverage-test';
 import { getE2EEnvironment } from './environment';
 
 export const E2E_TEST_PASSWORD = 'tester';

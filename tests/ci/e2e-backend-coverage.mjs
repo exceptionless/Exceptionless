@@ -14,6 +14,7 @@ const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {
         output: { type: 'string' },
+        'frontend-output': { type: 'string' },
         index: { type: 'string' },
         count: { type: 'string' }
     }
@@ -27,6 +28,14 @@ const output = resolve(values.output);
 // Reusing an output directory could accidentally publish a previous successful run.
 mkdirSync(output, { recursive: false });
 const session = `e2e-${process.env.GITHUB_RUN_ID ?? 'local'}-${process.env.GITHUB_RUN_ATTEMPT ?? '1'}-${index}-${randomUUID()}`;
+const frontendOutput = values['frontend-output'] ? resolve(values['frontend-output']) : undefined;
+let frontend;
+if (frontendOutput) {
+    mkdirSync(frontendOutput, { recursive: false });
+    frontend = await import('./frontend-coverage.mjs');
+    frontend.begin(frontendOutput, session);
+    process.env.E2E_FRONTEND_COVERAGE_DIRECTORY = frontendOutput;
+}
 const log = openSync(join(output, 'aspire.log'), 'w');
 const collectorLog = openSync(join(output, 'collector.log'), 'w');
 const started = performance.now();
@@ -262,6 +271,9 @@ try {
         clearInterval(cancelTest);
     }
     timings.test_seconds = (performance.now() - testStart) / 1000;
+    if (frontend) {
+        await frontend.seal(frontendOutput, { kind: 'e2e', index, count, session, complete: testExitCode === 0, seconds: timings.test_seconds });
+    }
 } catch (error) {
     errors.push(error.message);
 } finally {

@@ -200,3 +200,91 @@ Coverage validation/native merging took 13.4 seconds and 496 MiB Node peak RSS; 
 The 10m 43s characterization run exceeded the roughly ten-minute goal. Shard 5 was the critical path: 147.2s startup, 308.0s tests, and 2.2s shutdown. Its test slowdown was spread across scenarios; there were no retries or isolated timeout outliers. The earlier coverage probe ran that same shard in 95.6s startup/245.2s tests, so this comparison alone cannot separate instrumentation cost from runner variation. To reduce a measured avoidable cost, the real collector union contract check now runs once on .NET shard 1, parallel with the browser shards, instead of delaying final aggregation (that check took 32s in the earlier probe). The final-commit repeated-run evidence and resulting elapsed/runner-minute measurements are recorded in the PR; the figures above identify the measured characterization commit and do not claim to be those final runs.
 
 References: [Microsoft collector lifecycle and merging](https://learn.microsoft.com/en-us/dotnet/core/additional-tools/dotnet-coverage), [native formats versus branches](https://github.com/microsoft/codecoverage/issues/147), [Cobertura merge ambiguity](https://github.com/microsoft/codecoverage/issues/11).
+## Frontend coverage (Phase 2)
+
+Frontend coverage is separate from backend coverage. `test-client` runs the existing
+Vitest projects once with the pinned Istanbul provider; each existing Chromium E2E
+shard collects the opted-in Vite instrumentation during its normal test run.
+`test-e2e` waits for all three suites and publishes unit/component, E2E browser, and
+combined frontend HTML, JSON, and Cobertura reports. The PR comment shows the
+backend and frontend figures separately. No minimum percentages are imposed.
+
+The frontend denominator includes tracked application `.ts`, `.js`, and `.svelte`
+files under `ClientApp/src`, including untouched files. Tests, stories, declarations,
+generated API/schema output, dependencies, legacy Angular, and CSS are excluded.
+Files containing only erased types, imports, and re-exports are retained in the
+inventory with no executable counters. Missing executable files fail aggregation.
+Server-only SvelteKit files (`+server`, `.server`, and `/server/`) belong to the
+unit/combined report, not browser coverage.
+
+Both collectors use `@vitest/coverage-istanbul` 5.0.3's instrumenter, pinned to 1.0.2.
+The prototype compared V8 first: when `JSON.parse` throws, V8 marked the following
+return statement covered, while Istanbul correctly left it uncovered. The focused
+collector contract preserves that case and verifies original TypeScript/Svelte
+locations, opposite branch arms, and untouched-file inclusion. The Vite adapter
+explicitly handles `.svelte` and excludes CSS/SSR virtual modules. It runs only in
+the development server when `E2E_FRONTEND_COVERAGE_DIRECTORY` is set; ordinary
+development, production builds, and synthetic monitoring do not enable it.
+
+### Collection and source mapping
+
+The coverage-aware Playwright browser fixture observes all contexts and pages,
+including manually created contexts, popups, and early page closes. It snapshots
+before navigation/unload, on `pagehide`, and before explicit page/context teardown.
+Chromium protocol bindings serialize reports before their document disappears.
+Instrumented documents register themselves; a missing final snapshot fails the
+worker. Crashes, test failures, and collector errors retain available raw data but
+cannot yield a successful complete aggregate. Code running only after the final
+unload snapshot is outside that snapshot; this is not browser process tracing.
+
+Source line coverage follows Istanbul's original mapped statement starting lines.
+Svelte can reorder template expressions, so mapped range endpoints are preserved,
+not sorted into invented source spans. Unmapped compiler-generated control flow
+(including some template decisions) is not represented as original-source branch
+coverage. The branch figure is explicitly **mapped branches**, not a claim to
+measure every Svelte compiler decision. An implicit `if` false arm keeps its own
+counter even when it has no explicit `else` source span.
+
+Counters are reduced to covered/uncovered unions, not summed execution counts or
+averaged percentages. Function body spans identify anonymous functions whose
+generated names can vary between environments. Statement and ordered branch maps
+must agree before a shared file is merged. The initial and final source inventory,
+lock/config fingerprint, commit, run, attempt, session, shard count/index, worker
+completion, and artifact checksum are checked. Missing, duplicate, incompatible,
+stale, malformed, or incomplete inputs fail aggregation.
+
+### Local frontend collection
+
+Use a fresh output directory for every run. Start from the repository root; the
+existing Aspire prerequisites and localhost restrictions above still apply.
+
+```powershell
+npm ci --prefix src/Exceptionless.Web/ClientApp
+node --test tests/ci/frontend-coverage.test.mjs
+node tests/ci/check-frontend-coverage.mjs
+
+node tests/ci/frontend-unit-coverage.mjs --output "$env:TEMP/frontend-unit-run" -- --maxWorkers=2
+node tests/ci/e2e-backend-coverage.mjs --output "$env:TEMP/backend-run" --frontend-output "$env:TEMP/frontend-browser-run" --index 1 --count 1 -- e2e/tests/event-visibility.e2e.ts --retries=0
+```
+
+On codesmith, `TEMP`/`TMPDIR` must point under `/home/ejsmith/tmp`. To aggregate,
+place the unit artifact directory under `INPUT/unit/` and all browser artifact
+directories under `INPUT/e2e/`, then run
+`node tests/ci/frontend-coverage.mjs aggregate INPUT OUTPUT --count N`.
+All inputs must have matching collection identity and unchanged source/config.
+`e2e-added-lines.json` lists source lines covered only by browser execution.
+
+If a document fails to finalize, inspect its worker artifact and the Playwright
+failure report; do not accept retries or omit the worker. If source maps differ,
+inspect the affected original source and collector outputs instead of merging
+their percentages. `collection-start.json`, worker JSON, and `collection-error.txt`
+are diagnostic artifacts, not substitutes for a complete manifest.
+
+The initial local baseline ran all 960 existing unit/component tests: 5,551/21,692
+lines (25.59%) and 3,227/11,908 mapped branch arms (27.09%), in 50.73 seconds with
+four workers. The source inventory contained 864 files, including 70 files with no
+executable counters. The focused browser contract finalized seven documents across
+reload, full navigation, popup closure, manual contexts, and early page teardown.
+Hosted combined figures, resource measurements, overhead, and exact final-commit
+run links belong in the phase's PR evidence; local unit numbers are not a hosted
+E2E or performance result.

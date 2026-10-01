@@ -9,6 +9,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
+import { coverageExclude, coverageInclude } from './scripts/test-coverage/policy.ts';
+
 const apiTarget = process.env.API_HTTPS || process.env.API_HTTP;
 const apiProxy = { changeOrigin: true, target: apiTarget };
 
@@ -137,7 +139,13 @@ export default defineConfig({
     },
     clearScreen: false,
     logLevel: 'info',
-    plugins: [tailwindcss(), sveltekit(), svelteKitRuntimeDefines(), svelteEffectDepthDiagnostics()],
+    plugins: [
+        tailwindcss(),
+        sveltekit(),
+        svelteKitRuntimeDefines(),
+        svelteEffectDepthDiagnostics(),
+        process.env.E2E_FRONTEND_COVERAGE_DIRECTORY ? import('./scripts/test-coverage/vite.ts').then(({ frontendCoverage }) => frontendCoverage()) : undefined
+    ],
     server: {
         allowedHosts,
         hmr,
@@ -155,6 +163,15 @@ export default defineConfig({
         }
     },
     test: {
+        coverage: {
+            enabled: false,
+            exclude: coverageExclude,
+            excludeAfterRemap: true,
+            include: coverageInclude,
+            provider: 'istanbul',
+            reporter: ['json', 'json-summary', 'html'],
+            reportOnFailure: true
+        },
         projects: [
             {
                 extends: './vite.config.ts',
