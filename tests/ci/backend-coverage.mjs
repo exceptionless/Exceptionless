@@ -1,7 +1,7 @@
 // Merge the collector's native data, never percentages or lossy Cobertura conditions.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
@@ -205,7 +205,7 @@ function loadShards(directory, kind, count, expected) {
         const manifest = manifests[index];
         const file = join(dirname(path), 'backend.coverage');
         if (hash(readFileSync(file)) !== manifest.sha256) throw new Error(`Coverage artifact checksum mismatch: ${file}`);
-        // Re-convert the signed native file rather than trusting a separately uploaded XML file.
+        // Re-convert the native file verified by its checksum instead of trusting uploaded XML.
         const report = convert(file, join(dirname(path), 'verified.xml'), manifest.source_root);
         return { manifest, file, report };
     });
@@ -224,7 +224,7 @@ function statistics(report) {
 
 // One class per canonical source file avoids counting linked files twice across modules.
 // Branch attributes are deliberately absent: native Microsoft reports carry blocks, not branches.
-function writeCobertura(report, output) {
+export function writeCobertura(report, output) {
     const files = new Map();
     for (const [key, covered] of [...report.lines].sort(([a], [b]) => a.localeCompare(b))) {
         const separator = key.lastIndexOf(':');
@@ -239,7 +239,8 @@ function writeCobertura(report, output) {
         '<sources><source>.</source></sources><packages><package name="Backend"><classes>'
     ];
     for (const [file, lines] of files) {
-        xml.push(`<class name="${escapeXml(file)}" filename="${escapeXml(file)}"><methods/><lines>`);
+        const className = file.replace(/\.[^.]+$/, '').replaceAll('/', '.');
+        xml.push(`<class name="${escapeXml(className)}" filename="${escapeXml(file)}"><methods/><lines>`);
         for (const { line, covered } of lines.sort((a, b) => a.line - b.line)) xml.push(`<line number="${line}" hits="${Number(covered)}"/>`);
         xml.push('</lines></class>');
     }
@@ -251,7 +252,7 @@ function writeCobertura(report, output) {
 function merge(shards, directory) {
     mkdirSync(directory, { recursive: true });
     const output = join(directory, 'backend.coverage');
-    collector(['merge', ...shards.map((s) => s.file), '--output', output]);
+    collector(['merge', ...shards.map((s) => s.file), '--output-format', 'coverage', '--output', output]);
     const report = convert(output, join(directory, 'backend.xml'), shards[0].manifest.source_root);
     validateSources([...shards.map((s) => s.report), report]);
     assertUnion(
@@ -264,6 +265,7 @@ function merge(shards, directory) {
 }
 
 function aggregate(directory, output, apiCount, e2eCount) {
+    if (existsSync(output) && readdirSync(output).length) throw new Error('Coverage report output directory must be empty');
     const started = performance.now();
     const expected = identity();
     const api = loadShards(join(directory, 'api'), 'api', apiCount, expected);

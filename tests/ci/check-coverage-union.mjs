@@ -26,9 +26,26 @@ try {
         ['left', []],
         ['right', ['right']]
     ]) {
-        coverage(['collect', '--output', join(directory, `${name}.coverage`), 'dotnet', join(directory, 'src/bin/Release/net10.0/Probe.dll'), ...args]);
+        coverage([
+            'collect',
+            '--output-format',
+            'coverage',
+            '--output',
+            join(directory, `${name}.coverage`),
+            'dotnet',
+            join(directory, 'src/bin/Release/net10.0/Probe.dll'),
+            ...args
+        ]);
     }
-    coverage(['merge', join(directory, 'left.coverage'), join(directory, 'right.coverage'), '--output', join(directory, 'union.coverage')]);
+    coverage([
+        'merge',
+        join(directory, 'left.coverage'),
+        join(directory, 'right.coverage'),
+        '--output-format',
+        'coverage',
+        '--output',
+        join(directory, 'union.coverage')
+    ]);
     const reports = ['left', 'right', 'union'].map((name) => {
         const xml = join(directory, `${name}.xml`);
         coverage(['merge', join(directory, `${name}.coverage`), '--output-format', 'xml', '--output', xml]);

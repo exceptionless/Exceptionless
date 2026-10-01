@@ -39,6 +39,7 @@ let complete = false;
 let appUrl;
 let peakRssKiB = 0;
 let peakHostUsedKiB = 0;
+let lastResources = [];
 const errors = [];
 
 function run(command, args, options = {}) {
@@ -142,6 +143,8 @@ try {
         /* No AppHost has been started in this checkout. */
     }
     if (existing?.some((r) => r.state === 'Running')) throw new Error('An AppHost is already running in this checkout; use an isolated worktree');
+    // Direct Release startup bypasses the CLI's automatic certificate-trust step.
+    await command('aspire', ['certs', 'trust', '--non-interactive'], { stdio: ['ignore', log, log] });
     server = run(
         'dotnet',
         [
@@ -157,6 +160,8 @@ try {
             join(root, 'tests/CodeCoverage.config'),
             '--output',
             join(output, 'backend.coverage'),
+            '--output-format',
+            'coverage',
             '--log-file',
             join(output, 'coverage-diagnostics.log'),
             '--log-level',
@@ -213,6 +218,7 @@ try {
         let resources;
         try {
             resources = describe();
+            lastResources = resources;
         } catch {
             await delay(1000);
             continue;
@@ -261,6 +267,18 @@ try {
 } finally {
     const shutdownStart = performance.now();
     if (app && (testExitCode !== 0 || errors.length)) {
+        writeFileSync(
+            join(output, 'resource-state.json'),
+            JSON.stringify(
+                lastResources.map((r) => ({
+                    name: r.displayName,
+                    state: r.state,
+                    health: Object.fromEntries(Object.entries(r.healthReports ?? {}).map(([name, report]) => [name, report.status ?? 'Pending']))
+                })),
+                null,
+                2
+            ) + '\n'
+        );
         await Promise.allSettled(
             ['Api', 'Jobs', 'App', 'OldApp'].map(async (resource) => {
                 const file = openSync(join(output, `${resource}.log`), 'w');

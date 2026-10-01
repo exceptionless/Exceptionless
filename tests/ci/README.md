@@ -111,6 +111,8 @@ Coverage is opt-in through `backend-shards.mjs --coverage` and `e2e-backend-cove
 
 The local tool manifest pins `dotnet-coverage` **18.11.2**, matching the existing `Microsoft.Testing.Extensions.CodeCoverage` package. Both NuGet packages identify upstream commit `be7bc8830b6e477b1f66d951a326edfe2994abb5`. ReportGenerator remains at 5.5.11. Collection includes AppHost, Core, Insulation, Web, and now **Job**. The local Release proof adds 220 Job source lines to the denominator, so these figures should not be compared directly with historical reports that excluded it. Shared and linked source files are counted once in the line denominator; IL blocks belong to their compiled modules.
 
+The historical `api-coverage` Cobertura report counted 34,868 class/line entries, representing 32,685 unique file/line locations. Canonical reporting removes those 2,183 duplicates and adds the 220 Job lines, yielding 32,905 unique source lines. This normalization is another denominator change, not missing instrumentation.
+
 ### Lifecycle and local commands
 
 Install both client lockfiles and the existing Playwright Chromium shell before running the wrapper. It starts its own AppHost, discovers and probes localhost endpoints, waits for healthy API and Jobs processes, runs the existing browser tests once, snapshots while the applications are alive, stops only this checkout's AppHost, and explicitly shuts down the collector. Each invocation needs a new output directory. Session IDs include run, attempt, shard, and a random suffix.
@@ -133,9 +135,11 @@ node tests/ci/check-coverage-union.mjs
 
 On codesmith, `$env:TEMP`/`TMPDIR` must point to `/home/ejsmith/tmp`. Use an isolated worktree when a preview is already running. The runner refuses to reuse an active AppHost in its checkout and never runs `aspire stop --all`.
 
-Aspire 13.6's CLI startup chooses Debug even when MSBuild's `Configuration` environment property creates Release output. Its `dotnet run` hook also delegates to that CLI path. The wrapper therefore runs `dotnet run --configuration Release` with the SDK's `ASPIRE_SUPPRESS_CLI_RUN_HOOK=true` setting. This builds only the AppHost graph and launches the actual Release API/Jobs outputs. The aggregator checks module identities, block denominators, and PDB SHA-256 source checksums; Debug and Release reports cannot silently mix.
+Aspire 13.6's CLI startup chooses Debug even when MSBuild's `Configuration` environment property creates Release output. Its `dotnet run` hook also delegates to that CLI path. The wrapper therefore runs `dotnet run --configuration Release` with the SDK's `ASPIRE_SUPPRESS_CLI_RUN_HOOK=true` setting. It first runs `aspire certs trust --non-interactive`, preserving the CLI preparation needed on fresh runners. This builds only the AppHost graph and launches the actual Release API/Jobs outputs. The aggregator checks module identities, block denominators, and PDB SHA-256 source checksums; Debug and Release reports cannot silently mix.
 
 On failure, the runner captures API, Jobs, App, and OldApp logs before shutdown and preserves the snapshot, final native report when available, collector diagnostics, and `lifecycle.json`. Test exit codes take precedence; snapshot, shutdown, conversion, and source-validation failures also fail the run. An unsuccessful collector never receives a complete manifest. `failOnFlakyTests`, assertions, discovery, and shard isolation are unchanged.
+
+If API is running but Jobs/App remain waiting for API health, check certificate trust and the saved resource-state summary before changing timeouts. The first hosted probe exposed the missing CLI trust preparation that an already-trusted local machine hid. The collector output format is explicitly `coverage`; its implicit default can log an `Invalid outputType: default` error even while producing a file. Collector error-level diagnostics fail collection instead of being ignored.
 
 ### Reports, completeness, and limitations
 
