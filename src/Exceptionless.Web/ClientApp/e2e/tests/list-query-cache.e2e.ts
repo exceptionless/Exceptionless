@@ -1,6 +1,7 @@
 import type { Page, Request } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
+import { installWebSocketTestHarness } from '../support/web-socket';
 
 interface RequestCounts {
     eventList: number;
@@ -11,6 +12,9 @@ interface RequestCounts {
 }
 
 test('stack and event queries reuse fresh parameterized data during in-app navigation', async ({ e2eApi, page }) => {
+    // Measure navigation cache reuse without lazy saved-view creation or other server
+    // broadcasts invalidating the data. Live update behavior has separate coverage.
+    await installWebSocketTestHarness(page, { ignoreServerMessages: true });
     const userToken = await e2eApi.login();
     const organizations = await e2eApi.getOrganizations(userToken);
     const organizationId = organizations[0]?.id;
@@ -37,7 +41,7 @@ test('stack and event queries reuse fresh parameterized data during in-app navig
             runtimeErrors.push(message.text());
         }
     });
-    page.on('pageerror', (error) => runtimeErrors.push(error.stack ?? error.message));
+    page.on('pageerror', (error) => runtimeErrors.push(error.stack || error.message));
     page.on('request', (request) => recordListRequest(requestCounts, request));
     page.on('requestfailed', (request) => {
         if (isApiRequest(request)) {
