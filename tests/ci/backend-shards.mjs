@@ -1,10 +1,11 @@
 // Run complete xUnit classes on balanced shards, using discovery as the source of truth.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
+import { seal } from './backend-coverage.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 const timingsPath = join(import.meta.dirname, 'backend-durations.json');
@@ -75,6 +76,7 @@ function run(args) {
     }
     const selected = shards[index - 1];
     const output = resolve(args.output);
+    if (existsSync(output) && readdirSync(output).length) throw new Error('Shard output directory must be empty');
     mkdirSync(output, { recursive: true });
     const manifest = {
         index,
@@ -106,19 +108,35 @@ function run(args) {
             '--coverage-settings',
             join(root, 'tests/CodeCoverage.config'),
             '--coverage-output',
-            'coverage.cobertura.xml',
+            'backend.coverage',
             '--coverage-output-format',
-            'cobertura'
+            'coverage'
         );
     }
     if (process.env.GITHUB_ACTIONS) {
         command.push('--report-github');
     }
+    const start = performance.now();
     const result = spawnSync('dotnet', command, {
         stdio: 'inherit',
         env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development' }
     });
     if (result.error) throw result.error;
+    if (args.coverage) {
+        try {
+            seal(output, {
+                kind: 'api',
+                index,
+                count,
+                session: randomUUID(),
+                complete: result.status === 0,
+                timings: { test_seconds: (performance.now() - start) / 1000 }
+            });
+        } catch (error) {
+            console.error(`Coverage validation failed: ${error.message}`);
+            return result.status || 1;
+        }
+    }
     return result.status ?? 1;
 }
 
@@ -159,7 +177,7 @@ export function report({ directory, count, coverage }) {
             if (!existsSync(join(dirname(path), 'test-results.trx'))) {
                 throw new Error(`Missing shard TRX report: ${path}`);
             }
-            if (coverage && !existsSync(join(dirname(path), 'coverage.cobertura.xml'))) {
+            if (coverage && !existsSync(join(dirname(path), 'backend.coverage'))) {
                 throw new Error(`Missing shard coverage: ${path}`);
             }
         }

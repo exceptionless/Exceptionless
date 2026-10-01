@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "isRoot": true,
+    "tools": {
+        "dotnet-coverage": {
+            "version": "18.11.2",
+            "commands": ["dotnet-coverage"]
+        },
+        "dotnet-reportgenerator-globaltool": {
+            "version": "5.5.11",
+            "commands": ["reportgenerator"]
+        }
+    }
+}

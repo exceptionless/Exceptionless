@@ -1,0 +1,8 @@
+{
+    "name": "exceptionless-ci",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "saxes": "6.0.0"
+    }
+}

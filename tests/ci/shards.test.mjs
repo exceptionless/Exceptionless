@@ -50,7 +50,7 @@ test('backend gate rejects incomplete or inconsistent shards and reads xUnit JSO
                     if (defect === 'execution') name = 'Unexpected.Test';
                 }
                 writeFileSync(join(shard, 'manifest.json'), JSON.stringify(manifest));
-                if (defect !== 'coverage' || index !== 2) writeFileSync(join(shard, 'coverage.cobertura.xml'), '<coverage />');
+                if (defect !== 'coverage' || index !== 2) writeFileSync(join(shard, 'backend.coverage'), 'coverage fixture');
                 if (defect !== 'trx' || index !== 2) writeFileSync(join(shard, 'test-results.trx'), '<TestRun />');
                 const status = index === 2 && ['failed', 'skipped', 'pending'].includes(defect) ? defect : 'passed';
                 const result = {

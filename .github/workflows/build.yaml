@@ -172,7 +172,10 @@ jobs:
         run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
 
       - name: Verify CI test tooling
-        run: node --test tests/ci/shards.test.mjs
+        run: |
+          npm ci --prefix tests/ci
+          dotnet tool restore
+          node --test tests/ci/shards.test.mjs tests/ci/backend-coverage.test.mjs
 
       - name: Run .NET shard with coverage
         run: node tests/ci/backend-shards.mjs run --index ${{ matrix.shard }} --count 4 --output coverage --coverage
@@ -181,7 +184,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: api-results-${{ matrix.shard }}
+          name: api-results-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
           path: coverage/
           if-no-files-found: error
           retention-days: 14
@@ -206,11 +209,13 @@ jobs:
       - name: Download .NET results
         uses: actions/download-artifact@v6
         with:
-          pattern: api-results-*
-          path: coverage-shards
+          pattern: api-results-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: coverage-shards/api
 
       - name: Verify complete shard coverage and report timings
-        run: node tests/ci/backend-shards.mjs report coverage-shards --count 4 --coverage --write-timings coverage-shards/backend-durations.json
+        run: |
+          npm ci --prefix tests/ci
+          node tests/ci/backend-shards.mjs report coverage-shards/api --count 4 --coverage --write-timings coverage-shards/backend-durations.json
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
@@ -219,26 +224,12 @@ jobs:
 
       - name: Merge coverage
         run: |
-          dotnet tool install dotnet-reportgenerator-globaltool --tool-path .tools --version 5.5.11
-          .tools/reportgenerator '-reports:coverage-shards/**/coverage.cobertura.xml' '-targetdir:coverage' '-reporttypes:Cobertura'
-
-      - name: Code Coverage Summary Report
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: coverage/Cobertura.xml
-          badge: true
-          format: "markdown"
-          output: "both"
-
-      - name: Add Coverage PR Comment
-        uses: marocchino/sticky-pull-request-comment@v3
-        if: github.event_name == 'pull_request'
-        with:
-          recreate: true
-          path: code-coverage-results.md
+          dotnet tool restore
+          node tests/ci/backend-coverage.mjs aggregate coverage-shards --output coverage --api 4
+          dotnet tool run reportgenerator -- '-reports:coverage/dotnet/Cobertura.xml' '-targetdir:coverage/dotnet/html' '-reporttypes:Html'
 
       - name: Write Coverage to Job Summary
-        run: cat code-coverage-results.md >> "$GITHUB_STEP_SUMMARY"
+        run: cat coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload combined .NET coverage and timings
         if: ${{ !cancelled() }}
@@ -310,6 +301,8 @@ jobs:
     name: test-e2e-shard (${{ matrix.shard }}/6)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      BACKEND_COVERAGE_DIRECTORY: e2e-backend-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
     strategy:
       fail-fast: false
       matrix:
@@ -368,81 +361,28 @@ jobs:
         # upgrades/font downloads on every shard and install the headless binary used here.
         run: npx playwright install --only-shell chromium
 
-      - name: Start AppHost
+      - name: Restore coverage tooling
         run: |
+          npm ci --prefix tests/ci
+          dotnet tool restore
           mkdir -p "$HOME/.aspnet/https"
-          # Aspire builds the AppHost and its referenced projects in Debug. Do not build
-          # the entire solution in Release first (including an unused test assembly).
-          aspire run --apphost src/Exceptionless.AppHost --non-interactive --nologo -- --ci-e2e > aspire-run.log 2>&1 &
-          echo "$!" > aspire-run.pid
-          sleep 5
-          if ! kill -0 "$(cat aspire-run.pid)" 2>/dev/null; then
-            cat aspire-run.log
-            exit 1
-          fi
 
-      - name: Wait for Aspire Resources
-        timeout-minutes: 5
-        run: |
-          for attempt in {1..60}; do
-            if curl --connect-timeout 5 --max-time 20 -fksS https://web-ex.dev.localhost:7131/api/v2/about > /dev/null &&
-              curl --connect-timeout 5 --max-time 20 -fksS https://web-ex.dev.localhost:7131/next/login > /dev/null; then
-              break
-            fi
-
-            if ! kill -0 "$(cat aspire-run.pid)" 2>/dev/null; then
-              cat aspire-run.log
-              exit 1
-            fi
-
-            if [ "$attempt" -eq 60 ]; then
-              cat aspire-run.log
-              exit 1
-            fi
-
-            sleep 5
-          done
-
-      - name: Verify E2E Endpoints
-        run: |
-          curl --connect-timeout 5 --max-time 30 -fksS https://web-ex.dev.localhost:7131/api/v2/about > /dev/null
-          curl --connect-timeout 5 --max-time 30 -fksS https://web-ex.dev.localhost:7131/next/login > /dev/null
-
-      - name: Run Playwright E2E Tests
-        working-directory: src/Exceptionless.Web/ClientApp
-        env:
-          E2E_URL: https://web-ex.dev.localhost:7131
-          E2E_RUN_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}-s${{ matrix.shard }}
-          E2E_SHARD: ${{ matrix.shard }}
-        run: npm run test:e2e:ci -- --shard=${{ matrix.shard }}/6
+      - name: Run Playwright E2E Tests with backend coverage
+        run: node tests/ci/e2e-backend-coverage.mjs --output "$BACKEND_COVERAGE_DIRECTORY" --index ${{ matrix.shard }} --count 6
 
       - name: Capture E2E Failure Diagnostics
         if: ${{ failure() }}
         run: |
           mkdir -p aspire-logs
-          for resource in Api App OldApp; do
-            timeout 30s aspire logs "$resource" --apphost src/Exceptionless.AppHost --tail 200 --timestamps --non-interactive > "aspire-logs/$resource.log" 2>&1 || true
-          done
           free -m > aspire-logs/memory.log
           sudo dmesg --ctime | grep -Ei 'out of memory|killed process|oom' >> aspire-logs/memory.log || true
-
-      - name: Stop AppHost
-        if: ${{ always() }}
-        run: |
-          aspire stop --all --non-interactive || true
-          if [ -f aspire-run.pid ]; then
-            kill "$(cat aspire-run.pid)" 2>/dev/null || true
-          fi
 
       - name: Collect Aspire Logs
         if: ${{ !cancelled() }}
         run: |
           mkdir -p aspire-logs
-          if [ -f aspire-run.log ]; then
-            cp aspire-run.log aspire-logs/
-          fi
-          if [ -f aspire-run.pid ]; then
-            cp aspire-run.pid aspire-logs/
+          if [ -f "$BACKEND_COVERAGE_DIRECTORY/aspire.log" ]; then
+            cp "$BACKEND_COVERAGE_DIRECTORY/aspire.log" aspire-logs/
           fi
           if [ -d "$HOME/.aspire/cli/logs" ]; then
             cp -r "$HOME/.aspire/cli/logs/." aspire-logs/
@@ -476,8 +416,17 @@ jobs:
           path: aspire-logs/
           retention-days: 14
 
+      - name: Upload E2E backend coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: e2e-backend-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
+          path: ${{ env.BACKEND_COVERAGE_DIRECTORY }}/
+          if-no-files-found: error
+          retention-days: 14
+
   test-e2e:
-    needs: [test-e2e-shard]
+    needs: [test-e2e-shard, test-api]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -500,6 +449,30 @@ jobs:
       - name: Install Client Npm Packages
         run: npm ci
 
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.401
+
+      - name: Restore and verify coverage tooling
+        working-directory: .
+        run: |
+          npm ci --prefix tests/ci
+          dotnet tool restore
+          node tests/ci/check-coverage-union.mjs
+
+      - name: Download .NET coverage inputs
+        uses: actions/download-artifact@v6
+        with:
+          pattern: api-results-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: coverage-shards/api
+
+      - name: Download E2E backend coverage inputs
+        uses: actions/download-artifact@v6
+        with:
+          pattern: e2e-backend-${{ github.run_id }}-${{ github.run_attempt }}-*
+          path: coverage-shards/e2e
+
       - name: Download Playwright Blob Reports
         uses: actions/download-artifact@v6
         with:
@@ -518,6 +491,36 @@ jobs:
         run: |
           npx playwright test --project=chromium --list --reporter=json > test-results/discovery.json
           node ../../../tests/ci/browser-report.mjs test-results/discovery.json test-results/e2e-results.json
+
+      - name: Require complete successful backend and browser suites
+        env:
+          API_RESULT: ${{ needs.test-api.result }}
+          BROWSER_RESULT: ${{ needs.test-e2e-shard.result }}
+        run: test "$API_RESULT" = success && test "$BROWSER_RESULT" = success
+
+      - name: Merge backend coverage
+        working-directory: .
+        run: |
+          node tests/ci/backend-coverage.mjs aggregate coverage-shards --output backend-coverage --api 4 --e2e 6
+          for component in dotnet e2e combined; do
+            dotnet tool run reportgenerator -- "-reports:backend-coverage/$component/Cobertura.xml" "-targetdir:backend-coverage/$component/html" '-reporttypes:Html'
+          done
+          cat backend-coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@v3
+        if: github.event_name == 'pull_request'
+        with:
+          recreate: true
+          path: backend-coverage/summary.md
+
+      - name: Upload backend coverage reports
+        uses: actions/upload-artifact@v5
+        with:
+          name: backend-coverage
+          path: backend-coverage/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload combined Playwright report
         if: ${{ !cancelled() }}
@@ -540,7 +543,8 @@ jobs:
         if: ${{ always() }}
         env:
           SHARD_RESULT: ${{ needs.test-e2e-shard.result }}
-        run: test "$SHARD_RESULT" = success
+          API_RESULT: ${{ needs.test-api.result }}
+        run: test "$SHARD_RESULT" = success && test "$API_RESULT" = success
 
   docker-build:
     runs-on: ubuntu-latest
