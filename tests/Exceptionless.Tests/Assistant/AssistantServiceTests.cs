@@ -906,14 +906,27 @@ public sealed class AssistantServiceTests
         Assert.DoesNotContain("server-recorded tool results from earlier turns", isolatedHandler.RequestBody);
     }
 
-    [Fact]
-    public async Task StreamAsync_UsageOnlyFinalChunk_RecordsProviderUsage()
+    [Theory]
+    [InlineData(",\"cost\":0.002345", 2345)]
+    [InlineData(",\"cost\":0", 0)]
+    [InlineData("", 30_000)]
+    [InlineData(",\"cost\":null", 30_000)]
+    [InlineData(",\"cost\":\"unknown\"", 30_000)]
+    [InlineData(",\"cost\":-1", 30_000)]
+    [InlineData(",\"cost\":0.002345", 2345, true)]
+    [InlineData(",\"cost\":0", 0, true)]
+    [InlineData("", 30_000, true)]
+    public async Task StreamAsync_UsageOnlyFinalChunk_RecordsReportedCostOrEstimate(string costField, long expectedCostInMicrodollars, bool includesPartialUsage = false)
     {
+        string partialUsage = includesPartialUsage
+            ? "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":100,\"completion_tokens\":10}}\n\n"
+            : String.Empty;
         var handler = new StubHttpMessageHandler(
-            """
+            $$$"""
             data: {"choices":[{"delta":{"content":"Answer"}}]}
 
-            data: {"choices":[],"usage":{"prompt_tokens":12000,"completion_tokens":750,"total_tokens":12750,"cost":0.002345}}
+            {{{partialUsage}}}
+            data: {"choices":[],"usage":{"prompt_tokens":12000,"completion_tokens":750,"total_tokens":12750{{{costField}}}}}
 
             data: [DONE]
 
@@ -932,7 +945,8 @@ public sealed class AssistantServiceTests
             TimeProvider = TimeProvider.System
         });
         var lockProvider = CreateLockProvider(cache, TimeProvider.System);
-        var usageService = new AssistantUsageService(cache, lockProvider, new RecordingAssistantUsageRecorder(), appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, lockProvider, recorder, appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
         var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
 
         await foreach (var _ in service.StreamAsync(
@@ -948,7 +962,51 @@ public sealed class AssistantServiceTests
         var usage = await usageService.GetMonthlyUsageAsync("organization-id");
         Assert.Equal(12_000, usage.PromptTokens);
         Assert.Equal(750, usage.CompletionTokens);
-        Assert.Equal(0.002345m, usage.CostUsd);
+        Assert.Equal(expectedCostInMicrodollars, usage.CostInMicrodollars);
+        var recordedUsage = Assert.Single(recorder.Records, record => record.Increment.PromptTokens > 0);
+        Assert.Equal(12_000, recordedUsage.Increment.PromptTokens);
+        Assert.Equal(750, recordedUsage.Increment.CompletionTokens);
+        Assert.Equal(expectedCostInMicrodollars, recordedUsage.Increment.CostInMicrodollars);
+    }
+
+    [Fact]
+    public async Task StreamAsync_ProviderErrorAfterTokenUsage_RecordsEstimatedCost()
+    {
+        var handler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[],"usage":{"prompt_tokens":1000,"completion_tokens":100}}
+
+            data: {"error":{"message":"Provider failed"}}
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AppMode"] = AppMode.Production.ToString(),
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            }).Build());
+        using var cache = new InMemoryCacheClient();
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, lockProvider, recorder, appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
+
+        await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(
+                new AssistantChatRequest([new AssistantChatMessage("user", "Investigate this")], OrganizationId: "organization-id"),
+                "user-id", CreatePlanOptions(), TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        var usage = await usageService.GetMonthlyUsageAsync("organization-id");
+        Assert.Equal(1000, usage.PromptTokens);
+        Assert.Equal(100, usage.CompletionTokens);
+        Assert.Equal(2800, usage.CostInMicrodollars);
+        var recordedUsage = Assert.Single(recorder.Records, record => record.Increment.PromptTokens > 0);
+        Assert.Equal(2800, recordedUsage.Increment.CostInMicrodollars);
     }
 
     [Fact]
