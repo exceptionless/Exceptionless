@@ -14,7 +14,8 @@ export default defineConfig({
         {
             name: 'chromium',
             use: {
-                ...devices['Desktop Chrome']
+                ...devices['Desktop Chrome'],
+                channel: process.env.E2E_BROWSER_CHANNEL || undefined
             }
         }
     ],
