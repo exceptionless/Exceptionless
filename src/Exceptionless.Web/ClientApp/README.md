@@ -25,6 +25,8 @@ npm run build
 
 The static output goes to `build/`. Publishing `Exceptionless.Web` includes it directly in `wwwroot`; Docker app images use `build/update-config.sh` from the repository root to write public runtime configuration. `EX_ApiUrl` selects a separate API origin when configured, otherwise requests use the app origin.
 
+`EX_EnableSsl=true` retains forced HTTPS navigation for self-hosted deployments, including proxies that forward to an HTTP-only app container. The UI upgrades the current URL before starting the router or authentication, preserving its path, query, fragment, and any explicit nonstandard port. The default remains `false`. Standalone Vite development uses `PUBLIC_ENABLE_SSL` for the same behavior.
+
 Set the backend's `EX_BaseURL` to the public UI URL. Email links and OAuth authorization redirects use this address, including when the API has a separate origin.
 
 `npm run preview` previews the static build only; use Aspire for full-stack testing.

@@ -37,6 +37,7 @@ mkdir -p _app
     js_string "${EX_ApiUrl:-}"
     printf ' || window.location.origin,\n'
     write_setting PUBLIC_ENABLE_ACCOUNT_CREATION "${EX_EnableAccountCreation:-true}"
+    write_setting PUBLIC_ENABLE_SSL "${EX_EnableSsl:-false}"
     write_setting PUBLIC_SYSTEM_NOTIFICATION_MESSAGE "${EX_NotificationMessage:-}"
     write_setting PUBLIC_EXCEPTIONLESS_API_KEY "${EX_ExceptionlessApiKey:-}"
     write_setting PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL "${EX_ClientSetupShowServerUrl:-true}"

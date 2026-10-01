@@ -4,6 +4,7 @@ import { dev } from '$app/environment';
 import { page } from '$app/state';
 import { env } from '$env/dynamic/public';
 import { configureSessions } from '$features/auth/exceptionless-session';
+import { getHttpsRedirectUrl } from '$features/navigation/https-redirect';
 import { canonicalAppUrl } from '$features/navigation/legacy-links';
 import { normalizePath, normalizeRouteId } from '$lib/telemetry';
 import { installSvelteEffectDepthDiagnostics } from '$lib/telemetry/svelte-effect-depth-diagnostics';
@@ -30,6 +31,14 @@ if (PUBLIC_EXCEPTIONLESS_SERVER_URL) {
 }
 
 export const init: ClientInit = async () => {
+    const httpsDestination = getHttpsRedirectUrl(new URL(window.location.href), env.PUBLIC_ENABLE_SSL);
+    if (httpsDestination) {
+        window.location.replace(httpsDestination.href);
+        // Keep the router, authentication, and telemetry from starting on the HTTP page.
+        await new Promise<void>(() => {});
+        return;
+    }
+
     const canonical = canonicalAppUrl(new URL(window.location.href));
     if (canonical.href !== window.location.href) {
         // Runs before the router and auth layouts, retaining the existing session.

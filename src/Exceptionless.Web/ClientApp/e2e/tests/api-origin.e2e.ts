@@ -2,6 +2,39 @@ import { expect, test } from '../fixtures/e2e-test';
 
 test.skip(process.env.E2E_ENV === 'production', 'API origin configuration coverage is local only.');
 
+test('configured HTTPS preserves incoming links before starting HTTP API requests', async ({ e2eApi, page }) => {
+    const httpOrigin = 'http://localhost:65532';
+    const httpsOrigin = 'https://localhost:65532';
+    const destination = '/next/login?redirect=%2Fstack%2Fall#notice';
+    let sslFlagInjected = false;
+    const insecureApiRequests: string[] = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.protocol === 'http:' && url.pathname.startsWith('/api/')) {
+            insecureApiRequests.push(url.pathname);
+        }
+    });
+
+    // Model a proxy exposing HTTP and HTTPS while serving the real local Svelte app.
+    await page.route(`${httpOrigin}/**`, async (route) => {
+        const url = new URL(route.request().url());
+        const response = await route.fetch({ url: new URL(url.pathname + url.search, e2eApi.environment.appUrl).href });
+        if (url.pathname.endsWith('virtual:env/dynamic/public')) {
+            sslFlagInjected = true;
+            await route.fulfill({ body: `${await response.text()}\nenv.PUBLIC_ENABLE_SSL = 'true';`, response });
+        } else {
+            await route.fulfill({ response });
+        }
+    });
+    await page.route(`${httpsOrigin}/**`, (route) => route.fulfill({ body: '<h1>Secure destination</h1>', contentType: 'text/html' }));
+
+    await page.goto(`${httpOrigin}${destination}`, { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(`${httpsOrigin}${destination}`);
+    await expect(page.getByRole('heading', { name: 'Secure destination' })).toBeVisible();
+    expect(sslFlagInjected).toBe(true);
+    expect(insecureApiRequests).toEqual([]);
+});
+
 test('the OAuth bridge opens the application login and preserves the authorization return URL', async ({ e2eApi, page, request }) => {
     const query = '?client_id=local-client&state=local-cutover-check';
     const response = await request.get(`${e2eApi.environment.apiUrl}/oauth/authorize${query}`, { maxRedirects: 0 });

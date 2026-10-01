@@ -288,6 +288,9 @@ jobs:
       - name: Lint Client
         run: npm run lint
 
+      - name: Verify runtime configuration
+        run: node --test ../../../build/update-config.test.mjs
+
       - name: Check
         run: npm run check
 
