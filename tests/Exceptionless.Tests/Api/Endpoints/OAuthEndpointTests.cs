@@ -17,7 +17,10 @@ using Exceptionless.Web.Models.OAuth;
 using FluentRest;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
@@ -43,9 +46,11 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     private readonly IOAuthApplicationRepository _oauthApplicationRepository;
     private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly IUserRepository _userRepository;
+    private readonly AppWebHostFactory _factory;
 
     public OAuthEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
+        _factory = factory;
         _oauthApplicationRepository = GetService<IOAuthApplicationRepository>();
         _oauthTokenRepository = GetService<IOAuthTokenRepository>();
         _userRepository = GetService<IUserRepository>();
@@ -85,6 +90,83 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Contains(AuthorizationRoles.StacksWrite, metadata.ScopesSupported);
         Assert.True(metadata.ClientIdMetadataDocumentSupported);
         Assert.True(metadata.AuthorizationResponseIssParameterSupported);
+    }
+
+    [Theory]
+    [InlineData("/mcp", "/mcp", AuthorizationRoles.McpRead, HttpStatusCode.MethodNotAllowed)]
+    [InlineData("/api/v2", "/api/v2/projects", AuthorizationRoles.ProjectsRead, HttpStatusCode.OK)]
+    public async Task OAuthAsync_SeparateOrigins_UsesApiForDiscoveryTokensAndChallenges(string resourcePath, string protectedPath, string scope, HttpStatusCode authorizedStatus)
+    {
+        const string apiOrigin = "https://api.localhost:7443";
+        const string applicationOrigin = "https://ui.localhost:7444";
+        string resource = apiOrigin + resourcePath;
+        using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, configuration) =>
+            configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = applicationOrigin + "/#!",
+                ["ApiUrl"] = apiOrigin + "/"
+            })));
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri(apiOrigin + "/api/v2/"),
+            AllowAutoRedirect = false
+        });
+
+        using var discoveryRequest = new HttpRequestMessage(HttpMethod.Get, "/.well-known/oauth-authorization-server");
+        discoveryRequest.Headers.Host = "untrusted.localhost";
+        var discoveryResponse = await client.SendAsync(discoveryRequest, TestContext.Current.CancellationToken);
+        var metadata = await DeserializeResponseAsync<OAuthAuthorizationServerMetadata>(discoveryResponse);
+        Assert.NotNull(metadata);
+        Assert.Equal(apiOrigin, metadata.Issuer);
+        Assert.Equal(apiOrigin + "/api/v2/oauth/authorize", metadata.AuthorizationEndpoint);
+        Assert.Equal(apiOrigin + "/api/v2/oauth/token", metadata.TokenEndpoint);
+        Assert.Equal(apiOrigin + "/api/v2/oauth/register", metadata.RegistrationEndpoint);
+        Assert.Equal(apiOrigin + "/api/v2/oauth/revoke", metadata.RevocationEndpoint);
+
+        var resourceResponse = await client.GetAsync("/.well-known/oauth-protected-resource" + resourcePath, TestContext.Current.CancellationToken);
+        var resourceMetadata = await DeserializeResponseAsync<OAuthProtectedResourceMetadata>(resourceResponse);
+        Assert.NotNull(resourceMetadata);
+        Assert.Equal(resource, resourceMetadata.Resource);
+        Assert.Equal([apiOrigin], resourceMetadata.AuthorizationServers);
+
+        using var bridgeRequest = CreateAuthorizeRequest(PkceVerifier, resource: resource, authenticate: false);
+        string query = new Uri(client.BaseAddress!, bridgeRequest.RequestUri!).Query;
+        var bridgeResponse = await client.SendAsync(bridgeRequest, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Redirect, bridgeResponse.StatusCode);
+        Assert.Equal(applicationOrigin + "/oauth/authorize" + query, bridgeResponse.Headers.Location?.OriginalString);
+
+        using var consentRequest = CreateAuthorizeJsonRequest(PkceVerifier, resource: resource, scope: scope);
+        consentRequest.RequestUri = new Uri("oauth/authorize/consent", UriKind.Relative);
+        var consentResponse = await client.SendAsync(consentRequest, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, consentResponse.StatusCode);
+        var consent = await DeserializeResponseAsync<OAuthAuthorizeConsentResponse>(consentResponse);
+        Assert.NotNull(consent);
+        Assert.Equal(resource, consent.Resource);
+
+        using var authorizationRequest = CreateAuthorizeJsonRequest(PkceVerifier, resource: resource, scope: scope);
+        var authorizationResponse = await client.SendAsync(authorizationRequest, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, authorizationResponse.StatusCode);
+        var authorization = await DeserializeResponseAsync<OAuthAuthorizeResponse>(authorizationResponse);
+        Assert.NotNull(authorization);
+        var authorizationQuery = QueryHelpers.ParseQuery(new Uri(authorization.RedirectUri).Query);
+        Assert.Equal(apiOrigin, authorizationQuery["iss"].ToString());
+
+        using var tokenContent = CreateTokenExchangeContent(authorizationQuery["code"].ToString(), PkceVerifier, resource: resource);
+        var tokenResponse = await client.PostAsync("oauth/token", tokenContent, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, tokenResponse.StatusCode);
+        var token = await DeserializeResponseAsync<OAuthTokenResponse>(tokenResponse);
+        Assert.NotNull(token);
+        Assert.Equal(resource, token.Resource);
+
+        var challengeResponse = await client.GetAsync(protectedPath, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, challengeResponse.StatusCode);
+        Assert.Contains($"resource_metadata=\"{apiOrigin}/.well-known/oauth-protected-resource{resourcePath}\"", challengeResponse.Headers.WwwAuthenticate.ToString(), StringComparison.Ordinal);
+
+        using var protectedRequest = new HttpRequestMessage(HttpMethod.Get, protectedPath);
+        protectedRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+        protectedRequest.Headers.Add("Origin", apiOrigin);
+        var protectedResponse = await client.SendAsync(protectedRequest, TestContext.Current.CancellationToken);
+        Assert.Equal(authorizedStatus, protectedResponse.StatusCode);
     }
 
     [Fact]

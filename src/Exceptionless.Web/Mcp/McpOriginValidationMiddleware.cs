@@ -19,6 +19,7 @@ public sealed class McpOriginValidationMiddleware
             .Select(v => NormalizeOrigin(v!))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         allowedOrigins.Add(new Uri(appOptions.BaseURL).GetLeftPart(UriPartial.Authority));
+        allowedOrigins.Add(appOptions.GetApiOrigin());
         _allowedOrigins = allowedOrigins;
     }
 

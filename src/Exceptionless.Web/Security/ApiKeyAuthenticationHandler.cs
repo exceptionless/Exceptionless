@@ -364,7 +364,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     private string GetCanonicalOrigin()
     {
-        return new Uri(_appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
+        return _appOptions.GetApiOrigin();
     }
 }
 

@@ -16,18 +16,21 @@ public static class OAuthEndpoints
             => await mediator.InvokeAsync<HttpIResult>(new GetAuthorizationServerMetadata()))
             .AllowAnonymous()
             .WithTags("OAuth")
+            .WithDescription("OAuth issuer and endpoint URLs use the configured public ApiUrl origin, falling back to BaseURL when ApiUrl is unset.")
             .Produces<OAuthAuthorizationServerMetadata>();
 
         endpoints.MapGet(".well-known/oauth-protected-resource/mcp", async (IMediator mediator)
             => await mediator.InvokeAsync<HttpIResult>(new GetMcpProtectedResourceMetadata()))
             .AllowAnonymous()
             .WithTags("OAuth")
+            .WithDescription("MCP resource and authorization server URLs use the configured public ApiUrl origin, falling back to BaseURL when ApiUrl is unset.")
             .Produces<OAuthProtectedResourceMetadata>();
 
         endpoints.MapGet(".well-known/oauth-protected-resource/api/v2", async (IMediator mediator)
             => await mediator.InvokeAsync<HttpIResult>(new GetRestApiProtectedResourceMetadata()))
             .AllowAnonymous()
             .WithTags("OAuth")
+            .WithDescription("REST API resource and authorization server URLs use the configured public ApiUrl origin, falling back to BaseURL when ApiUrl is unset.")
             .Produces<OAuthProtectedResourceMetadata>();
 
         var group = endpoints.MapGroup("api/v2/oauth")

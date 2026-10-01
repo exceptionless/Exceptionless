@@ -549,6 +549,7 @@
         "tags": [
           "OAuth"
         ],
+        "description": "OAuth issuer and endpoint URLs use the configured public ApiUrl origin, falling back to BaseURL when ApiUrl is unset.",
         "responses": {
           "200": {
             "description": "OK",
@@ -568,6 +569,7 @@
         "tags": [
           "OAuth"
         ],
+        "description": "MCP resource and authorization server URLs use the configured public ApiUrl origin, falling back to BaseURL when ApiUrl is unset.",
         "responses": {
           "200": {
             "description": "OK",
@@ -587,6 +589,7 @@
         "tags": [
           "OAuth"
         ],
+        "description": "REST API resource and authorization server URLs use the configured public ApiUrl origin, falling back to BaseURL when ApiUrl is unset.",
         "responses": {
           "200": {
             "description": "OK",

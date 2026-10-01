@@ -56,7 +56,8 @@ public sealed class OAuthHandler(
 
     public Task<IResult> Handle(RedirectToAuthorizeBridge message)
     {
-        return Task.FromResult<IResult>(HttpResults.Redirect($"{GetOrigin()}/oauth/authorize{HttpContext.Request.QueryString}"));
+        string applicationOrigin = new Uri(appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
+        return Task.FromResult<IResult>(HttpResults.Redirect($"{applicationOrigin}/oauth/authorize{HttpContext.Request.QueryString}"));
     }
 
     public Task<IResult> Handle(CompleteOAuthAuthorization message)
@@ -153,7 +154,7 @@ public sealed class OAuthHandler(
 
     private string GetOrigin()
     {
-        return new Uri(appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
+        return appOptions.GetApiOrigin();
     }
 
     private string GetResource(OAuthResourceDefinition resourceDefinition)

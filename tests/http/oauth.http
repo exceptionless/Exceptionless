@@ -1,4 +1,6 @@
 # The GET authorize bridge redirects to /oauth/authorize on the configured application BaseURL with the original query string.
+# With separate hosts, configure EX_ApiUrl on both UI and API deployments and use that public API origin as rootUrl below.
+# Discovery, issuer, resources, and challenges use ApiUrl (or BaseURL when unset); only the browser redirect uses the UI BaseURL.
 # Local authorization-code walkthrough. Run registration, login, authorization, then token exchange.
 # Copy code from the authorization response's redirect_uri into authorizationCode.
 @rootUrl = http://localhost:7110

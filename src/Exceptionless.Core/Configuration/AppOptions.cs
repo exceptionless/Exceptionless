@@ -10,6 +10,8 @@ public class AppOptions
 {
     public string BaseURL { get; internal set; } = null!;
 
+    public string? ApiUrl { get; internal set; }
+
     /// <summary>
     /// Internal project id keeps us from recursively logging to our self
     /// </summary>
@@ -83,10 +85,16 @@ public class AppOptions
     public SourceMapOptions SourceMapOptions { get; internal set; } = null!;
     public AssistantOptions AssistantOptions { get; internal set; } = null!;
 
+    public string GetApiOrigin()
+    {
+        return new Uri(String.IsNullOrWhiteSpace(ApiUrl) ? BaseURL : ApiUrl).GetLeftPart(UriPartial.Authority);
+    }
+
     public static AppOptions ReadFromConfiguration(IConfiguration config)
     {
         var options = new AppOptions();
         options.BaseURL = config.GetValue<string>(nameof(options.BaseURL))?.TrimEnd('/') ?? throw new ApplicationException("BaseURL is a required configuration setting");
+        options.ApiUrl = config.GetValue<string>(nameof(options.ApiUrl))?.TrimEnd('/');
         options.InternalProjectId = config.GetValue(nameof(options.InternalProjectId), "54b56e480ef9605a88a13153");
         options.ExceptionlessApiKey = config.GetValue<string>(nameof(options.ExceptionlessApiKey));
         options.ExceptionlessServerUrl = config.GetValue<string>(nameof(options.ExceptionlessServerUrl));

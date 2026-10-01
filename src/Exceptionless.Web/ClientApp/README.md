@@ -29,6 +29,8 @@ The static output goes to `build/`. Publishing `Exceptionless.Web` includes it d
 
 Set the backend's `EX_BaseURL` to the public UI URL. Email links and OAuth authorization redirects use this address, including when the API has a separate origin.
 
+For separate UI and API hosts, set `EX_ApiUrl` to the public API URL on both deployments. The API uses this origin for OAuth discovery, issuer, resource validation, and authentication challenges; the browser authorization page still uses `EX_BaseURL`. If `EX_ApiUrl` is unset, the API retains `EX_BaseURL` as its canonical origin.
+
 `npm run preview` previews the static build only; use Aspire for full-stack testing.
 
 ## Testing
