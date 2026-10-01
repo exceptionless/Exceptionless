@@ -55,3 +55,43 @@ test('OAuth popup responses remain readable without signing out the existing ses
     }
     expect(logouts).toEqual([]);
 });
+
+test.describe('in-app legacy navigation', () => {
+    test.use({ e2eUseInvitedUser: true });
+
+    for (const prefix of ['/next', '/#!', '/#', '']) {
+        test(`following an old settings link preserves browser back and forward navigation (${prefix || 'root'})`, async ({ e2eScenario, page }) => {
+            await page.goto('/stack/all');
+            await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
+            await page.goto('/project/list');
+            await expect(page.getByRole('heading', { exact: true, name: 'Projects' })).toBeVisible();
+
+            // Exercise a historical saved link through the app router, without reloading the document.
+            await page.evaluate(
+                ({ prefix, projectId }) => {
+                    const link = document.createElement('a');
+                    link.href = `${prefix}/account/manage?projectId=${projectId}&tab=notifications&from=legacy-link`;
+                    link.textContent = 'Historical notification settings';
+                    document.querySelector('main')!.prepend(link);
+                },
+                { prefix, projectId: e2eScenario.projectId }
+            );
+            await page.getByRole('link', { exact: true, name: 'Historical notification settings' }).click();
+
+            await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
+            await expect(page.getByRole('button', { exact: true, name: e2eScenario.projectName })).toBeVisible();
+            const destination = page.url();
+            expect(new URL(destination).pathname).toBe('/account/notifications');
+            expect(new URL(destination).searchParams.get('from')).toBe('legacy-link');
+
+            await page.goBack();
+            await expect(page).toHaveURL(/\/project\/list$/);
+            await expect(page.getByRole('heading', { exact: true, name: 'Projects' })).toBeVisible();
+
+            await page.goForward();
+            await expect(page).toHaveURL(destination);
+            await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
+            expect(await page.evaluate(() => localStorage.getItem('satellizer_token'))).toBe(e2eScenario.userToken);
+        });
+    }
+});

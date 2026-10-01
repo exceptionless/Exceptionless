@@ -28,7 +28,7 @@
 
     let { children }: Props = $props();
 
-    beforeNavigate(({ cancel, to }) => {
+    beforeNavigate(({ cancel, to, type }) => {
         if (!to || to.url.origin !== page.url.origin) {
             return;
         }
@@ -36,7 +36,8 @@
         if (canonical.href !== to.url.href) {
             cancel();
             void goto(canonical, {
-                replaceState: true
+                // A followed link needs its own history entry; Back/Forward must reuse the existing entry.
+                replaceState: type === 'popstate'
             });
         }
     });
