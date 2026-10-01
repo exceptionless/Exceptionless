@@ -2,6 +2,12 @@
 
 These tests protect user-visible release workflows. They complement backend integration tests instead of repeating endpoint and repository assertions.
 
+## Local Runtime
+
+Run `aspire run` from the repository root and target the reported Svelte `App` endpoint at `/`. The API and WebSocket traffic share that browser-facing endpoint through Vite. `npm run test:e2e` defaults to `https://web-ex.dev.localhost:7131`; set `E2E_URL` to the reported endpoint when Aspire assigns a dynamic port. Follow root `AGENTS.md` for external URL authorization.
+
+The Angular application has been removed. Ordinary test navigation uses root routes. `tests/legacy-links.e2e.ts` specifically covers historical `/next` and hash links, retained sessions, browser history, and old stack action links that must only open details.
+
 ## Test Boundary
 
 - Use the API to arrange isolated data, wait for asynchronous ingestion, and clean up.

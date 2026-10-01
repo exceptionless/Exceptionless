@@ -1,6 +1,8 @@
 # Svelte ClientApp
 
-This directory is the Svelte 5 frontend. For frontend/UI/page/component/form/route work, use this app unless the user explicitly asks for Angular or legacy UI changes.
+This directory is the only Exceptionless application frontend. Svelte 5 serves the app at `/`; the Angular application has been removed. All frontend/UI/page/component/form/route work belongs here.
+
+Use root routes and `$app/paths` resolution for maintained navigation. `/next`, `#!/`, and `#/` are supported only as incoming compatibility links. Keep their coverage in `legacy-links` tests, and preserve `satellizer_token` so existing sessions survive the cutover.
 
 ## Tooling
 
