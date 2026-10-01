@@ -26,6 +26,8 @@ Thirty hide/resume cycles can complete different numbers of WebSocket handshakes
 
 The chart refresh scenario waits for the initial list request and loading indicator before holding a refresh response. Its interception assertion has a bounded timeout instead of waiting until the entire test expires.
 
+The API-key/first-event scenario also exposed a backend race during cleanup: the first-event configuration job could save an old project snapshot after deletion, making the project accessible again. The job now patches only its configuration flag. A deterministic two-case regression verifies that intervening project edits and soft deletion survive; the browser cleanup assertion remains intact.
+
 ## Timing reports and rebalancing
 
 The aggregate checks show the slowest .NET classes/tests and browser tests (including retry cost) in the Actions job summary. Download `api-coverage` for merged coverage and freshly measured class durations. After a material suite change, review those durations and copy the JSON into `backend-durations.json`; timing data changes balance only. The checked-in weights come from the first hosted sharded run; refresh them as expensive classes or runner behavior change.
