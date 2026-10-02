@@ -19,6 +19,12 @@ internal sealed class AppUrlBuilder
 
     public string Stack(string stackId) => Build($"stack/{stackId}");
 
+    public string MarkStackFixed(string stackId) => Build($"stack/{stackId}/mark-fixed");
+
+    public string IgnoreStack(string stackId) => Build($"stack/{stackId}/ignored");
+
+    public string DiscardStack(string stackId) => Build($"stack/{stackId}/discarded");
+
     public string ProjectNotifications(string projectId) => Build($"account/notifications?project={Uri.EscapeDataString(projectId)}");
 
     public string ProjectIntegrations(string projectId) => Build($"project/{projectId}/integrations");

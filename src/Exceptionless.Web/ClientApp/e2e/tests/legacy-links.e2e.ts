@@ -3,7 +3,7 @@ import { seedRepresentativeEvent } from '../support/event-data';
 
 test.skip(process.env.E2E_ENV === 'production', 'Cutover coverage targets the local app.');
 
-test('primary old links retain the session and open resources without applying stack actions', async ({ e2eApi, e2eScenario, page }) => {
+test('primary old links retain the session and require confirmation before applying stack actions', async ({ e2eApi, e2eScenario, page }) => {
     const event = await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eScenario);
     const mutations: string[] = [];
     page.on('request', (request) => {
@@ -11,16 +11,27 @@ test('primary old links retain the session and open resources without applying s
         if ((path.includes('/stacks/') && request.method() !== 'GET') || path.endsWith('/auth/logout')) mutations.push(path);
     });
 
-    for (const link of [
-        `/next/event/${event.id}`,
-        `/#!/event/by-ref/${e2eScenario.referenceId}`,
-        `/stack/${event.stack_id}/mark-fixed`,
-        `/#/stack/${event.stack_id}/ignored`,
-        `/next/stack/${event.stack_id}/discarded`
-    ]) {
+    for (const link of [`/next/event/${event.id}`, `/#!/event/by-ref/${e2eScenario.referenceId}`]) {
         await page.goto(link);
         await expect(page).toHaveURL(new RegExp(`/stack/${event.stack_id}/event/${event.id}$`));
         await expect(page.getByText(e2eScenario.message, { exact: true }).filter({ visible: true }).first()).toBeVisible();
+        expect(await page.evaluate(() => localStorage.getItem('satellizer_token'))).toBe(e2eScenario.userToken);
+    }
+    for (const [link, heading] of [
+        [`/stack/${event.stack_id}/mark-fixed`, 'Mark Stack As Fixed'],
+        [`/#/stack/${event.stack_id}/ignored`, 'Ignore Stack'],
+        [`/next/stack/${event.stack_id}/discarded`, 'Discard Stack']
+    ]) {
+        await page.goto(link);
+        const dialog = page.getByRole('alertdialog');
+        await expect(dialog.getByRole('heading', { exact: true, name: heading })).toBeVisible();
+        await expect(dialog.getByText(e2eScenario.message, { exact: true })).toBeVisible();
+        expect(mutations).toEqual([]);
+        await dialog.getByRole('button', { exact: true, name: 'Cancel' }).click();
+        await expect(page).toHaveURL(new RegExp(`/stack/${event.stack_id}/event/${event.id}$`));
+        await page.reload();
+        await expect(page.getByRole('button', { exact: true, name: 'Open' })).toBeVisible();
+        await expect(dialog).not.toBeVisible();
         expect(await page.evaluate(() => localStorage.getItem('satellizer_token'))).toBe(e2eScenario.userToken);
     }
     expect(mutations).toEqual([]);

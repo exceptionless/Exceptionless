@@ -4,6 +4,8 @@ This directory is the only Exceptionless application frontend. Svelte 5 serves t
 
 Use root routes and `$app/paths` resolution for maintained navigation. `/next`, `#!/`, and `#/` are supported only as incoming compatibility links. Keep their coverage in `legacy-links` tests, and preserve `satellizer_token` so existing sessions survive the cutover.
 
+Stack action links from emails require authentication and explicit confirmation. Opening, reloading, or cancelling an action link must never mutate the stack. Keep confirmation and failed-update recovery covered alongside incoming-link compatibility.
+
 ## Tooling
 
 Run commands from this directory.

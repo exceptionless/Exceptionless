@@ -12,7 +12,7 @@ Each email has:
 
 `Exceptionless.Core.Mail.Mailer` creates the models and queues the rendered result. Template registration and dispatch are centralized in `RazorEmailTemplateRenderer`, whose generic constraints verify each component-to-model pairing at compile time.
 
-Application links target the Svelte UI at `/` through the shared `AppUrlBuilder` in `Exceptionless.Core/Utility`, also used for Slack and webhook destinations. It normalizes historical base URLs; do not add `/next` or hash-route prefixes to new messages. Stack links open details so users can choose an action in the app. The web host retains `/exceptionless.png` and `/img/logo.png` for previously delivered emails.
+Application links target the Svelte UI at `/` through the shared `AppUrlBuilder` in `Exceptionless.Core/Utility`, also used for Slack and webhook destinations. It normalizes historical base URLs; do not add `/next` or hash-route prefixes to new messages. Event notification emails preserve the fixed, ignored, and discarded shortcuts. Each action opens a Svelte confirmation before changing the stack; historical action URLs use the same flow. The web host retains `/exceptionless.png` and `/img/logo.png` for previously delivered emails.
 
 Run the focused rendering and mailer tests from the repository root:
 

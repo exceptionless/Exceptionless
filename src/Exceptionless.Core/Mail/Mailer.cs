@@ -97,7 +97,9 @@ public class Mailer : IMailer
             result.Data.ToDictionary(kvp => kvp.Key, kvp => kvp.Value?.ToString() ?? String.Empty),
             GetEventUser(ev),
             [
-                new("Manage this stack", _appUrls.Stack(ev.StackId)),
+                new("Mark event as fixed", _appUrls.MarkStackFixed(ev.StackId)),
+                new("Stop sending notifications for this event", _appUrls.IgnoreStack(ev.StackId)),
+                new("Discard future event occurrences", _appUrls.DiscardStack(ev.StackId)),
                 new("Change your notification settings for this project", _appUrls.ProjectNotifications(project.Id))
             ],
             new EmailAction("View Event Details", _appUrls.Event(ev.Id)));

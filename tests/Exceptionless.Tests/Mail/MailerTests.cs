@@ -101,6 +101,9 @@ public sealed class MailerTests : TestWithServices
         [
             ("event/event-1", appUrls.Event("event-1")),
             ("stack/stack-1", appUrls.Stack("stack-1")),
+            ("stack/stack-1/mark-fixed", appUrls.MarkStackFixed("stack-1")),
+            ("stack/stack-1/ignored", appUrls.IgnoreStack("stack-1")),
+            ("stack/stack-1/discarded", appUrls.DiscardStack("stack-1")),
             ("account/notifications?project=project-1", appUrls.ProjectNotifications("project-1")),
             ("organization/organization-1/dashboard", appUrls.OrganizationDashboard("organization-1")),
             ("signup?token=token-1", appUrls.Signup("token-1")),
@@ -473,6 +476,12 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendEventNoticeAsync(user, ev, project, RandomData.GetBool(), RandomData.GetBool(), 1);
         var body = await RunMailJobAsync();
         Assert.Contains("View Event Details", body, StringComparison.Ordinal);
+        Assert.Contains("Mark event as fixed", body, StringComparison.Ordinal);
+        Assert.Contains("Stop sending notifications for this event", body, StringComparison.Ordinal);
+        Assert.Contains("Discard future event occurrences", body, StringComparison.Ordinal);
+        string baseUrl = AppUrlBuilder.GetOrigin(_options.BaseURL);
+        foreach (string action in new[] { "mark-fixed", "ignored", "discarded" })
+            Assert.Contains($"href=\"{baseUrl}/stack/{ev.StackId}/{action}\"", body, StringComparison.Ordinal);
         return body;
     }
 
@@ -789,7 +798,7 @@ public sealed class MailerTests : TestWithServices
     private static void AssertValidInternalUrl(Uri uri)
     {
         Assert.Empty(uri.Fragment);
-        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+|project/[^/]+/(?:configure|dashboard)|account/(?:notifications|verify)|organization/[^/]+/(?:dashboard|usage|billing)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
+        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|dashboard)|account/(?:notifications|verify)|organization/[^/]+/(?:dashboard|usage|billing)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
 
         if (uri.AbsolutePath is "/account/verify" or "/signup")
         {

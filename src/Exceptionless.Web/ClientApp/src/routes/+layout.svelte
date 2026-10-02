@@ -12,7 +12,7 @@
     import { buildServiceStatusUrl, createServiceStatusRedirector } from '$features/status/service-status-redirect';
     import { getApiUrl, getServerUrl } from '$shared/api/urls';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
-    import { error } from '@sveltejs/kit';
+    import { error, isHttpError } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 
@@ -45,6 +45,10 @@
     setBaseUrl(getApiUrl());
     setRequestOptions({
         errorCallback: (response) => {
+            // Empty error bodies still need their HTTP status for the query retry policy.
+            if (response.problem) {
+                response.problem.status ??= response.status;
+            }
             throw response.problem ?? response;
         },
         timeout: 5000
@@ -112,6 +116,11 @@
         defaultOptions: {
             queries: {
                 retry: (failureCount, error) => {
+                    // The response middleware also raises Svelte HTTP errors for missing resources.
+                    if (isHttpError(error, 404)) {
+                        return false;
+                    }
+
                     if (failureCount > 2) {
                         return false;
                     }
