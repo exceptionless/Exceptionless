@@ -1,5 +1,5 @@
 // Verify merged Playwright results against discovery and publish slow tests/retries.
-import { appendFileSync, readFileSync } from 'node:fs';
+import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
@@ -33,7 +33,7 @@ export function validate(expected, actual) {
 }
 
 function main() {
-    const { positionals } = parseArgs({ allowPositionals: true });
+    const { positionals, values } = parseArgs({ allowPositionals: true, options: { 'write-timings': { type: 'string' } } });
     if (positionals.length !== 2) throw new Error('Usage: browser-report.mjs DISCOVERY_JSON RESULTS_JSON');
     const [expected, actual] = positionals.map((path) => JSON.parse(readFileSync(path, 'utf8')));
     const tests = cases(actual);
@@ -56,6 +56,16 @@ function main() {
     console.log(summary);
     if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
     validate(expected, actual);
+    if (values['write-timings']) {
+        writeFileSync(
+            values['write-timings'],
+            JSON.stringify(
+                Object.fromEntries([...tests].sort(([a], [b]) => a.localeCompare(b)).map(([key, , test]) => [key, Number((duration(test) / 1000).toFixed(3))])),
+                null,
+                2
+            ) + '\n'
+        );
+    }
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {

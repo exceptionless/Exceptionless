@@ -1,5 +1,6 @@
-import { expect, type Page, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
+import { expect, test } from '../fixtures/e2e-test';
 import { mockTablePage } from '../support/table-layout';
 
 const EMPTY_MESSAGE = 'No data was found with the current filter.';

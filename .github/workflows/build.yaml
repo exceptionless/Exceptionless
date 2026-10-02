@@ -562,7 +562,7 @@ jobs:
           E2E_SHARD: report
         run: |
           npx playwright test --project=chromium --list --reporter=json > test-results/discovery.json
-          node ../../../tests/ci/browser-report.mjs test-results/discovery.json test-results/e2e-results.json
+          node ../../../tests/ci/browser-report.mjs test-results/discovery.json test-results/e2e-results.json --write-timings test-results/browser-durations.json
 
       - name: Require complete successful backend, frontend and browser suites
         env:

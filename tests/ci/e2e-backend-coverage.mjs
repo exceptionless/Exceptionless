@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { parseArgs } from 'node:util';
 import { seal } from './backend-coverage.mjs';
+import { prepare } from './browser-shards.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 const apphost = join(root, 'src/Exceptionless.AppHost');
@@ -27,6 +28,7 @@ if (!values.output || !Number.isInteger(index) || !Number.isInteger(count) || in
 const output = resolve(values.output);
 // Reusing an output directory could accidentally publish a previous successful run.
 mkdirSync(output, { recursive: false });
+const testList = prepare(output, index, count, positionals);
 const session = `e2e-${process.env.GITHUB_RUN_ID ?? 'local'}-${process.env.GITHUB_RUN_ATTEMPT ?? '1'}-${index}-${randomUUID()}`;
 const frontendOutput = values['frontend-output'] ? resolve(values['frontend-output']) : undefined;
 let frontend;
@@ -257,7 +259,7 @@ try {
     timings.startup_seconds = (performance.now() - started) / 1000;
     console.log(`Coverage session ready; API, Jobs and App healthy at ${appUrl}`);
     const testStart = performance.now();
-    const tests = run('npm', ['run', 'test:e2e:ci', '--', `--shard=${index}/${count}`, ...positionals], {
+    const tests = run('npm', ['run', 'test:e2e:ci', '--', '--test-list', testList, ...positionals], {
         cwd: client,
         detached: process.platform !== 'win32',
         env: { ...process.env, E2E_URL: appUrl, E2E_SHARD: String(index), E2E_RUN_ID: session }

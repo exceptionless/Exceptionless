@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { partition, report } from './backend-shards.mjs';
 import { validate } from './browser-report.mjs';
+import { inventory, plan, verifySelection } from './browser-shards.mjs';
 
 test('partition covers new classes once and is deterministic', () => {
     const classes = ['slow', 'medium', 'fast', 'new', 'another-new'];
@@ -95,4 +96,31 @@ test('browser gate checks discovery, results, and retries', () => {
         if (defect === null) validate(expected, actual);
         else assert.throws(() => validate(expected, actual), undefined, defect);
     }
+});
+
+test('browser duration balancing includes new tests exactly once and validates native selection', () => {
+    const spec = (id) => ({ id, title: id, file: 'tests/example.e2e.ts', tests: [{ projectName: 'chromium' }] });
+    const discovered = { suites: [{ title: 'tests/example.e2e.ts', suites: [{ title: 'journey', specs: ['slow', 'medium', 'fast', 'new'].map(spec) }] }] };
+    const key = (id) => JSON.stringify([id, 'chromium']);
+    const durations = { [key('slow')]: 60, [key('medium')]: 40, [key('fast')]: 20, deleted: 900 };
+    const shards = plan(discovered, durations, 2);
+    assert.deepEqual(
+        shards.flatMap((shard) => shard.tests.map((test) => test.key)).sort(),
+        inventory(discovered)
+            .map((test) => test.key)
+            .sort()
+    );
+    assert.ok(shards.every((shard) => shard.tests.length > 0));
+    assert.equal(inventory(discovered)[0].selector, '[chromium] › tests/example.e2e.ts › journey › slow');
+    const reversed = structuredClone(discovered);
+    reversed.suites[0].suites[0].specs.reverse();
+    assert.deepEqual(plan(reversed, durations, 2), shards);
+    const selected = shards[0].tests;
+    const report = { suites: [{ specs: selected.map((test) => spec(JSON.parse(test.key)[0])) }] };
+    verifySelection(selected, report);
+    for (const ids of [[], ['slow', 'slow'], ['unexpected']]) {
+        assert.throws(() => verifySelection(selected, { suites: [{ specs: ids.map(spec) }] }));
+    }
+    assert.throws(() => inventory({ ...discovered, errors: [{ message: 'load failed' }] }));
+    assert.throws(() => plan(discovered, durations, 5));
 });
