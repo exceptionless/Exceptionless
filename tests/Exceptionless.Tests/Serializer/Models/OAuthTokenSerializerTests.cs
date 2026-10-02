@@ -22,6 +22,7 @@ public class OAuthTokenSerializerTests : TestWithServices
         {
             Id = "650000000000000000000005",
             UserId = "660000000000000000000001",
+            AuthenticationVersion = "current-version",
             ClientId = "test-oauth-client",
             GrantId = "test-grant-id",
             Resource = "http://localhost:7110/api/v2",
@@ -41,6 +42,7 @@ public class OAuthTokenSerializerTests : TestWithServices
 
         Assert.NotNull(result);
         Assert.Equal("test-oauth-client", result.ClientId);
+        Assert.Equal("current-version", result.AuthenticationVersion);
         Assert.Equal("test-grant-id", result.GrantId);
         Assert.Equal("http://localhost:7110/api/v2", result.Resource);
         Assert.Equal(OAuthService.CreateTokenHash("serializer-access-token"), result.AccessTokenHash);

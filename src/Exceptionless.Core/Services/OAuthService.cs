@@ -378,6 +378,13 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     public async Task<string> CreateAuthorizationCodeAsync(OAuthAuthorizeRequest request, string userId, IReadOnlyCollection<string> organizationIds)
     {
+        var user = await userRepository.GetByIdAsync(userId, o => o.Cache(false))
+            ?? throw new InvalidOperationException("The user does not exist.");
+        return await CreateAuthorizationCodeAsync(request, user, organizationIds);
+    }
+
+    public async Task<string> CreateAuthorizationCodeAsync(OAuthAuthorizeRequest request, User user, IReadOnlyCollection<string> organizationIds)
+    {
         await oauthApplicationRepository.AddOrganizationIdsAsync(request.ClientId, organizationIds, o => o.ImmediateConsistency().Notifications(false));
 
         string code = StringExtensions.GetNewToken();
@@ -385,7 +392,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         {
             ClientId = request.ClientId,
             RedirectUri = request.RedirectUri,
-            UserId = userId,
+            UserId = user.Id,
+            AuthenticationVersion = user.AuthenticationVersion,
             CodeChallenge = request.CodeChallenge,
             Resource = request.Resource ?? throw new InvalidOperationException("OAuth resource must be validated before creating an authorization code."),
             Scopes = NormalizeScopes(request.Scope),
@@ -424,7 +432,11 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!ValidateCodeVerifier(code.CodeChallenge, request.CodeVerifier))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Invalid PKCE verifier.");
 
-        return OAuthTokenIssueResult.Success(await CreateTokenAsync(code.UserId, code.ClientId, code.Resource, code.Scopes, code.OrganizationIds));
+        var user = await userRepository.GetByIdAsync(code.UserId, o => o.Cache(false));
+        if (user is not { IsActive: true } || !String.Equals(user.AuthenticationVersion, code.AuthenticationVersion, StringComparison.Ordinal))
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code is invalid or expired.");
+
+        return OAuthTokenIssueResult.Success(await CreateTokenAsync(code.UserId, code.ClientId, code.Resource, code.Scopes, code.OrganizationIds, authenticationVersion: code.AuthenticationVersion));
     }
 
     public async Task<OAuthTokenIssueResult> RefreshAsync(OAuthTokenRequest request)
@@ -465,8 +477,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
         }
 
-        var user = await userRepository.GetByIdAsync(token.UserId, o => o.ImmediateConsistency());
-        if (user is null || !user.IsActive)
+        var user = await userRepository.GetByIdAsync(token.UserId, o => o.Cache(false).ImmediateConsistency());
+        if (user is null || !user.IsActive || !String.Equals(user.AuthenticationVersion, token.AuthenticationVersion, StringComparison.Ordinal))
         {
             await RevokeOAuthGrantFamilyAsync(token);
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
@@ -482,7 +494,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!token.IsDisabled)
             await SpendRefreshTokenAsync(token, utcNow);
 
-        return OAuthTokenIssueResult.Success(await CreateTokenAsync(token.UserId, token.ClientId, token.Resource, scopeValidation.Scopes, activeOrganizationIds, token.GrantId));
+        return OAuthTokenIssueResult.Success(await CreateTokenAsync(token.UserId, token.ClientId, token.Resource, scopeValidation.Scopes, activeOrganizationIds, token.GrantId, token.AuthenticationVersion));
     }
 
     public async Task<bool> RevokeAsync(string? tokenValue, string? clientId)
@@ -582,7 +594,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return oauthTokenRepository.SaveAsync(token, o => o.ImmediateConsistency());
     }
 
-    private async Task<OAuthTokenResponse> CreateTokenAsync(string userId, string clientId, string resource, IReadOnlyCollection<string> scopes, IReadOnlyCollection<string> organizationIds, string? grantId = null)
+    private async Task<OAuthTokenResponse> CreateTokenAsync(string userId, string clientId, string resource, IReadOnlyCollection<string> scopes, IReadOnlyCollection<string> organizationIds, string? grantId = null, string? authenticationVersion = null)
     {
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         var accessToken = CreateOAuthToken();
@@ -591,6 +603,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         {
             Id = ObjectId.GenerateNewId().ToString(),
             UserId = userId,
+            AuthenticationVersion = authenticationVersion,
             ClientId = clientId,
             GrantId = String.IsNullOrWhiteSpace(grantId) ? StringExtensions.GetNewToken() : grantId,
             Resource = resource,
@@ -855,6 +868,7 @@ public record OAuthClientRegistrationResponse
 
 public record OAuthAuthorizationCode
 {
+    public string? AuthenticationVersion { get; init; }
     public required string ClientId { get; init; }
     public required string RedirectUri { get; init; }
     public required string UserId { get; init; }

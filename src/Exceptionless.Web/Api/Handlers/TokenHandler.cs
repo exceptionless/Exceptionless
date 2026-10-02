@@ -17,6 +17,7 @@ namespace Exceptionless.Web.Api.Handlers;
 
 public class TokenHandler(
     ITokenRepository repository,
+    IUserRepository userRepository,
     IProjectRepository projectRepository,
     ApiMapper mapper,
     IAppQueryValidator validator,
@@ -266,12 +267,18 @@ public class TokenHandler(
         return null;
     }
 
-    private Task<Token> AddModelAsync(Token value)
+    private async Task<Token> AddModelAsync(Token value)
     {
         value.Id = StringExtensions.GetNewToken();
         value.CreatedUtc = value.UpdatedUtc = timeProvider.GetUtcNow().UtcDateTime;
         value.Type = TokenType.Access;
         value.CreatedBy = GetCurrentUserId();
+        if (!String.IsNullOrEmpty(value.UserId))
+        {
+            var user = value.UserId == GetCurrentUserId() ? HttpContext.Request.GetUser()
+                : await userRepository.GetByIdAsync(value.UserId, o => o.Cache(false));
+            value.AuthenticationVersion = user?.AuthenticationVersion;
+        }
 
         if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin))
             value.Scopes.Add(AuthorizationRoles.User);
@@ -279,7 +286,7 @@ public class TokenHandler(
         if (value.Scopes.Contains(AuthorizationRoles.User))
             value.Scopes.Add(AuthorizationRoles.Client);
 
-        return repository.AddAsync(value, o => o.Cache());
+        return await repository.AddAsync(value, o => o.Cache());
     }
 
     private async Task<PermissionResult> CanDeleteAsync(Token value)

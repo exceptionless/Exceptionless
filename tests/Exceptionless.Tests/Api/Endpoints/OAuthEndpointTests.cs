@@ -1590,6 +1590,36 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Equal("invalid_grant", error.Error);
     }
 
+    [Fact]
+    public async Task TokenAsync_AccountGenerationChanged_RejectsExistingCodesAndRefreshTokens()
+    {
+        var issued = await IssueTokenAsync(resource: RestApiResource, scope: $"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}");
+        string code = await CreateAuthorizationCodeAsync(PkceVerifier);
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.AuthenticationVersion = StringExtensions.GetNewToken();
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+        using var client = CreateHttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "projects");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", issued.AccessToken);
+        using var accessResponse = await client.SendAsync(request, TestCancellationToken);
+        Assert.Equal(HttpStatusCode.Unauthorized, accessResponse.StatusCode);
+        using var exchange = CreateTokenExchangeContent(code, PkceVerifier);
+        using var codeResponse = await client.PostAsync("oauth/token", exchange, TestCancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, codeResponse.StatusCode);
+        using var refresh = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = OAuthGrantTypes.RefreshToken,
+            ["client_id"] = ClientId,
+            ["refresh_token"] = issued.RefreshToken!
+        });
+        using var refreshResponse = await client.PostAsync("oauth/token", refresh, TestCancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, refreshResponse.StatusCode);
+        var stored = await GetStoredOAuthTokenAsync(issued.AccessToken);
+        Assert.NotNull(stored);
+        Assert.True(stored.IsDisabled);
+    }
+
     private async Task RemoveTestUserFromOrganizationAsync(string organizationId)
     {
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
