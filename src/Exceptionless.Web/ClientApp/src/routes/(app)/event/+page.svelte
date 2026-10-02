@@ -1,4 +1,7 @@
 <script lang="ts">
+    import type { EventChart } from '$generated/api';
+
+    import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as DataTable from '$comp/data-table';
@@ -6,13 +9,16 @@
     import RefreshButton from '$comp/refresh-button.svelte';
     import { H3 } from '$comp/typography';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
+    import { getEventChartQuery } from '$features/events/api.svelte';
     import {
         type GetEventsParams,
         getOrganizationCountQuery,
         getOrganizationEventsQuery,
         PERSISTENT_EVENT_DELETE_RECONCILE_EVENT
     } from '$features/events/api.svelte';
+    import EventChartSettings from '$features/events/components/event-chart-settings.svelte';
     import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
+    import EventMeasurementChart from '$features/events/components/event-measurement-chart.svelte';
     import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
     import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
     import {
@@ -47,6 +53,7 @@
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
     import InvestigationListTour from '$features/events/components/tours/investigation-list.svelte';
+    import { type MeasurementPoint, parseChartParameter } from '$features/events/event-chart';
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { organization } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
@@ -228,6 +235,7 @@
             after: 'string',
             before: 'string',
             bot: 'string',
+            chart: 'string',
             filter: 'string',
             first: 'string',
             level: 'string',
@@ -249,6 +257,9 @@
     const VIEW = 'events';
     let showStats = $state(true);
     let showChart = $state(true);
+    let savedChart = $state<EventChart | null>(null);
+    const chartOverride = $derived(parseChartParameter(queryParams.chart));
+    const chart = $derived(chartOverride === undefined ? savedChart : chartOverride);
     const savedViewsState = useSavedViews({
         applyFilters: (draftFilters, options) => {
             updateFilters(draftFilters, {
@@ -268,6 +279,7 @@
                 .getAllFlatColumns()
                 .filter((column) => column.columns.length === 0)
                 .map((column) => column.id),
+        getChart: () => chart,
         getColumnOrder: () => table.store.state.columnOrder,
         getColumnSizing: () => table.store.state.columnSizing,
         getColumnVisibility: () => table.store.state.columnVisibility,
@@ -278,6 +290,7 @@
         getSort: getEffectiveSort,
         getTime: getQueryTime,
         queryParams,
+        setChart: (value) => (savedChart = value),
         setColumnOrder: (v) => table.setColumnOrder(v),
         setColumnSizing: (v) => table.setColumnSizing(v),
         setColumnVisibility: (v) => table.setColumnVisibility(v),
@@ -750,7 +763,11 @@
 
     async function handleRefresh() {
         table.resetRowSelection();
-        await eventsQuery.refetch();
+        await Promise.all([
+            eventsQuery.refetch(),
+            ...(showChart && chart ? [measurementQuery.refetch()] : []),
+            ...(showStats || (showChart && !chart) ? [chartDataQuery.refetch()] : [])
+        ]);
     }
 
     async function reconcileTotalPages() {
@@ -888,6 +905,53 @@
         );
     });
 
+    const measurementQuery = getEventChartQuery({
+        get body() {
+            return chart
+                ? {
+                      chart,
+                      filter: eventsQueryParameters.filter,
+                      offset: DEFAULT_OFFSET,
+                      time: eventsQueryParameters.time
+                  }
+                : undefined;
+        },
+        get enabled() {
+            return showChart && !isSavedViewRoutePending;
+        },
+        get organizationId() {
+            return organization.current;
+        }
+    });
+
+    async function selectChartPoint(point: MeasurementPoint, series: string) {
+        if (point.event_id) {
+            await goto(
+                resolve('/(app)/event/[eventId=objectid]', {
+                    eventId: point.event_id
+                })
+            );
+            return;
+        }
+        const clauses = [eventsQueryParameters.filter].filter(Boolean);
+        if (chart?.group_by) {
+            const field = chart.group_by === 'source' ? 'source.keyword' : chart.group_by;
+            clauses.push(`${field}:${JSON.stringify(series)}`);
+        }
+
+        if (chart?.measurement) {
+            clauses.push(`measurements:(measurements.name:${JSON.stringify(chart.measurement)} AND measurements.unit:${JSON.stringify(chart.unit)})`);
+        }
+        const end = new Date(point.date.getTime() + (measurementQuery.data?.interval_milliseconds ?? 1000) - 1);
+        queryParams.update({
+            after: null,
+            before: null,
+            filter: clauses.map((clause) => `(${clause})`).join(' AND '),
+            page: null,
+            time: toDateMathRange(point.date, end)
+        });
+    }
+
     const chartDataQuery = getOrganizationCountQuery({
         enabled: () => !isSavedViewRoutePending,
         params: {
@@ -980,11 +1044,19 @@
                     isModified={savedViewsState.isModified}
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
-                    onResetToSaved={handleResetToSaved}
-                    onSavedViewUpdated={savedViewsState.handleSavedViewUpdated}
+                    onResetToSaved={() => {
+                        queryParams.chart = null;
+                        handleResetToSaved();
+                    }}
+                    onSavedViewUpdated={(view) => {
+                        savedChart = view.chart ?? null;
+                        savedViewsState.handleSavedViewUpdated(view);
+                        queryParams.chart = null;
+                    }}
                     savedViews={savedViewsState.savedViews}
                     setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
                     setWrappedColumnIds={savedViewsState.setWrappedColumnIds}
+                    {chart}
                     {showChart}
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
@@ -996,6 +1068,15 @@
                     wrappedColumnIds={savedViewsState.wrappedColumnIds}
                 />
             {/if}
+            <EventChartSettings
+                {chart}
+                filter={eventsQueryParameters.filter}
+                time={eventsQueryParameters.time}
+                onApply={(value) => {
+                    queryParams.chart = JSON.stringify(value);
+                    showChart = true;
+                }}
+            />
             <RefreshButton onRefresh={handleRefresh} isRefreshing={eventsQuery.isFetching} size="icon-lg" title="Refresh results" />
         </div>
     </div>
@@ -1011,7 +1092,18 @@
             />
         {/if}
 
-        {#if showChart}
+        {#if showChart && chart}
+            {#if measurementQuery.error}
+                <p role="alert" class="text-destructive text-sm">{measurementQuery.error.title ?? 'Unable to load chart.'}</p>
+            {:else}
+                <EventMeasurementChart
+                    {chart}
+                    result={measurementQuery.data}
+                    isLoading={isSavedViewRoutePending || measurementQuery.isLoading}
+                    onSelect={selectChartPoint}
+                />
+            {/if}
+        {:else if showChart}
             <EventsDashboardChart
                 data={chartData()}
                 isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}

@@ -207,6 +207,109 @@ export const CountResultSchema = object({
 });
 export type CountResultFormData = Infer<typeof CountResultSchema>;
 
+export const EventChartSchema = object({
+  measurement: string()
+    .min(1, "Measurement is required")
+    .regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,99}$/, "Measurement has invalid format")
+    .nullable()
+    .optional(),
+  unit: string()
+    .min(1, "Unit is required")
+    .max(32, "Unit must be at most 32 characters")
+    .nullable()
+    .optional(),
+  aggregation: string()
+    .min(1, "Aggregation is required")
+    .regex(
+      /^(avg|min|max|sum|p50|p95|p99|count)$/,
+      "Aggregation has invalid format",
+    ),
+  group_by: string()
+    .min(1, "Group by is required")
+    .regex(
+      /^(source|stack|outcome|dimensions\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$/,
+      "Group by has invalid format",
+    )
+    .nullable()
+    .optional(),
+  mode: string()
+    .min(1, "Mode is required")
+    .regex(/^(buckets|events)$/, "Mode has invalid format"),
+  display: string()
+    .min(1, "Display is required")
+    .regex(/^(line|bar)$/, "Display has invalid format"),
+});
+export type EventChartFormData = Infer<typeof EventChartSchema>;
+
+export const EventChartPointSchema = object({
+  date: iso.datetime(),
+  value: number().nullable(),
+  count: int(),
+  event_id: string().min(1, "Event id is required").nullable().optional(),
+});
+export type EventChartPointFormData = Infer<typeof EventChartPointSchema>;
+
+export const EventChartRequestSchema = object({
+  chart: lazy(() => EventChartSchema),
+  filter: string()
+    .min(1, "Filter is required")
+    .max(2000, "Filter must be at most 2000 characters")
+    .nullable()
+    .optional(),
+  time: string()
+    .min(1, "Time is required")
+    .max(100, "Time must be at most 100 characters")
+    .nullable()
+    .optional(),
+  offset: string()
+    .min(1, "Offset is required")
+    .max(20, "Offset must be at most 20 characters")
+    .nullable()
+    .optional(),
+});
+export type EventChartRequestFormData = Infer<typeof EventChartRequestSchema>;
+
+export const EventChartResultSchema = object({
+  series: array(lazy(() => EventChartSeriesSchema)),
+  total: int(),
+  truncated: boolean(),
+  interval_milliseconds: int().nullable().optional(),
+});
+export type EventChartResultFormData = Infer<typeof EventChartResultSchema>;
+
+export const EventChartSeriesSchema = object({
+  name: string().min(1, "Name is required"),
+  points: array(lazy(() => EventChartPointSchema)),
+});
+export type EventChartSeriesFormData = Infer<typeof EventChartSeriesSchema>;
+
+export const EventMeasurementSchema = object({
+  name: string()
+    .min(1, "Name is required")
+    .regex(/^[a-zA-Z][a-zA-Z0-9_.-]{0,99}$/, "Name has invalid format"),
+  value: number().nullable(),
+  unit: string()
+    .min(1, "Unit is required")
+    .max(32, "Unit must be at most 32 characters"),
+});
+export type EventMeasurementFormData = Infer<typeof EventMeasurementSchema>;
+
+export const EventMeasurementCatalogSchema = object({
+  measurements: array(lazy(() => EventMeasurementDescriptorSchema)),
+  truncated: boolean(),
+});
+export type EventMeasurementCatalogFormData = Infer<
+  typeof EventMeasurementCatalogSchema
+>;
+
+export const EventMeasurementDescriptorSchema = object({
+  name: string().min(1, "Name is required"),
+  unit: string().min(1, "Unit is required"),
+});
+export type EventMeasurementDescriptorFormData = Infer<
+  typeof EventMeasurementDescriptorSchema
+>;
+
 export const EventSubmissionSettingsSchema = object({
   enabled: boolean(),
   configured_enabled: boolean(),
@@ -353,6 +456,7 @@ export const NewSavedViewSchema = object({
     .optional(),
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
+  chart: lazy(() => EventChartSchema).optional(),
   is_private: boolean().nullable().optional(),
 });
 export type NewSavedViewFormData = Infer<typeof NewSavedViewSchema>;
@@ -597,6 +701,23 @@ export const PersistentEventSchema = object({
   geo: string().min(1, "Geo is required").nullable().optional(),
   value: number().nullable().optional(),
   count: int32().nullable().optional(),
+  outcome: string()
+    .min(1, "Outcome is required")
+    .max(100, "Outcome must be at most 100 characters")
+    .nullable()
+    .optional(),
+  parent_reference_id: string()
+    .min(1, "Parent reference id is required")
+    .nullable()
+    .optional(),
+  root_reference_id: string()
+    .min(1, "Root reference id is required")
+    .nullable()
+    .optional(),
+  measurements: array(lazy(() => EventMeasurementSchema))
+    .nullable()
+    .optional(),
+  dimensions: record(string(), string()).nullable().optional(),
   data: record(string(), unknown()).nullable().optional(),
   reference_id: string()
     .min(1, "Reference id is required")
@@ -622,6 +743,7 @@ export const PredefinedSavedViewDefinitionSchema = object({
     .optional(),
   showStats: boolean().nullable().optional(),
   showChart: boolean().nullable().optional(),
+  chart: lazy(() => EventChartSchema).optional(),
 });
 export type PredefinedSavedViewDefinitionFormData = Infer<
   typeof PredefinedSavedViewDefinitionSchema
@@ -824,6 +946,7 @@ export const UpdateSavedViewSchema = object({
     .optional(),
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
+  chart: lazy(() => EventChartSchema).optional(),
 });
 export type UpdateSavedViewFormData = Infer<typeof UpdateSavedViewSchema>;
 
@@ -1109,6 +1232,7 @@ export const ViewSavedViewSchema = object({
     .optional(),
   show_stats: boolean().nullable().optional(),
   show_chart: boolean().nullable().optional(),
+  chart: lazy(() => EventChartSchema).optional(),
   name: string().min(1, "Name is required"),
   slug: string().min(1, "Slug is required"),
   time: string().min(1, "Time is required").nullable().optional(),

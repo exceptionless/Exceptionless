@@ -8568,6 +8568,169 @@
         }
       }
     },
+    "/api/v2/organizations/{organizationId}/events/chart": {
+      "post": {
+        "tags": [
+          "Event"
+        ],
+        "summary": "Chart event measurements or counts",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventChartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventChartResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Upgrade Required",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/organizations/{organizationId}/events/measurements": {
+      "get": {
+        "tags": [
+          "Event"
+        ],
+        "summary": "List measurement names and units in the selected events",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventMeasurementCatalog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "Upgrade Required",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/events/count": {
       "get": {
         "tags": [
@@ -12212,6 +12375,223 @@
           }
         }
       },
+      "EventChart": {
+        "required": [
+          "aggregation",
+          "mode",
+          "display"
+        ],
+        "type": "object",
+        "properties": {
+          "measurement": {
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]{0,99}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "unit": {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "aggregation": {
+            "pattern": "^(avg|min|max|sum|p50|p95|p99|count)$",
+            "type": "string"
+          },
+          "group_by": {
+            "pattern": "^(source|stack|outcome|dimensions\\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "mode": {
+            "pattern": "^(buckets|events)$",
+            "type": "string"
+          },
+          "display": {
+            "pattern": "^(line|bar)$",
+            "type": "string"
+          }
+        },
+        "description": "Configuration of a saved view\u0027s single event chart. Null retains the default event-count chart."
+      },
+      "EventChartPoint": {
+        "required": [
+          "date",
+          "value",
+          "count"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "value": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "event_id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "EventChartRequest": {
+        "required": [
+          "chart"
+        ],
+        "type": "object",
+        "properties": {
+          "chart": {
+            "$ref": "#/components/schemas/EventChart"
+          },
+          "filter": {
+            "maxLength": 2000,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "time": {
+            "maxLength": 100,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "offset": {
+            "maxLength": 20,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "EventChartResult": {
+        "required": [
+          "series",
+          "total",
+          "truncated"
+        ],
+        "type": "object",
+        "properties": {
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventChartSeries"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "interval_milliseconds": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "EventChartSeries": {
+        "required": [
+          "name",
+          "points"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventChartPoint"
+            }
+          }
+        }
+      },
+      "EventMeasurement": {
+        "required": [
+          "name",
+          "value",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "pattern": "^[a-zA-Z][a-zA-Z0-9_.-]{0,99}$",
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "unit": {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string",
+            "description": "Case-sensitive unit, for example s, ms, By, or 1 for a dimensionless value."
+          }
+        },
+        "description": "A numeric observation on one event. Units describe values, not their storage type."
+      },
+      "EventMeasurementCatalog": {
+        "required": [
+          "measurements",
+          "truncated"
+        ],
+        "type": "object",
+        "properties": {
+          "measurements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventMeasurementDescriptor"
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EventMeasurementDescriptor": {
+        "required": [
+          "name",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
       "EventSubmissionSettings": {
         "required": [
           "enabled",
@@ -12581,6 +12961,16 @@
             "type": [
               "null",
               "boolean"
+            ]
+          },
+          "chart": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EventChart"
+              }
             ]
           },
           "is_private": {
@@ -13295,6 +13685,51 @@
             "description": "The number of duplicated events.",
             "format": "int32"
           },
+          "outcome": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The result of this operation, independent of the event type."
+          },
+          "parent_reference_id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Reference of the immediate parent event in the same project."
+          },
+          "root_reference_id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Reference of the root event in the same project. Supplied by the producer."
+          },
+          "measurements": {
+            "maxItems": 32,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/EventMeasurement"
+            },
+            "description": "Up to 32 uniquely named numeric observations. Missing values are not zero."
+          },
+          "dimensions": {
+            "maxLength": 32,
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Up to 32 categorical labels, indexed as exact strings without type inference."
+          },
           "data": {
             "type": [
               "null",
@@ -13380,6 +13815,16 @@
             "type": [
               "null",
               "boolean"
+            ]
+          },
+          "chart": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EventChart"
+              }
             ]
           }
         }
@@ -13944,6 +14389,16 @@
             "type": [
               "null",
               "boolean"
+            ]
+          },
+          "chart": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventChart"
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         },
@@ -14875,6 +15330,16 @@
             "type": [
               "null",
               "boolean"
+            ]
+          },
+          "chart": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/EventChart"
+              }
             ]
           },
           "name": {

@@ -7,6 +7,7 @@
     import { Button } from '$comp/ui/button';
     import * as Table from '$comp/ui/table';
     import * as EventsFacetedFilter from '$features/events/components/filters';
+    import { formatMeasurement } from '$features/events/event-chart';
     import {
         getErrorType,
         getLocation,
@@ -69,10 +70,55 @@
     let requestUrl = $derived(getRequestInfoUrl(event));
     let requestUrlPath = $derived(getRequestInfoPath(event));
     let version = $derived(event.data?.['@version']);
+
+    function relatedEventsHref(filter: string): string {
+        return `${resolve('/(app)/event')}?filter=${encodeURIComponent(`project:${event.project_id} AND (${filter})`)}&time=all`;
+    }
+    function relationshipHref(referenceId: string): string {
+        return `${resolve('/(app)/event/by-ref/[referenceId]', {
+            referenceId
+        })}?project=${encodeURIComponent(event.project_id)}`;
+    }
 </script>
 
 <Table.Root>
     <Table.Body>
+        {#if event.outcome}
+            <Table.Row><Table.Head>Outcome</Table.Head><Table.Cell></Table.Cell><Table.Cell>{event.outcome}</Table.Cell></Table.Row>
+        {/if}
+        {#if event.parent_reference_id}
+            <Table.Row
+                ><Table.Head>Parent event</Table.Head><Table.Cell></Table.Cell><Table.Cell
+                    ><A href={relationshipHref(event.parent_reference_id)}>{event.parent_reference_id}</A></Table.Cell
+                ></Table.Row
+            >
+        {/if}
+        {#if event.root_reference_id}
+            <Table.Row
+                ><Table.Head>Root event</Table.Head><Table.Cell></Table.Cell><Table.Cell
+                    ><A href={relationshipHref(event.root_reference_id)}>{event.root_reference_id}</A> · <A
+                        href={relatedEventsHref(`reference:${event.root_reference_id} OR root_reference_id:${event.root_reference_id}`)}>View related events</A
+                    ></Table.Cell
+                ></Table.Row
+            >
+        {/if}
+        {#if event.reference_id && (event.measurements?.length || event.outcome || event.parent_reference_id || event.root_reference_id)}
+            <Table.Row
+                ><Table.Head>Children</Table.Head><Table.Cell></Table.Cell><Table.Cell
+                    ><A href={relatedEventsHref(`parent_reference_id:${event.reference_id}`)}>View child events</A></Table.Cell
+                ></Table.Row
+            >
+        {/if}
+        {#each event.measurements ?? [] as measurement (measurement.name)}
+            <Table.Row
+                ><Table.Head>{measurement.name}</Table.Head><Table.Cell></Table.Cell><Table.Cell
+                    >{formatMeasurement(measurement.value, measurement.unit)}</Table.Cell
+                ></Table.Row
+            >
+        {/each}
+        {#each Object.entries(event.dimensions ?? {}) as [name, value] (name)}
+            <Table.Row><Table.Head>{name}</Table.Head><Table.Cell></Table.Cell><Table.Cell>{value}</Table.Cell></Table.Row>
+        {/each}
         {#if isSessionStart}
             <Table.Row>
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Duration</Table.Head>

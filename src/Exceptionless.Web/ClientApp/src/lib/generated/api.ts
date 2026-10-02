@@ -162,6 +162,73 @@ export interface CountResult {
   data?: null | object;
 }
 
+/** Configuration of a saved view's single event chart. Null retains the default event-count chart. */
+export interface EventChart {
+  /** @pattern ^[a-zA-Z][a-zA-Z0-9_.-]{0,99}$ */
+  measurement?: null | string;
+  unit?: null | string;
+  /** @pattern ^(avg|min|max|sum|p50|p95|p99|count)$ */
+  aggregation: string;
+  /** @pattern ^(source|stack|outcome|dimensions\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$ */
+  group_by?: null | string;
+  /** @pattern ^(buckets|events)$ */
+  mode: string;
+  /** @pattern ^(line|bar)$ */
+  display: string;
+}
+
+export interface EventChartPoint {
+  /** @format date-time */
+  date: string;
+  /** @format double */
+  value?: null | number;
+  /** @format int64 */
+  count: number;
+  event_id?: null | string;
+}
+
+export interface EventChartRequest {
+  /** Configuration of a saved view's single event chart. Null retains the default event-count chart. */
+  chart: EventChart;
+  filter?: null | string;
+  time?: null | string;
+  offset?: null | string;
+}
+
+export interface EventChartResult {
+  series: EventChartSeries[];
+  /** @format int64 */
+  total: number;
+  truncated: boolean;
+  /** @format int64 */
+  interval_milliseconds?: null | number;
+}
+
+export interface EventChartSeries {
+  name: string;
+  points: EventChartPoint[];
+}
+
+/** A numeric observation on one event. Units describe values, not their storage type. */
+export interface EventMeasurement {
+  /** @pattern ^[a-zA-Z][a-zA-Z0-9_.-]{0,99}$ */
+  name: string;
+  /** @format double */
+  value?: null | number;
+  /** Case-sensitive unit, for example s, ms, By, or 1 for a dimensionless value. */
+  unit: string;
+}
+
+export interface EventMeasurementCatalog {
+  measurements: EventMeasurementDescriptor[];
+  truncated: boolean;
+}
+
+export interface EventMeasurementDescriptor {
+  name: string;
+  unit: string;
+}
+
 export interface EventSubmissionSettings {
   enabled: boolean;
   configured_enabled: boolean;
@@ -266,6 +333,7 @@ export interface NewSavedView {
   columns?: null | Record<string, SavedViewColumnSettings>;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
+  chart?: null | EventChart;
   /** If true, the view will only be visible to the current user. Defaults to false. */
   is_private?: null | boolean;
 }
@@ -472,6 +540,16 @@ export interface PersistentEvent {
    * @format int32
    */
   count?: null | number;
+  /** The result of this operation, independent of the event type. */
+  outcome?: null | string;
+  /** Reference of the immediate parent event in the same project. */
+  parent_reference_id?: null | string;
+  /** Reference of the root event in the same project. Supplied by the producer. */
+  root_reference_id?: null | string;
+  /** Up to 32 uniquely named numeric observations. Missing values are not zero. */
+  measurements?: EventMeasurement[] | null;
+  /** Up to 32 categorical labels, indexed as exact strings without type inference. */
+  dimensions?: null | Record<string, string>;
   /** Optional data entries that contain additional information about this event. */
   data?: null | Record<string, unknown>;
   /** An optional identifier to be used for referencing this event instance at a later time. */
@@ -490,6 +568,7 @@ export interface PredefinedSavedViewDefinition {
   columns?: null | Record<string, SavedViewColumnSettings>;
   showStats?: null | boolean;
   showChart?: null | boolean;
+  chart?: null | EventChart;
 }
 
 export interface ProblemDetails {
@@ -686,6 +765,7 @@ export interface UpdateSavedView {
   columns?: null | Record<string, SavedViewColumnSettings>;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
+  chart?: EventChart | null;
 }
 
 export interface UpdateSavedViewDefault {
@@ -943,6 +1023,7 @@ export interface ViewSavedView {
   columns?: null | Record<string, SavedViewColumnSettings>;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
+  chart?: null | EventChart;
   name: string;
   slug: string;
   time?: null | string;

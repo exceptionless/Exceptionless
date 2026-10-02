@@ -1,4 +1,5 @@
 ﻿using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Visitors;
 using Microsoft.Extensions.Logging;
@@ -36,6 +37,9 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
         };
 
     private static readonly HashSet<string> _allowedAggregationFields = new(StringComparer.OrdinalIgnoreCase) {
+            "outcome",
+            "parent_reference_id",
+            "root_reference_id",
             "date",
             "source",
             "tags",
@@ -117,7 +121,9 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
             return new QueryProcessResult { Message = "Aggregation count exceeded" };
 
         // Only allow fields that are numeric or have high commonality.
-        if (!result.ReferencedFields.All(_allowedAggregationFields.Contains))
+        if (!result.ReferencedFields.All(field => _allowedAggregationFields.Contains(field)
+            || MeasurementField.TryParse(field, out _, out _)
+            || field.StartsWith("dimensions.", StringComparison.Ordinal)))
             return new QueryProcessResult { Message = "One or more aggregation fields are not allowed" };
 
         // Distinct queries are expensive.
