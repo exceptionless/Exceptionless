@@ -33,6 +33,7 @@
         "update:skills": "npx skills update"
     },
     "devDependencies": {
+        "@babel/core": "8.0.6",
         "@chromatic-com/storybook": "^5.4.0",
         "@eslint/compat": "^2.1.1",
         "@eslint/js": "^10.0.1",
