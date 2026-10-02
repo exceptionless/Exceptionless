@@ -205,6 +205,8 @@ public class Bootstrapper
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
                 AllowAutoRedirect = false,
+                UseCookies = false,
+                UseProxy = false,
                 ConnectCallback = ConnectToPublicAddressAsync
             });
         services.AddSingleton<SourceMapRequestThrottle>();
@@ -232,7 +234,7 @@ public class Bootstrapper
         Exception? lastException = null;
         foreach (var address in addresses)
         {
-            if (!OAuthClientMetadataService.IsPublicAddress(address))
+            if (!PublicAddressPolicy.IsPublic(address))
                 continue;
 
             var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
@@ -245,6 +247,11 @@ public class Bootstrapper
             {
                 lastException = ex;
                 socket.Dispose();
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
             }
         }
 
