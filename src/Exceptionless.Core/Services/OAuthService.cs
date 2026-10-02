@@ -415,7 +415,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!codeResult.HasValue)
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code is invalid or expired.");
 
-        await cacheClient.RemoveAsync(cacheKey);
+        if (!await cacheClient.RemoveAsync(cacheKey))
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code is invalid or expired.");
         var code = codeResult.Value;
         if (!String.Equals(code.ClientId, request.ClientId, StringComparison.Ordinal) || !String.Equals(code.RedirectUri, request.RedirectUri, StringComparison.Ordinal) || !String.Equals(code.Resource, request.Resource, StringComparison.Ordinal))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code does not match the token request.");
