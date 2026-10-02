@@ -61,6 +61,7 @@ public sealed class AuthHandlerTests : TestWithServices
             GetService<IOAuthProviderClient>(),
             GetService<ICacheClient>(),
             GetService<AuthService>(),
+            GetService<PasswordService>(),
             GetService<IMailer>(),
             GetService<IDomainLoginProvider>(),
             TimeProvider,

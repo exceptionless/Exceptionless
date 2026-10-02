@@ -424,7 +424,7 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetCurrentUserAsync_CachedUser_ReturnsCachedProfileUntilInvalidated()
+    public async Task GetCurrentUserAsync_CachedUser_ReturnsPersistedProfile()
     {
         // Arrange: give the cache a distinct profile without changing the stored user.
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
@@ -440,7 +440,7 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         var refreshed = await GetTestOrganizationUserAsync();
 
         // Assert
-        Assert.Equal("Cached profile", cached.FullName);
+        Assert.Equal(persistedName, cached.FullName);
         Assert.Equal(persistedName, refreshed.FullName);
     }
 
