@@ -39,6 +39,7 @@ public class EventHandler(
     IProjectRepository projectRepository,
     IStackRepository stackRepository,
     EventPostService eventPostService,
+    EventTelemetryService eventTelemetryService,
     IQueue<EventUserDescription> eventUserDescriptionQueue,
     MiniValidationValidator miniValidationValidator,
     FormattingPluginManager formattingPluginManager,
@@ -705,45 +706,7 @@ public class EventHandler(
             return PlanLimitResult<EventChartResult>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
 
         var time = TimeRangeParser.GetTimeInfo(request.Time, request.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
-        RepositoryQueryDescriptor<PersistentEvent> query = q => q
-            .SortExpression("-date")
-            .AppFilter(systemFilter)
-            .FilterExpression(request.Filter)
-            .EnforceEventStackFilter()
-            .DateRange(time.Range.UtcStart, time.Range.UtcEnd, time.Field)
-            .Index(time.Range.UtcStart, time.Range.UtcEnd)
-            .EventChart(request.Chart, time.Range.UtcStart, time.Range.UtcEnd);
-
-        if (request.Chart.Mode == "events")
-        {
-            var events = await eventRepository.FindAsync(query, o => o.PageLimit(EventChartQueryExtensions.MaxPoints));
-            var groups = events.Documents.GroupBy(ev => GetSeriesName(ev, request.Chart.GroupBy)).ToList();
-            return new EventChartResult
-            {
-                Total = events.Total,
-                Truncated = events.HasMore || events.Total > events.Documents.Count || groups.Count > EventChartQueryExtensions.MaxSeries,
-                Series = groups.Take(EventChartQueryExtensions.MaxSeries).Select(group => new EventChartSeries(group.Key,
-                    group.OrderBy(ev => ev.Date).Select(ev => new EventChartPoint(ev.Date.UtcDateTime,
-                        ev.Measurements?.FirstOrDefault(m => m.Name == request.Chart.Measurement && m.Unit == request.Chart.Unit)?.Value, 1, ev.Id)).ToList())).ToList()
-            };
-        }
-
-        var result = await eventRepository.CountAsync(query);
-        var response = new EventChartResult
-        {
-            Total = result.Total,
-            IntervalMilliseconds = EventChartQueryExtensions.GetInterval(time.Range.UtcStart, time.Range.UtcEnd)
-        };
-        if (request.Chart.GroupBy is null)
-            response.Series.Add(ReadSeries("All events", result.Aggregations, request.Chart));
-        else
-        {
-            var buckets = result.Aggregations.Terms<string>("series")?.Buckets ?? [];
-            response.Truncated = buckets.Sum(b => b.Total ?? 0) < result.Total;
-            foreach (var bucket in buckets)
-                response.Series.Add(ReadSeries(bucket.Key, bucket.Aggregations, request.Chart));
-        }
-        return response;
+        return await eventTelemetryService.GetChartAsync(systemFilter, request.Chart, request.Filter, time.Range.UtcStart, time.Range.UtcEnd);
     }
 
     public async Task<Result<EventMeasurementCatalog>> Handle(GetEventMeasurements message)
@@ -762,51 +725,7 @@ public class EventHandler(
             return PlanLimitResult<EventMeasurementCatalog>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
 
         var time = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
-        var result = await eventRepository.CountAsync(q => q.AppFilter(systemFilter).FilterExpression(message.Filter).EnforceEventStackFilter()
-            .DateRange(time.Range.UtcStart, time.Range.UtcEnd, time.Field).Index(time.Range.UtcStart, time.Range.UtcEnd).MeasurementCatalog());
-        var measurements = GetBucket(result.Aggregations, "measurements");
-        var names = measurements?.Aggregations.Terms<string>("names")?.Buckets ?? [];
-        var values = new List<EventMeasurementDescriptor>();
-        bool truncated = names.Sum(n => n.Total ?? 0) < (measurements?.Total ?? 0);
-        foreach (var name in names)
-        {
-            var units = name.Aggregations.Terms<string>("units")?.Buckets ?? [];
-            truncated |= units.Sum(u => u.Total ?? 0) < (name.Total ?? 0);
-            values.AddRange(units.Select(u => new EventMeasurementDescriptor(name.Key, u.Key)));
-        }
-        return new EventMeasurementCatalog(values.OrderBy(m => m.Name, StringComparer.Ordinal).ThenBy(m => m.Unit, StringComparer.Ordinal).ToList(), truncated);
-    }
-
-    private static string GetSeriesName(PersistentEvent ev, string? groupBy) => groupBy switch
-    {
-        null => "All events",
-        "source" => ev.Source ?? "(missing)",
-        "stack" => ev.StackId,
-        "outcome" => ev.Outcome ?? "(missing)",
-        "result" => ev.Result ?? "(missing)",
-        _ => ev.Labels?.GetValueOrDefault(groupBy["labels.".Length..]) ?? "(missing)"
-    };
-
-    private static SingleBucketAggregate? GetBucket(IReadOnlyDictionary<string, IAggregate> aggregations, string name)
-        => aggregations.GetValueOrDefault(name) as SingleBucketAggregate;
-
-    private static EventChartSeries ReadSeries(string name, IReadOnlyDictionary<string, IAggregate> aggregations, EventChart chart)
-    {
-        var points = new List<EventChartPoint>();
-        foreach (var bucket in aggregations.DateHistogram("dates")?.Buckets ?? [])
-        {
-            var selected = GetBucket(bucket.Aggregations, "measurements") is { } nested ? GetBucket(nested.Aggregations, "selected") : null;
-            double? value = chart.Measurement is null ? bucket.Total ?? 0 : null;
-            if (selected is { Total: > 0 } && selected.Aggregations.TryGetValue("value", out var metric))
-                value = metric switch
-                {
-                    ValueAggregate numeric => numeric.Value,
-                    PercentilesAggregate percentiles => percentiles.Items.FirstOrDefault()?.Value,
-                    _ => null
-                };
-            points.Add(new EventChartPoint(bucket.Date, value, bucket.Total ?? 0));
-        }
-        return new EventChartSeries(name, points);
+        return await eventTelemetryService.GetMeasurementsAsync(systemFilter, message.Filter, time.Range.UtcStart, time.Range.UtcEnd);
     }
 
     #region Private Helpers

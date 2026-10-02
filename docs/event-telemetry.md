@@ -89,6 +89,29 @@ The authenticated API provides:
 
 These APIs enforce organization access, retention, suspension, and premium-search policies. They use repository queries and the existing event store.
 
+## MCP investigation tools
+
+MCP exposes the same native fields and chart query engine. `search_events`, `get_stack_events`, and `get_event` return measurements, labels, outcome, result, and parent/root references directly on each event result, including summary rows. Large legacy detail sections can still be omitted by the existing detail-size limit without hiding these native fields.
+
+Agents can use these generic tools for tests, benchmarks, jobs, or other event types:
+
+| Investigation | MCP call or query |
+| --- | --- |
+| Discover searchable fields and numeric sorts | `get_filter_fields`; telemetry prefixes are included in filter/sort metadata. |
+| Discover measurement names and exact units | `get_event_measurements(projectId, filter, last)`; discovery is scoped to the project, filter, and time range. |
+| Inspect a suite or run | `search_events(projectId, filter: "reference:suite-run-1234")`; use `parent_reference_id:suite-run-1234` for immediate children, or `(reference:build-run-1234 OR root_reference_id:build-run-1234)` for a whole run. Always keep references in the same project. |
+| Find failing or slow individual observations | `search_events(projectId, filter: "outcome:failure AND labels.branch:main", sort: "-measurement.duration@s")`. Use a measurement threshold such as `measurement.duration@s:>1` when appropriate. |
+| Follow one operation across executions | Use its `stackId` with `get_stack_events`, optionally filtering by outcome, result, labels, measurement, or time. `get_event` retrieves failure details for a returned event ID. |
+| Count outcomes or detailed results | `count_events(projectId, filter, groupBy: "outcome")`, or group by `result`, `labels.runtime`, `parent_reference_id`, or `root_reference_id`. Optional `interval` adds time buckets. |
+| Inspect duration, memory, or call-count trends | `get_event_chart(projectId, measurement: "duration", unit: "s", aggregation: "p95", groupBy: "source", filter, last: "7d")`. Use `allocated`/`By` or `sql.calls`/`{call}` with the same tool. |
+| Retrieve individual measurement points | Use `get_event_chart` with `mode: "events"`; points contain event IDs for `get_event`. |
+
+The new discovery/history tools require `events:read` and the same plan access as the chart API. They default to 24 hours when no time is supplied, accept `last` or absolute `startUtc`/`endUtc`, and apply project access, organization access, suspension, and retention. They expose structured errors for invalid measurement/unit/grouping combinations and time ranges. Native fields do not require custom-field configuration.
+
+An agent must honor pagination and truncation. Search returns cursor-paged summaries; follow `pagination.after` with the same filter, sort, time, and limit for a complete history. Chart series are selected by observation frequency, not metric value, and discovery is also bounded. A `truncated` response includes a warning to narrow the query or page through events. Count groups are bounded and may omit missing or less frequent values; their totals are not necessarily the whole population. A sorted event list ranks individual observations, not per-operation averages. Compare a selected operation's average/percentiles through `get_event_chart`, or retrieve its complete observations for further analysis.
+
+For flakiness investigations, compare both success and failure observations with the same operation identity, run/attempt identity, parameters, and environment. Exclude unknown/result-only observations from a success/failure denominator, distinguish retries from independent runs, and avoid adding suite totals to child observations. A failure count by itself is not a flakiness classification. No reporter-specific event types or dedicated test/benchmark MCP tools are required.
+
 ## Storage and rollout
 
 Elasticsearch uses a fixed `nested` mapping for `measurements` (`name` and `unit` keywords, `value` double), a `flattened` mapping for labels, and keyword mappings for outcome, result, and relationships. New names do not create new mappings. Each measurement does create an additional hidden nested document, so the per-event limit bounds storage and indexing overhead. Daily index creation includes these mappings; migration 10 adds them to retained partitions. It does not backfill historical custom data or move it into native fields. Deploy the mapping migration before enabling producers.

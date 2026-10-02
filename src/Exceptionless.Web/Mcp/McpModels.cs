@@ -55,7 +55,8 @@ public sealed record McpFilterFieldSet(
     IReadOnlyCollection<string> FilterFields,
     IReadOnlyCollection<string> SortFields,
     IReadOnlyCollection<string> DynamicFilterPrefixes,
-    string? Notes = null);
+    string? Notes = null,
+    IReadOnlyCollection<string>? DynamicSortPrefixes = null);
 
 public sealed record McpEventCountResult(
     long Events,
@@ -159,7 +160,13 @@ public sealed record McpEventResult(
     string? Source = null,
     string? Message = null,
     string? ReferenceId = null,
-    McpEventDetails? Details = null);
+    McpEventDetails? Details = null,
+    string? Outcome = null,
+    string? Result = null,
+    string? ParentReferenceId = null,
+    string? RootReferenceId = null,
+    IReadOnlyCollection<EventMeasurement>? Measurements = null,
+    IReadOnlyDictionary<string, string>? Labels = null);
 
 public sealed record McpEventDetails(
     bool IsTruncated = false,
