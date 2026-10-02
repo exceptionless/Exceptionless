@@ -33,18 +33,20 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     private readonly IOAuthTokenRepository _oauthTokenRepository;
     private readonly ICacheClient _cacheClient;
     private readonly AuthService _authService;
+    private readonly PasswordService _passwordService;
     private readonly IUserRepository _userRepository;
     private readonly OAuthService _oauthService;
     private readonly TimeProvider _timeProvider;
     private readonly AppOptions _appOptions;
 
-    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, ICacheClient cacheClient, AuthService authService, IUserRepository userRepository, OAuthService oauthService, AppOptions appOptions, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
+    public ApiKeyAuthenticationHandler(ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, ICacheClient cacheClient, AuthService authService, PasswordService passwordService, IUserRepository userRepository, OAuthService oauthService, AppOptions appOptions, IOptionsMonitor<ApiKeyAuthenticationOptions> options,
         TimeProvider timeProvider, ILoggerFactory logger, UrlEncoder encoder) : base(options, logger, encoder)
     {
         _tokenRepository = tokenRepository;
         _oauthTokenRepository = oauthTokenRepository;
         _cacheClient = cacheClient;
         _authService = authService;
+        _passwordService = passwordService;
         _userRepository = userRepository;
         _oauthService = oauthService;
         _appOptions = appOptions;
@@ -100,7 +102,8 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
                     return AuthenticateResult.Fail(ex);
                 }
 
-                if (user is not { IsActive: true } || !user.IsCorrectPassword(authInfo.Password))
+                user = user is null ? null : await _passwordService.AuthenticateAsync(user, authInfo.Password);
+                if (user is null)
                 {
                     await _authService.RecordLoginFailureAsync(loginAttempt);
                     return AuthenticateResult.Fail("User is not valid");
