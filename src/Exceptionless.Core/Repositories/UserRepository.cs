@@ -2,6 +2,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using User = Exceptionless.Core.Models.User;
@@ -17,6 +18,26 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
     {
         DefaultConsistency = Consistency.Immediate;
         AddRequiredField(u => u.EmailAddress, u => u.OrganizationIds);
+    }
+
+    public override Task SaveAsync(IEnumerable<User> documents, ICommandOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+        var users = documents.ToArray();
+        if (users.Any(user => String.IsNullOrWhiteSpace(user.Version)))
+            throw new VersionConflictDocumentException("Read the current user record before saving changes.");
+        return base.SaveAsync(users, options);
+    }
+
+    public override async Task<User?> GetByIdAsync(Id id, ICommandOptions? options = null)
+    {
+        var user = await base.GetByIdAsync(id, options);
+        if (user is null || !String.IsNullOrWhiteSpace(user.Version))
+            return user;
+
+        // Cached records written by previous hosts do not contain concurrency metadata.
+        await InvalidateCacheAsync(user);
+        return await base.GetByIdAsync(id, new CommandOptions<User>().Cache(false));
     }
 
     public async Task<User?> RecordProductTourAsync(User user, string stateKey, DateTime recordedUtc)
@@ -135,6 +156,11 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
 
         emailAddress = emailAddress.Trim().ToLowerInvariant();
         var hit = await FindOneAsync(q => q.FieldEquals(u => u.EmailAddress, emailAddress), o => o.Cache(EmailCacheKey(emailAddress)));
+        if (hit?.Document is { } user && String.IsNullOrWhiteSpace(user.Version))
+        {
+            await InvalidateCacheAsync(user);
+            hit = await FindOneAsync(q => q.FieldEquals(u => u.EmailAddress, emailAddress), o => o.Cache(false));
+        }
         return hit?.Document;
     }
 

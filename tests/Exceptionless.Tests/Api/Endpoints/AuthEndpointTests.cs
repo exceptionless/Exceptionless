@@ -22,6 +22,7 @@ using Exceptionless.Web.Security;
 using FluentRest;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Utility;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -1997,6 +1998,46 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.NotNull(user);
         Assert.False(String.IsNullOrEmpty(user.AuthenticationVersion));
         Assert.Equal(user.AuthenticationVersion, (await _tokenRepository.GetByIdAsync(changed.Token))!.AuthenticationVersion);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ChangePassword_StaleUserSave_CannotRestoreCredentials(bool readFromCache)
+    {
+        var login = await SendRequestAsAsync<TokenResult>(r => r.Post().AppendPath("auth/login")
+            .Content(new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = SampleDataService.TEST_USER_PASSWORD })
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(login);
+        var current = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(current);
+        var stale = readFromCache
+            ? await _userRepository.GetByEmailAddressAsync(current.EmailAddress)
+            : await _userRepository.GetByIdAsync(current.Id, o => o.Cache(false));
+        Assert.NotNull(stale);
+        Assert.False(String.IsNullOrEmpty(stale.Version));
+        var changed = await SendRequestAsAsync<TokenResult>(r => r.Post().AppendPath("auth/change-password")
+            .BearerToken(login.Token)
+            .Content(new ChangePasswordModel { CurrentPassword = SampleDataService.TEST_USER_PASSWORD, Password = "ChangedPassword2$" })
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(changed);
+        stale.FullName = "Stale profile update";
+        await Assert.ThrowsAsync<VersionConflictDocumentException>(() => _userRepository.SaveAsync(stale));
+        var stored = await _userRepository.GetByIdAsync(stale.Id, o => o.Cache(false));
+        Assert.NotNull(stored);
+        Assert.True(stored.IsCorrectPassword("ChangedPassword2$"));
+        Assert.False(stored.IsCorrectPassword(SampleDataService.TEST_USER_PASSWORD));
+        Assert.NotEqual(stale.AuthenticationVersion, stored.AuthenticationVersion);
+        await SendRequestAsync(r => r.BearerToken(changed.Token).AppendPath("users/me").StatusCodeShouldBeOk());
+    }
+
+    [Fact]
+    public async Task SaveUser_WithoutReadVersion_RejectsWrite()
+    {
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.Version = null!;
+        await Assert.ThrowsAsync<VersionConflictDocumentException>(() => _userRepository.SaveAsync(user));
     }
 
     [Fact]

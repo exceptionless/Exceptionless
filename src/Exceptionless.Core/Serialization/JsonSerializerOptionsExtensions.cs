@@ -35,6 +35,14 @@ public static class JsonSerializerOptionsExtensions
     public static JsonSerializerOptions ConfigureExceptionlessApiDefaults(this JsonSerializerOptions options)
     {
         ConfigureExceptionlessDefaults(options, skipEmptyCollections: false);
+        ((DefaultJsonTypeInfoResolver)options.TypeInfoResolver!).Modifiers.Add(typeInfo =>
+        {
+            if (typeInfo.Type != typeof(Models.User))
+                return;
+            var version = typeInfo.Properties.FirstOrDefault(property => property.Name == "version");
+            if (version is not null)
+                typeInfo.Properties.Remove(version);
+        });
         return options;
     }
 

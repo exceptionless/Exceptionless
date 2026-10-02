@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Serialization;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -15,5 +17,15 @@ public sealed class AuthenticationVersionSerializerTests(ITestOutputHelper outpu
         Assert.Null(serializer.Deserialize<OAuthToken>("{}")!.AuthenticationVersion);
         var user = new User { AuthenticationVersion = "current" };
         Assert.Equal("current", serializer.Deserialize<User>(serializer.SerializeToString(user))!.AuthenticationVersion);
+    }
+
+    [Fact]
+    public void UserVersion_CachePreservesMetadata_ApiOmitsMetadata()
+    {
+        var user = new User { Version = "1:42" };
+        var serializer = GetService<ITextSerializer>();
+        Assert.Equal(user.Version, serializer.Deserialize<User>(serializer.SerializeToString(user))!.Version);
+        string apiJson = JsonSerializer.Serialize(user, new JsonSerializerOptions().ConfigureExceptionlessApiDefaults());
+        Assert.DoesNotContain("\"version\"", apiJson);
     }
 }
