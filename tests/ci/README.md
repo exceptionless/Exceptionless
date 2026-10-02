@@ -11,6 +11,8 @@ The normal build targets a roughly **10-minute critical path**. Track elapsed wo
 - `test-api` and `test-e2e` remain the required checks. They depend on every shard, reject missing/duplicate/inconsistent results, and fail if any shard fails, is cancelled, or is skipped. `fail-fast: false` retains diagnostics from the other shards.
 - .NET and E2E backend coverage are merged from Microsoft native coverage data before generating line reports with ReportGenerator. `test-api` retains the .NET-only report; `test-e2e` validates both suites and publishes the combined backend headline. Browser blob reports are merged into one HTML/JSON/JUnit report. Per-shard native coverage, TRX, CTRF JSON, JUnit, failure traces/screenshots, and Aspire logs remain downloadable for 14 days.
 - E2E startup builds the Release AppHost and its referenced applications once. It does not build the full solution or the unused .NET test assembly.
+- API and E2E runners cache the pinned Aspire CLI using the runner OS/architecture and SDK version. Both restore to the same global-tool path so AppHost module identity checks remain valid. Cache misses install the pinned package.
+- `--ci-e2e` leaves the legacy Angular resource on explicit start; these journeys use Svelte, so its dependency installation, Grunt lint/watch server, and associated startup work are unnecessary. Ordinary development still starts both applications. All browser tests and API/Jobs processes remain enabled.
 - Browser shards use GitHub's Ubuntu 24.04 image (with its installed browser libraries) and install only Playwright's headless Chromium shell. This avoids unrelated apt upgrades and font downloads that added several minutes to individual runners. Browser versions still come from the locked Playwright package; all layout/locale tests remain enabled.
 - Backend fixtures request `--test-services`, starting only Elasticsearch. Their queues/cache are in memory and storage is scoped to local files. The general `--services-only` mode still starts all development services. This also prevents backend tests from replacing a live preview's shared Azurite container with different dynamic ports.
 - `--ci-e2e` uses temporary Redis and storage containers with allocated ports. This prevents concurrent local AppHosts from replacing shared containers or changing credentials/TLS configuration during a test run. Normal development retains its persistent containers and volumes.
@@ -123,13 +125,12 @@ The historical `api-coverage` Cobertura report counted 34,868 class/line entries
 
 ### Lifecycle and local commands
 
-Install both client lockfiles and the existing Playwright Chromium shell before running the wrapper. It starts its own AppHost, discovers and probes localhost endpoints, waits for healthy API and Jobs processes, runs the existing browser tests once, snapshots while the applications are alive, stops only this checkout's AppHost, and explicitly shuts down the collector. Each invocation needs a new output directory. Session IDs include run, attempt, shard, and a random suffix.
+Install the Svelte client lockfile and the existing Playwright Chromium shell before running the wrapper. It starts its own AppHost, discovers and probes localhost endpoints, waits for healthy API and Jobs processes, runs the existing browser tests once, snapshots while the applications are alive, stops only this checkout's AppHost, and explicitly shuts down the collector. Each invocation needs a new output directory. Session IDs include run, attempt, shard, and a random suffix.
 
 ```powershell
 npm ci --prefix tests/ci
 dotnet tool restore
 npm ci --prefix src/Exceptionless.Web/ClientApp
-npm ci --prefix src/Exceptionless.Web/ClientApp.angular
 
 # One existing ingestion journey, no browser retries:
 node tests/ci/e2e-backend-coverage.mjs --output "$env:TEMP/e2e-proof" --index 1 --count 1 -- e2e/tests/project-api-key-configuration.e2e.ts --retries=0

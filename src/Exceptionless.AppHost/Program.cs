@@ -216,7 +216,6 @@ if (!servicesOnly)
     var app = builder.AddViteApp("App", "../Exceptionless.Web/ClientApp")
         .WithBrowserLogs()
         .WithReference(api)
-        .WithReference(oldApp)
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_API_KEY", builder.Configuration["PUBLIC_EXCEPTIONLESS_API_KEY"])
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL", builder.Configuration["PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL"] ?? String.Empty)
@@ -242,8 +241,13 @@ if (!servicesOnly)
     {
         // CI/local test runners install the locked dependencies before startup.
         // A second npm install can rewrite the lockfile with a different npm version.
-        oldApp.WithNpm(install: false);
+        // These browser journeys exercise Svelte, so legacy startup is explicit.
+        oldApp.WithNpm(install: false).WithExplicitStart();
         app.WithNpm(install: false);
+    }
+    else
+    {
+        app.WithReference(oldApp);
     }
 
     if (worktreePorts is not null)

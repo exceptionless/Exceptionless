@@ -170,13 +170,22 @@ jobs:
 
       # AppHost embeds discovered CLI/bundle paths in its assembly metadata.
       # Match the browser runners so native coverage has identical module IDs.
+      - name: Cache Aspire CLI
+        uses: actions/cache@v6
+        id: cache-aspire
+        with:
+          path: ~/.dotnet/tools
+          key: aspire-cli-${{ runner.os }}-${{ runner.arch }}-13.6.0-sdk-10.0.401
+
       - name: Install Aspire CLI
         run: |
           export PATH="$HOME/.dotnet/tools:$PATH"
-          if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
-            dotnet tool update --global Aspire.Cli --version 13.6.0
-          else
-            dotnet tool install --global Aspire.Cli --version 13.6.0
+          if [ "${{ steps.cache-aspire.outputs.cache-hit }}" != "true" ]; then
+            if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
+              dotnet tool update --global Aspire.Cli --version 13.6.0
+            else
+              dotnet tool install --global Aspire.Cli --version 13.6.0
+            fi
           fi
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           aspire --version
@@ -356,13 +365,22 @@ jobs:
           dotnet-version: 10.0.401
           dotnet-quality: ga
 
+      - name: Cache Aspire CLI
+        uses: actions/cache@v6
+        id: cache-aspire
+        with:
+          path: ~/.dotnet/tools
+          key: aspire-cli-${{ runner.os }}-${{ runner.arch }}-13.6.0-sdk-10.0.401
+
       - name: Install Aspire CLI
         run: |
           export PATH="$HOME/.dotnet/tools:$PATH"
-          if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
-            dotnet tool update --global Aspire.Cli --version 13.6.0
-          else
-            dotnet tool install --global Aspire.Cli --version 13.6.0
+          if [ "${{ steps.cache-aspire.outputs.cache-hit }}" != "true" ]; then
+            if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
+              dotnet tool update --global Aspire.Cli --version 13.6.0
+            else
+              dotnet tool install --global Aspire.Cli --version 13.6.0
+            fi
           fi
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           aspire --version
@@ -374,7 +392,6 @@ jobs:
           cache: npm
           cache-dependency-path: |
             src/Exceptionless.Web/ClientApp/package-lock.json
-            src/Exceptionless.Web/ClientApp.angular/package-lock.json
 
       - uses: actions/cache@v6
         with:
@@ -393,10 +410,6 @@ jobs:
       - name: Install Client Npm Packages
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         working-directory: src/Exceptionless.Web/ClientApp
-        run: npm ci
-
-      - name: Install Legacy Client Npm Packages
-        working-directory: src/Exceptionless.Web/ClientApp.angular
         run: npm ci
 
       - name: Install Playwright Chromium

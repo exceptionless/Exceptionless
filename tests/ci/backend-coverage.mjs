@@ -217,7 +217,7 @@ async function loadShards(directory, kind, count, expected) {
         if (hash(readFileSync(file)) !== manifest.sha256) throw new Error(`Coverage artifact checksum mismatch: ${file}`);
         return { manifest, file, report: undefined };
     });
-    // Bound collector processes on the two-core hosted runners. Re-convert every
+    // Bound collector processes to limit CPU and memory contention. Re-convert every
     // checked native input; parallelism never replaces source or union validation.
     for (let offset = 0; offset < shards.length; offset += 2) {
         const results = await Promise.allSettled(
