@@ -21,6 +21,7 @@ Content-Type: application/json
 
 ### Password authentication shares the login attempt window
 # Password changes replace the current user session; use the returned token afterward.
+# Password sign-in checks the current stored credentials, account status, and email.
 GET {{apiUrl}}/users/me
 Authorization: Basic {{email}}:{{password}}
 
