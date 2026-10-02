@@ -505,7 +505,8 @@ jobs:
           retention-days: 14
 
   test-e2e:
-    needs: [test-e2e-shard, test-api, test-client]
+    # Consume the raw shards directly so the two report jobs can run together.
+    needs: [test-e2e-shard, test-api-shard, test-client]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -592,10 +593,14 @@ jobs:
 
       - name: Require complete successful backend, frontend and browser suites
         env:
-          API_RESULT: ${{ needs.test-api.result }}
+          API_RESULT: ${{ needs.test-api-shard.result }}
           BROWSER_RESULT: ${{ needs.test-e2e-shard.result }}
           CLIENT_RESULT: ${{ needs.test-client.result }}
         run: test "$API_RESULT" = success && test "$BROWSER_RESULT" = success && test "$CLIENT_RESULT" = success
+
+      - name: Verify complete .NET shard results
+        working-directory: .
+        run: node tests/ci/backend-shards.mjs report coverage-shards/api --count 4 --coverage
 
       - name: Merge backend and frontend coverage
         working-directory: .
@@ -645,7 +650,7 @@ jobs:
         if: ${{ always() }}
         env:
           SHARD_RESULT: ${{ needs.test-e2e-shard.result }}
-          API_RESULT: ${{ needs.test-api.result }}
+          API_RESULT: ${{ needs.test-api-shard.result }}
         run: test "$SHARD_RESULT" = success && test "$API_RESULT" = success
 
   docker-build:

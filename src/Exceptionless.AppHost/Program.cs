@@ -229,7 +229,6 @@ if (!servicesOnly)
             e.IsProxied = false;
         })
         .WithHttpsDeveloperCertificate()
-        .WaitFor(api)
         .WithUrlForEndpoint("http", u =>
         {
             u.DisplayText = "Open App";
@@ -243,11 +242,13 @@ if (!servicesOnly)
         // A second npm install can rewrite the lockfile with a different npm version.
         // These browser journeys exercise Svelte, so legacy startup is explicit.
         oldApp.WithNpm(install: false).WithExplicitStart();
+        // Compile instrumented routes while the backend starts. The E2E runner
+        // waits for healthy API/Jobs and probes the frontend before running tests.
         app.WithNpm(install: false);
     }
     else
     {
-        app.WithReference(oldApp);
+        app.WithReference(oldApp).WaitFor(api);
     }
 
     if (worktreePorts is not null)
