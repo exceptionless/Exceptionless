@@ -15,6 +15,8 @@ public sealed class EventTelemetryEndpointTests(ITestOutputHelper output, AppWeb
 {
     protected override async Task ResetDataAsync()
     {
+        // Keep observations in one daily partition when tests run near UTC midnight.
+        TimeProvider.SetUtcNow(TimeProvider.GetUtcNow().UtcDateTime.Date.AddHours(12));
         await base.ResetDataAsync();
         await GetService<SampleDataService>().CreateDataAsync();
     }

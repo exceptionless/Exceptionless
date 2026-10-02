@@ -14,13 +14,16 @@ export const eventChartSchema = EventChartSchema.superRefine((chart, context) =>
 export type MeasurementPoint = Omit<EventChartPoint, 'date'> & { date: Date };
 
 export function chartSeries(result: EventChartResult | undefined) {
-    return (result?.series ?? []).map((series, index) => ({
-        color: `var(--chart-${(index % 5) + 1})`,
-        data: series.points.map((point) => ({ ...point, date: new Date(point.date) })),
-        key: `series${index}`,
-        label: series.name,
-        value: 'value'
-    }));
+    return (result?.series ?? []).map((series, index) => {
+        const key = `series${index}`;
+        return {
+            color: `var(--chart-${(index % 5) + 1})`,
+            data: series.points.map((point) => ({ ...point, date: new Date(point.date), [key]: point.value })),
+            key,
+            label: series.name,
+            value: key
+        };
+    });
 }
 
 export function chartSignature(chart: EventChart | null | undefined): string {

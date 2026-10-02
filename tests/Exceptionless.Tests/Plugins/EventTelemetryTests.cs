@@ -76,6 +76,7 @@ public sealed class EventTelemetryTests(ITestOutputHelper output) : TestWithServ
     [InlineData("\"measurements\":{\"old\":1}", "measurements")]
     [InlineData("\"measurements\":[{\"old\":1}]", "measurements")]
     [InlineData("\"dimensions\":{\"numeric\":4.90}", "dimensions")]
+    [InlineData("\"dimensions\":{\"legacy\":null}", "dimensions")]
     [InlineData("\"outcome\":{\"old\":true}", "outcome")]
     [InlineData("\"parent_reference_id\":\"legacy\"", "parent_reference_id")]
     public void ParseEvents_LegacyRootValues_PreservesDataAndBatch(string property, string key)

@@ -32,10 +32,10 @@
         }
     };
     const unit = $derived(measurementUnit(chart));
-    function selectAt(date: unknown, key: string) {
+    function selectAt(date: unknown, key: string, value: unknown) {
         const selectedSeries = series.find((s) => s.key === key);
         const timestamp = date instanceof Date ? date.getTime() : Number(date);
-        const point = selectedSeries?.data.find((point) => point.date.getTime() === timestamp);
+        const point = selectedSeries?.data.find((point) => point.date.getTime() === timestamp && point.value === value);
         if (point && point.value != null) {
             onSelect(point, selectedSeries!.label);
         }
@@ -54,11 +54,25 @@
     {:else}
         <Chart.Container {config} class="h-64 w-full">
             {#if chart.display === 'bar'}
-                <BarChart {data} x="date" {series} legend seriesLayout="group" onBarClick={(_, details) => selectAt(details.data.date, details.series.key)}>
+                <BarChart
+                    {data}
+                    x="date"
+                    {series}
+                    legend
+                    seriesLayout="group"
+                    onBarClick={(_, details) => selectAt(details.data.date, details.series.key, details.data.value)}
+                >
                     {#snippet tooltip()}{@render chartTooltip()}{/snippet}
                 </BarChart>
             {:else}
-                <LineChart {data} x="date" xScale={scaleUtc()} {series} legend onPointClick={(_, details) => selectAt(details.data.x, details.series.key)}>
+                <LineChart
+                    {data}
+                    x="date"
+                    xScale={scaleUtc()}
+                    {series}
+                    legend
+                    onPointClick={(_, details) => selectAt(details.data.x, details.series.key, details.data.y)}
+                >
                     {#snippet marks({ context })}
                         {#each context.series.visibleSeries as item (item.key)}
                             <Spline seriesKey={item.key} {...chartProps.spline} />

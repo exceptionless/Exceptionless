@@ -43,7 +43,7 @@ internal static partial class EventTelemetryReader
                 case "measurements" when value.ValueKind == JsonValueKind.Array && value.EnumerateArray().All(IsMeasurement):
                     ev.Measurements = value.Deserialize<List<EventMeasurement>>(_options);
                     return true;
-                case "dimensions" when value.ValueKind == JsonValueKind.Object:
+                case "dimensions" when value.ValueKind == JsonValueKind.Object && value.EnumerateObject().All(property => property.Value.ValueKind == JsonValueKind.String):
                     ev.Dimensions = value.Deserialize<Dictionary<string, string>>(_options);
                     return true;
             }
