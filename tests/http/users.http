@@ -23,6 +23,7 @@ Content-Type: application/json
 # Requests wait up to ten seconds when password checks are underway; completed failures retain their limit.
 # Password changes replace the current user session; use the returned token afterward.
 # Password sign-in checks the current stored credentials, account status, and email.
+# User session and access-token authentication checks current token state after logout or revocation.
 GET {{apiUrl}}/users/me
 Authorization: Basic {{email}}:{{password}}
 

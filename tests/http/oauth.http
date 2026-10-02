@@ -2,6 +2,7 @@
 # Copy code from the authorization response's redirect_uri into authorizationCode. Each code can be exchanged once.
 @rootUrl = http://localhost:7110
 @apiUrl = {{rootUrl}}/api/v2
+# Bearer authentication checks current OAuth token and application state after revocation or disablement.
 @email = admin@exceptionless.test
 @password = tester
 @organizationId = 537650f3b77efe23a47914f3
