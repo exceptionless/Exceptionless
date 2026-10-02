@@ -11,7 +11,7 @@ internal static partial class EventTelemetryReader
     private static readonly JsonSerializerOptions _options = new() { PropertyNameCaseInsensitive = true };
     private static readonly HashSet<string> _fields = new(StringComparer.OrdinalIgnoreCase)
     {
-        "outcome", "parent_reference_id", "root_reference_id", "measurements", "dimensions"
+        "outcome", "result", "parent_reference_id", "root_reference_id", "measurements", "labels"
     };
 
     // Only the inbound parser uses this modifier. Native models retain their typed API and storage contracts.
@@ -31,8 +31,11 @@ internal static partial class EventTelemetryReader
         {
             switch (name.Replace("_", "").ToLowerInvariant())
             {
-                case "outcome" when value.ValueKind == JsonValueKind.String:
+                case "outcome" when value.ValueKind == JsonValueKind.String && value.GetString() is Event.KnownOutcomes.Success or Event.KnownOutcomes.Failure or Event.KnownOutcomes.Unknown:
                     ev.Outcome = value.GetString();
+                    return true;
+                case "result" when value.ValueKind == JsonValueKind.String:
+                    ev.Result = value.GetString();
                     return true;
                 case "parentreferenceid" when value.ValueKind == JsonValueKind.String && IsReference(value.GetString()):
                     ev.ParentReferenceId = value.GetString();
@@ -43,8 +46,8 @@ internal static partial class EventTelemetryReader
                 case "measurements" when value.ValueKind == JsonValueKind.Array && value.EnumerateArray().All(IsMeasurement):
                     ev.Measurements = value.Deserialize<List<EventMeasurement>>(_options);
                     return true;
-                case "dimensions" when value.ValueKind == JsonValueKind.Object && value.EnumerateObject().All(property => property.Value.ValueKind == JsonValueKind.String):
-                    ev.Dimensions = value.Deserialize<Dictionary<string, string>>(_options);
+                case "labels" when value.ValueKind == JsonValueKind.Object && value.EnumerateObject().All(property => property.Value.ValueKind == JsonValueKind.String):
+                    ev.Labels = value.Deserialize<Dictionary<string, string>>(_options);
                     return true;
             }
         }

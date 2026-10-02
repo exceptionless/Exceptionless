@@ -14,7 +14,7 @@ public sealed record EventChart : IValidatableObject
     [Required, RegularExpression("^(avg|min|max|sum|p50|p95|p99|count)$")]
     public string Aggregation { get; set; } = "avg";
 
-    [RegularExpression("^(source|stack|outcome|dimensions\\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$")]
+    [RegularExpression("^(source|stack|outcome|result|labels\\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$")]
     public string? GroupBy { get; set; }
 
     [Required, RegularExpression("^(buckets|events)$")]

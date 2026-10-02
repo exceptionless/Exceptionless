@@ -227,7 +227,7 @@ export const EventChartSchema = object({
   group_by: string()
     .min(1, "Group by is required")
     .regex(
-      /^(source|stack|outcome|dimensions\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$/,
+      /^(source|stack|outcome|result|labels\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$/,
       "Group by has invalid format",
     )
     .nullable()
@@ -704,6 +704,12 @@ export const PersistentEventSchema = object({
   outcome: string()
     .min(1, "Outcome is required")
     .max(100, "Outcome must be at most 100 characters")
+    .regex(/^(success|failure|unknown)$/, "Outcome has invalid format")
+    .nullable()
+    .optional(),
+  result: string()
+    .min(1, "Result is required")
+    .max(100, "Result must be at most 100 characters")
     .nullable()
     .optional(),
   parent_reference_id: string()
@@ -717,7 +723,7 @@ export const PersistentEventSchema = object({
   measurements: array(lazy(() => EventMeasurementSchema))
     .nullable()
     .optional(),
-  dimensions: record(string(), string()).nullable().optional(),
+  labels: record(string(), string()).nullable().optional(),
   data: record(string(), unknown()).nullable().optional(),
   reference_id: string()
     .min(1, "Reference id is required")

@@ -38,6 +38,7 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
 
     private static readonly HashSet<string> _allowedAggregationFields = new(StringComparer.OrdinalIgnoreCase) {
             "outcome",
+            "result",
             "parent_reference_id",
             "root_reference_id",
             "date",
@@ -123,7 +124,7 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
         // Only allow fields that are numeric or have high commonality.
         if (!result.ReferencedFields.All(field => _allowedAggregationFields.Contains(field)
             || MeasurementField.TryParse(field, out _, out _)
-            || field.StartsWith("dimensions.", StringComparison.Ordinal)))
+            || field.StartsWith("labels.", StringComparison.Ordinal)))
             return new QueryProcessResult { Message = "One or more aggregation fields are not allowed" };
 
         // Distinct queries are expensive.

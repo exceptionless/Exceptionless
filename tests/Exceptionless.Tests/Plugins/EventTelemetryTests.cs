@@ -34,26 +34,31 @@ public sealed class EventTelemetryTests(ITestOutputHelper output) : TestWithServ
         {
             ReferenceId = "event-0001",
             ParentReferenceId = "event-0001",
+            Result = new string('x', 101),
             Measurements = [new() { Name = "duration", Value = 1, Unit = "s" }, new() { Name = "duration", Value = 2, Unit = "ms" }, null!],
-            Dimensions = new() { ["invalid name"] = "value" }
+            Labels = new() { ["invalid name"] = "value" }
         };
 
         var errors = EventTelemetryValidation.GetErrors(ev);
 
         Assert.Contains(nameof(Event.ParentReferenceId), errors.Keys);
         Assert.Contains(nameof(Event.Measurements), errors.Keys);
-        Assert.Contains(nameof(Event.Dimensions), errors.Keys);
+        Assert.Contains(nameof(Event.Labels), errors.Keys);
+        Assert.Contains(nameof(Event.Result), errors.Keys);
     }
 
-    [Fact]
-    public void ParseEvents_NativeTelemetry_RoundTripsWithoutUsingData()
+    [Theory]
+    [InlineData("success")]
+    [InlineData("failure")]
+    [InlineData("unknown")]
+    public void ParseEvents_NativeTelemetry_RoundTripsWithoutUsingData(string outcome)
     {
         var parser = GetService<EventParserPluginManager>();
         var serializer = GetService<ITextSerializer>();
-        const string json = """
+        string json = $$$"""
             {"type":"operation","reference_id":"child-001","parent_reference_id":"suite-001","root_reference_id":"build-001",
-             "outcome":"success","measurements":[{"name":"duration","value":0,"unit":"ms"},{"name":"allocated","value":128.5,"unit":"By"}],
-             "dimensions":{"version":"4.90","size":"00123","runtime":"net10"},"value":42,"data":{"@ref:session":"session-001"}}
+             "outcome":"{{{outcome}}}","result":"completed","measurements":[{"name":"duration","value":0,"unit":"s"},{"name":"allocated","value":128.5,"unit":"By"},{"name":"sql.calls","value":4,"unit":"{call}"}],
+             "labels":{"version":"4.90","size":"00123","runtime":"net10"},"value":42,"data":{"@ref:session":"session-001"}}
             """;
 
         var ev = Assert.Single(parser.ParseEvents(json, 2, null));
@@ -61,23 +66,49 @@ public sealed class EventTelemetryTests(ITestOutputHelper output) : TestWithServ
 
         Assert.Equal("suite-001", copy.ParentReferenceId);
         Assert.Equal("build-001", copy.RootReferenceId);
-        Assert.Equal("success", copy.Outcome);
+        Assert.Equal(outcome, copy.Outcome);
+        Assert.Equal("completed", copy.Result);
         Assert.Equal(0, copy.Measurements![0].Value);
         Assert.Equal(128.5, copy.Measurements[1].Value);
-        Assert.Equal("4.90", copy.Dimensions!["version"]);
-        Assert.Equal("00123", copy.Dimensions["size"]);
+        Assert.Equal("{call}", copy.Measurements[2].Unit);
+        Assert.Equal("4.90", copy.Labels!["version"]);
+        Assert.Equal("00123", copy.Labels["size"]);
         Assert.Equal(42, copy.Value);
         Assert.Equal("session-001", copy.Data!["@ref:session"]);
         Assert.False(copy.Data.ContainsKey("measurements"));
+        Assert.False(copy.Data.ContainsKey("labels"));
+        Assert.False(copy.Data.ContainsKey("outcome"));
+        Assert.False(copy.Data.ContainsKey("result"));
+        Assert.Empty(EventTelemetryValidation.GetErrors(copy));
+    }
+
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("success", true)]
+    [InlineData("failure", true)]
+    [InlineData("unknown", true)]
+    [InlineData("skipped", false)]
+    [InlineData("cancelled", false)]
+    [InlineData("SUCCESS", false)]
+    [InlineData("", false)]
+    public void Validate_NativeOutcome_UsesCanonicalValues(string? outcome, bool valid)
+    {
+        var errors = EventTelemetryValidation.GetErrors(new Event { Outcome = outcome });
+
+        Assert.Equal(valid, !errors.ContainsKey(nameof(Event.Outcome)));
     }
 
     [Theory]
     [InlineData("\"measurements\":\"legacy\"", "measurements")]
     [InlineData("\"measurements\":{\"old\":1}", "measurements")]
     [InlineData("\"measurements\":[{\"old\":1}]", "measurements")]
-    [InlineData("\"dimensions\":{\"numeric\":4.90}", "dimensions")]
-    [InlineData("\"dimensions\":{\"legacy\":null}", "dimensions")]
+    [InlineData("\"labels\":{\"numeric\":4.90}", "labels")]
+    [InlineData("\"labels\":{\"legacy\":null}", "labels")]
     [InlineData("\"outcome\":{\"old\":true}", "outcome")]
+    [InlineData("\"outcome\":\"skipped\"", "outcome")]
+    [InlineData("\"outcome\":\"SUCCESS\"", "outcome")]
+    [InlineData("\"result\":{\"old\":true}", "result")]
+    [InlineData("\"dimensions\":{\"branch\":\"main\"}", "dimensions")]
     [InlineData("\"parent_reference_id\":\"legacy\"", "parent_reference_id")]
     public void ParseEvents_LegacyRootValues_PreservesDataAndBatch(string property, string key)
     {
@@ -89,6 +120,10 @@ public sealed class EventTelemetryTests(ITestOutputHelper output) : TestWithServ
         Assert.True(events[0].Data!.ContainsKey(key));
         Assert.True(events[0].Data!.ContainsKey("existing"));
         Assert.Equal("second", events[1].Message);
+        Assert.Null(events[0].Outcome);
+        Assert.Null(events[0].Result);
+        Assert.Null(events[0].Labels);
+        Assert.Empty(EventTelemetryValidation.GetErrors(events[0]));
     }
 
     [Theory]
@@ -116,6 +151,9 @@ public sealed class EventTelemetryTests(ITestOutputHelper output) : TestWithServ
         Assert.NotEqual(first, second);
         second.Outcome = "success";
         Assert.Equal(first, second);
+        second.Result = "completed";
+        Assert.NotEqual(first, second);
+        second.Result = null;
         second.Measurements[0].Value = 1;
         Assert.NotEqual(first, second);
     }

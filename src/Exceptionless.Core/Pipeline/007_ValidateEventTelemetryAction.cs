@@ -10,7 +10,7 @@ public sealed class ValidateEventTelemetryAction(AppOptions options, ILoggerFact
 {
     public override Task ProcessAsync(EventContext ctx)
     {
-        if (ctx.Event is { Outcome: null, ParentReferenceId: null, RootReferenceId: null, Measurements: null, Dimensions: null })
+        if (ctx.Event is { Outcome: null, Result: null, ParentReferenceId: null, RootReferenceId: null, Measurements: null, Labels: null })
             return Task.CompletedTask;
 
         var errors = EventTelemetryValidation.GetErrors(ctx.Event);

@@ -18,14 +18,14 @@ describe('event chart settings', () => {
         await screen.findByText('Select a measurement and its unit together.');
         expect(onApply).not.toHaveBeenCalled();
         await fireEvent.input(screen.getByLabelText('Unit'), { target: { value: 'ms' } });
-        await fireEvent.input(screen.getByLabelText('Split by'), { target: { value: 'dimensions.branch' } });
+        await fireEvent.input(screen.getByLabelText('Split by'), { target: { value: 'labels.branch' } });
         await fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
 
         await waitFor(() =>
             expect(onApply).toHaveBeenCalledWith({
                 aggregation: 'avg',
                 display: 'line',
-                group_by: 'dimensions.branch',
+                group_by: 'labels.branch',
                 measurement: 'duration',
                 mode: 'buckets',
                 unit: 'ms'

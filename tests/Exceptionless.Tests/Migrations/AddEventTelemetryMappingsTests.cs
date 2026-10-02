@@ -37,13 +37,15 @@ public sealed class AddEventTelemetryMappingsTests(ITestOutputHelper output, App
             var properties = Assert.Single(mapping.Mappings).Value.Mappings.Properties!;
             var measurements = Assert.IsType<NestedProperty>(properties["measurements"]);
             Assert.IsType<DoubleNumberProperty>(measurements.Properties!["value"]);
-            Assert.IsType<FlattenedProperty>(properties["dimensions"]);
+            Assert.IsType<FlattenedProperty>(properties["labels"]);
+            Assert.IsType<KeywordProperty>(properties["outcome"]);
+            Assert.IsType<KeywordProperty>(properties["result"]);
             Assert.IsType<KeywordProperty>(properties["parent_reference_id"]);
             var retained = await client.GetAsync<JsonElement>("legacy", d => d.Index(index), TestCancellationToken);
             Assert.Equal("retained event", retained.Source.GetProperty("message").GetString());
             Assert.Equal("legacy", retained.Source.GetProperty("data").GetProperty("measurements").GetString());
 
-            var observation = JsonDocument.Parse("""{"measurements":[{"name":"duration","value":0,"unit":"ms"}],"dimensions":{"version":"4.90"}}""").RootElement;
+            var observation = JsonDocument.Parse("""{"measurements":[{"name":"duration","value":0,"unit":"ms"}],"labels":{"version":"4.90"}}""").RootElement;
             indexed = await client.IndexAsync(observation, d => d.Index(index).Id("native").Refresh(Refresh.WaitFor), TestCancellationToken);
             Assert.True(indexed.IsValidResponse, indexed.DebugInformation);
             var found = await client.SearchAsync<JsonElement>(d => d.Indices(index).Query(q => q.Nested(n => n

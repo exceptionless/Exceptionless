@@ -40,6 +40,9 @@ describe('event charts', () => {
         expect(eventChartSchema.safeParse({ ...chart, unit: null }).success).toBe(false);
         expect(eventChartSchema.safeParse({ ...chart, aggregation: 'count', measurement: null, unit: null }).success).toBe(true);
         expect(eventChartSchema.safeParse({ ...chart, aggregation: 'count', measurement: null, mode: 'events', unit: null }).success).toBe(false);
+        expect(eventChartSchema.safeParse({ ...chart, group_by: 'labels.branch', unit: '{call}' }).success).toBe(true);
+        expect(eventChartSchema.safeParse({ ...chart, group_by: 'result' }).success).toBe(true);
+        expect(eventChartSchema.safeParse({ ...chart, group_by: 'dimensions.branch' }).success).toBe(false);
     });
 
     it('formats counts independently of the measured unit', () => {

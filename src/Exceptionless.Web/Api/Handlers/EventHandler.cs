@@ -783,7 +783,8 @@ public class EventHandler(
         "source" => ev.Source ?? "(missing)",
         "stack" => ev.StackId,
         "outcome" => ev.Outcome ?? "(missing)",
-        _ => ev.Dimensions?.GetValueOrDefault(groupBy["dimensions.".Length..]) ?? "(missing)"
+        "result" => ev.Result ?? "(missing)",
+        _ => ev.Labels?.GetValueOrDefault(groupBy["labels.".Length..]) ?? "(missing)"
     };
 
     private static SingleBucketAggregate? GetBucket(IReadOnlyDictionary<string, IAggregate> aggregations, string name)

@@ -24,6 +24,8 @@ public class CheckForRegressionAction : EventPipelineActionBase
     {
         var stacks = contexts
             .Where(c => c.Stack is { Status: StackStatus.Fixed, DateFixed: not null })
+            // Explicit failures can regress. Events without outcome/result retain legacy behavior.
+            .Where(c => c.Event.Outcome == Event.KnownOutcomes.Failure || c.Event is { Outcome: null, Result: null })
             .OrderBy(c => c.Event.Date)
             .GroupBy(c => c.Event.StackId);
 
@@ -53,7 +55,7 @@ public class CheckForRegressionAction : EventPipelineActionBase
                         var version = _semanticVersionParser.Parse(versionGroup.Key, versionCache) ?? _semanticVersionParser.Default;
                         if (version < fixedInVersion)
                         {
-                            foreach (var ctx in stackGroup.Where(s => s.Organization.HasPremiumFeatures))
+                            foreach (var ctx in versionGroup.Where(s => s.Organization.HasPremiumFeatures))
                             {
                                 _logger.LogDebug("Discarding fixed stack event: Version {Version} is older than fixed in version {FixedInVersion}", version, fixedInVersion);
                                 ctx.IsDiscarded = true;

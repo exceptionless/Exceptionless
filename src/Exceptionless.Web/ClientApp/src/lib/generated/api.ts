@@ -169,7 +169,7 @@ export interface EventChart {
   unit?: null | string;
   /** @pattern ^(avg|min|max|sum|p50|p95|p99|count)$ */
   aggregation: string;
-  /** @pattern ^(source|stack|outcome|dimensions\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$ */
+  /** @pattern ^(source|stack|outcome|result|labels\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$ */
   group_by?: null | string;
   /** @pattern ^(buckets|events)$ */
   mode: string;
@@ -215,7 +215,7 @@ export interface EventMeasurement {
   name: string;
   /** @format double */
   value?: null | number;
-  /** Case-sensitive unit, for example s, ms, By, or 1 for a dimensionless value. */
+  /** Case-sensitive unit. Prefer UCUM/OTel symbols: s for duration, By for bytes, {call} for counts, or 1 for dimensionless values. */
   unit: string;
 }
 
@@ -540,8 +540,13 @@ export interface PersistentEvent {
    * @format int32
    */
   count?: null | number;
-  /** The result of this operation, independent of the event type. */
+  /**
+   * The ECS-aligned outcome: success, failure, or unknown. Omit when not applicable.
+   * @pattern ^(success|failure|unknown)$
+   */
   outcome?: null | string;
+  /** An optional detailed result, such as skipped, cancelled, or timed_out. Does not imply an outcome. */
+  result?: null | string;
   /** Reference of the immediate parent event in the same project. */
   parent_reference_id?: null | string;
   /** Reference of the root event in the same project. Supplied by the producer. */
@@ -549,7 +554,7 @@ export interface PersistentEvent {
   /** Up to 32 uniquely named numeric observations. Missing values are not zero. */
   measurements?: EventMeasurement[] | null;
   /** Up to 32 categorical labels, indexed as exact strings without type inference. */
-  dimensions?: null | Record<string, string>;
+  labels?: null | Record<string, string>;
   /** Optional data entries that contain additional information about this event. */
   data?: null | Record<string, unknown>;
   /** An optional identifier to be used for referencing this event instance at a later time. */

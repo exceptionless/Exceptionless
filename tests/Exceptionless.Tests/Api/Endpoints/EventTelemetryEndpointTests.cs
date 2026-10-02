@@ -35,14 +35,18 @@ public sealed class EventTelemetryEndpointTests(ITestOutputHelper output, AppWeb
         observations[0].Measurements = [new() { Name = "duration", Unit = "ms", Value = 0 }, new() { Name = "allocated", Unit = "By", Value = 999 }];
         observations[1].Measurements = [new() { Name = "duration", Unit = "ms", Value = 20 }, new() { Name = "allocated", Unit = "By", Value = 999 }];
         observations[2].Measurements = [new() { Name = "duration", Unit = "s", Value = 900 }];
+        observations[0].Outcome = Event.KnownOutcomes.Success;
+        observations[0].Result = "completed";
+        observations[1].Outcome = Event.KnownOutcomes.Failure;
+        observations[1].Result = "timed_out";
         foreach (var ev in events)
         {
-            ev.Dimensions = new() { ["version"] = "4.90", ["size"] = "00123" };
+            ev.Labels = new() { ["version"] = "4.90", ["size"] = "00123" };
             ev.Date = TimeProvider.GetUtcNow().AddMinutes(-1);
         }
         events.Single(e => e.OrganizationId != SampleDataService.TEST_ORG_ID).Measurements = [new() { Name = "duration", Unit = "ms", Value = 9999 }];
         await GetService<IEventRepository>().SaveAsync(events, o => o.ImmediateConsistency());
-        var request = new EventChartRequest { Chart = new() { Measurement = "duration", Unit = "ms", GroupBy = "dimensions.version" }, Filter = "dimensions.size:00123" };
+        var request = new EventChartRequest { Chart = new() { Measurement = "duration", Unit = "ms", GroupBy = "labels.version" }, Filter = "labels.size:00123" };
 
         var result = await ChartAsync(request);
 
@@ -56,7 +60,7 @@ public sealed class EventTelemetryEndpointTests(ITestOutputHelper output, AppWeb
         result = await ChartAsync(request);
         Assert.Equal(1, result.Total);
         Assert.Equal(20, Assert.Single(Assert.Single(result.Series).Points).Value);
-        request.Filter = "dimensions.size:00123";
+        request.Filter = "labels.size:00123";
 
         var sorted = await SendRequestAsAsync<List<PersistentEvent>>(r => r.AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "events")
@@ -80,10 +84,25 @@ public sealed class EventTelemetryEndpointTests(ITestOutputHelper output, AppWeb
         Assert.Contains(new EventMeasurementDescriptor("duration", "ms"), catalog!.Measurements);
         Assert.Contains(new EventMeasurementDescriptor("duration", "s"), catalog.Measurements);
         Assert.Contains(new EventMeasurementDescriptor("allocated", "By"), catalog.Measurements);
+
+        request.Chart.GroupBy = "result";
+        request.Filter = "outcome:failure AND result:timed_out";
+        result = await ChartAsync(request);
+        series = Assert.Single(result.Series);
+        Assert.Equal("timed_out", series.Name);
+        Assert.Equal(observations[1].Id, Assert.Single(series.Points).EventId);
+
+        request.Chart.Mode = "buckets";
+        result = await ChartAsync(request);
+        series = Assert.Single(result.Series);
+        Assert.Equal("timed_out", series.Name);
+        Assert.Equal(20, Assert.Single(series.Points).Value);
     }
 
-    [Fact]
-    public async Task Chart_ComplexUnit_UsesTheSameScopeAsDrilldown()
+    [Theory]
+    [InlineData("items/s @core")]
+    [InlineData("{request}/s")]
+    public async Task Chart_ComplexUnit_UsesTheSameScopeAsDrilldown(string unit)
     {
         var (_, events) = await CreateDataAsync(d =>
         {
@@ -91,15 +110,15 @@ public sealed class EventTelemetryEndpointTests(ITestOutputHelper output, AppWeb
             d.Event().TestProject().Source("throughput");
         });
         var ev = events[0];
-        ev.Measurements = [new() { Name = "rate", Unit = "items/s @core", Value = 10 }];
-        events[1].Measurements = [new() { Name = "rate", Unit = "1", Value = 20 }, new() { Name = "other", Unit = "items/s @core", Value = 30 }];
+        ev.Measurements = [new() { Name = "rate", Unit = unit, Value = 10 }];
+        events[1].Measurements = [new() { Name = "rate", Unit = "1", Value = 20 }, new() { Name = "other", Unit = unit, Value = 30 }];
         await GetService<IEventRepository>().SaveAsync(events, o => o.ImmediateConsistency());
-        var request = new EventChartRequest { Chart = new() { Measurement = "rate", Unit = "items/s @core" } };
+        var request = new EventChartRequest { Chart = new() { Measurement = "rate", Unit = unit } };
 
         var result = await ChartAsync(request);
         var drilled = await SendRequestAsAsync<List<PersistentEvent>>(r => r.AsTestOrganizationUser()
             .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "events")
-            .QueryString("filter", "measurements:(measurements.name:\"rate\" AND measurements.unit:\"items/s @core\")")
+            .QueryString("filter", $"measurements:(measurements.name:\"rate\" AND measurements.unit:\"{unit}\")")
             .StatusCodeShouldBeOk());
 
         Assert.Equal(1, result.Total);

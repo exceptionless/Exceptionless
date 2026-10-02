@@ -12403,7 +12403,7 @@
             "type": "string"
           },
           "group_by": {
-            "pattern": "^(source|stack|outcome|dimensions\\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$",
+            "pattern": "^(source|stack|outcome|result|labels\\.[a-zA-Z][a-zA-Z0-9_.-]{0,99})$",
             "type": [
               "null",
               "string"
@@ -12554,7 +12554,7 @@
             "maxLength": 32,
             "minLength": 1,
             "type": "string",
-            "description": "Case-sensitive unit, for example s, ms, By, or 1 for a dimensionless value."
+            "description": "Case-sensitive unit. Prefer UCUM/OTel symbols: s for duration, By for bytes, {call} for counts, or 1 for dimensionless values."
           }
         },
         "description": "A numeric observation on one event. Units describe values, not their storage type."
@@ -13688,11 +13688,21 @@
           "outcome": {
             "maxLength": 100,
             "minLength": 1,
+            "pattern": "^(success|failure|unknown)$",
             "type": [
               "null",
               "string"
             ],
-            "description": "The result of this operation, independent of the event type."
+            "description": "The ECS-aligned outcome: success, failure, or unknown. Omit when not applicable."
+          },
+          "result": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "An optional detailed result, such as skipped, cancelled, or timed_out. Does not imply an outcome."
           },
           "parent_reference_id": {
             "type": [
@@ -13719,7 +13729,7 @@
             },
             "description": "Up to 32 uniquely named numeric observations. Missing values are not zero."
           },
-          "dimensions": {
+          "labels": {
             "maxLength": 32,
             "type": [
               "null",

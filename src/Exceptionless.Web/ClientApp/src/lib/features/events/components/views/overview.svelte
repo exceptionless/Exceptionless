@@ -86,6 +86,9 @@
         {#if event.outcome}
             <Table.Row><Table.Head>Outcome</Table.Head><Table.Cell></Table.Cell><Table.Cell>{event.outcome}</Table.Cell></Table.Row>
         {/if}
+        {#if event.result}
+            <Table.Row><Table.Head>Result</Table.Head><Table.Cell></Table.Cell><Table.Cell>{event.result}</Table.Cell></Table.Row>
+        {/if}
         {#if event.parent_reference_id}
             <Table.Row
                 ><Table.Head>Parent event</Table.Head><Table.Cell></Table.Cell><Table.Cell
@@ -102,7 +105,7 @@
                 ></Table.Row
             >
         {/if}
-        {#if event.reference_id && (event.measurements?.length || event.outcome || event.parent_reference_id || event.root_reference_id)}
+        {#if event.reference_id && (event.measurements?.length || event.outcome || event.result || event.parent_reference_id || event.root_reference_id)}
             <Table.Row
                 ><Table.Head>Children</Table.Head><Table.Cell></Table.Cell><Table.Cell
                     ><A href={relatedEventsHref(`parent_reference_id:${event.reference_id}`)}>View child events</A></Table.Cell
@@ -116,7 +119,7 @@
                 ></Table.Row
             >
         {/each}
-        {#each Object.entries(event.dimensions ?? {}) as [name, value] (name)}
+        {#each Object.entries(event.labels ?? {}) as [name, value] (name)}
             <Table.Row><Table.Head>{name}</Table.Head><Table.Cell></Table.Cell><Table.Cell>{value}</Table.Cell></Table.Row>
         {/each}
         {#if isSessionStart}

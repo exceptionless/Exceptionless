@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Validation;
 
 public static class EventTelemetryValidation
 {
-    public static IEnumerable<ValidationResult> ValidateRelationshipsAndDimensions(Event ev)
+    public static IEnumerable<ValidationResult> ValidateRelationshipsAndLabels(Event ev)
     {
         if (ev.ParentReferenceId is not null && (!EventTelemetryReader.IsReference(ev.ParentReferenceId) || ev.ParentReferenceId == ev.ReferenceId))
             yield return new ValidationResult("ParentReferenceId must be a valid reference to a different event.", [nameof(ev.ParentReferenceId)]);
@@ -15,16 +15,17 @@ public static class EventTelemetryValidation
             yield return new ValidationResult("RootReferenceId must be a valid event reference.", [nameof(ev.RootReferenceId)]);
         if (ev.Measurements is not null && (ev.Measurements.Any(m => m is null) || ev.Measurements.Select(m => m?.Name).Distinct(StringComparer.Ordinal).Count() != ev.Measurements.Count))
             yield return new ValidationResult("Measurements must have unique names and cannot contain null entries.", [nameof(ev.Measurements)]);
-        if (ev.Dimensions is not null && ev.Dimensions.Any(d => !Regex.IsMatch(d.Key, EventMeasurement.NamePattern) || d.Value is null || d.Value.Length > 256))
-            yield return new ValidationResult("Dimension names must be valid measurement names and values must be strings of at most 256 characters.", [nameof(ev.Dimensions)]);
+        if (ev.Labels is not null && ev.Labels.Any(d => !Regex.IsMatch(d.Key, EventMeasurement.NamePattern) || d.Value is null || d.Value.Length > 256))
+            yield return new ValidationResult("Label names must be valid measurement names and values must be strings of at most 256 characters.", [nameof(ev.Labels)]);
     }
 
     public static IDictionary<string, string[]> GetErrors(Event ev)
     {
-        var results = ValidateRelationshipsAndDimensions(ev).ToList();
+        var results = ValidateRelationshipsAndLabels(ev).ToList();
         ValidateProperty(ev, nameof(ev.Outcome), ev.Outcome, results);
+        ValidateProperty(ev, nameof(ev.Result), ev.Result, results);
         ValidateProperty(ev, nameof(ev.Measurements), ev.Measurements, results);
-        ValidateProperty(ev, nameof(ev.Dimensions), ev.Dimensions, results);
+        ValidateProperty(ev, nameof(ev.Labels), ev.Labels, results);
         foreach (var measurement in ev.Measurements ?? [])
             if (measurement is not null)
                 Validator.TryValidateObject(measurement, new ValidationContext(measurement), results, validateAllProperties: true);

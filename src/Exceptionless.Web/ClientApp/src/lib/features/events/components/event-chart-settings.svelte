@@ -98,13 +98,13 @@
             key: 'unit',
             label: 'Unit',
             list: 'event-measurement-units',
-            placeholder: 'ms'
+            placeholder: 's'
         },
         {
             key: 'group_by',
             label: 'Split by',
             list: 'event-measurement-groups',
-            placeholder: 'source, stack, outcome, or dimensions.branch'
+            placeholder: 'source, stack, outcome, result, or labels.branch'
         }
     ] as const;
     const selectFields = [
@@ -235,8 +235,8 @@
                     </form.Field>
                 {/each}
                 <Field.FieldDescription
-                    >Units are exact: ms and s are separate series. Individual events use their recorded values. To count all events, clear Measurement and Unit
-                    and select Count with Time buckets.</Field.FieldDescription
+                    >Use the recorded unit, such as s for seconds, By for bytes, or {'{call}'} for calls. Units are exact: ms and s are separate series. To count
+                    all events, clear Measurement and Unit and select Count with Time buckets.</Field.FieldDescription
                 >
                 {#if catalog.error}<ErrorMessage message={catalog.error.title ?? 'Unable to load available measurements.'} />{/if}
                 {#if catalog.data?.truncated}<p class="text-muted-foreground text-sm">
@@ -263,4 +263,6 @@
 <datalist id="event-measurement-units"
     >{#each [...new Set(catalog.data?.measurements.map((m) => m.unit) ?? [])] as unit (unit)}<option value={unit}></option>{/each}</datalist
 >
-<datalist id="event-measurement-groups"><option value="source"></option><option value="stack"></option><option value="outcome"></option></datalist>
+<datalist id="event-measurement-groups"
+    ><option value="source"></option><option value="stack"></option><option value="outcome"></option><option value="result"></option></datalist
+>

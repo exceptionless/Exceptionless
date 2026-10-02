@@ -13,7 +13,7 @@ public sealed record EventMeasurement : IValidatableObject
     [Required]
     public double? Value { get; set; }
 
-    /// <summary>Case-sensitive unit, for example s, ms, By, or 1 for a dimensionless value.</summary>
+    /// <summary>Case-sensitive unit. Prefer UCUM/OTel symbols: s for duration, By for bytes, {call} for counts, or 1 for dimensionless values.</summary>
     [Required, StringLength(32, MinimumLength = 1)]
     public string Unit { get; set; } = null!;
 
