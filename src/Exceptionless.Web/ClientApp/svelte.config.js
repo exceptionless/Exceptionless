@@ -18,6 +18,11 @@ const config = {
             $generated: 'src/lib/generated',
             $lib: 'src/lib',
             $shared: 'src/lib/features/shared'
+
+        },
+        csp: {
+            directives: { 'script-src': ['self', 'strict-dynamic'] },
+            mode: 'auto'
         }
     },
     preprocess: vitePreprocess()
