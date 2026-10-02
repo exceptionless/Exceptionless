@@ -59,6 +59,35 @@ test('OAuth popup responses remain readable without signing out the existing ses
 test.describe('in-app legacy navigation', () => {
     test.use({ e2eUseInvitedUser: true });
 
+    test('Back normalizes an existing legacy history entry without losing Forward', async ({ e2eScenario, page }) => {
+        await page.goto('/stack/all');
+        await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
+        await page.goto(`/account/notifications?project=${e2eScenario.projectId}`);
+        await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
+        const destination = page.url();
+
+        await page.evaluate((oldUrl) => {
+            window.history.replaceState(window.history.state, '', oldUrl);
+            const link = document.createElement('a');
+            link.href = '/project/list';
+            link.textContent = 'Open project list';
+            document.querySelector('main')!.prepend(link);
+        }, `/account/manage?projectId=${e2eScenario.projectId}&tab=notifications`);
+        await page.getByRole('link', { exact: true, name: 'Open project list' }).click();
+        await expect(page).toHaveURL(/\/project\/list$/);
+
+        await page.goBack();
+        await expect(page).toHaveURL(destination);
+        await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
+        await page.goForward();
+        await expect(page).toHaveURL(/\/project\/list$/);
+        await page.goBack();
+        await expect(page).toHaveURL(destination);
+        await page.goBack();
+        await expect(page).toHaveURL(/\/stack\/all$/);
+        expect(await page.evaluate(() => localStorage.getItem('satellizer_token'))).toBe(e2eScenario.userToken);
+    });
+
     for (const prefix of ['/next', '/#!', '/#', '']) {
         test(`following an old settings link preserves browser back and forward navigation (${prefix || 'root'})`, async ({ e2eScenario, page }) => {
             await page.goto('/stack/all');

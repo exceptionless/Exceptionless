@@ -23,11 +23,13 @@ To create a production version of your app:
 npm run build
 ```
 
-The static output goes to `build/`. Publishing `Exceptionless.Web` includes it directly in `wwwroot`; Docker app images use `build/update-config.sh` from the repository root to write public runtime configuration. `EX_ApiUrl` selects a separate API origin when configured, otherwise requests use the app origin.
+The static output goes to `build/`. Publishing `Exceptionless.Web` includes it directly in `wwwroot`; Docker app images use `build/update-config.sh` from the repository root to write public runtime configuration. Startup stops if configuration generation fails. `EX_ApiUrl` selects a separate API origin for requests and the API Reference link when configured, otherwise they use the app origin.
 
 `EX_EnableSsl=true` retains forced HTTPS navigation for self-hosted deployments, including proxies that forward to an HTTP-only app container. The UI upgrades the current URL before starting the router or authentication, preserving its path, query, fragment, and any explicit nonstandard port. The default remains `false`. Standalone Vite development uses `PUBLIC_ENABLE_SSL` for the same behavior.
 
 Set the backend's `EX_BaseURL` to the public UI URL. Email links and OAuth authorization redirects use this address, including when the API has a separate origin.
+
+New email, Slack, and webhook links use the root application origin even if `EX_BaseURL` still contains a historical `/next` path or hash suffix. Incoming compatibility links also normalize existing browser history entries so Back and Forward continue to work.
 
 For separate UI and API hosts, set `EX_ApiUrl` to the public API URL on both deployments. The API uses this origin for OAuth discovery, issuer, resource validation, and authentication challenges; the browser authorization page still uses `EX_BaseURL`. If `EX_ApiUrl` is unset, the API retains `EX_BaseURL` as its canonical origin.
 

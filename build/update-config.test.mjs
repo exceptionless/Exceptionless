@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -36,4 +36,56 @@ test('runtime configuration preserves the SSL setting, escaped values, and secre
             rmSync(directory, { recursive: true, force: true });
         }
     }
+});
+
+function withStartupFixture(run) {
+    const directory = mkdtempSync(join(tmpdir(), 'exceptionless-entrypoint-'));
+    try {
+        const bin = join(directory, 'bin');
+        mkdirSync(bin);
+        mkdirSync(join(directory, 'app/wwwroot'), { recursive: true });
+        writeFileSync(join(bin, 'update-config'), '#!/bin/bash\nexit "$CONFIG_EXIT"\n', { mode: 0o700 });
+        writeFileSync(join(bin, 'dotnet'), '#!/usr/bin/env node\nconsole.log(JSON.stringify({ pid: process.pid, args: process.argv.slice(2) }));\n', { mode: 0o700 });
+        run((script, configExit, args = []) => spawnSync('bash', [
+            '-c',
+            // Run the actual entrypoint with only external processes and container directories replaced.
+            'cd() { builtin cd "$TEST_ROOT$1"; }; chown() { :; }; mkdir() { :; }; supervisord() { echo SUPERVISOR_STARTED; exit 0; }; export -f cd chown mkdir supervisord; exec bash "$1" "${@:2}"',
+            'entrypoint-test',
+            fileURLToPath(new URL(script, import.meta.url)),
+            ...args
+        ], {
+            cwd: directory,
+            encoding: 'utf8',
+            timeout: 5000,
+            env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, TEST_ROOT: directory, CONFIG_EXIT: String(configExit) }
+        }));
+    } finally {
+        rmSync(directory, { recursive: true, force: true });
+    }
+}
+
+test('app entrypoint propagates config failure and replaces itself without splitting arguments', () => {
+    withStartupFixture((run) => {
+        const failure = run('./app-docker-entrypoint.sh', 42);
+        assert.equal(failure.status, 42, failure.stderr);
+        assert.equal(failure.stdout, '');
+
+        const success = run('./app-docker-entrypoint.sh', 0, ['--Example=two words']);
+        assert.equal(success.status, 0, success.stderr);
+        const application = JSON.parse(success.stdout);
+        assert.deepEqual(application.args, ['Exceptionless.Web.dll', '--Example=two words']);
+        assert.equal(application.pid, success.pid);
+    });
+});
+
+test('all-in-one entrypoint starts its supervisor only after successful config generation', () => {
+    withStartupFixture((run) => {
+        const failure = run('./docker-entrypoint.sh', 42);
+        assert.equal(failure.status, 42, failure.stderr);
+        assert.ok(!failure.stdout.includes('SUPERVISOR_STARTED'));
+
+        const success = run('./docker-entrypoint.sh', 0);
+        assert.equal(success.status, 0, success.stderr);
+        assert.ok(success.stdout.includes('SUPERVISOR_STARTED'));
+    });
 });

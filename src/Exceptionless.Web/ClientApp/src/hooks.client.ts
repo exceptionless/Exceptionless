@@ -30,6 +30,13 @@ if (PUBLIC_EXCEPTIONLESS_SERVER_URL) {
     env.PUBLIC_EXCEPTIONLESS_SERVER_URL = PUBLIC_EXCEPTIONLESS_SERVER_URL;
 }
 
+function normalizeCurrentAppUrl() {
+    const canonical = canonicalAppUrl(new URL(window.location.href));
+    if (canonical.href !== window.location.href) {
+        window.history.replaceState(window.history.state, '', canonical);
+    }
+}
+
 export const init: ClientInit = async () => {
     const httpsDestination = getHttpsRedirectUrl(new URL(window.location.href), env.PUBLIC_ENABLE_SSL);
     if (httpsDestination) {
@@ -39,11 +46,9 @@ export const init: ClientInit = async () => {
         return;
     }
 
-    const canonical = canonicalAppUrl(new URL(window.location.href));
-    if (canonical.href !== window.location.href) {
-        // Runs before the router and auth layouts, retaining the existing session.
-        window.history.replaceState(window.history.state, '', canonical);
-    }
+    normalizeCurrentAppUrl();
+    // Normalize existing entries before the router reads them; cancelling popstate would undo Back/Forward.
+    window.addEventListener('popstate', normalizeCurrentAppUrl, { capture: true });
 
     if (!env.PUBLIC_EXCEPTIONLESS_API_KEY) {
         return;

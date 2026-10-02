@@ -53,7 +53,7 @@ export function canonicalAppUrl(source: URL): URL {
     }
 
     // Historical action links only open details. Navigating must never change stack state.
-    url.pathname = url.pathname.replace(/^(\/stack\/[^/]+)\/(mark-fixed|ignored|discarded)\/?$/, '$1');
+    url.pathname = url.pathname.replace(/^(\/stack\/[^/]+)\/(mark-fixed|ignored|stop-notifications|discarded)\/?$/, '$1');
     return url;
 }
 

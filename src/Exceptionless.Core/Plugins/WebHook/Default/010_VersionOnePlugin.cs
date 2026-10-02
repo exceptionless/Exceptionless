@@ -4,6 +4,7 @@ using System.Text.Json.Serialization.Metadata;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Utility;
 using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
@@ -41,7 +42,7 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
         var requestInfo = ev.GetRequestInfo(_serializer, _logger);
         var environmentInfo = ev.GetEnvironmentInfo(_serializer, _logger);
 
-        return Task.FromResult<object?>(new VersionOneWebHookEvent(_options.BaseURL)
+        return Task.FromResult<object?>(new VersionOneWebHookEvent(AppUrlBuilder.GetOrigin(_options.BaseURL))
         {
             Id = ev.Id,
             OccurrenceDate = ev.Date,
@@ -76,7 +77,7 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
             return Task.FromResult<object?>(null);
 
-        return Task.FromResult<object?>(new VersionOneWebHookStack(_options.BaseURL)
+        return Task.FromResult<object?>(new VersionOneWebHookStack(AppUrlBuilder.GetOrigin(_options.BaseURL))
         {
             Id = ctx.Stack.Id,
             Status = ctx.Stack.Status,

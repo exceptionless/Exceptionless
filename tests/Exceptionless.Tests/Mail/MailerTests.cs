@@ -76,10 +76,11 @@ public sealed class MailerTests : TestWithServices
     [Theory]
     [InlineData("http://localhost:9001", "http://localhost:9001/organization/organization-1/billing")]
     [InlineData("http://localhost:9001/#!", "http://localhost:9001/organization/organization-1/billing")]
+    [InlineData("http://localhost:9001/next/", "http://localhost:9001/organization/organization-1/billing")]
     public void OrganizationBilling_BaseUrlVariant_MatchesExistingTemplate(string baseUrl, string expected)
     {
         // Arrange
-        var appUrls = new EmailAppUrlBuilder(baseUrl);
+        var appUrls = new AppUrlBuilder(baseUrl);
 
         // Act
         string url = appUrls.OrganizationBilling("organization-1");
@@ -89,11 +90,11 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
-    public void EmailAppUrlBuilder_ProductionBaseUrl_UsesRootSvelteRoutes()
+    public void AppUrlBuilder_ProductionBaseUrl_UsesRootSvelteRoutes()
     {
         // Arrange
         const string baseUrl = "https://be.exceptionless.io";
-        var appUrls = new EmailAppUrlBuilder(baseUrl);
+        var appUrls = new AppUrlBuilder(baseUrl);
 
         // Act
         (string Path, string Url)[] routes =

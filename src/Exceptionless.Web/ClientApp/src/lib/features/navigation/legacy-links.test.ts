@@ -22,6 +22,7 @@ describe('primary legacy links', () => {
         ['/project/abc/manage?tab=integrations&code=slack-code', '/project/abc/integrations?code=slack-code'],
         ['/stack/abc/mark-fixed', '/stack/abc'],
         ['/stack/abc/ignored', '/stack/abc'],
+        ['/stack/abc/stop-notifications', '/stack/abc'],
         ['/stack/abc/discarded', '/stack/abc'],
         ['/next/payment/invoice-id', '/payment/invoice-id'],
         ['/unknown/old/page', '/unknown/old/page'],

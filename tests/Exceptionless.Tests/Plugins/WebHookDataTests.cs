@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -34,8 +35,9 @@ public sealed class WebHookDataTests : TestWithServices
 
     [Theory]
     [MemberData(nameof(WebHookData))]
-    public async Task CreateFromEventAsync(string version, bool expectData)
+    public async Task CreateFromEventAsync(string version, bool expectData, string baseUrl)
     {
+        GetService<AppOptions>().BaseURL = baseUrl;
         object? data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
         if (expectData)
         {
@@ -52,8 +54,9 @@ public sealed class WebHookDataTests : TestWithServices
 
     [Theory]
     [MemberData(nameof(WebHookData))]
-    public async Task CanCreateFromStackAsync(string version, bool expectData)
+    public async Task CanCreateFromStackAsync(string version, bool expectData, string baseUrl)
     {
+        GetService<AppOptions>().BaseURL = baseUrl;
         object? data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
         if (expectData)
         {
@@ -69,10 +72,12 @@ public sealed class WebHookDataTests : TestWithServices
     }
 
     public static IEnumerable<object[]> WebHookData => new List<object[]> {
-            new object[] { "v0", false },
-            new object[] { WebHook.KnownVersions.Version1, true },
-            new object[] { WebHook.KnownVersions.Version2, true },
-            new object[] { "v3", false }
+            new object[] { "v0", false, "http://localhost:7110" },
+            new object[] { WebHook.KnownVersions.Version1, true, "http://localhost:7110" },
+            new object[] { WebHook.KnownVersions.Version2, true, "http://localhost:7110" },
+            new object[] { "v3", false, "http://localhost:7110" },
+            new object[] { WebHook.KnownVersions.Version1, true, "http://localhost:7110/#!" },
+            new object[] { WebHook.KnownVersions.Version2, true, "http://localhost:7110/next/" }
         }.ToArray();
 
     private JsonSerializerOptions GetJsonSerializerOptions(object data)

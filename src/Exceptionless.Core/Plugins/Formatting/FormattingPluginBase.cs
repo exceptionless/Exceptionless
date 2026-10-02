@@ -1,6 +1,7 @@
 ﻿using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Utility;
 using Foundatio.Serializer;
 using Microsoft.Extensions.Logging;
 
@@ -57,12 +58,12 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
         if (!String.IsNullOrEmpty(version))
             attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Version", Value = version, Short = true });
 
-        string baseUrl = _options.BaseURL;
+        var appUrls = new AppUrlBuilder(_options.BaseURL);
         var actions = new List<string>
         {
             $"• {GetSlackEventUrl(ev.Id, "View Event")}",
-            $"• <{baseUrl}/stack/{ev.StackId}|Manage this stack>",
-            $"• <{baseUrl}/project/{ev.ProjectId}/integrations|Change your notification settings for this project>"
+            $"• <{appUrls.Stack(ev.StackId)}|Manage this stack>",
+            $"• <{appUrls.ProjectIntegrations(ev.ProjectId)}|Change your notification settings for this project>"
         };
 
         attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });
@@ -70,7 +71,7 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
 
     protected string GetSlackEventUrl(string eventId, string? message = null)
     {
-        var parts = new List<string> { $"{_options.BaseURL}/event/{eventId}" };
+        var parts = new List<string> { new AppUrlBuilder(_options.BaseURL).Event(eventId) };
         if (!String.IsNullOrEmpty(message))
             parts.Add($"|{message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")}");
 

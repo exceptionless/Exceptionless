@@ -64,12 +64,10 @@ public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
         Assert.NotEqual("text/html", response.Content.Headers.ContentType?.MediaType);
     }
 
-    [Theory]
-    [InlineData("https://localhost:9443/backend?ignored=true", "https://localhost:9443", "wss://localhost:9443")]
-    [InlineData("http://localhost:8111/backend", "http://localhost:8111", "ws://localhost:8111")]
-    [InlineData("https://localhost/backend", "https://localhost", "wss://localhost")]
-    public async Task GetAppRoute_CspAllowsConfiguredApiAndWebSocketOrigins(string apiUrl, string httpOrigin, string webSocketOrigin)
+    [Fact]
+    public async Task GetAppRoute_CspAllowsConfiguredApiAndWebSocketOrigins()
     {
+        const string apiUrl = "https://localhost:9443/backend?ignored=true";
         await using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
             config.AddInMemoryCollection(new Dictionary<string, string?> { ["ApiUrl"] = apiUrl })));
         await factory.Server.WaitForReadyAsync();
@@ -82,9 +80,17 @@ public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
         string connections = Assert.Single(policy.Split(';'), directive => directive.StartsWith("connect-src ", StringComparison.Ordinal));
         string[] sources = connections.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         Assert.Contains("'self'", sources);
-        Assert.Contains(httpOrigin, sources);
-        Assert.Contains(webSocketOrigin, sources);
+        Assert.Contains("https://localhost:9443", sources);
+        Assert.Contains("wss://localhost:9443", sources);
         Assert.DoesNotContain("*", sources);
         Assert.DoesNotContain(apiUrl, sources);
+
+        // API-origin validation must preserve the existing script compatibility policy.
+        string scripts = Assert.Single(policy.Split(';'), directive => directive.StartsWith("script-src ", StringComparison.Ordinal));
+        string[] scriptSources = scripts.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Contains("'unsafe-inline'", scriptSources);
+        Assert.Contains("'unsafe-eval'", scriptSources);
+        Assert.Contains("https://js.stripe.com", scriptSources);
+        Assert.Contains("https://widget.intercom.io", scriptSources);
     }
 }

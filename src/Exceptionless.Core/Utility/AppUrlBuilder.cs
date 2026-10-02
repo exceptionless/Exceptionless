@@ -1,25 +1,27 @@
-namespace Exceptionless.Core.Mail;
+namespace Exceptionless.Core.Utility;
 
 /// <summary>
-/// Centralizes public application destinations used in email.
+/// Centralizes public application destinations used in notifications.
 /// </summary>
-internal sealed class EmailAppUrlBuilder
+internal sealed class AppUrlBuilder
 {
     private readonly string _baseUrl;
 
-    public EmailAppUrlBuilder(string baseUrl)
+    public AppUrlBuilder(string baseUrl)
     {
-        // Older installations used a hash-router base URL.
-        _baseUrl = baseUrl.TrimEnd('/');
-        if (_baseUrl.EndsWith("/#!", StringComparison.Ordinal) || _baseUrl.EndsWith("/#", StringComparison.Ordinal))
-            _baseUrl = _baseUrl[.._baseUrl.LastIndexOf('/')];
+        _baseUrl = GetOrigin(baseUrl);
     }
+
+    // Svelte serves at the root even when an installation retains a historical /next or hash base URL.
+    public static string GetOrigin(string baseUrl) => new Uri(baseUrl).GetLeftPart(UriPartial.Authority);
 
     public string Event(string eventId) => Build($"event/{eventId}");
 
     public string Stack(string stackId) => Build($"stack/{stackId}");
 
     public string ProjectNotifications(string projectId) => Build($"account/notifications?project={Uri.EscapeDataString(projectId)}");
+
+    public string ProjectIntegrations(string projectId) => Build($"project/{projectId}/integrations");
 
     public string OrganizationDashboard(string organizationId) => Build($"organization/{organizationId}/dashboard");
 

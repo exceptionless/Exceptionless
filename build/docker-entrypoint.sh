@@ -13,16 +13,14 @@ if [ "$#" -ne 0 ]; then
     echo "Starting Elasticsearch..."
     /usr/local/bin/docker-entrypoint.sh eswrapper > /var/log/exceptionless/elasticsearch.log 2>&1 &
     sleep 5
-    eval "dotnet Exceptionless.Job.dll $@"
+    dotnet Exceptionless.Job.dll "$@"
 else
     echo "Running Exceptionless Web"
 
     mkdir -p /var/log/supervisor
     mkdir -p Temp/
 
-    pushd /app/wwwroot
-    update-config
-    popd
+    (cd /app/wwwroot && update-config) || exit $?
 
     supervisord -c /etc/supervisord.conf
 
