@@ -345,7 +345,6 @@ jobs:
           cache: npm
           cache-dependency-path: |
             src/Exceptionless.Web/ClientApp/package-lock.json
-            src/Exceptionless.Web/ClientApp.angular/package-lock.json
 
       - uses: actions/cache@v6
         with:

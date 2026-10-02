@@ -1,52 +1,60 @@
 #!/bin/bash
-set -euo pipefail
 
-# Publish client IDs only; OAuth secrets must not enter client configuration or logs.
-IFS=';' read -ra oauthParts <<< "${EX_ConnectionStrings__OAuth:-}"
-for part in "${oauthParts[@]}"; do
-    key="${part%%=*}"
-    key="${key//[[:space:]]/}"
-    value="${part#*=}"
-    value="${value#"${value%%[![:space:]]*}"}"
-    value="${value%"${value##*[![:space:]]}"}"
-    case "$key" in
-        FacebookId) FacebookAppId="$value" ;;
-        GitHubId) GitHubAppId="$value" ;;
-        GoogleId) GoogleAppId="$value" ;;
-        IntercomId) IntercomAppId="$value" ;;
-        MicrosoftId) MicrosoftAppId="$value" ;;
-        SlackId) SlackAppId="$value" ;;
-    esac
+ApiUrl="${EX_ApiUrl:-}"
+ClientSetupShowServerUrl="${EX_ClientSetupShowServerUrl:-true}"
+EnableAccountCreation="${EX_EnableAccountCreation:-true}"
+
+OAuth="${EX_ConnectionStrings__OAuth:-}"
+IFS=';' read -a oauthParts <<< "$OAuth"
+for part in ${oauthParts[@]}
+do
+  key="$( cut -d '=' -f 1 <<< $part )"
+  value="$( cut -d '=' -f 2- <<< $part )"
+
+  if [ "$key" == "FacebookId" ]; then
+    FacebookAppId=$value
+  fi
+  if [ "$key" == "GitHubId" ]; then
+    GitHubAppId=$value
+  fi
+  if [ "$key" == "GoogleId" ]; then
+    GoogleAppId=$value
+  fi
+  if [ "$key" == "IntercomId" ]; then
+    IntercomAppId=$value
+  fi
+  if [ "$key" == "MicrosoftId" ]; then
+    MicrosoftAppId=$value
+  fi
+  if [ "$key" == "SlackId" ]; then
+    SlackAppId=$value
+  fi
 done
 
-write_setting() {
-    local value="${2:-}"
-    value="${value//\\/\\\\}"
-    value="${value//\'/\\\'}"
-    value="${value//$'\r'/\\r}"
-    value="${value//$'\n'/\\n}"
-    printf "    %s: '%s',\n" "$1" "$value"
-}
+config_header="export const env={"
 
-mkdir -p _app
-{
-    printf 'export const env={\n'
-    write_setting PUBLIC_BASE_URL "${EX_ApiUrl:-}"
-    write_setting PUBLIC_ENABLE_ACCOUNT_CREATION "${EX_EnableAccountCreation:-true}"
-    write_setting PUBLIC_SYSTEM_NOTIFICATION_MESSAGE "${EX_NotificationMessage:-}"
-    write_setting PUBLIC_EXCEPTIONLESS_API_KEY "${EX_ExceptionlessApiKey:-}"
-    write_setting PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL "${EX_ClientSetupShowServerUrl:-true}"
-    write_setting PUBLIC_EXCEPTIONLESS_SERVER_URL "${EX_ExceptionlessServerUrl:-}"
-    write_setting PUBLIC_STRIPE_PUBLISHABLE_KEY "${EX_StripePublishableApiKey:-}"
-    write_setting PUBLIC_FACEBOOK_APPID "${FacebookAppId:-}"
-    write_setting PUBLIC_GITHUB_APPID "${GitHubAppId:-}"
-    write_setting PUBLIC_GOOGLE_APPID "${GoogleAppId:-}"
-    write_setting PUBLIC_MICROSOFT_APPID "${MicrosoftAppId:-}"
-    write_setting PUBLIC_INTERCOM_APPID "${IntercomAppId:-}"
-    write_setting PUBLIC_SLACK_APPID "${SlackAppId:-}"
-    printf '};\n'
-    printf 'env.PUBLIC_BASE_URL ||= window.location.origin;\n'
-} > _app/env.js
+config="
+    PUBLIC_BASE_URL: '$ApiUrl' || window.location.origin,
+    PUBLIC_ENABLE_ACCOUNT_CREATION: '$EnableAccountCreation',
+    PUBLIC_SYSTEM_NOTIFICATION_MESSAGE: '$EX_NotificationMessage',
+    PUBLIC_EXCEPTIONLESS_API_KEY: '$EX_ExceptionlessApiKey',
+    PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL: '$ClientSetupShowServerUrl',
+    PUBLIC_EXCEPTIONLESS_SERVER_URL: '$EX_ExceptionlessServerUrl',
+    PUBLIC_STRIPE_PUBLISHABLE_KEY: '$EX_StripePublishableApiKey',
+    PUBLIC_FACEBOOK_APPID: '$FacebookAppId',
+    PUBLIC_GITHUB_APPID: '$GitHubAppId',
+    PUBLIC_GOOGLE_APPID: '$GoogleAppId',
+    PUBLIC_MICROSOFT_APPID: '$MicrosoftAppId',
+    PUBLIC_INTERCOM_APPID: '$IntercomAppId',
+    PUBLIC_SLACK_APPID: '$SlackAppId'"
 
-checksum=$(md5sum _app/env.js | cut -c 1-32)
-sed -E -i "s|/_app/env.js(\\?v=[a-f0-9]+)?|/_app/env.js?v=$checksum|g" index.html
+config_footer="};"
+
+echo "Exceptionless UI Config"
+echo "$config"
+
+checksum=`echo -n $config | md5sum | cut -c 1-32`
+echo "$config_header$config$config_footer" > "_app/env.js"
+
+CONTENT=$(cat index.html)
+echo "$CONTENT" | sed -E "s|/_app/env.js|/_app/env.js?v=$checksum|g" > index.html

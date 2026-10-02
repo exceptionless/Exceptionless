@@ -146,20 +146,20 @@
     });
 </script>
 
-{#if isOAuthPopupCallback(page.url, !!window.opener)}
-    <p role="status">Completing sign in...</p>
-{:else}
-    <div class="bg-background text-foreground">
-        <ModeWatcher defaultMode="dark" />
+<div class="bg-background text-foreground">
+    <ModeWatcher defaultMode="dark" />
 
-        <QueryClientProvider client={queryClient}>
-            <Sidebar.Provider>
+    <QueryClientProvider client={queryClient}>
+        <Sidebar.Provider>
+            {#if isOAuthPopupCallback(page.url, !!window.opener)}
+                <p role="status">Completing sign in...</p>
+            {:else}
                 {@render children()}
-            </Sidebar.Provider>
+            {/if}
+        </Sidebar.Provider>
 
-            <SvelteQueryDevtools />
-        </QueryClientProvider>
+        <SvelteQueryDevtools />
+    </QueryClientProvider>
 
-        <Toaster position="bottom-right" />
-    </div>
-{/if}
+    <Toaster position="bottom-right" />
+</div>
