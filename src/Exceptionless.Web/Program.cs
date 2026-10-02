@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
-using System.Text.RegularExpressions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
@@ -11,8 +10,8 @@ using Exceptionless.Core.Validation;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Insulation.Security;
 using Exceptionless.Web.Api;
-using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Api.Results;
+using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Mcp;
@@ -126,6 +125,7 @@ public partial class Program
             builder.Services.AddAppOptions(options);
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddCsp(nonceByteAmount: 32);
+            builder.Services.AddSingleton<FrontendScriptNonces>();
 
             builder.Services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
@@ -321,9 +321,10 @@ public partial class Program
             }
 
             app.MapOpenApi("/docs/v2/openapi.json");
-            app.MapScalarApiReference("/docs", o =>
+            app.MapScalarApiReference("/docs", (o, context) =>
             {
-                o.DisableDefaultFonts()
+                o.WithNonce(context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce())
+                    .DisableDefaultFonts()
                     .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
                     .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
                     .AddPreferredSecuritySchemes("Bearer");
@@ -421,6 +422,7 @@ public partial class Program
             context.Response.Headers.Remove(HeaderNames.ETag);
             context.Response.Headers.Remove(HeaderNames.LastModified);
             context.Response.Headers.Remove(HeaderNames.AcceptRanges);
+            context.Response.Headers.Remove(HeaderNames.ContentRange);
 
             if (isHead)
             {
@@ -430,7 +432,8 @@ public partial class Program
 
             using var reader = new StreamReader(buffer, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
             string html = await reader.ReadToEndAsync(context.RequestAborted);
-            string responseHtml = AddScriptNonce(html, context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce());
+            string responseHtml = context.RequestServices.GetRequiredService<FrontendScriptNonces>()
+                .AddNonce(html, context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce());
             byte[] responseBytes = Encoding.UTF8.GetBytes(responseHtml);
 
             context.Response.ContentLength = responseBytes.Length;
@@ -443,21 +446,6 @@ public partial class Program
             context.Response.Body = responseBody;
         }
     }
-
-    internal static string AddScriptNonce(string html, string nonce)
-    {
-        return ScriptElementRegex().Replace(html, match =>
-        {
-            string attributes = NonceAttributeRegex().Replace(match.Groups["attributes"].Value, attribute => attribute.Groups["quoted"].Success ? attribute.Value : String.Empty);
-            return $"<script nonce=\"{nonce}\"{attributes}>{match.Groups["content"].Value}{match.Groups["closingTag"].Value}";
-        });
-    }
-
-    [GeneratedRegex("<script\\b(?<attributes>(?:\"[^\"]*\"|'[^']*'|[^'\">])*)>(?<content>.*?)(?<closingTag></script\\s*>)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline | RegexOptions.NonBacktracking)]
-    private static partial Regex ScriptElementRegex();
-
-    [GeneratedRegex("(?<quoted>\"[^\"]*\"|'[^']*')|\\snonce(?=[\\s=>/]|$)(?:\\s*=\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s>]+))?", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-    private static partial Regex NonceAttributeRegex();
 
     internal static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
     {

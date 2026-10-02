@@ -18,9 +18,9 @@ describe('server CSP hook', () => {
 
     it.each([false, true])('limits scheme-wide WebSockets to development (dev=%s)', async (dev) => {
         environment.dev = dev;
-        const original = new Response('<script>start()</script>', { headers: { 'content-type': 'text/html' } });
+        const original = createFrameworkResponse();
 
-        const response = await handle({ event: {} as Parameters<Handle>[0]['event'], resolve: async () => original });
+        const response = await handle({ event: createEvent(), resolve: async () => original });
         const policy = response.headers.get('content-security-policy')!;
         const connections = policy
             .split('; ')
@@ -39,7 +39,7 @@ describe('server CSP hook', () => {
         environment.building = true;
         const original = new Response('<script>start()</script>', { headers: { 'content-type': 'text/html' } });
 
-        const response = await handle({ event: {} as Parameters<Handle>[0]['event'], resolve: async () => original });
+        const response = await handle({ event: createEvent(), resolve: async () => original });
 
         expect(response).toBe(original);
         expect(response.headers.has('content-security-policy')).toBe(false);
@@ -49,7 +49,7 @@ describe('server CSP hook', () => {
         publicEnvironment.PUBLIC_BASE_URL = '';
         const original = new Response('<script>start()</script>', { headers: { 'content-type': 'text/html' } });
 
-        const response = await handle({ event: {} as Parameters<Handle>[0]['event'], resolve: async () => original });
+        const response = await handle({ event: createEvent(), resolve: async () => original });
         const connections = response.headers
             .get('content-security-policy')!
             .split('; ')
@@ -67,7 +67,43 @@ describe('server CSP hook', () => {
         publicEnvironment.PUBLIC_BASE_URL = 'ftp://app.example.test';
         const original = new Response('<script>start()</script>', { headers: { 'content-type': 'text/html' } });
 
-        await expect(handle({ event: {} as Parameters<Handle>[0]['event'], resolve: async () => original })).rejects.toThrow();
+        await expect(handle({ event: createEvent(), resolve: async () => original })).rejects.toThrow();
+    });
+
+    it.each(['GET', 'HEAD'])('removes conditional and range headers before resolving HTML (%s)', async (method) => {
+        const event = createEvent(method, '/next/', {
+            'if-modified-since': 'Wed, 30 Sep 2026 00:00:00 GMT',
+            'if-none-match': '*',
+            'if-range': 'old',
+            range: 'bytes=0-23'
+        });
+        const response = await handle({
+            event,
+            resolve: async (resolvedEvent) => {
+                for (const header of ['range', 'if-range', 'if-none-match', 'if-modified-since']) {
+                    expect(resolvedEvent.request.headers.has(header)).toBe(false);
+                }
+                return method === 'HEAD' ? new Response(null, { headers: { 'content-type': 'text/html' } }) : createFrameworkResponse();
+            }
+        });
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get('cache-control')).toBe('no-store');
+        if (method === 'HEAD') expect(response.body).toBeNull();
+    });
+
+    it.each([
+        ['GET', '/next/app.js'],
+        ['POST', '/next/']
+    ])('preserves conditional headers outside document requests (%s %s)', async (method, path) => {
+        const event = createEvent(method, path, { 'if-none-match': 'current' });
+        await handle({
+            event,
+            resolve: async (resolvedEvent) => {
+                expect(resolvedEvent.request.headers.get('if-none-match')).toBe('current');
+                return Response.json({ ok: true });
+            }
+        });
     });
 
     it('does not trust request or forwarded hosts for the production WebSocket origin', async () => {
@@ -85,3 +121,15 @@ describe('server CSP hook', () => {
         expect(policy).not.toContain('forwarded.example');
     });
 });
+
+function createEvent(method = 'GET', path = '/next/', headers: HeadersInit = {}) {
+    const url = new URL(path, 'https://app.example.test');
+    return { request: new Request(url, { headers, method }), url } as Parameters<Handle>[0]['event'];
+}
+
+function createFrameworkResponse() {
+    const nonce = 'dGVzdC1mcmFtZXdvcmstbm9uY2U=';
+    return new Response(`<script nonce="${nonce}">start()</script>`, {
+        headers: { 'content-security-policy': `script-src 'nonce-${nonce}' 'strict-dynamic'`, 'content-type': 'text/html' }
+    });
+}

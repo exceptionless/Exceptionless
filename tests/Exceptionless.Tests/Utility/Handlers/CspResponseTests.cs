@@ -1,9 +1,11 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Exceptionless.Web.Security;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Joonasw.AspNetCore.SecurityHeaders.Csp;
 using Joonasw.AspNetCore.SecurityHeaders.Csp.Builder;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.FileProviders;
 using Scalar.AspNetCore;
 using Xunit;
 
@@ -54,7 +56,7 @@ public sealed class CspResponseTests
     {
         const string html = "<script data-note=\"a nonce='keep'\" nonce='old'></script>";
 
-        Assert.Equal("<script nonce=\"new\" data-note=\"a nonce='keep'\"></script>", Exceptionless.Web.Program.AddScriptNonce(html, "new"));
+        Assert.Equal("<script nonce=\"new\" data-note=\"a nonce='keep'\"></script>", AddNonceToTrustedHtml(html, "new"));
     }
 
     [Theory]
@@ -64,7 +66,7 @@ public sealed class CspResponseTests
     [InlineData("<script nonce async></script>")]
     public void AddScriptNonce_ScriptWithExistingNonce_ReplacesNonce(string html)
     {
-        string result = Exceptionless.Web.Program.AddScriptNonce(html, "new");
+        string result = AddNonceToTrustedHtml(html, "new");
 
         Assert.Equal(1, CountOccurrences(result, "nonce=\"new\""));
         Assert.DoesNotContain("old", result, StringComparison.Ordinal);
@@ -75,7 +77,7 @@ public sealed class CspResponseTests
     {
         const string html = "<script data-state=\"ready > pending\" nonce></script>";
 
-        string result = Exceptionless.Web.Program.AddScriptNonce(html, "new");
+        string result = AddNonceToTrustedHtml(html, "new");
 
         Assert.Equal("<script nonce=\"new\" data-state=\"ready > pending\"></script>", result);
     }
@@ -85,7 +87,7 @@ public sealed class CspResponseTests
     {
         const string html = "<script>const marker = \"<script>\";</script>";
 
-        string result = Exceptionless.Web.Program.AddScriptNonce(html, "new");
+        string result = AddNonceToTrustedHtml(html, "new");
 
         Assert.Equal("<script nonce=\"new\">const marker = \"<script>\";</script>", result);
     }
@@ -95,12 +97,29 @@ public sealed class CspResponseTests
     {
         const string html = "<script data-nonce=\"keep\" noncevalue=\"keep\" nonce-value=\"keep\"></script>";
 
-        string result = Exceptionless.Web.Program.AddScriptNonce(html, "new");
+        string result = AddNonceToTrustedHtml(html, "new");
 
         Assert.Contains("data-nonce=\"keep\"", result, StringComparison.Ordinal);
         Assert.Contains("noncevalue=\"keep\"", result, StringComparison.Ordinal);
         Assert.Contains("nonce-value=\"keep\"", result, StringComparison.Ordinal);
         Assert.Equal(1, CountOccurrences(result, "nonce=\"new\""));
+    }
+
+    [Fact]
+    public void AddNonce_UntrustedOrModifiedScripts_DoesNotAuthorizeThem()
+    {
+        const string trustedHtml = "<script src=\"/app.js\"></script><script>start()</script>";
+        const string injectedHtml = trustedHtml
+            + "<script>injected()</script><script src=\"/payload.js\"></script>"
+            + "<script src=\"https://untrusted.example/payload.js\"></script>"
+            + "<script nonce=\"attacker\">start();injected()</script>"
+            + "<script src=\"/app.js\" onload=\"injected()\"></script>";
+
+        string result = AddNonceToTrustedHtml(injectedHtml, "fresh", trustedHtml);
+
+        Assert.StartsWith("<script nonce=\"fresh\" src=\"/app.js\"></script><script nonce=\"fresh\">start()</script>", result);
+        Assert.Equal(2, CountOccurrences(result, "nonce=\"fresh\""));
+        Assert.EndsWith(injectedHtml[trustedHtml.Length..], result);
     }
 
     [Fact]
@@ -163,12 +182,22 @@ public sealed class CspResponseTests
             Assert.Equal("no-store", scalarResponse.Headers.CacheControl?.ToString());
             Assert.Contains($"'nonce-{scalarNonce}'", scalarPolicy, StringComparison.Ordinal);
             Assert.Contains("scalar.js", scalarBody, StringComparison.Ordinal);
+            Assert.Contains("<script>untrustedHeader()</script>", scalarBody, StringComparison.Ordinal);
+            MatchCollection scalarScriptNonces = Regex.Matches(scalarBody, "<script\\b[^>]*\\bnonce=\"(?<nonce>[^\"]+)\"");
+            Assert.Equal(3, scalarScriptNonces.Count);
+            Assert.All(scalarScriptNonces, script => Assert.Equal(scalarNonce, System.Net.WebUtility.HtmlDecode(script.Groups["nonce"].Value)));
             Assert.Contains("scalar.aspnetcore.js", scalarBody, StringComparison.Ordinal);
             Assert.Contains("\"withDefaultFonts\":false", scalarBody, StringComparison.Ordinal);
             Assert.DoesNotContain("cdn.jsdelivr.net", scalarBody, StringComparison.Ordinal);
             using HttpResponseMessage scalarScriptResponse = await client.GetAsync("/docs/scalar.js", TestContext.Current.CancellationToken);
             Assert.Equal(StatusCodes.Status200OK, (int)scalarScriptResponse.StatusCode);
             Assert.StartsWith("text/javascript", scalarScriptResponse.Content.Headers.ContentType?.ToString());
+
+            using HttpResponseMessage nextScalarResponse = await client.GetAsync("/docs/", TestContext.Current.CancellationToken);
+            string nextScalarBody = await nextScalarResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            string nextScalarNonce = GetNonceAttribute(nextScalarBody);
+            Assert.NotEqual(scalarNonce, nextScalarNonce);
+            Assert.Contains($"'nonce-{nextScalarNonce}'", nextScalarResponse.Headers.GetValues("Content-Security-Policy").Single());
         }
         finally
         {
@@ -323,6 +352,7 @@ public sealed class CspResponseTests
                 .ConfigureServices(services =>
                 {
                     services.AddCsp(nonceByteAmount: 32);
+                    services.AddSingleton<FrontendScriptNonces>();
                     services.AddRouting();
                 })
                 .Configure(app =>
@@ -334,7 +364,10 @@ public sealed class CspResponseTests
                     app.UseRouting();
                     app.UseEndpoints(endpoints =>
                     {
-                        endpoints.MapScalarApiReference("/docs", options => options.DisableDefaultFonts());
+                        endpoints.MapScalarApiReference("/docs", (options, context) => options
+                            .WithNonce(context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce())
+                            .DisableDefaultFonts()
+                            .AddHeaderContent("<script>untrustedHeader()</script>"));
                         endpoints.MapFallback("{**slug:nonfile}", Exceptionless.Web.Program.CreateRequestDelegate(endpoints, "/index.html"));
                     });
                 }))
@@ -342,6 +375,22 @@ public sealed class CspResponseTests
 
         await host.StartAsync(TestContext.Current.CancellationToken);
         return host;
+    }
+
+    private static string AddNonceToTrustedHtml(string html, string nonce, string? trustedHtml = null)
+    {
+        string webRoot = Path.Combine(Path.GetTempPath(), $"exceptionless-csp-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(webRoot);
+        try
+        {
+            File.WriteAllText(Path.Combine(webRoot, "index.html"), trustedHtml ?? html);
+            using var files = new PhysicalFileProvider(webRoot);
+            return new FrontendScriptNonces(files).AddNonce(html, nonce);
+        }
+        finally
+        {
+            Directory.Delete(webRoot, recursive: true);
+        }
     }
 
     private static int CountOccurrences(string value, string search)

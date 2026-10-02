@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { addNonceToScripts, createContentSecurityPolicy, createNonce, getWebSocketOrigin, secureHtmlResponse } from './content-security-policy';
+import { createContentSecurityPolicy, createNonce, getWebSocketOrigin, replaceScriptNonce, secureHtmlResponse } from './content-security-policy';
 
 describe('configured WebSocket origin', () => {
     it.each([
@@ -41,35 +41,23 @@ describe('createNonce', () => {
     });
 });
 
-describe('addNonceToScripts', () => {
-    it('preserves similar attribute names and nonce text inside quoted values', () => {
+describe('replaceScriptNonce', () => {
+    it('replaces only SvelteKit-authorized script nonces, preserving untrusted tags and quoted attribute text', () => {
+        const trustedNonce = createNonce();
         const nonce = createNonce();
-        const html = `<script noncevalue='keep' data-note="a nonce='keep'" nonce='old'></script>`;
+        const html =
+            `<script data-note="a nonce='${trustedNonce}'" nonce="${trustedNonce}">const marker = "<script>";</script>` +
+            `<script nonce='${trustedNonce}' src="/app.js"></script>` +
+            `<script nonce="attacker">injected()</script><script>injected()</script><script src="https://untrusted.example/payload.js"></script>`;
 
-        expect(addNonceToScripts(html, nonce)).toBe(`<script nonce="${nonce}" noncevalue='keep' data-note="a nonce='keep'"></script>`);
-    });
+        const result = replaceScriptNonce(html, trustedNonce, nonce);
 
-    it('adds the nonce to every script opening tag', () => {
-        const nonce = createNonce();
-        const html = '<script>first()</script><script async src="/second.js"></script>';
-
-        expect(addNonceToScripts(html, nonce)).toBe(`<script nonce="${nonce}">first()</script><script nonce="${nonce}" async src="/second.js"></script>`);
-    });
-
-    it('replaces existing quoted, unquoted, and boolean nonce attributes', () => {
-        const nonce = createNonce();
-        const html = `<script nonce="old"></script><SCRIPT type="module" NONCE='older'></SCRIPT><script nonce defer></script>`;
-
-        expect(addNonceToScripts(html, nonce)).toBe(
-            `<script nonce="${nonce}"></script><SCRIPT nonce="${nonce}" type="module"></SCRIPT><script nonce="${nonce}" defer></script>`
+        expect(result).toContain(`<script data-note="a nonce='${trustedNonce}'" nonce="${nonce}">const marker = "<script>";</script>`);
+        expect(result).toContain(`<script nonce="${nonce}" src="/app.js"></script>`);
+        expect(result).toContain(
+            '<script nonce="attacker">injected()</script><script>injected()</script><script src="https://untrusted.example/payload.js"></script>'
         );
-    });
-
-    it('preserves script-like text inside inline scripts', () => {
-        const nonce = createNonce();
-        const html = '<script>const marker = "<script>";</script>';
-
-        expect(addNonceToScripts(html, nonce)).toBe(`<script nonce="${nonce}">const marker = "<script>";</script>`);
+        expect([...result.matchAll(new RegExp(`nonce="${nonce.replaceAll('+', '\\+')}"`, 'g'))]).toHaveLength(2);
     });
 });
 
@@ -161,20 +149,28 @@ describe('createContentSecurityPolicy', () => {
 });
 
 describe('secureHtmlResponse', () => {
-    it('buffers chunked HTML, nonces every script, and prevents nonce/body caching', async () => {
+    it('buffers chunked HTML, preserves framework trust, and removes stale response metadata', async () => {
+        const trustedNonce = createNonce();
         const encoder = new TextEncoder();
         const stream = new ReadableStream<Uint8Array>({
             start(controller) {
                 controller.enqueue(encoder.encode('<!doctype html><html><body><scr'));
-                controller.enqueue(encoder.encode('ipt type="module">start()</script><script src="/app.js"></script></body></html>'));
+                controller.enqueue(
+                    encoder.encode(
+                        `ipt nonce="${trustedNonce}" type="module">start()</script><script nonce="${trustedNonce}" src="/app.js"></script><script>injected()</script></body></html>`
+                    )
+                );
                 controller.close();
             }
         });
         const originalResponse = new Response(stream, {
             headers: {
+                'accept-ranges': 'bytes',
                 'content-length': '123',
+                'content-security-policy': `script-src 'nonce-${trustedNonce}' 'strict-dynamic'`,
                 'content-type': 'text/html; charset=utf-8',
-                etag: 'stale-after-transformation'
+                etag: 'stale-after-transformation',
+                'last-modified': 'Wed, 30 Sep 2026 00:00:00 GMT'
             }
         });
 
@@ -190,6 +186,42 @@ describe('secureHtmlResponse', () => {
         expect(response.headers.get('cache-control')).toBe('no-store');
         expect(response.headers.has('content-length')).toBe(false);
         expect(response.headers.has('etag')).toBe(false);
+        expect(response.headers.has('last-modified')).toBe(false);
+        expect(response.headers.has('accept-ranges')).toBe(false);
+        expect(html).toContain('<script>injected()</script>');
+    });
+
+    it('does not grant a nonce when the framework has not authorized any scripts', async () => {
+        const html = '<script>injected()</script><script nonce="attacker" src="/payload.js"></script>';
+        const response = await secureHtmlResponse(new Response(html, { headers: { 'content-type': 'text/html' } }));
+
+        expect(await response.text()).toBe(html);
+        expect(response.headers.get('content-security-policy')).toContain("'strict-dynamic'");
+        expect(response.headers.get('cache-control')).toBe('no-store');
+    });
+
+    it.each([200, 206])('rejects partial HTML rather than rewriting its byte range (status %i)', async (status) => {
+        const originalResponse = new Response('<script>start()</script>', {
+            headers: { 'content-range': 'bytes 0-23/100', 'content-type': 'text/html' },
+            status
+        });
+
+        await expect(secureHtmlResponse(originalResponse)).rejects.toThrow('complete HTML document');
+    });
+
+    it('secures HEAD metadata without manufacturing a response body', async () => {
+        const response = await secureHtmlResponse(
+            new Response(null, {
+                headers: { 'accept-ranges': 'bytes', 'content-type': 'text/html', etag: 'stale', 'last-modified': 'Wed, 30 Sep 2026 00:00:00 GMT' }
+            })
+        );
+
+        expect(response.body).toBeNull();
+        expect(response.headers.get('cache-control')).toBe('no-store');
+        expect(response.headers.has('etag')).toBe(false);
+        expect(response.headers.has('last-modified')).toBe(false);
+        expect(response.headers.has('accept-ranges')).toBe(false);
+        expect(response.headers.get('content-security-policy')).toContain("'strict-dynamic'");
     });
 
     it('leaves non-HTML responses untouched', async () => {
