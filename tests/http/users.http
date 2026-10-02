@@ -20,6 +20,7 @@ Content-Type: application/json
 @token = {{login.response.body.$.token}}
 
 ### Password authentication shares the login attempt window
+# Requests wait up to ten seconds when password checks are underway; completed failures retain their limit.
 # Password changes replace the current user session; use the returned token afterward.
 # Password sign-in checks the current stored credentials, account status, and email.
 GET {{apiUrl}}/users/me

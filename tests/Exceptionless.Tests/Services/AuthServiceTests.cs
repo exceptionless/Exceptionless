@@ -11,10 +11,14 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     {
         var first = GetService<AuthService>();
         var second = new AuthService(GetService<ICacheClient>(), TimeProvider);
-        var attempts = await Task.WhenAll(Enumerable.Range(0, 100).Select(i =>
-            (i % 2 == 0 ? first : second).TryBeginLoginAsync(" User@exceptionless.test ", null, TestCancellationToken)));
+        var requests = Enumerable.Range(0, 100).Select(i =>
+            (i % 2 == 0 ? first : second).TryBeginLoginAsync(" User@exceptionless.test ", null, TestCancellationToken)).ToArray();
+        var admitted = requests.Where(task => task.IsCompletedSuccessfully).Select(task => task.Result).ToArray();
+        Assert.Equal(5, admitted.Length);
+        Assert.All(admitted, Assert.NotNull);
+        await Task.WhenAll(admitted.Select(a => first.RecordLoginFailureAsync(a!)));
+        var attempts = await Task.WhenAll(requests);
         Assert.Equal(5, attempts.Count(a => a is not null));
-        await Task.WhenAll(attempts.Where(a => a is not null).Select(a => first.RecordLoginFailureAsync(a!)));
         Assert.Null(await second.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken));
     }
 
@@ -22,14 +26,84 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     public async Task TryBeginLoginAsync_ConcurrentUsers_BoundsChecksAtSharedIpAddress()
     {
         var service = GetService<AuthService>();
-        var attempts = await Task.WhenAll(Enumerable.Range(0, 100).Select(i =>
-            service.TryBeginLoginAsync($"user{i}@exceptionless.test", "192.0.2.1", TestCancellationToken)));
+        var requests = Enumerable.Range(0, 100).Select(i =>
+            service.TryBeginLoginAsync($"user{i}@exceptionless.test", "192.0.2.1", TestCancellationToken)).ToArray();
+        var admitted = requests.Where(task => task.IsCompletedSuccessfully).Select(task => task.Result).ToArray();
+        Assert.Equal(15, admitted.Length);
+        Assert.All(admitted, Assert.NotNull);
+        await Task.WhenAll(admitted.Select(a => service.RecordLoginFailureAsync(a!)));
+        var attempts = await Task.WhenAll(requests);
         Assert.Equal(15, attempts.Count(a => a is not null));
-        await Task.WhenAll(attempts.Where(a => a is not null).Select(a => service.RecordLoginFailureAsync(a!)));
         Assert.Null(await service.TryBeginLoginAsync("other@exceptionless.test", "192.0.2.1", TestCancellationToken));
         // Rejected IP admission must release the partially reserved account slot.
         await using var allowed = await service.TryBeginLoginAsync("user99@exceptionless.test", "192.0.2.2", TestCancellationToken);
         Assert.NotNull(allowed);
+    }
+
+    [Theory]
+    [InlineData(false, 5)]
+    [InlineData(true, 15)]
+    public async Task TryBeginLoginAsync_ValidBurstAcrossInstances_WaitsForCapacity(bool distinctUsers, int capacity)
+    {
+        var first = GetService<AuthService>();
+        var second = new AuthService(GetService<ICacheClient>(), TimeProvider);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int checks = 0;
+        int pending = 0;
+        async Task AuthenticateAsync(int index)
+        {
+            var service = index % 2 == 0 ? first : second;
+            string email = distinctUsers ? $"user{index}@example.test" : "user@example.test";
+            await using var attempt = await service.TryBeginLoginAsync(email, "192.0.2.1", TestCancellationToken);
+            Assert.NotNull(attempt);
+            Assert.InRange(Interlocked.Increment(ref pending), 1, capacity);
+            Interlocked.Increment(ref checks);
+            await release.Task;
+            Interlocked.Decrement(ref pending);
+            await service.RecordLoginSuccessAsync(attempt);
+        }
+        var requests = Enumerable.Range(0, 100).Select(AuthenticateAsync).ToArray();
+        try
+        {
+            Assert.Equal(capacity, Volatile.Read(ref checks));
+            Assert.All(requests, task => Assert.False(task.IsCompleted));
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+        await Task.WhenAll(requests);
+        Assert.Equal(100, checks);
+        Assert.Equal(0, pending);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TryBeginLoginAsync_PendingIpCapacity_CancellationOrTimeoutReleasesAccountSlot(bool timeout)
+    {
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
+        var service = GetService<AuthService>();
+        var held = await Task.WhenAll(Enumerable.Range(0, 15).Select(index =>
+            service.TryBeginLoginAsync($"other{index}@example.test", "192.0.2.1", TestCancellationToken)));
+        Assert.All(held, Assert.NotNull);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        var waiting = service.TryBeginLoginAsync("waiting@example.test", "192.0.2.1", cancellation.Token);
+        Assert.False(waiting.IsCompleted);
+        if (timeout)
+        {
+            TimeProvider.Advance(TimeSpan.FromSeconds(10));
+            Assert.Null(await waiting);
+        }
+        else
+        {
+            await cancellation.CancelAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting);
+        }
+        var allowed = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ =>
+            service.TryBeginLoginAsync("waiting@example.test", "192.0.2.2", TestCancellationToken)));
+        Assert.All(allowed, Assert.NotNull);
+        await Task.WhenAll(held.Concat(allowed).Select(attempt => attempt!.DisposeAsync().AsTask()));
     }
 
     [Fact]
@@ -100,8 +174,13 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
             await FailAsync(service);
         var pending = await BeginAsync(service);
         await service.ClearUserLoginAttemptsAsync(" User@exceptionless.test ");
-        var remaining = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken)));
-        Assert.Equal(4, remaining.Count(a => a is not null));
+        var remaining = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken)));
+        Assert.All(remaining, Assert.NotNull);
+        using var waitingCancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        var waiting = service.TryBeginLoginAsync("user@exceptionless.test", null, waitingCancellation.Token);
+        Assert.False(waiting.IsCompleted);
+        await waitingCancellation.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting);
         await pending.DisposeAsync();
         await Task.WhenAll(remaining.Where(a => a is not null).Select(a => a!.DisposeAsync().AsTask()));
         for (int i = 0; i < 11; i++)
@@ -117,7 +196,11 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
         var old = await BeginAsync(service);
         for (int i = 0; i < 4; i++)
             await FailAsync(service);
-        Assert.Null(await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken));
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        var waiting = service.TryBeginLoginAsync("user@exceptionless.test", null, cancellation.Token);
+        Assert.False(waiting.IsCompleted);
+        await cancellation.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting);
         TimeProvider.Advance(TimeSpan.FromMinutes(1));
         for (int i = 0; i < 5; i++)
             await FailAsync(service);

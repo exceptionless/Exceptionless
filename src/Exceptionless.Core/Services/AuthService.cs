@@ -11,6 +11,7 @@ public sealed class AuthService
     private const int UserFailureLimit = 5;
     private const int IpAddressFailureLimit = 15;
     private static readonly TimeSpan AttemptWindow = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan CapacityWaitTimeout = TimeSpan.FromSeconds(10);
     private readonly ScopedCacheClient _cache;
     private readonly TimeProvider _timeProvider;
 
@@ -29,36 +30,63 @@ public sealed class AuthService
             ArgumentException.ThrowIfNullOrWhiteSpace(ipAddress);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var expiresUtc = GetWindowExpiration();
-        string[] userKeys = GetKeys($"user:{emailAddress.Trim().ToLowerInvariant()}", UserFailureLimit, expiresUtc);
-        var failures = await _cache.GetAllAsync<string>(userKeys);
-        var observedFailures = failures.Where(pair => pair.Value.HasValue && pair.Value.Value.StartsWith("failed:", StringComparison.Ordinal))
-            .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.Value)).ToArray();
+        long started = _timeProvider.GetTimestamp();
         string reservation = $"pending:{Guid.NewGuid():N}";
-        var keys = new List<string>(2);
-        try
+        while (true)
         {
-            string? userKey = await ReserveAsync(userKeys, reservation, expiresUtc);
-            if (userKey is null)
-                return null;
-            keys.Add(userKey);
-            if (ipAddress is not null)
-            {
-                string? ipKey = await ReserveAsync(GetKeys($"ip:{ipAddress}", IpAddressFailureLimit, expiresUtc), reservation, expiresUtc);
-                if (ipKey is null)
-                {
-                    await ReleaseAsync(keys, reservation);
-                    return null;
-                }
-                keys.Add(ipKey);
-            }
             cancellationToken.ThrowIfCancellationRequested();
-            return new LoginAttempt(this, expiresUtc, keys.ToArray(), reservation, observedFailures);
-        }
-        catch
-        {
-            await ReleaseAsync(keys, reservation);
-            throw;
+            if (_timeProvider.GetElapsedTime(started) >= CapacityWaitTimeout)
+                return null;
+            var expiresUtc = GetWindowExpiration();
+            string[] userKeys = GetKeys($"user:{emailAddress.Trim().ToLowerInvariant()}", UserFailureLimit, expiresUtc);
+            var userState = await _cache.GetAllAsync<string>(userKeys);
+            var keys = new List<string>(2);
+            try
+            {
+                string? userKey = await ReserveAsync(userKeys, userState, reservation, expiresUtc);
+                if (userKey is null && HasReachedFailureLimit(userKeys, userState))
+                    return null;
+                if (userKey is not null)
+                {
+                    keys.Add(userKey);
+                    string? ipKey = null;
+                    if (ipAddress is not null)
+                    {
+                        string[] ipKeys = GetKeys($"ip:{ipAddress}", IpAddressFailureLimit, expiresUtc);
+                        var ipState = await _cache.GetAllAsync<string>(ipKeys);
+                        ipKey = await ReserveAsync(ipKeys, ipState, reservation, expiresUtc);
+                        if (ipKey is null && HasReachedFailureLimit(ipKeys, ipState))
+                        {
+                            await ReleaseAsync(keys, reservation);
+                            return null;
+                        }
+                    }
+                    if (ipAddress is null || ipKey is not null)
+                    {
+                        if (ipKey is not null)
+                            keys.Add(ipKey);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var observedFailures = userState.Where(pair => IsFailure(pair.Value))
+                            .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.Value)).ToArray();
+                        return new LoginAttempt(this, expiresUtc, keys.ToArray(), reservation, observedFailures);
+                    }
+                    // Release the account slot while waiting on shared IP capacity.
+                    await ReleaseAsync(keys, reservation);
+                }
+            }
+            catch
+            {
+                await ReleaseAsync(keys, reservation);
+                throw;
+            }
+
+            var remaining = CapacityWaitTimeout - _timeProvider.GetElapsedTime(started);
+            if (remaining <= TimeSpan.Zero)
+                return null;
+            // Pending checks may succeed and return capacity. Spread retries across
+            // hosts; completed failures still deny admission without waiting.
+            var delay = TimeSpan.FromMilliseconds(Random.Shared.Next(75, 126));
+            await Task.Delay(delay < remaining ? delay : remaining, _timeProvider, cancellationToken);
         }
     }
 
@@ -89,13 +117,19 @@ public sealed class AuthService
             .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.Value)));
     }
 
-    private async Task<string?> ReserveAsync(string[] keys, string reservation, DateTime expiresUtc)
+    private async Task<string?> ReserveAsync(string[] keys, IDictionary<string, CacheValue<string>> state, string reservation, DateTime expiresUtc)
     {
         foreach (string key in keys)
-            if (await _cache.AddAsync(key, reservation, expiresUtc))
+            if ((!state.TryGetValue(key, out var value) || !value.HasValue) && await _cache.AddAsync(key, reservation, expiresUtc))
                 return key;
         return null;
     }
+
+    private static bool HasReachedFailureLimit(string[] keys, IDictionary<string, CacheValue<string>> state)
+        => keys.All(key => state.TryGetValue(key, out var value) && IsFailure(value));
+
+    private static bool IsFailure(CacheValue<string> value)
+        => value.HasValue && value.Value.StartsWith("failed:", StringComparison.Ordinal);
 
     private Task ReleaseAsync(IEnumerable<string> keys, string reservation)
         => Task.WhenAll(keys.Select(key => _cache.RemoveIfEqualAsync(key, reservation)));
