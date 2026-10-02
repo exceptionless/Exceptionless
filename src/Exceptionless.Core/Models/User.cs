@@ -20,6 +20,7 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public ISet<string> OrganizationIds { get; init; } = new HashSet<string>();
 
     public string? Password { get; set; }
+    public string? AuthenticationVersion { get; set; }
     public string? Salt { get; set; }
     public string? PasswordResetToken { get; set; }
     public DateTime PasswordResetTokenExpiration { get; set; }

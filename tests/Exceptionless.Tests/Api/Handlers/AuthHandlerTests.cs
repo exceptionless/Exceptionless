@@ -45,7 +45,39 @@ public sealed class AuthHandlerTests : TestWithServices
         new OperationCanceledException("Repository operation was canceled.")
     };
 
-    private AuthHandler CreateHandler(Exception repositoryException)
+    [Fact]
+    public async Task ResetUserTokensAsync_OneStoreThrows_StillAttemptsBothStores()
+    {
+        var tokens = DispatchProxy.Create<ITokenRepository, CleanupRepositoryProxy>();
+        var oauthTokens = DispatchProxy.Create<IOAuthTokenRepository, CleanupRepositoryProxy>();
+        var tokenProxy = (CleanupRepositoryProxy)(object)tokens;
+        var oauthProxy = (CleanupRepositoryProxy)(object)oauthTokens;
+        tokenProxy.Throw = true;
+        var handler = CreateHandler(new Exception("Unused"), tokens, oauthTokens);
+        var method = typeof(AuthHandler).GetMethod("ResetUserTokensAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        var task = Assert.IsAssignableFrom<Task>(method.Invoke(handler,
+            [new User { Id = "test-user", EmailAddress = "user@example.test", AuthenticationVersion = "current" }, "test", new DefaultHttpContext()]));
+        await task;
+        Assert.Equal(1, tokenProxy.Calls);
+        Assert.Equal(1, oauthProxy.Calls);
+    }
+
+    private class CleanupRepositoryProxy : DispatchProxy
+    {
+        public int Calls { get; private set; }
+        public bool Throw { get; set; }
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            Assert.Equal("RemoveAllByUserIdAsync", targetMethod!.Name);
+            Calls++;
+            if (Throw)
+                throw new InvalidOperationException("Token store unavailable.");
+            return Task.FromResult(0L);
+        }
+    }
+
+    private AuthHandler CreateHandler(Exception repositoryException, ITokenRepository? tokenRepository = null, IOAuthTokenRepository? oauthTokenRepository = null)
     {
         var userRepository = DispatchProxy.Create<IUserRepository, ThrowingUserRepositoryProxy>();
         ((ThrowingUserRepositoryProxy)(object)userRepository).Exception = repositoryException;
@@ -56,8 +88,8 @@ public sealed class AuthHandlerTests : TestWithServices
             appOptions.IntercomOptions,
             GetService<IOrganizationRepository>(),
             userRepository,
-            GetService<ITokenRepository>(),
-            GetService<IOAuthTokenRepository>(),
+            tokenRepository ?? GetService<ITokenRepository>(),
+            oauthTokenRepository ?? GetService<IOAuthTokenRepository>(),
             GetService<IOAuthProviderClient>(),
             GetService<ICacheClient>(),
             GetService<AuthService>(),

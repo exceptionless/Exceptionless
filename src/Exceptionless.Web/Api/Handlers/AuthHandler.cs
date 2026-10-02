@@ -312,7 +312,10 @@ public class AuthHandler(
         try
         {
             if (user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId.Value))
+            {
+                user.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
                 await userRepository.SaveAsync(user, o => o.Cache());
+            }
         }
         catch (Exception ex)
         {
@@ -649,6 +652,7 @@ public class AuthHandler(
     {
         using var _ = logger.BeginScope(new ExceptionlessState().Tag(tag).Identity(user.EmailAddress).SetHttpContext(httpContext));
         user.SetPassword(password);
+        user.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
         user.ResetPasswordResetToken();
 
         try
@@ -666,15 +670,24 @@ public class AuthHandler(
     private async Task ResetUserTokensAsync(User user, string tag, HttpContext httpContext)
     {
         using var _ = logger.BeginScope(new ExceptionlessState().Tag(tag).Identity(user.EmailAddress).SetHttpContext(httpContext));
-        try
+        var totals = await Task.WhenAll(
+            RemoveAsync(() => tokenRepository.RemoveAllByUserIdAsync(user.Id)),
+            RemoveAsync(() => oauthTokenRepository.RemoveAllByUserIdAsync(user.Id)));
+        logger.RemovedUserTokens(totals.Sum(), user.EmailAddress);
+
+        async Task<long> RemoveAsync(Func<Task<long>> remove)
         {
-            long total = await tokenRepository.RemoveAllByUserIdAsync(user.Id);
-            total += await oauthTokenRepository.RemoveAllByUserIdAsync(user.Id);
-            logger.RemovedUserTokens(total, user.EmailAddress);
-        }
-        catch (Exception ex)
-        {
-            logger.LogCritical(ex, "Error removing user tokens for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
+            try
+            {
+                return await remove();
+            }
+            catch (Exception ex)
+            {
+                // AuthenticationVersion was persisted with the account change. Remaining
+                // records cannot authenticate, and each token store gets its cleanup attempt.
+                logger.LogError(ex, "Error cleaning up user tokens for {UserId}", user.Id);
+                return 0;
+            }
         }
     }
 
@@ -683,7 +696,9 @@ public class AuthHandler(
         var userTokens = await tokenRepository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id);
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
-        var validAccessToken = userTokens.Documents.FirstOrDefault(token => !token.ExpiresUtc.HasValue || token.ExpiresUtc > utcNow);
+        var validAccessToken = userTokens.Documents.FirstOrDefault(token => !token.IsDisabled && !token.IsSuspended
+            && String.Equals(token.AuthenticationVersion, user.AuthenticationVersion, StringComparison.Ordinal)
+            && (!token.ExpiresUtc.HasValue || token.ExpiresUtc > utcNow));
         if (validAccessToken is not null)
             return validAccessToken.Id;
 
@@ -691,6 +706,7 @@ public class AuthHandler(
         {
             Id = Core.Extensions.StringExtensions.GetNewToken(),
             UserId = user.Id,
+            AuthenticationVersion = user.AuthenticationVersion,
             CreatedUtc = utcNow,
             UpdatedUtc = utcNow,
             ExpiresUtc = utcNow.AddMonths(3),
