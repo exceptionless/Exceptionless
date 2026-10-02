@@ -1,4 +1,4 @@
-import type { ConsoleMessage, Request, Response } from '@playwright/test';
+import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
@@ -34,6 +34,7 @@ interface RuntimeDiagnostics {
 
 test('stack effects stay bounded through background, paging, and navigation chaos @signup', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     test.slow();
+    await page.clock.install();
     await installWebSocketTestHarness(page, { ignoreServerMessages: true });
 
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
@@ -193,32 +194,49 @@ test('stack effects stay bounded through background, paging, and navigation chao
     expect(actionSample(diagnostics, 'removal notification leading window').listRequests).toBe(0);
 
     await measureAction(diagnostics, 'removal notification trailing reconciliation', async () => {
+        const refreshed = waitForStackRefresh(page, e2eScenario.organizationId);
         await page.waitForTimeout(STACK_NOTIFICATION_TRAILING_REFRESH_MS - 1_500);
+        await refreshed;
     });
     expect(actionSample(diagnostics, 'removal notification trailing reconciliation').countRequests).toBe(1);
     expect(actionSample(diagnostics, 'removal notification trailing reconciliation').listRequests).toBe(1);
 
-    await measureAction(diagnostics, 'sustained stack change notifications', async () => {
-        for (let wave = 0; wave < 4; wave++) {
-            await dispatchWebSocketMessages(
-                page,
-                Array.from({ length: 30 }, (_, index) => ({
-                    message: {
-                        change_type: 1,
-                        data: {},
-                        id: `chaos-missing-stack-${wave}-${index}`,
-                        organization_id: e2eScenario.organizationId,
-                        project_id: e2eScenario.projectId,
-                        type: 'Stack'
-                    },
-                    type: 'StackChanged'
-                }))
-            );
-            await page.waitForTimeout(1_600);
-        }
+    // Real runner delays can move the fourth wave past the five-second boundary,
+    // legitimately opening a second throttle window. Control only this window.
+    await page.clock.pauseAt(new Date((await page.evaluate(() => Date.now())) + 1_000));
+    try {
+        await measureAction(diagnostics, 'sustained stack change notifications', async () => {
+            const leadingRefresh = waitForStackRefresh(page, e2eScenario.organizationId);
+            let trailingRefresh: Promise<void> | undefined;
+            for (let wave = 0; wave < 4; wave++) {
+                await dispatchWebSocketMessages(
+                    page,
+                    Array.from({ length: 30 }, (_, index) => ({
+                        message: {
+                            change_type: 1,
+                            data: {},
+                            id: `chaos-missing-stack-${wave}-${index}`,
+                            organization_id: e2eScenario.organizationId,
+                            project_id: e2eScenario.projectId,
+                            type: 'Stack'
+                        },
+                        type: 'StackChanged'
+                    }))
+                );
+                if (wave === 0) {
+                    // Let real network work finish before advancing virtual timers.
+                    await leadingRefresh;
+                    trailingRefresh = waitForStackRefresh(page, e2eScenario.organizationId);
+                }
+                await page.clock.runFor(1_600);
+            }
 
-        await page.waitForTimeout(2_000);
-    });
+            await page.clock.runFor(2_000);
+            await trailingRefresh;
+        });
+    } finally {
+        await page.clock.resume();
+    }
     const sustainedNotificationSample = actionSample(diagnostics, 'sustained stack change notifications');
     expect(sustainedNotificationSample.countRequests).toBeGreaterThanOrEqual(1);
     expect(sustainedNotificationSample.countRequests).toBeLessThanOrEqual(2);
@@ -342,4 +360,18 @@ function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request)
         method: request.method(),
         url: request.url()
     });
+}
+
+async function waitForStackRefresh(page: Page, organizationId: string): Promise<void> {
+    const responses = await Promise.all([
+        page.waitForResponse((response) => isStackListResponse(response, organizationId)),
+        page.waitForResponse((response) => {
+            const url = new URL(response.url());
+            return url.pathname === `/api/v2/organizations/${organizationId}/events/count` && url.searchParams.get('mode') === 'stack_frequent';
+        })
+    ]);
+    for (const response of responses) {
+        expect(response.ok()).toBe(true);
+        await response.finished();
+    }
 }
