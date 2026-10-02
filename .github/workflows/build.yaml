@@ -229,7 +229,7 @@ jobs:
   # Preserve the required check name and fail closed if any shard fails or is skipped.
   test-api:
     needs: [test-api-shard]
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -507,7 +507,7 @@ jobs:
   test-e2e:
     # Consume the raw shards directly so the two report jobs can run together.
     needs: [test-e2e-shard, test-api-shard, test-client]
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     defaults:
