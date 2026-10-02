@@ -1024,8 +1024,8 @@
 
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
-        <H3 class="my-0 shrink-0">{pageTitle}</H3>
-        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1" data-tour="event-filters">
+        <H3 class="my-0 max-w-full shrink-0 wrap-anywhere">{pageTitle}</H3>
+        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-min md:flex-1" data-tour="event-filters">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
@@ -1049,9 +1049,11 @@
                         handleResetToSaved();
                     }}
                     onSavedViewUpdated={(view) => {
-                        savedChart = view.chart ?? null;
                         savedViewsState.handleSavedViewUpdated(view);
-                        queryParams.chart = null;
+                        if (savedViewsState.activeSavedView?.id === view.id) {
+                            savedChart = view.chart ?? null;
+                            queryParams.chart = null;
+                        }
                     }}
                     savedViews={savedViewsState.savedViews}
                     setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
