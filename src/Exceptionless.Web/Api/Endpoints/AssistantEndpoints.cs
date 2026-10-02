@@ -163,15 +163,26 @@ public static class AssistantEndpoints
             diagnostics.Finish("cancelled", "client_disconnected");
             await assistantUsageService.RecordTurnCancelledAsync(organizationId);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
             string failureCode = cancellationToken.IsCancellationRequested ? "turn_timeout"
                 : diagnostics.Stage is "provider_request" or "provider_stream" ? "provider_timeout" : "operation_cancelled";
+            var partialResponse = ex is AssistantProviderCanceledException providerCancellation
+                ? AssistantStreamEvent.TextDelta(providerCancellation.PartialResponse)
+                : null;
+            if (partialResponse is not null)
+                diagnostics.Observe(partialResponse);
             diagnostics.Finish("failed", failureCode);
             await assistantUsageService.RecordTurnFailedAsync(organizationId);
+            // Generation has timed out, but the browser can still receive the partial answer.
+            if (partialResponse is not null)
+            {
+                await JsonSerializer.SerializeAsync(httpContext.Response.Body, partialResponse, s_jsonOptions, httpContext.RequestAborted);
+                await httpContext.Response.WriteAsync("\n", httpContext.RequestAborted);
+            }
             var error = AssistantStreamEvent.Error("Exie took too long to complete this response. Try narrowing the question.");
-            await JsonSerializer.SerializeAsync(httpContext.Response.Body, error, s_jsonOptions, CancellationToken.None);
-            await httpContext.Response.WriteAsync("\n", CancellationToken.None);
+            await JsonSerializer.SerializeAsync(httpContext.Response.Body, error, s_jsonOptions, httpContext.RequestAborted);
+            await httpContext.Response.WriteAsync("\n", httpContext.RequestAborted);
         }
         catch (Exception ex)
         {

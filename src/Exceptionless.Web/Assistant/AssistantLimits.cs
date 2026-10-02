@@ -4,7 +4,8 @@ internal static class AssistantLimits
 {
     public const int MaximumInputMessages = 20;
     public const int MaximumInputCharacters = 48_000;
-    public const int MaximumOutputTokens = 2048;
+    // The provider budget includes reasoning tokens as well as the visible answer.
+    public const int MaximumOutputTokens = 16_384;
     public const int MaximumMalformedResponseRetries = 1;
     public const int MaximumToolRounds = 3;
     public const int MaximumToolCallsPerTurn = 12;
