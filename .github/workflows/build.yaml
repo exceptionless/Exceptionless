@@ -171,11 +171,13 @@ jobs:
       # AppHost embeds discovered CLI/bundle paths in its assembly metadata.
       # Match the browser runners so native coverage has identical module IDs.
       - name: Cache Aspire CLI
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         id: cache-aspire
         with:
-          path: ~/.dotnet/tools
-          key: aspire-cli-${{ runner.os }}-${{ runner.arch }}-13.6.0-sdk-10.0.401
+          path: |
+            ~/.dotnet/tools/aspire
+            ~/.dotnet/tools/.store/aspire.cli
+          key: aspire-cli-v2-${{ runner.os }}-${{ runner.arch }}-13.6.0-sdk-10.0.401
 
       - name: Install Aspire CLI
         run: |
@@ -192,6 +194,15 @@ jobs:
 
       - name: Build
         run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
+
+      - name: Save Aspire CLI
+        if: matrix.shard == 1 && steps.cache-aspire.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ~/.dotnet/tools/aspire
+            ~/.dotnet/tools/.store/aspire.cli
+          key: aspire-cli-v2-${{ runner.os }}-${{ runner.arch }}-13.6.0-sdk-10.0.401
 
       - name: Verify CI test tooling
         run: |
@@ -366,11 +377,13 @@ jobs:
           dotnet-quality: ga
 
       - name: Cache Aspire CLI
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         id: cache-aspire
         with:
-          path: ~/.dotnet/tools
-          key: aspire-cli-${{ runner.os }}-${{ runner.arch }}-13.6.0-sdk-10.0.401
+          path: |
+            ~/.dotnet/tools/aspire
+            ~/.dotnet/tools/.store/aspire.cli
+          key: aspire-cli-v2-${{ runner.os }}-${{ runner.arch }}-13.6.0-sdk-10.0.401
 
       - name: Install Aspire CLI
         run: |
