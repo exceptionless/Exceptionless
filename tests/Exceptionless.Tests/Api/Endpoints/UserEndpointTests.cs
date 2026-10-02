@@ -444,6 +444,27 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         Assert.Equal(persistedName, refreshed.FullName);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReadUser_LegacyCacheWithoutVersion_RefreshesFromStorage(bool byEmail)
+    {
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        string persistedName = user.FullName;
+        user.Version = null!;
+        user.FullName = "Old cached profile";
+        await Assert.IsType<PausingProfileUserRepository>(_userRepository).CacheUserAsync(user);
+        var refreshed = byEmail
+            ? await _userRepository.GetByEmailAddressAsync(user.EmailAddress)
+            : await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(refreshed);
+        Assert.Equal(persistedName, refreshed.FullName);
+        Assert.False(String.IsNullOrWhiteSpace(refreshed.Version));
+        refreshed.FullName = "Current update";
+        await _userRepository.SaveAsync(refreshed);
+    }
+
     [Fact]
     public async Task GetCurrentUserAsync_WithAvatar_ReturnsRoutableAvatarUrl()
     {

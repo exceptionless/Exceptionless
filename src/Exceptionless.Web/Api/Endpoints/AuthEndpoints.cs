@@ -183,6 +183,7 @@ public static class AuthEndpoints
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .WithSummary("Removes an external login provider from the account")
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The provider user id.",
             ParameterDescriptions = new() {
@@ -191,6 +192,7 @@ public static class AuthEndpoints
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
                 ["400"] = "Invalid provider name.",
+                ["409"] = "The account changed while the request was being processed.",
             }
         });
 
@@ -202,9 +204,11 @@ public static class AuthEndpoints
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Change password")
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
+                ["409"] = "The account changed while the request was being processed.",
                 ["422"] = "Validation error",
             }
         });
@@ -220,6 +224,7 @@ public static class AuthEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .WithSummary("Forgot password")
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
                 ["email"] = "The email address.",
@@ -227,6 +232,7 @@ public static class AuthEndpoints
             ResponseDescriptions = new() {
                 ["200"] = "Forgot password email was sent.",
                 ["400"] = "Invalid email address.",
+                ["409"] = "The account changed while the request was being processed.",
             }
         });
 
@@ -239,9 +245,11 @@ public static class AuthEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Reset password")
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "Password reset email was sent.",
+                ["409"] = "The account changed while the request was being processed.",
                 ["422"] = "Invalid reset password model.",
             }
         });
@@ -258,6 +266,7 @@ public static class AuthEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .WithSummary("Cancel reset password")
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
                 ["token"] = "The password reset token.",
@@ -265,6 +274,7 @@ public static class AuthEndpoints
             ResponseDescriptions = new() {
                 ["200"] = "Password reset email was cancelled.",
                 ["400"] = "Invalid password reset token.",
+                ["409"] = "The account changed while the request was being processed.",
             }
         });
 

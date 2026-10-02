@@ -6,13 +6,16 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
-public record User : IIdentity, IHaveDates, IValidatableObject
+public record User : IIdentity, IHaveDates, IVersioned, IValidatableObject
 {
     /// <summary>
     /// Unique id that identifies an user.
     /// </summary>
     [ObjectId]
     public string Id { get; set; } = null!;
+
+    // Repository concurrency metadata also survives serialized cache reads.
+    public string Version { get; set; } = null!;
 
     /// <summary>
     /// The organizations that the user has access to.
