@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Exceptionless.Web.Security;
 using Joonasw.AspNetCore.SecurityHeaders;
 using Joonasw.AspNetCore.SecurityHeaders.Csp.Builder;
 using Microsoft.AspNetCore.Builder;
@@ -30,6 +31,7 @@ public sealed class CspNonceTests
             var services = new ServiceCollection();
             services.AddLogging();
             services.AddCsp(nonceByteAmount: 32);
+            services.AddSingleton<FrontendScriptNonces>();
             services.AddSingleton<IWebHostEnvironment>(new TestWebHostEnvironment(webRoot, fileProvider));
             await using var serviceProvider = services.BuildServiceProvider();
 

@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 
 const NONCE_BYTE_LENGTH = 32;
 const NONCE_PATTERN = /^[A-Za-z\d+/]{43}=$/;
-const NONCE_ATTRIBUTE_PATTERN = /("[^"]*"|'[^']*')|\s+nonce(?=[\s=>/]|$)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi;
+const NONCE_ATTRIBUTE_PATTERN = /("[^"]*"|'[^']*')|\s+nonce\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
 const SCRIPT_ELEMENT_PATTERN = /(<script\b)((?:"[^"]*"|'[^']*'|[^'">])*)>([\s\S]*?)(<\/script\s*>)/gi;
 
 // Exceptionless uses Intercom's US endpoints. Keep region-specific sources scoped to that workspace.
@@ -61,16 +61,6 @@ interface ContentSecurityPolicyOptions {
     siteBaseUrl?: string;
 }
 
-export function addNonceToScripts(html: string, nonce: string): string {
-    validateNonce(nonce);
-
-    return html.replace(SCRIPT_ELEMENT_PATTERN, (_scriptElement, scriptTagName: string, attributes: string, content: string, closingTag: string) => {
-        const attributesWithoutNonce = attributes.replace(NONCE_ATTRIBUTE_PATTERN, (_attribute, quoted: string | undefined) => quoted ?? '');
-
-        return `${scriptTagName} nonce="${nonce}"${attributesWithoutNonce}>${content}${closingTag}`;
-    });
-}
-
 export function createContentSecurityPolicy(nonce: string, options: ContentSecurityPolicyOptions = {}): string {
     validateNonce(nonce);
 
@@ -106,17 +96,54 @@ export function getWebSocketOrigin(siteBaseUrl: string): string {
     return url.origin;
 }
 
+export function replaceScriptNonce(html: string, trustedNonce: string, nonce: string): string {
+    validateNonce(nonce);
+
+    return html.replace(SCRIPT_ELEMENT_PATTERN, (_scriptElement, scriptTagName: string, attributes: string, content: string, closingTag: string) => {
+        const updatedAttributes = attributes.replace(
+            NONCE_ATTRIBUTE_PATTERN,
+            (attribute, quoted: string | undefined, doubleQuoted: string | undefined, singleQuoted: string | undefined, unquoted: string | undefined) => {
+                if (!quoted && (doubleQuoted ?? singleQuoted ?? unquoted) === trustedNonce) {
+                    return ` nonce="${nonce}"`;
+                }
+
+                return attribute;
+            }
+        );
+
+        return `${scriptTagName}${updatedAttributes}>${content}${closingTag}`;
+    });
+}
+
 export async function secureHtmlResponse(response: Response, options: ContentSecurityPolicyOptions = {}): Promise<Response> {
-    if (!response.headers.get('content-type')?.startsWith('text/html') || response.body === null) {
+    if (!response.headers.get('content-type')?.toLowerCase().startsWith('text/html') || [204, 205, 304].includes(response.status)) {
         return response;
     }
 
+    if (response.status === 206 || response.headers.has('content-range')) {
+        throw new Error('CSP requires a complete HTML document; partial HTML responses cannot be secured.');
+    }
+
     const nonce = createNonce();
-    const html = addNonceToScripts(await response.text(), nonce);
+    // Only SvelteKit's unpredictable, per-response nonce identifies trusted scripts.
+    // Unmarked scripts, including injected tags, never receive authorization.
+    const scriptPolicy = response.headers
+        .get('content-security-policy')
+        ?.split(';')
+        .find((directive) => directive.trim().startsWith('script-src '));
+    const trustedNonce = scriptPolicy?.match(/'nonce-([A-Za-z\d+/]+={0,2})'/)?.[1];
+    let html = response.body === null ? null : await response.text();
+    if (html !== null && trustedNonce) {
+        html = replaceScriptNonce(html, trustedNonce, nonce);
+    }
+
     const headers = new Headers(response.headers);
     headers.delete('content-encoding');
     headers.delete('content-length');
     headers.delete('etag');
+    headers.delete('last-modified');
+    headers.delete('accept-ranges');
+    headers.delete('content-range');
     headers.set('Cache-Control', 'no-store');
     headers.set('Content-Security-Policy', createContentSecurityPolicy(nonce, options));
 
