@@ -41,6 +41,6 @@ Report the exact action, resource names, trace IDs, repeated-call counts, durati
 
 ## Browser and environment boundaries
 
-The AppHost enables `WithBrowserLogs()` for the Svelte `App` resource, which serves the application at `/`. Discover that resource's current endpoint; there is no separate Angular frontend. Use its dashboard for browser console/network evidence or screenshots when they explain a UI failure, and correlate browser activity with backend traces where available.
+The AppHost enables `WithBrowserLogs()` for the Svelte `App` resource, which serves the application at `/`. Discover that resource's current endpoint. Use its dashboard for browser console/network evidence or screenshots when they explain a UI failure, and correlate browser activity with backend traces where available.
 
 Avoid restarting the whole AppHost as a diagnostic loop. For deployed or external environments, follow the user's explicit scope and the platform's diagnostics; do not assume local Aspire commands or endpoints apply.

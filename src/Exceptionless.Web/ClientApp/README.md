@@ -1,6 +1,6 @@
 # Exceptionless User Interface
 
-This is the only Exceptionless application frontend: Svelte 5 and SvelteKit, served at `/`. The Angular application and its build tooling have been removed. New links use root routes; primary historical `/next`, `#!/`, and `#/` links remain supported by the navigation compatibility layer. The existing session storage key is retained so users stay signed in.
+This is the only Exceptionless application frontend: Svelte 5 and SvelteKit, served at `/`. New links use root routes; primary historical `/next`, `#!/`, and `#/` links remain supported by the navigation compatibility layer. The existing session storage key is retained so users stay signed in.
 
 ## Developing
 

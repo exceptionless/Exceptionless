@@ -22,7 +22,7 @@ Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://gith
 
 ## Contributing (Step-by-step)
 
-See the [README](README.md#contributing) for Aspire setup. The only application frontend is Svelte in `src/Exceptionless.Web/ClientApp`, served at `/`; the Angular application has been removed. Follow its [frontend guide](src/Exceptionless.Web/ClientApp/README.md) and the applicable `AGENTS.md` instructions.
+See the [README](README.md#contributing) for Aspire setup. The only application frontend is Svelte in `src/Exceptionless.Web/ClientApp`, served at `/`. Follow its [frontend guide](src/Exceptionless.Web/ClientApp/README.md) and the applicable `AGENTS.md` instructions.
 
 1. Refer to the GitHub documentation on how to fork the repository:
 

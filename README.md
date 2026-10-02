@@ -50,7 +50,7 @@ Notes:
 
 ## UI Development
 
-The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is the only application frontend and serves at `/`. The Angular application and its build tooling have been removed. Aspire starts Svelte together with the API. Existing `/next/` links and primary hash-route bookmarks resolve to the current pages, and existing signed-in sessions are retained.
+The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is the only application frontend and serves at `/`. Aspire starts Svelte together with the API. Existing `/next/` links and primary hash-route bookmarks resolve to the current pages, and existing signed-in sessions are retained.
 
 See the [frontend README](src/Exceptionless.Web/ClientApp/README.md) for development, build, and test commands. Published app images contain the Svelte build at the web root; API-only images retain their API landing page.
 

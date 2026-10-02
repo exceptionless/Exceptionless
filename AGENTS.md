@@ -42,7 +42,7 @@ tests/                         # C# tests and HTTP samples
 
 ## Frontend Direction
 
-- `src/Exceptionless.Web/ClientApp` is the only application frontend and serves Svelte at `/`. The Angular application and its build pipeline have been removed.
+- `src/Exceptionless.Web/ClientApp` is the only application frontend and serves Svelte at `/`.
 - Use root routes for navigation, documentation, and ordinary test fixtures. Keep `/next` and hash-route examples in incoming-link compatibility tests only; preserve the existing session storage key and public contracts.
 - Use the frontend skills for Svelte architecture, TanStack Query/Form, and shadcn-svelte details.
 

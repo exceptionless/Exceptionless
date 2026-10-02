@@ -85,11 +85,6 @@ public class AppOptions
     public SourceMapOptions SourceMapOptions { get; internal set; } = null!;
     public AssistantOptions AssistantOptions { get; internal set; } = null!;
 
-    public string GetApiOrigin()
-    {
-        return new Uri(String.IsNullOrWhiteSpace(ApiUrl) ? BaseURL : ApiUrl).GetLeftPart(UriPartial.Authority);
-    }
-
     public static AppOptions ReadFromConfiguration(IConfiguration config)
     {
         var options = new AppOptions();

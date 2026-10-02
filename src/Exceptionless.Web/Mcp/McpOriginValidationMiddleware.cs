@@ -1,4 +1,5 @@
 using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Services;
 using Microsoft.Net.Http.Headers;
 

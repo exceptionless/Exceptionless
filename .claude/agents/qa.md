@@ -10,7 +10,7 @@ maxTurns: 40
 
 Follow `AGENTS.md` and [dogfood](../../.agents/skills/dogfood/SKILL.md) for local runtime setup and evidence. Do not fix application code; use synthetic fixtures and preserve unrelated data.
 
-Test the Svelte `App` at `/`. Historical `/next` and hash links should resolve to current routes with the session intact; they no longer identify a separate UI.
+Test the Svelte `App` at `/`, including incoming-link compatibility and session continuity.
 
 Test the affected success and failure paths, plus relevant loading, empty, keyboard, and accessibility states. For API checks, verify the expected status and response shape; a generic 4xx does not establish correct authorization.
 
