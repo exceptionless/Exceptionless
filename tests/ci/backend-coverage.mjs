@@ -1,13 +1,14 @@
 // Merge the collector's native data, never percentages or lossy Cobertura conditions.
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { isDeepStrictEqual, parseArgs } from 'node:util';
+import { isDeepStrictEqual, parseArgs, promisify } from 'node:util';
 import { SaxesParser } from 'saxes';
 
 const root = resolve(import.meta.dirname, '../..');
+const execute = promisify(execFile);
 const collectorVersion = '18.11.2';
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 const hash = (data) => createHash('sha256').update(data).digest('hex');
@@ -206,18 +207,40 @@ function findManifests(directory) {
         .map((entry) => join(entry.parentPath, entry.name));
 }
 
-function loadShards(directory, kind, count, expected) {
+async function loadShards(directory, kind, count, expected) {
     const paths = findManifests(directory);
     const manifests = paths.map(readJson);
     validateManifests(manifests, expected, kind, count);
-    return paths.map((path, index) => {
+    const shards = paths.map((path, index) => {
         const manifest = manifests[index];
         const file = join(dirname(path), 'backend.coverage');
         if (hash(readFileSync(file)) !== manifest.sha256) throw new Error(`Coverage artifact checksum mismatch: ${file}`);
-        // Re-convert the native file verified by its checksum instead of trusting uploaded XML.
-        const report = convert(file, join(dirname(path), 'verified.xml'), manifest.source_root);
-        return { manifest, file, report };
+        return { manifest, file, report: undefined };
     });
+    // Bound collector processes on the two-core hosted runners. Re-convert every
+    // checked native input; parallelism never replaces source or union validation.
+    for (let offset = 0; offset < shards.length; offset += 2) {
+        const results = await Promise.allSettled(
+            shards.slice(offset, offset + 2).map(async (shard) => {
+                const output = join(dirname(shard.file), 'verified.xml');
+                const result = await execute(
+                    'dotnet',
+                    ['tool', 'run', 'dotnet-coverage', '--', 'merge', shard.file, '--output-format', 'xml', '--output', output],
+                    {
+                        cwd: root,
+                        timeout: 120_000,
+                        maxBuffer: 8 * 1024 * 1024
+                    }
+                );
+                process.stdout.write(result.stdout);
+                process.stderr.write(result.stderr);
+                shard.report = readNative(readFileSync(output, 'utf8'), shard.manifest.source_root);
+            })
+        );
+        const errors = results.filter((result) => result.status === 'rejected').map((result) => result.reason);
+        if (errors.length) throw new AggregateError(errors, `Native coverage verification failed:\n${errors.map((error) => error.message).join('\n')}`);
+    }
+    return shards;
 }
 
 const escapeXml = (value) => String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
@@ -278,12 +301,12 @@ function merge(shards, directory) {
     return { report, stats };
 }
 
-function aggregate(directory, output, apiCount, e2eCount) {
+async function aggregate(directory, output, apiCount, e2eCount) {
     if (existsSync(output) && readdirSync(output).length) throw new Error('Coverage report output directory must be empty');
     const started = performance.now();
     const expected = identity();
-    const api = loadShards(join(directory, 'api'), 'api', apiCount, expected);
-    const e2e = e2eCount ? loadShards(join(directory, 'e2e'), 'e2e', e2eCount, expected) : [];
+    const api = await loadShards(join(directory, 'api'), 'api', apiCount, expected);
+    const e2e = e2eCount ? await loadShards(join(directory, 'e2e'), 'e2e', e2eCount, expected) : [];
     validateSources([...api, ...e2e].map((s) => s.report));
     const components = { '.NET tests': merge(api, join(output, 'dotnet')) };
     if (e2e.length) {
@@ -345,19 +368,19 @@ function aggregate(directory, output, apiCount, e2eCount) {
     console.log(summary.join('\n'));
 }
 
-function main() {
+async function main() {
     const { values, positionals } = parseArgs({
         allowPositionals: true,
         options: { output: { type: 'string' }, api: { type: 'string' }, e2e: { type: 'string' } }
     });
     if (positionals[0] !== 'aggregate' || positionals.length !== 2 || !values.output)
         throw new Error('Usage: backend-coverage.mjs aggregate DIR --output DIR --api N [--e2e N]');
-    aggregate(resolve(positionals[1]), resolve(values.output), Number(values.api), Number(values.e2e ?? 0));
+    await aggregate(resolve(positionals[1]), resolve(values.output), Number(values.api), Number(values.e2e ?? 0));
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
     try {
-        main();
+        await main();
     } catch (error) {
         console.error(error.message);
         process.exitCode = 1;

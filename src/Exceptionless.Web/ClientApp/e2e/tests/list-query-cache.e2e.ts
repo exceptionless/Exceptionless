@@ -1,6 +1,7 @@
 import type { Page, Request } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
+import { installWebSocketTestHarness } from '../support/web-socket';
 
 interface RequestCounts {
     eventList: number;
@@ -11,6 +12,9 @@ interface RequestCounts {
 }
 
 test('stack and event queries reuse fresh parameterized data during in-app navigation', async ({ e2eApi, page }) => {
+    // Measure navigation cache reuse independently of background invalidations.
+    // Real notification delivery is exercised by the event-visibility journey.
+    await installWebSocketTestHarness(page, { ignoreServerMessages: true });
     const userToken = await e2eApi.login();
     const organizations = await e2eApi.getOrganizations(userToken);
     const organizationId = organizations[0]?.id;
