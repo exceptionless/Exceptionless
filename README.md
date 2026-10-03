@@ -47,6 +47,7 @@ Notes:
 1. Running `Exceptionless.AppHost` starts the app and required infrastructure together.
 2. Backend tests bootstrap required infrastructure automatically.
 3. Use Aspire CLI 13.6.0 or newer (`aspire update --self` to update). The AppHost uses the CLI bundle for the dashboard and resource orchestrator; when no CLI is installed, the SDK downloads the matching version through DNX.
+4. Aspire runs Elasticsearch and Kibana 9.5.4. Elasticsearch uses a fresh `exceptionless.data.v9` Docker volume; existing 8.x data in `exceptionless.data.v1` is preserved but is not migrated automatically. To migrate existing data, follow [Elastic's upgrade preparation](https://www.elastic.co/docs/deploy-manage/upgrade/prepare-to-upgrade) before attaching it to 9.x. An upgraded data directory cannot be downgraded to 8.x.
 
 ![image](https://user-images.githubusercontent.com/282584/223168564-6518d509-d292-4078-a61f-ab493d2bb812.png)
 
