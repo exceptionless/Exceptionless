@@ -8,8 +8,8 @@ namespace Exceptionless.Web.Hubs;
 /// underlying HttpResponse stream.
 ///
 /// Design: delivery is best-effort. Critical notifications can replace queued cache
-/// invalidations. Otherwise, a full queue aborts the connection so reconnect handling
-/// performs a full cache resynchronization.
+/// invalidations, then drain the bounded queue and close so reconnect handling performs
+/// a full cache resynchronization. Other data overflow aborts immediately.
 ///
 /// Deduplication: messages with the same serialized payload are coalesced — if an
 /// identical message is already queued, the newer duplicate is skipped. This reduces
@@ -17,6 +17,7 @@ namespace Exceptionless.Web.Hubs;
 /// </summary>
 public sealed class SseConnection : IAsyncDisposable
 {
+    private static readonly TimeSpan ResyncDrainTimeout = TimeSpan.FromSeconds(1);
     private static readonly byte[] KeepAliveBytes = ": keepalive\n\n"u8.ToArray();
     private readonly HttpResponse _response;
     private readonly ITextSerializer _serializer;
@@ -89,6 +90,21 @@ public sealed class SseConnection : IAsyncDisposable
 
         if (result is EnqueueResult.ReplacedDroppable)
         {
+            Interlocked.Increment(ref _droppedMessages);
+            // Let retained critical events flush before closing. Bound this grace period
+            // so a stalled response cannot prevent reconnect and lease cleanup forever.
+            lock (_lifecycleLock)
+            {
+                if (Volatile.Read(ref _disposeState) == 0)
+                    _cts.CancelAfter(ResyncDrainTimeout);
+            }
+            return true;
+        }
+
+        if (result is EnqueueResult.Draining)
+        {
+            // The connection is already closing for resynchronization. Keep the manager
+            // from disposing it before the accepted critical notifications flush.
             Interlocked.Increment(ref _droppedMessages);
             return true;
         }
@@ -226,6 +242,8 @@ public sealed class SseConnection : IAsyncDisposable
         Enqueued,
         Deduped,
         ReplacedDroppable,
+        ReplacedKeepAlive,
+        Draining,
         Full,
         Closed
     }
@@ -244,6 +262,7 @@ public sealed class SseConnection : IAsyncDisposable
         private readonly SemaphoreSlim _signal = new(0);
         private readonly int _capacity;
         private bool _completed;
+        private bool _draining;
 
         public DedupQueue(int capacity)
         {
@@ -255,7 +274,7 @@ public sealed class SseConnection : IAsyncDisposable
             lock (_lock)
             {
                 if (_completed)
-                    return EnqueueResult.Closed;
+                    return _draining ? EnqueueResult.Draining : EnqueueResult.Closed;
 
                 // Dedup check: if same key is already queued, skip
                 if (evt.DedupeKey is not null && _index.ContainsKey(evt.DedupeKey))
@@ -273,8 +292,14 @@ public sealed class SseConnection : IAsyncDisposable
                     if (queuedToDrop is null)
                         return EnqueueResult.Full;
 
+                    result = queuedToDrop.Value.IsKeepAlive ? EnqueueResult.ReplacedKeepAlive : EnqueueResult.ReplacedDroppable;
                     RemoveNode(queuedToDrop);
-                    result = EnqueueResult.ReplacedDroppable;
+                    if (result is EnqueueResult.ReplacedDroppable)
+                    {
+                        _draining = true;
+                        _completed = true;
+                        _signal.Release(); // End the stream after draining the bounded queue.
+                    }
                     queueCountIncreased = false;
                 }
 
@@ -321,6 +346,15 @@ public sealed class SseConnection : IAsyncDisposable
 
         private LinkedListNode<SseEvent>? FindFirstDroppableNode()
         {
+            // Discarding a heartbeat does not lose client state or require a reconnect.
+            var keepAlive = _list.First;
+            while (keepAlive is not null)
+            {
+                if (keepAlive.Value.IsKeepAlive)
+                    return keepAlive;
+                keepAlive = keepAlive.Next;
+            }
+
             var current = _list.First;
             while (current is not null)
             {

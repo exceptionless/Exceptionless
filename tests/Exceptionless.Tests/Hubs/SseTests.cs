@@ -581,6 +581,59 @@ public sealed class SseDeduplicationTests : TestWithServices
     public SseDeduplicationTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
+    public async Task TryWrite_CriticalEventEvictsInvalidation_DeliversCriticalThenReconnects()
+    {
+        using var response = new FakeHttpResponse();
+        await using var connection = new SseConnection("backpressure", response, GetService<ITextSerializer>(), TestContext.Current.CancellationToken, Log.CreateLogger<SseConnection>(), capacity: 2, startImmediately: false);
+        Assert.True(connection.TryWrite(new { type = "StackChanged", id = "invalidated-stack" }));
+        Assert.True(connection.TryWrite(new { type = "SystemNotification", message = "first-critical" }, canDrop: false));
+
+        Assert.True(connection.TryWrite(new { type = "SystemNotification", message = "replacement-critical" }, canDrop: false));
+        Assert.True(connection.TryWrite(new { type = "StackChanged", id = "late-invalidation" }));
+        connection.Start();
+
+        Assert.Contains("first-critical", response.WrittenData);
+        Assert.Contains("replacement-critical", response.WrittenData);
+        Assert.DoesNotContain("invalidated-stack", response.WrittenData);
+        Assert.DoesNotContain("late-invalidation", response.WrittenData);
+        Assert.True(connection.ConnectionAborted.IsCancellationRequested);
+        Assert.Equal(2, connection.DroppedMessages);
+    }
+
+    [Fact]
+    public async Task TryWrite_FullQueue_DeduplicatesOrAbortsOnNewInvalidation()
+    {
+        using var response = new FakeHttpResponse();
+        await using var connection = new SseConnection("full-queue", response, GetService<ITextSerializer>(), TestContext.Current.CancellationToken, Log.CreateLogger<SseConnection>(), capacity: 1, startImmediately: false);
+        var message = new { type = "StackChanged", id = "stack" };
+        Assert.True(connection.TryWrite(message));
+
+        Assert.True(connection.TryWrite(message));
+        Assert.False(connection.ConnectionAborted.IsCancellationRequested);
+        Assert.Equal(1, connection.DedupedMessages);
+        Assert.Equal(0, connection.DroppedMessages);
+
+        Assert.False(connection.TryWrite(new { type = "StackChanged", id = "other" }));
+        Assert.True(connection.ConnectionAborted.IsCancellationRequested);
+        Assert.Equal(1, connection.DroppedMessages);
+    }
+
+    [Fact]
+    public async Task TryWrite_CriticalEventEvictsKeepAlive_DoesNotRequireReconnect()
+    {
+        using var response = new FakeHttpResponse();
+        await using var connection = new SseConnection("keepalive-backpressure", response, GetService<ITextSerializer>(), TestContext.Current.CancellationToken, Log.CreateLogger<SseConnection>(), capacity: 1, startImmediately: false);
+        Assert.True(connection.TryWriteKeepAlive());
+
+        Assert.True(connection.TryWrite(new { type = "SystemNotification", message = "critical" }, canDrop: false));
+        connection.Start();
+
+        Assert.Contains("critical", response.WrittenData);
+        Assert.False(connection.ConnectionAborted.IsCancellationRequested);
+        Assert.Equal(0, connection.DroppedMessages);
+    }
+
+    [Fact]
     public async Task DuplicateMessages_AreDeduped_OnlyOneQueued()
     {
         var queue = new SseConnection.DedupQueue(8);
@@ -718,6 +771,8 @@ public sealed class SseDeduplicationTests : TestWithServices
         Assert.Equal(SseConnection.EnqueueResult.ReplacedDroppable, result);
         Assert.Equal("critical-1", item1!.Value.Data);
         Assert.Equal("critical-2", item2!.Value.Data);
+        Assert.Equal(SseConnection.EnqueueResult.Draining, queue.TryEnqueue(new SseConnection.SseEvent { Data = "late" }));
+        Assert.Null(await queue.DequeueAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
