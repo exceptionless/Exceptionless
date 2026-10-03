@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 import { createServer } from 'node:http';
 import { afterEach, expect, it } from 'vitest';
 
-import { createSseProxy } from './sse-proxy';
+import { createApiProxies } from './sse-proxy';
 
 const upstream = createServer();
 
@@ -29,7 +29,11 @@ it('cancels the upstream SSE stream when the downstream HTTP/2 response closes',
     const target = `http://127.0.0.1:${address.port}`;
     const downstream = Object.assign(new EventEmitter(), { destroyed: false, writableFinished: false });
     const options: RequestInit = {};
-    const proxy = createSseProxy(target);
+    const proxies = Object.entries(createApiProxies(target));
+    const matchProxy = (url: string) => proxies.find(([prefix]) => url.startsWith(prefix))?.[1];
+    expect(matchProxy('/api/v2/about')).toMatchObject({ changeOrigin: true, target, ws: true });
+    expect(matchProxy('/api/v2/about')?.fetchOptions?.onBeforeRequest).toBeUndefined();
+    const proxy = matchProxy('/api/v2/push?canary=1')!;
     await proxy.fetchOptions!.onBeforeRequest!(options, {} as IncomingMessage, downstream as ServerResponse, {});
     const response = await fetch(`${target}/api/v2/push`, options);
     const reader = response.body!.getReader();
