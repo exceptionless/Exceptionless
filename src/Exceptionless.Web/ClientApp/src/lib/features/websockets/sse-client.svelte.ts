@@ -1,5 +1,6 @@
-import { env } from '$env/dynamic/public';
+import { getServerUrl } from '$shared/api/urls';
 import { DocumentVisibility } from '$shared/document-visibility.svelte';
+import { SvelteURL } from 'svelte/reactivity';
 
 import { accessToken } from '../auth/index.svelte';
 
@@ -40,12 +41,11 @@ export class SseClient {
      */
     public get url(): string {
         if (this._url === null) {
-            const baseUrl = this._options.baseUrl ?? env.PUBLIC_EXCEPTIONLESS_SERVER_URL;
+            const baseUrl = this._options.baseUrl;
             if (baseUrl) {
                 this._url = `${baseUrl.replace(/\/$/, '')}${this._path}`;
             } else {
-                const { host, protocol } = window.location;
-                this._url = `${protocol}//${host}${this._path}`;
+                this._url = new SvelteURL(getServerUrl(this._path), window.location.origin).href;
             }
         }
 

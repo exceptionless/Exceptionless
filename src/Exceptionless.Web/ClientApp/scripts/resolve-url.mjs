@@ -51,19 +51,17 @@ function git(args) {
 }
 
 const isAppResource = (resource) => /^app$/i.test(resource.displayName ?? '') || /^app$/i.test(resource.name ?? '');
-const isOldAppResource = (resource) => /^oldapp$/i.test(resource.displayName ?? '') || /^oldapp$/i.test(resource.name ?? '');
 const isApiResource = (resource) => /^api$/i.test(resource.displayName ?? '') || /^api$/i.test(resource.name ?? '');
 
 export function resolveUrls() {
     const clean = (url) => url && url.replace(/\/$/, '');
     const scope = deriveScope();
-    const { apiUrl, appUrl, found, oldAppUrl } = fromAspire();
+    const { apiUrl, appUrl, found } = fromAspire();
 
     if (appUrl) {
         return {
             apiUrl: clean(apiUrl),
             appUrl: clean(appUrl),
-            oldAppUrl: clean(oldAppUrl),
             scope,
             status: 'ready'
         };
@@ -113,14 +111,12 @@ function fromAspire() {
 
     let found = false;
     let appUrl;
-    let oldAppUrl;
     let apiUrl;
 
     for (const resource of resources) {
         const app = isAppResource(resource);
-        const oldApp = isOldAppResource(resource);
         const api = isApiResource(resource);
-        if (!app && !oldApp && !api) {
+        if (!app && !api) {
             continue;
         }
 
@@ -135,14 +131,12 @@ function fromAspire() {
         const urls = (resource.urls ?? []).filter((url) => /^https?:\/\//i.test(url.url ?? ''));
         if (app) {
             appUrl ??= (urls.find((url) => /open app$/i.test(url.displayName ?? '')) ?? urls[0])?.url;
-        } else if (oldApp) {
-            oldAppUrl ??= (urls.find((url) => /old/i.test(url.displayName ?? '')) ?? urls[0])?.url;
         } else if (api) {
             apiUrl ??= (urls.find((url) => /open api|api/i.test(url.displayName ?? '')) ?? urls[0])?.url;
         }
     }
 
-    return { apiUrl, appUrl, found, oldAppUrl };
+    return { apiUrl, appUrl, found };
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {

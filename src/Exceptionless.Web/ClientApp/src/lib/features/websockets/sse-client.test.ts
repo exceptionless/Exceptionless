@@ -425,8 +425,9 @@ describe('SseClient', () => {
         });
 
         it('uses the configured API origin for push while keeping an explicit override', () => {
-            const configuredUrl = env.PUBLIC_EXCEPTIONLESS_SERVER_URL;
-            env.PUBLIC_EXCEPTIONLESS_SERVER_URL = 'https://api-ex.dev.localhost:7111/';
+            const configuredUrl = env.PUBLIC_BASE_URL;
+            env.PUBLIC_BASE_URL = 'https://api-ex.dev.localhost:7111/';
+            vi.stubGlobal('window', { location: { origin: 'https://web-ex.dev.localhost:7131' } });
 
             try {
                 const client = new SseClient();
@@ -436,7 +437,8 @@ describe('SseClient', () => {
                 const overridden = trackedClient({ baseUrl: 'http://localhost:5200' });
                 expect(overridden.url).toBe('http://localhost:5200/api/v2/push');
             } finally {
-                env.PUBLIC_EXCEPTIONLESS_SERVER_URL = configuredUrl;
+                env.PUBLIC_BASE_URL = configuredUrl;
+                vi.unstubAllGlobals();
             }
         });
     });
