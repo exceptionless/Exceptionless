@@ -74,7 +74,7 @@ public class SseMiddleware
             try
             {
                 connection = _connectionManager.AddConnectionDeferred(connectionId, context.Response, connectionLifetime.Token);
-                if (!_connectionRegistry.TryRegister(connectionId, principal.UserId, principal.TokenId, principal.OrganizationIds, principal.FollowMembershipAdditions))
+                if (!_connectionRegistry.TryRegister(connectionId, principal.UserId, principal.TokenId, principal.OrganizationIds, principal.FollowMembershipAdditions, principal.CanReceiveTokenNotifications))
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     return;

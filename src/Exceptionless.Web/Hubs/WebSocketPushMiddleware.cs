@@ -76,7 +76,7 @@ public sealed class WebSocketPushMiddleware
             {
                 socket = await context.WebSockets.AcceptWebSocketAsync();
                 _connectionManager.AddConnection(connectionId, socket);
-                if (!_connectionRegistry.TryRegister(connectionId, principal.UserId, principal.TokenId, principal.OrganizationIds, principal.FollowMembershipAdditions))
+                if (!_connectionRegistry.TryRegister(connectionId, principal.UserId, principal.TokenId, principal.OrganizationIds, principal.FollowMembershipAdditions, principal.CanReceiveTokenNotifications))
                 {
                     await socket.CloseOutputAsync((WebSocketCloseStatus)UnauthorizedCloseStatus, "Unauthorized", context.RequestAborted).ConfigureAwait(false);
                     return;

@@ -4,7 +4,7 @@ using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Web.Hubs;
 
-internal sealed record PushPrincipal(string ConnectionOwnerId, string? UserId, string? TokenId, IReadOnlyCollection<string> OrganizationIds, bool FollowMembershipAdditions)
+internal sealed record PushPrincipal(string ConnectionOwnerId, string? UserId, string? TokenId, IReadOnlyCollection<string> OrganizationIds, bool FollowMembershipAdditions, bool CanReceiveTokenNotifications)
 {
     public static bool TryCreate(ClaimsPrincipal principal, [NotNullWhen(true)] out PushPrincipal? pushPrincipal)
     {
@@ -27,6 +27,7 @@ internal sealed record PushPrincipal(string ConnectionOwnerId, string? UserId, s
             userId,
             tokenId,
             principal.GetOrganizationIds(),
+            principal.IsUserAuthType(),
             principal.IsUserAuthType());
         return true;
     }

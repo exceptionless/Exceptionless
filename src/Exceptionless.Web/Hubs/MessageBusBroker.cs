@@ -130,7 +130,9 @@ public sealed class MessageBusBroker : IStartupAction
 
             if (userId is not null)
             {
-                var userConnectionIds = _connectionRegistry.GetUserConnections(userId);
+                // Token identifiers are bearer credentials. Membership tracking includes
+                // scoped identities, but only ordinary sessions may receive these events.
+                var userConnectionIds = _connectionRegistry.GetTokenNotificationConnections(_connectionRegistry.GetUserConnections(userId));
 
                 // Auth token removed = logout. Close connections immediately without sending;
                 // there is no point delivering a message to a connection we are about to tear down.
@@ -157,6 +159,9 @@ public sealed class MessageBusBroker : IStartupAction
             }
 
             entityChanged.Data.Clear();
+            if (!String.IsNullOrEmpty(entityChanged.OrganizationId))
+                TypedSend(_connectionRegistry.GetTokenNotificationConnections(_connectionRegistry.GetGroupConnections(entityChanged.OrganizationId)), entityChanged);
+            return;
         }
 
         if (!String.IsNullOrEmpty(entityChanged.OrganizationId))

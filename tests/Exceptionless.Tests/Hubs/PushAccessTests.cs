@@ -16,6 +16,84 @@ namespace Exceptionless.Tests.Hubs;
 public sealed class PushAccessTests(ITestOutputHelper output) : TestWithServices(output)
 {
     [Theory]
+    [InlineData(true, ChangeType.Added)]
+    [InlineData(true, ChangeType.Saved)]
+    [InlineData(false, ChangeType.Added)]
+    public async Task OnEntityChangedAsync_TokenCredentials_OnlyNormalSessionsReceiveCanary(bool authenticationToken, ChangeType changeType)
+    {
+        var user = new User { Id = "user", EmailAddress = "user@example.test", OrganizationIds = new HashSet<string> { "allowed" } };
+        var oauth = new OAuthToken { Id = "oauth", UserId = user.Id, ClientId = "client", Resource = "https://localhost/api/v2", OrganizationIds = ["allowed"] };
+        var access = new Token { Id = "access", Type = TokenType.Access, OrganizationId = "allowed" };
+        var userAccess = new Token { Id = "user-access", Type = TokenType.Access, UserId = user.Id, OrganizationId = "allowed" };
+        var session = new Token { Id = "session", Type = TokenType.Authentication, UserId = user.Id };
+        ClaimsPrincipal[] identities = [new(user.ToIdentity(oauth)), new(access.ToIdentity()), new(user.ToIdentity(userAccess)), new(user.ToIdentity(session))];
+        var registry = GetService<PushConnectionRegistry>();
+        var sse = GetService<SseConnectionManager>();
+        var webSockets = GetService<WebSocketConnectionManager>();
+        var responses = identities.Select(_ => new FakeHttpResponse()).ToArray();
+        var sockets = identities.Select(_ => new TestWebSocket()).ToArray();
+        const string canary = "synthetic-new-credential-canary";
+
+        try
+        {
+            for (int index = 0; index < identities.Length; index++)
+            {
+                Assert.True(PushPrincipal.TryCreate(identities[index], out var principal));
+                Assert.Equal(index == 3, principal.CanReceiveTokenNotifications);
+                sse.AddConnectionDeferred($"sse-{index}", responses[index], TestContext.Current.CancellationToken);
+                webSockets.AddConnection($"websocket-{index}", sockets[index]);
+                Assert.True(registry.TryRegister($"sse-{index}", principal.UserId, principal.TokenId, principal.OrganizationIds, principal.FollowMembershipAdditions, principal.CanReceiveTokenNotifications));
+                Assert.True(registry.TryRegister($"websocket-{index}", principal.UserId, principal.TokenId, principal.OrganizationIds, principal.FollowMembershipAdditions, principal.CanReceiveTokenNotifications));
+            }
+
+            var broker = GetService<MessageBusBroker>();
+            var logout = new EntityChanged { Type = nameof(Token), Id = "previous-session", ChangeType = ChangeType.Removed };
+            logout.Data[ExtendedEntityChanged.KnownKeys.UserId] = user.Id;
+            logout.Data[ExtendedEntityChanged.KnownKeys.IsAuthenticationToken] = true;
+            await broker.OnEntityChangedAsync(logout, TestContext.Current.CancellationToken);
+            Assert.NotNull(sse.GetConnectionById("sse-0"));
+            Assert.NotNull(webSockets.GetConnectionById("websocket-0"));
+
+            var message = new EntityChanged { Type = nameof(Token), Id = canary, ChangeType = changeType };
+            message.Data[ExtendedEntityChanged.KnownKeys.IsAuthenticationToken] = authenticationToken;
+            if (authenticationToken)
+                message.Data[ExtendedEntityChanged.KnownKeys.UserId] = user.Id;
+            else
+                message.Data[ExtendedEntityChanged.KnownKeys.OrganizationId] = "allowed";
+
+            await broker.OnEntityChangedAsync(message, TestContext.Current.CancellationToken);
+            for (int index = 0; index < identities.Length; index++)
+            {
+                var connection = sse.GetConnectionById($"sse-{index}")!;
+                connection.TryWriteKeepAlive();
+                connection.Start();
+                await sse.RemoveConnectionAsync($"sse-{index}");
+            }
+
+            Assert.Contains(canary, responses[3].WrittenData);
+            Assert.Contains(canary, String.Join("", sockets[3].SentMessages));
+            for (int index = 0; index < 3; index++)
+            {
+                Assert.DoesNotContain(canary, responses[index].WrittenData);
+                Assert.DoesNotContain(canary, String.Join("", sockets[index].SentMessages));
+            }
+            Assert.Contains("sse-0", registry.GetUserConnections(user.Id));
+        }
+        finally
+        {
+            for (int index = 0; index < identities.Length; index++)
+            {
+                await sse.RemoveConnectionAsync($"sse-{index}");
+                await webSockets.RemoveConnectionAsync($"websocket-{index}");
+                registry.Unregister($"sse-{index}");
+                registry.Unregister($"websocket-{index}");
+                responses[index].Dispose();
+                sockets[index].Dispose();
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(ChangeType.Removed, false)]
     [InlineData(ChangeType.Saved, true)]
     public async Task OAuthTokenRevoked_ClosesBothTransportsWithoutClosingOtherTokens(ChangeType changeType, bool revoked)
