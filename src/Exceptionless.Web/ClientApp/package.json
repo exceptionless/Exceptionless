@@ -93,7 +93,7 @@
         "bits-ui": "^2.19.2",
         "clsx": "^2.1.1",
         "d3-scale": "^4.0.2",
-        "dompurify": "^3.4.15",
+        "dompurify": "^3.4.16",
         "driver.js": "^1.8.0",
         "layerchart": "^2.5.0",
         "mode-watcher": "^1.1.0",
