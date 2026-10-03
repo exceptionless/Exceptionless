@@ -5,11 +5,11 @@ using Xunit;
 
 namespace Exceptionless.Tests.Utility;
 
-public sealed class RedisConnectionLeaseStoreTests : IClassFixture<AppWebHostFactory>
+public sealed class RedisConnectionLeaseStoreTests : IClassFixture<RedisTestFixture>
 {
-    private readonly AppWebHostFactory _factory;
+    private readonly RedisTestFixture _factory;
 
-    public RedisConnectionLeaseStoreTests(AppWebHostFactory factory)
+    public RedisConnectionLeaseStoreTests(RedisTestFixture factory)
     {
         _factory = factory;
     }
@@ -17,8 +17,7 @@ public sealed class RedisConnectionLeaseStoreTests : IClassFixture<AppWebHostFac
     [Fact]
     public async Task TryAcquireAsync_TwoProvidersShareAtomicLimitAndRecoverExpiredLeases()
     {
-        string connectionString = await _factory.GetRedisConnectionStringAsync(TestContext.Current.CancellationToken);
-        await using var multiplexer = await ConnectionMultiplexer.ConnectAsync(connectionString);
+        await using var multiplexer = await ConnectionMultiplexer.ConnectAsync(_factory.ConnectionString);
         string scope = $"lease-test-{Guid.NewGuid():N}";
         var first = new RedisConnectionLeaseStore(multiplexer, new AppOptions { AppScope = scope });
         var second = new RedisConnectionLeaseStore(multiplexer, new AppOptions { AppScope = scope });
