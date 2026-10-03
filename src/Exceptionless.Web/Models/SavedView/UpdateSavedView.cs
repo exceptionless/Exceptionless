@@ -23,6 +23,8 @@ public class UpdateSavedView : IValidatableObject
     public bool? ShowStats { get; set; }
     public bool? ShowChart { get; set; }
 
+    public EventChart? Chart { get; set; }
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (FilterDefinitions is { Length: > 0 } && !NewSavedView.IsValidJsonArray(FilterDefinitions))

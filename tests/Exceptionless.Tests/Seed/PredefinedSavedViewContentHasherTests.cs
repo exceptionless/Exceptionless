@@ -7,6 +7,19 @@ namespace Exceptionless.Tests.Seed;
 public sealed class PredefinedSavedViewContentHasherTests
 {
     [Fact]
+    public void GetContentHash_ChartAddedAndRemoved_PreservesLegacyBaseline()
+    {
+        var view = new SavedView { Name = "All", Slug = "all", ViewType = "events" };
+        string baseline = PredefinedSavedViewContentHasher.GetContentHash(view);
+        Assert.Equal("79c85bcab013ff5fcbca3a5f620a0e1e12d92c44cd70bd02ec0779d4b840ab22", baseline);
+
+        view.Chart = new EventChart { Measurement = "duration", Unit = "ms" };
+        Assert.NotEqual(baseline, PredefinedSavedViewContentHasher.GetContentHash(view));
+        view.Chart = null;
+        Assert.Equal(baseline, PredefinedSavedViewContentHasher.GetContentHash(view));
+    }
+
+    [Fact]
     public void GetContentHash_FilterDefinitionsDifferOnlyByFormattingAndDictionaryInsertionOrder_ReturnsSameHash()
     {
         // Arrange

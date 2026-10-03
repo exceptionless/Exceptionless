@@ -77,8 +77,21 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
             return;
         }
 
-        if (TryGetEnumerableElementType(type, out var elementType) && IsComplexType(elementType))
-            schema.Items = await context.GetOrCreateSchemaAsync(elementType, null, cancellationToken);
+        if (TryGetEnumerableElementType(type, out var elementType))
+        {
+            if (IsComplexType(elementType))
+                schema.Items = await context.GetOrCreateSchemaAsync(elementType, null, cancellationToken);
+            return;
+        }
+
+        if (type != typeof(object) && IsComplexType(type))
+        {
+            var nested = await context.GetOrCreateSchemaAsync(type, null, cancellationToken);
+            schema.AnyOf = [nested];
+            if (schema.Type?.HasFlag(JsonSchemaType.Null) == true)
+                schema.AnyOf.Add(new OpenApiSchema { Type = JsonSchemaType.Null });
+            schema.Type = null;
+        }
     }
 
     private static bool IsComplexType(Type type)
@@ -188,7 +201,7 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
         }
         else
         {
-            schemaType = JsonSchemaType.Object;
+            schemaType |= JsonSchemaType.Object;
         }
 
         schema.Type = schemaType;

@@ -21,7 +21,7 @@ public static class PredefinedSavedViewContentHasher
             savedView.FilterDefinitions,
             savedView.Columns,
             savedView.ShowStats,
-            savedView.ShowChart);
+            savedView.ShowChart, savedView.Chart);
     }
 
     public static string GetDefinitionsContentHash(IEnumerable<PredefinedSavedViewDefinition> definitions)
@@ -43,7 +43,7 @@ public static class PredefinedSavedViewContentHasher
                     PredefinedSavedViewsDataSeed.GetRawJson(definition.FilterDefinitions),
                     definition.Columns,
                     definition.ShowStats,
-                    definition.ShowChart)
+                    definition.ShowChart, definition.Chart)
             });
 
         return SerializeAndHash(content);
@@ -59,7 +59,8 @@ public static class PredefinedSavedViewContentHasher
         string? filterDefinitions,
         IReadOnlyDictionary<string, SavedViewColumnSettings>? columns,
         bool? showStats,
-        bool? showChart)
+        bool? showChart,
+        EventChart? chart)
     {
         var content = new
         {
@@ -75,7 +76,13 @@ public static class PredefinedSavedViewContentHasher
             showChart
         };
 
-        return SerializeAndHash(content);
+        // Keep the exact legacy hash when no chart configuration exists.
+        if (chart is null)
+            return SerializeAndHash(content);
+
+        var configured = JsonSerializer.SerializeToNode(content)!.AsObject();
+        configured["chart"] = JsonSerializer.SerializeToNode(chart);
+        return configured.ToJsonString().ToSHA256();
     }
 
     private static string SerializeAndHash<T>(T content)

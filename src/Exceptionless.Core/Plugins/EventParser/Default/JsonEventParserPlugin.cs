@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
 using Exceptionless.Core.Extensions;
+using System.Text.Json.Serialization.Metadata;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Microsoft.Extensions.Logging;
@@ -17,6 +19,8 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
         // non-nullable properties. We must not reject structurally valid events; the pipeline
         // handles missing/null values gracefully downstream.
         _jsonOptions = new JsonSerializerOptions(jsonOptions) { RespectNullableAnnotations = false };
+        _jsonOptions.TypeInfoResolver = (_jsonOptions.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver())
+            .WithAddedModifier(EventTelemetryReader.CaptureTelemetryProperties);
     }
 
     public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string? userAgent)

@@ -281,22 +281,23 @@ public partial class SavedViewHandler(
         }
 
         var savedViews = message.Definitions.Select(definition => new SavedView
-            {
-                OrganizationId = PredefinedSavedViewsDataSeed.SystemOrganizationId,
-                CreatedByUserId = GetCurrentUserId(),
-                PredefinedKey = definition.Key,
-                Name = definition.Name,
-                Slug = definition.Slug,
-                ViewType = definition.ViewType,
-                Filter = definition.Filter,
-                Time = definition.Time,
-                Sort = definition.Sort,
-                FilterDefinitions = definition.FilterDefinitions is { } filterDefinitions ? JsonSerializer.Serialize(filterDefinitions) : null,
-                Columns = CopyColumns(definition.Columns),
-                ShowStats = definition.ShowStats,
-                ShowChart = definition.ShowChart,
-                Version = 1
-            })
+        {
+            OrganizationId = PredefinedSavedViewsDataSeed.SystemOrganizationId,
+            CreatedByUserId = GetCurrentUserId(),
+            PredefinedKey = definition.Key,
+            Name = definition.Name,
+            Slug = definition.Slug,
+            ViewType = definition.ViewType,
+            Filter = definition.Filter,
+            Time = definition.Time,
+            Sort = definition.Sort,
+            FilterDefinitions = definition.FilterDefinitions is { } filterDefinitions ? JsonSerializer.Serialize(filterDefinitions) : null,
+            Columns = CopyColumns(definition.Columns),
+            ShowStats = definition.ShowStats,
+            ShowChart = definition.ShowChart,
+            Chart = definition.Chart is null ? null : definition.Chart with { },
+            Version = 1
+        })
             .ToList();
 
         foreach (var savedView in savedViews)
@@ -363,6 +364,10 @@ public partial class SavedViewHandler(
 
         var changedNames = message.Changes.GetChangedPropertyNames();
         message.Changes.Patch(original);
+
+        // Delta's cross-model copy skips null references. An explicit null chart restores the default.
+        if (changedNames.Contains(nameof(UpdateSavedView.Chart)) && message.Changes.TryGetPropertyValue(nameof(UpdateSavedView.Chart), out var chart))
+            original.Chart = (EventChart?)chart;
 
         if (changedNames.Contains(nameof(UpdateSavedView.Slug)))
             original.Slug = ToSlug(original.Slug);
@@ -818,6 +823,7 @@ public partial class SavedViewHandler(
             Columns = CopyColumns(definition.Columns),
             ShowStats = definition.ShowStats,
             ShowChart = definition.ShowChart,
+            Chart = definition.Chart is null ? null : definition.Chart with { },
             Version = 1
         };
 
@@ -838,6 +844,7 @@ public partial class SavedViewHandler(
         changed |= SetColumnsIfChanged(savedView, definition.Columns);
         changed |= SetIfChanged(savedView, definition.ShowStats, static (view, value) => view.ShowStats = value, static view => view.ShowStats);
         changed |= SetIfChanged(savedView, definition.ShowChart, static (view, value) => view.ShowChart = value, static view => view.ShowChart);
+        changed |= SetIfChanged(savedView, definition.Chart is null ? null : definition.Chart with { }, static (view, value) => view.Chart = value, static view => view.Chart);
         changed |= SetIfChanged(savedView, 1, static (view, value) => view.Version = value, static view => view.Version);
         changed |= SetIfChanged(savedView, PredefinedSavedViewContentHasher.GetContentHash(savedView), static (view, value) => view.PredefinedContentHash = value, static view => view.PredefinedContentHash);
 
@@ -943,7 +950,8 @@ public partial class SavedViewHandler(
             FilterDefinitions = ParseFilterDefinitions(savedView.FilterDefinitions),
             Columns = savedView.Columns,
             ShowStats = savedView.ShowStats,
-            ShowChart = savedView.ShowChart
+            ShowChart = savedView.ShowChart,
+            Chart = savedView.Chart
         };
     }
 

@@ -8,16 +8,27 @@
     import { getEventsByReferenceQuery } from '$features/events/api.svelte';
     import { buildEventDetailsHref } from '$features/events/components/summary';
     import Summary from '$features/events/components/summary/summary.svelte';
+    import { createQueryParameters } from '$shared/query-params';
 
     const referenceId = $derived(page.params.referenceId || '');
+    const queryParams = createQueryParameters({
+        schema: {
+            project: 'string'
+        }
+    });
     const eventsQuery = getEventsByReferenceQuery({
         route: {
+            get projectId() {
+                return queryParams.project ?? undefined;
+            },
             get referenceId() {
                 return referenceId;
             }
         }
     });
-    const eventListHref = $derived(`${resolve('/(app)/event')}?filter=${encodeURIComponent(`reference:${referenceId}`)}&limit=20`);
+    const eventListHref = $derived(
+        `${resolve('/(app)/event')}?filter=${encodeURIComponent(`${queryParams.project ? `project:${queryParams.project} AND ` : ''}reference:${referenceId}`)}&limit=20`
+    );
     let redirectedEventId = $state<string>();
 
     $effect(() => {

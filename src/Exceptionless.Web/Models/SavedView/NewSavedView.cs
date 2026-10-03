@@ -60,6 +60,8 @@ public record NewSavedView : IOwnedByOrganization, IValidatableObject
 
     public bool? ShowChart { get; set; }
 
+    public EventChart? Chart { get; set; }
+
     /// <summary>If true, the view will only be visible to the current user. Defaults to false.</summary>
     public bool? IsPrivate { get; set; }
 
