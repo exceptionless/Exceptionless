@@ -54,8 +54,6 @@ dotnet restore Exceptionless.slnx
 echo "Installing Svelte frontend dependencies..."
 npm ci --prefix src/Exceptionless.Web/ClientApp --prefer-offline --no-audit
 
-echo "Installing legacy Angular frontend dependencies..."
-npm ci --prefix src/Exceptionless.Web/ClientApp.angular --prefer-offline --no-audit
 
 echo "Setup complete. Use Run Aspire to start the app, Run Storybook for component work, or Run Lume Docs to test the static site."
 '''

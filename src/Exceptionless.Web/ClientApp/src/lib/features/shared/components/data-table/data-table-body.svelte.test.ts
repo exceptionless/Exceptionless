@@ -224,7 +224,7 @@ describe('DataTableBody', () => {
 
         const messageLink = screen.getByText('Unexpected end of Stream, the content may have already been read by another component.').closest('a');
 
-        expect(messageLink?.getAttribute('href')).toBe('/next/event/event-id');
+        expect(messageLink?.getAttribute('href')).toBe('/event/event-id');
     });
 
     it('opens stack details for normal clicks anywhere in a stack summary', async () => {
@@ -243,6 +243,6 @@ describe('DataTableBody', () => {
 
         const messageLink = screen.getByText('Unexpected end of Stream, the content may have already been read by another component.').closest('a');
 
-        expect(messageLink?.getAttribute('href')).toBe('/next/stack/stack-id');
+        expect(messageLink?.getAttribute('href')).toBe('/stack/stack-id');
     });
 });

@@ -19,7 +19,7 @@ test('desktop navbar logo stays within the expanded sidebar', async ({ page }) =
     });
     await page.route('**/api/v2/**', fulfillAppShellRequest);
 
-    await page.goto('/next/stack');
+    await page.goto('/stack');
 
     const logo = page.getByRole('link', { name: 'Exceptionless Logo' }).locator('img:visible');
     const sidebar = page.locator('[data-slot="sidebar-container"]');

@@ -11,7 +11,7 @@ vi.mock('../activity', () => ({ submitProductTourActivity: vi.fn() }));
 const navigation = vi.hoisted(() => ({ goto: vi.fn() }));
 vi.mock('$app/navigation', () => navigation);
 vi.mock('$app/state', () => ({ page: { route: { id: '/(app)/stack' } } }));
-vi.mock('$app/paths', () => ({ resolve: () => '/next/event' }));
+vi.mock('$app/paths', () => ({ resolve: () => '/event' }));
 
 let targets: HTMLDivElement;
 
@@ -61,7 +61,7 @@ describe('ProductTourShellSpotlight', () => {
 
         await fireEvent.click(await screen.findByRole('button', { name: button }));
 
-        expect(navigation.goto).toHaveBeenCalledWith('/next/event');
+        expect(navigation.goto).toHaveBeenCalledWith('/event');
         expect(productTourCheckpoint.current).toBe(checkpoint);
         pending.resolve();
         await waitFor(() => expect(productTourCheckpoint.current?.checkpointName).toBe('filters'));

@@ -4,13 +4,11 @@ import { buildServiceStatusUrl, createServiceStatusRedirector } from './service-
 
 describe('buildServiceStatusUrl', () => {
     it('preserves the current path, query, and hash as an encoded redirect', () => {
-        const url = new URL('https://example.test/next/stack/most-frequent-errors?project=project-1&filter=status%3Aopen#details');
+        const url = new URL('https://example.test/stack/most-frequent-errors?project=project-1&filter=status%3Aopen#details');
 
-        const result = buildServiceStatusUrl('/next/status', url);
+        const result = buildServiceStatusUrl('/status', url);
 
-        expect(new URL(result, url.origin).searchParams.get('redirect')).toBe(
-            '/next/stack/most-frequent-errors?project=project-1&filter=status%3Aopen#details'
-        );
+        expect(new URL(result, url.origin).searchParams.get('redirect')).toBe('/stack/most-frequent-errors?project=project-1&filter=status%3Aopen#details');
     });
 });
 

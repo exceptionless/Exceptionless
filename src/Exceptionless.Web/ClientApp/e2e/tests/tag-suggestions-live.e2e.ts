@@ -14,7 +14,7 @@ test('tag suggestions from indexed events can be selected and survive reload', a
     });
     await e2eApi.pollForEventByReference(e2eScenario.userToken, e2eScenario.projectId, e2eScenario.referenceId);
 
-    await page.goto('/next/event?tag=AlphaTag&time=all');
+    await page.goto('/event?tag=AlphaTag&time=all');
     await expect(getVisibleText(page, e2eScenario.message)).toBeVisible({ timeout: 30_000 });
     await page.getByRole('button', { name: /^Tag\s+AlphaTag/ }).click();
     await expect(page.getByRole('option', { exact: true, name: 'BetaTag' })).toBeVisible();

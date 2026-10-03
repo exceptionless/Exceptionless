@@ -204,7 +204,7 @@ export function problemDetailsToFormErrors(problem: null | ProblemDetails): null
     const generalErrors = problem.errors?.['general']?.join(', ');
     if (generalErrors) {
         result.form = generalErrors;
-    } else if (problem.status !== 422) {
+    } else if (problem.status !== 422 || !Object.values(problem.errors ?? {}).some((errors) => Boolean(errors?.length))) {
         const message = getProblemMessage(problem, '');
         if (message) {
             result.form = message;
@@ -213,15 +213,20 @@ export function problemDetailsToFormErrors(problem: null | ProblemDetails): null
 
     // Handle field-level errors (422 validation errors)
     if (problem.status === 422 && problem.errors) {
-        result.fields = {};
+        const fields: Record<string, string> = {};
         for (const key in problem.errors) {
             if (key === 'general') {
                 continue;
             }
 
-            const errors = problem.errors[key] as string[];
+            const errors = problem.errors[key];
             // TODO: Convert snake_case field names to match form field names??
-            result.fields[key] = errors.join(', ');
+            if (errors?.length) {
+                fields[key] = errors.join(', ');
+            }
+        }
+        if (Object.keys(fields).length > 0) {
+            result.fields = fields;
         }
     }
 
