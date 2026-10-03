@@ -29,6 +29,7 @@ public sealed class SseConnection : IAsyncDisposable
     private Task? _writeLoop;
     private long _droppedMessages;
     private long _dedupedMessages;
+    private int _resyncDrainStarted;
     private int _disposeState;
 
     public string ConnectionId { get; }
@@ -95,7 +96,7 @@ public sealed class SseConnection : IAsyncDisposable
             // so a stalled response cannot prevent reconnect and lease cleanup forever.
             lock (_lifecycleLock)
             {
-                if (Volatile.Read(ref _disposeState) == 0)
+                if (Volatile.Read(ref _disposeState) == 0 && Interlocked.Exchange(ref _resyncDrainStarted, 1) == 0)
                     _cts.CancelAfter(ResyncDrainTimeout);
             }
             return true;
@@ -273,8 +274,10 @@ public sealed class SseConnection : IAsyncDisposable
         {
             lock (_lock)
             {
-                if (_completed)
-                    return _draining ? EnqueueResult.Draining : EnqueueResult.Closed;
+                if (_completed && !_draining)
+                    return EnqueueResult.Closed;
+                if (_draining && evt.CanDrop)
+                    return EnqueueResult.Draining;
 
                 // Dedup check: if same key is already queued, skip
                 if (evt.DedupeKey is not null && _index.ContainsKey(evt.DedupeKey))
@@ -290,11 +293,11 @@ public sealed class SseConnection : IAsyncDisposable
 
                     var queuedToDrop = FindFirstDroppableNode();
                     if (queuedToDrop is null)
-                        return EnqueueResult.Full;
+                        return _draining ? EnqueueResult.Draining : EnqueueResult.Full;
 
                     result = queuedToDrop.Value.IsKeepAlive ? EnqueueResult.ReplacedKeepAlive : EnqueueResult.ReplacedDroppable;
                     RemoveNode(queuedToDrop);
-                    if (result is EnqueueResult.ReplacedDroppable)
+                    if (result is EnqueueResult.ReplacedDroppable && !_draining)
                     {
                         _draining = true;
                         _completed = true;
@@ -320,7 +323,10 @@ public sealed class SseConnection : IAsyncDisposable
             lock (_lock)
             {
                 if (_list.Count == 0)
+                {
+                    _draining = false; // No producer may enqueue after the reader exits.
                     return null; // Completed
+                }
 
                 var node = _list.First!;
                 RemoveNode(node);
@@ -332,6 +338,7 @@ public sealed class SseConnection : IAsyncDisposable
         {
             lock (_lock)
             {
+                _draining = false; // Abort and disposal close the producer gate immediately.
                 if (_completed)
                     return;
                 _completed = true;
