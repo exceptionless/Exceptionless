@@ -76,7 +76,6 @@ public sealed class MailerTests : TestWithServices
     [Theory]
     [InlineData("http://localhost:9001", "http://localhost:9001/organization/organization-1/billing")]
     [InlineData("http://localhost:9001/#!", "http://localhost:9001/organization/organization-1/billing")]
-    [InlineData("http://localhost:9001/next/", "http://localhost:9001/organization/organization-1/billing")]
     public void OrganizationBilling_BaseUrlVariant_MatchesExistingTemplate(string baseUrl, string expected)
     {
         // Arrange
@@ -107,7 +106,7 @@ public sealed class MailerTests : TestWithServices
             ("account/notifications?project=project-1", appUrls.ProjectNotifications("project-1")),
             ("organization/organization-1/dashboard", appUrls.OrganizationDashboard("organization-1")),
             ("signup?token=token-1", appUrls.Signup("token-1")),
-            ("organization/organization-1/billing?changePlan=true", appUrls.OrganizationUpgrade("organization-1")),
+            ("organization/organization-1/upgrade", appUrls.OrganizationUpgrade("organization-1")),
             ("organization/organization-1/dashboard?view=stacks", appUrls.OrganizationFrequent("organization-1")),
             ("organization/organization-1/usage", appUrls.OrganizationManage("organization-1")),
             ("organization/organization-1/billing", appUrls.OrganizationBilling("organization-1")),
@@ -479,7 +478,7 @@ public sealed class MailerTests : TestWithServices
         Assert.Contains("Mark event as fixed", body, StringComparison.Ordinal);
         Assert.Contains("Stop sending notifications for this event", body, StringComparison.Ordinal);
         Assert.Contains("Discard future event occurrences", body, StringComparison.Ordinal);
-        string baseUrl = AppUrlBuilder.GetOrigin(_options.BaseURL);
+        string baseUrl = _options.BaseURL.GetOrigin();
         foreach (string action in new[] { "mark-fixed", "ignored", "discarded" })
             Assert.Contains($"href=\"{baseUrl}/stack/{ev.StackId}/{action}\"", body, StringComparison.Ordinal);
         return body;
@@ -790,7 +789,6 @@ public sealed class MailerTests : TestWithServices
             }
 
             Assert.True(String.Equals(uri.Scheme, baseUri.Scheme, StringComparison.OrdinalIgnoreCase), $"Expected internal email URL scheme '{baseUri.Scheme}' but found '{uri.Scheme}'.");
-            Assert.DoesNotContain("/next/", uri.PathAndQuery, StringComparison.OrdinalIgnoreCase);
             AssertValidInternalUrl(uri);
         }
     }
@@ -798,7 +796,7 @@ public sealed class MailerTests : TestWithServices
     private static void AssertValidInternalUrl(Uri uri)
     {
         Assert.Empty(uri.Fragment);
-        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|dashboard)|account/(?:notifications|verify)|organization/[^/]+/(?:dashboard|usage|billing)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
+        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|dashboard)|account/(?:notifications|verify)|organization/[^/]+/(?:dashboard|usage|billing|upgrade)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
 
         if (uri.AbsolutePath is "/account/verify" or "/signup")
         {

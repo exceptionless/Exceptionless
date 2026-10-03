@@ -6,15 +6,12 @@ const origin = 'https://localhost:7131';
 
 describe('primary legacy links', () => {
     it.each([
-        ['/next/', '/'],
-        ['/next/event/123?tab=data#details', '/event/123?tab=data#details'],
         ['/#!/event/by-ref/order.123?project=abc', '/event/by-ref/order.123?project=abc'],
         ['/#/signup?token=a%2Bb%2Fc%3D', '/signup?token=a%2Bb%2Fc%3D'],
         ['/#!/account/verify?token=verify-token', '/account/verify?token=verify-token'],
-        ['/next/reset-password/token?cancel=true', '/reset-password/token?cancel=true'],
         ['/account/manage?projectId=abc&tab=notifications', '/account/notifications?project=abc'],
         ['/organization/abc/manage?tab=billing', '/organization/abc/billing'],
-        ['/organization/abc/upgrade', '/organization/abc/billing?changePlan=true'],
+        ['/#!/organization/abc/upgrade', '/organization/abc/upgrade'],
         ['/organization/abc/frequent', '/organization/abc/dashboard?view=stacks'],
         ['/project/abc/error/timeline', '/project/abc/dashboard?type=error'],
         ['/project/abc/error/frequent?time=all', '/project/abc/dashboard?time=all&type=error&view=stacks'],
@@ -23,10 +20,7 @@ describe('primary legacy links', () => {
         ['/#!/stack/abc/mark-fixed', '/stack/abc/mark-fixed'],
         ['/#/stack/abc/ignored', '/stack/abc/ignored'],
         ['/stack/abc/stop-notifications', '/stack/abc/ignored'],
-        ['/next/stack/abc/discarded', '/stack/abc/discarded'],
-        ['/next/payment/invoice-id', '/payment/invoice-id'],
         ['/unknown/old/page', '/unknown/old/page'],
-        ['/nextdoor', '/nextdoor'],
         ['/event/abc#data', '/event/abc#data']
     ])('maps %s to %s without a second redirect', (input, expected) => {
         const result = canonicalAppUrl(new URL(input, origin));

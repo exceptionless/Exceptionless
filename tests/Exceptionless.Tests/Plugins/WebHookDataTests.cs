@@ -35,10 +35,13 @@ public sealed class WebHookDataTests : TestWithServices
 
     [Theory]
     [MemberData(nameof(WebHookData))]
-    public async Task CreateFromEventAsync(string version, bool expectData, string baseUrl)
+    public async Task CreateFromEventAsync_VersionAndBaseUrl_PreservesPayloadContract(string version, bool expectData, string baseUrl)
     {
+        // Arrange
         GetService<AppOptions>().BaseURL = baseUrl;
+        // Act
         object? data = await _webHookData.CreateFromEventAsync(GetWebHookDataContext(version));
+        // Assert
         if (expectData)
         {
             Assert.NotNull(data);
@@ -54,10 +57,13 @@ public sealed class WebHookDataTests : TestWithServices
 
     [Theory]
     [MemberData(nameof(WebHookData))]
-    public async Task CanCreateFromStackAsync(string version, bool expectData, string baseUrl)
+    public async Task CreateFromStackAsync_VersionAndBaseUrl_PreservesPayloadContract(string version, bool expectData, string baseUrl)
     {
+        // Arrange
         GetService<AppOptions>().BaseURL = baseUrl;
+        // Act
         object? data = await _webHookData.CreateFromStackAsync(GetWebHookDataContext(version));
+        // Assert
         if (expectData)
         {
             Assert.NotNull(data);
@@ -77,7 +83,7 @@ public sealed class WebHookDataTests : TestWithServices
             new object[] { WebHook.KnownVersions.Version2, true, "http://localhost:7110" },
             new object[] { "v3", false, "http://localhost:7110" },
             new object[] { WebHook.KnownVersions.Version1, true, "http://localhost:7110/#!" },
-            new object[] { WebHook.KnownVersions.Version2, true, "http://localhost:7110/next/" }
+            new object[] { WebHook.KnownVersions.Version2, true, "http://localhost:7110/#!" }
         }.ToArray();
 
     private JsonSerializerOptions GetJsonSerializerOptions(object data)

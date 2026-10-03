@@ -14,7 +14,7 @@ Systematically explore Exceptionless as a local user, find issues, and produce a
 
 Local targets:
 
-The Svelte app at `/` is the only application UI. Exercise `/next` and hash URLs when testing incoming-link compatibility, then verify they resolve to the root routes without losing the session.
+The Svelte app at `/` is the only application UI. Exercise primary hash URLs when testing incoming-link compatibility, then verify they resolve to the root routes without losing the session.
 
 - Aspire dashboard: `https://ex.dev.localhost:7101`
 - Svelte app: `https://web-ex.dev.localhost:7131/`

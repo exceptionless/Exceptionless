@@ -97,6 +97,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     [InlineData("/api/v2", "/api/v2/projects", AuthorizationRoles.ProjectsRead, HttpStatusCode.OK)]
     public async Task OAuthAsync_SeparateOrigins_UsesApiForDiscoveryTokensAndChallenges(string resourcePath, string protectedPath, string scope, HttpStatusCode authorizedStatus)
     {
+        // Arrange
         const string apiOrigin = "https://api.localhost:7443";
         const string applicationOrigin = "https://ui.localhost:7444";
         string resource = apiOrigin + resourcePath;
@@ -114,8 +115,10 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
 
         using var discoveryRequest = new HttpRequestMessage(HttpMethod.Get, "/.well-known/oauth-authorization-server");
         discoveryRequest.Headers.Host = "untrusted.localhost";
+        // Act
         var discoveryResponse = await client.SendAsync(discoveryRequest, TestContext.Current.CancellationToken);
         var metadata = await DeserializeResponseAsync<OAuthAuthorizationServerMetadata>(discoveryResponse);
+        // Assert
         Assert.NotNull(metadata);
         Assert.Equal(apiOrigin, metadata.Issuer);
         Assert.Equal(apiOrigin + "/api/v2/oauth/authorize", metadata.AuthorizationEndpoint);
@@ -123,49 +126,68 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Equal(apiOrigin + "/api/v2/oauth/register", metadata.RegistrationEndpoint);
         Assert.Equal(apiOrigin + "/api/v2/oauth/revoke", metadata.RevocationEndpoint);
 
+        // Act
         var resourceResponse = await client.GetAsync("/.well-known/oauth-protected-resource" + resourcePath, TestContext.Current.CancellationToken);
         var resourceMetadata = await DeserializeResponseAsync<OAuthProtectedResourceMetadata>(resourceResponse);
+        // Assert
         Assert.NotNull(resourceMetadata);
         Assert.Equal(resource, resourceMetadata.Resource);
         Assert.Equal([apiOrigin], resourceMetadata.AuthorizationServers);
 
+        // Arrange
         using var bridgeRequest = CreateAuthorizeRequest(PkceVerifier, resource: resource, authenticate: false);
         string query = new Uri(client.BaseAddress!, bridgeRequest.RequestUri!).Query;
+        // Act
         var bridgeResponse = await client.SendAsync(bridgeRequest, TestContext.Current.CancellationToken);
+        // Assert
         Assert.Equal(HttpStatusCode.Redirect, bridgeResponse.StatusCode);
         Assert.Equal(applicationOrigin + "/oauth/authorize" + query, bridgeResponse.Headers.Location?.OriginalString);
 
+        // Arrange
         using var consentRequest = CreateAuthorizeJsonRequest(PkceVerifier, resource: resource, scope: scope);
         consentRequest.RequestUri = new Uri("oauth/authorize/consent", UriKind.Relative);
+        // Act
         var consentResponse = await client.SendAsync(consentRequest, TestContext.Current.CancellationToken);
+        // Assert
         Assert.Equal(HttpStatusCode.OK, consentResponse.StatusCode);
         var consent = await DeserializeResponseAsync<OAuthAuthorizeConsentResponse>(consentResponse);
         Assert.NotNull(consent);
         Assert.Equal(resource, consent.Resource);
 
+        // Arrange
         using var authorizationRequest = CreateAuthorizeJsonRequest(PkceVerifier, resource: resource, scope: scope);
+        // Act
         var authorizationResponse = await client.SendAsync(authorizationRequest, TestContext.Current.CancellationToken);
+        // Assert
         Assert.Equal(HttpStatusCode.OK, authorizationResponse.StatusCode);
         var authorization = await DeserializeResponseAsync<OAuthAuthorizeResponse>(authorizationResponse);
         Assert.NotNull(authorization);
         var authorizationQuery = QueryHelpers.ParseQuery(new Uri(authorization.RedirectUri).Query);
         Assert.Equal(apiOrigin, authorizationQuery["iss"].ToString());
 
+        // Arrange
         using var tokenContent = CreateTokenExchangeContent(authorizationQuery["code"].ToString(), PkceVerifier, resource: resource);
+        // Act
         var tokenResponse = await client.PostAsync("oauth/token", tokenContent, TestContext.Current.CancellationToken);
+        // Assert
         Assert.Equal(HttpStatusCode.OK, tokenResponse.StatusCode);
         var token = await DeserializeResponseAsync<OAuthTokenResponse>(tokenResponse);
         Assert.NotNull(token);
         Assert.Equal(resource, token.Resource);
 
+        // Act
         var challengeResponse = await client.GetAsync(protectedPath, TestContext.Current.CancellationToken);
+        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, challengeResponse.StatusCode);
         Assert.Contains($"resource_metadata=\"{apiOrigin}/.well-known/oauth-protected-resource{resourcePath}\"", challengeResponse.Headers.WwwAuthenticate.ToString(), StringComparison.Ordinal);
 
+        // Arrange
         using var protectedRequest = new HttpRequestMessage(HttpMethod.Get, protectedPath);
         protectedRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
         protectedRequest.Headers.Add("Origin", apiOrigin);
+        // Act
         var protectedResponse = await client.SendAsync(protectedRequest, TestContext.Current.CancellationToken);
+        // Assert
         Assert.Equal(authorizedStatus, protectedResponse.StatusCode);
     }
 
@@ -475,6 +497,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     [InlineData("http://localhost:7110/#")]
     public async Task AuthorizeAsync_SeparateApiOrigin_RedirectsToConfiguredApplicationWithOriginalQuery(string applicationBaseUrl)
     {
+        // Arrange
         var options = GetService<AppOptions>();
         string originalBaseUrl = options.BaseURL;
         using var client = CreateHttpClient();
@@ -486,8 +509,10 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         {
             options.BaseURL = applicationBaseUrl;
 
+            // Act
             var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
+            // Assert
             Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
             Assert.Equal("http://localhost:7110/oauth/authorize" + query, response.Headers.Location?.OriginalString);
         }

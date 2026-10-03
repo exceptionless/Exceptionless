@@ -5,7 +5,7 @@ test.skip(process.env.E2E_ENV === 'production', 'API origin configuration covera
 test('configured HTTPS preserves incoming links before starting HTTP API requests', async ({ e2eApi, page }) => {
     const httpOrigin = 'http://localhost:65532';
     const httpsOrigin = 'https://localhost:65532';
-    const destination = '/next/login?redirect=%2Fstack%2Fall#notice';
+    const destination = '/login?redirect=%2Fstack%2Fall#notice';
     let sslFlagInjected = false;
     const insecureApiRequests: string[] = [];
     page.on('request', (request) => {
@@ -51,6 +51,7 @@ test('the OAuth bridge opens the application login and preserves the authorizati
 });
 
 test('status waits for the configured API to recover before returning to the application', async ({ page }) => {
+    await page.clock.install();
     const apiOrigin = 'https://localhost:65533';
     await page.addInitScript((origin) => localStorage.setItem('PUBLIC_BASE_URL', origin), apiOrigin);
     let apiHealthy = false;
@@ -73,7 +74,9 @@ test('status waits for the configured API to recover before returning to the app
     expect(sameOriginHealthRequests).toBe(0);
 
     apiHealthy = true;
-    await expect(page).toHaveURL(/\/login$/, { timeout: 40_000 });
+    // Advance the health query's retry interval while keeping real request/redirect assertions.
+    await page.clock.fastForward(30_001);
+    await expect(page).toHaveURL(/\/login$/);
     expect(apiHealthRequests).toBeGreaterThan(1);
     expect(sameOriginHealthRequests).toBe(0);
 });

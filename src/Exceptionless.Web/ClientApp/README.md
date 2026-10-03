@@ -1,6 +1,6 @@
 # Exceptionless User Interface
 
-This is the only Exceptionless application frontend: Svelte 5 and SvelteKit, served at `/`. New links use root routes; primary historical `/next`, `#!/`, and `#/` links remain supported by the navigation compatibility layer. The existing session storage key is retained so users stay signed in.
+This is the only Exceptionless application frontend: Svelte 5 and SvelteKit, served at `/`. New links use root routes; primary historical `#!/` and `#/` links remain supported by the navigation compatibility layer. The existing session storage key is retained so users stay signed in.
 
 ## Developing
 
@@ -29,7 +29,7 @@ The static output goes to `build/`. Publishing `Exceptionless.Web` includes it d
 
 Set the backend's `EX_BaseURL` to the public UI URL. Email links and OAuth authorization redirects use this address, including when the API has a separate origin.
 
-New email, Slack, and webhook links use the root application origin even if `EX_BaseURL` still contains a historical `/next` path or hash suffix. Incoming compatibility links also normalize existing browser history entries so Back and Forward continue to work.
+New email, Slack, and webhook links use the root application origin even if `EX_BaseURL` still contains a historical hash suffix. Incoming compatibility links also normalize existing browser history entries so Back and Forward continue to work.
 
 For separate UI and API hosts, set `EX_ApiUrl` to the public API URL on both deployments. The API uses this origin for OAuth discovery, issuer, resource validation, and authentication challenges; the browser authorization page still uses `EX_BaseURL`. If `EX_ApiUrl` is unset, the API retains `EX_BaseURL` as its canonical origin.
 

@@ -5,7 +5,7 @@ description: Apply Exceptionless Svelte conventions when adding or restructuring
 
 # Frontend Architecture
 
-Work in `src/Exceptionless.Web/ClientApp`, the sole application frontend at `/`, and follow its `AGENTS.md`. Generate root routes with `$app/paths`; preserve historical `/next` and hash links through the incoming-link compatibility layer.
+Work in `src/Exceptionless.Web/ClientApp`, the sole application frontend at `/`, and follow its `AGENTS.md`. Generate root routes with `$app/paths`; preserve primary historical hash links through the incoming-link compatibility layer.
 
 ## Feature structure
 

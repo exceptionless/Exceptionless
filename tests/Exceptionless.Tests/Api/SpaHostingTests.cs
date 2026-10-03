@@ -14,19 +14,20 @@ public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
 
     [Theory]
     [InlineData("/login")]
-    [InlineData("/next/login")]
     [InlineData("/stack/507f1f77bcf86cd799439011/mark-fixed")]
     [InlineData("/project/507f1f77bcf86cd799439011/error/timeline")]
     [InlineData("/event/by-ref/order.123")]
-    [InlineData("/next/event/by-ref/order.123")]
-    public async Task GetAppRoute_ReturnsRootShell(string path)
+    public async Task GetAsync_ApplicationRoute_ReturnsRootShell(string path)
     {
+        // Arrange
         await _factory.Server.WaitForReadyAsync();
         using var client = _factory.CreateClient();
         string shell = await client.GetStringAsync("/index.html", TestContext.Current.CancellationToken);
 
+        // Act
         using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
         Assert.Equal(shell, await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
@@ -41,40 +42,49 @@ public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
     [InlineData("/_app/missing")]
     [InlineData("/_app/missing.js")]
     [InlineData("/missing.css")]
-    public async Task GetMissingServiceOrAsset_DoesNotReturnShell(string path)
+    public async Task GetAsync_MissingServiceOrAsset_DoesNotReturnShell(string path)
     {
+        // Arrange
         await _factory.Server.WaitForReadyAsync();
         using var client = _factory.CreateClient();
 
+        // Act
         using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.NotEqual("text/html", response.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]
-    public async Task PostAppRoute_DoesNotReturnShell()
+    public async Task PostAsync_ApplicationRoute_DoesNotReturnShell()
     {
+        // Arrange
         await _factory.Server.WaitForReadyAsync();
         using var client = _factory.CreateClient();
 
+        // Act
         using var response = await client.PostAsync("/login", null, TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.NotEqual("text/html", response.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]
-    public async Task GetAppRoute_CspAllowsConfiguredApiAndWebSocketOrigins()
+    public async Task GetAsync_ConfiguredApiOrigin_AllowsApiAndWebSocketConnections()
     {
+        // Arrange
         const string apiUrl = "https://localhost:9443/backend?ignored=true";
         await using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
             config.AddInMemoryCollection(new Dictionary<string, string?> { ["ApiUrl"] = apiUrl })));
         await factory.Server.WaitForReadyAsync();
         using var client = factory.CreateClient();
 
+        // Act
         using var response = await client.GetAsync("/login", TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         string policy = Assert.Single(response.Headers.GetValues("Content-Security-Policy"));
         string connections = Assert.Single(policy.Split(';'), directive => directive.StartsWith("connect-src ", StringComparison.Ordinal));

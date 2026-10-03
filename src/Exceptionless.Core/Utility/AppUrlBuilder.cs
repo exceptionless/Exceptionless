@@ -1,3 +1,5 @@
+using Exceptionless.Core.Extensions;
+
 namespace Exceptionless.Core.Utility;
 
 /// <summary>
@@ -9,11 +11,8 @@ internal sealed class AppUrlBuilder
 
     public AppUrlBuilder(string baseUrl)
     {
-        _baseUrl = GetOrigin(baseUrl);
+        _baseUrl = baseUrl.GetOrigin();
     }
-
-    // Svelte serves at the root even when an installation retains a historical /next or hash base URL.
-    public static string GetOrigin(string baseUrl) => new Uri(baseUrl).GetLeftPart(UriPartial.Authority);
 
     public string Event(string eventId) => Build($"event/{eventId}");
 
@@ -33,7 +32,7 @@ internal sealed class AppUrlBuilder
 
     public string Signup(string token) => Build($"signup?token={Uri.EscapeDataString(token)}");
 
-    public string OrganizationUpgrade(string organizationId) => Build($"organization/{organizationId}/billing?changePlan=true");
+    public string OrganizationUpgrade(string organizationId) => Build($"organization/{organizationId}/upgrade");
 
     public string OrganizationFrequent(string organizationId) => Build($"organization/{organizationId}/dashboard?view=stacks");
 

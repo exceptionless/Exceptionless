@@ -62,7 +62,9 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
         var actions = new List<string>
         {
             $"• {GetSlackEventUrl(ev.Id, "View Event")}",
-            $"• <{appUrls.Stack(ev.StackId)}|Manage this stack>",
+            $"• <{appUrls.MarkStackFixed(ev.StackId)}|Mark event as fixed>",
+            $"• <{appUrls.IgnoreStack(ev.StackId)}|Stop sending notifications for this event>",
+            $"• <{appUrls.DiscardStack(ev.StackId)}|Discard future event occurrences>",
             $"• <{appUrls.ProjectIntegrations(ev.ProjectId)}|Change your notification settings for this project>"
         };
 

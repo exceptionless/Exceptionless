@@ -11,7 +11,7 @@ test('primary old links retain the session and require confirmation before apply
         if ((path.includes('/stacks/') && request.method() !== 'GET') || path.endsWith('/auth/logout')) mutations.push(path);
     });
 
-    for (const link of [`/next/event/${event.id}`, `/#!/event/by-ref/${e2eScenario.referenceId}`]) {
+    for (const link of [`/event/${event.id}`, `/#!/event/by-ref/${e2eScenario.referenceId}`]) {
         await page.goto(link);
         await expect(page).toHaveURL(new RegExp(`/stack/${event.stack_id}/event/${event.id}$`));
         await expect(page.getByText(e2eScenario.message, { exact: true }).filter({ visible: true }).first()).toBeVisible();
@@ -20,7 +20,7 @@ test('primary old links retain the session and require confirmation before apply
     for (const [link, heading] of [
         [`/stack/${event.stack_id}/mark-fixed`, 'Mark Stack As Fixed'],
         [`/#/stack/${event.stack_id}/ignored`, 'Ignore Stack'],
-        [`/next/stack/${event.stack_id}/discarded`, 'Discard Stack']
+        [`/stack/${event.stack_id}/discarded`, 'Discard Stack']
     ]) {
         await page.goto(link);
         const dialog = page.getByRole('alertdialog');
@@ -51,6 +51,10 @@ test('old project and organization dashboards select the destination organizatio
     await page.goto(`/organization/${e2eScenario.organizationId}/frequent?time=all`);
     await expect.poll(() => new URL(page.url()).pathname).toBe('/stack');
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('organization') ?? 'null'))).toBe(e2eScenario.organizationId);
+
+    await page.goto(`/#!/organization/${e2eScenario.organizationId}/upgrade?source=email`);
+    await expect(page).toHaveURL(`/organization/${e2eScenario.organizationId}/billing?source=email&changePlan=true`);
+    await expect(page.getByRole('dialog').getByRole('heading', { exact: true, name: 'Manage subscription' })).toBeVisible();
 });
 
 test('OAuth popup responses remain readable without signing out the existing session', async ({ e2eScenario, page }) => {
@@ -99,39 +103,34 @@ test.describe('in-app legacy navigation', () => {
         expect(await page.evaluate(() => localStorage.getItem('satellizer_token'))).toBe(e2eScenario.userToken);
     });
 
-    for (const prefix of ['/next', '/#!', '/#', '']) {
-        test(`following an old settings link preserves browser back and forward navigation (${prefix || 'root'})`, async ({ e2eScenario, page }) => {
-            await page.goto('/stack/all');
-            await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
-            await page.goto('/project/list');
-            await expect(page.getByRole('heading', { exact: true, name: 'Projects' })).toBeVisible();
+    test('following a historical hash settings link preserves browser back and forward navigation', async ({ e2eScenario, page }) => {
+        await page.goto('/stack/all');
+        await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
+        await page.goto('/project/list');
+        await expect(page.getByRole('heading', { exact: true, name: 'Projects' })).toBeVisible();
 
-            // Exercise a historical saved link through the app router, without reloading the document.
-            await page.evaluate(
-                ({ prefix, projectId }) => {
-                    const link = document.createElement('a');
-                    link.href = `${prefix}/account/manage?projectId=${projectId}&tab=notifications&from=legacy-link`;
-                    link.textContent = 'Historical notification settings';
-                    document.querySelector('main')!.prepend(link);
-                },
-                { prefix, projectId: e2eScenario.projectId }
-            );
-            await page.getByRole('link', { exact: true, name: 'Historical notification settings' }).click();
+        // Exercise a historical saved link through the app router, without reloading the document.
+        await page.evaluate((projectId) => {
+            const link = document.createElement('a');
+            link.href = `/#!/account/manage?projectId=${projectId}&tab=notifications&from=legacy-link`;
+            link.textContent = 'Historical notification settings';
+            document.querySelector('main')!.prepend(link);
+        }, e2eScenario.projectId);
+        await page.getByRole('link', { exact: true, name: 'Historical notification settings' }).click();
 
-            await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
-            await expect(page.getByRole('button', { exact: true, name: e2eScenario.projectName })).toBeVisible();
-            const destination = page.url();
-            expect(new URL(destination).pathname).toBe('/account/notifications');
-            expect(new URL(destination).searchParams.get('from')).toBe('legacy-link');
+        await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
+        await expect(page.getByRole('button', { exact: true, name: e2eScenario.projectName })).toBeVisible();
+        const destination = page.url();
+        expect(new URL(destination).pathname).toBe('/account/notifications');
+        expect(new URL(destination).searchParams.get('from')).toBe('legacy-link');
 
-            await page.goBack();
-            await expect(page).toHaveURL(/\/project\/list$/);
-            await expect(page.getByRole('heading', { exact: true, name: 'Projects' })).toBeVisible();
+        await page.goBack();
+        await expect(page).toHaveURL(/\/project\/list$/);
+        await expect(page.getByRole('heading', { exact: true, name: 'Projects' })).toBeVisible();
 
-            await page.goForward();
-            await expect(page).toHaveURL(destination);
-            await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
-            expect(await page.evaluate(() => localStorage.getItem('satellizer_token'))).toBe(e2eScenario.userToken);
-        });
-    }
+        await page.goForward();
+        await expect(page).toHaveURL(destination);
+        await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
+        expect(await page.evaluate(() => localStorage.getItem('satellizer_token'))).toBe(e2eScenario.userToken);
+    });
 });

@@ -1,3 +1,4 @@
+using Exceptionless.Core.Extensions;
 using Joonasw.AspNetCore.SecurityHeaders.Csp.Builder;
 
 namespace Exceptionless.Web.Security;
@@ -21,8 +22,8 @@ internal static class ApiContentSecurityPolicy
             return [];
 
         var origin = new UriBuilder(uri) { Host = uri.IdnHost, Path = String.Empty, Query = String.Empty, Fragment = String.Empty };
-        string httpOrigin = origin.Uri.GetLeftPart(UriPartial.Authority);
+        string httpOrigin = origin.Uri.GetOrigin();
         origin.Scheme = uri.Scheme == "https" ? "wss" : "ws";
-        return [httpOrigin, origin.Uri.GetLeftPart(UriPartial.Authority)];
+        return [httpOrigin, origin.Uri.GetOrigin()];
     }
 }

@@ -12,8 +12,12 @@ public sealed class ApiContentSecurityPolicyTests
     [InlineData("http://[::1]:8111/backend", "http://[::1]:8111", "ws://[::1]:8111")]
     public void GetConfiguredOrigins_HttpUrl_AllowsOnlyHttpAndWebSocketOrigins(string apiUrl, string httpOrigin, string webSocketOrigin)
     {
+        // Arrange: configuration is supplied by the theory.
+
+        // Act
         string[] origins = ApiContentSecurityPolicy.GetConfiguredOrigins(apiUrl);
 
+        // Assert
         Assert.Equal([httpOrigin, webSocketOrigin], origins);
     }
 
@@ -29,8 +33,12 @@ public sealed class ApiContentSecurityPolicyTests
     [InlineData("https://api.localhost;script-src")]
     public void GetConfiguredOrigins_InvalidConfiguration_DoesNotExpandPolicy(string? apiUrl)
     {
+        // Arrange: configuration is supplied by the theory.
+
+        // Act
         string[] origins = ApiContentSecurityPolicy.GetConfiguredOrigins(apiUrl);
 
+        // Assert
         Assert.Empty(origins);
     }
 }

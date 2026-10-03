@@ -1,4 +1,4 @@
-/** Primary public bookmarks from Angular and the /next preview. Unknown routes remain unknown. */
+/** Primary public bookmarks from the old UI. Unknown routes remain unknown. */
 export function canonicalAppUrl(source: URL): URL {
     const url = new URL(source);
     if (url.hash.startsWith('#!/') || url.hash.startsWith('#/')) {
@@ -12,7 +12,6 @@ export function canonicalAppUrl(source: URL): URL {
         }
     }
 
-    url.pathname = url.pathname.replace(/^\/next(?=\/|$)/, '') || '/';
     const path = url.pathname.replace(/\/$/, '') || '/';
     const tab = url.searchParams.get('tab');
 
@@ -26,13 +25,12 @@ export function canonicalAppUrl(source: URL): URL {
         }
     }
 
-    const organization = /^\/organization\/([^/]+)\/(upgrade|manage|frequent)$/.exec(path);
+    const organization = /^\/organization\/([^/]+)\/(manage|frequent)$/.exec(path);
     if (organization) {
         const [, id, action] = organization;
-        if (action === 'upgrade' || (action === 'manage' && tab === 'billing')) {
+        if (action === 'manage' && tab === 'billing') {
             url.pathname = `/organization/${id}/billing`;
             url.searchParams.delete('tab');
-            if (action === 'upgrade') url.searchParams.set('changePlan', 'true');
         } else if (action === 'frequent') {
             url.pathname = `/organization/${id}/dashboard`;
             url.searchParams.set('view', 'stacks');
