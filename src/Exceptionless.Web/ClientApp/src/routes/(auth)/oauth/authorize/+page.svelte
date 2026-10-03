@@ -18,6 +18,8 @@
     import { useFetchClient } from '@foundatiofx/fetchclient';
     import { SvelteSet } from 'svelte/reactivity';
 
+    import { getOAuthErrorMessage } from './oauth-error';
+
     interface OAuthAuthorizeConsentResponse {
         client_id?: string;
         client_name?: string;
@@ -194,12 +196,7 @@
             return;
         }
 
-        errorMessage =
-            response.data?.error_description ||
-            response.data?.error ||
-            response.problem?.detail ||
-            response.problem?.title ||
-            'Unable to authorize application.';
+        errorMessage = getOAuthErrorMessage(response, 'Unable to authorize application.');
     }
 
     function cancelAuthorization() {
@@ -252,7 +249,7 @@
 
     function getRequiredScopes(resourceValue: string): string[] {
         if (resourceValue.endsWith('/mcp')) {
-            return [mcpReadScope, offlineAccessScope];
+            return [mcpReadScope];
         }
 
         return [];
@@ -290,12 +287,7 @@
         }
 
         consentDetails = null;
-        consentErrorMessage =
-            response.data?.error_description ||
-            response.data?.error ||
-            response.problem?.detail ||
-            response.problem?.title ||
-            'Unable to load application details.';
+        consentErrorMessage = getOAuthErrorMessage(response, 'Unable to load application details.');
     }
 
     async function redirectToLogin(): Promise<void> {
