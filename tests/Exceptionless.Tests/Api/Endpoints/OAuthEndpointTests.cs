@@ -1384,6 +1384,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     public async Task TokenAsync_ExpandedClientScopes_RequiresFreshConsent(bool originalOfflineAccess)
     {
         string originalScopes = originalOfflineAccess ? "mcp:read projects:read offline_access" : "mcp:read projects:read";
+        await SetStoredOAuthApplicationScopesAsync(ClientId, originalScopes.Split(' '));
         var token = await IssueTokenAsync(scope: originalScopes);
         Assert.Equal(originalOfflineAccess, token.RefreshToken is not null);
 

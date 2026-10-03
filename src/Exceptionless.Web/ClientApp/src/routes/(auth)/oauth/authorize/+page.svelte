@@ -59,6 +59,7 @@
     let isLoadingConsent = $state(false);
     let loadedConsentKey = $state<null | string>(null);
     let initializedOrganizationSelectionKey = $state<null | string>(null);
+    let consentRequestId = 0;
     const selectedOrganizationIds = new SvelteSet<string>();
     const selectedScopes = new SvelteSet<string>();
 
@@ -87,7 +88,9 @@
     const hasSelectedOrganizations = $derived(selectedOrganizationIds.size > 0);
     const hasSelectedResourceScope = $derived(selectedScopeValues.some((scope) => scope !== offlineAccessScope));
     const hasRequiredScopes = $derived(missingRequiredScopes.length === 0 && requiredScopes.every((scope) => selectedScopes.has(scope)));
-    const canApprove = $derived(!isLoadingConsent && !consentErrorMessage && hasSelectedOrganizations && hasSelectedResourceScope && hasRequiredScopes);
+    const canApprove = $derived(
+        Boolean(consentDetails) && !isLoadingConsent && !consentErrorMessage && hasSelectedOrganizations && hasSelectedResourceScope && hasRequiredScopes
+    );
 
     $effect(() => {
         if (!browser || accessToken.current) {
@@ -264,7 +267,11 @@
     }
 
     async function loadConsentDetails(): Promise<void> {
+        const requestId = ++consentRequestId;
+        const consentKey = page.url.search;
         isLoadingConsent = true;
+        consentDetails = null;
+        errorMessage = null;
         consentErrorMessage = null;
         const client = useFetchClient();
         const response = await client.postJSON<OAuthAuthorizeConsentResponse>(
@@ -274,6 +281,10 @@
                 expectedStatusCodes: [400, 401]
             }
         );
+
+        if (requestId !== consentRequestId || consentKey !== page.url.search) {
+            return;
+        }
 
         isLoadingConsent = false;
         if (response.ok && response.data) {
