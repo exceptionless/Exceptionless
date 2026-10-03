@@ -19,6 +19,13 @@ const config = {
             $lib: 'src/lib',
             $shared: 'src/lib/features/shared'
         },
+        // SvelteKit authorizes its generated bootstrap at the point of rendering.
+        csp: {
+            directives: {
+                'script-src': ['self', 'strict-dynamic']
+            },
+            mode: 'auto'
+        },
         paths: {
             base: '/next'
         }
