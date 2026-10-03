@@ -9,6 +9,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
+import { createSseProxy } from './src/lib/server/sse-proxy';
+
 const apiTarget = process.env.API_HTTPS || process.env.API_HTTP;
 const apiProxy = { changeOrigin: true, target: apiTarget };
 
@@ -142,6 +144,7 @@ export default defineConfig({
         proxy: {
             '/.well-known': apiProxy,
             '/api': { ...apiProxy, ws: true },
+            '/api/v2/push': createSseProxy(apiTarget),
             '/docs': apiProxy,
             '/health': apiProxy,
             '/mcp': apiProxy,
