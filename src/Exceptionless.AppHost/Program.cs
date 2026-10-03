@@ -25,8 +25,8 @@ string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.d
 const string SharedEmailConnectionString = "smtp://localhost:1026";
 
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
-    // Keep the previous 8.x data volume intact; major upgrades cannot be rolled back in place.
-    .WithDataVolume("exceptionless.data.v9")
+    // Increment the volume version for breaking data changes and preserve the previous volume.
+    .WithDataVolume("exceptionless.data.v2")
     .WithEndpointProxySupport(false);
 
 // Backend tests use in-memory queues/cache and scoped file storage. Starting the
