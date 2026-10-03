@@ -61,7 +61,7 @@
         "eslint-plugin-svelte": "^3.23.0",
         "globals": "^17.12.0",
         "jsdom": "^30.1.1",
-        "magic-string": "^1.4.1",
+        "magic-string": "^1.4.2",
         "prettier": "^3.9.8",
         "prettier-plugin-svelte": "^4.1.1",
         "prettier-plugin-tailwindcss": "^0.8.1",
