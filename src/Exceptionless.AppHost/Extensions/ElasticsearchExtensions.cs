@@ -13,7 +13,7 @@ public static class ElasticsearchBuilderExtensions
     private const int KibanaPort = 5601;
 
     /// <summary>
-    /// Adds a Elasticsearch container to the application model. The default image is "docker.elastic.co/elasticsearch/elasticsearch". This version the package defaults to the 8.19.21 tag of the Elasticsearch container image
+    /// Adds a Elasticsearch container to the application model. The default image is "docker.elastic.co/elasticsearch/elasticsearch". This version the package defaults to the 8.19.22 tag of the Elasticsearch container image
     /// </summary>
     /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
     /// <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
@@ -46,7 +46,7 @@ public static class ElasticsearchBuilderExtensions
               tags: null,
               timeout: null));
 
-        return builder.AddResource(elasticsearch)
+        var resource = builder.AddResource(elasticsearch)
             .WithImage(ElasticsearchContainerImageTags.Image, ElasticsearchContainerImageTags.Tag)
             .WithImageRegistry(ElasticsearchContainerImageTags.ElasticsearchRegistry)
             .WithHttpEndpoint(targetPort: ElasticsearchPort, port: port, name: ElasticsearchResource.PrimaryEndpointName)
@@ -56,8 +56,12 @@ public static class ElasticsearchBuilderExtensions
             .WithEnvironment("xpack.security.enabled", "false")
             .WithEnvironment("action.destructive_requires_name", "false")
             .WithEnvironment("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
-            .WithHealthCheck(healthCheckKey)
-            .PublishAsConnectionString();
+            .WithHealthCheck(healthCheckKey);
+
+        // Preserve the existing manifest contract for consumers of this custom resource.
+#pragma warning disable CS0618 // PublishAsConnectionString remains necessary for the legacy manifest publisher.
+        return resource.PublishAsConnectionString();
+#pragma warning restore CS0618
     }
 
     public static IResourceBuilder<ElasticsearchResource> WithKibana(this IResourceBuilder<ElasticsearchResource> builder, Action<IResourceBuilder<KibanaResource>>? configureContainer = null, string? containerName = null)
@@ -121,7 +125,7 @@ internal static class ElasticsearchContainerImageTags
     public const string Image = "exceptionless/elasticsearch";
     public const string KibanaRegistry = "docker.elastic.co";
     public const string KibanaImage = "kibana/kibana";
-    public const string Tag = "8.19.21";
+    public const string Tag = "8.19.22";
 }
 
 internal sealed class ElasticsearchConnectionHealthCheck(Func<string?> connectionStringFactory) : IHealthCheck

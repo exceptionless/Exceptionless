@@ -62,7 +62,7 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
     private static async Task<DistributedApplication> StartSharedAppHostAsync()
     {
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Exceptionless_AppHost>(
-            ["services-only", "--Logging:LogLevel:Default=Warning"],
+            ["--test-services", "--Logging:LogLevel:Default=Warning"],
             CancellationToken.None);
         var app = await appHost.BuildAsync(CancellationToken.None);
         await app.StartAsync(CancellationToken.None);

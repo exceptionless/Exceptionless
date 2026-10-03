@@ -1,4 +1,5 @@
 import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
+import { seedRepresentativeEvent } from '../support/event-data';
 
 test.use({ e2eUseGeneratedUser: true });
 
@@ -79,6 +80,56 @@ test('login restores the full notification settings link and selected project', 
 
             await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
             await expect.poll(() => new URL(page.url()).searchParams.get('redirect')).toBe(destination);
+        });
+    } finally {
+        await context.close();
+    }
+});
+
+test('login restores a shared stack event link after sign-in and session expiry', async ({ browser, e2eApi, e2eScenario }) => {
+    const event = await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, {
+        message: e2eScenario.message,
+        projectId: e2eScenario.projectId,
+        projectToken: e2eScenario.projectToken,
+        referenceId: e2eScenario.referenceId
+    });
+    const context = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
+    const page = await context.newPage();
+    const destination = `/next/stack/${event.stack_id}/event/${event.id}?from=shared%2Bevent#event-details`;
+
+    try {
+        await test.step('preserve the shared event destination when authentication is required', async () => {
+            await page.goto(destination);
+            await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
+            await expect.poll(() => new URL(page.url()).searchParams.get('redirect')).toBe(destination);
+        });
+
+        await test.step('return to the shared event after login', async () => {
+            await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
+            await page.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);
+            await page.getByRole('button', { exact: true, name: 'Login' }).click();
+
+            await expect(page).toHaveURL(new URL(destination, e2eApi.environment.appUrl).href);
+            await expect(page.getByText(e2eScenario.message, { exact: true }).filter({ visible: true }).first()).toBeVisible();
+            await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('organization') ?? 'null'))).toBe(e2eScenario.organizationId);
+            await expect(page.getByRole('button').filter({ hasText: e2eScenario.organizationName }).filter({ visible: true }).first()).toBeVisible();
+            await test.info().attach('shared-stack-event-after-login', { body: await page.screenshot(), contentType: 'image/png' });
+        });
+
+        await test.step('preserve the same shared event destination after session expiry', async () => {
+            await page.evaluate(() => localStorage.setItem('satellizer_token', 'expired-navigation-test-token'));
+            await page.reload();
+
+            await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
+            await expect.poll(() => new URL(page.url()).searchParams.get('redirect')).toBe(destination);
+
+            await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
+            await page.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);
+            await page.getByRole('button', { exact: true, name: 'Login' }).click();
+
+            await expect(page).toHaveURL(new URL(destination, e2eApi.environment.appUrl).href);
+            await expect(page.getByText(e2eScenario.message, { exact: true }).filter({ visible: true }).first()).toBeVisible();
+            await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('organization') ?? 'null'))).toBe(e2eScenario.organizationId);
         });
     } finally {
         await context.close();

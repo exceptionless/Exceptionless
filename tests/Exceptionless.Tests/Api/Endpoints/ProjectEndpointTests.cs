@@ -141,9 +141,8 @@ public sealed class ProjectEndpointTests : IntegrationTestsBase
         );
 
         Assert.NotNull(workItems);
-
-        var workItemJob = GetService<WorkItemJob>();
-        await workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        // Project deletion is synchronous soft deletion and does not enqueue work.
+        Assert.Empty(workItems.Workers);
         await RefreshDataAsync();
 
         // Assert

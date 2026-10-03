@@ -78,6 +78,7 @@
         <InputGroup.Textarea
             aria-describedby="assistant-composer-help"
             aria-label="Message Exie"
+            data-tour="exie-input"
             bind:ref={textareaElement}
             bind:value
             class="placeholder:text-muted-foreground/50 max-h-40 min-h-18 px-3 pt-3 text-sm"

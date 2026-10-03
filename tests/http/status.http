@@ -27,29 +27,17 @@ GET {{url}}/ready
 GET {{apiUrl}}/about
 Authorization: Bearer {{token}}
 
-### Queue Stats
-GET {{apiUrl}}/queue-stats
-Authorization: Bearer {{token}}
-
-### System Notification
-# Returns 204 No Content when no system notification is configured.
+### Read the current system banner
 GET {{apiUrl}}/notifications/system
 Authorization: Bearer {{token}}
 
-### System Notification
+### Show a system banner
 POST {{apiUrl}}/notifications/system
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
-{ "value": "<b>System is currently unavailable</b>" }
+{ "message": "Scheduled maintenance is in progress." }
 
-### System Notification
+### Clear the system banner
 DELETE {{apiUrl}}/notifications/system
 Authorization: Bearer {{token}}
-
-### Release Notification
-POST {{apiUrl}}/notifications/release?critical=true
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ "value": "We just released a new release!! Check it out <a href=\"blah\">here</a>" }

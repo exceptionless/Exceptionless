@@ -3,11 +3,16 @@
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
     import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
     import { Separator } from '$comp/ui/separator';
     import { Spinner } from '$comp/ui/spinner';
     import { Switch } from '$comp/ui/switch';
-    import { getAdminAssistantSettingsQuery, putAdminAssistantEnabledSettingsMutation, putAdminAssistantSettingsMutation } from '$features/admin/api.svelte';
+    import { Textarea } from '$comp/ui/textarea';
+    import {
+        getAdminAssistantSettingsQuery,
+        putAdminAssistantConversationSharingSettingsMutation,
+        putAdminAssistantEnabledSettingsMutation,
+        putAdminAssistantSettingsMutation
+    } from '$features/admin/api.svelte';
     import { type AssistantSettingsFormData, AssistantSettingsSchema } from '$features/admin/schemas';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
@@ -16,9 +21,12 @@
 
     const settingsQuery = getAdminAssistantSettingsQuery();
     const updateEnabledSettings = putAdminAssistantEnabledSettingsMutation();
+    const updateConversationSharingSettings = putAdminAssistantConversationSharingSettingsMutation();
     const updateSettings = putAdminAssistantSettingsMutation();
     let assistantEnabled = $state(false);
+    let conversationSharingDefaultEnabled = $state(false);
     let loadedAvailabilityKey = $state<null | string>(null);
+    let loadedConversationSharingDefaultEnabled = $state<boolean>();
     let loadedSettingsKey = $state<null | string>(null);
     const settings = $derived(settingsQuery.data);
     const availabilityKey = $derived(
@@ -63,6 +71,15 @@
     });
 
     $effect(() => {
+        if (!settings || loadedConversationSharingDefaultEnabled === settings.conversation_sharing_default_enabled) {
+            return;
+        }
+
+        loadedConversationSharingDefaultEnabled = settings.conversation_sharing_default_enabled;
+        conversationSharingDefaultEnabled = settings.conversation_sharing_default_enabled;
+    });
+
+    $effect(() => {
         if (!settings || loadedSettingsKey === settingsKey) {
             return;
         }
@@ -104,6 +121,20 @@
             toast.success(saved.enabled ? 'Exie is enabled.' : 'Exie is disabled.');
         } catch {
             toast.error('Failed to update Exie availability.');
+        }
+    }
+
+    async function saveConversationSharingDefault() {
+        try {
+            const saved = await updateConversationSharingSettings.mutateAsync({
+                enabled: conversationSharingDefaultEnabled
+            });
+            conversationSharingDefaultEnabled = saved.conversation_sharing_default_enabled;
+            toast.success(
+                saved.conversation_sharing_default_enabled ? 'Exie conversation sharing default is enabled.' : 'Exie conversation sharing default is disabled.'
+            );
+        } catch {
+            toast.error('Failed to update Exie conversation sharing default.');
         }
     }
 </script>
@@ -159,6 +190,34 @@
 
     <Separator />
 
+    <Field.Field orientation="responsive" class="gap-4 p-4">
+        <Field.Content>
+            <Field.Label for="assistant-conversation-sharing-default">Conversation sharing default</Field.Label>
+            <Field.Description>
+                Choose whether users share Exie messages and replies by default to help improve the feature. Users can change this in Exie; their saved choice
+                always takes precedence. Usage and error diagnostics remain available either way.
+            </Field.Description>
+        </Field.Content>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <Switch
+                id="assistant-conversation-sharing-default"
+                bind:checked={conversationSharingDefaultEnabled}
+                disabled={updateConversationSharingSettings.isPending}
+            />
+            <Button
+                type="button"
+                size="sm"
+                aria-label="Save Exie conversation sharing default"
+                disabled={updateConversationSharingSettings.isPending || conversationSharingDefaultEnabled === settings?.conversation_sharing_default_enabled}
+                onclick={saveConversationSharingDefault}
+            >
+                {updateConversationSharingSettings.isPending ? 'Saving...' : 'Save'}
+            </Button>
+        </div>
+    </Field.Field>
+
+    <Separator />
+
     <form
         onsubmit={(event) => {
             event.preventDefault();
@@ -167,7 +226,7 @@
     >
         <settingsForm.Field name="model">
             {#snippet children(field)}
-                <Field.Field orientation="responsive" class="gap-4 p-4" data-invalid={ariaInvalid(field)}>
+                <Field.Field class="gap-4 p-4" data-invalid={ariaInvalid(field)}>
                     <Field.Content>
                         <div class="flex flex-wrap items-center gap-2">
                             <Field.Label for={field.name}>Exie model</Field.Label>
@@ -179,19 +238,30 @@
                         </div>
                         <Field.Description>OpenRouter model used for new Exie conversations and turns. Changes apply without restarting.</Field.Description>
                     </Field.Content>
-                    <div class="flex w-full flex-col gap-2 @md/field-group:w-[32rem]">
-                        <div class="flex flex-col gap-2 sm:flex-row">
-                            <Input
-                                class="min-w-0 flex-1"
+                    <div class="flex min-w-0 flex-col gap-2">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
+                            <Textarea
+                                class="min-h-9 min-w-0 flex-1 resize-none wrap-anywhere"
                                 id={field.name}
+                                rows={1}
                                 value={field.state.value}
                                 onblur={field.handleBlur}
-                                oninput={(event) => field.handleChange(event.currentTarget.value)}
+                                oninput={(event) => {
+                                    event.currentTarget.value = event.currentTarget.value.replace(/[\r\n]/g, '');
+                                    field.handleChange(event.currentTarget.value);
+                                }}
+                                onkeydown={(event) => {
+                                    if (event.key === 'Enter' && !event.isComposing) {
+                                        event.preventDefault();
+                                        event.currentTarget.form?.requestSubmit();
+                                    }
+                                }}
                                 aria-invalid={ariaInvalid(field)}
                                 autocomplete="off"
+                                spellcheck={false}
                                 placeholder="provider/model"
                             />
-                            <div class="flex items-center justify-end gap-2">
+                            <div class="flex shrink-0 items-center justify-end gap-2">
                                 {#if settings?.is_overridden}
                                     <Button
                                         type="button"

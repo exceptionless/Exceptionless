@@ -184,7 +184,7 @@
                 <div class="ml-2 flex shrink-0 items-center gap-2">
                     <StackLogLevel {stack} />
                     <AssistantFixButton {prepareContext} resource={assistantResource} />
-                    <ButtonGroup.Root>
+                    <ButtonGroup.Root data-tour="stack-status">
                         <StackStatusDropdownMenu {stack} />
                         <StackOptionsDropdownMenu {onDeleted} {stack} />
                     </ButtonGroup.Root>
@@ -192,7 +192,7 @@
             </Card.Title>
         </Card.Header>
         <Card.Content class="space-y-2">
-            <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            <div class="grid grid-cols-2 gap-2 lg:grid-cols-4" data-tour="stack-metrics">
                 <Card.Root size="sm" class={metricCardClass}>
                     <Card.Header class={metricHeaderClass}>
                         <div class="flex min-w-0 items-center gap-1.5">

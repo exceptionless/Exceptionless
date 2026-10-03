@@ -31,6 +31,7 @@
     import LogOut from '@lucide/svelte/icons/log-out';
     import Plus from '@lucide/svelte/icons/plus';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+    import Route from '@lucide/svelte/icons/route';
     import Search from '@lucide/svelte/icons/search';
     import SunMoon from '@lucide/svelte/icons/sun-moon';
     import UserPlus from '@lucide/svelte/icons/user-plus';
@@ -65,6 +66,7 @@
         open: boolean;
         openChat: () => void;
         openExie: () => Promise<void> | void;
+        openGuidedTours: () => void;
         openImpersonateOrganization: () => Promise<void> | void;
         openKeyboardShortcuts: () => Promise<void> | void;
         openOrganizationSwitcher: () => Promise<void> | void;
@@ -93,6 +95,7 @@
         open = $bindable(),
         openChat,
         openExie,
+        openGuidedTours,
         openImpersonateOrganization,
         openKeyboardShortcuts,
         openOrganizationSwitcher,
@@ -383,6 +386,11 @@
         await openUserMenu();
     }
 
+    function openGuidedTourCatalog(): void {
+        closeCommandWindow();
+        openGuidedTours();
+    }
+
     async function openImpersonateOrganizationDialog(): Promise<void> {
         closeCommandWindow();
         await openImpersonateOrganization();
@@ -556,6 +564,13 @@
                 bind:selectedActionId={selectedProjectActionId}
             />
             {#if !selectingProject}
+                <Command.Group heading="Guided Tours">
+                    <Command.Item value="Browse Guided Tours help onboarding guides" onSelect={openGuidedTourCatalog}>
+                        <Route />
+                        <span>Guided Tours</span>
+                    </Command.Item>
+                </Command.Group>
+                <Command.Separator />
                 {#if isExieEnabled}
                     <Command.Group heading="Exie" value="Exie Assistant">
                         <Command.Item value="Ask Exie open assistant AI chat" onSelect={() => void openExieAssistant()}>

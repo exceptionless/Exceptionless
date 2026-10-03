@@ -26,6 +26,7 @@
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import LogOut from '@lucide/svelte/icons/log-out';
     import Plus from '@lucide/svelte/icons/plus';
+    import Route from '@lucide/svelte/icons/route';
     import Settings from '@lucide/svelte/icons/settings';
     import { useQueryClient } from '@tanstack/svelte-query';
 
@@ -36,6 +37,7 @@
         isLoading: boolean;
         open?: boolean;
         openChat: () => void;
+        openGuidedTours: () => void;
         openKeyboardShortcuts: () => Promise<void> | void;
         organizations?: ViewOrganization[];
         user: undefined | ViewCurrentUser;
@@ -48,6 +50,7 @@
         isLoading,
         open = $bindable(false),
         openChat,
+        openGuidedTours,
         openKeyboardShortcuts,
         organizations = [],
         user
@@ -56,7 +59,6 @@
     const client = useFetchClient();
     const queryClient = useQueryClient();
     const currentOrganizationId = $derived(organizations.find((organizationItem) => organizationItem.id === organization.current)?.id);
-
     function getUnreadCountLabel(unreadCount: number): string {
         return unreadCount > 99 ? '99+' : unreadCount.toString();
     }
@@ -69,6 +71,12 @@
     function onChatClick() {
         onMenuClick();
         openChat();
+    }
+
+    function onGuidedToursClick(): void {
+        onMenuClick();
+        open = false;
+        openGuidedTours();
     }
 
     function onKeyboardShortcutsClick() {
@@ -131,7 +139,12 @@
             <DropdownMenu.Root bind:open>
                 <DropdownMenu.Trigger>
                     {#snippet child({ props })}
-                        <Sidebar.MenuButton size="lg" class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" {...props}>
+                        <Sidebar.MenuButton
+                            size="lg"
+                            class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                            data-tour="help-menu"
+                            {...props}
+                        >
                             <Avatar.Root class="size-8 rounded-lg" title="Profile Image">
                                 {#await gravatar.src}
                                     <Avatar.Fallback class="rounded-lg">{gravatar.initials}</Avatar.Fallback>
@@ -220,11 +233,15 @@
                         {/if}
                     </DropdownMenu.Group>
                     <DropdownMenu.Sub>
-                        <DropdownMenu.SubTrigger>
+                        <DropdownMenu.SubTrigger class="data-[state=open]:bg-accent data-[state=open]:text-accent-foreground">
                             <BookOpen />
                             Help
                         </DropdownMenu.SubTrigger>
-                        <DropdownMenu.SubContent>
+                        <DropdownMenu.SubContent side={sidebar.isMobile ? 'top' : 'right'} align={sidebar.isMobile ? 'end' : 'start'}>
+                            <DropdownMenu.Item data-tour="guided-tours-menu-item" onSelect={onGuidedToursClick}>
+                                <Route />
+                                <span class="w-full">Guided Tours</span>
+                            </DropdownMenu.Item>
                             {#if isChatEnabled}
                                 <DropdownMenu.Item class="gap-2 p-2" onSelect={onChatClick}>
                                     <Help />

@@ -1,9 +1,15 @@
-import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
+import type { ConsoleMessage, Request, Response } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
-import { dispatchWebSocketMessages, installWebSocketTestHarness } from '../support/web-socket';
+import {
+    churnDocumentVisibility,
+    dispatchWebSocketMessages,
+    installWebSocketTestHarness,
+    setDocumentHidden,
+    waitForWebSocketConnection
+} from '../support/web-socket';
 
 const STACK_NOTIFICATION_TRAILING_REFRESH_MS = 5_000;
 
@@ -28,7 +34,7 @@ interface RuntimeDiagnostics {
 
 test('stack effects stay bounded through background, paging, and navigation chaos @signup', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     test.slow();
-    await installWebSocketTestHarness(page);
+    await installWebSocketTestHarness(page, { ignoreServerMessages: true });
 
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const diagnostics: RuntimeDiagnostics = {
@@ -148,15 +154,12 @@ test('stack effects stay bounded through background, paging, and navigation chao
     });
     expect(actionSample(diagnostics, 'stack detail mount and teardown').listRequests).toBe(0);
 
+    let reconnects = 0;
     await measureAction(diagnostics, 'rapid visibility changes', async () => {
-        for (let index = 0; index < 30; index++) {
-            await setDocumentHidden(page, true);
-            await setDocumentHidden(page, false);
-        }
-
-        await page.waitForTimeout(2_000);
+        reconnects = await churnDocumentVisibility(page);
     });
-    expect(actionSample(diagnostics, 'rapid visibility changes').listRequests).toBeLessThanOrEqual(1);
+    expect(actionSample(diagnostics, 'rapid visibility changes').listRequests).toBeGreaterThanOrEqual(1);
+    expect(actionSample(diagnostics, 'rapid visibility changes').listRequests).toBeLessThanOrEqual(reconnects);
 
     await measureAction(diagnostics, 'background ingestion and resume', async () => {
         await setDocumentHidden(page, true);
@@ -164,6 +167,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await e2eApi.submitEvent(e2eScenario.projectId, e2eScenario.projectToken, event);
         await e2eApi.pollForEventByReference(e2eScenario.userToken, e2eScenario.projectId, referenceId);
         await setDocumentHidden(page, false);
+        await waitForWebSocketConnection(page);
         await page.waitForTimeout(2_000);
     });
     expect(actionSample(diagnostics, 'background ingestion and resume').listRequests).toBeLessThanOrEqual(2);
@@ -233,7 +237,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
     expect(actionSample(diagnostics, 'route remounts').listRequests).toBeLessThanOrEqual(5);
 
     await testInfo.attach('stack-effect-chaos-diagnostics', {
-        body: Buffer.from(JSON.stringify(diagnostics, null, 2)),
+        body: Buffer.from(JSON.stringify({ ...diagnostics, visibilityReconnects: reconnects }, null, 2)),
         contentType: 'application/json'
     });
 
@@ -338,19 +342,4 @@ function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request)
         method: request.method(),
         url: request.url()
     });
-}
-
-async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
-    await page.evaluate((nextHidden) => {
-        Object.defineProperty(document, 'hidden', {
-            configurable: true,
-            get: () => nextHidden
-        });
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            get: () => (nextHidden ? 'hidden' : 'visible')
-        });
-        document.dispatchEvent(new Event('visibilitychange'));
-        window.dispatchEvent(new Event('visibilitychange'));
-    }, hidden);
 }

@@ -13,14 +13,18 @@ public static class TestServerExtensions
         if (Debugger.IsAttached)
             maxWaitTime = maxWaitTime.Add(TimeSpan.FromMinutes(1));
 
-        var client = server.CreateClient();
+        using var client = server.CreateClient();
         var startTime = DateTime.UtcNow;
         do
         {
-            if (startupContext is not null && startupContext.IsStartupComplete && startupContext.Result.Success == false)
-                throw new OperationCanceledException($"Startup action \"{startupContext.Result.FailedActionName}\" failed: {startupContext.Result.ErrorMessage}");
+            // Foundatio publishes IsStartupComplete before replacing the default result.
+            // Only fail early for a populated failure; /ready remains the success condition.
+            var result = startupContext?.Result;
+            if (startupContext?.IsStartupComplete == true && result?.Success == false
+                && (result.FailedActionName is not null || result.ErrorMessage is not null))
+                throw new OperationCanceledException($"Startup action \"{result.FailedActionName}\" failed: {result.ErrorMessage}");
 
-            var response = await client.GetAsync("/ready");
+            using var response = await client.GetAsync("/ready");
             if (response.IsSuccessStatusCode)
                 break;
 
