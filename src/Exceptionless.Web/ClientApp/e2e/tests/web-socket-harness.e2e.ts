@@ -1,9 +1,86 @@
 import { expect, test } from '@playwright/test';
+import { createServer } from 'node:http';
 
-import { installWebSocketTestHarness, waitForWebSocketConnection } from '../support/web-socket';
+import { dispatchWebSocketMessages, installWebSocketTestHarness, waitForWebSocketConnection } from '../support/web-socket';
+
+test('the default SSE harness observes a live fetch and forwards server notifications', async ({ page }) => {
+    const payload = 'data: {"type":"EventChanged","message":{"id":"live-canary"}}\n\n';
+    let requests = 0;
+    await page.route('http://localhost/api/v2/push', (route) => {
+        requests++;
+        return route.fulfill({
+            body: payload,
+            headers: { 'Content-Type': 'text/event-stream', 'X-Live-Push-Canary': 'live-canary' },
+            status: 200
+        });
+    });
+    await page.route('http://localhost/harness', (route) => route.fulfill({ body: '<html></html>', contentType: 'text/html' }));
+    await installWebSocketTestHarness(page);
+    await page.goto('http://localhost/harness');
+
+    const result = await page.evaluate(async () => {
+        const response = await fetch('http://localhost/api/v2/push');
+        const canary = response.headers.get('X-Live-Push-Canary');
+        if (!canary) {
+            await response.body?.cancel();
+            return { body: '', canary };
+        }
+        return { body: await response.text(), canary };
+    });
+
+    expect(requests).toBe(1);
+    expect(result).toEqual({ body: payload, canary: 'live-canary' });
+});
+
+test('suppressed server messages retain a live SSE connection for injected notifications', async ({ page }) => {
+    let requests = 0;
+    let closed = false;
+    const server = createServer((request, response) => {
+        if (request.url !== '/api/v2/push') {
+            response.end('<html></html>');
+            return;
+        }
+        requests++;
+        response.writeHead(200, { 'Content-Type': 'text/event-stream' });
+        response.write('data: {"type":"EventChanged","message":{"id":"server-canary"}}\n\n');
+        response.once('close', () => {
+            closed = true;
+        });
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    try {
+        const address = server.address();
+        if (!address || typeof address === 'string') {
+            throw new Error('Expected a local SSE fixture port');
+        }
+        await installWebSocketTestHarness(page, { ignoreServerMessages: true });
+        await page.goto(`http://127.0.0.1:${address.port}`);
+        await page.evaluate(async () => {
+            const response = await fetch('/api/v2/push');
+            const trackedWindow = window as Window & { __notification?: Promise<string> };
+            trackedWindow.__notification = response
+                .body!.getReader()
+                .read()
+                .then(({ value }) => new TextDecoder().decode(value));
+        });
+        await waitForWebSocketConnection(page);
+        expect(requests).toBe(1);
+
+        await dispatchWebSocketMessages(page, [{ message: { id: 'injected-canary' }, type: 'EventChanged' }]);
+
+        const notification = await page.evaluate(() => (window as Window & { __notification?: Promise<string> }).__notification);
+        expect(notification).toMatch(/^data: .+\n\n$/);
+        expect(JSON.parse(notification!.slice('data: '.length).trim())).toEqual({ message: { id: 'injected-canary' }, type: 'EventChanged' });
+        await page.reload();
+        await expect.poll(() => closed).toBe(true);
+    } finally {
+        server.closeAllConnections();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+});
 
 test('aborting an SSE fetch unblocks the reader and removes its controller', async ({ page }) => {
-    await installWebSocketTestHarness(page);
+    await installWebSocketTestHarness(page, { synthetic: true });
     await page.goto('about:blank');
 
     const abortResult = await page.evaluate(async () => {
@@ -39,7 +116,7 @@ test('aborting an SSE fetch unblocks the reader and removes its controller', asy
 });
 
 test('connection waits and reconnect counts track the SSE harness', async ({ page }) => {
-    await installWebSocketTestHarness(page, { ignoreServerMessages: true });
+    await installWebSocketTestHarness(page, { ignoreServerMessages: true, synthetic: true });
     await page.goto('about:blank');
 
     await page.evaluate(async () => {

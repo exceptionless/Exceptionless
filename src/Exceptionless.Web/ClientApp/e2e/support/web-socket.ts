@@ -50,7 +50,7 @@ export async function dispatchWebSocketMessages(page: Page, messages: unknown[])
     }, messages);
 }
 
-export async function installWebSocketTestHarness(page: Page, options: { ignoreServerMessages?: boolean } = {}): Promise<void> {
+export async function installWebSocketTestHarness(page: Page, options: { ignoreServerMessages?: boolean; synthetic?: boolean } = {}): Promise<void> {
     if (options.ignoreServerMessages) {
         // Keep real connection/reconnection behavior, but let request-budget tests
         // inject their own notifications without late background-job broadcasts.
@@ -63,7 +63,7 @@ export async function installWebSocketTestHarness(page: Page, options: { ignoreS
         );
     }
 
-    await page.addInitScript(() => {
+    await page.addInitScript((options) => {
         const trackedWindow = window as TrackedWebSocketWindow;
         if (trackedWindow.__exceptionlessE2EWebSockets) {
             return;
@@ -105,8 +105,13 @@ export async function installWebSocketTestHarness(page: Page, options: { ignoreS
                 return NativeFetch(input, init);
             }
 
+            const response = options.synthetic ? undefined : await NativeFetch(input, init);
+            if (response && (!response.ok || !response.body || !response.headers.get('Content-Type')?.startsWith('text/event-stream'))) {
+                return response;
+            }
+            const reader = response?.body?.getReader();
             let activeController: ReadableStreamDefaultController<Uint8Array> | undefined;
-            const signal = init?.signal;
+            const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
             let abortHandler: (() => void) | undefined;
 
             const removeController = () => {
@@ -125,8 +130,9 @@ export async function installWebSocketTestHarness(page: Page, options: { ignoreS
             };
 
             const stream = new ReadableStream<Uint8Array>({
-                cancel() {
+                async cancel() {
                     removeController();
+                    await reader?.cancel();
                 },
                 start(controller) {
                     activeController = controller;
@@ -146,17 +152,40 @@ export async function installWebSocketTestHarness(page: Page, options: { ignoreS
                     } else {
                         signal?.addEventListener('abort', abortHandler, { once: true });
                     }
+
+                    if (reader) {
+                        void (async () => {
+                            try {
+                                while (true) {
+                                    const { done, value } = await reader.read();
+                                    if (done) {
+                                        activeController?.close();
+                                        break;
+                                    }
+                                    if (!options.ignoreServerMessages) {
+                                        activeController?.enqueue(value);
+                                    }
+                                }
+                            } catch (error) {
+                                activeController?.error(error);
+                            } finally {
+                                removeController();
+                                reader.releaseLock();
+                            }
+                        })();
+                    }
                 }
             });
 
             return new Response(stream, {
-                headers: {
+                headers: response?.headers ?? {
                     'Content-Type': 'text/event-stream'
                 },
-                status: 200
+                status: response?.status ?? 200,
+                statusText: response?.statusText
             });
         };
-    });
+    }, options);
 }
 
 export async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
