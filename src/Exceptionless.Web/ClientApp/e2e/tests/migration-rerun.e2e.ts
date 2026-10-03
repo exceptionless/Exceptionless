@@ -21,7 +21,7 @@ test('global admin can open the guarded migration rerun confirmation', async ({ 
         });
     });
 
-    await page.goto('/next/system/migrations');
+    await page.goto('/system/migrations');
 
     await expect(page.getByRole('heading', { name: 'System Administration' })).toBeVisible();
     await expect(page.getByText(e2eScenario.organizationName, { exact: false }).first()).toBeVisible();

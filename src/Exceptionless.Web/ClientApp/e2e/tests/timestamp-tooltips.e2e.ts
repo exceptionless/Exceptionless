@@ -30,7 +30,7 @@ test('event and stack timestamp titles remain accessible across locales and time
                     { organizationId: e2eScenario.organizationId, token: e2eScenario.userToken }
                 );
                 const page = await context.newPage();
-                for (const route of ['/next/event?time=all', '/next/stack?time=all']) {
+                for (const route of ['/event?time=all', '/stack?time=all']) {
                     await page.goto(route);
                     const timestamp = page.locator('time').first();
                     await expect(timestamp).toBeVisible();

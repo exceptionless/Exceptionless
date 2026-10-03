@@ -21,7 +21,7 @@ test('operator can scope Events to a project and clear the project filter', asyn
     });
 
     await test.step('show events from both projects before scoping', async () => {
-        await page.goto('/next/event?time=all');
+        await page.goto('/event?time=all');
 
         await expect(getVisibleText(page, e2eScenario.message)).toBeVisible({ timeout: 30_000 });
         await expect(getVisibleText(page, e2eSecondaryProject.message)).toBeVisible({ timeout: 30_000 });
@@ -81,7 +81,7 @@ test('project scope on Most Frequent Errors survives immediate reload and histor
             referenceId: e2eScenario.referenceId
         });
 
-        await page.goto('/next/stack/most-frequent-errors');
+        await page.goto('/stack/most-frequent-errors');
         const stackRow = getVisibleRow(page, e2eScenario.message);
         await expect(stackRow).toBeVisible({ timeout: 30_000 });
         await stackRow.click();

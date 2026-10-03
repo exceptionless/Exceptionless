@@ -84,11 +84,11 @@ describe('filterUsesPremiumFeatures', () => {
 });
 
 describe('getSearchResourceForPathname', () => {
-    it.each(['/stack', '/next/stack/saved-view'])('identifies stack-mode event search routes: %s', (pathname) => {
+    it.each(['/stack', '/stack/saved-view'])('identifies stack-mode event search routes: %s', (pathname) => {
         expect(getSearchResourceForPathname(pathname)).toBe('event-stack');
     });
 
-    it.each(['/project/537650f3b77efe23a47914f4/stacks', '/next/project/537650f3b77efe23a47914f4/stacks/537650f3b77efe23a47914f5'])(
+    it.each(['/project/537650f3b77efe23a47914f4/stacks', '/project/537650f3b77efe23a47914f4/stacks/537650f3b77efe23a47914f5'])(
         'identifies direct stack search routes: %s',
         (pathname) => {
             expect(getSearchResourceForPathname(pathname)).toBe('stack');
