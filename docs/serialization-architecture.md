@@ -113,7 +113,7 @@ Cached values: Organizations, Projects, Stacks, Tokens, Users. Cache is ephemera
 
 **Config:** `SseConnectionManager` and the temporary rollout-compatible `WebSocketConnectionManager` resolve `ITextSerializer` from DI.
 
-Messages sent to browser clients use `serializer.SerializeToString(message)` with the standard snake_case options. The Svelte client receives the payload over SSE, while the legacy Angular client temporarily remains on WebSocket. Both clients consume the same `TypedMessage` JSON contract and expect snake_case.
+Messages sent to browser clients use `serializer.SerializeToString(message)` with the standard snake_case options. The Svelte client receives the payload over SSE, while cached clients can use the temporary server WebSocket compatibility path. Both transports share the same `TypedMessage` JSON contract and expect snake_case.
 
 ### Path 7: Webhook Payloads
 
