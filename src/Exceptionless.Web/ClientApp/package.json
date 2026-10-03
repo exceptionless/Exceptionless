@@ -86,7 +86,7 @@
         "@stripe/stripe-js": "^9.16.0",
         "@tanstack/svelte-form": "^1.33.5",
         "@tanstack/svelte-query": "^6.2.1",
-        "@tanstack/svelte-query-devtools": "^6.2.1",
+        "@tanstack/svelte-query-devtools": "^6.3.0",
         "@tanstack/svelte-table": "^9.2.4",
         "@types/d3-scale": "^4.0.9",
         "@types/d3-shape": "^3.2.0",
