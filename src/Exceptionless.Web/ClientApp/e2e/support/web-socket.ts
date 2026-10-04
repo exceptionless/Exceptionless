@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type Request } from '@playwright/test';
 
 interface TrackedWebSocketWindow extends Window {
     __exceptionlessE2ESseControllers?: ReadableStreamDefaultController<Uint8Array>[];
@@ -186,6 +186,10 @@ export async function installWebSocketTestHarness(page: Page, options: { ignoreS
             });
         };
     }, options);
+}
+
+export function isSseCancellation(request: Pick<Request, 'failure' | 'method' | 'url'>): boolean {
+    return request.method() === 'GET' && new URL(request.url()).pathname === '/api/v2/push' && request.failure()?.errorText === 'net::ERR_ABORTED';
 }
 
 export async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {

@@ -7,6 +7,7 @@ import {
     churnDocumentVisibility,
     dispatchWebSocketMessages,
     installWebSocketTestHarness,
+    isSseCancellation,
     setDocumentHidden,
     waitForWebSocketConnection
 } from '../support/web-socket';
@@ -30,6 +31,7 @@ interface RuntimeDiagnostics {
     actionSamples: ActionSample[];
     activeAction: string;
     networkFailures: { action: string; status: number; url: string }[];
+    pushCancellations: RuntimeDiagnostics['requestFailures'];
     requestFailures: { action: string; error: null | string; method: string; url: string }[];
     requests: RequestCounts;
     runtimeErrors: { action: string; message: string }[];
@@ -44,6 +46,7 @@ test('event list and detail effects stay bounded through paging and background c
         actionSamples: [],
         activeAction: 'setup',
         networkFailures: [],
+        pushCancellations: [],
         requestFailures: [],
         requests: emptyRequestCounts(),
         runtimeErrors: []
@@ -335,7 +338,10 @@ async function measureAction(diagnostics: RuntimeDiagnostics, name: string, acti
 
 function recordConsoleMessage(diagnostics: RuntimeDiagnostics, message: ConsoleMessage): void {
     const text = message.text();
-    if (message.type() === 'error' && /effect_update_depth_exceeded|maximum update depth|svelte\.dev\/e\/effect/i.test(text)) {
+    if (
+        (message.type() === 'error' && /effect_update_depth_exceeded|maximum update depth|svelte\.dev\/e\/effect/i.test(text)) ||
+        (message.type() === 'warning' && text.startsWith('[SseClient] Connection timeout'))
+    ) {
         diagnostics.runtimeErrors.push({ action: diagnostics.activeAction, message: text });
     }
 }
@@ -375,10 +381,19 @@ function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request)
         return;
     }
 
-    diagnostics.requestFailures.push({
+    const failure = {
         action: diagnostics.activeAction,
         error: request.failure()?.errorText ?? null,
         method: request.method(),
         url: request.url()
-    });
+    };
+    if (
+        isSseCancellation(request) &&
+        ['event list background ingestion and resume', 'event list visibility churn', 'full detail visibility churn'].includes(diagnostics.activeAction)
+    ) {
+        // These actions deliberately close push; retain that evidence separately.
+        diagnostics.pushCancellations.push(failure);
+        return;
+    }
+    diagnostics.requestFailures.push(failure);
 }

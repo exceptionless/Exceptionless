@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { createServer } from 'node:http';
 
-import { dispatchWebSocketMessages, installWebSocketTestHarness, waitForWebSocketConnection } from '../support/web-socket';
+import { dispatchWebSocketMessages, installWebSocketTestHarness, isSseCancellation, waitForWebSocketConnection } from '../support/web-socket';
 
 test('the default SSE harness observes a live fetch and forwards server notifications', async ({ page }) => {
     const payload = 'data: {"type":"EventChanged","message":{"id":"live-canary"}}\n\n';
@@ -36,6 +36,11 @@ test('suppressed server messages retain a live SSE connection for injected notif
     let requests = 0;
     let closed = false;
     const server = createServer((request, response) => {
+        const status = new URL(request.url!, 'http://localhost').searchParams.get('status');
+        if (status) {
+            response.writeHead(Number(status)).end('synthetic push failure');
+            return;
+        }
         if (request.url !== '/api/v2/push') {
             response.end('<html></html>');
             return;
@@ -56,8 +61,10 @@ test('suppressed server messages retain a live SSE connection for injected notif
         await installWebSocketTestHarness(page, { ignoreServerMessages: true });
         await page.goto(`http://127.0.0.1:${address.port}`);
         await page.evaluate(async () => {
-            const response = await fetch('/api/v2/push');
-            const trackedWindow = window as Window & { __notification?: Promise<string> };
+            const controller = new AbortController();
+            const response = await fetch('/api/v2/push', { signal: controller.signal });
+            const trackedWindow = window as Window & { __controller?: AbortController; __notification?: Promise<string> };
+            trackedWindow.__controller = controller;
             trackedWindow.__notification = response
                 .body!.getReader()
                 .read()
@@ -71,6 +78,43 @@ test('suppressed server messages retain a live SSE connection for injected notif
         const notification = await page.evaluate(() => (window as Window & { __notification?: Promise<string> }).__notification);
         expect(notification).toMatch(/^data: .+\n\n$/);
         expect(JSON.parse(notification!.slice('data: '.length).trim())).toEqual({ message: { id: 'injected-canary' }, type: 'EventChanged' });
+
+        const cancellation = page.waitForEvent('requestfailed', { predicate: (request) => new URL(request.url()).pathname === '/api/v2/push' });
+        await page.evaluate(() => (window as Window & { __controller?: AbortController }).__controller!.abort());
+        expect(isSseCancellation(await cancellation)).toBe(true);
+        await expect.poll(() => closed).toBe(true);
+
+        for (const [pathname, method, errorText] of [
+            ['/api/v2/events/canary', 'GET', 'net::ERR_ABORTED'],
+            ['/api/v2/organizations/canary/events', 'GET', 'net::ERR_ABORTED'],
+            ['/api/v2/organizations/canary/events/count', 'GET', 'net::ERR_ABORTED'],
+            ['/api/v2/push', 'POST', 'net::ERR_ABORTED'],
+            ['/api/v2/push', 'GET', 'net::ERR_CONNECTION_RESET'],
+            ['/api/v2/push', 'GET', null]
+        ] as const) {
+            expect(
+                isSseCancellation({
+                    failure: () => (errorText ? { errorText } : null),
+                    method: () => method,
+                    url: () => `http://localhost${pathname}`
+                })
+            ).toBe(false);
+        }
+        const failures = await page.evaluate(async () => {
+            const statuses = [];
+            for (const status of [401, 429, 500]) {
+                const response = await fetch(`/api/v2/push?status=${status}`);
+                statuses.push(response.status);
+            }
+            return statuses;
+        });
+        expect(failures).toEqual([401, 429, 500]);
+
+        closed = false;
+        await page.evaluate(async () => {
+            await fetch('/api/v2/push');
+        });
+        expect(requests).toBe(2);
         await page.reload();
         await expect.poll(() => closed).toBe(true);
     } finally {
