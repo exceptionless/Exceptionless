@@ -107,6 +107,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
                 ["BaseURL"] = applicationOrigin + "/#!",
                 ["ApiUrl"] = apiOrigin + "/"
             })));
+        await factory.Server.WaitForReadyAsync();
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri(apiOrigin + "/api/v2/"),
