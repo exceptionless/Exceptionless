@@ -21,7 +21,7 @@ public sealed class OAuthAuthorizationValidationTests
     public void GetActiveOAuthOrganizationIds_RemovedMembership_ReturnsNoOrganizations()
     {
         // Arrange
-        var user = new User { OrganizationIds = ["organization-1"] };
+        var user = new User { OrganizationIds = new HashSet<string>(["organization-1"]) };
         var token = new OAuthToken { OrganizationIds = ["organization-1"] };
         user.OrganizationIds.Clear();
 
