@@ -58,7 +58,7 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
     });
 
     await test.step('open the session from the Sessions table', async () => {
-        await page.goto('/next/sessions?time=all');
+        await page.goto('/sessions?time=all');
         await expect(page.getByRole('heading', { name: 'Sessions' })).toBeVisible();
 
         const sessionRow = getVisibleRow(page, name, identity);
@@ -70,7 +70,7 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
         await expect(eventSheet.getByText(name).filter({ visible: true }).first()).toBeVisible();
         await eventSheet.getByRole('link', { name: 'Open details in new window' }).click();
 
-        await expect(page).toHaveURL(/\/next\/(?:event|stack\/[^/]+\/event)\//);
+        await expect(page).toHaveURL(/\/(?:event|stack\/[^/]+\/event)\//);
         await expect(getVisibleText(page, identity)).toBeVisible();
     });
 
@@ -89,7 +89,7 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
         await expect.poll(() => sessionEventsTable.evaluate((element) => element.scrollWidth / element.offsetWidth)).toBeLessThanOrEqual(1.02);
 
         const eventsLink = page.getByRole('link', { name: 'Open events filtered to this session' });
-        await expect(eventsLink).toHaveAttribute('href', /\/next\/event\/all\?/);
+        await expect(eventsLink).toHaveAttribute('href', /\/event\/all\?/);
         const eventsHref = await eventsLink.getAttribute('href');
         const eventsUrl = new URL(eventsHref!, page.url());
         expect(eventsUrl.searchParams.get('session')).toBe(sessionId);
@@ -113,7 +113,7 @@ test('operator can find and inspect a user session', async ({ e2eApi, e2eScenari
     });
 
     await test.step('event detail messages wrap and small alignment fixes render consistently', async () => {
-        await page.goto(`/next/stack/${relatedStackId}/event/${relatedEventId}`);
+        await page.goto(`/stack/${relatedStackId}/event/${relatedEventId}`);
         await expect(page.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
 
         const activePanel = () => page.getByRole('tabpanel').filter({ visible: true });

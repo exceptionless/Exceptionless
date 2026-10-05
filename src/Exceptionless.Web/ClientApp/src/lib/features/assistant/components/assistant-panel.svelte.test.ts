@@ -2,6 +2,9 @@ import { resolve } from '$app/paths';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { env } = vi.hoisted(() => ({ env: { PUBLIC_BASE_URL: '' } }));
+vi.mock('$env/dynamic/public', () => ({ env }));
+
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
 vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled: () => true }));
 vi.mock('katex/dist/katex.min.css', () => ({}));
@@ -17,6 +20,7 @@ import AssistantPanel from './assistant-panel.svelte';
 
 describe('AssistantPanel', () => {
     beforeEach(() => {
+        env.PUBLIC_BASE_URL = '';
         HTMLElement.prototype.scrollIntoView = vi.fn();
         HTMLElement.prototype.scrollTo = vi.fn();
     });
@@ -36,13 +40,13 @@ describe('AssistantPanel', () => {
     });
 
     it('records opens only when becoming visible, not when typing or changing views', async () => {
-        const props = { open: true, organizationId: 'organization-1', path: '/next/stack' };
+        const props = { open: true, organizationId: 'organization-1', path: '/stack' };
         const view = render(AssistantPanel, { props });
         await screen.findByRole('textbox', { name: 'Message Exie' });
         expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.Opened')).toHaveLength(1);
 
         await fireEvent.input(screen.getByRole('textbox', { name: 'Message Exie' }), { target: { value: 'Unsent draft' } });
-        await view.rerender({ ...props, mode: 'page', path: '/next/event' });
+        await view.rerender({ ...props, mode: 'page', path: '/event' });
         await waitFor(() => expect(submitFeatureUsage).toHaveBeenCalledWith('assistant.ViewChanged', expect.anything()));
         expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.Opened')).toHaveLength(1);
 
@@ -52,6 +56,15 @@ describe('AssistantPanel', () => {
         await waitFor(() => expect(submitFeatureUsage.mock.calls.filter(([feature]) => feature === 'assistant.Opened')).toHaveLength(2));
     });
 
+    it('streams responses from the configured API origin', async () => {
+        env.PUBLIC_BASE_URL = 'https://localhost:8443';
+        const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response('{"type":"text_delta","text":"Configured origin response"}\n{"type":"done"}\n'));
+        vi.stubGlobal('fetch', fetchMock);
+        render(AssistantPanel, { props: { open: true, organizationId: 'organization-1', promptRequest: { id: 'origin-prompt', prompt: 'Hello' } } });
+        await screen.findByText('Configured origin response');
+        expect(fetchMock.mock.calls[0]?.[0]).toBe('https://localhost:8443/api/v2/assistant/chat');
+    });
+
     it('correlates message outcomes and feedback without recording chat text', async () => {
         const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response('{"type":"text_delta","text":"The answer"}\n{"type":"done"}\n'));
         vi.stubGlobal('fetch', fetchMock);
@@ -59,7 +72,7 @@ describe('AssistantPanel', () => {
             props: {
                 open: true,
                 organizationId: 'organization-1',
-                path: '/next/stack/stack-1?filter=private',
+                path: '/stack/stack-1?filter=private',
                 promptRequest: { id: 'prompt-request', prompt: 'My question' }
             }
         });
@@ -71,7 +84,7 @@ describe('AssistantPanel', () => {
         const prompt = eventData('assistant.MessageSent');
         expect(prompt.conversation_id).toMatch(/^[0-9a-f]{32}$/);
         expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string).conversation_id).toBe(prompt.conversation_id);
-        expect(prompt).toMatchObject({ organization_id: 'organization-1', path: '/next/stack/stack-1', prompt_source: 'queued', role: 'user' });
+        expect(prompt).toMatchObject({ organization_id: 'organization-1', path: '/stack/stack-1', prompt_source: 'queued', role: 'user' });
         expect(eventData('assistant.ResponseCompleted')).toMatchObject({
             assistant_message_id: prompt.assistant_message_id,
             conversation_id: prompt.conversation_id,
@@ -340,7 +353,7 @@ describe('AssistantPanel', () => {
         const onCollapse = vi.fn();
         render(AssistantPanel, {
             props: {
-                collapseHref: '/next/stack',
+                collapseHref: '/stack',
                 mode: 'page',
                 onCollapse,
                 open: false,
@@ -351,7 +364,7 @@ describe('AssistantPanel', () => {
         expect(screen.getByRole('log', { name: 'Conversation with Exie' })).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Clear conversation' }).hasAttribute('disabled')).toBe(true);
         const collapseLink = screen.getByRole('link', { name: 'Collapse Exie to side panel' });
-        expect(collapseLink.getAttribute('href')).toBe('/next/stack');
+        expect(collapseLink.getAttribute('href')).toBe('/stack');
 
         collapseLink.addEventListener('click', (event) => event.preventDefault());
         await fireEvent.click(collapseLink);
@@ -368,18 +381,18 @@ describe('AssistantPanel', () => {
 
         const view = render(AssistantPanel, {
             props: {
-                expandHref: '/next/exie?from=%2Fnext%2Fstack',
+                expandHref: '/exie?from=%2Fstack',
                 open: true,
                 organizationId: 'organization-1',
                 promptRequest: { id: 'request-1', prompt: 'Keep this conversation.' }
             }
         });
 
-        expect(screen.getByRole('link', { name: 'Expand Exie to full page' }).getAttribute('href')).toBe('/next/exie?from=%2Fnext%2Fstack');
+        expect(screen.getByRole('link', { name: 'Expand Exie to full page' }).getAttribute('href')).toBe('/exie?from=%2Fstack');
         expect(await screen.findByText('The conversation is still here.')).toBeTruthy();
 
         await view.rerender({
-            collapseHref: '/next/stack',
+            collapseHref: '/stack',
             mode: 'page',
             open: true,
             organizationId: 'organization-1',
@@ -439,7 +452,7 @@ describe('AssistantPanel', () => {
             props: {
                 open: true,
                 organizationId: 'organization-1',
-                path: '/next/stack/stack-a',
+                path: '/stack/stack-a',
                 promptRequest: { id: 'request-1', prompt: 'Analyze this stack.' }
             }
         });
@@ -448,7 +461,7 @@ describe('AssistantPanel', () => {
         await view.rerender({
             open: true,
             organizationId: 'organization-1',
-            path: '/next/stack/stack-b',
+            path: '/stack/stack-b',
             promptRequest: { id: 'request-1', prompt: 'Analyze this stack.' }
         });
         await fireEvent.click(action);
@@ -459,8 +472,8 @@ describe('AssistantPanel', () => {
             messages: Array<{ suggested_action_path?: string }>;
             path: string;
         };
-        expect(payload.path).toBe('/next/stack/stack-b');
-        expect(payload.messages.at(-1)?.suggested_action_path).toBe('/next/stack/stack-a');
+        expect(payload.path).toBe('/stack/stack-b');
+        expect(payload.messages.at(-1)?.suggested_action_path).toBe('/stack/stack-a');
     });
 
     it('hides tool calls by default and toggles them locally with /tools', async () => {

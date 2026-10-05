@@ -1,5 +1,6 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.WebHook;
@@ -15,7 +16,7 @@ public sealed class VersionTwoPlugin : WebHookDataPluginBase
             return Task.FromResult<object?>(null);
 
         var ev = ctx.Event!;
-        return Task.FromResult<object?>(new WebHookEvent(_options.BaseURL)
+        return Task.FromResult<object?>(new WebHookEvent(_options.BaseURL.GetOrigin())
         {
             Id = ev.Id,
             OccurrenceDate = ev.Date,
@@ -45,7 +46,7 @@ public sealed class VersionTwoPlugin : WebHookDataPluginBase
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version2))
             return Task.FromResult<object?>(null);
 
-        return Task.FromResult<object?>(new WebHookStack(_options.BaseURL)
+        return Task.FromResult<object?>(new WebHookStack(_options.BaseURL.GetOrigin())
         {
             Id = ctx.Stack.Id,
             Title = ctx.Stack.Title,

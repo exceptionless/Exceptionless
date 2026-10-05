@@ -76,39 +76,16 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             }
 
             if (String.Equals(authInfo.Username, "client", StringComparison.OrdinalIgnoreCase))
+            {
                 token = authInfo.Password;
+            }
             else if (String.Equals(authInfo.Password, "x-oauth-basic", StringComparison.OrdinalIgnoreCase) || String.IsNullOrEmpty(authInfo.Password))
+            {
                 token = authInfo.Username;
+            }
             else
             {
-                string emailAddress = authInfo.Username.Trim().ToLowerInvariant();
-                string? ipAddress = Request.GetClientIpAddress();
-                await using var loginAttempt = await _authService.TryBeginLoginAsync(emailAddress, ipAddress, Context.RequestAborted);
-                if (loginAttempt is null)
-                {
-                    Logger.LogError("Login denied for {EmailAddress}", emailAddress);
-                    return AuthenticateResult.Fail("Login denied.");
-                }
-
-                User? user;
-                try
-                {
-                    user = await _userRepository.GetByEmailAddressAsync(emailAddress);
-                }
-                catch (Exception ex)
-                {
-                    return AuthenticateResult.Fail(ex);
-                }
-
-                if (user is not { IsActive: true } || !user.IsCorrectPassword(authInfo.Password))
-                {
-                    await _authService.RecordLoginFailureAsync(loginAttempt);
-                    return AuthenticateResult.Fail("User is not valid");
-                }
-
-                await _authService.RecordLoginSuccessAsync(loginAttempt);
-
-                return AuthenticateResult.Success(CreateUserAuthenticationTicket(user));
+                return await AuthenticatePasswordAsync(authInfo);
             }
         }
         else
@@ -191,6 +168,41 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         }
 
         Response.Headers.WWWAuthenticate = $"Bearer error=\"insufficient_scope\", scope=\"{String.Join(' ', resourceDefinition.RequiredScopes)}\", resource_metadata=\"{GetResourceMetadataUri(resourceDefinition)}\"";
+    }
+
+    private async Task<AuthenticateResult> AuthenticatePasswordAsync(AuthInfo authInfo)
+    {
+        string emailAddress = authInfo.Username.Trim().ToLowerInvariant();
+        string? ipAddress = Request.GetClientIpAddress();
+        await using var loginAttempt = await _authService.TryBeginLoginAsync(emailAddress, ipAddress, Context.RequestAborted);
+        if (loginAttempt is null)
+        {
+            Logger.LogError("Login denied for {EmailAddress}", emailAddress);
+            return AuthenticateResult.Fail("Login denied.");
+        }
+
+        User? user;
+        try
+        {
+            user = await _userRepository.GetByEmailAddressAsync(emailAddress);
+        }
+        catch (Exception ex)
+        {
+            if (ex is not OperationCanceledException || !Context.RequestAborted.IsCancellationRequested)
+                Logger.LogError(ex, "Error retrieving user during Basic password authentication: {Message}", ex.Message);
+
+            return AuthenticateResult.Fail(ex);
+        }
+
+        if (user is not { IsActive: true } || !user.IsCorrectPassword(authInfo.Password))
+        {
+            await _authService.RecordLoginFailureAsync(loginAttempt);
+            return AuthenticateResult.Fail("User is not valid");
+        }
+
+        await _authService.RecordLoginSuccessAsync(loginAttempt);
+
+        return AuthenticateResult.Success(CreateUserAuthenticationTicket(user));
     }
 
     private async Task<AuthenticateResult> AuthenticateOAuthBearerAsync(string token)
@@ -376,7 +388,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     private string GetCanonicalOrigin()
     {
-        return new Uri(_appOptions.BaseURL).GetLeftPart(UriPartial.Authority);
+        return (String.IsNullOrWhiteSpace(_appOptions.ApiUrl) ? _appOptions.BaseURL : _appOptions.ApiUrl).GetOrigin();
     }
 }
 
