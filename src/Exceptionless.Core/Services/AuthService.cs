@@ -1,7 +1,7 @@
+using System.Runtime.ExceptionServices;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Services;
 
@@ -16,11 +16,6 @@ public sealed class AuthService
     private readonly ScopedCacheClient _cache;
     private readonly ILogger<AuthService> _logger;
     private readonly TimeProvider _timeProvider;
-
-    public AuthService(ICacheClient cacheClient, TimeProvider timeProvider)
-        : this(cacheClient, timeProvider, NullLogger<AuthService>.Instance)
-    {
-    }
 
     public AuthService(ICacheClient cacheClient, TimeProvider timeProvider, ILogger<AuthService> logger)
     {
@@ -43,7 +38,7 @@ public sealed class AuthService
         cancellationToken.ThrowIfCancellationRequested();
 
         var expiresUtc = GetWindowExpiration();
-        string[] userCacheKeys = GetCacheKeys($"user:{emailAddress.Trim().ToLowerInvariant()}", UserFailureLimit, expiresUtc);
+        string[] userCacheKeys = GetUserCacheKeys(emailAddress, expiresUtc);
         var failures = await _cache.GetAllAsync<string>(userCacheKeys);
         var observedFailures = failures.Where(pair => pair.Value.HasValue && pair.Value.Value.StartsWith("failed:", StringComparison.Ordinal))
             .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.Value)).ToArray();
@@ -59,7 +54,7 @@ public sealed class AuthService
 
             if (ipAddress is not null)
             {
-                string? ipAddressCacheKey = await ReserveCacheKeyAsync(GetCacheKeys($"ip:{ipAddress}", IpAddressFailureLimit, expiresUtc), reservation, expiresUtc);
+                string? ipAddressCacheKey = await ReserveCacheKeyAsync(GetIpAddressCacheKeys(ipAddress, expiresUtc), reservation, expiresUtc);
                 if (ipAddressCacheKey is null)
                 {
                     await ReleaseCacheKeysAsync(reservedCacheKeys, reservation);
@@ -71,19 +66,13 @@ public sealed class AuthService
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            return new LoginAttempt(this, expiresUtc, reservedCacheKeys.ToArray(), reservation, observedFailures);
+            string[] cacheKeys = reservedCacheKeys.ToArray();
+
+            return new LoginAttempt(expiresUtc, cacheKeys, reservation, observedFailures, () => ReleaseCacheKeysAsync(cacheKeys, reservation));
         }
-        catch (Exception exception)
+        catch
         {
-            try
-            {
-                await ReleaseCacheKeysAsync(reservedCacheKeys, reservation);
-            }
-            catch (Exception cleanupException)
-            {
-                _logger.LogError("Failed to release login admission reservations after {FailureType}: {CleanupFailureType}",
-                    exception.GetType().Name, cleanupException.GetType().Name);
-            }
+            await ReleaseCacheKeysAsync(reservedCacheKeys, reservation);
 
             throw;
         }
@@ -114,12 +103,19 @@ public sealed class AuthService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(emailAddress);
 
-        var failures = await _cache.GetAllAsync<string>(GetCacheKeys($"user:{emailAddress.Trim().ToLowerInvariant()}", UserFailureLimit, GetWindowExpiration()));
+        var failures = await _cache.GetAllAsync<string>(GetUserCacheKeys(emailAddress, GetWindowExpiration()));
         // Recovery clears completed failures while checks underway retain admission.
         await RemoveFailuresAsync(failures.Where(pair => pair.Value.HasValue && pair.Value.Value.StartsWith("failed:", StringComparison.Ordinal))
             .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.Value)));
     }
 
+    /// <summary>
+    /// Atomically reserves the first available cache entry until the captured window expires.
+    /// </summary>
+    /// <param name="cacheKeys">The entries belonging to one user's or IP address's admission budget.</param>
+    /// <param name="reservation">The unique value used to conditionally release or charge the entry.</param>
+    /// <param name="expiresUtc">The expiration captured before reserving either admission budget.</param>
+    /// <returns>The reserved cache key, or <see langword="null"/> when the admission budget is exhausted.</returns>
     private async Task<string?> ReserveCacheKeyAsync(string[] cacheKeys, string reservation, DateTime expiresUtc)
     {
         foreach (string cacheKey in cacheKeys)
@@ -129,25 +125,76 @@ public sealed class AuthService
         return null;
     }
 
-    private Task ReleaseCacheKeysAsync(IEnumerable<string> cacheKeys, string reservation)
-        => Task.WhenAll(cacheKeys.Select(cacheKey => _cache.RemoveIfEqualAsync(cacheKey, reservation)));
+    /// <summary>
+    /// Releases every entry still owned by the reservation. Cleanup failures are logged and remain
+    /// charged until expiration, so disposal cannot replace an in-flight error or cancellation.
+    /// </summary>
+    private async Task ReleaseCacheKeysAsync(IEnumerable<string> cacheKeys, string reservation)
+    {
+        List<Exception>? cleanupFailures = null;
+        foreach (string cacheKey in cacheKeys)
+        {
+            try
+            {
+                await _cache.RemoveIfEqualAsync(cacheKey, reservation);
+            }
+            catch (Exception exception)
+            {
+                // Cache-provider messages can contain identities, cache keys, or connection details.
+                var safeException = new Exception("Cache reservation cleanup failed.");
+                safeException.Data["ExceptionType"] = exception.GetType().FullName;
+                if (!String.IsNullOrEmpty(exception.StackTrace))
+                    ExceptionDispatchInfo.SetRemoteStackTrace(safeException, exception.StackTrace);
+
+                (cleanupFailures ??= []).Add(safeException);
+            }
+        }
+
+        if (cleanupFailures is null)
+            return;
+
+        _logger.LogError(new AggregateException("Login admission cleanup failed.", cleanupFailures),
+            "Failed to release {FailedCacheKeyCount} login admission reservations: {Message}", cleanupFailures.Count,
+            "Unreleased reservations expire at the current window boundary.");
+    }
 
     private Task RemoveFailuresAsync(IEnumerable<KeyValuePair<string, string>> failures)
         => Task.WhenAll(failures.Select(failure => _cache.RemoveIfEqualAsync(failure.Key, failure.Value)));
 
     private DateTime GetWindowExpiration() => _timeProvider.GetUtcNow().UtcDateTime.Floor(AttemptWindow).Add(AttemptWindow);
 
-    // The window selects expiration; separate cache entries atomically reserve admission.
-    private static string[] GetCacheKeys(string cacheKeyPrefix, int limit, DateTime expiresUtc)
-        => Enumerable.Range(0, limit).Select(index => $"{cacheKeyPrefix}:attempts:{expiresUtc.Ticks}:{index}").ToArray();
+    /// <summary>
+    /// Gets the user admission cache keys for the captured window, normalizing email casing and whitespace.
+    /// </summary>
+    /// <param name="emailAddress">The email identity shared by interactive and Basic password authentication.</param>
+    /// <param name="expiresUtc">The captured window expiration, also used by the IP admission budget.</param>
+    /// <returns>The five cache entries sharing the user's fixed-window admission budget.</returns>
+    private static string[] GetUserCacheKeys(string emailAddress, DateTime expiresUtc)
+    {
+        string normalizedEmailAddress = emailAddress.Trim().ToLowerInvariant();
 
+        return Enumerable.Range(0, UserFailureLimit).Select(index => $"user:{normalizedEmailAddress}:attempts:{expiresUtc.Ticks}:{index}").ToArray();
+    }
+
+    /// <summary>
+    /// Gets the IP admission cache keys for the same captured window as the user reservation.
+    /// </summary>
+    /// <param name="ipAddress">The client IP address supplied by the authentication caller.</param>
+    /// <param name="expiresUtc">The same captured expiration used by the user admission budget.</param>
+    /// <returns>The fifteen cache entries sharing the IP address's fixed-window admission budget.</returns>
+    private static string[] GetIpAddressCacheKeys(string ipAddress, DateTime expiresUtc)
+        => Enumerable.Range(0, IpAddressFailureLimit).Select(index => $"ip:{ipAddress}:attempts:{expiresUtc.Ticks}:{index}").ToArray();
+
+    /// <summary>
+    /// Owns one login admission reservation and releases unfinished entries when disposed.
+    /// </summary>
     public sealed class LoginAttempt : IAsyncDisposable
     {
-        private readonly AuthService _owner;
+        private readonly Func<Task> _releaseAsync;
 
-        internal LoginAttempt(AuthService owner, DateTime expiresUtc, string[] cacheKeys, string reservation, KeyValuePair<string, string>[] observedFailures)
+        internal LoginAttempt(DateTime expiresUtc, string[] cacheKeys, string reservation, KeyValuePair<string, string>[] observedFailures, Func<Task> releaseAsync)
         {
-            _owner = owner;
+            _releaseAsync = releaseAsync;
             ExpiresUtc = expiresUtc;
             CacheKeys = cacheKeys;
             Reservation = reservation;
@@ -159,6 +206,6 @@ public sealed class AuthService
         internal string Reservation { get; }
         internal KeyValuePair<string, string>[] ObservedFailures { get; }
 
-        public ValueTask DisposeAsync() => new(_owner.ReleaseCacheKeysAsync(CacheKeys, Reservation));
+        public ValueTask DisposeAsync() => new(_releaseAsync());
     }
 }
