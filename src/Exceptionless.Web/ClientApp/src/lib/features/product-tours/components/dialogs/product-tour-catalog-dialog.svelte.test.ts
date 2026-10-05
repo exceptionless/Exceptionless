@@ -19,7 +19,7 @@ describe('ProductTourCatalogDialog', () => {
                 isProjectConfigurePage: false,
                 isSetupPage: false,
                 organizationId: 'organization',
-                pathname: '/next',
+                pathname: '/',
                 projects: []
             },
             { app_overview: '2026-09-08T00:00:00Z' }
@@ -54,7 +54,7 @@ describe('ProductTourCatalogDialog', () => {
             errorEventAvailability: 'empty',
             isProjectConfigurePage: false,
             isSetupPage: false,
-            pathname: '/next',
+            pathname: '/',
             projects: []
         });
         const onStart = vi.fn();

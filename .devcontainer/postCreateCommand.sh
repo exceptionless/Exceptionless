@@ -6,4 +6,3 @@ mkdir -p "$HOME/.aspnet/https" "$HOME/.aspnet/dev-certs/trust"
 
 dotnet restore Exceptionless.slnx
 npm ci --prefix src/Exceptionless.Web/ClientApp
-npm ci --prefix src/Exceptionless.Web/ClientApp.angular

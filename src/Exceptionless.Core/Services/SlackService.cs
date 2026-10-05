@@ -38,7 +38,7 @@ public class SlackService
                 { "client_id", _appOptions.SlackOptions.SlackId },
                 { "client_secret", _appOptions.SlackOptions.SlackSecret },
                 { "code", code },
-                { "redirect_uri", new Uri(_appOptions.BaseURL).GetLeftPart(UriPartial.Authority) }
+                { "redirect_uri", _appOptions.BaseURL.GetOrigin() }
             };
 
         string url = $"https://slack.com/api/oauth.access?{data!.ToQueryString()}";
