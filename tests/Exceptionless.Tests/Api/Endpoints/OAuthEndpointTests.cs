@@ -642,7 +642,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
                 var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
                 Assert.NotNull(error);
                 Assert.Equal("invalid_scope", error.Error);
-                Assert.Equal($"Scopes not allowed for this application: {deniedScopes}. Restart authorization with fewer scopes or ask a global administrator to review the application in System → OAuth Apps. After saving changes, restart authorization using the same client ID.", error.ErrorDescription);
+                Assert.Equal($"Scopes not allowed for this application: {deniedScopes}. Restart authorization with scopes allowed for this application.", error.ErrorDescription);
                 Assert.DoesNotContain("redirect_uri", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
             }
         }

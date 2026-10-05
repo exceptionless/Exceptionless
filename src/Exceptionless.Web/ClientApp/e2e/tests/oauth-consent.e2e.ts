@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('AuthorizeConsent_InvalidAndRestartedRequests_UsesOnlyCurrentValidation', async ({ page }) => {
     // Arrange
     const errorDescription =
-        'Scopes not allowed for this application: stacks:write, offline_access. Restart authorization with fewer scopes or ask a global administrator to review the application in System → OAuth Apps. After saving changes, restart authorization using the same client ID.';
+        'Scopes not allowed for this application: stacks:write, offline_access. Restart authorization with scopes allowed for this application.';
     let consentRequests = 0;
     let authorizationRequests = 0;
     let completeStaleConsent: (() => void) | undefined;

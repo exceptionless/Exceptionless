@@ -86,7 +86,7 @@ public sealed class OAuthAuthorizationValidationTests
         if (deniedScopes is not null)
         {
             Assert.Equal("invalid_scope", result.Error);
-            Assert.Equal($"Scopes not allowed for this application: {deniedScopes}. Restart authorization with fewer scopes or ask a global administrator to review the application in System → OAuth Apps. After saving changes, restart authorization using the same client ID.", result.ErrorDescription);
+            Assert.Equal($"Scopes not allowed for this application: {deniedScopes}. Restart authorization with scopes allowed for this application.", result.ErrorDescription);
             Assert.Empty(result.Scopes);
         }
     }

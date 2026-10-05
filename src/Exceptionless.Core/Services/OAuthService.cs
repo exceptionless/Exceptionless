@@ -367,7 +367,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             string description = disallowedScopes.Length > 0
                 ? $"Scopes not allowed for this application: {String.Join(", ", disallowedScopes)}."
                 : "One or more scopes are not allowed for this application.";
-            return OAuthValidationResult.Invalid("invalid_scope", $"{description} Restart authorization with fewer scopes or ask a global administrator to review the application in System → OAuth Apps. After saving changes, restart authorization using the same client ID.");
+            return OAuthValidationResult.Invalid("invalid_scope", $"{description} Restart authorization with scopes allowed for this application.");
         }
 
         if (resourceDefinition.RequiredScopes.Any(s => !requestedScopes.Contains(s, StringComparer.Ordinal)))

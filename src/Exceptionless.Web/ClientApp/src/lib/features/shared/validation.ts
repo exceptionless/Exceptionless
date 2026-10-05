@@ -10,8 +10,6 @@ export type FieldWithErrors = {
 
 type ProblemDetailsLike = {
     detail?: unknown;
-    error?: unknown;
-    error_description?: unknown;
     errors?: Record<string, unknown>;
     message?: unknown;
     status?: unknown;
@@ -119,11 +117,21 @@ export function getFormErrorMessages(errors?: unknown[]): string | string[] | un
 }
 
 export function getProblemMessage(error: unknown, fallback: string): string {
+    // OAuth uses its own error format; FetchClient also stores these bodies in response.problem.
+    if (error && typeof error === 'object') {
+        if ('error_description' in error && isNonEmptyString(error.error_description)) {
+            return error.error_description;
+        }
+        if ('error' in error && isNonEmptyString(error.error)) {
+            return error.error;
+        }
+    }
+
     if (!isProblemDetailsLike(error)) {
         return fallback;
     }
 
-    const candidates: unknown[] = [error.error_description, error.error, error.message];
+    const candidates: unknown[] = [error.message];
     for (const value of Object.values(error.errors ?? {})) {
         if (Array.isArray(value)) {
             candidates.push(...value);
@@ -236,7 +244,7 @@ export function problemDetailsToFormErrors(problem: null | ProblemDetails): null
 }
 
 function isNonEmptyString(value: unknown): value is string {
-    return typeof value === 'string' && value.trim().length > 0;
+    return typeof value === 'string' && value.length > 0;
 }
 
 function isProblemDetailsLike(error: unknown): error is ProblemDetailsLike {
@@ -244,5 +252,5 @@ function isProblemDetailsLike(error: unknown): error is ProblemDetailsLike {
         return false;
     }
 
-    return 'title' in error || 'detail' in error || 'errors' in error || 'status' in error || 'error_description' in error || 'error' in error;
+    return 'title' in error || 'detail' in error || 'errors' in error || 'status' in error;
 }

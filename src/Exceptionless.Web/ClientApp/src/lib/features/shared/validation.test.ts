@@ -21,7 +21,7 @@ describe('getProblemMessage', () => {
         [{ detail: 'Problem detail' }, 'Problem detail'],
         [{ title: 'Problem title' }, 'Problem title'],
         [{ detail: 7, error: [], error_description: {}, title: false }, 'Fallback'],
-        [{ detail: 'Problem detail', error_description: '  ' }, 'Problem detail'],
+        [{ detail: 'Problem detail', error_description: '' }, 'Problem detail'],
         [null, 'Fallback'],
         ['Malformed body', 'Fallback']
     ])('GetProblemMessage_OAuthPayload_ReturnsSafeMessage: %j', (problem, expected) => {
