@@ -21,9 +21,9 @@ test('home navigation honors personal and organization saved views and survives 
     // Act & Assert: each step exercises and verifies a home-view transition.
     await test.step('fall back to the first Stacks saved view when no default is configured', async () => {
         // Act
-        await page.goto('/next/');
+        await page.goto('/');
         // Assert
-        await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
+        await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
         await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
         await expect.poll(() => savedViewListLimits).toContain('100');
     });
@@ -31,7 +31,7 @@ test('home navigation honors personal and organization saved views and survives 
     await test.step('prefer the personal saved view', async () => {
         // Arrange
         await journey.submitRepresentativeEvent();
-        await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
+        await page.goto(`/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
         await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
 
         // Act
@@ -73,9 +73,9 @@ test('home navigation honors personal and organization saved views and survives 
             .toBe(true);
 
         // Act
-        await page.goto('/next/');
+        await page.goto('/');
         // Assert
-        await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
+        await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
     });
 
     await test.step('fall back to the organization saved view after clearing the personal preference', async () => {
@@ -92,9 +92,9 @@ test('home navigation honors personal and organization saved views and survives 
         await expect(page.getByText('Personal home view cleared.')).toBeVisible();
 
         // Act
-        await page.goto('/next/');
+        await page.goto('/');
         // Assert
-        await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
+        await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
     });
 
     await test.step('clear deleted defaults and return to the first Stacks saved view', async () => {
@@ -117,9 +117,9 @@ test('home navigation honors personal and organization saved views and survives 
         expect(deletion).toBe(202);
 
         // Act
-        await page.goto('/next/');
+        await page.goto('/');
         // Assert
-        await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
+        await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
     });
 
     // Assert
@@ -163,7 +163,7 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
         )
         .toBe(true);
 
-    await page.goto('/next/event');
+    await page.goto('/event');
     const sidebar = page.locator('[data-sidebar="sidebar"]');
     const sharedViewLink = sidebar.getByRole('link', { exact: true, name: sharedViewName });
     const privateViewLink = sidebar.getByRole('link', { exact: true, name: privateViewName });
@@ -172,8 +172,8 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
     await expectSavedViewBefore(sharedViewLink, privateViewLink);
 
     await sharedViewLink.click();
-    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(savedViewSlug(sharedViewName))}(?:[?#]|$)`));
-    await page.goto('/next/event');
+    await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(savedViewSlug(sharedViewName))}(?:[?#]|$)`));
+    await page.goto('/event');
     await expect(privateViewLink).toBeVisible({ timeout: 30_000 });
 
     await expect(privateViewLink).toHaveAttribute('draggable', 'true');
@@ -242,7 +242,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
     });
 
     await test.step('save the filtered Events page as a view', async () => {
-        await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
+        await page.goto(`/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
         await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
 
         await openViewMenu(page);
@@ -256,7 +256,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
         await expect(dialog).toBeHidden({ timeout: 30_000 });
 
         await expect(page.getByRole('heading', { name: viewName })).toBeVisible({ timeout: 30_000 });
-        await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
+        await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
         await expect(getVisibleText(page, journey.message)).toBeVisible();
     });
 
@@ -272,19 +272,19 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
         await expect(dialog).toBeHidden({ timeout: 30_000 });
 
         await expect(page.getByRole('heading', { name: renamedViewName })).toBeVisible({ timeout: 30_000 });
-        await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
+        await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
         await expect(getVisibleText(page, journey.message)).toBeVisible();
     });
 
     await test.step('updating a URL override clears the hidden session-local draft', async () => {
-        await page.goto(`/next/event/${viewSlug}?time=90d`);
+        await page.goto(`/event/${viewSlug}?time=90d`);
         const dateFilter = page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first();
         await dateFilter.click();
         await page.getByRole('button', { name: 'Last 30 days' }).click();
         await expect(page).toHaveURL(/[?&]time=30d(?:&|$)/);
         await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
 
-        await page.goto(`/next/event/${viewSlug}?time=1d`);
+        await page.goto(`/event/${viewSlug}?time=1d`);
         await expect(
             page
                 .getByRole('button', { name: /Date\s+Last 24 hours/ })
@@ -305,7 +305,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
             })
             .toContain('now-1d');
 
-        await page.goto(`/next/event/${viewSlug}`);
+        await page.goto(`/event/${viewSlug}`);
         await expect(
             page
                 .getByRole('button', { name: /Date\s+Last 24 hours/ })
@@ -321,7 +321,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
             .filter({ visible: true })
             .first();
 
-        await page.goto(`/next/event/${viewSlug}?reference=`);
+        await page.goto(`/event/${viewSlug}?reference=`);
         await expect(page).toHaveURL(/[?&]reference=(?:&|$)/);
         await expect(referenceFilter).toHaveCount(0);
         await page.reload();
@@ -335,7 +335,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
     });
 
     await test.step('reset route-specific filter overrides to the saved view', async () => {
-        await page.goto(`/next/event/${viewSlug}?project=${e2eScenario.projectId}`);
+        await page.goto(`/event/${viewSlug}?project=${e2eScenario.projectId}`);
         await openViewMenu(page);
         await page.getByRole('menuitem', { name: 'Reset to Saved' }).click();
 
@@ -354,7 +354,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
         await expect(dialog).toBeHidden({ timeout: 30_000 });
 
         await expect(page.getByRole('heading', { name: 'Events' })).toBeVisible({ timeout: 30_000 });
-        await expect(page).toHaveURL(/\/next\/event(?:[?#]|$)/);
+        await expect(page).toHaveURL(/\/event(?:[?#]|$)/);
         await expect(page.getByRole('heading', { name: renamedViewName })).toHaveCount(0);
     });
 
@@ -429,7 +429,7 @@ test('switching saved views preserves each view temporary filter overrides acros
         )
         .toBe(true);
 
-    await page.goto(`/next/event/${firstViewSlug}`);
+    await page.goto(`/event/${firstViewSlug}`);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
     const dateFilter = page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first();
     await dateFilter.click();
@@ -452,7 +452,7 @@ test('switching saved views preserves each view temporary filter overrides acros
     const secondViewLink = page.getByRole('link', { exact: true, name: secondViewName }).first();
 
     await secondViewLink.click();
-    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(secondViewSlug)}(?:[?#]|$)`));
+    await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(secondViewSlug)}(?:[?#]|$)`));
     await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
     await expect(
         page
@@ -482,8 +482,8 @@ test('switching saved views preserves each view temporary filter overrides acros
             setTimeout(() => navigate(firstHref), 0);
         },
         {
-            firstHref: `/next/event/${firstViewSlug}`,
-            secondHref: `/next/event/${secondViewSlug}`
+            firstHref: `/event/${firstViewSlug}`,
+            secondHref: `/event/${secondViewSlug}`
         }
     );
     await page.waitForTimeout(100);
@@ -504,7 +504,7 @@ test('switching saved views preserves each view temporary filter overrides acros
         }
     };
     page.on('request', captureColdLoadEventTime);
-    await page.goto(`/next/event/${firstViewSlug}?project=${e2eScenario.projectId}&sort=type&status=open`);
+    await page.goto(`/event/${firstViewSlug}?project=${e2eScenario.projectId}&sort=type&status=open`);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`[?&]project=${escapeRegExp(e2eScenario.projectId)}(?:&|$)`));
     await expect(page).toHaveURL(/[?&]sort=type(?:&|$)/);
@@ -524,13 +524,13 @@ test('switching saved views preserves each view temporary filter overrides acros
             .filter({ visible: true })
             .first()
     ).toBeVisible();
-    await navigateClientSide(page, `/next/event/${firstViewSlug}?project=${e2eScenario.projectId}&sort=type&status=regressed&time=90d`);
+    await navigateClientSide(page, `/event/${firstViewSlug}?project=${e2eScenario.projectId}&sort=type&status=regressed&time=90d`);
     await expect(page).toHaveURL(/[?&]status=regressed(?:&|$)/);
     await secondViewLink.click();
     await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
 
     await firstViewLink.click();
-    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(firstViewSlug)}(?:[?#]|$)`));
+    await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(firstViewSlug)}(?:[?#]|$)`));
     await expect(page).not.toHaveURL(/[?&]status=/);
     await expect(page).not.toHaveURL(/[?&]project=/);
     await expect(page).not.toHaveURL(/[?&]sort=/);
@@ -544,7 +544,7 @@ test('switching saved views preserves each view temporary filter overrides acros
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expectColumnBefore(page, 'User', 'Summary');
 
-    await page.goto(`/next/event/${firstViewSlug}?time=15m`);
+    await page.goto(`/event/${firstViewSlug}?time=15m`);
     await expect(
         page
             .getByRole('button', { name: /Date\s+Last 15 minutes/ })
@@ -578,7 +578,7 @@ test('switching saved views preserves each view temporary filter overrides acros
     await refreshedSavedViews;
 
     await secondViewLink.click();
-    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(secondViewSlug)}(?:[?#]|$)`));
+    await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(secondViewSlug)}(?:[?#]|$)`));
     await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
     await expect(
         page
@@ -602,7 +602,7 @@ test('switching saved views preserves each view temporary filter overrides acros
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await firstViewLink.click();
-    await expect(page).toHaveURL(new RegExp(`/next/event/${escapeRegExp(firstViewSlug)}(?:[?#]|$)`));
+    await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(firstViewSlug)}(?:[?#]|$)`));
     await expect(page).toHaveURL(/[?&]time=90d(?:&|$)/);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
     await expect(
@@ -619,9 +619,9 @@ test('switching saved views preserves each view temporary filter overrides acros
     await expect(summaryWrap).toBeChecked();
     await columnDialog.getByRole('button', { name: 'Done' }).click();
 
-    await navigateClientSide(page, '/next/stack');
-    await expect(page).toHaveURL(/\/next\/stack(?:[?#]|$)/);
-    await navigateClientSide(page, `/next/event/${firstViewSlug}`);
+    await navigateClientSide(page, '/stack');
+    await expect(page).toHaveURL(/\/stack(?:[?#]|$)/);
+    await navigateClientSide(page, `/event/${firstViewSlug}`);
     await expect(
         page
             .getByRole('button', { name: /Date\s+Last 90 days/ })
@@ -629,8 +629,8 @@ test('switching saved views preserves each view temporary filter overrides acros
             .first()
     ).toBeVisible();
     await page.goBack();
-    await expect(page).toHaveURL(/\/next\/stack(?:[?#]|$)/);
-    await navigateClientSide(page, `/next/event/${firstViewSlug}`);
+    await expect(page).toHaveURL(/\/stack(?:[?#]|$)/);
+    await navigateClientSide(page, `/event/${firstViewSlug}`);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
 
     await openViewMenu(page);
@@ -697,7 +697,7 @@ test('save completion does not overwrite a newly active saved view', async ({ e2
         })
         .toBe(true);
 
-    await page.goto(`/next/event/${firstViewSlug}`);
+    await page.goto(`/event/${firstViewSlug}`);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
     await page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first().click();
     await page.getByRole('button', { name: 'Last 90 days' }).click();
@@ -844,10 +844,10 @@ test('stream switches to a session-local saved view draft without mixing in-flig
         sourceRequestCompleted = true;
     });
 
-    await page.goto('/next/stream');
+    await page.goto('/stream');
     await expect.poll(() => sourceRequestStarted).toBe(true);
     await page.getByRole('button', { name: 'Pause streaming updates' }).click();
-    await navigateClientSide(page, `/next/stream?saved=${savedView.id}`);
+    await navigateClientSide(page, `/stream?saved=${savedView.id}`);
     releaseSourceRequest();
     await expect.poll(() => sourceRequestCompleted).toBe(true);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
@@ -910,7 +910,7 @@ test('stream switches to a session-local saved view draft without mixing in-flig
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
 
     streamRequestFilters.length = 0;
-    await page.goto(`/next/stream?saved=${savedView.id}&filter=${encodeURIComponent(draftExpression)}`);
+    await page.goto(`/stream?saved=${savedView.id}&filter=${encodeURIComponent(draftExpression)}`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Status Fixed' })).toHaveCount(0);
@@ -920,7 +920,7 @@ test('stream switches to a session-local saved view draft without mixing in-flig
     expect(explicitFilter).not.toContain(remoteExpression);
 
     streamRequestFilters.length = 0;
-    await page.goto(`/next/stream?saved=${savedView.id}&filter=`);
+    await page.goto(`/stream?saved=${savedView.id}&filter=`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Status Fixed' })).toHaveCount(0);
@@ -944,7 +944,7 @@ test('stream loads default results when its saved-view lookup fails', async ({ e
         }
     });
 
-    await page.goto('/next/stream?saved=unavailable-view');
+    await page.goto('/stream?saved=unavailable-view');
     await expect(page.getByRole('heading', { name: 'Event Stream' })).toBeVisible();
     await expect.poll(() => eventRequests.length, { timeout: 30_000 }).toBeGreaterThan(0);
 });
@@ -997,7 +997,7 @@ test('reset clears a session-local draft after delayed current-user identity res
         await route.continue();
     });
 
-    await page.goto(`/next/event/${viewSlug}?time=1d`);
+    await page.goto(`/event/${viewSlug}?time=1d`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await openViewMenu(page);
     const resetMenuItem = page.getByRole('menuitem', { name: 'Reset to Saved' });
@@ -1063,7 +1063,7 @@ test('filter edits made before current-user identity resolves become session-loc
         await route.continue();
     });
 
-    await page.goto(`/next/event/${viewSlug}`);
+    await page.goto(`/event/${viewSlug}`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await openViewMenu(page);
     const chartMenuItem = page.getByRole('menuitemcheckbox', { name: 'Chart' });
@@ -1095,7 +1095,7 @@ test('filter edits made before current-user identity resolves become session-loc
         })
         .toContain('now-90d');
 
-    await page.goto(`/next/event/${viewSlug}`);
+    await page.goto(`/event/${viewSlug}`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect
         .poll(async () => {
@@ -1181,7 +1181,7 @@ test('saved view loads server state and protects drafts when the current-user lo
         }
     });
 
-    await page.goto(`/next/event/${viewSlug}?time=1d`);
+    await page.goto(`/event/${viewSlug}?time=1d`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect.poll(() => eventRequests.length, { timeout: 30_000 }).toBeGreaterThan(0);
     await openViewMenu(page);
@@ -1189,7 +1189,7 @@ test('saved view loads server state and protects drafts when the current-user lo
     await expect(page.getByRole('menuitem', { name: 'Reset to Saved' })).toBeDisabled();
 
     await page.unroute('**/api/v2/users/me');
-    await page.goto(`/next/event/${viewSlug}`);
+    await page.goto(`/event/${viewSlug}`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect(
         page

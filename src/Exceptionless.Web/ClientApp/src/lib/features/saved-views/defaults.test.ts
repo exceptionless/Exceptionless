@@ -34,7 +34,7 @@ describe('getSavedViewDefaultHref', () => {
             savedViews
         });
 
-        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/event/my-home');
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/event/my-home');
     });
 
     it('uses the organization default when there is no personal default', () => {
@@ -45,7 +45,7 @@ describe('getSavedViewDefaultHref', () => {
             savedViews
         });
 
-        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/stack/organization-home');
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/stack/organization-home');
     });
 
     it('skips missing duplicate personal defaults', () => {
@@ -57,7 +57,7 @@ describe('getSavedViewDefaultHref', () => {
         });
 
         expect(defaults.userDefault?.id).toBe('valid-default');
-        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/stack/valid-home');
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/stack/valid-home');
     });
 
     it('ignores a private organization default', () => {
@@ -72,7 +72,7 @@ describe('getSavedViewDefaultHref', () => {
         });
 
         expect(defaults.organizationDefault).toBeUndefined();
-        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/stack/all');
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/stack/all');
     });
 
     it('falls back to the first Stacks saved view when no configured default is available', () => {
@@ -82,12 +82,12 @@ describe('getSavedViewDefaultHref', () => {
             savedView({ id: 'second-stack-view', slug: 'errors' })
         ];
 
-        expect(getSavedViewDefaultHref({}, savedViews)).toBe('/next/stack/all');
+        expect(getSavedViewDefaultHref({}, savedViews)).toBe('/stack/all');
     });
 
     it('falls back to the built-in Stacks route when there are no Stacks saved views', () => {
-        expect(getSavedViewDefaultHref({}, [])).toBe('/next/stack');
-        expect(getSavedViewDefaultHref({}, undefined)).toBe('/next/stack');
+        expect(getSavedViewDefaultHref({}, [])).toBe('/stack');
+        expect(getSavedViewDefaultHref({}, undefined)).toBe('/stack');
     });
 
     it('builds stream saved view links using the saved view identifier', () => {
@@ -98,7 +98,7 @@ describe('getSavedViewDefaultHref', () => {
             savedViews
         });
 
-        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/stream?saved=stream-default');
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/stream?saved=stream-default');
     });
 
     it('builds Sessions saved view links for a configured home view', () => {
@@ -109,7 +109,7 @@ describe('getSavedViewDefaultHref', () => {
             savedViews
         });
 
-        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/next/sessions/active');
+        expect(getSavedViewDefaultHref(defaults, savedViews)).toBe('/sessions/active');
     });
 });
 

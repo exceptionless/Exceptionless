@@ -103,7 +103,7 @@ public sealed class AssistantServiceTests
         var request = new AssistantChatRequest(
             [new AssistantChatMessage("user", "Say hello")],
             ProjectId: "project-id",
-            Path: "/next/stack/stack-id/event/event-id?tab=details");
+            Path: "/stack/stack-id/event/event-id?tab=details");
         var planOptions = CreatePlanOptions();
         var events = new List<AssistantStreamEvent>();
 
@@ -177,15 +177,15 @@ public sealed class AssistantServiceTests
     }
 
     [Fact]
-    public async Task StreamAsync_RuntimeModelOverride_UsesOverride()
+    public async Task StreamAsync_RuntimeModelChanges_UsesLatestModelWithoutPriceFilter()
     {
-        var handler = new StubHttpMessageHandler(
-            """
+        const string response = """
             data: {"choices":[{"delta":{"content":"Hello"}}]}
 
             data: [DONE]
 
-            """);
+            """;
+        var handler = new StubHttpMessageHandler(response, response, response, response, response);
         var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -199,19 +199,34 @@ public sealed class AssistantServiceTests
             TimeProvider = TimeProvider.System
         });
         var settingsService = CreateAssistantModelSettingsService(appOptions);
-        await settingsService.SetModelAsync("z-ai/glm-5.3-flash", "000000000000000000000001");
         var service = CreateAssistantService(handler, appOptions, cache, modelSettingsService: settingsService);
+        var request = new AssistantChatRequest(
+            [new AssistantChatMessage("user", "Say hello")],
+            OrganizationId: "organization-id",
+            ConversationId: "conversation-id");
 
-        await foreach (var _ in service.StreamAsync(
-            new AssistantChatRequest([new AssistantChatMessage("user", "Say hello")]),
-            "user-id",
-            CreatePlanOptions(),
-            TestContext.Current.CancellationToken))
+        string?[] models = [null, "openai/gpt-6.1-sol", "anthropic/claude-sonnet-5.5", "openai/gpt-6.1-sol", null];
+        foreach (string? model in models)
         {
+            await settingsService.SetModelAsync(model, "000000000000000000000001");
+            var events = new List<AssistantStreamEvent>();
+            await foreach (var item in service.StreamAsync(request, "user-id", CreatePlanOptions(), TestContext.Current.CancellationToken))
+                events.Add(item);
+
+            Assert.Contains(events, item => item.Text == "Hello");
+            Assert.Equal("done", events[^1].Type);
         }
 
-        using var providerRequest = JsonDocument.Parse(handler.RequestBody);
-        Assert.Equal("z-ai/glm-5.3-flash", providerRequest.RootElement.GetProperty("model").GetString());
+        Assert.Equal(models.Length, handler.RequestBodies.Count);
+        for (int index = 0; index < models.Length; index++)
+        {
+            using var providerRequest = JsonDocument.Parse(handler.RequestBodies[index]);
+            var payload = providerRequest.RootElement;
+            Assert.Equal(models[index] ?? appOptions.AssistantOptions.Model, payload.GetProperty("model").GetString());
+            Assert.False(payload.TryGetProperty("provider", out var provider) && provider.TryGetProperty("max_price", out _));
+            Assert.Equal(AssistantLimits.MaximumOutputTokens, payload.GetProperty("max_tokens").GetInt32());
+            Assert.NotEmpty(payload.GetProperty("tools").EnumerateArray());
+        }
     }
 
     [Fact]
@@ -891,14 +906,27 @@ public sealed class AssistantServiceTests
         Assert.DoesNotContain("server-recorded tool results from earlier turns", isolatedHandler.RequestBody);
     }
 
-    [Fact]
-    public async Task StreamAsync_UsageOnlyFinalChunk_RecordsProviderUsage()
+    [Theory]
+    [InlineData(",\"cost\":0.002345", 2345)]
+    [InlineData(",\"cost\":0", 0)]
+    [InlineData("", 30_000)]
+    [InlineData(",\"cost\":null", 30_000)]
+    [InlineData(",\"cost\":\"unknown\"", 30_000)]
+    [InlineData(",\"cost\":-1", 30_000)]
+    [InlineData(",\"cost\":0.002345", 2345, true)]
+    [InlineData(",\"cost\":0", 0, true)]
+    [InlineData("", 30_000, true)]
+    public async Task StreamAsync_UsageOnlyFinalChunk_RecordsReportedCostOrEstimate(string costField, long expectedCostInMicrodollars, bool includesPartialUsage = false)
     {
+        string partialUsage = includesPartialUsage
+            ? "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":100,\"completion_tokens\":10}}\n\n"
+            : String.Empty;
         var handler = new StubHttpMessageHandler(
-            """
+            $$$"""
             data: {"choices":[{"delta":{"content":"Answer"}}]}
 
-            data: {"choices":[],"usage":{"prompt_tokens":12000,"completion_tokens":750,"total_tokens":12750,"cost":0.002345}}
+            {{{partialUsage}}}
+            data: {"choices":[],"usage":{"prompt_tokens":12000,"completion_tokens":750,"total_tokens":12750{{{costField}}}}}
 
             data: [DONE]
 
@@ -917,7 +945,8 @@ public sealed class AssistantServiceTests
             TimeProvider = TimeProvider.System
         });
         var lockProvider = CreateLockProvider(cache, TimeProvider.System);
-        var usageService = new AssistantUsageService(cache, lockProvider, new RecordingAssistantUsageRecorder(), appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, lockProvider, recorder, appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
         var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
 
         await foreach (var _ in service.StreamAsync(
@@ -933,7 +962,51 @@ public sealed class AssistantServiceTests
         var usage = await usageService.GetMonthlyUsageAsync("organization-id");
         Assert.Equal(12_000, usage.PromptTokens);
         Assert.Equal(750, usage.CompletionTokens);
-        Assert.Equal(0.002345m, usage.CostUsd);
+        Assert.Equal(expectedCostInMicrodollars, usage.CostInMicrodollars);
+        var recordedUsage = Assert.Single(recorder.Records, record => record.Increment.PromptTokens > 0);
+        Assert.Equal(12_000, recordedUsage.Increment.PromptTokens);
+        Assert.Equal(750, recordedUsage.Increment.CompletionTokens);
+        Assert.Equal(expectedCostInMicrodollars, recordedUsage.Increment.CostInMicrodollars);
+    }
+
+    [Fact]
+    public async Task StreamAsync_ProviderErrorAfterTokenUsage_RecordsEstimatedCost()
+    {
+        var handler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[],"usage":{"prompt_tokens":1000,"completion_tokens":100}}
+
+            data: {"error":{"message":"Provider failed"}}
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AppMode"] = AppMode.Production.ToString(),
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            }).Build());
+        using var cache = new InMemoryCacheClient();
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, lockProvider, recorder, appOptions, TimeProvider.System, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, usageService);
+
+        await Assert.ThrowsAsync<AssistantProviderException>(async () =>
+        {
+            await foreach (var _ in service.StreamAsync(
+                new AssistantChatRequest([new AssistantChatMessage("user", "Investigate this")], OrganizationId: "organization-id"),
+                "user-id", CreatePlanOptions(), TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        var usage = await usageService.GetMonthlyUsageAsync("organization-id");
+        Assert.Equal(1000, usage.PromptTokens);
+        Assert.Equal(100, usage.CompletionTokens);
+        Assert.Equal(2800, usage.CostInMicrodollars);
+        var recordedUsage = Assert.Single(recorder.Records, record => record.Increment.PromptTokens > 0);
+        Assert.Equal(2800, recordedUsage.Increment.CostInMicrodollars);
     }
 
     [Fact]
@@ -1303,13 +1376,13 @@ public sealed class AssistantServiceTests
     }
 
     [Theory]
-    [InlineData("length", "output_limit", true)]
-    [InlineData("content_filter", "content_filter", true)]
-    [InlineData("error", "provider_error", true)]
-    [InlineData("length", "output_limit", false)]
-    [InlineData("content_filter", "content_filter", false)]
-    [InlineData("error", "provider_error", false)]
-    public async Task StreamAsync_PartialProviderFailure_PreservesTextAndFailsTurn(string finishReason, string failureCode, bool recordDiagnostics)
+    [InlineData("length", "output_limit", "Exie reached its response length limit. Ask for a shorter answer or split the question into smaller parts.", true)]
+    [InlineData("content_filter", "content_filter", "Exie stopped before completing the answer. Please try again.", true)]
+    [InlineData("error", "provider_error", "Exie stopped before completing the answer. Please try again.", true)]
+    [InlineData("length", "output_limit", "Exie reached its response length limit. Ask for a shorter answer or split the question into smaller parts.", false)]
+    [InlineData("content_filter", "content_filter", "Exie stopped before completing the answer. Please try again.", false)]
+    [InlineData("error", "provider_error", "Exie stopped before completing the answer. Please try again.", false)]
+    public async Task StreamAsync_PartialProviderFailure_PreservesTextAndFailsTurn(string finishReason, string failureCode, string expectedMessage, bool recordDiagnostics)
     {
         string payload = JsonSerializer.Serialize(new
         {
@@ -1338,7 +1411,11 @@ public sealed class AssistantServiceTests
             .Select(line => JsonSerializer.Deserialize<AssistantStreamEvent>(line, new JsonSerializerOptions(JsonSerializerDefaults.Web))!);
         Assert.Collection(events,
             item => Assert.Equal("Partial answer", item.Text),
-            item => Assert.Equal("error", item.Type),
+            item =>
+            {
+                Assert.Equal("error", item.Type);
+                Assert.Equal(expectedMessage, item.Message);
+            },
             item => Assert.Equal("done", item.Type));
         if (recordDiagnostics)
             Assert.Equal(failureCode, Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("ProviderOutcome")).Properties["ProviderOutcome"]);
@@ -1444,6 +1521,97 @@ public sealed class AssistantServiceTests
         Assert.Equal("invalid_provider_response", turnEntry.Properties["FailureReason"]);
         Assert.Equal("failed", turnEntry.Properties["Outcome"]);
         Assert.All(logger.Entries, entry => Assert.DoesNotContain("private", entry.Message));
+    }
+
+    [Theory]
+    [InlineData("turn", "private partial answer", false, "private partial answer", "failed", "turn_timeout")]
+    [InlineData("provider", "private partial answer", false, "private partial answer", "failed", "provider_timeout")]
+    [InlineData("client", "private partial answer", false, "", "cancelled", "client_disconnected")]
+    [InlineData("turn", "private partial answer <｜DSML｜invoke>", false, "", "failed", "turn_timeout")]
+    [InlineData("turn", "", false, "", "failed", "turn_timeout")]
+    [InlineData("turn", "I marked the private stack critical.", true, "", "failed", "turn_timeout")]
+    [InlineData("provider", "I marked the private stack critical.", true, "", "failed", "provider_timeout")]
+    public async Task StreamAsync_CancelledProvider_PreservesSafePartialAnswerAndRecordsUsage(
+        string cancellationSource, string content, bool hasPendingToolCall, string expectedText, string outcome, string failureReason)
+    {
+        var timeProvider = new FakeTimeProvider();
+        using var requestAborted = new CancellationTokenSource();
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(AssistantLimits.MaximumTurnDurationSeconds), timeProvider);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(requestAborted.Token, deadline.Token, TestContext.Current.CancellationToken);
+        Action cancel = cancellationSource switch
+        {
+            "turn" => () => timeProvider.Advance(TimeSpan.FromSeconds(AssistantLimits.MaximumTurnDurationSeconds)),
+            "client" => requestAborted.Cancel,
+            _ => () => { }
+        };
+        string payload = JsonSerializer.Serialize(new
+        {
+            choices = new[]
+            {
+                new
+                {
+                    delta = new
+                    {
+                        content,
+                        reasoning = "private reasoning",
+                        tool_calls = hasPendingToolCall ? new[]
+                        {
+                            new { index = 0, id = "pending-tool", function = new { name = "set_stack_critical", arguments = "{\"stack_id\":\"private-stack\",\"critical\":true}" } }
+                        } : []
+                    }
+                }
+            },
+            usage = new { prompt_tokens = 1000, completion_tokens = 200, cost = 0.004m }
+        });
+        var handler = new CancelledProviderHandler($"data: {payload}\n\n", cancel);
+        var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["AppMode"] = AppMode.Production.ToString(),
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            }).Build());
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, timeProvider, "organization-id", "conversation-id", "request-id", requestAborted.Token);
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions { TimeProvider = timeProvider });
+        var recorder = new RecordingAssistantUsageRecorder();
+        var usageService = new AssistantUsageService(cache, CreateLockProvider(cache, timeProvider), recorder, options,
+            timeProvider, NullLogger<AssistantUsageService>.Instance);
+        var service = CreateAssistantService(handler, options, cache, usageService: usageService, timeProvider: timeProvider);
+        var context = new DefaultHttpContext { RequestAborted = requestAborted.Token };
+        using var response = new MemoryStream();
+        context.Response.Body = response;
+
+        await AssistantEndpoints.WriteResponseAsync(context,
+            service.StreamAsync(new AssistantChatRequest([new AssistantChatMessage("user", "private question")], OrganizationId: "organization-id"),
+                "user-id", CreatePlanOptions(), diagnostics, cancellation.Token),
+            usageService, "organization-id", diagnostics, cancellation.Token);
+
+        string body = Encoding.UTF8.GetString(response.ToArray());
+        var events = body.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => JsonSerializer.Deserialize<AssistantStreamEvent>(line, new JsonSerializerOptions(JsonSerializerDefaults.Web))!).ToArray();
+        Assert.Equal(expectedText, String.Concat(events.Where(item => item.Type == "text_delta").Select(item => item.Text)));
+        Assert.DoesNotContain("private reasoning", body);
+        Assert.DoesNotContain("DSML", body);
+        Assert.DoesNotContain(events, item => item.Type is "tool_call" or "tool_result" or "done");
+        if (cancellationSource == "client")
+            Assert.Empty(events);
+        else
+        {
+            Assert.Equal("Exie took too long to complete this response. Try narrowing the question.", Assert.Single(events, item => item.Type == "error").Message);
+            Assert.Equal("error", events[^1].Type);
+        }
+        Assert.Equal(0, diagnostics.ToolCalls);
+        var turn = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("Outcome"));
+        Assert.Equal(outcome, turn.Properties["Outcome"]);
+        Assert.Equal(failureReason, turn.Properties["FailureReason"]);
+        Assert.All(logger.Entries, entry => Assert.DoesNotContain("private", entry.Message));
+        var usage = Assert.Single(recorder.Records, record => record.Increment.PromptTokens > 0).Increment;
+        Assert.Equal(1000, usage.PromptTokens);
+        Assert.Equal(200, usage.CompletionTokens);
+        Assert.Equal(4000, usage.CostInMicrodollars);
+        Assert.Equal(cancellationSource == "client" ? 0 : 1, recorder.Records.Sum(record => record.Increment.Failed));
+        Assert.Equal(cancellationSource == "client" ? 1 : 0, recorder.Records.Sum(record => record.Increment.Cancelled));
     }
 
     [Theory]
@@ -1932,6 +2100,27 @@ public sealed class AssistantServiceTests
     {
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             => ValueTask.FromException<int>(new IOException("private stream detail"));
+    }
+
+    private sealed class CancelledProviderHandler(string content, Action cancel) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(new CancelledProviderStream(Encoding.UTF8.GetBytes(content), cancel))
+            });
+    }
+
+    private sealed class CancelledProviderStream(byte[] content, Action cancel) : MemoryStream(content)
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (Position < Length)
+                return base.ReadAsync(buffer, cancellationToken);
+
+            cancel();
+            return ValueTask.FromException<int>(new OperationCanceledException("private cancellation detail", cancellationToken));
+        }
     }
 
     private sealed class TimingHttpMessageHandler(FakeTimeProvider timeProvider, Action? beforeHeaders = null) : HttpMessageHandler

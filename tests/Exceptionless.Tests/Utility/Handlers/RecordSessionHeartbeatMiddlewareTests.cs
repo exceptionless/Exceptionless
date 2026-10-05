@@ -99,7 +99,11 @@ public sealed class RecordSessionHeartbeatMiddlewareTests : TestWithServices
             next,
             GetService<ICacheClient>(),
             GetService<AppOptions>(),
-            GetService<SystemSettingsService>(),
+            new SystemSettingsService(
+                () => Task.FromResult<SystemSettings?>(null),
+                _ => Task.CompletedTask,
+                GetService<AppOptions>(),
+                TimeProvider),
             TimeProvider,
             GetService<ILogger<ProjectConfigMiddleware>>());
     }

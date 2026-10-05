@@ -80,7 +80,7 @@ helm upgrade vpa fairwinds-stable/vpa --namespace vpa -f vpa-values.yaml --reset
 
 # upgrade signoz
 helm repo update
-helm upgrade --reset-values signoz-collector signoz/k8s-infra --version 0.16.0 -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY" --dry-run
+helm upgrade --reset-values signoz-collector signoz/k8s-infra --version 0.17.1 -f signoz.yaml --set "signozApiKey=$SIGNOZ_KEY" --dry-run
 
 # upgrade elasticsearch metrics exporter
 helm upgrade --reset-values es-exporter prometheus-community/prometheus-elasticsearch-exporter `
@@ -89,7 +89,7 @@ helm upgrade --reset-values es-exporter prometheus-community/prometheus-elastics
   --set serviceMonitor.enabled=false --dry-run
 
 # upgrade KubeBlocks operator
-# https://kubeblocks.io/docs/release-0.9/user_docs/installation/install-kubeblocks
+# https://kubeblocks.io/docs/
 helm repo update kubeblocks
 helm upgrade kubeblocks kubeblocks/kubeblocks --namespace kb-system --dry-run
 helm upgrade kb-addon-redis kubeblocks/kb-addon-redis --namespace kb-system --dry-run
@@ -97,9 +97,9 @@ helm upgrade kb-addon-redis kubeblocks/kb-addon-redis --namespace kb-system --dr
 # upgrade elasticsearch operator
 # https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-quickstart.html
 # https://github.com/elastic/cloud-on-k8s/releases
-kubectl replace -f https://download.elastic.co/downloads/eck/3.3.2/crds.yaml
-kubectl create -f https://download.elastic.co/downloads/eck/3.3.2/crds.yaml
-kubectl apply -f https://download.elastic.co/downloads/eck/3.3.2/operator.yaml
+kubectl replace -f https://download.elastic.co/downloads/eck/3.5.0/crds.yaml
+kubectl create -f https://download.elastic.co/downloads/eck/3.5.0/crds.yaml
+kubectl apply -f https://download.elastic.co/downloads/eck/3.5.0/operator.yaml
 
 # upgrade redis (KubeBlocks)
 kubectl apply -f ex-prod-redis.yaml -n ex-prod

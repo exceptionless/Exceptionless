@@ -13,7 +13,6 @@
   </Folder>
   <Folder Name="/Solution Items/http/">
     <File Path="tests/http/admin.http" />
-    <File Path="tests/http/auth.http" />
     <File Path="tests/http/events.http" />
     <File Path="tests/http/organizations.http" />
     <File Path="tests/http/projects.http" />

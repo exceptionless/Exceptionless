@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Reflection;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -952,24 +951,6 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         var projectUsageResponse = await _usageService.GetUsageAsync(organization.Id, project.Id);
         Assert.Equal(5, projectUsageResponse.CurrentUsage.Deleted);
         Assert.Equal(5, projectUsageResponse.CurrentHourUsage.Deleted);
-    }
-
-    [Fact]
-    public async Task RunBenchmarkAsync()
-    {
-        const int iterations = 10000;
-        var organization = await _organizationRepository.AddAsync(new Organization { Name = "Test", MaxEventsPerMonth = iterations - 10, PlanId = _plans.ExtraLargePlan.Id }, o => o.ImmediateConsistency());
-        var project = await _projectRepository.AddAsync(new Project { Name = "Test", OrganizationId = organization.Id, NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Ticks }, o => o.ImmediateConsistency());
-
-        var sw = Stopwatch.StartNew();
-        for (int i = 0; i < iterations; i++)
-        {
-            int eventsLeft = await _usageService.GetEventsLeftAsync(organization.Id);
-            await _usageService.IncrementTotalAsync(organization.Id, project.Id);
-        }
-
-        sw.Stop();
-        _logger.LogInformation("Time: {Duration:g}, Avg: ({AverageTickDuration:g}ticks | {AverageDuration}ms)", sw.Elapsed, sw.ElapsedTicks / iterations, sw.ElapsedMilliseconds / iterations);
     }
 
     private sealed class FailOnceHourlyPlanOveragePublisher(IMessagePublisher inner) : IMessagePublisher
