@@ -16,14 +16,6 @@ Content-Type: application/json
 
 @token = {{login.response.body.$.token}}
 
-### Password authentication shares the login attempt window
-GET {{apiUrl}}/users/me
-Authorization: Basic {{email}}:{{password}}
-
-### Authentication token through the client alias
-GET {{apiUrl}}/users/me
-Authorization: Basic client:{{token}}
-
 ### Get Current User
 # @name currentUser
 GET {{apiUrl}}/users/me

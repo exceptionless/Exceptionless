@@ -1,5 +1,7 @@
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Services;
 
@@ -12,15 +14,23 @@ public sealed class AuthService
     private const int IpAddressFailureLimit = 15;
     private static readonly TimeSpan AttemptWindow = TimeSpan.FromMinutes(15);
     private readonly ScopedCacheClient _cache;
+    private readonly ILogger<AuthService> _logger;
     private readonly TimeProvider _timeProvider;
 
     public AuthService(ICacheClient cacheClient, TimeProvider timeProvider)
+        : this(cacheClient, timeProvider, NullLogger<AuthService>.Instance)
+    {
+    }
+
+    public AuthService(ICacheClient cacheClient, TimeProvider timeProvider, ILogger<AuthService> logger)
     {
         ArgumentNullException.ThrowIfNull(cacheClient);
         ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(logger);
 
         _cache = new ScopedCacheClient(cacheClient, "Auth");
         _timeProvider = timeProvider;
+        _logger = logger;
     }
 
     public async Task<LoginAttempt?> TryBeginLoginAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken = default)
@@ -63,9 +73,18 @@ public sealed class AuthService
 
             return new LoginAttempt(this, expiresUtc, reservedCacheKeys.ToArray(), reservation, observedFailures);
         }
-        catch
+        catch (Exception exception)
         {
-            await ReleaseCacheKeysAsync(reservedCacheKeys, reservation);
+            try
+            {
+                await ReleaseCacheKeysAsync(reservedCacheKeys, reservation);
+            }
+            catch (Exception cleanupException)
+            {
+                _logger.LogError("Failed to release login admission reservations after {FailureType}: {CleanupFailureType}",
+                    exception.GetType().Name, cleanupException.GetType().Name);
+            }
+
             throw;
         }
     }

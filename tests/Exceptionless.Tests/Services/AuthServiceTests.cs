@@ -1,7 +1,6 @@
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using Exceptionless.Core.Services;
 using Foundatio.Caching;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Exceptionless.Tests.Services;
@@ -151,9 +150,9 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     {
         // Arrange
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        var cache = CacheCallProxy.Create(GetService<ICacheClient>(), out var proxy);
+        using var cache = new FaultingCacheClient(TimeProvider);
         string? ipAddress = includeIpAddress ? "192.0.2.1" : null;
-        proxy.AfterAdd = cacheKey =>
+        cache.AfterAdd = cacheKey =>
         {
             if (cacheKey.Contains(includeIpAddress ? "ip:" : "user:", StringComparison.Ordinal))
                 cancellation.Cancel();
@@ -166,7 +165,7 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
         {
             _ = await service.TryBeginLoginAsync("user@exceptionless.test", ipAddress, cancellation.Token);
         });
-        proxy.AfterAdd = null;
+        cache.AfterAdd = null;
         var allowed = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", ipAddress, TestCancellationToken)));
         var ipAllowed = await Task.WhenAll(Enumerable.Range(0, 10).Select(index => service.TryBeginLoginAsync($"other{index}@exceptionless.test", ipAddress, TestCancellationToken)));
         await DisposeAttemptsAsync(allowed.Concat(ipAllowed));
@@ -193,6 +192,64 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
 
         // Assert
         Assert.IsType<OperationCanceledException>(exception);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TryBeginLoginAsync_CleanupFailure_PreservesOriginalExceptionAndLogsSafeDetails(bool cancelled)
+    {
+        // Arrange
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        using var cache = new FaultingCacheClient(TimeProvider);
+        var failure = new InvalidOperationException("Synthetic sensitive acquisition detail.");
+        cache.BeforeAdd = cacheKey =>
+        {
+            if (!cancelled && cacheKey.Contains("ip:", StringComparison.Ordinal))
+                throw failure;
+        };
+
+        cache.AfterAdd = cacheKey =>
+        {
+            if (cancelled && cacheKey.Contains("ip:", StringComparison.Ordinal))
+                cancellation.Cancel();
+        };
+
+        cache.BeforeRemove = _ => throw new IOException("Synthetic sensitive cleanup detail.");
+        var logger = new CapturingLogger();
+        var service = new AuthService(cache, TimeProvider, logger);
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", cancellation.Token);
+        });
+        cache.BeforeAdd = null;
+        cache.AfterAdd = null;
+        cache.BeforeRemove = null;
+        var beforeExpiration = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken)));
+        await DisposeAttemptsAsync(beforeExpiration);
+        TimeProvider.Advance(TimeSpan.FromMinutes(15));
+        var afterExpiration = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken)));
+        await DisposeAttemptsAsync(afterExpiration);
+
+        // Assert
+        if (cancelled)
+            Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(exception).CancellationToken);
+        else
+            Assert.Same(failure, exception);
+
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.Null(entry.Exception);
+        Assert.Contains(cancelled ? nameof(OperationCanceledException) : nameof(InvalidOperationException), entry.Message);
+        Assert.Contains(nameof(IOException), entry.Message);
+        Assert.DoesNotContain("sensitive", entry.Message);
+        Assert.DoesNotContain("user@exceptionless.test", entry.Message);
+        Assert.DoesNotContain("192.0.2.1", entry.Message);
+        Assert.Equal(4, beforeExpiration.Count(attempt => attempt is not null));
+        Assert.All(afterExpiration, Assert.NotNull);
     }
 
     [Fact]
@@ -279,9 +336,9 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     public async Task TryBeginLoginAsync_IpCacheFailure_ReleasesUserCacheKey()
     {
         // Arrange
-        var cache = CacheCallProxy.Create(GetService<ICacheClient>(), out var proxy);
+        using var cache = new FaultingCacheClient(TimeProvider);
         var failure = new InvalidOperationException("Synthetic cache failure.");
-        proxy.BeforeAdd = cacheKey =>
+        cache.BeforeAdd = cacheKey =>
         {
             if (cacheKey.Contains("ip:", StringComparison.Ordinal))
                 throw failure;
@@ -294,7 +351,7 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
         {
             _ = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken);
         });
-        proxy.BeforeAdd = null;
+        cache.BeforeAdd = null;
         var allowed = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken)));
         await DisposeAttemptsAsync(allowed);
 
@@ -350,54 +407,40 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
         await service.RecordLoginFailureAsync(attempt);
     }
 
-    public class CacheCallProxy : DispatchProxy
+    private sealed class CapturingLogger : ILogger<AuthService>
     {
-        private ICacheClient _inner = null!;
+        public List<(LogLevel Level, string Message, Exception? Exception)> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            => Entries.Add((logLevel, formatter(state, exception), exception));
+    }
+
+    private sealed class FaultingCacheClient(TimeProvider timeProvider) : InMemoryCacheClient(options => options.TimeProvider(timeProvider)), ICacheClient
+    {
         public Action<string>? BeforeAdd { get; set; }
         public Action<string>? AfterAdd { get; set; }
+        public Action<string>? BeforeRemove { get; set; }
 
-        public static ICacheClient Create(ICacheClient inner, out CacheCallProxy proxy)
+        async Task<bool> ICacheClient.AddAsync<T>(string cacheKey, T value, TimeSpan? expiresIn)
         {
-            var cache = Create<ICacheClient, CacheCallProxy>();
-            proxy = (CacheCallProxy)cache;
-            proxy._inner = inner;
+            BeforeAdd?.Invoke(cacheKey);
 
-            return cache;
-        }
-
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
-        {
-            if (targetMethod!.Name == nameof(ICacheClient.AddAsync))
-            {
-                string cacheKey = (string)args![0]!;
-                BeforeAdd?.Invoke(cacheKey);
-
-                return AddAsync(targetMethod, args, cacheKey);
-            }
-
-            return InvokeInner(targetMethod, args);
-        }
-
-        private async Task<bool> AddAsync(MethodInfo method, object?[] args, string cacheKey)
-        {
-            bool added = await (Task<bool>)InvokeInner(method, args)!;
+            bool added = await base.AddAsync(cacheKey, value, expiresIn);
             if (added)
                 AfterAdd?.Invoke(cacheKey);
 
             return added;
         }
 
-        private object? InvokeInner(MethodInfo method, object?[]? args)
+        Task<bool> ICacheClient.RemoveIfEqualAsync<T>(string cacheKey, T expected)
         {
-            try
-            {
-                return method.Invoke(_inner, args);
-            }
-            catch (TargetInvocationException exception) when (exception.InnerException is not null)
-            {
-                ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
-                throw;
-            }
+            BeforeRemove?.Invoke(cacheKey);
+
+            return base.RemoveIfEqualAsync(cacheKey, expected);
         }
     }
 }
