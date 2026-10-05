@@ -14,7 +14,7 @@ test('floating table controls keep the first row visible between different-heigh
     }
 
     await page.setViewportSize({ height: 720, width: 1280 });
-    await page.goto('/next/event?limit=10&time=all');
+    await page.goto('/event?limit=10&time=all');
 
     const toolbar = page.locator('[data-slot="data-table-footer"]');
     const pager = toolbar.getByRole('navigation', { name: 'Table pagination' });

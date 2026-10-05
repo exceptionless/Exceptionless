@@ -13,7 +13,7 @@ test('events filter builder applies, persists, and clears a reference filter', a
     });
 
     await test.step('apply a reference filter through the filter builder', async () => {
-        await page.goto('/next/event?time=all');
+        await page.goto('/event?time=all');
         await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
 
         await setReferenceFilter(page, missingReference);

@@ -53,7 +53,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
     }
 
     await test.step('event details use the page scroll and preserve the selected tab when the event changes', async () => {
-        await page.goto(`/next/stack/${journey.stackId}/event/${firstEventId}`);
+        await page.goto(`/stack/${journey.stackId}/event/${firstEventId}`);
         const overviewTab = page.getByRole('tab', { name: 'Overview' });
         await expect(overviewTab).toHaveAttribute('aria-selected', 'true');
 
@@ -75,7 +75,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
         await expect(page).not.toHaveURL(new RegExp(`/event/${firstEventId}(?:[?#]|$)`));
         await expect(page.getByRole('tab', { name: 'Exception' })).toHaveAttribute('aria-selected', 'true');
 
-        await page.goto(`/next/stack/${journey.stackId}/event/${firstEventId}`);
+        await page.goto(`/stack/${journey.stackId}/event/${firstEventId}`);
         await page.getByRole('tab', { name: 'Request' }).click();
         await expect(page.getByRole('tab', { name: 'Request' })).toHaveAttribute('aria-selected', 'true');
 
@@ -129,7 +129,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
     });
 
     await test.step('manual refresh keeps the current page', async () => {
-        await page.goto(`/next/stack?project=${e2eScenario.projectId}&limit=5&time=all`);
+        await page.goto(`/stack?project=${e2eScenario.projectId}&limit=5&time=all`);
         const pager = page.getByRole('navigation', { name: 'Table pagination' });
         await expect(pager).toBeVisible();
         await expect(pager.getByRole('button', { name: 'Rows per page' })).toContainText('5 rows');
@@ -164,20 +164,20 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
     });
 
     await test.step('row selection clears when navigating between stack views', async () => {
-        await page.goto(`/next/stack/all?project=${e2eScenario.projectId}&time=all`);
+        await page.goto(`/stack/all?project=${e2eScenario.projectId}&time=all`);
         const selectedRow = page.getByRole('row').filter({ hasText: journey.message }).first();
         await expect(selectedRow).toBeVisible({ timeout: 30_000 });
         await selectedRow.getByRole('checkbox', { name: 'Select row' }).click();
         await expect(page.getByText('1 selected', { exact: true })).toBeVisible();
 
         await page.getByRole('link', { exact: true, name: 'Most Frequent Errors' }).filter({ visible: true }).first().click();
-        await expect(page).toHaveURL(/\/next\/stack\/most-frequent-errors/);
+        await expect(page).toHaveURL(/\/stack\/most-frequent-errors/);
         await expect(page.getByText(journey.message).filter({ visible: true }).first()).toBeVisible({ timeout: 30_000 });
         await expect(page.getByText('1 selected', { exact: true })).toHaveCount(0);
     });
 
     await test.step('the fixed-version field has space before the dialog footer', async () => {
-        await page.goto(`/next/stack?filter=project:${e2eScenario.projectId}&time=all`);
+        await page.goto(`/stack?filter=project:${e2eScenario.projectId}&time=all`);
         await page.getByRole('checkbox', { name: 'Select row' }).first().click();
         const bulkActionsButton = page.getByRole('button', { name: 'Actions' });
         const selectionCount = page.getByText('1 selected', { exact: true });
@@ -201,7 +201,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
     });
 
     await test.step('message is available as a wrappable event column', async () => {
-        await page.goto(`/next/stream?project=${e2eScenario.projectId}&time=all`);
+        await page.goto(`/stream?project=${e2eScenario.projectId}&time=all`);
         await expect(page.getByText(journey.message).filter({ visible: true }).first()).toBeVisible({ timeout: 30_000 });
 
         await page.getByTitle('Manage View Settings').click();
@@ -212,7 +212,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
     });
 
     await test.step('renaming a project refreshes cached stack summaries', async () => {
-        const stackUrl = `/next/stack?filter=project:${e2eScenario.projectId}&time=all`;
+        const stackUrl = `/stack?filter=project:${e2eScenario.projectId}&time=all`;
         await page.goto(stackUrl);
         await expect(page.getByText(journey.message).filter({ visible: true }).first()).toBeVisible({ timeout: 30_000 });
 
@@ -291,7 +291,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
 
         await expect(page.getByRole('cell', { name: journey.projectName }).first()).toBeVisible();
 
-        await page.goto(`/next/project/${e2eScenario.projectId}/manage`);
+        await page.goto(`/project/${e2eScenario.projectId}/manage`);
         const renamedProject = `${journey.projectName} Renamed`;
         const updateResponse = page.waitForResponse(
             (response) => response.url().includes(`/api/v2/projects/${e2eScenario.projectId}`) && response.request().method() === 'PATCH'
