@@ -162,6 +162,35 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     }
 
     [Fact]
+    public async Task RecordLoginSuccessAsync_ConcurrentReservation_PreservesNewReservation()
+    {
+        // Arrange
+        using var cache = new RacyInMemoryCacheClient(TimeProvider);
+        var service = new AuthService(cache, TimeProvider, Log.CreateLogger<AuthService>());
+        await FailAsync(service);
+        await using var success = await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken);
+        Assert.NotNull(success);
+
+        // Act
+        Task recordSuccess = service.RecordLoginSuccessAsync(success);
+        Task completed = await Task.WhenAny(recordSuccess, cache.MatchingFailureObserved);
+        var concurrent = await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken);
+        Assert.NotNull(concurrent);
+
+        if (completed == cache.MatchingFailureObserved)
+            cache.ContinueStaleRemoval();
+
+        await recordSuccess;
+        var remaining = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ =>
+            service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken)));
+        await concurrent.DisposeAsync();
+        await DisposeAttemptsAsync(remaining);
+
+        // Assert
+        Assert.Equal(4, remaining.Count(attempt => attempt is not null));
+    }
+
+    [Fact]
     public async Task RecordLoginSuccessAsync_NullAttempt_ThrowsArgumentNullException()
     {
         // Arrange
@@ -511,5 +540,30 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
 
         Task<bool> ICacheClient.RemoveIfEqualAsync<T>(string cacheKey, T expected)
             => BeforeRemove?.Invoke(cacheKey) ?? base.RemoveIfEqualAsync(cacheKey, expected);
+
+        Task<bool> ICacheClient.RemoveAsync(string cacheKey)
+            => BeforeRemove?.Invoke(cacheKey) ?? base.RemoveAsync(cacheKey);
+    }
+
+    private sealed class RacyInMemoryCacheClient(TimeProvider timeProvider) : InMemoryCacheClient(options => options.TimeProvider(timeProvider)), ICacheClient
+    {
+        private readonly TaskCompletionSource _continueStaleRemoval = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _matchingFailureObserved = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task MatchingFailureObserved => _matchingFailureObserved.Task;
+
+        public void ContinueStaleRemoval() => _continueStaleRemoval.TrySetResult();
+
+        async Task<bool> ICacheClient.RemoveIfEqualAsync<T>(string cacheKey, T expected)
+        {
+            bool removed = await base.RemoveIfEqualAsync(cacheKey, expected);
+            if (!removed || expected is not string value || !value.StartsWith("failed:", StringComparison.Ordinal))
+                return removed;
+
+            _matchingFailureObserved.TrySetResult();
+            await _continueStaleRemoval.Task;
+
+            return await base.RemoveAsync(cacheKey);
+        }
     }
 }
