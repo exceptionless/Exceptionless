@@ -15,10 +15,9 @@
     import { clearAuthenticationSession } from '$features/auth/session.svelte';
     import { getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
+    import { getProblemMessage } from '$shared/validation';
     import { useFetchClient } from '@foundatiofx/fetchclient';
     import { SvelteSet } from 'svelte/reactivity';
-
-    import { getOAuthErrorMessage } from './oauth-error';
 
     interface OAuthAuthorizeConsentResponse {
         client_id?: string;
@@ -88,6 +87,7 @@
     const hasSelectedOrganizations = $derived(selectedOrganizationIds.size > 0);
     const hasSelectedResourceScope = $derived(selectedScopeValues.some((scope) => scope !== offlineAccessScope));
     const hasRequiredScopes = $derived(missingRequiredScopes.length === 0 && requiredScopes.every((scope) => selectedScopes.has(scope)));
+    const canSelectConsent = $derived(Boolean(consentDetails) && !isLoadingConsent && !consentErrorMessage && !isAuthorizing);
     const canApprove = $derived(
         Boolean(consentDetails) && !isLoadingConsent && !consentErrorMessage && hasSelectedOrganizations && hasSelectedResourceScope && hasRequiredScopes
     );
@@ -199,7 +199,7 @@
             return;
         }
 
-        errorMessage = getOAuthErrorMessage(response, 'Unable to authorize application.');
+        errorMessage = getProblemMessage(response.data, getProblemMessage(response.problem, 'Unable to authorize application.'));
     }
 
     function cancelAuthorization() {
@@ -267,6 +267,7 @@
     }
 
     async function loadConsentDetails(): Promise<void> {
+        // A → B → A navigation can leave an older request with the same query; only the newest response owns this state.
         const requestId = ++consentRequestId;
         const consentKey = page.url.search;
         isLoadingConsent = true;
@@ -298,7 +299,7 @@
         }
 
         consentDetails = null;
-        consentErrorMessage = getOAuthErrorMessage(response, 'Unable to load application details.');
+        consentErrorMessage = getProblemMessage(response.data, getProblemMessage(response.problem, 'Unable to load application details.'));
     }
 
     async function redirectToLogin(): Promise<void> {
@@ -368,6 +369,7 @@
                                 <label class="hover:bg-muted/50 flex min-h-8 items-center gap-2 rounded-sm px-2 text-sm">
                                     <Checkbox
                                         checked={selectedOrganizationIds.has(organization.id)}
+                                        disabled={!canSelectConsent}
                                         onCheckedChange={(checked) => toggleOrganization(organization.id, checked)}
                                     />
                                     <span class="min-w-0 flex-1 truncate font-medium">{organization.name}</span>
@@ -419,7 +421,11 @@
                         {/each}
                         {#each requestedOptionalScopes as scope (scope)}
                             <label class="hover:bg-muted/50 flex min-h-12 items-center gap-2 rounded-sm border px-2 py-1.5 text-sm">
-                                <Checkbox checked={selectedScopes.has(scope)} onCheckedChange={(checked) => toggleScope(scope, checked)} />
+                                <Checkbox
+                                    checked={selectedScopes.has(scope)}
+                                    disabled={!canSelectConsent}
+                                    onCheckedChange={(checked) => toggleScope(scope, checked)}
+                                />
                                 <span class="min-w-0 flex-1">
                                     <span class="block truncate font-medium">{formatScope(scope)}</span>
                                     <span class="text-muted-foreground block truncate font-mono text-xs">{scope}</span>

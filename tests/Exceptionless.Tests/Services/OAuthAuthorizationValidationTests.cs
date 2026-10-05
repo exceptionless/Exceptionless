@@ -17,6 +17,21 @@ public sealed class OAuthAuthorizationValidationTests
     private const string FourReadScopes = "mcp:read projects:read stacks:read events:read";
     private const string AllScopes = "mcp:read projects:read stacks:read stacks:write events:read offline_access";
 
+    [Fact]
+    public void GetActiveOAuthOrganizationIds_RemovedMembership_ReturnsNoOrganizations()
+    {
+        // Arrange
+        var user = new User { OrganizationIds = ["organization-1"] };
+        var token = new OAuthToken { OrganizationIds = ["organization-1"] };
+        user.OrganizationIds.Clear();
+
+        // Act
+        var organizationIds = user.GetActiveOAuthOrganizationIds(token);
+
+        // Assert
+        Assert.Empty(organizationIds);
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -24,6 +39,7 @@ public sealed class OAuthAuthorizationValidationTests
     [InlineData(true, true)]
     public void ToIdentity_OAuthGrant_DoesNotInheritGlobalRoleOrForeignOrganization(bool globalAdministrator, bool writeScope)
     {
+        // Arrange
         var user = new User
         {
             Id = "user-1",
@@ -40,13 +56,13 @@ public sealed class OAuthAuthorizationValidationTests
             OrganizationIds = ["organization-1", "foreign-organization"]
         };
 
+        // Act
         var identity = user.ToIdentity(token);
 
+        // Assert
         Assert.DoesNotContain(identity.Claims, claim => claim.Type == ClaimTypes.Role && claim.Value == AuthorizationRoles.GlobalAdmin);
         Assert.Equal(writeScope, identity.HasClaim(ClaimTypes.Role, AuthorizationRoles.StacksWrite));
         Assert.Equal("organization-1", identity.FindFirst(IdentityUtils.OrganizationIdsClaim)?.Value);
-        user.OrganizationIds.Clear();
-        Assert.Empty(user.GetActiveOAuthOrganizationIds(token));
     }
 
     [Theory]
@@ -82,10 +98,13 @@ public sealed class OAuthAuthorizationValidationTests
     [InlineData("mcp:read <script>unknown</script>")]
     public async Task ValidateAuthorizationRequestAsync_InvalidScopes_DeniesWithoutReflectingUnknownScopes(string scopes)
     {
+        // Arrange
         var (service, _) = CreateService(AllScopes);
 
+        // Act
         var result = await service.ValidateAuthorizationRequestAsync(CreateRequest(scopes), Resource, OAuthService.McpResource);
 
+        // Assert
         Assert.False(result.IsValid);
         Assert.Equal("invalid_scope", result.Error);
         Assert.DoesNotContain("<script>", result.ErrorDescription);
@@ -100,6 +119,7 @@ public sealed class OAuthAuthorizationValidationTests
     [InlineData("resource", "invalid_target", "The requested resource is not supported.")]
     public async Task ValidateAuthorizationRequestAsync_InvalidSecurityParameters_DoesNotDiscloseClientScopeDetails(string scenario, string error, string description)
     {
+        // Arrange
         var (service, application) = CreateService(FourReadScopes);
         application.IsDisabled = scenario == "disabled";
         var request = CreateRequest(AllScopes) with
@@ -110,8 +130,10 @@ public sealed class OAuthAuthorizationValidationTests
             Resource = scenario == "resource" ? "http://localhost/other" : Resource
         };
 
+        // Act
         var result = await service.ValidateAuthorizationRequestAsync(request, Resource, OAuthService.McpResource);
 
+        // Assert
         Assert.False(result.IsValid);
         Assert.Equal(error, result.Error);
         Assert.Equal(description, result.ErrorDescription);

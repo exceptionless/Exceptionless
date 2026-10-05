@@ -22,9 +22,9 @@ Dynamic registration without a scope uses `mcp:read projects:read stacks:read ev
 
 If authorization reports scopes that are not allowed for the application, restart the client's authorization flow requesting an allowed subset. Keep `mcp:read` for MCP access. Changing checkboxes on a failed consent page does not validate a new request.
 
-To enable additional scopes, a **global administrator** must:
+Client software should register the scopes it will request. A **global administrator** can review an existing application’s allowed scopes:
 
-1. Open **System → OAuth Apps** (`/next/system/oauth-applications` in version 8.10.0; `/system/oauth-applications` after the Svelte app moves to the root).
+1. Open **System → OAuth Apps** (`/system/oauth-applications`).
 2. Change the default **Authorized** filter to **Not authorized** or **All applications** if the application has never completed consent.
 3. Find the application using the exact client ID from the authorization request, then select **Edit application**.
 4. Review and select **Stacks Write** and/or **Offline Access** as needed, then select **Save Changes**.

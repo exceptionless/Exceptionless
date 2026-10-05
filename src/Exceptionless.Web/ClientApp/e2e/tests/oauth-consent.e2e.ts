@@ -1,11 +1,14 @@
 import { expect, test } from '@playwright/test';
 
-test('OAuth consent displays scope-policy errors and validates a restarted request before approval', async ({ page }) => {
+test('AuthorizeConsent_InvalidAndRestartedRequests_UsesOnlyCurrentValidation', async ({ page }) => {
+    // Arrange
     const errorDescription =
         'Scopes not allowed for this application: stacks:write, offline_access. Restart authorization with fewer scopes or ask a global administrator to review the application in System → OAuth Apps. After saving changes, restart authorization using the same client ID.';
     let consentRequests = 0;
     let authorizationRequests = 0;
     let completeStaleConsent: (() => void) | undefined;
+    let completeSameQueryConsent: (() => void) | undefined;
+    let sameQueryRequests = 0;
     await page.addInitScript(() => window.localStorage.setItem('satellizer_token', 'test-consent-session'));
     // This browser regression exercises the production page and FetchClient with HTTP responses.
     // Service policy and issuance are covered separately by OAuthEndpointTests.
@@ -18,9 +21,16 @@ test('OAuth consent displays scope-policy errors and validates a restarted reque
         } else if (path.endsWith('/oauth/authorize/consent')) {
             consentRequests++;
             const body = route.request().postDataJSON() as { client_id: string; scope: string };
-            if (body.client_id === 'stale-client') {
+            if (body.client_id === 'same-query-client') {
+                sameQueryRequests++;
+            }
+            if (body.client_id === 'stale-client' || (body.client_id === 'same-query-client' && sameQueryRequests === 1)) {
                 await new Promise<void>((resolve) => {
-                    completeStaleConsent = resolve;
+                    if (body.client_id === 'same-query-client') {
+                        completeSameQueryConsent = resolve;
+                    } else {
+                        completeStaleConsent = resolve;
+                    }
                 });
                 await route.fulfill({ json: { error: 'invalid_scope', error_description: 'Stale request error' }, status: 400 });
                 return;
@@ -48,23 +58,31 @@ test('OAuth consent displays scope-policy errors and validates a restarted reque
         scope: 'mcp:read projects:read stacks:read stacks:write events:read offline_access'
     });
     try {
+        // Act
         await page.goto(`/oauth/authorize?${parameters}`);
+        // Assert
         await expect(page.getByText(errorDescription, { exact: true })).toBeVisible();
         await expect(page.getByText('Required', { exact: true })).toHaveCount(1);
         await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeDisabled();
-        await page.getByRole('checkbox', { name: /Stacks Write/ }).click();
-        await page.getByRole('checkbox', { name: /Offline Access/ }).click();
+        await expect(page.getByRole('checkbox', { name: /Stacks Write/ })).toBeDisabled();
+        await expect(page.getByRole('checkbox', { name: /Offline Access/ })).toBeDisabled();
+        await expect(page.getByRole('checkbox', { name: 'Test Organization' })).toBeDisabled();
         await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeDisabled();
         expect(consentRequests).toBe(1);
         expect(authorizationRequests).toBe(0);
         await page.screenshot({ fullPage: true, path: test.info().outputPath('scope-error.png') });
 
+        // Act: restart with an allowed request.
         parameters.set('scope', 'mcp:read');
         await page.goto(`/oauth/authorize?${parameters}`);
+        // Assert
         await expect(page.getByText('Test Client', { exact: true })).toBeVisible();
+        await expect(page.getByRole('checkbox', { name: 'Test Organization' })).toBeEnabled();
         await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeEnabled();
         expect(consentRequests).toBe(2);
+        // Act
         await page.getByRole('button', { exact: true, name: 'Approve' }).click();
+        // Assert
         await expect(page.getByText(errorDescription, { exact: true })).toBeVisible();
         expect(authorizationRequests).toBe(1);
 
@@ -80,14 +98,21 @@ test('OAuth consent displays scope-policy errors and validates a restarted reque
             await page.getByRole('link', { name: 'Change authorization request' }).click();
         }
 
+        // Act: a new query must clear the preceding request's error.
         parameters.set('scope', 'mcp:read projects:read');
         await navigateWithQuery();
         await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeEnabled();
+        // Assert
         await expect(page.getByText(errorDescription, { exact: true })).toHaveCount(0);
+        await expect(page.getByRole('checkbox', { name: /Projects Read/ })).toBeEnabled();
 
+        // Act: hold an obsolete request while navigating to another client.
         parameters.set('client_id', 'stale-client');
         await navigateWithQuery();
         await expect.poll(() => Boolean(completeStaleConsent)).toBe(true);
+        // Assert
+        await expect(page.getByRole('checkbox', { name: /Projects Read/ })).toBeDisabled();
+        await expect(page.getByRole('checkbox', { name: 'Test Organization' })).toBeDisabled();
         await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeDisabled();
         parameters.set('client_id', 'test-client');
         await navigateWithQuery();
@@ -95,11 +120,40 @@ test('OAuth consent displays scope-policy errors and validates a restarted reque
         const staleResponse = page.waitForResponse(
             (response) => response.url().endsWith('/oauth/authorize/consent') && response.request().postDataJSON().client_id === 'stale-client'
         );
+        // Act
         completeStaleConsent?.();
         await (await staleResponse).finished();
+        // Assert
         await expect(page.getByText('Stale request error', { exact: true })).toHaveCount(0);
         await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeEnabled();
+
+        // Arrange: A1 and A2 have identical queries; URL equality cannot reject A1.
+        parameters.set('client_id', 'same-query-client');
+        await navigateWithQuery();
+        await expect.poll(() => Boolean(completeSameQueryConsent)).toBe(true);
+        await expect(page.getByRole('checkbox', { name: /Projects Read/ })).toBeDisabled();
+
+        // Act: navigate A → B → A, letting A2 validate before A1 completes.
+        parameters.set('client_id', 'test-client');
+        await navigateWithQuery();
+        await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeEnabled();
+        parameters.set('client_id', 'same-query-client');
+        await navigateWithQuery();
+        await expect.poll(() => sameQueryRequests).toBe(2);
+        await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeEnabled();
+        const sameQueryResponse = page.waitForResponse(
+            (response) => response.url().endsWith('/oauth/authorize/consent') && response.request().postDataJSON().client_id === 'same-query-client'
+        );
+        completeSameQueryConsent?.();
+        await (await sameQueryResponse).finished();
+
+        // Assert
+        await expect(page.getByText('Stale request error', { exact: true })).toHaveCount(0);
+        await expect(page.getByRole('checkbox', { name: /Projects Read/ })).toBeEnabled();
+        await expect(page.getByRole('checkbox', { name: 'Test Organization' })).toBeEnabled();
+        await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeEnabled();
     } finally {
+        completeSameQueryConsent?.();
         completeStaleConsent?.();
     }
 });

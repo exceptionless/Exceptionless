@@ -10,6 +10,8 @@ export type FieldWithErrors = {
 
 type ProblemDetailsLike = {
     detail?: unknown;
+    error?: unknown;
+    error_description?: unknown;
     errors?: Record<string, unknown>;
     message?: unknown;
     status?: unknown;
@@ -121,7 +123,7 @@ export function getProblemMessage(error: unknown, fallback: string): string {
         return fallback;
     }
 
-    const candidates: unknown[] = [error.message];
+    const candidates: unknown[] = [error.error_description, error.error, error.message];
     for (const value of Object.values(error.errors ?? {})) {
         if (Array.isArray(value)) {
             candidates.push(...value);
@@ -234,7 +236,7 @@ export function problemDetailsToFormErrors(problem: null | ProblemDetails): null
 }
 
 function isNonEmptyString(value: unknown): value is string {
-    return typeof value === 'string' && value.length > 0;
+    return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isProblemDetailsLike(error: unknown): error is ProblemDetailsLike {
@@ -242,5 +244,5 @@ function isProblemDetailsLike(error: unknown): error is ProblemDetailsLike {
         return false;
     }
 
-    return 'title' in error || 'detail' in error || 'errors' in error || 'status' in error;
+    return 'title' in error || 'detail' in error || 'errors' in error || 'status' in error || 'error_description' in error || 'error' in error;
 }

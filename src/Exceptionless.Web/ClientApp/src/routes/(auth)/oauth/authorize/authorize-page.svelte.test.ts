@@ -28,8 +28,7 @@ vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
     useFetchClient: mocks.useFetchClient
 }));
 
-const scopeError =
-    'Scopes not allowed for this application: stacks:write, offline_access. Restart authorization with fewer scopes or ask a global administrator to review the application in System → OAuth Apps.';
+const scopeError = 'Scopes not allowed for this application: stacks:write, offline_access. Restart authorization with scopes allowed for this application.';
 
 function consentResponse() {
     return jsonResponse({ client_id: 'test-client', client_name: 'Test Client', required_scopes: ['mcp:read'], scopes: ['mcp:read', 'offline_access'] });
@@ -46,54 +45,8 @@ describe('OAuth authorization', () => {
         );
     });
 
-    it('shows the actual FetchClient OAuth error on failed consent and keeps approval disabled after scope edits', async () => {
-        const fetch = vi.fn().mockResolvedValue(jsonResponse({ error: 'invalid_scope', error_description: scopeError }, 400));
-        mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
-        render(AuthorizePage);
-
-        expect(await screen.findByText(scopeError)).toBeVisible();
-        expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled();
-        expect(screen.getAllByText('Required')).toHaveLength(1);
-        await fireEvent.click(screen.getByRole('checkbox', { name: /Stacks Write/ }));
-        expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled();
-        expect(fetch).toHaveBeenCalledOnce();
-    });
-
-    it('shows the actual FetchClient OAuth error when final authorization fails', async () => {
-        const fetch = vi
-            .fn()
-            .mockResolvedValueOnce(consentResponse())
-            .mockResolvedValueOnce(jsonResponse({ error: 'invalid_scope', error_description: scopeError }, 400));
-        mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
-        render(AuthorizePage);
-        await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeEnabled());
-        await fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
-
-        expect(await screen.findByText(scopeError)).toBeVisible();
-        expect(fetch).toHaveBeenCalledTimes(2);
-    });
-
-    it.each(['consent', 'approval'])('returns to login with the original query after session expiry during %s', async (stage) => {
-        const fetch = vi.fn();
-        if (stage === 'approval') {
-            fetch.mockResolvedValueOnce(consentResponse());
-        }
-
-        fetch.mockResolvedValueOnce(jsonResponse({}, 401));
-        mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
-        render(AuthorizePage);
-        if (stage === 'approval') {
-            await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeEnabled());
-            await fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
-        }
-
-        await waitFor(() => expect(mocks.clearSession).toHaveBeenCalledOnce());
-        expect(mocks.goto).toHaveBeenCalledWith(`/login?redirect=${encodeURIComponent(mocks.page.url.pathname + mocks.page.url.search)}`, {
-            replaceState: true
-        });
-    });
-
-    it('sends one authorization request while approval is pending and cancel sends none', async () => {
+    it('ApproveAuthorization_DuplicateSubmission_SendsOneRequest', async () => {
+        // Arrange
         let complete: (response: Response) => void = () => {};
         const fetch = vi
             .fn()
@@ -108,25 +61,168 @@ describe('OAuth authorization', () => {
         render(AuthorizePage);
         const approve = screen.getByRole('button', { name: 'Approve' });
         await waitFor(() => expect(approve).toBeEnabled());
-        await fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-        expect(await screen.findByText('Authorization canceled. You can close this tab.')).toBeVisible();
-        expect(fetch).toHaveBeenCalledOnce();
+
+        // Act
         await fireEvent.click(approve);
         await fireEvent.click(approve);
+
+        // Assert
         expect(approve).toBeDisabled();
+        expect(screen.getByRole('checkbox', { name: /Offline Access/ })).toBeDisabled();
+        expect(screen.getByRole('checkbox', { name: 'Test Organization' })).toBeDisabled();
         await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
         complete(jsonResponse({ error: 'invalid_scope', error_description: scopeError }, 400));
         expect(await screen.findByText(scopeError)).toBeVisible();
         expect(fetch).toHaveBeenCalledTimes(2);
     });
 
-    it('renders an error as text without creating HTML', async () => {
+    it('ApproveAuthorization_FailedRequest_ShowsOAuthDescription', async () => {
+        // Arrange
+        const fetch = vi
+            .fn()
+            .mockResolvedValueOnce(consentResponse())
+            .mockResolvedValueOnce(jsonResponse({ error: 'invalid_scope', error_description: scopeError }, 400));
+        mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
+        render(AuthorizePage);
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeEnabled());
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
+
+        // Assert
+        expect(await screen.findByText(scopeError)).toBeVisible();
+        expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('ApproveAuthorization_ValidSelection_SubmitsOnlySelectedScopes', async () => {
+        // Arrange
+        const fetch = vi
+            .fn()
+            .mockResolvedValueOnce(consentResponse())
+            .mockResolvedValueOnce(jsonResponse({ error: 'invalid_scope', error_description: scopeError }, 400));
+        mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
+        render(AuthorizePage);
+        const approve = screen.getByRole('button', { name: 'Approve' });
+        await waitFor(() => expect(approve).toBeEnabled());
+        const organization = screen.getByRole('checkbox', { name: 'Test Organization' });
+
+        // Act: removing the last organization must leave its selection editable.
+        await fireEvent.click(organization);
+
+        // Assert
+        expect(approve).toBeDisabled();
+        expect(organization).toBeEnabled();
+
+        // Act: restore membership selection and decline optional offline access.
+        await fireEvent.click(organization);
+        await fireEvent.click(screen.getByRole('checkbox', { name: /Offline Access/ }));
+        await fireEvent.click(approve);
+
+        // Assert
+        await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+        const request = fetch.mock.calls[1]![0] as Request;
+        const body = await request.json();
+        expect(body.scope).toBe('mcp:read');
+        expect(body.organization_ids).toEqual(['organization-1']);
+    });
+
+    it('CancelAuthorization_ValidatedRequest_DoesNotSendAuthorizationRequest', async () => {
+        // Arrange
+        const fetch = vi.fn().mockResolvedValueOnce(consentResponse());
+        mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
+        render(AuthorizePage);
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeEnabled());
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        // Assert
+        expect(await screen.findByText('Authorization canceled. You can close this tab.')).toBeVisible();
+        expect(fetch).toHaveBeenCalledOnce();
+    });
+
+    it('LoadConsent_FailedRequest_DisablesSelectionsAndApproval', async () => {
+        // Arrange
+        const fetch = vi.fn().mockResolvedValue(jsonResponse({ error: 'invalid_scope', error_description: scopeError }, 400));
+        mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
+
+        // Act
+        render(AuthorizePage);
+
+        // Assert
+        expect(await screen.findByText(scopeError)).toBeVisible();
+        expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled();
+        expect(screen.getAllByText('Required')).toHaveLength(1);
+        expect(screen.getByRole('checkbox', { name: /Stacks Write/ })).toBeDisabled();
+        expect(screen.getByRole('checkbox', { name: /Offline Access/ })).toBeDisabled();
+        expect(screen.getByRole('checkbox', { name: 'Test Organization' })).toBeDisabled();
+        expect(fetch).toHaveBeenCalledOnce();
+    });
+
+    it('LoadConsent_PendingRequest_DisablesSelectionsUntilValidated', async () => {
+        // Arrange
+        let complete: (response: Response) => void = () => {};
+        const fetch = vi.fn().mockImplementation(
+            () =>
+                new Promise<Response>((resolve) => {
+                    complete = resolve;
+                })
+        );
+        mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
+
+        // Act
+        render(AuthorizePage);
+        await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+
+        // Assert
+        expect(screen.getByRole('checkbox', { name: /Offline Access/ })).toBeDisabled();
+        expect(screen.getByRole('checkbox', { name: 'Test Organization' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled();
+
+        // Act
+        complete(consentResponse());
+
+        // Assert
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeEnabled());
+        expect(screen.getByRole('checkbox', { name: /Offline Access/ })).toBeEnabled();
+        expect(screen.getByRole('checkbox', { name: 'Test Organization' })).toBeEnabled();
+    });
+
+    it('LoadConsent_UntrustedDescription_RendersText', async () => {
+        // Arrange
         const description = '<img src=x onerror=alert(1)>';
         const fetch = vi.fn().mockResolvedValue(jsonResponse({ error_description: description }, 400));
         mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
+
+        // Act
         const { container } = render(AuthorizePage);
+
+        // Assert
         expect(await screen.findByText(description)).toBeVisible();
         expect(container.querySelector('img[src="x"]')).toBeNull();
         expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled();
+    });
+
+    it.each(['consent', 'approval'])('Session_ExpiredDuring%s_RedirectsWithOriginalQuery', async (stage) => {
+        // Arrange
+        const fetch = vi.fn();
+        if (stage === 'approval') {
+            fetch.mockResolvedValueOnce(consentResponse());
+        }
+        fetch.mockResolvedValueOnce(jsonResponse({}, 401));
+        mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
+
+        // Act
+        render(AuthorizePage);
+        if (stage === 'approval') {
+            await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeEnabled());
+            await fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
+        }
+
+        // Assert
+        await waitFor(() => expect(mocks.clearSession).toHaveBeenCalledOnce());
+        expect(mocks.goto).toHaveBeenCalledWith(`/login?redirect=${encodeURIComponent(mocks.page.url.pathname + mocks.page.url.search)}`, {
+            replaceState: true
+        });
     });
 });

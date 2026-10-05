@@ -21,13 +21,7 @@ test.skip(
 );
 test.use({ e2eUseGeneratedUser: true });
 
-test('a global administrator enables client scopes and a member restarts consent to obtain and refresh only the selected grant', async ({
-    browser,
-    e2eApi,
-    e2eScenario,
-    page,
-    request
-}) => {
+test('AuthorizeConsent_ExpandedClientRegistration_RequiresFreshMemberGrant', async ({ browser, e2eApi, e2eScenario, page, request }) => {
     const readScopes = ['mcp:read', 'projects:read', 'stacks:read', 'events:read'];
     const allScopes = [...readScopes, 'stacks:write', 'offline_access'];
     const applicationName = `OAuth live ${e2eScenario.run}`;
@@ -58,6 +52,7 @@ test('a global administrator enables client scopes and a member restarts consent
         const { resource } = (await metadataResponse.json()) as { resource: string };
 
         await test.step('register a restricted client and show its actual denied-scope response', async () => {
+            // Act
             const registrationResponse = await request.post(`${environment.apiUrl}/oauth/register`, {
                 data: {
                     client_name: applicationName,
@@ -68,6 +63,7 @@ test('a global administrator enables client scopes and a member restarts consent
                     token_endpoint_auth_method: 'none'
                 }
             });
+            // Assert
             expect(registrationResponse.status()).toBe(201);
             clientId = ((await registrationResponse.json()) as { client_id: string }).client_id;
             expect(clientId).toMatch(/^dcr_/);
@@ -82,12 +78,17 @@ test('a global administrator enables client scopes and a member restarts consent
             await page.goto(authorizationUrl(allScopes));
             await expect(page.getByText(/^Scopes not allowed for this application: stacks:write, offline_access\./)).toBeVisible();
             await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeDisabled();
+            await expect(page.getByRole('checkbox', { name: /Stacks Write/ })).toBeDisabled();
+            await expect(page.getByRole('checkbox', { name: /Offline Access/ })).toBeDisabled();
+            await expect(page.getByRole('checkbox', { exact: true, name: e2eScenario.organizationName })).toBeDisabled();
         });
 
         await administratorContext.addInitScript((token) => window.localStorage.setItem('satellizer_token', token), administratorToken);
         const administratorPage = await administratorContext.newPage();
         await test.step('find the failed registration through Not authorized', async () => {
+            // Act
             await administratorPage.goto(`/system/oauth-applications?criteria=${encodeURIComponent(applicationName)}`);
+            // Assert
             await expect(administratorPage.getByRole('button', { name: 'Filter by authorization' })).toHaveText('Authorized');
             await expect(administratorPage.getByRole('link', { exact: true, name: applicationName })).toHaveCount(0);
             await administratorPage.getByRole('button', { name: 'Filter by authorization' }).click();
@@ -100,7 +101,9 @@ test('a global administrator enables client scopes and a member restarts consent
         });
 
         const limitedGrant = await test.step('consent to an allowed subset without offline access', async () => {
+            // Act
             const tokens = await approveAndExchange(readScopes);
+            // Assert
             expect(tokens.refresh_token).toBeUndefined();
             expect(tokens.scope.split(' ')).toEqual(readScopes);
             return tokens;
@@ -131,7 +134,9 @@ test('a global administrator enables client scopes and a member restarts consent
         });
 
         await test.step('restart with the same client and exchange and rotate the fresh consent grant', async () => {
+            // Act
             const granted = await approveAndExchange(allScopes);
+            // Assert
             expect(granted.scope.split(' ').toSorted()).toEqual(allScopes.toSorted());
             expect(granted.refresh_token).toEqual(expect.any(String));
             const response = await request.post(`${environment.apiUrl}/oauth/token`, {
@@ -169,6 +174,8 @@ test('a global administrator enables client scopes and a member restarts consent
             await page.goto(authorizationUrl(scopes, verifier));
             await expect(page.getByRole('checkbox', { exact: true, name: e2eScenario.organizationName })).toBeChecked();
             await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeEnabled();
+            await expect(page.getByRole('checkbox', { name: /Projects Read/ })).toBeEnabled();
+            await expect(page.getByRole('checkbox', { exact: true, name: e2eScenario.organizationName })).toBeEnabled();
             const authorizationResponse = page.waitForResponse(
                 (response) => response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/v2/oauth/authorize'
             );
