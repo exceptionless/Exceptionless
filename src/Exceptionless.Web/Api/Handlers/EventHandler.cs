@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Nodes;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -460,6 +461,7 @@ public class EventHandler(
 
         string? identity = null;
         string? identityName = null;
+        string? environment = null;
 
         var exclusions = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList();
         foreach (var kvp in filteredParameters)
@@ -473,7 +475,12 @@ public class EventHandler(
                     ev.Source = kvp.Value.FirstOrDefault();
                     break;
                 case "environment":
-                    ev.Environment = kvp.Value.FirstOrDefault();
+                    if (kvp.Key.AnyWildcardMatches(exclusions, true))
+                        continue;
+
+                    environment = kvp.Value.FirstOrDefault();
+                    if (kvp.Value.Count > 1)
+                        ev.Data![kvp.Key] = kvp.Value;
                     break;
                 case "message":
                     ev.Message = kvp.Value.FirstOrDefault();
@@ -530,7 +537,17 @@ public class EventHandler(
                 charSet = contentTypeHeader.Charset.ToString();
             }
 
-            using var stream = new MemoryStream(ev.GetBytes(serializer));
+            byte[] eventBytes = ev.GetBytes(serializer);
+            if (environment is not null)
+            {
+                // Keep the original query value until ingestion, where both the normalized
+                // deployment name and legacy custom data are populated together.
+                var submission = JsonNode.Parse(eventBytes)!;
+                submission["environment"] = environment;
+                eventBytes = Encoding.UTF8.GetBytes(submission.ToJsonString());
+            }
+
+            using var stream = new MemoryStream(eventBytes);
             await eventPostService.EnqueueAsync(new EventPost(appOptions.EnableArchive)
             {
                 ApiVersion = message.ApiVersion,

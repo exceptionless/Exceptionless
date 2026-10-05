@@ -103,4 +103,42 @@ public sealed class EventEnvironmentTests : TestWithServices
         Assert.Equal(new Event { Environment = " Production ", Data = null }, new Event { Environment = "Production", Data = null });
         Assert.NotEqual(new Event { Environment = "Production", Data = null }, new Event { Environment = "production", Data = null });
     }
+
+    [Theory]
+    [InlineData("west", "west")]
+    [InlineData(" Production ", "Production")]
+    [InlineData("   ", null)]
+    [InlineData("bad\nenvironment", null)]
+    [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm", null)]
+    public void ParseEvents_LegacyStringEnvironment_PreservesOriginalDataAcrossRoundTrips(string environment, string? expected)
+    {
+        var parser = GetService<JsonEventParserPlugin>();
+        var serializer = GetService<ITextSerializer>();
+
+        foreach (var (environmentFirst, duplicateKey) in new[] { (true, false), (false, false), (true, true), (false, true) })
+        {
+            string environmentProperty = $"\"environment\":{JsonSerializer.Serialize(environment)}";
+            string dataProperty = duplicateKey
+                ? "\"data\":{\"environment\":\"nested\",\"kept\":true}"
+                : "\"data\":{\"kept\":true}";
+            string json = environmentFirst
+                ? $"{{{environmentProperty},{dataProperty}}}"
+                : $"{{{dataProperty},{environmentProperty}}}";
+
+            var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(parser.ParseEvents(json, 2, null)));
+            Assert.Equal(expected, ev.Environment);
+            Assert.Equal(environment, ev.Data![duplicateKey ? "environment1" : "environment"]);
+            if (duplicateKey)
+                Assert.Equal("nested", ev.Data["environment"]);
+
+            string serialized = serializer.SerializeToString(ev)!;
+            for (int i = 0; i < 3; i++)
+            {
+                ev = serializer.Deserialize<PersistentEvent>(serialized)!;
+                string roundTrip = serializer.SerializeToString(ev)!;
+                Assert.Equal(serialized, roundTrip);
+                Assert.Equal(expected, ev.Environment);
+            }
+        }
+    }
 }

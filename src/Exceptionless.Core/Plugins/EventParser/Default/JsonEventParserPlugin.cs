@@ -1,7 +1,9 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Serialization;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventParser;
@@ -16,7 +18,14 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
         // Create lenient parsing options — inbound events from older SDK clients may omit
         // non-nullable properties. We must not reject structurally valid events; the pipeline
         // handles missing/null values gracefully downstream.
-        _jsonOptions = new JsonSerializerOptions(jsonOptions) { RespectNullableAnnotations = false };
+        _jsonOptions = new JsonSerializerOptions(jsonOptions)
+        {
+            RespectNullableAnnotations = false,
+            // Preserve the original root value once, at ingestion. Repeating this during
+            // storage or API deserialization would accumulate duplicate custom data.
+            TypeInfoResolver = (jsonOptions.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver())
+                .WithAddedModifier(EventEnvironmentConverter.ConfigureIngestionProperty)
+        };
     }
 
     public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string? userAgent)

@@ -66,4 +66,4 @@ Use [fixed in version](/docs/versioning/) when environments run different releas
 
 ## Rollout
 
-Deploy the server before adopting SDK versions that expose the new setting. The server adds mappings to existing event indices without rewriting historical events. Clients that do not send an environment continue to work. `data.@environment` and custom `data.environment` values retain their existing meanings. Legacy non-string root `environment` values are preserved as custom event data and leave the deployment environment unspecified.
+Deploy the server before adopting SDK versions that expose the new setting. The server adds mappings to existing event indices without rewriting historical events. Clients that do not send an environment continue to work. `data.@environment` and custom `data.environment` values retain their existing meanings. Root `environment` values are also preserved as legacy custom event data, including the original whitespace in strings. Non-string values leave the deployment environment unspecified. If `data.environment` already exists, the root value uses the next available key (`environment1`, `environment2`, and so on).

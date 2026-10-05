@@ -16,7 +16,7 @@ test('environment filters include unspecified events and persist in saved views'
         await e2eApi.pollForEventByReference(e2eScenario.userToken, e2eScenario.projectId, referenceId);
     }
 
-    await page.goto(`/next/event?project=${e2eScenario.projectId}&time=all`);
+    await page.goto(`/event?project=${e2eScenario.projectId}&time=all`);
     for (const message of messages) await expect(getVisibleText(page, message)).toBeVisible({ timeout: 30_000 });
 
     await page.getByRole('button', { name: 'Manage filters' }).click();
@@ -66,7 +66,7 @@ test('environment filters include unspecified events and persist in saved views'
 
 test('stack, session, and stream filters retain names with no current events', async ({ e2eScenario, page }) => {
     for (const route of ['stack', 'sessions', 'stream']) {
-        await page.goto(`/next/${route}?project=${e2eScenario.projectId}`);
+        await page.goto(`/${route}?project=${e2eScenario.projectId}`);
         await page.getByRole('button', { name: 'Manage filters' }).click();
         await page.getByPlaceholder('Search...').fill('Environment');
         await page.getByText('Environment', { exact: true }).click();
@@ -104,7 +104,7 @@ test('environment choices use the saved view time range', async ({ e2eScenario, 
             headers: { Authorization: `Bearer ${e2eScenario.userToken}` }
         });
         expect(response.status(), await response.text()).toBe(201);
-        await page.goto(`/next/${route}/${slug}`);
+        await page.goto(`/${route}/${slug}`);
         await expect(page.getByRole('heading', { exact: true, name })).toBeVisible();
         expect(new URL(page.url()).searchParams.get('time')).toBeNull();
         await page.getByRole('button', { name: 'Manage filters' }).click();
