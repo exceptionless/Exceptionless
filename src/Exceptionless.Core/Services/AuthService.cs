@@ -1,4 +1,3 @@
-using System.Runtime.ExceptionServices;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
@@ -131,31 +130,17 @@ public sealed class AuthService
     /// </summary>
     private async Task ReleaseCacheKeysAsync(IEnumerable<string> cacheKeys, string reservation)
     {
-        List<Exception>? cleanupFailures = null;
         foreach (string cacheKey in cacheKeys)
         {
             try
             {
                 await _cache.RemoveIfEqualAsync(cacheKey, reservation);
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
-                // Cache-provider messages can contain identities, cache keys, or connection details.
-                var safeException = new Exception("Cache reservation cleanup failed.");
-                safeException.Data["ExceptionType"] = exception.GetType().FullName;
-                if (!String.IsNullOrEmpty(exception.StackTrace))
-                    ExceptionDispatchInfo.SetRemoteStackTrace(safeException, exception.StackTrace);
-
-                (cleanupFailures ??= []).Add(safeException);
+                _logger.LogError(ex, "Error releasing login admission reservation: {Message}", ex.Message);
             }
         }
-
-        if (cleanupFailures is null)
-            return;
-
-        _logger.LogError(new AggregateException("Login admission cleanup failed.", cleanupFailures),
-            "Failed to release {FailedCacheKeyCount} login admission reservations: {Message}", cleanupFailures.Count,
-            "Unreleased reservations expire at the current window boundary.");
     }
 
     private Task RemoveFailuresAsync(IEnumerable<KeyValuePair<string, string>> failures)
