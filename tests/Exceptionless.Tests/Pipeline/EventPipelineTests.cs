@@ -855,6 +855,76 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(StackStatus.Regressed, contexts[1].Stack?.Status);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("1.0.1")]
+    public async Task ProcessBatchAsync_ExplicitOutcomes_OnlyEligibleFailuresRegress(string? fixedVersion)
+    {
+        var fixedAt = new DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
+        TimeProvider.SetUtcNow(fixedAt);
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var project = _projectData.GenerateSampleProject();
+        var initial = await _pipeline.RunAsync(_eventData.GenerateEvent(projectId: project.Id, organizationId: organization.Id,
+            source: "repeatable-operation", type: Event.KnownTypes.Log, occurrenceDate: fixedAt.AddMinutes(-2)), organization, project);
+        Assert.False(initial.HasError, initial.ErrorMessage);
+        var stack = Assert.IsType<Stack>(initial.Stack);
+        stack.MarkFixed(fixedVersion is null ? null : new SemanticVersion(1, 0, 1), TimeProvider);
+        await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency().Cache());
+        TimeProvider.Advance(TimeSpan.FromMinutes(10));
+
+        EventContext Observation(string? outcome, string? result, int minute, string version = "1.0.1")
+        {
+            var ev = _eventData.GenerateEvent(stackId: stack.Id, projectId: project.Id, organizationId: organization.Id,
+                source: "repeatable-operation", type: Event.KnownTypes.Log, occurrenceDate: fixedAt.AddMinutes(minute), semver: version);
+            ev.Outcome = outcome;
+            ev.Result = result;
+            return new EventContext(ev, organization, project);
+        }
+
+        // Non-failures after the fix stay visible and leave the stack fixed, including older versions.
+        var nonFailures = new[]
+        {
+            Observation(Event.KnownOutcomes.Success, "completed", 1, "1.0.0"),
+            Observation(Event.KnownOutcomes.Unknown, "aborted", 2),
+            Observation(null, "skipped", 3)
+        };
+        await _pipeline.RunAsync(nonFailures);
+        Assert.All(nonFailures, ctx =>
+        {
+            Assert.False(ctx.HasError, ctx.ErrorMessage);
+            Assert.True(ctx.IsProcessed);
+            Assert.False(ctx.IsDiscarded);
+            Assert.False(ctx.IsRegression);
+        });
+        Assert.Equal(StackStatus.Fixed, (await _stackRepository.GetByIdAsync(stack.Id))!.Status);
+
+        // A stale failure cannot regress. Only the qualifying failure in the same batch can do so.
+        var staleFailure = Observation(Event.KnownOutcomes.Failure, "timed_out", -1, "1.0.0");
+        var success = Observation(Event.KnownOutcomes.Success, "completed", 4);
+        var failure = Observation(Event.KnownOutcomes.Failure, "timed_out", 5);
+        await _pipeline.RunAsync([staleFailure, success, failure]);
+        Assert.False(staleFailure.HasError, staleFailure.ErrorMessage);
+        Assert.False(staleFailure.IsRegression);
+        Assert.Equal(fixedVersion is not null, staleFailure.IsDiscarded);
+        Assert.False(success.HasError, success.ErrorMessage);
+        Assert.True(success.IsProcessed);
+        Assert.False(success.IsDiscarded);
+        Assert.False(success.IsRegression);
+        Assert.False(failure.HasError, failure.ErrorMessage);
+        Assert.True(failure.IsProcessed);
+        Assert.False(failure.IsDiscarded);
+        Assert.True(failure.IsRegression);
+        Assert.Equal(stack.Id, failure.Event.StackId);
+        Assert.Equal(StackStatus.Regressed, (await _stackRepository.GetByIdAsync(stack.Id))!.Status);
+
+        // A subsequent successful observation does not automatically resolve the regression.
+        var laterSuccess = Observation(Event.KnownOutcomes.Success, "completed", 6);
+        await _pipeline.RunAsync(laterSuccess);
+        Assert.False(laterSuccess.HasError, laterSuccess.ErrorMessage);
+        Assert.True(laterSuccess.IsProcessed);
+        Assert.Equal(StackStatus.Regressed, (await _stackRepository.GetByIdAsync(stack.Id))!.Status);
+    }
+
     [Fact]
     public async Task EnsureVersionedRegressionAsync()
     {

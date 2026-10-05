@@ -38,6 +38,20 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
     }
 
     [Fact]
+    public async Task GetOpenApiJson_ChartPatch_DescribesTypedNullableConfiguration()
+    {
+        using var document = await GetOpenApiDocumentAsync();
+        var update = document.RootElement.GetProperty("components").GetProperty("schemas").GetProperty("UpdateSavedView");
+        var chart = update.GetProperty("properties").GetProperty("chart");
+
+        Assert.Contains(chart.GetProperty("anyOf").EnumerateArray(), option =>
+            option.TryGetProperty("$ref", out var reference) && reference.GetString() == "#/components/schemas/EventChart");
+        Assert.Contains(chart.GetProperty("anyOf").EnumerateArray(), option =>
+            option.TryGetProperty("type", out var type) && type.GetString() == "null");
+        Assert.False(update.TryGetProperty("required", out var required) && required.EnumerateArray().Any(value => value.GetString() == "chart"));
+    }
+
+    [Fact]
     public async Task GetOpenApiJson_Default_ContainsExpectedRoutesOperationsAndResponses()
     {
         // Arrange

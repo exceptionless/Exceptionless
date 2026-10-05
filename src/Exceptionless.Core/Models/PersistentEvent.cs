@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using Exceptionless.Core.Validation;
 using Exceptionless.Core.Attributes;
 using Exceptionless.Core.Extensions;
 using Foundatio.Repositories.Models;
@@ -70,6 +71,9 @@ public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWith
         {
             yield return new ValidationResult("ReferenceId must contain between 8 and 100 alphanumeric or '-' characters.", [nameof(ReferenceId)]);
         }
+
+        foreach (var error in EventTelemetryValidation.ValidateRelationshipsAndLabels(this))
+            yield return error;
 
         // NOTE: We need to write a migration to cleanup all old events of 50 or more tags so there never is an error while saving.
         //if (ev.Tags.Count > 50)

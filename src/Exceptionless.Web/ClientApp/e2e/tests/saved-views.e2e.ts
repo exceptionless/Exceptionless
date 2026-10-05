@@ -665,6 +665,15 @@ test('save completion does not overwrite a newly active saved view', async ({ e2
     const firstViewSlug = savedViewSlug(firstViewName);
     const secondViewSlug = savedViewSlug(secondViewName);
     const authorizationHeaders = { Authorization: `Bearer ${e2eScenario.userToken}` };
+    const configureChart = async (measurement: string, unit: string) => {
+        await page.getByRole('button', { name: 'Configure chart' }).click();
+        const dialog = page.getByRole('dialog', { name: 'Configure chart' });
+        await dialog.getByLabel('Measurement', { exact: true }).fill(measurement);
+        await dialog.getByLabel('Unit', { exact: true }).fill(unit);
+        await dialog.getByRole('button', { exact: true, name: 'Apply' }).click();
+        await expect(dialog).toBeHidden();
+        await expect.poll(() => JSON.parse(new URL(page.url()).searchParams.get('chart') ?? 'null')?.measurement).toBe(measurement);
+    };
     const createView = (name: string, slug: string, time: string) =>
         request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
             data: {
@@ -699,6 +708,7 @@ test('save completion does not overwrite a newly active saved view', async ({ e2
 
     await page.goto(`/event/${firstViewSlug}`);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
+    await configureChart('duration', 'ms');
     await page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first().click();
     await page.getByRole('button', { name: 'Last 90 days' }).click();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
@@ -737,13 +747,18 @@ test('save completion does not overwrite a newly active saved view', async ({ e2
     await expect.poll(() => secondViewRequestTimes.some((time) => time.includes('now-1d'))).toBe(true);
     await page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first().click();
     await page.getByRole('button', { name: 'Last 7 days' }).click();
+    await configureChart('allocated', 'By');
     const saveCompleted = page.waitForResponse(
         (response) => response.request().method() === 'PATCH' && new URL(response.url()).pathname === `/api/v2/saved-views/${firstView.id}`
     );
     releaseSave();
-    await saveCompleted;
+    const savedViewResponse = await saveCompleted;
+    expect((await savedViewResponse.json()).chart).toMatchObject({ measurement: 'duration', unit: 'ms' });
     await expect.poll(() => secondViewRequestTimes.some((time) => time.includes('now-7d'))).toBe(true);
+    await expect(page.getByText('allocated · avg (By)', { exact: true })).toBeVisible();
+    expect(JSON.parse(new URL(page.url()).searchParams.get('chart') ?? 'null')).toMatchObject({ measurement: 'allocated', unit: 'By' });
     await page.reload();
+    await expect(page.getByText('allocated · avg (By)', { exact: true })).toBeVisible();
     await expect(
         page
             .getByRole('button', { name: /Date\s+Last 7 days/ })

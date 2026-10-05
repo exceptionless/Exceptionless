@@ -20,6 +20,8 @@ public sealed class ExceptionlessMcpToolMetadataTests
     [InlineData(nameof(ExceptionlessMcpTools.SearchEventsAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.GetEventAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.CountEventsAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.GetEventMeasurementsAsync))]
+    [InlineData(nameof(ExceptionlessMcpTools.GetEventChartAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.GetFilterFields))]
     public void ReadTools_AnnotationsAdvertiseReadOnly(string methodName)
     {

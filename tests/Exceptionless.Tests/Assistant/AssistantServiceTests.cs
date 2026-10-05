@@ -1989,6 +1989,7 @@ public sealed class AssistantServiceTests
         null!,
         NullLogger<ExceptionlessMcpTools>.Instance,
         TimeProvider.System,
+        null!,
         assistantToolContext);
 
     private static AssistantService CreateAssistantService(

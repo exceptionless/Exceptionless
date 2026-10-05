@@ -13,6 +13,7 @@ using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Assistant;
@@ -27,7 +28,7 @@ using ModelContextProtocol.Server;
 namespace Exceptionless.Web.Mcp;
 
 [McpServerToolType]
-public sealed class ExceptionlessMcpTools
+public sealed partial class ExceptionlessMcpTools
 {
     private const int DefaultLimit = 10;
     private const int MaxSummaryLimit = 100;
@@ -40,11 +41,11 @@ public sealed class ExceptionlessMcpTools
     private const string LastDescription = "Optional relative time range such as 24h, 7d, or 30m. Do not combine with startUtc or endUtc.";
     private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Do not combine with last.";
     private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Do not combine with last.";
-    private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
+    private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser, outcome, result, parent_reference_id, root_reference_id, or labels.<name>. Groups are the most frequent values, not a complete inventory. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
     private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences.";
-    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*. data.* works for custom data values that were indexed for search; arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
+    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, reference, parent_reference_id, root_reference_id, outcome, result, labels.<name>, measurement.<name>@<unit>, data.*. Examples: outcome:failure, labels.branch:main, measurement.duration@s:>1, _exists_:measurement.duration@s, parent_reference_id:suite-run-1234. For units containing punctuation, use the structured get_event_chart tool or a nested filter such as measurements:(measurements.name:sql.calls AND measurements.unit:\"{call}\" AND measurements.value:>10). data.* works for custom data values that were indexed for search; arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
 
     private const string IndexedDataFilterNote = "data.* filters work for custom data values that were indexed for search. Arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
 
@@ -61,6 +62,7 @@ public sealed class ExceptionlessMcpTools
     private readonly ITextSerializer _serializer;
     private readonly ILogger<ExceptionlessMcpTools> _logger;
     private readonly TimeProvider _timeProvider;
+    private readonly EventTelemetryService _eventTelemetryService;
     private readonly AssistantToolContext? _assistantToolContext;
 
     public ExceptionlessMcpTools(
@@ -77,6 +79,7 @@ public sealed class ExceptionlessMcpTools
         ITextSerializer serializer,
         ILogger<ExceptionlessMcpTools> logger,
         TimeProvider timeProvider,
+        EventTelemetryService eventTelemetryService,
         AssistantToolContext? assistantToolContext = null)
     {
         _httpContextAccessor = httpContextAccessor;
@@ -91,6 +94,7 @@ public sealed class ExceptionlessMcpTools
         _serializer = serializer;
         _logger = logger;
         _timeProvider = timeProvider;
+        _eventTelemetryService = eventTelemetryService;
         _mcpContextService = mcpContextService;
         _assistantToolContext = assistantToolContext;
     }
@@ -349,7 +353,7 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "search_stacks", Title = "Search error stacks", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
+    [McpServerTool(Name = "search_stacks", Title = "Search stacks", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
     [Description("Searches stacks in an Exceptionless project for broad, top, or recent-issue questions. This tool has no stack id filter; use get_stack when stackId is known. When pagination.hasMore is true, pass pagination.after to fetch the next page or pagination.before to fetch the previous page.")]
     public async Task<McpResponse<McpListData<McpStackResult>>> SearchStacksAsync(
         [Description("Optional Exceptionless project id to search within. May be omitted when only one project is accessible.")]
@@ -414,7 +418,7 @@ public sealed class ExceptionlessMcpTools
         }
     }
 
-    [McpServerTool(Name = "get_stack", Title = "Get error stack", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
+    [McpServerTool(Name = "get_stack", Title = "Get stack", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
     [Description("Gets summary details for a specific Exceptionless stack by its globally unique id. projectId is optional and, when supplied, is validated against the stack.")]
     public async Task<McpResponse<McpStackResult>> GetStackAsync(
         [Description("The Exceptionless stack id.")]
@@ -449,7 +453,7 @@ public sealed class ExceptionlessMcpTools
         string? projectId = null,
         [Description(EventFilterDescription)]
         string? filter = null,
-        [Description("Optional sort expression. Defaults to -date.")]
+        [Description("Optional sort expression. Defaults to -date. Use -measurement.duration@s for slowest observations (exact name/unit), or date for chronological history. Missing measurements sort last.")]
         string? sort = "-date",
         [Description(SummaryLimitDescription)]
         int limit = DefaultLimit,
@@ -473,7 +477,7 @@ public sealed class ExceptionlessMcpTools
             if (projectId is not null && !TryValidateId(projectId, "projectId", out var projectIdError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(projectIdError);
 
-            var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator, allowIndexedDataFields: true);
+            var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator, allowEventFields: true);
             if (validation.Error is not null)
                 return McpResponse<McpListData<McpEventResult>>.Failed(validation.Error);
 
@@ -506,13 +510,13 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "search_events", Title = "Search events", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
-    [Description("Searches event summary rows in an Exceptionless project. Use this for event-first triage across correlation ids, order ids, users, sessions, recent windows, or data.* fields. When pagination.hasMore is true, pass pagination.after or pagination.before to page.")]
+    [Description("Searches event summaries including native measurements, labels, outcome/result, and parent/root references. Find failing operations with outcome:failure, slow observations with sort=-measurement.duration@s, immediate children with parent_reference_id:REF, and a run with (reference:REF OR root_reference_id:REF). Use the same project when following references. Use stack:ID or get_stack_events for history across runs. Compare equivalent labels and units; passing and failing attempts are needed to investigate flakiness. When pagination.hasMore is true, pass pagination.after or pagination.before to page.")]
     public async Task<McpResponse<McpListData<McpEventResult>>> SearchEventsAsync(
         [Description("Optional Exceptionless project id to search within. May be omitted when only one project is accessible.")]
         string? projectId = null,
         [Description(EventFilterDescription)]
         string? filter = null,
-        [Description("Optional sort expression. Defaults to -date.")]
+        [Description("Optional sort expression. Defaults to -date. Use -measurement.duration@s for slowest observations (exact name/unit), or date for chronological history. Missing measurements sort last.")]
         string? sort = "-date",
         [Description(SummaryLimitDescription)]
         int limit = DefaultLimit,
@@ -533,7 +537,7 @@ public sealed class ExceptionlessMcpTools
             if (projectId is not null && !TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(idError);
 
-            var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator, allowIndexedDataFields: true);
+            var validation = await ValidateSearchAsync(filter, sort, limit, EventFilterFields, EventSortFields, _eventQueryValidator, allowEventFields: true);
             if (validation.Error is not null)
                 return McpResponse<McpListData<McpEventResult>>.Failed(validation.Error);
 
@@ -571,7 +575,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "get_event", Title = "Get event details", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
-    [Description("Gets details for a specific Exceptionless event by its globally unique id, including error, request, environment, and extended data when available. projectId is optional and, when supplied, is validated against the event.")]
+    [Description("Gets details for a specific Exceptionless event by its globally unique id, including native measurements, labels, outcome/result, parent/root references, and error, request, environment, and extended data when available. projectId is optional and, when supplied, is validated against the event.")]
     public async Task<McpResponse<McpEventResult>> GetEventAsync(
         [Description("The Exceptionless event id.")]
         string eventId,
@@ -612,7 +616,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "count_events", Title = "Count events", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
-    [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets and groupBy dimensions for questions like occurrences by version, tag, user, or error type.")]
+    [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets and groupBy dimensions for counts by outcome, result, labels, version, tag, user, or error type. Filter a suite/run with parent_reference_id or root_reference_id. Events counts stored observations; occurrences includes duplicate counts. For failure rates, count failure and success with the same scope, excluding unknown/result-only observations from that denominator. Counts do not prove flakiness without attempt/run identity.")]
     public async Task<McpResponse<McpEventCountResult>> CountEventsAsync(
         [Description("Optional Exceptionless project id to count within. May be omitted when only one project is accessible.")]
         string? projectId = null,
@@ -637,7 +641,7 @@ public sealed class ExceptionlessMcpTools
             if (projectId is not null && !TryValidateId(projectId, "projectId", out var idError))
                 return McpResponse<McpEventCountResult>.Failed(idError);
 
-            var validation = await ValidateSearchAsync(filter, sort: null, DefaultLimit, EventFilterFields, EventSortFields, _eventQueryValidator, allowIndexedDataFields: true);
+            var validation = await ValidateSearchAsync(filter, sort: null, DefaultLimit, EventFilterFields, EventSortFields, _eventQueryValidator, allowEventFields: true);
             if (validation.Error is not null)
                 return McpResponse<McpEventCountResult>.Failed(validation.Error);
 
@@ -704,7 +708,8 @@ public sealed class ExceptionlessMcpTools
                     .ToArray() ?? [];
             }
 
-            string? warning = CombineWarnings(groupLimitWarning, GetGroupByOverlapWarning(resolvedGroupBy));
+            string? warning = CombineWarnings(groupLimitWarning, GetGroupByOverlapWarning(resolvedGroupBy),
+                resolvedGroupBy is null ? null : $"Groups are limited to the {resolvedGroupLimit} most frequent values and exclude missing values. Counts can be approximate across shards. Use narrower filters or paginated search_events for complete observation histories.");
 
             return McpResponse<McpEventCountResult>.Success(new McpEventCountResult(
                 result.Total,
@@ -988,7 +993,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "get_filter_fields", Title = "Get filter fields", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
-    [Description("Lists supported Exceptionless MCP filter and sort fields for projects, stacks, and events. Dynamic data.* filter prefixes are allowed for indexed custom event data.")]
+    [Description("Lists supported Exceptionless MCP filter and sort fields for projects, stacks, and events. Includes native telemetry fields, dynamic labels.<name> filters, and measurement.<name>@<unit> numeric filters/sorts. Use get_event_measurements to discover exact names and units.")]
     public McpResponse<McpFilterFieldsResult> GetFilterFields()
     {
         try
@@ -997,7 +1002,7 @@ public sealed class ExceptionlessMcpTools
             return McpResponse<McpFilterFieldsResult>.Success(new McpFilterFieldsResult(
                 ToFilterFieldSet(ProjectFilterFields, ProjectSortFields),
                 ToFilterFieldSet(StackFilterFields, StackSortFields),
-                ToFilterFieldSet(EventFilterFields, EventSortFields, "data.")));
+                ToFilterFieldSet(EventFilterFields, EventSortFields, "data.", "labels.", "measurement.")));
         }
         catch (Exception ex) when (IsLookupError(ex))
         {
@@ -1138,7 +1143,7 @@ public sealed class ExceptionlessMcpTools
         if (!TryValidateSort(sort, ProjectSortFields, out string? sortError))
             return SearchValidationResult.Failed(McpErrors.InvalidSort(sortError ?? "Invalid sort.", sort, ProjectSortFields));
 
-        var filterFieldError = GetFilterFieldError(filter, ProjectFilterFields, allowIndexedDataFields: false);
+        var filterFieldError = GetFilterFieldError(filter, ProjectFilterFields, allowEventFields: false);
         if (filterFieldError is not null)
             return SearchValidationResult.Failed(filterFieldError);
 
@@ -1152,26 +1157,26 @@ public sealed class ExceptionlessMcpTools
         IReadOnlySet<string> allowedFilterFields,
         IReadOnlySet<string> allowedSortFields,
         AppQueryValidator queryValidator,
-        bool allowIndexedDataFields = false)
+        bool allowEventFields = false)
     {
         if (!TryValidateLimit(limit, out int resolvedLimit, out string? limitError, out string? warning))
             return SearchValidationResult.Failed(McpErrors.InvalidLimit(limitError ?? "Invalid limit.", limit, MaxSummaryLimit));
 
-        if (!TryValidateSort(sort, allowedSortFields, out string? sortError))
+        if (!TryValidateSort(sort, allowedSortFields, out string? sortError, allowMeasurements: allowEventFields))
             return SearchValidationResult.Failed(McpErrors.InvalidSort(sortError ?? "Invalid sort.", sort, allowedSortFields));
 
         var queryValidation = await queryValidator.ValidateQueryAsync(filter);
         if (!queryValidation.IsValid)
             return SearchValidationResult.Failed(McpErrors.InvalidFilter($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}"));
 
-        var filterFieldError = GetFilterFieldError(filter, allowedFilterFields, allowIndexedDataFields);
+        var filterFieldError = GetFilterFieldError(filter, allowedFilterFields, allowEventFields);
         if (filterFieldError is not null)
             return SearchValidationResult.Failed(filterFieldError);
 
         return new SearchValidationResult(resolvedLimit, warning);
     }
 
-    private static bool TryValidateSort(string? sort, IReadOnlySet<string> allowedSortFields, out string? error)
+    private static bool TryValidateSort(string? sort, IReadOnlySet<string> allowedSortFields, out string? error, bool allowMeasurements = false)
     {
         if (String.IsNullOrWhiteSpace(sort))
         {
@@ -1182,9 +1187,10 @@ public sealed class ExceptionlessMcpTools
         foreach (string term in sort.Split([',', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             string field = term.TrimStart('+', '-');
-            if (field.Length == 0 || !allowedSortFields.Contains(field))
+            if (field.Length == 0 || (!allowedSortFields.Contains(field) && !(allowMeasurements && MeasurementField.TryParse(field, out _, out _))))
             {
-                error = $"Unknown sort field '{field}'. Allowed sort fields: {String.Join(", ", allowedSortFields.Order(StringComparer.OrdinalIgnoreCase))}.";
+                error = $"Unknown sort field '{field}'. Allowed sort fields: {String.Join(", ", allowedSortFields.Order(StringComparer.OrdinalIgnoreCase))}."
+                    + (allowMeasurements ? " Numeric sorts also accept measurement.<name>@<unit>." : String.Empty);
                 return false;
             }
         }
@@ -1355,6 +1361,13 @@ public sealed class ExceptionlessMcpTools
             return true;
         }
 
+        if (IsLabelField(groupBy.Trim()))
+        {
+            resolvedGroupBy = new McpEventGroupBy(groupBy.Trim(), groupBy.Trim());
+            error = null!;
+            return true;
+        }
+
         error = McpErrors.InvalidGroupBy($"Unsupported groupBy field '{groupBy}'.", groupBy, EventGroupByAllowedFields);
         return false;
     }
@@ -1508,7 +1521,7 @@ public sealed class ExceptionlessMcpTools
         return false;
     }
 
-    private static McpErrorInfo? GetFilterFieldError(string? filter, IReadOnlySet<string> allowedFilterFields, bool allowIndexedDataFields)
+    private static McpErrorInfo? GetFilterFieldError(string? filter, IReadOnlySet<string> allowedFilterFields, bool allowEventFields)
     {
         if (String.IsNullOrWhiteSpace(filter))
             return null;
@@ -1516,10 +1529,20 @@ public sealed class ExceptionlessMcpTools
         foreach (Match match in FilterFieldRegex.Matches(RemoveQuotedFilterValues(filter)))
         {
             string field = match.Groups["field"].Value;
+            if (allowEventFields && field.Equals("_exists_", StringComparison.OrdinalIgnoreCase))
+            {
+                var operand = ExistenceFieldRegex.Match(filter[(match.Index + match.Length)..]);
+                if (!operand.Success)
+                    return McpErrors.InvalidFilter("Use _exists_:<field> with an unquoted supported field, for example _exists_:measurement.duration@s.");
+                field = operand.Groups["field"].Value;
+            }
             if (allowedFilterFields.Contains(field))
                 continue;
 
-            if (allowIndexedDataFields && field.StartsWith("data.", StringComparison.OrdinalIgnoreCase))
+            if (allowEventFields && (IsLabelField(field) || MeasurementField.TryParse(field, out _, out _)))
+                continue;
+
+            if (allowEventFields && field.StartsWith("data.", StringComparison.OrdinalIgnoreCase))
             {
                 string indexedDataField = field["data.".Length..];
                 if (indexedDataField.StartsWith('@') || indexedDataField.IsValidFieldName())
@@ -1655,7 +1678,13 @@ public sealed class ExceptionlessMcpTools
             ev.Source,
             ev.Message,
             ev.ReferenceId,
-            includeDetails ? ToEventDetails(ev, maxDetailSize) : null);
+            includeDetails ? ToEventDetails(ev, maxDetailSize) : null,
+            ev.Outcome,
+            ev.Result,
+            ev.ParentReferenceId,
+            ev.RootReferenceId,
+            ev.Measurements,
+            ev.Labels);
     }
 
     private McpEventDetails ToEventDetails(PersistentEvent ev, int maxDetailSize)
@@ -1771,7 +1800,8 @@ public sealed class ExceptionlessMcpTools
             filterFields.Order(StringComparer.OrdinalIgnoreCase).ToArray(),
             sortFields.Order(StringComparer.OrdinalIgnoreCase).ToArray(),
             dynamicFilterPrefixes,
-            notes);
+            notes is null ? null : notes + " Use _exists_:<field> to require a supported field, including a measurement alias. Native labels.<name> values are exact strings. Numeric measurement.<name>@<unit> filters and sorts require an exact unit; get_event_measurements discovers names/units. Parent/root references link event instances within the same project; stacks group repeated occurrences across runs.",
+            dynamicFilterPrefixes.Contains("measurement.") ? ["measurement."] : null);
     }
 
     private McpResponse<McpListData<TResult>> ToListResponse<TDocument, TResult>(
@@ -1826,6 +1856,7 @@ public sealed class ExceptionlessMcpTools
     private static readonly HashSet<string> ClientSetupPlatforms = new(StringComparer.OrdinalIgnoreCase) { "expo", "react-native" };
 
     private static readonly Regex FilterFieldRegex = new(@"(?:^|[-+\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex ExistenceFieldRegex = new(@"^\s*(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*)(?=$|[\s)])", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex IdRegex = new(@"^[A-Za-z0-9]{24,36}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex RelativeTimeRegex = new(@"^(?<value>\d+)(?<unit>[mhdw])$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IntervalRegex = new(@"^\d+[mhdwM]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -1844,11 +1875,20 @@ public sealed class ExceptionlessMcpTools
         "error.code",
         "os",
         "os.version",
-        "browser"
+        "browser",
+        "outcome",
+        "result",
+        "parent_reference_id",
+        "root_reference_id",
+        "labels.<name>"
     ];
 
     private static readonly IReadOnlyDictionary<string, McpEventGroupBy> EventGroupByFields = new Dictionary<string, McpEventGroupBy>(StringComparer.OrdinalIgnoreCase)
     {
+        ["outcome"] = new("outcome", "outcome"),
+        ["result"] = new("result", "result"),
+        ["parent_reference_id"] = new("parent_reference_id", "parent_reference_id"),
+        ["root_reference_id"] = new("root_reference_id", "root_reference_id"),
         ["version"] = new("version", EventIndex.Alias.Version),
         ["type"] = new("type", EventIndex.Alias.Type),
         ["source"] = new("source", EventIndex.Alias.Source),
@@ -1922,6 +1962,10 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly HashSet<string> EventSortFields = new(StringComparer.OrdinalIgnoreCase)
     {
+        "outcome",
+        "result",
+        "parent_reference_id",
+        "root_reference_id",
         EventIndex.Alias.Date,
         EventIndex.Alias.Type,
         EventIndex.Alias.Source,
@@ -1937,6 +1981,10 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly HashSet<string> EventFilterFields = new(EventSortFields, StringComparer.OrdinalIgnoreCase)
     {
+        "measurements",
+        "measurements.name",
+        "measurements.unit",
+        "measurements.value",
         EventIndex.Alias.OrganizationId,
         "organization_id",
         EventIndex.Alias.ProjectId,

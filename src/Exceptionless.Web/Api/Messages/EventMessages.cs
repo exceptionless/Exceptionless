@@ -18,6 +18,10 @@ public record GetEventsByStack(string StackId, string? Filter, string? Sort, str
 public record GetEventsByReferenceId(string ReferenceId, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
 public record GetEventsByReferenceIdAndProject(string ReferenceId, string ProjectId, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
 
+// Measurements
+public record GetEventChart(string OrganizationId, EventChartRequest Request, HttpContext Context);
+public record GetEventMeasurements(string OrganizationId, string? Filter, string? Time, string? Offset, HttpContext Context);
+
 // Sessions
 public record GetEventsBySessionId(string SessionId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
 public record GetEventsBySessionIdAndProject(string SessionId, string ProjectId, string? Filter, string? Sort, string? Time, string? Offset, string? Mode, int? Page, int Limit, string? Before, string? After, string? Include, HttpContext Context);
