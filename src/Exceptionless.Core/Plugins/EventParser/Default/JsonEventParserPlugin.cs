@@ -12,15 +12,16 @@ namespace Exceptionless.Core.Plugins.EventParser;
 public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
 {
     private readonly JsonSerializerOptions _jsonOptions;
+    private readonly JsonSerializerOptions _normalizedJsonOptions;
 
     public JsonEventParserPlugin(AppOptions options, JsonSerializerOptions jsonOptions, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         // Create lenient parsing options — inbound events from older SDK clients may omit
         // non-nullable properties. We must not reject structurally valid events; the pipeline
         // handles missing/null values gracefully downstream.
-        _jsonOptions = new JsonSerializerOptions(jsonOptions)
+        _normalizedJsonOptions = new JsonSerializerOptions(jsonOptions) { RespectNullableAnnotations = false };
+        _jsonOptions = new JsonSerializerOptions(_normalizedJsonOptions)
         {
-            RespectNullableAnnotations = false,
             // Preserve the original root value once, at ingestion. Repeating this during
             // storage or API deserialization would accumulate duplicate custom data.
             TypeInfoResolver = (jsonOptions.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver())
@@ -29,6 +30,16 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
     }
 
     public List<PersistentEvent>? ParseEvents(string input, int apiVersion, string? userAgent)
+    {
+        return ParseEvents(input, apiVersion, _jsonOptions);
+    }
+
+    internal List<PersistentEvent>? ParseNormalizedEvents(string input)
+    {
+        return ParseEvents(input, 2, _normalizedJsonOptions);
+    }
+
+    private List<PersistentEvent>? ParseEvents(string input, int apiVersion, JsonSerializerOptions jsonOptions)
     {
         if (apiVersion < 2)
             return null;
@@ -40,7 +51,7 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
             {
                 try
                 {
-                    var ev = JsonSerializer.Deserialize<PersistentEvent>(input, _jsonOptions);
+                    var ev = JsonSerializer.Deserialize<PersistentEvent>(input, jsonOptions);
                     if (ev is not null)
                         events.Add(ev);
                 }
@@ -56,7 +67,7 @@ public class JsonEventParserPlugin : PluginBase, IEventParserPlugin
             {
                 try
                 {
-                    var parsedEvents = JsonSerializer.Deserialize<PersistentEvent[]>(input, _jsonOptions);
+                    var parsedEvents = JsonSerializer.Deserialize<PersistentEvent[]>(input, jsonOptions);
                     if (parsedEvents is { Length: > 0 })
                         events.AddRange(parsedEvents.Where(e => e is not null));
                 }

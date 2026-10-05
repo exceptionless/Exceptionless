@@ -3,6 +3,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
+using Exceptionless.Core.Queues.Models;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -139,6 +140,20 @@ public sealed class EventEnvironmentTests : TestWithServices
         Assert.Equal("west", data.GetProperty("Environment1").GetString());
         Assert.Equal("east", data.GetProperty("environment2").GetString());
         Assert.Equal("north", data.GetProperty("ENVIRONMENT3").GetProperty("region").GetString());
+    }
+
+    [Fact]
+    public void EventPostMetadata_NormalizedFlag_DefaultsToLegacyIngestionAndRoundTrips()
+    {
+        var serializer = GetService<ITextSerializer>();
+        const string legacyJson = """{"organization_id":"organization","project_id":"project","api_version":2}""";
+        var legacy = serializer.Deserialize<EventPostInfo>(legacyJson);
+
+        Assert.NotNull(legacy);
+        Assert.False(legacy.IsNormalized);
+        Assert.DoesNotContain("is_normalized", serializer.SerializeToString(legacy)!);
+        var normalized = legacy with { IsNormalized = true };
+        Assert.True(serializer.Deserialize<EventPostInfo>(serializer.SerializeToString(normalized)!)!.IsNormalized);
     }
 
     [Theory]

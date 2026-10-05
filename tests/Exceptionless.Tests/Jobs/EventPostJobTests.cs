@@ -4,6 +4,8 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
@@ -148,6 +150,49 @@ public class EventPostJobTests : IntegrationTestsBase
         usage = await _usageService.GetUsageAsync(organization.Id);
         Assert.Equal(1, usage.CurrentUsage.Total);
         Assert.Equal(0, usage.CurrentUsage.Blocked);
+    }
+
+    [Fact]
+    public async Task RunAsync_RetryingParsedBatch_PreservesEnvironmentDataWithoutDuplicates()
+    {
+        var production = GenerateEvent(type: Event.KnownTypes.Log);
+        production.Environment = "Production";
+        var staging = GenerateEvent(type: Event.KnownTypes.Log);
+        staging.Environment = "Staging";
+        await EnqueueEventPostAsync([production, staging]);
+
+        var services = GetService<IServiceProvider>();
+        var failingPipeline = new FailingPipeline(services, _options, Log);
+        var failingJob = ActivatorUtilities.CreateInstance<EventPostsJob>(services, failingPipeline);
+        Assert.True((await failingJob.RunAsync(TestCancellationToken)).IsSuccess);
+        Assert.Equal(3, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
+
+        Assert.True((await _job.RunAsync(TestCancellationToken)).IsSuccess);
+        Assert.True((await _job.RunAsync(TestCancellationToken)).IsSuccess);
+        await RefreshDataAsync();
+
+        var events = (await _eventRepository.GetAllAsync()).Documents;
+        Assert.Equal(2, events.Count);
+        Assert.All(events, ev =>
+        {
+            Assert.NotNull(ev.Data);
+            Assert.Equal(ev.Environment, ev.Data["environment"]);
+            Assert.False(ev.Data.ContainsKey("environment1"));
+        });
+    }
+
+    private sealed class FailingPipeline(IServiceProvider services, AppOptions options, ILoggerFactory loggerFactory)
+        : EventPipeline(services, options, loggerFactory)
+    {
+        protected override IList<Type> GetActionTypes() => [];
+
+        public override Task<ICollection<EventContext>> RunAsync(ICollection<EventContext> contexts)
+        {
+            foreach (var context in contexts)
+                context.SetError("Simulated transient batch failure", new InvalidOperationException("Retry this event"));
+
+            return Task.FromResult(contexts);
+        }
     }
 
     [Fact]

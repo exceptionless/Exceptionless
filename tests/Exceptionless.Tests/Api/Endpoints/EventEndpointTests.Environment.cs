@@ -88,9 +88,16 @@ public partial class EventEndpointTests
             data.Event().FreeProject().Type(Event.KnownTypes.Log).Mutate(ev => { ev.Environment = "production"; ev.SetUserIdentity("unaffected-production-user"); });
             data.Event().FreeProject().Type(Event.KnownTypes.Error).Stack(first).Mutate(ev => { ev.Environment = "development"; ev.SetUserIdentity("development-user"); });
             data.Event().FreeProject().Type(Event.KnownTypes.Log).Mutate(ev => { ev.Environment = "development"; ev.SetUserIdentity("unaffected-development-user"); });
+            data.Event().FreeProject().Type(Event.KnownTypes.Error).Stack(first).Mutate(ev => ev.SetUserIdentity("unspecified-user"));
+            data.Event().FreeProject().Type(Event.KnownTypes.Log).Mutate(ev => ev.SetUserIdentity("unaffected-unspecified-user"));
         });
 
-        foreach (var (filter, expected, totalUsers) in new[] { ("environment:production", 12, 13), ("environment:staging", 1, 1), ("environment:production", 12, 13), ("environment:(production OR staging)", 13, 14), ("", 14, 16) })
+        foreach (var (filter, expected, totalUsers) in new[]
+        {
+            ("environment:production", 12, 13), ("environment:staging", 1, 1), ("environment:production", 12, 13),
+            ("environment:(production OR staging)", 13, 14), ("_missing_:environment", 1, 2), ("_exists_:environment", 14, 16),
+            ("(_missing_:environment OR environment:production)", 13, 15), ("", 15, 18)
+        })
         {
             var stacks = await SendRequestAsAsync<List<StackSummaryModel>>(request => request
                 .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "stack_frequent")
@@ -100,6 +107,29 @@ public partial class EventEndpointTests
             Assert.Equal(expected, stack.Users);
             Assert.Equal(totalUsers, stack.TotalUsers);
         }
+    }
+
+    [Theory]
+    [InlineData("environment")]
+    [InlineData("Environment")]
+    public async Task GetSubmitEvent_RepeatedEnvironments_PreservesCollectionWithoutDuplicateData(string propertyName)
+    {
+        await SendRequestAsync(request => request
+            .AsTestOrganizationClientUser().AppendPaths("events", "submit")
+            .QueryString("message", "Repeated GET environments")
+            .QueryString("reference", "repeated-environment-reference")
+            .QueryStrings(propertyName, new[] { " Production ", "staging" }).StatusCodeShouldBeOk());
+
+        await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        var ev = Assert.Single((await _eventRepository.GetAllAsync()).Documents,
+            item => item.ReferenceId == "repeated-environment-reference");
+        Assert.Equal("Production", ev.Environment);
+        Assert.NotNull(ev.Data);
+        Assert.Contains(propertyName, ev.Data.Keys, StringComparer.Ordinal);
+        Assert.Equal(new[] { " Production ", "staging" }, JsonSerializer.SerializeToElement(ev.Data[propertyName]).EnumerateArray().Select(value => value.GetString()));
+        Assert.False(ev.Data.ContainsKey("environment1"));
     }
 
     [Fact]

@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json.Nodes;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -461,8 +460,6 @@ public class EventHandler(
 
         string? identity = null;
         string? identityName = null;
-        string? environment = null;
-        string? environmentPropertyName = null;
 
         var exclusions = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList();
         foreach (var kvp in filteredParameters)
@@ -479,10 +476,8 @@ public class EventHandler(
                     if (kvp.Key.AnyWildcardMatches(exclusions, true))
                         continue;
 
-                    environment = kvp.Value.FirstOrDefault();
-                    environmentPropertyName = kvp.Key;
-                    if (kvp.Value.Count > 1)
-                        ev.Data![kvp.Key] = kvp.Value;
+                    ev.Environment = kvp.Value.FirstOrDefault();
+                    ev.Data![kvp.Key] = kvp.Value.Count > 1 ? kvp.Value : kvp.Value.FirstOrDefault();
                     break;
                 case "message":
                     ev.Message = kvp.Value.FirstOrDefault();
@@ -539,19 +534,10 @@ public class EventHandler(
                 charSet = contentTypeHeader.Charset.ToString();
             }
 
-            byte[] eventBytes = ev.GetBytes(serializer);
-            if (environment is not null)
-            {
-                // Keep the original query value until ingestion, where both the normalized
-                // deployment name and legacy custom data are populated together.
-                var submission = JsonNode.Parse(eventBytes)!;
-                submission[environmentPropertyName!] = environment;
-                eventBytes = Encoding.UTF8.GetBytes(submission.ToJsonString());
-            }
-
-            using var stream = new MemoryStream(eventBytes);
+            using var stream = new MemoryStream(ev.GetBytes(serializer));
             await eventPostService.EnqueueAsync(new EventPost(appOptions.EnableArchive)
             {
+                IsNormalized = true,
                 ApiVersion = message.ApiVersion,
                 CharSet = charSet,
                 ContentEncoding = contentEncoding,
