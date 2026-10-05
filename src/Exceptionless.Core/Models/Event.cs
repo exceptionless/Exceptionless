@@ -121,6 +121,11 @@ public class Event : IData, IJsonOnDeserialized
             Data ??= [];
             foreach (var kvp in ExtensionData)
             {
+                // Ingestion leaves deployment environments in extension data to retain the
+                // original key casing and value, including case-distinct legacy properties.
+                if (String.Equals(kvp.Key, nameof(Environment), StringComparison.OrdinalIgnoreCase))
+                    Environment = kvp.Value.ValueKind == JsonValueKind.String ? kvp.Value.GetString() : null;
+
                 object? value = JsonElementConverter.Convert(kvp.Value);
                 EventDataNormalizer.Set(Data, kvp.Key, value);
             }

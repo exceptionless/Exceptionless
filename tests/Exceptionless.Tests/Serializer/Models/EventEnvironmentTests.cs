@@ -105,6 +105,43 @@ public sealed class EventEnvironmentTests : TestWithServices
     }
 
     [Theory]
+    [InlineData("Environment")]
+    [InlineData("ENVIRONMENT")]
+    [InlineData("environment")]
+    public void ParseEvents_LegacyEnvironmentKey_PreservesSubmittedCasing(string propertyName)
+    {
+        var parser = GetService<JsonEventParserPlugin>();
+        var serializer = GetService<ITextSerializer>();
+
+        var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(parser.ParseEvents($$"""{"{{propertyName}}":"west"}""", 2, null)));
+
+        Assert.Equal("west", ev.Environment);
+        using var serialized = JsonDocument.Parse(serializer.SerializeToString(ev)!);
+        var property = Assert.Single(serialized.RootElement.GetProperty("data").EnumerateObject());
+        Assert.Equal(propertyName, property.Name);
+        Assert.Equal("west", property.Value.GetString());
+    }
+
+    [Fact]
+    public void ParseEvents_CaseDistinctEnvironmentKeys_PreservesAllLegacyValues()
+    {
+        var parser = GetService<JsonEventParserPlugin>();
+        var serializer = GetService<ITextSerializer>();
+        const string json = """{"Environment":"west","environment":"east","ENVIRONMENT":{"region":"north"},"data":{"environment":"nested"}}""";
+
+        var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(parser.ParseEvents(json, 2, null)));
+
+        Assert.Null(ev.Environment);
+        using var serialized = JsonDocument.Parse(serializer.SerializeToString(ev)!);
+        var data = serialized.RootElement.GetProperty("data");
+        Assert.Equal(4, data.EnumerateObject().Count());
+        Assert.Equal("nested", data.GetProperty("environment").GetString());
+        Assert.Equal("west", data.GetProperty("Environment1").GetString());
+        Assert.Equal("east", data.GetProperty("environment2").GetString());
+        Assert.Equal("north", data.GetProperty("ENVIRONMENT3").GetProperty("region").GetString());
+    }
+
+    [Theory]
     [InlineData("west", "west")]
     [InlineData(" Production ", "Production")]
     [InlineData("   ", null)]

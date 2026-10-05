@@ -462,6 +462,7 @@ public class EventHandler(
         string? identity = null;
         string? identityName = null;
         string? environment = null;
+        string? environmentPropertyName = null;
 
         var exclusions = project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList();
         foreach (var kvp in filteredParameters)
@@ -479,6 +480,7 @@ public class EventHandler(
                         continue;
 
                     environment = kvp.Value.FirstOrDefault();
+                    environmentPropertyName = kvp.Key;
                     if (kvp.Value.Count > 1)
                         ev.Data![kvp.Key] = kvp.Value;
                     break;
@@ -543,7 +545,7 @@ public class EventHandler(
                 // Keep the original query value until ingestion, where both the normalized
                 // deployment name and legacy custom data are populated together.
                 var submission = JsonNode.Parse(eventBytes)!;
-                submission["environment"] = environment;
+                submission[environmentPropertyName!] = environment;
                 eventBytes = Encoding.UTF8.GetBytes(submission.ToJsonString());
             }
 

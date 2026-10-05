@@ -13,21 +13,23 @@ namespace Exceptionless.Tests.Api.Endpoints;
 public partial class EventEndpointTests
 {
     [Theory]
-    [InlineData("{\"region\":\"west\"}", null)]
-    [InlineData("\"west\"", "west")]
-    [InlineData("\" Production \"", "Production")]
-    [InlineData("\"   \"", null)]
-    [InlineData("\"bad\\nenvironment\"", null)]
-    public async Task PostEvent_LegacyRootEnvironment_PreservesCustomDataThroughStorageAndApi(string environment, string? expected)
+    [InlineData("{\"region\":\"west\"}", null, "environment")]
+    [InlineData("{\"region\":\"west\"}", null, "Environment")]
+    [InlineData("\"west\"", "west", "environment")]
+    [InlineData("\" Production \"", "Production", "environment")]
+    [InlineData("\" Production \"", "Production", "ENVIRONMENT")]
+    [InlineData("\"   \"", null, "environment")]
+    [InlineData("\"bad\\nenvironment\"", null, "environment")]
+    public async Task PostEvent_LegacyRootEnvironment_PreservesCustomDataThroughStorageAndApi(string environment, string? expected, string propertyName)
     {
         await SendRequestAsync(request => request.Post()
             .AsTestOrganizationClientUser().AppendPath("events")
-            .Content(new
+            .Content(new Dictionary<string, object?>
             {
-                type = "log",
-                message = "Legacy environment metadata",
-                reference_id = "legacy-environment-reference",
-                environment = JsonSerializer.Deserialize<JsonElement>(environment)
+                ["type"] = "log",
+                ["message"] = "Legacy environment metadata",
+                ["reference_id"] = "legacy-environment-reference",
+                [propertyName] = JsonSerializer.Deserialize<JsonElement>(environment)
             }).StatusCodeShouldBeAccepted());
 
         await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
@@ -39,23 +41,25 @@ public partial class EventEndpointTests
         var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(events));
         Assert.Equal(expected, ev.Environment);
         Assert.NotNull(ev.Data);
+        Assert.Contains(propertyName, ev.Data.Keys, StringComparer.Ordinal);
         Assert.True(JsonElement.DeepEquals(JsonSerializer.Deserialize<JsonElement>(environment), JsonSerializer.SerializeToElement(ev.Data["environment"])));
         Assert.False(ev.Data.ContainsKey("environment1"));
     }
 
     [Theory]
-    [InlineData(" Production ", "Production")]
-    [InlineData("preview-42", "preview-42")]
-    [InlineData("   ", null)]
-    [InlineData("bad\nenvironment", null)]
-    [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm", null)]
-    public async Task GetSubmitEvent_EnvironmentParameter_TrimsAndPreservesCasing(string environment, string? expected)
+    [InlineData(" Production ", "Production", "environment")]
+    [InlineData(" Production ", "Production", "Environment")]
+    [InlineData("preview-42", "preview-42", "environment")]
+    [InlineData("   ", null, "environment")]
+    [InlineData("bad\nenvironment", null, "environment")]
+    [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm", null, "environment")]
+    public async Task GetSubmitEvent_EnvironmentParameter_TrimsAndPreservesCasing(string environment, string? expected, string propertyName)
     {
         await SendRequestAsync(request => request
             .AsTestOrganizationClientUser().AppendPaths("events", "submit")
             .QueryString("message", "GET environment submission")
             .QueryString("reference", "get-environment-reference")
-            .QueryString("environment", environment).StatusCodeShouldBeOk());
+            .QueryString(propertyName, environment).StatusCodeShouldBeOk());
 
         await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
         await RefreshDataAsync();
@@ -64,6 +68,7 @@ public partial class EventEndpointTests
             item => item.ReferenceId == "get-environment-reference");
         Assert.Equal(expected, ev.Environment);
         Assert.NotNull(ev.Data);
+        Assert.Contains(propertyName, ev.Data.Keys, StringComparer.Ordinal);
         Assert.Equal(environment, ev.Data["environment"]);
         Assert.False(ev.Data.ContainsKey("environment1"));
     }
