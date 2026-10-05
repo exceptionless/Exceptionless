@@ -6,6 +6,8 @@ description: Implement scoped Exceptionless changes and verify the requested beh
 
 Follow `AGENTS.md` and the relevant local skill. Establish the requested result and affected compatibility boundaries, then implement the smallest complete change using current repository patterns.
 
+Frontend work targets the Svelte application in `src/Exceptionless.Web/ClientApp` at `/`. Preserve incoming-link and session compatibility.
+
 Work through dependencies in order. Verify the changed behavior, fix regressions caused by the work, and retry when the result identifies a useful correction. Report persistent blockers with evidence instead of repeating the same attempt.
 
 Complete delivery within the user's authorization. Summarize changes, verification, and remaining gaps. Do not require a separate reviewer or QA agent for every edit.

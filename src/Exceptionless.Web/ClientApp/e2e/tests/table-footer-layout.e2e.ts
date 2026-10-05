@@ -19,7 +19,7 @@ for (const route of ['stack', 'event', 'sessions']) {
                 { height: 844, width: 390 }
             ]) {
                 await page.setViewportSize(viewport);
-                await page.goto(`/next/${route}`);
+                await page.goto(`/${route}`);
                 if (rowCount === 0) {
                     await expect(page.getByText(EMPTY_MESSAGE, { exact: true })).toBeVisible();
                 } else {
@@ -38,7 +38,7 @@ for (const route of ['stack', 'event', 'sessions']) {
 test('long tables keep sticky controls and release extra scroll space after paging to a short result', async ({ page }) => {
     await mockTablePage(page, 21);
     await page.setViewportSize({ height: 800, width: 1280 });
-    await page.goto('/next/stack');
+    await page.goto('/stack');
 
     const toolbar = page.getByRole('toolbar', { name: 'Table controls' });
     const pager = toolbar.getByRole('navigation', { name: 'Table pagination' });

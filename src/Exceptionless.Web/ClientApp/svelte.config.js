@@ -18,9 +18,6 @@ const config = {
             $generated: 'src/lib/generated',
             $lib: 'src/lib',
             $shared: 'src/lib/features/shared'
-        },
-        paths: {
-            base: '/next'
         }
     },
     preprocess: vitePreprocess()
