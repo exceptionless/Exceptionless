@@ -1269,6 +1269,43 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PasswordLogin_LegacyHash_UpgradesWithoutChangingProfile(bool useBasic)
+    {
+        // Arrange
+        var original = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(original);
+        Assert.False(original.Password!.Contains('$'));
+        var originalAccounts = original.OAuthAccounts.ToArray();
+
+        // Act
+        if (useBasic)
+        {
+            await SendRequestAsync(r => r.BasicAuthorization(original.EmailAddress, SampleDataService.TEST_USER_PASSWORD)
+                .AppendPath("users/me").StatusCodeShouldBeOk());
+        }
+        else
+        {
+            await SendRequestAsync(r => r.Post().AppendPath("auth/login")
+                .Content(new Login { Email = original.EmailAddress, Password = SampleDataService.TEST_USER_PASSWORD })
+                .StatusCodeShouldBeOk());
+        }
+
+        // Assert
+        var updated = await _userRepository.GetByIdAsync(original.Id, o => o.Cache(false));
+        Assert.NotNull(updated);
+        Assert.StartsWith("pbkdf2-sha256$600000$", updated.Password);
+        Assert.True(updated.IsCorrectPassword(SampleDataService.TEST_USER_PASSWORD));
+        Assert.Equal(original.FullName, updated.FullName);
+        Assert.Equal(original.IsActive, updated.IsActive);
+        Assert.Equal(original.IsEmailAddressVerified, updated.IsEmailAddressVerified);
+        Assert.Equal(original.OrganizationIds, updated.OrganizationIds);
+        Assert.Equal(originalAccounts, updated.OAuthAccounts);
+        Assert.Equal(updated.Password, (await _userRepository.GetByEmailAddressAsync(original.EmailAddress))!.Password);
+    }
+
     [Fact]
     public async Task PasswordLogin_MissingRemoteIpAddress_StillEnforcesUserLimit()
     {
@@ -1977,7 +2014,8 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.NotEmpty(user.OrganizationIds);
         Assert.NotNull(user.Salt);
         Assert.True(user.IsEmailAddressVerified);
-        Assert.Equal(password.ToSaltedHash(user.Salt), user.Password);
+        Assert.True(user.IsCorrectPassword(password));
+        Assert.StartsWith("pbkdf2-sha256$600000$", user.Password);
         Assert.Contains(organization.Id, user.OrganizationIds);
 
         organization = await _organizationRepository.GetByIdAsync(organization.Id);
@@ -2069,6 +2107,29 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.NotNull(problemDetails);
         Assert.Single(problemDetails.Errors);
         Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "password"));
+    }
+
+    [Fact]
+    public async Task UpgradePasswordHashAsync_StalePassword_DoesNotOverwriteNewPasswordOrProfile()
+    {
+        // Arrange
+        var original = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(original);
+        var changed = original with { FullName = "Updated name" };
+        changed.SetPassword("ChangedPassword2$");
+        await _userRepository.SaveAsync(changed, o => o.ImmediateConsistency());
+        string salt = PasswordHasher.CreateSalt();
+
+        // Act
+        var result = await _userRepository.UpgradePasswordHashAsync(original, salt, PasswordHasher.Hash(SampleDataService.TEST_USER_PASSWORD, salt));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(changed.Password, result.Password);
+        Assert.Equal(changed.Salt, result.Salt);
+        Assert.Equal(changed.FullName, result.FullName);
+        Assert.True(result.IsCorrectPassword("ChangedPassword2$"));
+        Assert.False(result.IsCorrectPassword(SampleDataService.TEST_USER_PASSWORD));
     }
 
     private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId)
