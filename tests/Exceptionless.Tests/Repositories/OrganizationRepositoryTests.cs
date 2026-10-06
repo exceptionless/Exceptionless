@@ -140,20 +140,35 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
         Assert.Equal(organization.Id, Assert.Single(results.Documents).Id);
     }
 
-    [Fact]
-    public async Task GetByFilter_AppFilter_ReturnsOnlyAllowedOrganizations()
+    [Theory]
+    [InlineData(null, new[] { "Beta Organization", "Zulu Organization", "alpha Organization" })]
+    [InlineData("-name", new[] { "alpha Organization", "Zulu Organization", "Beta Organization" })]
+    public async Task GetByFilterAsync_WithSearchAfterPaging_ReturnsOnlyAllowedOrganizationsInRequestedOrder(string? sort, string[] expectedNames)
     {
         // Arrange
-        var organization1 = new Organization { Name = "Allowed Organization", PlanId = _plans.FreePlan.Id };
-        var organization2 = new Organization { Name = "Blocked Organization", PlanId = _plans.FreePlan.Id };
-        await _repository.AddAsync([organization1, organization2], o => o.ImmediateConsistency());
+        var zulu = new Organization { Name = "Zulu Organization", PlanId = _plans.FreePlan.Id };
+        var alpha = new Organization { Name = "alpha Organization", PlanId = _plans.FreePlan.Id };
+        var beta = new Organization { Name = "Beta Organization", PlanId = _plans.FreePlan.Id };
+        var blocked = new Organization { Name = "Aardvark Organization", PlanId = _plans.FreePlan.Id };
+        await _repository.AddAsync([zulu, alpha, beta, blocked], o => o.ImmediateConsistency());
+        var filter = new AppFilter(new[] { zulu, alpha, beta }) { IsUserOrganizationsFilter = true };
 
         // Act
-        var results = await _repository.GetByFilterAsync(new AppFilter(organization1), null, null);
+        var results = await _repository.GetByFilterAsync(filter, null, sort, o => o.SearchAfterPaging().PageLimit(2));
+        var firstPage = results.Documents.ToList();
+        bool hasSecondPage = await results.NextPageAsync();
+        var secondPage = results.Documents.ToList();
+        bool hasThirdPage = await results.NextPageAsync();
 
         // Assert
-        Assert.Single(results.Documents);
-        Assert.Equal(organization1.Id, results.Documents.First().Id);
+        Assert.Equal(2, firstPage.Count);
+        Assert.True(hasSecondPage);
+        Assert.Single(secondPage);
+        Assert.False(hasThirdPage);
+        var organizations = firstPage.Concat(secondPage).ToList();
+        Assert.Equal(expectedNames, organizations.Select(organization => organization.Name));
+        Assert.Equal(3, organizations.Select(organization => organization.Id).Distinct().Count());
+        Assert.DoesNotContain(organizations, organization => String.Equals(organization.Id, blocked.Id, StringComparison.Ordinal));
     }
 
     [Fact]
