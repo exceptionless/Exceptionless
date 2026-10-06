@@ -112,4 +112,34 @@ public sealed class PredefinedSavedViewContentHasherTests
         // Assert
         Assert.Equal(originalHash, reorderedHash);
     }
+
+    [Fact]
+    public void GetContentHash_ColumnWrapSettingDiffers_ReturnsDifferentHash()
+    {
+        // Arrange
+        var singleLine = new SavedView
+        {
+            Name = "Errors",
+            Slug = "errors",
+            ViewType = "stacks",
+            Columns = new Dictionary<string, SavedViewColumnSettings>
+            {
+                ["summary"] = new() { Position = 0, Visible = true }
+            }
+        };
+        var wrapped = singleLine with
+        {
+            Columns = new Dictionary<string, SavedViewColumnSettings>
+            {
+                ["summary"] = new() { Position = 0, Visible = true, Wrap = true }
+            }
+        };
+
+        // Act
+        string singleLineHash = PredefinedSavedViewContentHasher.GetContentHash(singleLine);
+        string wrappedHash = PredefinedSavedViewContentHasher.GetContentHash(wrapped);
+
+        // Assert
+        Assert.NotEqual(singleLineHash, wrappedHash);
+    }
 }

@@ -125,6 +125,7 @@
     watch(
         [() => queryParams.filter],
         ([filter]) => {
+            table.resetRowSelection();
             filters = sanitizeStackFilters(getFiltersFromCache(filterCacheKey(filter), filter), true);
         },
         {
@@ -137,6 +138,10 @@
         queryParams.page ??= 1;
         queryParams.sort ??= '-last';
     });
+
+    function handleTagClick(tag: string) {
+        onFilterChanged(new TagFilter([tag]));
+    }
 
     function onFilterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         if (!isStackFilterSupported(addedOrUpdated)) {
@@ -167,13 +172,13 @@
     function updateFilters(updatedFilters: FacetedFilter.IFilter[]): void {
         const sanitizedFilters = sanitizeStackFilters(updatedFilters);
         const filter = toFilter(sanitizedFilters);
+        if (queryParams.filter !== filter) {
+            table.resetRowSelection();
+        }
+
         updateFilterCache(filterCacheKey(filter), sanitizedFilters);
         queryParams.page = 1;
         queryParams.filter = filter;
-    }
-
-    function handleTagClick(tag: string) {
-        onFilterChanged(new TagFilter([tag]));
     }
 
     const stacksQueryParameters: GetProjectStacksParams = $state({
@@ -214,21 +219,6 @@
         }
     });
 
-    function rowHref(row: Stack): string {
-        return resolve('/(app)/project/[projectId]/stacks/[stackId]', {
-            projectId: projectId ?? '',
-            stackId: row.id
-        });
-    }
-
-    function rowClick(row: Stack): void {
-        selectedStackId = row.id;
-    }
-
-    async function handleStackFilterChanged(filter: IFilter): Promise<void> {
-        await redirectToEventsWithFilter(organization.current, filter, getEventsNavigationOptionsForFilter(filter));
-    }
-
     function handleStackError(problem: ProblemDetails): void {
         selectedStackId = undefined;
         if (!showBillingDialogOnUpgradeProblem(problem, organization.current)) {
@@ -236,20 +226,25 @@
         }
     }
 
-    const table = createTable(getTableOptions(stacksQueryParameters, stacksQuery, handleTagClick));
-
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
-
-    function reset() {
-        table.resetRowSelection();
-        table.setPageIndex(0);
+    async function handleStackFilterChanged(filter: IFilter): Promise<void> {
+        await redirectToEventsWithFilter(organization.current, filter, getEventsNavigationOptionsForFilter(filter));
     }
 
-    async function handleRefresh() {
-        if (!canRefresh) {
-            reset();
-        }
+    function rowClick(row: Stack): void {
+        selectedStackId = row.id;
+    }
 
+    function rowHref(row: Stack): string {
+        return resolve('/(app)/project/[projectId]/stacks/[stackId]', {
+            projectId: projectId ?? '',
+            stackId: row.id
+        });
+    }
+
+    const table = createTable(getTableOptions(stacksQueryParameters, stacksQuery, handleTagClick));
+
+    async function handleRefresh() {
+        table.resetRowSelection();
         await stacksQuery.refetch();
     }
 
@@ -267,40 +262,36 @@
         }
     }
 
+    function reset() {
+        table.resetRowSelection();
+        table.setPageIndex(0);
+    }
+
     useEventListener(document, 'StackChanged', (event) => onStackChanged((event as CustomEvent).detail));
 </script>
 
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <Muted class="w-full shrink-0">Manage project stacks, including restoring ignored or discarded stacks</Muted>
-        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <StackFacetedFilterBuilder includeProject={false} />
             </FacetedFilter.Root>
         </div>
         <div class="ml-auto flex shrink-0 items-start gap-2">
-            <RefreshButton
-                onRefresh={handleRefresh}
-                isRefreshing={stacksQuery.isLoading}
-                size="icon-lg"
-                title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
-            />
+            <RefreshButton onRefresh={handleRefresh} isRefreshing={stacksQuery.isFetching} size="icon-lg" title="Refresh results" />
             <DataTableViewOptions size="icon-lg" {table} />
         </div>
     </div>
 
     <StacksDataTable bind:limit={queryParams.limit!} isLoading={stacksQuery.isLoading} {rowClick} {rowHref} {table}>
         {#snippet footerChildren()}
-            <div class="h-9 min-w-35">
+            <div class="flex min-w-0 items-center gap-3">
                 <TableStacksBulkActionsDropdownMenu {table} />
+                <DataTable.Selection {table} />
             </div>
 
-            <DataTable.Selection {table} />
-            <DataTable.PageSize bind:value={queryParams.limit!} {table}></DataTable.PageSize>
-            <div class="flex items-center space-x-6 lg:space-x-8">
-                <DataTable.PageCount {table} />
-                <DataTable.Pagination {table} />
-            </div>
+            <DataTable.Pager bind:value={queryParams.limit!} {table} variant="floating" />
         {/snippet}
     </StacksDataTable>
 </div>

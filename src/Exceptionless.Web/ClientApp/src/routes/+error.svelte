@@ -21,30 +21,6 @@
     const primaryHref = $derived(isAuthenticated ? resolve('/(app)/event') : resolve('/(auth)/login'));
     const primaryLabel = $derived(isAuthenticated ? 'Open Events' : 'Log in');
 
-    function getErrorTitle(status: number): string {
-        if (status === 403) {
-            return "You don't have access to this page";
-        }
-
-        if (status === 404) {
-            return "We couldn't find that page";
-        }
-
-        if (status === 410) {
-            return 'That page is no longer available';
-        }
-
-        if (status === 426) {
-            return 'This page needs a plan change';
-        }
-
-        if (status >= 500) {
-            return 'Something went wrong on our side';
-        }
-
-        return 'This page hit an error';
-    }
-
     function getErrorMessage(status: number, fallback?: string): string {
         if (status === 403) {
             return 'Your account is signed in, but it does not have permission to open this resource.';
@@ -67,6 +43,30 @@
         }
 
         return fallback ?? 'Something unexpected happened while opening this page.';
+    }
+
+    function getErrorTitle(status: number): string {
+        if (status === 403) {
+            return "You don't have access to this page";
+        }
+
+        if (status === 404) {
+            return "We couldn't find that page";
+        }
+
+        if (status === 410) {
+            return 'That page is no longer available';
+        }
+
+        if (status === 426) {
+            return 'This page needs a plan change';
+        }
+
+        if (status >= 500) {
+            return 'Something went wrong on our side';
+        }
+
+        return 'This page hit an error';
     }
 </script>
 

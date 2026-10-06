@@ -82,22 +82,6 @@
         }
     });
 
-    async function addWebhook(webhook: NewWebhook) {
-        toast.dismiss(toastId);
-
-        try {
-            await newWebhook.mutateAsync(webhook);
-            toastId = toast.success('Webhook added successfully');
-        } catch (error) {
-            if (showBillingDialogOnUpgradeProblem(error, organization.current, () => addWebhook(webhook))) {
-                return;
-            }
-
-            toastId = toast.error('Error adding webhook. Please try again.');
-            throw error;
-        }
-    }
-
     async function addSlack() {
         toast.dismiss(toastId);
 
@@ -111,6 +95,22 @@
             }
 
             toastId = toast.error('Error connecting Slack integration. Please try again.');
+        }
+    }
+
+    async function addWebhook(webhook: NewWebhook) {
+        toast.dismiss(toastId);
+
+        try {
+            await newWebhook.mutateAsync(webhook);
+            toastId = toast.success('Webhook added successfully');
+        } catch (error) {
+            if (showBillingDialogOnUpgradeProblem(error, organization.current, () => addWebhook(webhook))) {
+                return;
+            }
+
+            toastId = toast.error('Error adding webhook. Please try again.');
+            throw error;
         }
     }
 

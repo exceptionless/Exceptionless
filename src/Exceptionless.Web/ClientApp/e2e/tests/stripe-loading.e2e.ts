@@ -22,7 +22,7 @@ test('authenticated application pages defer loading Stripe until billing is open
         }
     });
 
-    await page.goto('/next/stack/all');
+    await page.goto('/stack/all');
     await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
     await expect(page.getByTitle('Refresh results').locator('svg')).not.toHaveClass(/animate-spin/);
     await page.waitForTimeout(1_000);

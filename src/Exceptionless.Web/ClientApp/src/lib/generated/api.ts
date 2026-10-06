@@ -15,6 +15,105 @@ export enum BillingStatus {
   Unpaid = 4,
 }
 
+export interface AdminAssistantOrganizationUsage {
+  organization_id: string;
+  organization_name: string;
+  plan_id: string;
+  /** @format date-time */
+  last_used_utc: string;
+  /** @format int64 */
+  turns: number;
+  /** @format int64 */
+  completed: number;
+  /** @format int64 */
+  failed: number;
+  /** @format int64 */
+  cancelled: number;
+  /** @format int64 */
+  provider_requests: number;
+  /** @format int64 */
+  tool_calls: number;
+  /** @format int64 */
+  prompt_tokens: number;
+  /** @format int64 */
+  completion_tokens: number;
+  /** @format double */
+  cost_usd: number;
+  /** @format int64 */
+  blocked_by_concurrency: number;
+  /** @format int64 */
+  blocked_by_rate_limit: number;
+  /** @format int64 */
+  blocked_by_token_limit: number;
+  /** @format int64 */
+  blocked_by_cost_limit: number;
+  /** @format int64 */
+  monthly_token_limit?: null | number;
+  /** @format double */
+  monthly_cost_limit_usd?: null | number;
+  /** @format double */
+  token_utilization?: null | number;
+  /** @format double */
+  cost_utilization?: null | number;
+}
+
+export interface AdminAssistantUsageResponse {
+  /** @format date-time */
+  month: string;
+  /** @format int64 */
+  active_organizations: number;
+  /** @format int64 */
+  turns: number;
+  /** @format int64 */
+  prompt_tokens: number;
+  /** @format int64 */
+  completion_tokens: number;
+  /** @format double */
+  cost_usd: number;
+  organizations: AdminAssistantOrganizationUsage[];
+}
+
+export interface AssistantAccessResponse {
+  enabled: boolean;
+  has_access: boolean;
+  upgrade_required: boolean;
+  message?: null | string;
+  minimum_plan_id?: null | string;
+}
+
+export interface AssistantChatMessage {
+  role: string;
+  content: string;
+  is_suggested_action?: null | boolean;
+  suggested_action_label?: null | string;
+  suggested_action_path?: null | string;
+}
+
+export interface AssistantChatRequest {
+  messages: AssistantChatMessage[];
+  organization_id?: null | string;
+  project_id?: null | string;
+  path?: null | string;
+  conversation_id?: null | string;
+}
+
+export interface AssistantConversationSharingSettings {
+  enabled: boolean;
+  default_enabled: boolean;
+  is_overridden: boolean;
+}
+
+export interface AssistantModelSettings {
+  model: string;
+  configured_model: string;
+  is_overridden: boolean;
+  enabled: boolean;
+  configured_enabled: boolean;
+  is_enabled_overridden: boolean;
+  is_configured: boolean;
+  conversation_sharing_default_enabled: boolean;
+}
+
 export interface BillingPlan {
   id: string;
   name: string;
@@ -63,12 +162,28 @@ export interface CountResult {
   data?: null | object;
 }
 
+export interface EventSubmissionSettings {
+  enabled: boolean;
+  configured_enabled: boolean;
+  is_overridden: boolean;
+}
+
 export interface ExternalAuthInfo {
   clientId: string;
   code: string;
   /** @format uri */
   redirectUri: string;
   inviteToken?: null | string;
+}
+
+export interface HttpValidationProblemDetails {
+  type?: null | string;
+  title?: null | string;
+  /** @format int32 */
+  status?: null | number;
+  detail?: null | string;
+  instance?: null | string;
+  errors: Record<string, string[]>;
 }
 
 /** Base interface for aggregation results. Concrete types include ValueAggregate, BucketAggregate, StatsAggregate, etc. See client-side type definitions for full type information. */
@@ -386,6 +501,11 @@ export interface ProblemDetails {
   instance?: null | string;
 }
 
+export interface RecordProductTourResult {
+  /** @format date-time */
+  recorded_utc: string;
+}
+
 export interface ResetPasswordModel {
   password_reset_token: string;
   password: string;
@@ -398,6 +518,8 @@ export interface SavedViewColumnSettings {
   visible?: null | boolean;
   /** Whether the column fills the table's remaining width. Null or false means use fixed-width behavior. */
   auto_fill?: null | boolean;
+  /** Whether cell content wraps onto multiple lines. Null or false means keep content on one line. */
+  wrap?: null | boolean;
   /**
    * Zero-based display position. Null means use the table default order.
    * @format int32
@@ -515,6 +637,22 @@ export interface TokenResult {
   token: string;
 }
 
+export interface UpdateAssistantConversationSharing {
+  enabled?: null | boolean;
+}
+
+export interface UpdateAssistantConversationSharingSettings {
+  enabled: boolean;
+}
+
+export interface UpdateAssistantEnabledSettings {
+  enabled?: null | boolean;
+}
+
+export interface UpdateAssistantSettings {
+  model?: null | string;
+}
+
 export interface UpdateEmailAddressResult {
   is_verified: boolean;
 }
@@ -524,6 +662,10 @@ export interface UpdateEvent {
   /** @format email */
   email_address?: null | string;
   description?: null | string;
+}
+
+export interface UpdateEventSubmissionSettings {
+  enabled?: null | boolean;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -544,6 +686,15 @@ export interface UpdateSavedView {
   columns?: null | Record<string, SavedViewColumnSettings>;
   show_stats?: null | boolean;
   show_chart?: null | boolean;
+}
+
+export interface UpdateSavedViewDefault {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  saved_view_id?: null | string;
+}
+
+export interface UpdateSavedViewOrder {
+  saved_view_ids: string[];
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -604,12 +755,16 @@ export interface User {
   /** @format date-time */
   password_reset_token_expiration: string;
   o_auth_accounts: OAuthAccount[];
+  organization_preferences: UserOrganizationPreference[];
+  saved_view_orders: UserSavedViewOrderPreference[];
+  product_tours: object;
   /** Gets or sets the users Full Name. */
   full_name: string;
   /** @format email */
   email_address: string;
   avatar_file_name?: null | string;
   email_notifications_enabled: boolean;
+  assistant_conversation_sharing_enabled?: null | boolean;
   is_email_address_verified: boolean;
   verify_email_address_token?: null | string;
   /** @format date-time */
@@ -631,10 +786,27 @@ export interface UserDescription {
   data?: null | Record<string, unknown>;
 }
 
+export interface UserOrganizationPreference {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  default_saved_view_id: string;
+}
+
+export interface UserSavedViewOrderPreference {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  view_type: string;
+  saved_view_ids: string[];
+}
+
 export interface ViewCurrentUser {
   hash?: null | string;
   has_local_account: boolean;
   o_auth_accounts: OAuthAccount[];
+  organization_preferences: UserOrganizationPreference[];
+  saved_view_orders: UserSavedViewOrderPreference[];
+  product_tours: object;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   organization_ids: string[];
@@ -681,6 +853,8 @@ export interface ViewOrganization {
   /** @format date-time */
   updated_utc: string;
   name: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  default_saved_view_id?: null | string;
   icon_url?: null | string;
   plan_id: string;
   plan_name: string;
@@ -763,6 +937,7 @@ export interface ViewSavedView {
   created_by_user_id: string;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   updated_by_user_id?: null | string;
+  predefined_key?: null | string;
   filter?: null | string;
   filter_definitions?: null | string;
   columns?: null | Record<string, SavedViewColumnSettings>;

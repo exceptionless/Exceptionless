@@ -61,25 +61,81 @@ public class CleanupDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanCleanupSuspendedTokens()
+    public async Task RunAsync_AbandonedOAuthApplications_RemovesOnlyOldAutomaticRegistrationsWithoutAuthorization()
     {
-        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
-        organization.IsSuspended = true;
-        organization.SuspensionDate = DateTime.UtcNow;
-        organization.SuspendedByUserId = TestConstants.UserId;
-        organization.SuspensionCode = Core.Models.SuspensionCode.Billing;
-        organization.SuspensionNotes = "blah";
-        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
-
-        await _projectRepository.AddAsync(_projectData.GenerateSampleProject());
-        var token = await _tokenRepository.AddAsync(_tokenData.GenerateSampleApiKeyToken(), o => o.ImmediateConsistency());
-        Assert.False(token.IsSuspended);
+        var repository = GetService<IOAuthApplicationRepository>();
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var abandoned = CreateApplication("abandoned");
+        var legacy = CreateApplication("legacy");
+        var recent = CreateApplication("recent");
+        var authorized = CreateApplication("authorized");
+        authorized.OrganizationIds.Add(TestConstants.OrganizationId);
+        var manual = CreateApplication("manual");
+        manual.CreatedByUserId = TestConstants.UserId;
+        var edited = CreateApplication("edited");
+        edited.UpdatedByUserId = TestConstants.UserId;
+        var disabled = CreateApplication("disabled");
+        disabled.IsDisabled = true;
+        var legacyWithToken = CreateApplication("legacy-with-token");
+        var missingDate = CreateApplication("missing-date");
+        var applications = new[] { abandoned, legacy, recent, authorized, manual, edited, disabled, legacyWithToken, missingDate };
+        await repository.AddAsync(applications);
+        foreach (var application in applications)
+            await repository.PatchAsync(application.Id, new PartialPatch(new { updated_utc = utcNow.AddHours(-25) }));
+        await repository.PatchAsync(recent.Id, new PartialPatch(new { updated_utc = utcNow.AddHours(-23) }));
+        await repository.PatchAsync(legacy.Id, new ScriptPatch("ctx._source.remove('organization_ids'); ctx._source.remove('updated_by_user_id');"));
+        // Preserve the old timestamp explicitly because patches normally advance it.
+        await repository.PatchAsync(legacy.Id, new PartialPatch(new { updated_utc = utcNow.AddHours(-25) }));
+        await repository.PatchAsync(missingDate.Id, new PartialPatch(new Dictionary<string, object?> { ["updated_utc"] = null }));
+        var legacyToken = await _oauthTokenRepository.AddAsync(new OAuthToken
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            ClientId = legacyWithToken.ClientId,
+            UserId = TestConstants.UserId,
+            GrantId = StringExtensions.GetNewToken(),
+            AccessTokenHash = OAuthService.CreateTokenHash(StringExtensions.GetNewToken()),
+            Scopes = [AuthorizationRoles.McpRead],
+            OrganizationIds = [TestConstants.OrganizationId],
+            Resource = "http://localhost:7110/mcp",
+            ExpiresUtc = utcNow.AddHours(-2),
+            IsDisabled = true,
+            CreatedBy = TestConstants.UserId,
+            CreatedUtc = utcNow.AddDays(-2),
+            UpdatedUtc = utcNow
+        });
+        await _oauthTokenRepository.PatchAsync(legacyToken.Id, new PartialPatch(new { updated_utc = utcNow.AddDays(-2) }));
 
         await _job.RunAsync(TestCancellationToken);
 
-        token = await _tokenRepository.GetByIdAsync(token.Id);
-        Assert.NotNull(token);
-        Assert.True(token.IsSuspended);
+        Assert.Null(await repository.GetByIdAsync(abandoned.Id));
+        Assert.Null(await repository.GetByIdAsync(legacy.Id));
+        foreach (var application in new[] { recent, authorized, manual, edited, disabled, legacyWithToken, missingDate })
+            Assert.NotNull(await repository.GetByIdAsync(application.Id));
+        Assert.Null(await _oauthTokenRepository.GetByIdAsync(legacyToken.Id));
+        var backfilled = await repository.GetByIdAsync(legacyWithToken.Id);
+        Assert.NotNull(backfilled);
+        Assert.Contains(TestConstants.OrganizationId, backfilled.OrganizationIds);
+
+        // The deleted registration can be recreated normally on a subsequent connection attempt.
+        var registration = await GetService<OAuthService>().RegisterClientAsync(new OAuthClientRegistrationRequest
+        {
+            ClientName = abandoned.Name,
+            RedirectUris = abandoned.RedirectUris
+        });
+        Assert.NotNull(registration.Response);
+        Assert.NotNull(await repository.GetByClientIdAsync(registration.Response.ClientId));
+
+        OAuthApplication CreateApplication(string name) => new()
+        {
+            ClientId = $"dcr_cleanup-{name}",
+            Name = name,
+            RedirectUris = ["http://localhost:54321/callback"],
+            Scopes = [AuthorizationRoles.McpRead],
+            CreatedByUserId = OAuthApplication.SystemUserId,
+            UpdatedByUserId = OAuthApplication.SystemUserId,
+            CreatedUtc = utcNow.AddDays(-2),
+            UpdatedUtc = utcNow.AddHours(-25)
+        };
     }
 
     [Fact]
@@ -133,41 +189,6 @@ public class CleanupDataJobTests : IntegrationTestsBase
                 UpdatedUtc = updatedUtc
             };
         }
-    }
-
-    [Fact]
-    public async Task CanCleanupSoftDeletedOrganization()
-    {
-        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
-        organization.IsDeleted = true;
-        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
-
-        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
-        var deletedProject = _projectData.GenerateProject(generateId: true, organizationId: organization.Id, name: "Deleted project");
-        deletedProject.IsDeleted = true;
-        await _projectRepository.AddAsync(deletedProject, o => o.ImmediateConsistency());
-        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
-        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
-        string iconPath = OrganizationStoragePaths.GetProfileImagePath(organization.Id, "icon.png");
-        using var stream = new MemoryStream([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
-        await _fileStorage.SaveFileAsync(iconPath, stream, TestCancellationToken);
-        string sourceMapPath = $"source-maps/{project.Id}/app.map";
-        await using (var sourceMap = new MemoryStream([0x7B, 0x7D]))
-            await _fileStorage.SaveFileAsync(sourceMapPath, sourceMap, TestCancellationToken);
-        string deletedProjectSourceMapPath = $"source-maps/{deletedProject.Id}/app.map";
-        await using (var sourceMap = new MemoryStream([0x7B, 0x7D]))
-            await _fileStorage.SaveFileAsync(deletedProjectSourceMapPath, sourceMap, TestCancellationToken);
-
-        await _job.RunAsync(TestCancellationToken);
-
-        Assert.Null(await _organizationRepository.GetByIdAsync(organization.Id, o => o.IncludeSoftDeletes()));
-        Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
-        Assert.Null(await _projectRepository.GetByIdAsync(deletedProject.Id, o => o.IncludeSoftDeletes()));
-        Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
-        Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
-        Assert.False(await _fileStorage.ExistsAsync(iconPath));
-        Assert.False(await _fileStorage.ExistsAsync(sourceMapPath));
-        Assert.False(await _fileStorage.ExistsAsync(deletedProjectSourceMapPath));
     }
 
     [Fact]
@@ -250,96 +271,6 @@ public class CleanupDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanCleanupSoftDeletedProject()
-    {
-        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
-
-        var project = _projectData.GenerateSampleProject();
-        project.IsDeleted = true;
-        await _projectRepository.AddAsync(project, o => o.ImmediateConsistency());
-
-        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
-        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
-        string sourceMapPath = $"source-maps/{project.Id}/app.map";
-        await using (var sourceMap = new MemoryStream([0x7B, 0x7D]))
-            await _fileStorage.SaveFileAsync(sourceMapPath, sourceMap, TestCancellationToken);
-
-        await _job.RunAsync(TestCancellationToken);
-
-        Assert.NotNull(await _organizationRepository.GetByIdAsync(organization.Id));
-        Assert.Null(await _projectRepository.GetByIdAsync(project.Id, o => o.IncludeSoftDeletes()));
-        Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
-        Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
-        Assert.False(await _fileStorage.ExistsAsync(sourceMapPath));
-    }
-
-    [Fact]
-    public async Task CanCleanupSoftDeletedStack()
-    {
-        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateSampleOrganization(_billingManager, _plans), o => o.ImmediateConsistency());
-        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
-
-        var stack = _stackData.GenerateSampleStack();
-        stack.IsDeleted = true;
-        await _stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
-
-        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
-
-        await _job.RunAsync(TestCancellationToken);
-
-        Assert.NotNull(await _organizationRepository.GetByIdAsync(organization.Id));
-        Assert.NotNull(await _projectRepository.GetByIdAsync(project.Id));
-        Assert.Null(await _stackRepository.GetByIdAsync(stack.Id, o => o.IncludeSoftDeletes()));
-        Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
-    }
-
-    [Fact]
-    public async Task CanCleanupEventsOutsideOfRetentionPeriod()
-    {
-        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
-        _billingManager.ApplyBillingPlan(organization, _plans.FreePlan);
-        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
-
-        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
-        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
-
-        var options = GetService<AppOptions>();
-        var date = DateTimeOffset.UtcNow.SubtractDays(options.MaximumRetentionDays);
-        var persistentEvent = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization.Id, project.Id, stack.Id, occurrenceDate: date), o => o.ImmediateConsistency());
-
-        await _job.RunAsync(TestCancellationToken);
-
-        Assert.NotNull(await _organizationRepository.GetByIdAsync(organization.Id));
-        Assert.NotNull(await _projectRepository.GetByIdAsync(project.Id));
-        Assert.NotNull(await _stackRepository.GetByIdAsync(stack.Id));
-        Assert.Null(await _eventRepository.GetByIdAsync(persistentEvent.Id, o => o.IncludeSoftDeletes()));
-    }
-
-    [Fact]
-    public async Task CanDeleteOrphanedEventsByStack()
-    {
-        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
-        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
-        var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
-
-        var stack = await _stackRepository.AddAsync(_stackData.GenerateSampleStack(), o => o.ImmediateConsistency());
-        await _eventRepository.AddAsync(_eventData.GenerateEvents(5000, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
-
-        var orphanedEvents = _eventData.GenerateEvents(10000, organization.Id, project.Id).ToList();
-        orphanedEvents.ForEach(e => e.StackId = ObjectId.GenerateNewId().ToString());
-
-        await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
-
-        var eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
-        Assert.Equal(15000, eventCount);
-
-        await GetService<CleanupOrphanedDataJob>().RunAsync(TestCancellationToken);
-
-        eventCount = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
-        Assert.Equal(5000, eventCount);
-    }
-
-    [Fact]
     public async Task CanCleanupSuspendedTokens_MultiTenant_OnlySuspendedOrganizationTokensAffected()
     {
         // Arrange - Organization 1 is suspended, Organization 2 is active
@@ -355,98 +286,29 @@ public class CleanupDataJobTests : IntegrationTestsBase
 
         // Tokens for both organizations
         var token1 = _tokenData.GenerateToken(generateId: true, organizationId: organization1.Id, projectId: TestConstants.ProjectId);
+        var anotherToken = _tokenData.GenerateToken(generateId: true, organizationId: organization1.Id, projectId: TestConstants.ProjectId);
+        var alreadySuspendedToken = _tokenData.GenerateToken(generateId: true, organizationId: organization1.Id, projectId: TestConstants.ProjectId);
+        alreadySuspendedToken.IsSuspended = true;
         var token2 = _tokenData.GenerateToken(generateId: true, organizationId: organization2.Id, projectId: TestConstants.ProjectIdWithNoRoles);
-        await _tokenRepository.AddAsync([token1, token2], o => o.ImmediateConsistency());
+        await _tokenRepository.AddAsync([token1, anotherToken, alreadySuspendedToken, token2], o => o.ImmediateConsistency());
 
         Assert.False(token1.IsSuspended);
+        Assert.False(anotherToken.IsSuspended);
         Assert.False(token2.IsSuspended);
 
         // Act
         await _job.RunAsync(TestCancellationToken);
 
-        // Assert - Only Organization 1's token is suspended
-        var updatedToken1 = await _tokenRepository.GetByIdAsync(token1.Id);
-        var updatedToken2 = await _tokenRepository.GetByIdAsync(token2.Id);
-        Assert.NotNull(updatedToken1);
-        Assert.NotNull(updatedToken2);
-        Assert.True(updatedToken1.IsSuspended);
-        Assert.False(updatedToken2.IsSuspended);
-    }
-
-    [Fact]
-    public async Task CanCleanupSuspendedTokens_AlreadySuspendedToken_RemainsUnchanged()
-    {
-        // Arrange - Organization suspended, token already marked as suspended
-        var organization = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
-        organization.IsSuspended = true;
-        organization.SuspensionDate = DateTime.UtcNow;
-        organization.SuspendedByUserId = TestConstants.UserId;
-        organization.SuspensionCode = Core.Models.SuspensionCode.Abuse;
-        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
-
-        var token = _tokenData.GenerateToken(generateId: true, organizationId: organization.Id, projectId: TestConstants.ProjectId);
-        token.IsSuspended = true;
-        await _tokenRepository.AddAsync(token, o => o.ImmediateConsistency());
-
-        // Act
-        await _job.RunAsync(TestCancellationToken);
-
-        // Assert - Token remains suspended
-        var updatedToken = await _tokenRepository.GetByIdAsync(token.Id);
-        Assert.NotNull(updatedToken);
-        Assert.True(updatedToken.IsSuspended);
-    }
-
-    [Fact]
-    public async Task CanCleanupSuspendedTokens_MultipleTokensPerOrganization_AllGetSuspended()
-    {
-        // Arrange - Suspended organization with many tokens
-        var organization = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
-        organization.IsSuspended = true;
-        organization.SuspensionDate = DateTime.UtcNow;
-        organization.SuspendedByUserId = TestConstants.UserId;
-        organization.SuspensionCode = Core.Models.SuspensionCode.Billing;
-        await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
-
-        var tokens = new List<Token>();
-        for (int i = 0; i < 10; i++)
-            tokens.Add(_tokenData.GenerateToken(generateId: true, organizationId: organization.Id, projectId: TestConstants.ProjectId));
-        await _tokenRepository.AddAsync(tokens, o => o.ImmediateConsistency());
-
-        // Act
-        await _job.RunAsync(TestCancellationToken);
-
-        // Assert - All 10 tokens suspended
-        foreach (var t in tokens)
+        // Every token in the suspended organization stays or becomes suspended.
+        foreach (var token in new[] { token1, anotherToken, alreadySuspendedToken })
         {
-            var updated = await _tokenRepository.GetByIdAsync(t.Id);
-            Assert.NotNull(updated);
-            Assert.True(updated.IsSuspended);
+            var updatedToken = await _tokenRepository.GetByIdAsync(token.Id);
+            Assert.NotNull(updatedToken);
+            Assert.True(updatedToken.IsSuspended);
         }
-    }
-
-    [Fact]
-    public async Task CanCleanupSuspendedTokens_NoSuspendedOrganizations_NoTokensModified()
-    {
-        // Arrange - Two active organizations with tokens
-        var organization1 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
-        var organization2 = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId2);
-        await _organizationRepository.AddAsync([organization1, organization2], o => o.ImmediateConsistency());
-
-        var token1 = _tokenData.GenerateToken(generateId: true, organizationId: organization1.Id, projectId: TestConstants.ProjectId);
-        var token2 = _tokenData.GenerateToken(generateId: true, organizationId: organization2.Id, projectId: TestConstants.ProjectIdWithNoRoles);
-        await _tokenRepository.AddAsync([token1, token2], o => o.ImmediateConsistency());
-
-        // Act
-        await _job.RunAsync(TestCancellationToken);
-
-        // Assert - No tokens suspended
-        var updated1 = await _tokenRepository.GetByIdAsync(token1.Id);
-        var updated2 = await _tokenRepository.GetByIdAsync(token2.Id);
-        Assert.NotNull(updated1);
-        Assert.NotNull(updated2);
-        Assert.False(updated1.IsSuspended);
-        Assert.False(updated2.IsSuspended);
+        var updatedToken2 = await _tokenRepository.GetByIdAsync(token2.Id);
+        Assert.NotNull(updatedToken2);
+        Assert.False(updatedToken2.IsSuspended);
     }
 
     [Fact]
@@ -469,12 +331,32 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var event1 = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization1.Id, project1.Id, stack1.Id), o => o.ImmediateConsistency());
         var event2 = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization2.Id, project2.Id, stack2.Id), o => o.ImmediateConsistency());
 
+        // Include both active and already-deleted projects in the deleted organization.
+        var deletedProject = _projectData.GenerateProject(generateId: true, organizationId: organization1.Id);
+        deletedProject.IsDeleted = true;
+        await _projectRepository.AddAsync(deletedProject, o => o.ImmediateConsistency());
+        string[] deletedFiles = [
+            OrganizationStoragePaths.GetProfileImagePath(organization1.Id, "icon.png"),
+            $"source-maps/{project1.Id}/app.map",
+            $"source-maps/{deletedProject.Id}/app.map"
+        ];
+        string[] retainedFiles = [
+            OrganizationStoragePaths.GetProfileImagePath(organization2.Id, "icon.png"),
+            $"source-maps/{project2.Id}/app.map"
+        ];
+        foreach (string path in deletedFiles.Concat(retainedFiles))
+        {
+            await using var stream = new MemoryStream([0x7B, 0x7D]);
+            await _fileStorage.SaveFileAsync(path, stream, TestCancellationToken);
+        }
+
         // Act
         await _job.RunAsync(TestCancellationToken);
 
         // Assert - Organization 1's entire hierarchy is hard-deleted; Organization 2's everything remains
         Assert.Null(await _organizationRepository.GetByIdAsync(organization1.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _projectRepository.GetByIdAsync(project1.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _projectRepository.GetByIdAsync(deletedProject.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _stackRepository.GetByIdAsync(stack1.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(event1.Id, o => o.IncludeSoftDeletes()));
 
@@ -482,6 +364,10 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.NotNull(await _projectRepository.GetByIdAsync(project2.Id));
         Assert.NotNull(await _stackRepository.GetByIdAsync(stack2.Id));
         Assert.NotNull(await _eventRepository.GetByIdAsync(event2.Id));
+        foreach (string path in deletedFiles)
+            Assert.False(await _fileStorage.ExistsAsync(path));
+        foreach (string path in retainedFiles)
+            Assert.True(await _fileStorage.ExistsAsync(path));
     }
 
     [Fact]
@@ -503,6 +389,14 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var event1 = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization1.Id, project1.Id, stack1.Id), o => o.ImmediateConsistency());
         var event2 = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization2.Id, project2.Id, stack2.Id), o => o.ImmediateConsistency());
 
+        string sourceMapPath1 = $"source-maps/{project1.Id}/app.map";
+        string sourceMapPath2 = $"source-maps/{project2.Id}/app.map";
+        foreach (string path in new[] { sourceMapPath1, sourceMapPath2 })
+        {
+            await using var stream = new MemoryStream([0x7B, 0x7D]);
+            await _fileStorage.SaveFileAsync(path, stream, TestCancellationToken);
+        }
+
         // Act
         await _job.RunAsync(TestCancellationToken);
 
@@ -515,12 +409,14 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.NotNull(await _stackRepository.GetByIdAsync(stack2.Id));
         Assert.Null(await _eventRepository.GetByIdAsync(event1.Id, o => o.IncludeSoftDeletes()));
         Assert.NotNull(await _eventRepository.GetByIdAsync(event2.Id));
+        Assert.False(await _fileStorage.ExistsAsync(sourceMapPath1));
+        Assert.True(await _fileStorage.ExistsAsync(sourceMapPath2));
     }
 
     [Fact]
-    public async Task CanCleanupSoftDeletedStack_MultiTenant_OnlyDeletedStackCleaned()
+    public async Task CanCleanupSoftDeletedStack_OnlyDeletedStackCleaned()
     {
-        // Arrange - Same organization, two projects, one stack soft-deleted in project 1
+        // Arrange - Two stacks in the same project, one soft-deleted.
         var organization = await _organizationRepository.AddAsync(_organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId), o => o.ImmediateConsistency());
         var project = await _projectRepository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
 
@@ -564,12 +460,11 @@ public class CleanupDataJobTests : IntegrationTestsBase
 
         var options = GetService<AppOptions>();
 
-        // Create "will-be-expired" events at a date that's valid for index insertion
-        // then advance time so they fall outside retention
+        // Events on the retention boundary are valid for insertion and removed by cleanup.
         var willExpireDate = DateTimeOffset.UtcNow.SubtractDays(options.MaximumRetentionDays);
         var recentDate = DateTimeOffset.UtcNow.AddDays(-1);
 
-        // Organization 1: 1 recent (keep) + 1 at retention boundary (will be expired after time advance)
+        // Organization 1: one recent event and one at the retention boundary.
         var recentEvent1 = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization1.Id, project1.Id, stack1.Id, occurrenceDate: recentDate), o => o.ImmediateConsistency());
         var expiredEvent1 = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization1.Id, project1.Id, stack1.Id, occurrenceDate: willExpireDate), o => o.ImmediateConsistency());
 
@@ -581,6 +476,12 @@ public class CleanupDataJobTests : IntegrationTestsBase
         await _job.RunAsync(TestCancellationToken);
 
         // Assert - Only recent events survive (events at retention boundary are deleted)
+        Assert.NotNull(await _organizationRepository.GetByIdAsync(organization1.Id));
+        Assert.NotNull(await _organizationRepository.GetByIdAsync(organization2.Id));
+        Assert.NotNull(await _projectRepository.GetByIdAsync(project1.Id));
+        Assert.NotNull(await _projectRepository.GetByIdAsync(project2.Id));
+        Assert.NotNull(await _stackRepository.GetByIdAsync(stack1.Id));
+        Assert.NotNull(await _stackRepository.GetByIdAsync(stack2.Id));
         Assert.NotNull(await _eventRepository.GetByIdAsync(recentEvent1.Id));
         Assert.NotNull(await _eventRepository.GetByIdAsync(recentEvent2.Id));
         Assert.Null(await _eventRepository.GetByIdAsync(expiredEvent1.Id, o => o.IncludeSoftDeletes()));

@@ -13,8 +13,14 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { toFilter } from '$features/events/components/filters/helpers.svelte';
     import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
+    import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
+    import SavedViewCreateTour from '$features/product-tours/components/saved-view-create-tour.svelte';
+    import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
+    import { getMeQuery } from '$features/users/api.svelte';
+    import Building2 from '@lucide/svelte/icons/building-2';
     import Columns3 from '@lucide/svelte/icons/columns-3';
+    import House from '@lucide/svelte/icons/house';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Plus from '@lucide/svelte/icons/plus';
     import Save from '@lucide/svelte/icons/save';
@@ -24,15 +30,52 @@
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { AutoFillColumnSelection } from '../column-settings';
+    import type { AutoFillColumnSelection, WrappedColumnIds } from '../column-settings';
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';
 
-    import { deleteSavedView, markSavedViewDeleted, patchSavedView, postSavedView, restoreDeletedSavedView } from '../api.svelte';
+    import {
+        deleteSavedView,
+        markSavedViewDeleted,
+        patchSavedView,
+        postSavedView,
+        putOrganizationSavedViewDefault,
+        putUserSavedViewDefault,
+        restoreDeletedSavedView
+    } from '../api.svelte';
     import { buildColumnSettings } from '../column-settings';
+    import { resolveSavedViewDefaults } from '../defaults';
     import ColumnManagementDialog from './column-management-dialog.svelte';
     import DeleteViewDialog from './delete-view-dialog.svelte';
     import RenameViewDialog from './rename-view-dialog.svelte';
     import SaveViewDialog from './save-view-dialog.svelte';
+
+    interface Props {
+        activeSavedView?: SavedView;
+        autoFillColumnId: AutoFillColumnSelection;
+        canModifySavedView?: boolean;
+        columnOrder?: string[];
+        columnSizing?: Record<string, number>;
+        columnVisibility?: Record<string, boolean>;
+        defaultAutoFillColumnId?: string;
+        filters: IFilter[];
+        isModified: boolean;
+        onClearSavedView: () => Promise<void>;
+        onLoadView: (view: SavedView) => void;
+        onResetToSaved: () => void;
+        onSavedViewUpdated: (view: SavedView) => void;
+        savedViews: SavedView[];
+        setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
+        setShowChart?: (show: boolean) => void;
+        setShowStats?: (show: boolean) => void;
+        setWrappedColumnIds: (columnIds: WrappedColumnIds) => void;
+        showChart?: boolean;
+        showStats?: boolean;
+        sort?: string;
+        table: Table<StockFeatures, TData>;
+        time?: string;
+        view: string;
+        wrappedColumnIds: WrappedColumnIds;
+    }
 
     function getErrorMessage(error: unknown, fallback: string): string {
         const problem = error as ProblemDetails;
@@ -44,33 +87,10 @@
         return problem?.title ?? fallback;
     }
 
-    interface Props {
-        activeSavedView?: SavedView;
-        autoFillColumnId: AutoFillColumnSelection;
-        columnOrder?: string[];
-        columnSizing?: Record<string, number>;
-        columnVisibility?: Record<string, boolean>;
-        defaultAutoFillColumnId?: string;
-        filters: IFilter[];
-        isModified: boolean;
-        onClearSavedView: () => void;
-        onLoadView: (view: SavedView) => void;
-        onResetToSaved: () => void;
-        savedViews: SavedView[];
-        setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
-        setShowChart?: (show: boolean) => void;
-        setShowStats?: (show: boolean) => void;
-        showChart?: boolean;
-        showStats?: boolean;
-        sort?: string;
-        table: Table<StockFeatures, TData>;
-        time?: string;
-        view: string;
-    }
-
     let {
         activeSavedView,
         autoFillColumnId,
+        canModifySavedView = true,
         columnOrder,
         columnSizing,
         columnVisibility,
@@ -80,16 +100,19 @@
         onClearSavedView,
         onLoadView,
         onResetToSaved,
+        onSavedViewUpdated,
         savedViews,
         setAutoFillColumnId,
         setShowChart,
         setShowStats,
+        setWrappedColumnIds,
         showChart = true,
         showStats = true,
         sort,
         table,
         time,
-        view
+        view,
+        wrappedColumnIds
     }: Props = $props();
 
     let isSaveDialogOpen = $state(false);
@@ -98,8 +121,30 @@
     let isColumnDialogOpen = $state(false);
     let isMenuOpen = $state(false);
     let viewToDelete = $state<null | SavedView>(null);
+    let savedViewCreateTour = $state<SavedViewCreateTour>();
 
     const organizationId = $derived(organization.current);
+    const activeView = $derived(activeSavedView);
+    const currentUserQuery = getMeQuery();
+    const organizationsQuery = getOrganizationsQuery({});
+    const membershipOrganization = $derived(organizationsQuery.data?.data?.find((organizationItem) => organizationItem.id === organizationId));
+    const organizationIdToLoad = $derived(organizationsQuery.isSuccess && !membershipOrganization ? organizationId : undefined);
+    const currentOrganizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return organizationIdToLoad;
+            }
+        }
+    });
+    const currentOrganization = $derived(membershipOrganization ?? currentOrganizationQuery.data);
+    const defaults = $derived.by(() => {
+        return resolveSavedViewDefaults({
+            organizationDefaultSavedViewId: currentOrganization?.default_saved_view_id,
+            organizationId,
+            organizationPreferences: currentUserQuery.data?.organization_preferences,
+            savedViews
+        });
+    });
 
     const createMutation = postSavedView({
         route: {
@@ -122,8 +167,30 @@
             }
         }
     });
+    const userDefaultMutation = putUserSavedViewDefault({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
+    const organizationDefaultMutation = putOrganizationSavedViewDefault({
+        route: {
+            get organizationId() {
+                return organizationId;
+            }
+        }
+    });
 
-    const saving = $derived(createMutation.isPending || updateMutation.isPending || removeMutation.isPending);
+    const saving = $derived(
+        createMutation.isPending ||
+            updateMutation.isPending ||
+            removeMutation.isPending ||
+            userDefaultMutation.isPending ||
+            organizationDefaultMutation.isPending
+    );
+    const isUserDefault = $derived(!!activeView && defaults.userDefault?.id === activeView.id);
+    const isOrganizationDefault = $derived(!!activeView && defaults.organizationDefault?.id === activeView.id);
     const currentFilterString = $derived(toFilter(filters.filter((f) => f.type !== 'date')));
 
     // Auto-detect if current filters match an existing saved view for "load existing" hint
@@ -149,70 +216,59 @@
         });
     });
 
-    const activeView = $derived(activeSavedView);
-
     const reorderableColumns = $derived(table.getAllLeafColumns().filter((column) => column.id !== 'select'));
 
-    async function openSaveDialog() {
-        await tick();
-        isSaveDialogOpen = true;
-    }
-
-    async function openRenameDialog() {
-        await tick();
-        isRenameDialogOpen = true;
-    }
-
     function getSavedColumnSettings() {
+        const supportedWrappedColumnIds = wrappedColumnIds.filter((columnId) => supportsColumnWrapping(table.getColumn(columnId)?.columnDef.meta));
         return buildColumnSettings(
             table.getAllLeafColumns().map((column) => column.id),
             columnOrder ?? [],
             columnVisibility ?? {},
             columnSizing ?? {},
             autoFillColumnId,
-            defaultAutoFillColumnId
+            defaultAutoFillColumnId,
+            supportedWrappedColumnIds
         );
     }
 
-    async function openDeleteDialog(savedView: SavedView) {
-        viewToDelete = savedView;
-        await tick();
-        isDeleteDialogOpen = true;
+    function getUpdateBody(): UpdateSavedView {
+        return {
+            columns: getSavedColumnSettings(),
+            filter: currentFilterString || null,
+            filter_definitions: serializeFilters(filters),
+            show_chart: showChart,
+            show_stats: showStats,
+            sort: sort || null,
+            time: time || null
+        };
     }
 
-    function handleResetToSaved(): void {
-        isMenuOpen = false;
-        onResetToSaved();
-    }
-
-    async function handleSave(name: string, slug: string, isPrivate: boolean) {
-        if (!organizationId) {
+    async function handleDelete() {
+        if (!viewToDelete || !organizationId) {
             return;
         }
 
-        const filterDefinitions = serializeFilters(filters);
-        const body: NewSavedView = {
-            columns: getSavedColumnSettings(),
-            filter: currentFilterString || undefined,
-            filter_definitions: filterDefinitions,
-            is_private: isPrivate || undefined,
-            name,
-            organization_id: organizationId,
-            show_chart: showChart,
-            show_stats: showStats,
-            slug,
-            sort: sort || undefined,
-            time: time || undefined,
-            view_type: view
-        };
+        const target = viewToDelete;
+        const wasActiveView = activeSavedView?.id === target.id;
+        markSavedViewDeleted(target);
+        if (wasActiveView) {
+            await onClearSavedView();
+        }
 
         try {
-            const result = await createMutation.mutateAsync(body);
-            isSaveDialogOpen = false;
-            onLoadView(result);
-            toast.success(`Saved view "${result.name}" created.`);
-        } catch (error) {
-            toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
+            await removeMutation.mutateAsync(target);
+
+            toast.success(`View "${target.name}" deleted.`);
+        } catch {
+            restoreDeletedSavedView(target);
+            if (wasActiveView) {
+                onLoadView(target);
+            }
+
+            toast.error('Failed to delete view. Please try again.');
+        } finally {
+            isDeleteDialogOpen = false;
+            viewToDelete = null;
         }
     }
 
@@ -233,57 +289,110 @@
         }
     }
 
-    function getUpdateBody(): UpdateSavedView {
-        return {
+    function handleResetToSaved(): void {
+        if (!canModifySavedView) {
+            return;
+        }
+
+        isMenuOpen = false;
+        onResetToSaved();
+    }
+
+    async function handleSave(name: string, slug: string, isPrivate: boolean) {
+        if (!organizationId) {
+            return;
+        }
+
+        const tour = savedViewCreateTour;
+        const filterDefinitions = serializeFilters(filters);
+        const body: NewSavedView = {
             columns: getSavedColumnSettings(),
-            filter: currentFilterString || null,
-            filter_definitions: serializeFilters(filters),
+            filter: currentFilterString || undefined,
+            filter_definitions: filterDefinitions,
+            is_private: isPrivate || undefined,
+            name,
+            organization_id: organizationId,
             show_chart: showChart,
             show_stats: showStats,
-            sort: sort || null,
-            time: time || null
+            slug,
+            sort: sort || undefined,
+            time: time || undefined,
+            view_type: view
         };
+
+        try {
+            const result = await createMutation.mutateAsync(body);
+            isSaveDialogOpen = false;
+            onLoadView(result);
+            if (tour) {
+                await tour.created();
+            }
+            toast.success(`Saved view "${result.name}" created.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
+        }
     }
 
     async function handleUpdate() {
-        if (!activeView || !organizationId) {
+        if (!activeView || !organizationId || !canModifySavedView) {
             return;
         }
 
         try {
-            await updateMutation.mutateAsync(getUpdateBody());
+            const result = await updateMutation.mutateAsync(getUpdateBody());
+            onSavedViewUpdated(result);
             toast.success(`View "${activeView.name}" saved.`);
         } catch (error) {
             toast.error(getErrorMessage(error, 'Failed to save view. Please try again.'));
         }
     }
 
-    async function handleDelete() {
-        if (!viewToDelete || !organizationId) {
+    async function openDeleteDialog(savedView: SavedView) {
+        viewToDelete = savedView;
+        await tick();
+        isDeleteDialogOpen = true;
+    }
+
+    async function openRenameDialog() {
+        await tick();
+        isRenameDialogOpen = true;
+    }
+
+    async function openSaveDialog() {
+        await tick();
+        isSaveDialogOpen = true;
+        savedViewCreateTour?.openingSaveDialog();
+    }
+
+    async function toggleOrganizationDefault(): Promise<void> {
+        if (!activeView || activeView.user_id || !organizationId) {
             return;
         }
 
-        const target = viewToDelete;
-        const wasActiveView = activeSavedView?.id === target.id;
-        markSavedViewDeleted(target);
-        if (wasActiveView) {
-            onClearSavedView();
+        const clearingDefault = isOrganizationDefault;
+        try {
+            await organizationDefaultMutation.mutateAsync({
+                saved_view_id: clearingDefault ? null : activeView.id
+            });
+            toast.success(clearingDefault ? 'Organization home view cleared.' : `"${activeView.name}" is now the organization home view.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to update the organization home view. Please try again.'));
+        }
+    }
+
+    async function toggleUserDefault(): Promise<void> {
+        if (!activeView || !organizationId) {
+            return;
         }
 
+        const clearingDefault = isUserDefault;
         try {
-            await removeMutation.mutateAsync(target);
-
-            toast.success(`View "${target.name}" deleted.`);
-        } catch {
-            restoreDeletedSavedView(target);
-            if (wasActiveView) {
-                onLoadView(target);
-            }
-
-            toast.error('Failed to delete view. Please try again.');
-        } finally {
-            isDeleteDialogOpen = false;
-            viewToDelete = null;
+            await userDefaultMutation.mutateAsync({
+                saved_view_id: clearingDefault ? null : activeView.id
+            });
+            toast.success(clearingDefault ? 'Personal home view cleared.' : `"${activeView.name}" is now your home view.`);
+        } catch (error) {
+            toast.error(getErrorMessage(error, 'Failed to update your home view. Please try again.'));
         }
     }
 </script>
@@ -291,7 +400,7 @@
 <DropdownMenu.Root bind:open={isMenuOpen}>
     <DropdownMenu.Trigger>
         {#snippet child({ props })}
-            <Button {...props} class="relative gap-x-1.5 px-3" size="lg" variant="outline" title="Manage View Settings">
+            <Button {...props} class="relative gap-x-1.5 px-3" data-tour="saved-view-trigger" size="lg" variant="outline" title="Manage View Settings">
                 <SlidersHorizontal class="size-4" aria-hidden="true" />
                 <span>View</span>
                 {#if isModified}
@@ -300,16 +409,16 @@
             </Button>
         {/snippet}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="w-64">
+    <DropdownMenu.Content align="end" class="w-64" data-tour="saved-view-settings">
         <DropdownMenu.Group>
             <DropdownMenu.Label>Saved View</DropdownMenu.Label>
             {#if activeView}
-                <DropdownMenu.Item disabled={saving || !isModified} onclick={handleUpdate}>
+                <DropdownMenu.Item disabled={saving || !isModified || !canModifySavedView} onclick={handleUpdate}>
                     <Save class="mr-2 size-4" aria-hidden="true" />
                     Save
                 </DropdownMenu.Item>
             {/if}
-            <DropdownMenu.Item disabled={saving} onclick={openSaveDialog}>
+            <DropdownMenu.Item data-tour="saved-view-save-as" disabled={saving} onclick={openSaveDialog}>
                 <Plus class="mr-2 size-4" aria-hidden="true" />
                 Save As...
             </DropdownMenu.Item>
@@ -318,17 +427,35 @@
                     <Pencil class="mr-2 size-4" aria-hidden="true" />
                     Rename
                 </DropdownMenu.Item>
-                <DropdownMenu.Item disabled={!isModified} onclick={handleResetToSaved}>
+                <DropdownMenu.Item disabled={!isModified || !canModifySavedView} onclick={handleResetToSaved}>
                     <Undo2 class="mr-2 size-4" aria-hidden="true" />
                     Reset to Saved
                 </DropdownMenu.Item>
-                <DropdownMenu.Separator />
+            {/if}
+        </DropdownMenu.Group>
+        {#if activeView}
+            <DropdownMenu.Separator />
+            <DropdownMenu.Group>
+                <DropdownMenu.Label>Home</DropdownMenu.Label>
+                <DropdownMenu.Item disabled={saving} onclick={toggleUserDefault}>
+                    <House class="mr-2 size-4" aria-hidden="true" />
+                    {isUserDefault ? 'Clear my home view' : 'Set as my home view'}
+                </DropdownMenu.Item>
+                {#if !activeView.user_id}
+                    <DropdownMenu.Item disabled={saving} onclick={toggleOrganizationDefault}>
+                        <Building2 class="mr-2 size-4" aria-hidden="true" />
+                        {isOrganizationDefault ? 'Clear organization home' : 'Set as organization home'}
+                    </DropdownMenu.Item>
+                {/if}
+            </DropdownMenu.Group>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Group>
                 <DropdownMenu.Item class="text-destructive" onclick={() => openDeleteDialog(activeView)}>
                     <Trash2 class="mr-2 size-4" aria-hidden="true" />
                     Delete "{activeView.name}"
                 </DropdownMenu.Item>
-            {/if}
-        </DropdownMenu.Group>
+            </DropdownMenu.Group>
+        {/if}
         {#if setShowStats || setShowChart}
             <DropdownMenu.Separator />
             <DropdownMenu.Group>
@@ -374,14 +501,23 @@
 {#if isSaveDialogOpen}
     <SaveViewDialog
         bind:open={isSaveDialogOpen}
+        defaultPrivate={savedViewCreateTour?.shouldDefaultPrivate()}
         {duplicateView}
         {savedViews}
         {saving}
         onSave={handleSave}
-        onClose={() => (isSaveDialogOpen = false)}
+        onClose={() => savedViewCreateTour?.closed()}
         {onLoadView}
     />
 {/if}
+
+<SavedViewCreateTour
+    bind:this={savedViewCreateTour}
+    closeMenu={() => (isMenuOpen = false)}
+    {isMenuOpen}
+    openMenu={() => (isMenuOpen = true)}
+    {openSaveDialog}
+/>
 
 {#if isRenameDialogOpen && activeView}
     <RenameViewDialog
@@ -401,5 +537,13 @@
 {/if}
 
 {#if isColumnDialogOpen}
-    <ColumnManagementDialog bind:open={isColumnDialogOpen} {autoFillColumnId} {defaultAutoFillColumnId} {setAutoFillColumnId} {table} />
+    <ColumnManagementDialog
+        bind:open={isColumnDialogOpen}
+        {autoFillColumnId}
+        {defaultAutoFillColumnId}
+        {setAutoFillColumnId}
+        {setWrappedColumnIds}
+        {table}
+        {wrappedColumnIds}
+    />
 {/if}

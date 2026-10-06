@@ -64,15 +64,41 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
         Assert.Equal(0, _cache.Count);
     }
 
-    [Fact]
-    public async Task GetByCriteria_SearchById_ReturnsMatchingOrganization()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetByCriteriaAsync_SearchById_ReturnsMatchingOrganization(bool padCriteria)
     {
         // Arrange
         var organization = new Organization { Name = "Criteria Test Organization", PlanId = _plans.FreePlan.Id };
         await _repository.AddAsync(organization, o => o.ImmediateConsistency());
 
         // Act
-        var results = await _repository.GetByCriteriaAsync(organization.Id,
+        string criteria = padCriteria ? $"  {organization.Id}  " : organization.Id;
+        var results = await _repository.GetByCriteriaAsync(criteria,
+            o => o.PageLimit(10), OrganizationSortBy.Newest);
+
+        // Assert
+        Assert.Single(results.Documents);
+        Assert.Equal(organization.Id, results.Documents.First().Id);
+    }
+
+    [Theory]
+    [InlineData("NSW Planning Team")]
+    [InlineData("NSW")]
+    [InlineData("nsw")]
+    [InlineData("planning")]
+    [InlineData("NSW planning")]
+    [InlineData("  NSW  ")]
+    public async Task GetByCriteriaAsync_SearchByName_ReturnsMatchingOrganization(string criteria)
+    {
+        // Arrange
+        var organization = new Organization { Name = "NSW Planning Team", PlanId = _plans.FreePlan.Id };
+        var unrelatedOrganization = new Organization { Name = "Unrelated Company", PlanId = _plans.FreePlan.Id };
+        await _repository.AddAsync([organization, unrelatedOrganization], o => o.ImmediateConsistency());
+
+        // Act
+        var results = await _repository.GetByCriteriaAsync(criteria,
             o => o.PageLimit(10), OrganizationSortBy.Newest);
 
         // Assert
@@ -81,19 +107,37 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetByCriteria_SearchByName_ReturnsMatchingOrganization()
+    public async Task GetByCriteriaAsync_WithSymbolOnlyName_ReturnsMatchingOrganization()
     {
-        // Arrange
-        var organization = new Organization { Name = "Unique Search Name", PlanId = _plans.FreePlan.Id };
-        await _repository.AddAsync(organization, o => o.ImmediateConsistency());
+        var organization = new Organization { Name = "+++", PlanId = _plans.FreePlan.Id };
+        await _repository.AddAsync(organization, options => options.ImmediateConsistency());
 
-        // Act
-        var results = await _repository.GetByCriteriaAsync("Unique Search Name",
-            o => o.PageLimit(10), OrganizationSortBy.Newest);
+        var results = await _repository.GetByCriteriaAsync(organization.Name,
+            options => options.PageLimit(10), OrganizationSortBy.Newest);
 
-        // Assert
-        Assert.Single(results.Documents);
-        Assert.Equal("Unique Search Name", results.Documents.First().Name);
+        Assert.Equal(organization.Id, Assert.Single(results.Documents).Id);
+    }
+
+    [Fact]
+    public async Task GetByCriteriaAsync_WithNameAndPlanAndStatusFilters_ReturnsMatchingOrganization()
+    {
+        var organization = new Organization
+        {
+            Name = "NSW Planning Team",
+            PlanId = _plans.SmallPlan.Id,
+            BillingStatus = BillingStatus.Active
+        };
+        await _repository.AddAsync([
+            organization,
+            new Organization { Name = "NSW Free", PlanId = _plans.FreePlan.Id, BillingStatus = BillingStatus.Active },
+            new Organization { Name = "NSW Past Due", PlanId = _plans.SmallPlan.Id, BillingStatus = BillingStatus.PastDue },
+            new Organization { Name = "Unrelated Company", PlanId = _plans.SmallPlan.Id, BillingStatus = BillingStatus.Active }
+        ], options => options.ImmediateConsistency());
+
+        var results = await _repository.GetByCriteriaAsync("nsw", options => options.PageLimit(10),
+            OrganizationSortBy.Newest, paid: true, suspended: false);
+
+        Assert.Equal(organization.Id, Assert.Single(results.Documents).Id);
     }
 
     [Fact]

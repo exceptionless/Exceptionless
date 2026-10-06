@@ -46,11 +46,12 @@
     import EventsBulkActionsDropdownMenu from '$features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
     import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
     import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
+    import InvestigationListTour from '$features/events/components/tours/investigation-list.svelte';
     import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
     import { organization } from '$features/organizations/context.svelte';
     import { premiumPage } from '$features/organizations/premium-page.svelte';
     import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { useSavedViews } from '$features/saved-views/use-saved-views.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
     import * as agg from '$features/shared/api/aggregations';
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
@@ -123,21 +124,17 @@
         return buildFilterCacheKey(organization.current, page.url.pathname, filter);
     }
 
-    function getQueryTime(params: ListFilterQueryParams = queryParams): null | string {
-        if (params.time != null) {
-            if (params.time === ALL_TIME_QUERY_VALUE) {
-                return null;
-            }
-
-            return params.time ? deserializeTimeQueryParam(params.time) : null;
-        }
-
-        return savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
-    }
-
     function getEffectiveFilter(): null | string {
         const filter = toFilter(getCurrentFiltersWithoutTime());
         return filter || null;
+    }
+
+    function getEffectiveSort(): null | string | undefined {
+        if (queryParams.sort != null) {
+            return queryParams.sort || undefined;
+        }
+
+        return savedViewsState.activeSavedView?.sort ?? undefined;
     }
 
     function getQueryFilters(params: ListFilterQueryParams = queryParams): FacetedFilter.IFilter[] | null {
@@ -192,6 +189,18 @@
         return filters.length > 0 ? filters : null;
     }
 
+    function getQueryTime(params: ListFilterQueryParams = queryParams): null | string {
+        if (params.time != null) {
+            if (params.time === ALL_TIME_QUERY_VALUE) {
+                return null;
+            }
+
+            return params.time ? deserializeTimeQueryParam(params.time) : null;
+        }
+
+        return savedViewsState.activeSavedView?.time ?? DEFAULT_TIME_RANGE;
+    }
+
     function parseBooleanQueryParam(value: null | string | undefined): boolean | undefined {
         if (value === 'true') {
             return true;
@@ -209,14 +218,6 @@
             .split(',')
             .map((item) => item.trim())
             .filter((item) => item);
-    }
-
-    function getEffectiveSort(): null | string | undefined {
-        if (queryParams.sort != null) {
-            return queryParams.sort || undefined;
-        }
-
-        return savedViewsState.activeSavedView?.sort ?? undefined;
     }
 
     updateFilterCache(filterCacheKey(DEFAULT_FILTER), DEFAULT_FILTERS);
@@ -249,12 +250,24 @@
     let showStats = $state(true);
     let showChart = $state(true);
     const savedViewsState = useSavedViews({
+        applyFilters: (draftFilters, options) => {
+            updateFilters(draftFilters, {
+                clearPagination: false,
+                history: options?.history
+            });
+            filters = draftFilters;
+        },
         baseHref: resolve('/(app)/event'),
         defaultAutoFillColumnId: 'summary',
         defaultColumnVisibility: defaultEventColumnVisibility,
         defaultFilter: DEFAULT_FILTER,
         defaultTime: DEFAULT_TIME_RANGE,
         filterCacheKey,
+        getAvailableColumnIds: () =>
+            table
+                .getAllFlatColumns()
+                .filter((column) => column.columns.length === 0)
+                .map((column) => column.id),
         getColumnOrder: () => table.store.state.columnOrder,
         getColumnSizing: () => table.store.state.columnSizing,
         getColumnVisibility: () => table.store.state.columnVisibility,
@@ -280,7 +293,12 @@
     // Keep queries disabled until saved-view state and its URL overrides have both settled.
     let normalizedSavedViewId = $state<string>();
     const isSavedViewRoutePending = $derived(
-        !!page.params.slug && (!savedViewsState.activeSavedView || savedViewsState.activeSavedView.id !== normalizedSavedViewId)
+        isSavedViewHydrationPending(
+            page.params.slug,
+            savedViewsState.activeSavedView?.id,
+            normalizedSavedViewId,
+            isSavedViewUnavailable(savedViewsState.activeSavedView?.id, savedViewsState.isMissing, savedViewsState.isError)
+        )
     );
 
     $effect(() => {
@@ -332,15 +350,6 @@
 
         const filter = savedViewsState.activeSavedView?.filter ?? DEFAULT_FILTER;
         return getFiltersFromCache(filterCacheKey(filter), filter).filter((filter) => filter.type !== 'date');
-    }
-
-    function getSavedViewFilters(): FacetedFilter.IFilter[] | null {
-        const savedView = savedViewsState.activeSavedView;
-        if (!savedView?.filter_definitions) {
-            return null;
-        }
-
-        return deserializeFilters(savedView.filter_definitions);
     }
 
     function getQueryFilterRemovalKeys(savedViewFilters: FacetedFilter.IFilter[], params: ListFilterQueryParams = queryParams): string[] {
@@ -397,6 +406,15 @@
         return removedKeys;
     }
 
+    function getSavedViewFilters(): FacetedFilter.IFilter[] | null {
+        const savedView = savedViewsState.activeSavedView;
+        if (!savedView?.filter_definitions) {
+            return null;
+        }
+
+        return deserializeFilters(savedView.filter_definitions);
+    }
+
     function mergeFilterOverrides(
         baseFilters: FacetedFilter.IFilter[],
         overrideFilters: FacetedFilter.IFilter[],
@@ -414,8 +432,13 @@
     let isInternalFilterUpdate = false;
     watch(
         [() => page.url.pathname, () => getListFilterQueryParams(queryParams), () => savedViewsState.activeSavedView],
-        ([pathname, currentQueryParams, activeSavedView], [previousPathname, , previousSavedView]) => {
+        ([pathname, currentQueryParams, activeSavedView], [previousPathname, previousQueryParams, previousSavedView]) => {
             const savedViewChanged = pathname !== previousPathname || activeSavedView?.id !== previousSavedView?.id;
+            const queryChanged = JSON.stringify(currentQueryParams) !== JSON.stringify(previousQueryParams);
+            if (savedViewChanged || queryChanged) {
+                table.resetRowSelection();
+            }
+
             if (isInternalFilterUpdate && !savedViewChanged) {
                 isInternalFilterUpdate = false;
                 return;
@@ -431,6 +454,7 @@
 
     function handleResetToSaved(): void {
         isInternalFilterUpdate = false;
+        table.resetRowSelection();
         queryParams.update(LIST_FILTER_QUERY_PARAM_RESET);
         savedViewsState.handleResetToSaved();
         filters = getCurrentFilters();
@@ -460,7 +484,7 @@
         filters = updatedFilters;
     }
 
-    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { clearPagination?: boolean } = {}): void {
+    function updateFilters(updatedFilters: FacetedFilter.IFilter[], options: { clearPagination?: boolean; history?: 'push' | 'replace' } = {}): void {
         const shouldClearPagination = options.clearPagination ?? true;
         const filter = toFilter(updatedFilters.filter((f) => f.type !== 'date'));
         const expressionFilters = updatedFilters.filter((f) => f.type !== 'date' && !isQueryParamFilter(f));
@@ -493,6 +517,10 @@
         const shouldClearPaginationForFilter = shouldClearPagination && effectiveQueryWillChange;
         const paginationWillChange = shouldClearPaginationForFilter && (queryParams.after != null || queryParams.before != null || queryParams.page != null);
 
+        if (effectiveQueryWillChange) {
+            table.resetRowSelection();
+        }
+
         updateFilterCache(filterCacheKey(filter), updatedFilters);
 
         // Only skip the watch when the URL will actually change from our update.
@@ -501,24 +529,29 @@
             isInternalFilterUpdate = true;
         }
 
-        queryParams.update({
-            after: shouldClearPaginationForFilter ? null : queryParams.after,
-            before: shouldClearPaginationForFilter ? null : queryParams.before,
-            bot: queryFilterParams.bot,
-            filter: newFilterParam,
-            first: queryFilterParams.first,
-            level: queryFilterParams.level,
-            page: shouldClearPaginationForFilter ? null : queryParams.page,
-            project: queryFilterParams.project,
-            reference: queryFilterParams.reference,
-            session: queryFilterParams.session,
-            stack: queryFilterParams.stack,
-            status: queryFilterParams.status,
-            tag: queryFilterParams.tag,
-            time: newTimeParam,
-            type: queryFilterParams.type,
-            version: queryFilterParams.version
-        });
+        queryParams.update(
+            {
+                after: shouldClearPaginationForFilter ? null : queryParams.after,
+                before: shouldClearPaginationForFilter ? null : queryParams.before,
+                bot: queryFilterParams.bot,
+                filter: newFilterParam,
+                first: queryFilterParams.first,
+                level: queryFilterParams.level,
+                page: shouldClearPaginationForFilter ? null : queryParams.page,
+                project: queryFilterParams.project,
+                reference: queryFilterParams.reference,
+                session: queryFilterParams.session,
+                stack: queryFilterParams.stack,
+                status: queryFilterParams.status,
+                tag: queryFilterParams.tag,
+                time: newTimeParam,
+                type: queryFilterParams.type,
+                version: queryFilterParams.version
+            },
+            {
+                history: options.history
+            }
+        );
     }
 
     $effect(() => {
@@ -530,11 +563,40 @@
 
         untrack(() => {
             updateFilters(getCurrentFilters(getListFilterQueryParams(queryParams)), {
-                clearPagination: false
+                clearPagination: false,
+                history: 'replace'
             });
         });
         normalizedSavedViewId = activeSavedViewId;
     });
+
+    function getPageSize(): number {
+        return queryParams.limit ?? pageSizePreference.current;
+    }
+
+    function getQueryFilterParamDeltas(currentParams: ReturnType<typeof getQueryFilterParams>, baseParams: ReturnType<typeof getQueryFilterParams>) {
+        const getDelta = (currentValue: null | string, baseValue: null | string): null | string => {
+            if (currentValue === baseValue) {
+                return null;
+            }
+
+            return currentValue ?? (baseValue ? '' : null);
+        };
+
+        return {
+            bot: getDelta(currentParams.bot, baseParams.bot),
+            first: getDelta(currentParams.first, baseParams.first),
+            level: getDelta(currentParams.level, baseParams.level),
+            project: getDelta(currentParams.project, baseParams.project),
+            reference: getDelta(currentParams.reference, baseParams.reference),
+            session: getDelta(currentParams.session, baseParams.session),
+            stack: getDelta(currentParams.stack, baseParams.stack),
+            status: getDelta(currentParams.status, baseParams.status),
+            tag: getDelta(currentParams.tag, baseParams.tag),
+            type: getDelta(currentParams.type, baseParams.type),
+            version: getDelta(currentParams.version, baseParams.version)
+        };
+    }
 
     function getQueryFilterParams(filters: FacetedFilter.IFilter[]) {
         const botFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'bot');
@@ -564,30 +626,6 @@
         };
     }
 
-    function getQueryFilterParamDeltas(currentParams: ReturnType<typeof getQueryFilterParams>, baseParams: ReturnType<typeof getQueryFilterParams>) {
-        const getDelta = (currentValue: null | string, baseValue: null | string): null | string => {
-            if (currentValue === baseValue) {
-                return null;
-            }
-
-            return currentValue ?? (baseValue ? '' : null);
-        };
-
-        return {
-            bot: getDelta(currentParams.bot, baseParams.bot),
-            first: getDelta(currentParams.first, baseParams.first),
-            level: getDelta(currentParams.level, baseParams.level),
-            project: getDelta(currentParams.project, baseParams.project),
-            reference: getDelta(currentParams.reference, baseParams.reference),
-            session: getDelta(currentParams.session, baseParams.session),
-            stack: getDelta(currentParams.stack, baseParams.stack),
-            status: getDelta(currentParams.status, baseParams.status),
-            tag: getDelta(currentParams.tag, baseParams.tag),
-            type: getDelta(currentParams.type, baseParams.type),
-            version: getDelta(currentParams.version, baseParams.version)
-        };
-    }
-
     function isQueryParamFilter(filter: FacetedFilter.IFilter): boolean {
         if (filter.type === 'string' && filter.key === 'string-stack') {
             return true;
@@ -602,10 +640,6 @@
         }
 
         return ['level', 'project', 'reference', 'session', 'status', 'tag', 'type', 'version'].includes(filter.type);
-    }
-
-    function getPageSize(): number {
-        return queryParams.limit ?? pageSizePreference.current;
     }
 
     function setPageSize(value: number): void {
@@ -714,22 +748,8 @@
         })
     );
 
-    const canRefresh = $derived(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected() && table.store.state.pagination.pageIndex === 0);
-
-    function reset() {
-        table.resetRowSelection();
-        table.setPageIndex(0);
-    }
-
     async function handleRefresh() {
-        const isFirstPage = table.store.state.pagination.pageIndex === 0;
-        if (!canRefresh) {
-            reset();
-            if (!isFirstPage) {
-                return;
-            }
-        }
-
+        table.resetRowSelection();
         await eventsQuery.refetch();
     }
 
@@ -776,6 +796,11 @@
         if (totalPages != null && table.store.state.pagination.pageIndex >= totalPages) {
             table.firstPage();
         }
+    }
+
+    function reset() {
+        table.resetRowSelection();
+        table.setPageIndex(0);
     }
 
     let reconcileTotalRequested = false;
@@ -936,7 +961,7 @@
 <div class="flex flex-col">
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">{pageTitle}</H3>
-        <div class="flex min-w-0 flex-1 flex-wrap items-start gap-2">
+        <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1" data-tour="event-filters">
             <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
@@ -946,6 +971,7 @@
                 <SavedViewPicker
                     activeSavedView={savedViewsState.activeSavedView}
                     autoFillColumnId={savedViewsState.autoFillColumnId}
+                    canModifySavedView={savedViewsState.canModifySavedView}
                     columnOrder={table.store.state.columnOrder}
                     columnSizing={table.store.state.columnSizing}
                     columnVisibility={table.store.state.columnVisibility}
@@ -955,8 +981,10 @@
                     onLoadView={savedViewsState.handleLoadView}
                     onClearSavedView={savedViewsState.handleClearSavedView}
                     onResetToSaved={handleResetToSaved}
+                    onSavedViewUpdated={savedViewsState.handleSavedViewUpdated}
                     savedViews={savedViewsState.savedViews}
                     setAutoFillColumnId={savedViewsState.setAutoFillColumnId}
+                    setWrappedColumnIds={savedViewsState.setWrappedColumnIds}
                     {showChart}
                     {showStats}
                     setShowChart={(v) => (showChart = v)}
@@ -965,14 +993,10 @@
                     {table}
                     time={getQueryTime() ?? undefined}
                     view={VIEW}
+                    wrappedColumnIds={savedViewsState.wrappedColumnIds}
                 />
             {/if}
-            <RefreshButton
-                onRefresh={handleRefresh}
-                isRefreshing={eventsQuery.isFetching}
-                size="icon-lg"
-                title={canRefresh ? 'Refresh results' : 'Return to the first page to refresh results'}
-            />
+            <RefreshButton onRefresh={handleRefresh} isRefreshing={eventsQuery.isFetching} size="icon-lg" title="Refresh results" />
         </div>
     </div>
 
@@ -995,30 +1019,27 @@
             />
         {/if}
 
-        <EventsDataTable
-            autoFillColumnId={savedViewsState.autoFillColumnId}
-            bind:limit={eventsQueryParameters.limit!}
-            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
-            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
-            {rowClick}
-            {rowHref}
-            {table}
-        >
-            {#snippet footerChildren()}
-                <div class="h-9 min-w-35">
-                    {#if table.getSelectedRowModel().flatRows.length}
+        <div data-tour="event-list">
+            <EventsDataTable
+                autoFillColumnId={savedViewsState.autoFillColumnId}
+                bind:limit={eventsQueryParameters.limit!}
+                isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+                onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
+                {rowClick}
+                {rowHref}
+                {table}
+                wrappedColumnIds={savedViewsState.wrappedColumnIds}
+            >
+                {#snippet footerChildren()}
+                    <div class="flex min-w-0 items-center gap-3">
                         <EventsBulkActionsDropdownMenu {table} />
-                    {/if}
-                </div>
+                        <DataTable.Selection {table} />
+                    </div>
 
-                <DataTable.Selection {table} />
-                <DataTable.PageSize bind:value={eventsQueryParameters.limit!} {table}></DataTable.PageSize>
-                <div class="flex items-center space-x-6 lg:space-x-8">
-                    <DataTable.PageCount {table} />
-                    <DataTable.Pagination {table} />
-                </div>
-            {/snippet}
-        </EventsDataTable>
+                    <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} variant="floating" />
+                {/snippet}
+            </EventsDataTable>
+        </div>
     </div>
 </div>
 
@@ -1029,4 +1050,12 @@
         selectedEventId = null;
     }}
     onError={handleEventError}
+/>
+
+<InvestigationListTour
+    firstErrorId={isSavedViewRoutePending ? undefined : table.getRowModel().rows.find((row) => row.original.type === 'error')?.original.id}
+    isLoading={eventsQuery.isFetching || isSavedViewRoutePending}
+    onOpenError={(eventId) => {
+        selectedEventId = eventId;
+    }}
 />

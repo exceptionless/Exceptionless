@@ -137,8 +137,27 @@
     const debouncedUpdatedUserFormSubmit = debounce(1000, () => updateUserForm.handleSubmit());
     const isAvatarSaving = $derived(uploadAvatar.isPending || removeAvatar.isPending);
 
-    function openAvatarPicker() {
-        avatarInput?.click();
+    async function deleteAccount() {
+        toast.dismiss(toastId);
+        try {
+            await deleteAccountMutation.mutateAsync();
+            toastId = toast.success('Successfully queued your account for deletion.');
+            await logout(queryClient, client);
+            await goto(resolve('/(auth)/login'), {
+                replaceState: true
+            });
+        } catch (error: unknown) {
+            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
+            toastId = toast.error(`An error occurred while trying to delete your account: ${message}`);
+        }
+    }
+
+    function getProblemMessage(error: unknown, fallback: string) {
+        if (!(error instanceof ProblemDetails)) {
+            return fallback;
+        }
+
+        return error.errors.file?.[0] ?? Object.values(error.errors ?? {})[0]?.[0] ?? error.title ?? fallback;
     }
 
     function handleAvatarFileChange(input: HTMLInputElement) {
@@ -185,27 +204,8 @@
         }
     }
 
-    async function deleteAccount() {
-        toast.dismiss(toastId);
-        try {
-            await deleteAccountMutation.mutateAsync();
-            toastId = toast.success('Successfully queued your account for deletion.');
-            await logout(queryClient, client);
-            await goto(resolve('/(auth)/login'), {
-                replaceState: true
-            });
-        } catch (error: unknown) {
-            const message = error instanceof ProblemDetails ? error.title : 'Please try again.';
-            toastId = toast.error(`An error occurred while trying to delete your account: ${message}`);
-        }
-    }
-
-    function getProblemMessage(error: unknown, fallback: string) {
-        if (!(error instanceof ProblemDetails)) {
-            return fallback;
-        }
-
-        return error.errors.file?.[0] ?? Object.values(error.errors ?? {})[0]?.[0] ?? error.title ?? fallback;
+    function openAvatarPicker() {
+        avatarInput?.click();
     }
 </script>
 

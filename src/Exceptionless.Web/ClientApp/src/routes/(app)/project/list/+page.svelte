@@ -61,6 +61,10 @@
         })
     );
 
+    async function addProject() {
+        await goto(resolve('/(app)/project/add'));
+    }
+
     async function rowClick(project: ViewProject) {
         if (project.id) {
             organization.current = project.organization_id;
@@ -76,10 +80,6 @@
         return resolve('/(app)/project/[projectId]/manage', {
             projectId: project.id
         });
-    }
-
-    async function addProject() {
-        await goto(resolve('/(app)/project/add'));
     }
 
     $effect(() => {

@@ -10,6 +10,6 @@
     let { error }: Props = $props();
 </script>
 
-{#if error.stack_trace}<div class="bg-inherit pl-[10px]">
+{#if error.stack_trace}<div class="flex flex-col bg-inherit pl-[10px]" data-slot="stack-trace-frames">
         {#each error.stack_trace as frame, index (index)}<StackTraceFrame {frame} />{/each}
     </div>{/if}

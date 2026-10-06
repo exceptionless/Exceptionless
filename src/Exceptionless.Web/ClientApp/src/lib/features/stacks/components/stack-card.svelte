@@ -184,7 +184,7 @@
                 <div class="ml-2 flex shrink-0 items-center gap-2">
                     <StackLogLevel {stack} />
                     <AssistantFixButton {prepareContext} resource={assistantResource} />
-                    <ButtonGroup.Root>
+                    <ButtonGroup.Root data-tour="stack-status">
                         <StackStatusDropdownMenu {stack} />
                         <StackOptionsDropdownMenu {onDeleted} {stack} />
                     </ButtonGroup.Root>
@@ -192,7 +192,7 @@
             </Card.Title>
         </Card.Header>
         <Card.Content class="space-y-2">
-            <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            <div class="grid grid-cols-2 gap-2 lg:grid-cols-4" data-tour="stack-metrics">
                 <Card.Root size="sm" class={metricCardClass}>
                     <Card.Header class={metricHeaderClass}>
                         <div class="flex min-w-0 items-center gap-1.5">
@@ -314,13 +314,17 @@
                     {#if projectQuery.isSuccess || stack.project_id}
                         <Table.Row class="group">
                             {#if projectQuery.isSuccess}
-                                <Table.Head class="w-40 font-semibold whitespace-nowrap">Project</Table.Head>
+                                <Table.Head class="w-20 max-w-20 min-w-20 font-semibold whitespace-normal sm:w-40 sm:max-w-40 sm:min-w-40 sm:whitespace-nowrap"
+                                    >Project</Table.Head
+                                >
                                 <Table.Cell class="w-4 pr-0">
                                     <EventsFacetedFilter.ProjectTrigger changed={filterChanged} value={[projectQuery.data.id!]} />
                                 </Table.Cell>
                                 <Table.Cell>{projectQuery.data.name}</Table.Cell>
                             {:else}
-                                <Table.Head class="w-40 font-semibold whitespace-nowrap"><Skeleton class="h-6 w-full rounded-full" /></Table.Head>
+                                <Table.Head class="w-20 max-w-20 min-w-20 font-semibold whitespace-normal sm:w-40 sm:max-w-40 sm:min-w-40 sm:whitespace-nowrap"
+                                    ><Skeleton class="h-6 w-full rounded-full" /></Table.Head
+                                >
                                 <Table.Cell class="w-4 pr-0"></Table.Cell>
                                 <Table.Cell class="flex items-center"><Skeleton class="h-6 w-full rounded-full" /></Table.Cell>
                             {/if}
@@ -328,7 +332,9 @@
                     {/if}
                     {#if stack.tags && stack.tags.length > 0}
                         <Table.Row class="group">
-                            <Table.Head class="w-36 font-semibold whitespace-nowrap">Tags</Table.Head>
+                            <Table.Head class="w-20 max-w-20 min-w-20 font-semibold whitespace-normal sm:w-36 sm:max-w-36 sm:min-w-36 sm:whitespace-nowrap"
+                                >Tags</Table.Head
+                            >
                             <Table.Cell class="w-4 pr-0"></Table.Cell>
                             <Table.Cell class="flex flex-wrap items-center justify-start gap-2 overflow-auto">
                                 <TagList onTagClick={(tag) => filterChanged(new EventsFacetedFilter.TagFilter([tag]))} tags={stack.tags} />
@@ -337,7 +343,9 @@
                     {/if}
                     {#if (stack.status === 'fixed' || stack.status === 'regressed') && stack.date_fixed}
                         <Table.Row>
-                            <Table.Head class="w-36 font-semibold whitespace-nowrap">Fixed</Table.Head>
+                            <Table.Head class="w-20 max-w-20 min-w-20 font-semibold whitespace-normal sm:w-36 sm:max-w-36 sm:min-w-36 sm:whitespace-nowrap"
+                                >Fixed</Table.Head
+                            >
                             <Table.Cell class="w-4 pr-0"></Table.Cell>
                             <Table.Cell>
                                 {stack.fixed_in_version && `In ${stack.fixed_in_version} on `}
@@ -347,7 +355,9 @@
                     {/if}
                     {#if stack.status === 'snoozed' && stack.snooze_until_utc}
                         <Table.Row>
-                            <Table.Head class="w-36 font-semibold whitespace-nowrap">Snoozed Until</Table.Head>
+                            <Table.Head class="w-20 max-w-20 min-w-20 font-semibold whitespace-normal sm:w-36 sm:max-w-36 sm:min-w-36 sm:whitespace-nowrap"
+                                >Snoozed Until</Table.Head
+                            >
                             <Table.Cell class="w-4 pr-0"></Table.Cell>
                             <Table.Cell><DateTime value={stack.snooze_until_utc} /></Table.Cell>
                         </Table.Row>

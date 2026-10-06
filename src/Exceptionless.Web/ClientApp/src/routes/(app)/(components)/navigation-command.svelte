@@ -31,6 +31,7 @@
     import LogOut from '@lucide/svelte/icons/log-out';
     import Plus from '@lucide/svelte/icons/plus';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+    import Route from '@lucide/svelte/icons/route';
     import Search from '@lucide/svelte/icons/search';
     import SunMoon from '@lucide/svelte/icons/sun-moon';
     import UserPlus from '@lucide/svelte/icons/user-plus';
@@ -54,6 +55,8 @@
         value: string;
     };
 
+    type CommandSearchResult = EventSummaryModel<SummaryTemplateKeys> | StackSummaryModel<SummaryTemplateKeys>;
+
     type Props = {
         askExie: (prompt: string) => Promise<void> | void;
         isChatEnabled: boolean;
@@ -63,6 +66,7 @@
         open: boolean;
         openChat: () => void;
         openExie: () => Promise<void> | void;
+        openGuidedTours: () => void;
         openImpersonateOrganization: () => Promise<void> | void;
         openKeyboardShortcuts: () => Promise<void> | void;
         openOrganizationSwitcher: () => Promise<void> | void;
@@ -72,8 +76,6 @@
         routes: NavigationItem[];
         stopImpersonating: () => Promise<void> | void;
     };
-
-    type CommandSearchResult = EventSummaryModel<SummaryTemplateKeys> | StackSummaryModel<SummaryTemplateKeys>;
 
     const EXIE_ERROR_TRENDS_PROMPT =
         'Analyze error trends in the current context over the last 7 days. Highlight spikes, regressions, and the issues that deserve attention first.';
@@ -93,6 +95,7 @@
         open = $bindable(),
         openChat,
         openExie,
+        openGuidedTours,
         openImpersonateOrganization,
         openKeyboardShortcuts,
         openOrganizationSwitcher,
@@ -188,16 +191,14 @@
         }
     });
 
-    function getCommandGroup(route: NavigationItem): string {
-        return route.group === 'Dashboards' ? route.title : route.group;
-    }
+    function buildSearchHref(path: string, searchText: string): string {
+        const params = new URLSearchParams({
+            filter: searchText,
+            limit: '20',
+            time: ''
+        });
 
-    function getCommandTitle(route: NavigationItem): string {
-        return route.group === 'Dashboards' ? `All ${route.title}` : route.title;
-    }
-
-    function getCommandValue(...parts: Array<string | undefined>): string {
-        return parts.filter(Boolean).join(' ');
+        return `${path}?${params.toString()}`;
     }
 
     function filterCommandItem(value: string, search: string, keywords?: string[]): number {
@@ -210,14 +211,27 @@
         return searchableText.includes(normalizedSearch) ? 1 : 0;
     }
 
-    function buildSearchHref(path: string, searchText: string): string {
-        const params = new URLSearchParams({
-            filter: searchText,
-            limit: '20',
-            time: ''
-        });
+    function getCommandGroup(route: NavigationItem): string {
+        return route.group === 'Dashboards' ? route.title : route.group;
+    }
 
-        return `${path}?${params.toString()}`;
+    function getCommandTitle(route: NavigationItem): string {
+        return route.group === 'Dashboards' ? `All ${route.title}` : route.title;
+    }
+
+    function getCommandValue(...parts: Array<string | undefined>): string {
+        return parts.filter(Boolean).join(' ');
+    }
+
+    function getEventHref(result: CommandSearchResult): string {
+        return buildEventDetailsHref(result.id);
+    }
+
+    function getResultDescription(result: CommandSearchResult): string | undefined {
+        const data = result.data as Record<string, unknown>;
+        const values = [data.Identity, data.Source, data.Path].filter((value): value is string => typeof value === 'string' && value.length > 0);
+
+        return values.join(' · ') || undefined;
     }
 
     function getResultTitle(result: CommandSearchResult): string {
@@ -233,19 +247,8 @@
         return values.join(' ') || result.id;
     }
 
-    function getResultDescription(result: CommandSearchResult): string | undefined {
-        const data = result.data as Record<string, unknown>;
-        const values = [data.Identity, data.Source, data.Path].filter((value): value is string => typeof value === 'string' && value.length > 0);
-
-        return values.join(' · ') || undefined;
-    }
-
     function getResultValue(group: 'Event' | 'Stack', result: CommandSearchResult): string {
         return getCommandValue(group, debouncedSearchText, getResultTitle(result), getResultDescription(result), result.id);
-    }
-
-    function getEventHref(result: CommandSearchResult): string {
-        return buildEventDetailsHref(result.id);
     }
 
     function getStackHref(result: CommandSearchResult): string {
@@ -324,6 +327,16 @@
         }
     });
 
+    async function askExieAssistant(prompt: string): Promise<void> {
+        closeCommandWindow();
+        await askExie(prompt);
+    }
+
+    async function openExieAssistant(): Promise<void> {
+        closeCommandWindow();
+        await openExie();
+    }
+
     function openResetProjectDataDialog(project: ViewProject): void {
         resetProjectTarget = project;
         showResetProjectDataDialog = true;
@@ -344,16 +357,6 @@
         await openOrganizationSwitcher();
     }
 
-    async function openExieAssistant(): Promise<void> {
-        closeCommandWindow();
-        await openExie();
-    }
-
-    async function askExieAssistant(prompt: string): Promise<void> {
-        closeCommandWindow();
-        await askExie(prompt);
-    }
-
     let showInviteUserDialog = $state(false);
     const addOrganizationUserMutation = addOrganizationUser({
         route: {
@@ -362,12 +365,6 @@
             }
         }
     });
-
-    async function openInviteUserDialog(): Promise<void> {
-        closeCommandWindow();
-        await tick();
-        showInviteUserDialog = true;
-    }
 
     async function inviteUser(email: string): Promise<void> {
         try {
@@ -389,15 +386,9 @@
         await openUserMenu();
     }
 
-    async function openKeyboardShortcutsDialog(): Promise<void> {
+    function openGuidedTourCatalog(): void {
         closeCommandWindow();
-        await openKeyboardShortcuts();
-    }
-
-    async function switchToOrganization(organizationItem: ViewOrganization): Promise<void> {
-        closeCommandWindow();
-        organization.current = organizationItem.id;
-        await goto(resolve('/(app)/stack'));
+        openGuidedTours();
     }
 
     async function openImpersonateOrganizationDialog(): Promise<void> {
@@ -405,14 +396,31 @@
         await openImpersonateOrganization();
     }
 
-    async function stopImpersonatingOrganization(): Promise<void> {
+    async function openInviteUserDialog(): Promise<void> {
         closeCommandWindow();
-        await stopImpersonating();
+        await tick();
+        showInviteUserDialog = true;
+    }
+
+    async function openKeyboardShortcutsDialog(): Promise<void> {
+        closeCommandWindow();
+        await openKeyboardShortcuts();
     }
 
     function openSupportChat(): void {
         closeCommandWindow();
         openChat();
+    }
+
+    async function stopImpersonatingOrganization(): Promise<void> {
+        closeCommandWindow();
+        await stopImpersonating();
+    }
+
+    async function switchToOrganization(organizationItem: ViewOrganization): Promise<void> {
+        closeCommandWindow();
+        organization.current = organizationItem.id;
+        await goto(resolve('/'));
     }
 
     function toggleTheme(): void {
@@ -421,6 +429,12 @@
     }
 
     let isRefreshing = $state(false);
+    async function logOutCurrentUser(): Promise<void> {
+        closeCommandWindow();
+        await logout(queryClient, client);
+        await goto(resolve('/(auth)/login'));
+    }
+
     async function refreshCurrentView(): Promise<void> {
         closeCommandWindow();
         isRefreshing = true;
@@ -439,12 +453,6 @@
         } finally {
             isRefreshing = false;
         }
-    }
-
-    async function logOutCurrentUser(): Promise<void> {
-        closeCommandWindow();
-        await logout(queryClient, client);
-        await goto(resolve('/(auth)/login'));
     }
 
     const PAGE_JUMP_SIZE = 7;
@@ -556,6 +564,13 @@
                 bind:selectedActionId={selectedProjectActionId}
             />
             {#if !selectingProject}
+                <Command.Group heading="Guided Tours">
+                    <Command.Item value="Browse Guided Tours help onboarding guides" onSelect={openGuidedTourCatalog}>
+                        <Route />
+                        <span>Guided Tours</span>
+                    </Command.Item>
+                </Command.Group>
+                <Command.Separator />
                 {#if isExieEnabled}
                     <Command.Group heading="Exie" value="Exie Assistant">
                         <Command.Item value="Ask Exie open assistant AI chat" onSelect={() => void openExieAssistant()}>

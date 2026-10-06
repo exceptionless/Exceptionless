@@ -2,7 +2,6 @@
 @email = admin@exceptionless.test
 @password = tester
 @organizationId = 537650f3b77efe23a47914f3
-@feature = feature-saved-views
 
 ### login to test account
 # @name login
@@ -18,31 +17,12 @@ Content-Type: application/json
 
 @token = {{login.response.body.$.token}}
 
-### Enable saved views feature flag
-POST {{apiUrl}}/organizations/{{organizationId}}/features/{{feature}}
-Authorization: Bearer {{token}}
-
-### Get saved views by organization
-GET {{apiUrl}}/organizations/{{organizationId}}/saved-views
-Authorization: Bearer {{token}}
-
 ### Get saved views by view
 GET {{apiUrl}}/organizations/{{organizationId}}/saved-views/events
 Authorization: Bearer {{token}}
 
-### Create or update predefined saved views
-POST {{apiUrl}}/organizations/{{organizationId}}/saved-views/predefined
-Authorization: Bearer {{token}}
-
-### Get global predefined saved views as seed JSON
-GET {{apiUrl}}/saved-views/predefined
-Authorization: Bearer {{token}}
-
-### Force update matching organization saved views from the saved predefined definitions
-POST {{apiUrl}}/saved-views/predefined/force-update
-Authorization: Bearer {{token}}
-
-### Create organization-wide saved view
+### Create an organization-wide view with custom columns
+# Set is_private to true for a personal view.
 # @name newSavedView
 POST {{apiUrl}}/organizations/{{organizationId}}/saved-views
 Authorization: Bearer {{token}}
@@ -55,6 +35,7 @@ Content-Type: application/json
     "time": "[now-7d TO now]",
     "sort": "-date",
     "view_type": "events",
+    "is_private": false,
     "columns": {
         "summary": {
             "auto_fill": true,
@@ -77,37 +58,14 @@ Content-Type: application/json
 
 @savedViewId = {{newSavedView.response.body.$.id}}
 
-### Create private saved view
-POST {{apiUrl}}/organizations/{{organizationId}}/saved-views
+### Set your default view (use saved_view_id: null to clear it)
+PUT {{apiUrl}}/organizations/{{organizationId}}/saved-view-defaults/user
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-    "organization_id": "{{organizationId}}",
-    "name": "My Private View",
-    "filter": "type:error",
-    "view_type": "stream",
-    "columns": {
-        "summary": {
-            "auto_fill": true,
-            "visible": true,
-            "position": 0
-        },
-        "date": {
-            "visible": true,
-            "position": 1
-        },
-        "user": {
-            "visible": true,
-            "position": 2
-        }
-    },
-    "is_private": true
+    "saved_view_id": "{{savedViewId}}"
 }
-
-### Get saved view by id
-GET {{apiUrl}}/saved-views/{{savedViewId}}
-Authorization: Bearer {{token}}
 
 ### Update saved view
 PATCH {{apiUrl}}/saved-views/{{savedViewId}}
@@ -116,38 +74,9 @@ Content-Type: application/json
 
 {
     "name": "Open Events (Last 30d)",
-    "time": "[now-30d TO now]",
-    "sort": "date",
-    "columns": {
-        "summary": {
-            "auto_fill": true,
-            "visible": true,
-            "position": 0
-        },
-        "date": {
-            "visible": true,
-            "position": 1,
-            "width": 220
-        },
-        "user": {
-            "visible": true,
-            "position": 2
-        }
-    }
+    "time": "[now-30d TO now]"
 }
-
-### Save saved view as a predefined saved view
-POST {{apiUrl}}/saved-views/{{savedViewId}}/predefined
-Authorization: Bearer {{token}}
-
-### Delete predefined saved view
-DELETE {{apiUrl}}/saved-views/{{savedViewId}}/predefined
-Authorization: Bearer {{token}}
 
 ### Delete saved view
 DELETE {{apiUrl}}/saved-views/{{savedViewId}}
-Authorization: Bearer {{token}}
-
-### Disable saved views feature flag
-DELETE {{apiUrl}}/organizations/{{organizationId}}/features/{{feature}}
 Authorization: Bearer {{token}}

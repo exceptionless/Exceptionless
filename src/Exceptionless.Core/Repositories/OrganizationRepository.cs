@@ -60,9 +60,13 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         var query = new RepositoryQuery<Organization>();
 
         if (!String.IsNullOrWhiteSpace(criteria))
+        {
+            string normalizedCriteria = criteria.Trim();
             query.FieldOr(g => g
-                .FieldEquals(o => o.Id, criteria)
-                .FieldEquals(o => o.Name, criteria));
+                .FieldEquals(o => o.Id, normalizedCriteria)
+                .FieldEquals(o => o.Name, normalizedCriteria)
+                .FieldContains(o => o.Name, normalizedCriteria));
+        }
 
         if (paid.HasValue)
         {

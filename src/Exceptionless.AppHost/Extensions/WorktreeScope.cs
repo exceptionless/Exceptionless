@@ -10,15 +10,11 @@ public sealed record WorktreePorts(
     int ApiHttp,
     int ApiHttps,
     int JobsHttp,
-    int OldAppHttp,
-    int OldAppHttps,
-    int OldAppLiveReload,
     int AppHttps,
     int DocsHttp)
 {
     public string ApiHttpUrl => $"http://localhost:{ApiHttp}";
     public string ApiHttpsUrl => $"https://localhost:{ApiHttps}";
-    public string OldAppHttpsUrl => $"https://angular-ex.dev.localhost:{OldAppHttps}";
     public string AppHttpsUrl => $"https://web-ex.dev.localhost:{AppHttps}";
 }
 
@@ -51,7 +47,7 @@ public static class WorktreeScope
 
     public static WorktreePorts AssignFreePorts()
     {
-        int[] ports = FreePorts(12);
+        int[] ports = FreePorts(9);
         var assignments = new WorktreePorts(
             ports[0],
             ports[1],
@@ -61,14 +57,11 @@ public static class WorktreeScope
             ports[5],
             ports[6],
             ports[7],
-            ports[8],
-            ports[9],
-            ports[10],
-            ports[11]);
+            ports[8]);
 
         Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"https://localhost:{assignments.DashboardHttps};http://localhost:{assignments.DashboardHttp}");
-        Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", $"https://localhost:{assignments.DashboardOtlp}");
-        Environment.SetEnvironmentVariable("DOTNET_RESOURCE_SERVICE_ENDPOINT_URL", $"https://localhost:{assignments.ResourceService}");
+        Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", $"https://localhost:{assignments.DashboardOtlp}");
+        Environment.SetEnvironmentVariable("ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL", $"https://localhost:{assignments.ResourceService}");
 
         return assignments;
     }

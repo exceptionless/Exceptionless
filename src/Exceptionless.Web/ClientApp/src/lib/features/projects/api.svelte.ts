@@ -3,7 +3,9 @@ import type { StringValueFromBody, WorkInProgressResult } from '$features/shared
 import type { WebSocketMessageValue } from '$features/websockets/models';
 
 import { accessToken } from '$features/auth/index.svelte';
+import { queryKeys as eventQueryKeys } from '$features/events/api.svelte';
 import { fetchApiJson } from '$features/shared/api/api.svelte';
+import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
@@ -30,6 +32,19 @@ export async function invalidateProjectQueries(queryClient: QueryClient, message
             queryKey: queryKeys.projects()
         });
     }
+
+    await invalidateProjectSummaryQueries(queryClient);
+}
+
+export async function invalidateProjectSummaryQueries(queryClient: QueryClient): Promise<void> {
+    await Promise.all([
+        queryClient.invalidateQueries({
+            queryKey: eventQueryKeys.type
+        }),
+        queryClient.invalidateQueries({
+            queryKey: stackQueryKeys.type
+        })
+    ]);
 }
 
 // TODO: Do we need to scope these all by organization?
@@ -426,11 +441,10 @@ export function getProjectQuery(request: GetProjectRequest) {
 
         return {
             enabled: () => !!accessToken.current && !!id,
-            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            // Like event and stack reads, finish across remounts so the next observer can reuse the result.
+            queryFn: async () => {
                 const client = useFetchClient();
-                const response = await client.getJSON<ViewProject>(`projects/${id}`, {
-                    signal
-                });
+                const response = await client.getJSON<ViewProject>(`projects/${id}`);
 
                 return response.data!;
             },
@@ -717,8 +731,17 @@ export function updateProject(request: UpdateProjectRequest) {
                 queryKey: queryKeys.id(request.route.id)
             });
         },
-        onSuccess: (project: ViewProject) => {
+        onSuccess: async (project: ViewProject) => {
             queryClient.setQueryData(queryKeys.id(request.route.id), project);
+            await Promise.all([
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.organization(project.organization_id)
+                }),
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.projects()
+                }),
+                invalidateProjectSummaryQueries(queryClient)
+            ]);
         }
     }));
 }

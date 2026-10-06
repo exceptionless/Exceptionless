@@ -1,10 +1,11 @@
-# Additonal http collections can be found in the tests/http folder.
+# Quick API walkthrough against a local development instance.
+# More manual examples are in tests/http. Run login before the authenticated requests.
 
 @apiUrl = http://localhost:7110/api/v2
 @email = admin@exceptionless.test
 @password = tester
 
-### create an account
+### Optional: create a new account
 
 # @name signup
 POST {{apiUrl}}/auth/signup
@@ -12,7 +13,7 @@ Content-Type: application/json
 
 {
     "name": "Test Tester",
-    "email": "{{email}}",
+    "email": "new-user@exceptionless.test",
     "password": "{{password}}"
 }
 
@@ -71,14 +72,4 @@ Hello World!
 ### get events
 
 GET {{apiUrl}}/events?sort=date
-Authorization: Bearer {{token}}
-
-### get events with after token
-
-GET {{apiUrl}}/events?sort=date&after=WzE2OTQxNDczMjc1NTgsIjY0ZmFhMmZmZTBhZTljMmY1YzhmZjMxYyJd
-Authorization: Bearer {{token}}
-
-###
-
-GET {{apiUrl}}/events/count?filter=(status:open%20OR%20status:regressed)&offset=-300m&time=last%2024%20hours&aggregations=date:(date^-300m%20cardinality:stack%20sum:count~1)%20cardinality:stack%20terms:(first%20@include:true)%20sum:count~1
 Authorization: Bearer {{token}}

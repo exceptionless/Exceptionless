@@ -32,6 +32,12 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     [Required]
     public string Name { get; set; } = null!;
 
+    /// <summary>
+    /// The shared saved view used as the default landing view when a user has not selected a personal default.
+    /// </summary>
+    [ObjectId]
+    public string? DefaultSavedViewId { get; set; }
+
     [StringLength(2000)]
     public string? IconFileName { get; set; }
 

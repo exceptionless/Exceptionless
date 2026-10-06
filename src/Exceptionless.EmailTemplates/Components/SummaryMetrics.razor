@@ -1,0 +1,23 @@
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0 32px;width:100%">
+    <tr>
+        @foreach (var metric in Metrics)
+        {
+            <td class="email-metric email-metric-@Metrics.Count" width="@(100 / Metrics.Count)%" valign="top" style="padding:4px">
+                <div style="background:@EmailStyles.White;border:1px solid @EmailStyles.Border;min-height:70px;padding:10px;text-align:center">
+                    <b style="display:block;text-align:left">@metric.Label</b>
+                    <div style="color:@metric.Color;font-size:34px;font-weight:400;line-height:1.3;margin-top:3px;text-align:center">@metric.Value</div>
+                </div>
+            </td>
+        }
+    </tr>
+</table>
+
+@code {
+    [Parameter, EditorRequired]
+    public required IReadOnlyList<SummaryMetric> Metrics { get; set; }
+
+    public sealed record SummaryMetric(string Label, double Value, string Color)
+    {
+        public SummaryMetric(string label, double value) : this(label, value, EmailStyles.Dark) { }
+    }
+}

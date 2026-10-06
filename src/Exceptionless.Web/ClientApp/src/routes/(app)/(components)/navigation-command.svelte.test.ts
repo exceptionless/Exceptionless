@@ -19,6 +19,7 @@ const project = vi.hoisted(() => ({
     organization_id: 'organization-id'
 }));
 
+vi.mock('$env/dynamic/public', () => ({ env: {} }));
 vi.mock('$app/navigation', () => ({ goto }));
 vi.mock('$features/auth/api.svelte', () => ({ logout }));
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
@@ -59,6 +60,7 @@ type RenderOptions = {
     isImpersonating?: boolean;
     openChat?: () => void;
     openExie?: () => Promise<void> | void;
+    openGuidedTours?: () => void;
     openImpersonateOrganization?: () => Promise<void> | void;
     organizations?: Array<{ id: string; name: string }>;
     stopImpersonating?: () => Promise<void> | void;
@@ -66,7 +68,7 @@ type RenderOptions = {
 
 const sessionsRoute: NavigationItem = {
     group: 'Dashboards',
-    href: '/next/sessions',
+    href: '/sessions',
     icon: undefined as never,
     title: 'Sessions'
 };
@@ -81,6 +83,7 @@ function renderCommandPalette(routes: NavigationItem[] = [], options: RenderOpti
         open: true,
         openChat: options.openChat ?? vi.fn(),
         openExie: options.openExie ?? vi.fn(),
+        openGuidedTours: options.openGuidedTours ?? vi.fn(),
         openImpersonateOrganization: options.openImpersonateOrganization ?? vi.fn(),
         openKeyboardShortcuts: vi.fn(),
         openOrganizationSwitcher: vi.fn(),
@@ -109,14 +112,14 @@ describe('NavigationCommand project actions', () => {
     });
 
     it.each([
-        ['Open Project', `/next/project/${project.id}/manage`],
-        ['Project Stacks', `/next/stack?filter=project:${project.id}`],
-        ['Project Events', `/next/event?project=${project.id}`],
-        ['Project API Keys', `/next/project/${project.id}/api-keys`],
-        ['Project Webhooks & Integrations', `/next/project/${project.id}/integrations`],
-        ['Project Source Maps', `/next/project/${project.id}/source-maps`],
-        ['Project Notifications', `/next/account/notifications?project=${project.id}`],
-        ['Client Setup', `/next/project/${project.id}/configure`]
+        ['Open Project', `/project/${project.id}/manage`],
+        ['Project Stacks', `/stack?filter=project:${project.id}`],
+        ['Project Events', `/event?project=${project.id}`],
+        ['Project API Keys', `/project/${project.id}/api-keys`],
+        ['Project Webhooks & Integrations', `/project/${project.id}/integrations`],
+        ['Project Source Maps', `/project/${project.id}/source-maps`],
+        ['Project Notifications', `/account/notifications?project=${project.id}`],
+        ['Client Setup', `/project/${project.id}/configure`]
     ])('links %s to the selected project', async (action, expectedHref) => {
         renderCommandPalette();
 
@@ -131,7 +134,7 @@ describe('NavigationCommand project actions', () => {
         renderCommandPalette([
             {
                 group: 'My Account',
-                href: '/next/account/ai-tools',
+                href: '/account/ai-tools',
                 icon: undefined as never,
                 keywords: ['MCP'],
                 title: 'AI Tools'
@@ -224,7 +227,7 @@ describe('NavigationCommand project actions', () => {
 
         const usersLink = screen.getByText('View Organization Users').closest('a');
 
-        expect(usersLink?.getAttribute('href')).toBe('/next/organization/organization-id/users');
+        expect(usersLink?.getAttribute('href')).toBe('/organization/organization-id/users');
     });
 
     it('opens Exie from the command palette', async () => {
@@ -274,7 +277,7 @@ describe('NavigationCommand project actions', () => {
         await fireEvent.click(screen.getByText('Switch to Other Organization'));
 
         expect(organizationState.current).toBe('other-organization-id');
-        await waitFor(() => expect(goto).toHaveBeenCalledWith('/next/stack'));
+        await waitFor(() => expect(goto).toHaveBeenCalledWith('/'));
     });
 
     it('opens support chat', async () => {
@@ -316,6 +319,27 @@ describe('NavigationCommand project actions', () => {
         renderCommandPalette();
         await fireEvent.click(screen.getByText('Log Out'));
         await waitFor(() => expect(logout).toHaveBeenCalledOnce());
-        expect(goto).toHaveBeenCalledWith('/next/login');
+        expect(goto).toHaveBeenCalledWith('/login');
+    });
+});
+
+describe('NavigationCommand guided tours', () => {
+    it('opens the guided-tour catalog from one command', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        const openGuidedTours = vi.fn();
+        try {
+            const catalogPalette = renderCommandPalette([], { openGuidedTours });
+
+            // Act
+            await fireEvent.click(screen.getByRole('option', { name: 'Guided Tours' }));
+
+            // Assert
+            expect(openGuidedTours).toHaveBeenCalled();
+            catalogPalette.unmount();
+            await vi.runAllTimersAsync();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });

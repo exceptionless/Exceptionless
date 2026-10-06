@@ -52,7 +52,7 @@ public class Program
             .AddYamlFile("appsettings.yml", optional: true, reloadOnChange: true)
             .AddYamlFile($"appsettings.{environment}.yml", optional: true, reloadOnChange: true)
             .AddCustomEnvironmentVariables()
-            .AddCommandLine(args)
+            .AddCommandLine(jobOptions.ConfigurationArguments)
             .Build();
 
         Log.Logger = new LoggerConfiguration()
@@ -177,7 +177,12 @@ public class Program
         if (options is { MaintainIndexes: true, AllJobs: false })
             services.AddJob<MaintainIndexesJob>();
 
-        if (options.Migration)
+        if (options.RerunMigrationId is not null)
+        {
+            services.AddSingleton(new RerunMigrationJobOptions(options.RerunMigrationId));
+            services.AddJob<RerunMigrationJob>(o => o.WaitForStartupActions());
+        }
+        else if (options.Migration)
             services.AddJob<MigrationJob>(o => o.WaitForStartupActions());
         if (options.StackStatus)
             services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());

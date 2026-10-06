@@ -72,6 +72,10 @@
     const totalPages = $derived(Math.max(1, Math.ceil(totalCount / pageSize)));
     const hasFilters = $derived(searchQuery !== '' || paidFilter !== undefined || suspendedFilter !== undefined);
 
+    function isUserMember(orgId: string | undefined): boolean {
+        return orgId ? userOrganizationIds.includes(orgId) : false;
+    }
+
     function resetFilters() {
         searchQuery = '';
         paidFilter = undefined;
@@ -80,13 +84,12 @@
         selectedOrganization = null;
     }
 
-    function isUserMember(orgId: string | undefined): boolean {
-        return orgId ? userOrganizationIds.includes(orgId) : false;
-    }
-
     const actionButtonText = $derived(selectedOrganization && isUserMember(selectedOrganization.id) ? 'View Organization' : 'Impersonate');
-    function handleSelect(organization: ViewOrganization) {
-        selectedOrganization = organization;
+    function handleCancel() {
+        open = false;
+        searchQuery = '';
+        selectedOrganization = null;
+        currentPage = 1;
     }
 
     async function handleImpersonate() {
@@ -97,13 +100,6 @@
             selectedOrganization = null;
             currentPage = 1;
         }
-    }
-
-    function handleCancel() {
-        open = false;
-        searchQuery = '';
-        selectedOrganization = null;
-        currentPage = 1;
     }
 
     function handleOpenChange(isOpen: boolean) {
@@ -122,6 +118,10 @@
         selectedOrganization = null;
     }
 
+    function handleSelect(organization: ViewOrganization) {
+        selectedOrganization = organization;
+    }
+
     $effect(() => {
         void searchQuery;
         void paidFilter;
@@ -129,23 +129,6 @@
         currentPage = 1;
         selectedOrganization = null;
     });
-
-    function getBillingStatusLabel(status: BillingStatus | null | undefined): string {
-        switch (status) {
-            case BillingStatus.Active:
-                return 'Active';
-            case BillingStatus.Canceled:
-                return 'Canceled';
-            case BillingStatus.PastDue:
-                return 'Past Due';
-            case BillingStatus.Trialing:
-                return 'Trialing';
-            case BillingStatus.Unpaid:
-                return 'Unpaid';
-            default:
-                return 'Unknown';
-        }
-    }
 
     function getBillingStatusColor(status: BillingStatus | null | undefined): string {
         switch (status) {
@@ -161,6 +144,23 @@
                 return 'text-red-600 dark:text-red-400';
             default:
                 return 'text-muted-foreground';
+        }
+    }
+
+    function getBillingStatusLabel(status: BillingStatus | null | undefined): string {
+        switch (status) {
+            case BillingStatus.Active:
+                return 'Active';
+            case BillingStatus.Canceled:
+                return 'Canceled';
+            case BillingStatus.PastDue:
+                return 'Past Due';
+            case BillingStatus.Trialing:
+                return 'Trialing';
+            case BillingStatus.Unpaid:
+                return 'Unpaid';
+            default:
+                return 'Unknown';
         }
     }
 

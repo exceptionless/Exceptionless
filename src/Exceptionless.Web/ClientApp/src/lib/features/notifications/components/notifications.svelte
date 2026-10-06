@@ -21,6 +21,31 @@
 
     type SystemNotificationTarget = 'Both' | 'Legacy' | 'Modern';
 
+    function getDismissedSystemNotificationKey() {
+        if (typeof localStorage === 'undefined') {
+            return null;
+        }
+
+        try {
+            return localStorage.getItem(dismissedSystemNotificationStorageKey);
+        } catch {
+            return null;
+        }
+    }
+
+    function getSystemNotificationDateKey(date: null | string | undefined) {
+        if (!date) {
+            return null;
+        }
+
+        const parsedDate = new Date(date);
+        return Number.isNaN(parsedDate.getTime()) ? date : parsedDate.toISOString();
+    }
+
+    function getSystemNotificationKey(date: null | string | undefined, level: 'Error' | 'Info' | 'Warning', target: SystemNotificationTarget, message: string) {
+        return JSON.stringify([getSystemNotificationDateKey(date), level, target, message]);
+    }
+
     function normalizeSystemNotificationTarget(target: null | string | undefined): SystemNotificationTarget {
         const normalizedTarget = (target ?? 'Both').replace(/[^a-z]/gi, '').toLowerCase();
 
@@ -45,31 +70,6 @@
         }
 
         return 'Both';
-    }
-
-    function getDismissedSystemNotificationKey() {
-        if (typeof localStorage === 'undefined') {
-            return null;
-        }
-
-        try {
-            return localStorage.getItem(dismissedSystemNotificationStorageKey);
-        } catch {
-            return null;
-        }
-    }
-
-    function getSystemNotificationDateKey(date: null | string | undefined) {
-        if (!date) {
-            return null;
-        }
-
-        const parsedDate = new Date(date);
-        return Number.isNaN(parsedDate.getTime()) ? date : parsedDate.toISOString();
-    }
-
-    function getSystemNotificationKey(date: null | string | undefined, level: 'Error' | 'Info' | 'Warning', target: SystemNotificationTarget, message: string) {
-        return JSON.stringify([getSystemNotificationDateKey(date), level, target, message]);
     }
 
     function setDismissedSystemNotificationKey(key: null | string) {
@@ -97,7 +97,9 @@
 
     const queryTarget = $derived<SystemNotificationTarget>(normalizeSystemNotificationTarget(currentNotificationQuery.data?.target));
     const effectiveTarget = $derived(hasRealtimeSystemNotification ? systemTarget : queryTarget);
-    const showForModern = $derived(effectiveTarget === 'Both' || effectiveTarget === 'Modern');
+    // Existing notifications and WebSocket messages retain their public target values.
+    // Do not surface a previously hidden banner merely because the other UI was removed.
+    const showSystemNotification = $derived(effectiveTarget === 'Both' || effectiveTarget === 'Modern');
 
     const displayMessage = $derived(
         hasRealtimeSystemNotification ? systemMessage || fallbackMessage : currentNotificationQuery.data?.message || fallbackMessage
@@ -140,7 +142,7 @@
     });
 </script>
 
-{#if displayMessage && showForModern && systemNotificationKey !== dismissedSystemNotificationKey}
+{#if displayMessage && showSystemNotification && systemNotificationKey !== dismissedSystemNotificationKey}
     {@const LevelIcon = levelIconMap[displayLevel]}
     <Notification variant={levelVariantMap[displayLevel]} role="alert" aria-live="assertive" class="mb-4">
         {#snippet icon()}

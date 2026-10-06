@@ -13,7 +13,6 @@
   </Folder>
   <Folder Name="/Solution Items/http/">
     <File Path="tests/http/admin.http" />
-    <File Path="tests/http/auth.http" />
     <File Path="tests/http/events.http" />
     <File Path="tests/http/organizations.http" />
     <File Path="tests/http/projects.http" />
@@ -27,6 +26,7 @@
   <Project Path="benchmarks/Exceptionless.Ingestion.Load/Exceptionless.Ingestion.Load.csproj" />
   <Project Path="src/Exceptionless.AppHost/Exceptionless.AppHost.csproj" />
   <Project Path="src/Exceptionless.Core/Exceptionless.Core.csproj" />
+  <Project Path="src/Exceptionless.EmailTemplates/Exceptionless.EmailTemplates.csproj" />
   <Project Path="src/Exceptionless.Insulation/Exceptionless.Insulation.csproj" />
   <Project Path="src/Exceptionless.Job/Exceptionless.Job.csproj" />
   <Project Path="src/Exceptionless.Web/Exceptionless.Web.csproj" />

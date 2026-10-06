@@ -8,31 +8,25 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Sidebar from '$comp/ui/sidebar';
     import { useSidebar } from '$comp/ui/sidebar';
+    import SavedViewOrderDialog from '$features/saved-views/components/saved-view-order-dialog.svelte';
+    import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Settings from '@lucide/svelte/icons/settings-2';
     import Wrench from '@lucide/svelte/icons/wrench';
     import { onDestroy } from 'svelte';
+    import { toast } from 'svelte-sonner';
 
-    import type { NavigationItem } from '../../../routes.svelte';
+    import type { NavigationChild, NavigationItem } from '../../../routes.svelte';
 
-    function isSavedItemActive(savedItem: { href: string }, routeHref: string): boolean {
-        const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved');
-        const activeSavedParam = page.url.searchParams.get('saved');
-        const isOnRoute = routeHref === page.url.pathname;
+    type Props = ComponentProps<typeof Sidebar.Root> & {
+        footer?: Snippet;
+        header?: Snippet;
+        onSavedViewOrderChange: (viewType: string, savedViewIds: string[]) => Promise<void>;
+        routes: NavigationItem[];
+    };
 
-        return isOnRoute && activeSavedParam === savedId;
-    }
-
-    function isPathActive(href: string | undefined): boolean {
-        if (!href) {
-            return false;
-        }
-
-        return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
-    }
-
-    function isSettingsGroup(group: string): boolean {
-        return group === 'Settings' || group.endsWith(' Settings');
+    function hasSavedViewChildren(route: NavigationItem): boolean {
+        return !!route.view || (route.children?.some((childItem) => isSavedViewChild(childItem)) ?? false);
     }
 
     function isChildItemActive(childItem: { href: string }, routeHref: string): boolean {
@@ -46,12 +40,12 @@
         return isPathActive(childUrl.pathname);
     }
 
-    function isSavedViewChild(childItem: { href: string }): boolean {
-        return new URL(childItem.href, page.url.origin).searchParams.has('saved');
-    }
+    function isPathActive(href: string | undefined): boolean {
+        if (!href) {
+            return false;
+        }
 
-    function hasSavedViewChildren(route: NavigationItem): boolean {
-        return !!route.view || (route.children?.some((childItem) => isSavedViewChild(childItem)) ?? false);
+        return page.url.pathname === href || page.url.pathname.startsWith(href + '/');
     }
 
     function isRouteActive(route: NavigationItem): boolean {
@@ -63,13 +57,23 @@
         return route.children?.some((childItem) => isChildItemActive(childItem, routeHref)) ?? false;
     }
 
-    type Props = ComponentProps<typeof Sidebar.Root> & {
-        footer?: Snippet;
-        header?: Snippet;
-        routes: NavigationItem[];
-    };
+    function isSavedItemActive(savedItem: { href: string }, routeHref: string): boolean {
+        const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved');
+        const activeSavedParam = page.url.searchParams.get('saved');
+        const isOnRoute = routeHref === page.url.pathname;
 
-    let { footer, header, routes, ...props }: Props = $props();
+        return isOnRoute && activeSavedParam === savedId;
+    }
+
+    function isSavedViewChild(childItem: { href: string }): boolean {
+        return new URL(childItem.href, page.url.origin).searchParams.has('saved');
+    }
+
+    function isSettingsGroup(group: string): boolean {
+        return group === 'Settings' || group.endsWith(' Settings');
+    }
+
+    let { footer, header, onSavedViewOrderChange, ref = $bindable(null), routes, ...props }: Props = $props();
     const dashboardRoutes = $derived(routes.filter((route) => route.group === 'Dashboards'));
 
     const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
@@ -100,6 +104,152 @@
     let hoverMenuCloseTimeout = $state<ReturnType<typeof setTimeout> | undefined>(undefined);
     let expandedRouteHrefs = $state<Record<string, boolean>>({});
     let settingsExpanded = $state<boolean | undefined>(undefined);
+    let savedViewOrderRoute = $state<NavigationItem>();
+    let savedViewOrderDialogOpen = $state(false);
+    let draggedSavedView = $state<{ savedViewId: string; viewType: string }>();
+    let pendingSavedViewOrders = $state<Record<string, string[]>>({});
+    let savingSavedViewOrderType = $state<string>();
+
+    const savedViewsForOrderDialog = $derived(
+        (savedViewOrderRoute?.children ?? [])
+            .filter((child) => !!child.savedView)
+            .map((child) => ({
+                id: child.savedView!.id,
+                name: child.title,
+                user_id: child.savedView!.isPrivate ? 'current-user' : undefined
+            }))
+    );
+
+    function clearPendingSavedViewOrder(viewType: string): void {
+        pendingSavedViewOrders = Object.fromEntries(Object.entries(pendingSavedViewOrders).filter(([key]) => key !== viewType));
+    }
+
+    function closeHoverMenu(menuId: string) {
+        if (!isIconCollapsed) {
+            return;
+        }
+
+        if (hoverMenuCloseTimeout) {
+            clearTimeout(hoverMenuCloseTimeout);
+        }
+
+        hoverMenuCloseTimeout = setTimeout(() => {
+            if (hoverMenuId === menuId) {
+                hoverMenuId = undefined;
+            }
+        }, 220);
+    }
+
+    function getDroppedSavedViewIds(route: NavigationItem, draggedSavedViewId: string, targetSavedViewId: string): string[] {
+        const savedViewIds = getSavedViewIds(route);
+        const currentIndex = savedViewIds.indexOf(draggedSavedViewId);
+        const targetIndex = savedViewIds.indexOf(targetSavedViewId);
+        if (currentIndex < 0 || targetIndex < 0) {
+            return savedViewIds;
+        }
+
+        const [movedSavedViewId] = savedViewIds.splice(currentIndex, 1);
+        if (!movedSavedViewId) {
+            return savedViewIds;
+        }
+
+        savedViewIds.splice(targetIndex, 0, movedSavedViewId);
+        return savedViewIds;
+    }
+
+    function getOrderedRouteChildren(route: NavigationItem): NavigationChild[] {
+        if (!route.view) {
+            return route.children ?? [];
+        }
+
+        const pendingOrder = pendingSavedViewOrders[route.view];
+        if (!pendingOrder) {
+            return route.children ?? [];
+        }
+
+        const savedViewsById = new Map((route.children ?? []).flatMap((child) => (child.savedView ? [[child.savedView.id, child] as const] : [])));
+        const orderedSavedViews = pendingOrder.map((savedViewId) => savedViewsById.get(savedViewId)).filter((child): child is NavigationChild => !!child);
+        const unorderedSavedViews = (route.children ?? []).filter((child) => child.savedView && !pendingOrder.includes(child.savedView.id));
+        const builtInChildren = (route.children ?? []).filter((child) => !child.savedView);
+
+        return [...orderedSavedViews, ...unorderedSavedViews, ...builtInChildren];
+    }
+
+    function getSavedViewIds(route: NavigationItem): string[] {
+        return (route.children ?? []).flatMap((child) => (child.savedView ? [child.savedView.id] : []));
+    }
+
+    function handleSavedViewDragEnd(route: NavigationItem): void {
+        if (!route.view || draggedSavedView?.viewType !== route.view) {
+            return;
+        }
+
+        draggedSavedView = undefined;
+        clearPendingSavedViewOrder(route.view);
+    }
+
+    function handleSavedViewDragOver(event: DragEvent, route: NavigationItem, targetSavedViewId: string): void {
+        if (!route.view || draggedSavedView?.viewType !== route.view || draggedSavedView.savedViewId === targetSavedViewId) {
+            return;
+        }
+
+        event.preventDefault();
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+    }
+
+    function handleSavedViewDragStart(event: DragEvent, route: NavigationItem, savedViewId: string): void {
+        if (!route.view || savingSavedViewOrderType === route.view) {
+            event.preventDefault();
+            return;
+        }
+
+        draggedSavedView = {
+            savedViewId,
+            viewType: route.view
+        };
+
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', savedViewId);
+        }
+    }
+
+    function isHoverMenuOpen(menuId: string): boolean {
+        return isIconCollapsed && hoverMenuId === menuId;
+    }
+
+    function isRouteGroupOpen(route: NavigationItem): boolean {
+        const routeHref = String(route.href);
+
+        return expandedRouteHrefs[routeHref] ?? isRouteActive(route);
+    }
+
+    function isSettingsOpen(): boolean {
+        return settingsExpanded ?? settingsIsActive;
+    }
+
+    function onFlyoutLinkClick(): void {
+        hoverMenuId = undefined;
+        onMenuClick();
+    }
+
+    function onHoverMenuOpenChange(menuId: string, open: boolean): void {
+        if (!isIconCollapsed) {
+            hoverMenuId = undefined;
+            return;
+        }
+
+        if (open) {
+            openHoverMenu(menuId);
+            return;
+        }
+
+        if (hoverMenuId === menuId) {
+            hoverMenuId = undefined;
+        }
+    }
 
     function onMenuClick() {
         if (sidebar.isMobile) {
@@ -120,51 +270,49 @@
         hoverMenuId = menuId;
     }
 
-    function closeHoverMenu(menuId: string) {
-        if (!isIconCollapsed) {
+    function openSavedViewOrderDialog(event: MouseEvent, route: NavigationItem): void {
+        event.stopPropagation();
+        savedViewOrderRoute = route;
+        savedViewOrderDialogOpen = true;
+    }
+
+    async function persistDraggedSavedViewOrder(route: NavigationItem, targetSavedViewId: string): Promise<void> {
+        if (!route.view || draggedSavedView?.viewType !== route.view) {
             return;
         }
 
-        if (hoverMenuCloseTimeout) {
-            clearTimeout(hoverMenuCloseTimeout);
-        }
-
-        hoverMenuCloseTimeout = setTimeout(() => {
-            if (hoverMenuId === menuId) {
-                hoverMenuId = undefined;
-            }
-        }, 220);
-    }
-
-    function isHoverMenuOpen(menuId: string): boolean {
-        return isIconCollapsed && hoverMenuId === menuId;
-    }
-
-    function onHoverMenuOpenChange(menuId: string, open: boolean): void {
-        if (!isIconCollapsed) {
-            hoverMenuId = undefined;
+        const viewType = route.view;
+        const currentSavedViewIds = getSavedViewIds(route);
+        const savedViewIds = getDroppedSavedViewIds(route, draggedSavedView.savedViewId, targetSavedViewId);
+        const orderChanged = savedViewIds.some((savedViewId, index) => savedViewId !== currentSavedViewIds[index]);
+        draggedSavedView = undefined;
+        if (!orderChanged) {
+            clearPendingSavedViewOrder(viewType);
             return;
         }
 
-        if (open) {
-            openHoverMenu(menuId);
+        pendingSavedViewOrders = {
+            ...pendingSavedViewOrders,
+            [viewType]: savedViewIds
+        };
+        savingSavedViewOrderType = viewType;
+        try {
+            await onSavedViewOrderChange(viewType, savedViewIds);
+            toast.success(`${route.title} view order saved.`);
+        } catch {
+            toast.error(`Failed to update your ${route.title.toLowerCase()} view order. Please try again.`);
+        } finally {
+            clearPendingSavedViewOrder(viewType);
+            savingSavedViewOrderType = undefined;
+        }
+    }
+
+    async function saveSavedViewOrder(savedViewIds: string[]): Promise<void> {
+        if (!savedViewOrderRoute?.view) {
             return;
         }
 
-        if (hoverMenuId === menuId) {
-            hoverMenuId = undefined;
-        }
-    }
-
-    function onFlyoutLinkClick(): void {
-        hoverMenuId = undefined;
-        onMenuClick();
-    }
-
-    function isRouteGroupOpen(route: NavigationItem): boolean {
-        const routeHref = String(route.href);
-
-        return expandedRouteHrefs[routeHref] ?? isRouteActive(route);
+        await onSavedViewOrderChange(savedViewOrderRoute.view, savedViewIds);
     }
 
     function setRouteGroupOpen(route: NavigationItem, open: boolean): void {
@@ -173,10 +321,6 @@
             ...expandedRouteHrefs,
             [routeHref]: open
         };
-    }
-
-    function isSettingsOpen(): boolean {
-        return settingsExpanded ?? settingsIsActive;
     }
 
     $effect(() => {
@@ -215,14 +359,14 @@
     });
 </script>
 
-<Sidebar.Root collapsible="icon" {...props}>
+<Sidebar.Root bind:ref collapsible="icon" data-tour="app-navigation" {...props}>
     <Sidebar.Header class={!sidebar.isMobile ? 'mt-16' : ''}>
         {#if header}
             {@render header()}
         {/if}
     </Sidebar.Header>
     <Sidebar.Content>
-        <Sidebar.Group class="pt-0">
+        <Sidebar.Group class="pt-0" data-tour="saved-view-navigation">
             <Sidebar.Menu>
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}
@@ -234,7 +378,7 @@
                                 <DropdownMenu.Trigger>
                                     {#snippet child({ props })}
                                         <Sidebar.MenuItem onmouseenter={() => openHoverMenu(menuId)} onmouseleave={() => closeHoverMenu(menuId)}>
-                                            <Sidebar.MenuButton tooltipContent={route.title} {...props}>
+                                            <Sidebar.MenuButton data-tour={`navigation-${route.title.toLowerCase()}`} tooltipContent={route.title} {...props}>
                                                 <Icon />
                                                 <span>{route.title}</span>
                                             </Sidebar.MenuButton>
@@ -267,7 +411,11 @@
                             </DropdownMenu.Root>
                         {:else}
                             <Sidebar.MenuItem>
-                                <Sidebar.MenuButton isActive={isRouteActive(route)} tooltipContent={route.title}>
+                                <Sidebar.MenuButton
+                                    data-tour={`navigation-${route.title.toLowerCase()}`}
+                                    isActive={isRouteActive(route)}
+                                    tooltipContent={route.title}
+                                >
                                     {#snippet child({ props })}
                                         <A variant="ghost" href={route.href} title={route.title} onclick={onMenuClick} {...props}>
                                             <Icon />
@@ -283,23 +431,48 @@
                                 <Sidebar.MenuItem {...collapsibleProps}>
                                     <Collapsible.Trigger>
                                         {#snippet child({ props: triggerProps })}
-                                            <Sidebar.MenuButton {...triggerProps}>
+                                            <Sidebar.MenuButton
+                                                data-tour={`navigation-${route.title.toLowerCase()}`}
+                                                {...triggerProps}
+                                                class="group-has-data-[sidebar=menu-action]/menu-item:pr-14"
+                                            >
                                                 {#snippet child({ props: buttonProps })}
                                                     <button type="button" title={route.title} {...buttonProps}>
                                                         <Icon />
                                                         <span>{route.title}</span>
                                                         <ChevronRight
-                                                            class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                                                            class="absolute right-1 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
                                                         />
                                                     </button>
                                                 {/snippet}
                                             </Sidebar.MenuButton>
                                         {/snippet}
                                     </Collapsible.Trigger>
+                                    {#if route.view && (route.children ?? []).some((child) => !!child.savedView)}
+                                        <Sidebar.MenuAction
+                                            showOnHover
+                                            aria-label={`Reorder ${route.title} views`}
+                                            class="right-7"
+                                            title={`Reorder ${route.title} views`}
+                                            onclick={(event) => openSavedViewOrderDialog(event, route)}
+                                        >
+                                            <ArrowUpDown />
+                                        </Sidebar.MenuAction>
+                                    {/if}
                                     <Collapsible.Content>
                                         <Sidebar.MenuSub>
-                                            {#each route.children as savedItem (savedItem.href)}
-                                                <Sidebar.MenuSubItem>
+                                            {#each getOrderedRouteChildren(route) as savedItem (savedItem.href)}
+                                                <Sidebar.MenuSubItem
+                                                    class={draggedSavedView?.savedViewId === savedItem.savedView?.id ? 'opacity-50' : undefined}
+                                                    data-saved-view-id={savedItem.savedView?.id}
+                                                    ondragover={(event) => savedItem.savedView && handleSavedViewDragOver(event, route, savedItem.savedView.id)}
+                                                    ondrop={(event) => {
+                                                        event.preventDefault();
+                                                        if (savedItem.savedView) {
+                                                            void persistDraggedSavedViewOrder(route, savedItem.savedView.id);
+                                                        }
+                                                    }}
+                                                >
                                                     <Sidebar.MenuSubButton isActive={isChildItemActive(savedItem, route.href)}>
                                                         {#snippet child({ props: subProps })}
                                                             <A
@@ -307,6 +480,10 @@
                                                                 href={savedItem.href}
                                                                 title={savedItem.title}
                                                                 onclick={onMenuClick}
+                                                                draggable={!!savedItem.savedView && savingSavedViewOrderType !== route.view}
+                                                                ondragstart={(event) =>
+                                                                    savedItem.savedView && handleSavedViewDragStart(event, route, savedItem.savedView.id)}
+                                                                ondragend={() => handleSavedViewDragEnd(route)}
                                                                 {...subProps}
                                                             >
                                                                 <span class="truncate">{savedItem.title}</span>
@@ -322,7 +499,7 @@
                         </Collapsible.Root>
                     {:else}
                         <Sidebar.MenuItem>
-                            <Sidebar.MenuButton isActive={isRouteActive(route)}>
+                            <Sidebar.MenuButton data-tour={`navigation-${route.title.toLowerCase()}`} isActive={isRouteActive(route)}>
                                 {#snippet child({ props })}
                                     <A variant="ghost" href={route.href} title={route.title} onclick={onMenuClick} {...props}>
                                         <Icon />
@@ -420,3 +597,12 @@
         {/if}
     </Sidebar.Footer>
 </Sidebar.Root>
+
+{#if savedViewOrderRoute}
+    <SavedViewOrderDialog
+        bind:open={savedViewOrderDialogOpen}
+        onSave={saveSavedViewOrder}
+        savedViews={savedViewsForOrderDialog}
+        title={savedViewOrderRoute.title}
+    />
+{/if}

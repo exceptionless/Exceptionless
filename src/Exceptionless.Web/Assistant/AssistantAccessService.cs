@@ -2,6 +2,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Options;
@@ -11,13 +12,15 @@ namespace Exceptionless.Web.Assistant;
 public sealed class AssistantAccessService(
     AppOptions appOptions,
     BillingPlans billingPlans,
-    IOrganizationRepository organizationRepository)
+    IOrganizationRepository organizationRepository,
+    SystemSettingsService systemSettingsService)
 {
     public async Task<AssistantAccessDecision> GetAccessAsync(HttpRequest request, string? organizationId)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var configurationDecision = EvaluateConfiguration(appOptions);
+        bool enabled = await systemSettingsService.IsAssistantEnabledAsync();
+        var configurationDecision = EvaluateConfiguration(appOptions, enabled);
         if (configurationDecision is not null)
             return configurationDecision;
 
@@ -41,9 +44,9 @@ public sealed class AssistantAccessService(
         return EvaluatePlan(billingPlans.GetPlan(organization.PlanId)?.Assistant, billingPlans.MediumPlan.Id);
     }
 
-    internal static AssistantAccessDecision? EvaluateConfiguration(AppOptions appOptions)
+    internal static AssistantAccessDecision? EvaluateConfiguration(AppOptions appOptions, bool? enabled = null)
     {
-        if (!appOptions.AssistantOptions.Enabled)
+        if (!(enabled ?? appOptions.AssistantOptions.Enabled))
             return AssistantAccessDecision.Unavailable(AssistantAccessReason.Disabled, "Exie is disabled.", enabled: false);
 
         if (!appOptions.AssistantOptions.IsConfigured)

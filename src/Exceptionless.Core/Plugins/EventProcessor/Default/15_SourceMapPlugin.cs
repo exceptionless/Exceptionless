@@ -38,7 +38,8 @@ public sealed class SourceMapPlugin : EventProcessorPluginBase
             context.Project.Id,
             context.EventPostInfo?.ClientKeyHash,
             String.Equals(context.Organization.PlanId, _billingPlans.FreePlan.Id, StringComparison.OrdinalIgnoreCase));
-        if (await _sourceMapService.SymbolicateAsync(request, error))
+        var result = await _sourceMapService.ProcessAsync(request, error);
+        if (result.Modified)
             context.Event.SetError(error);
     }
 }

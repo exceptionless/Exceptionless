@@ -47,6 +47,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         AddIndex(OAuthTokens = new OAuthTokenIndex(this));
         AddIndex(Projects = new ProjectIndex(this));
         AddIndex(SavedViews = new SavedViewIndex(this));
+        AddIndex(SystemSettings = new SystemSettingsIndex(this));
         AddIndex(Tokens = new TokenIndex(this));
         AddIndex(Users = new UserIndex(this));
         AddIndex(WebHooks = new WebHookIndex(this));
@@ -77,6 +78,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     public OAuthTokenIndex OAuthTokens { get; }
     public ProjectIndex Projects { get; }
     public SavedViewIndex SavedViews { get; }
+    public SystemSettingsIndex SystemSettings { get; }
     public TokenIndex Tokens { get; }
     public UserIndex Users { get; }
     public WebHookIndex WebHooks { get; }

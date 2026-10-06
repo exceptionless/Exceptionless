@@ -6,8 +6,11 @@
     import { page } from '$app/state';
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
+    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
+    import Copy from '@lucide/svelte/icons/copy';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { onMount } from 'svelte';
+    import { toast } from 'svelte-sonner';
 
     import { type DetailSheetHistoryEntry, detailSheetHistoryStateKey, type DetailSheetPageState } from '../history-state';
     import { preserveDetailSheetForAssistant } from './detail-sheet-interaction';
@@ -26,15 +29,15 @@
 
     const svelteKitPageStateKey = 'sveltekit:states';
 
-    interface PendingNavigation {
-        options?: LinkNavigationOptions;
-        url: URL;
-    }
-
     interface LinkNavigationOptions {
         keepFocus?: boolean;
         noScroll?: boolean;
         replaceState?: boolean;
+    }
+
+    interface PendingNavigation {
+        options?: LinkNavigationOptions;
+        url: URL;
     }
 
     let { actions, children, detailsHref, historyKey, historyValue, onClose, onOpen, open, title }: Props = $props();
@@ -47,13 +50,64 @@
     let pendingNavigationTimer: number | undefined;
     let selectedLinkNavigationOptions: LinkNavigationOptions | undefined;
     let wasOpen = false;
+    const clipboard = new UseClipboard();
+
+    function clearOwnedHistoryEntry(): void {
+        historyEntryUrl = undefined;
+        historyEntryValue = undefined;
+        ownsHistoryEntry = false;
+    }
+
+    function consumeOwnedHistoryEntry(): void {
+        if (!browser || !ownsHistoryEntry) {
+            return;
+        }
+
+        const shouldTraverseBack = historyEntryUrl === getCurrentUrl();
+        clearOwnedHistoryEntry();
+        if (shouldTraverseBack) {
+            window.history.back();
+        }
+    }
+
+    async function copyDetailsLink(): Promise<void> {
+        await clipboard.copy(new URL(detailsHref, window.location.href).href);
+        if (clipboard.copied) {
+            toast.success(`${title} link copied`);
+        } else {
+            toast.error(`Unable to copy ${title.toLowerCase()} link`);
+        }
+    }
+
+    function createHistoryState(value?: string): Record<string, unknown> {
+        return {
+            ...page.state,
+            [detailSheetHistoryStateKey]: value
+                ? {
+                      key: historyKey,
+                      value
+                  }
+                : undefined
+        };
+    }
+
+    function getBrowserUrl(): string {
+        return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    }
 
     function getCurrentUrl(): string {
         return `${page.url.pathname}${page.url.search}${page.url.hash}`;
     }
 
-    function getBrowserUrl(): string {
-        return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    function getHistoryEntry(historyState: unknown): DetailSheetHistoryEntry | undefined {
+        if (!historyState || typeof historyState !== 'object') {
+            return undefined;
+        }
+
+        const rawHistoryState = historyState as Record<string, unknown>;
+        const pageState = (rawHistoryState[svelteKitPageStateKey] ?? rawHistoryState) as DetailSheetPageState;
+        const entry = pageState[detailSheetHistoryStateKey];
+        return entry?.key === historyKey && typeof entry.value === 'string' ? entry : undefined;
     }
 
     function getLinkNavigationOptions(link: HTMLAnchorElement): LinkNavigationOptions | undefined {
@@ -80,33 +134,11 @@
         return Object.values(options).some((value) => value !== undefined) ? options : undefined;
     }
 
-    function clearOwnedHistoryEntry(): void {
-        historyEntryUrl = undefined;
-        historyEntryValue = undefined;
-        ownsHistoryEntry = false;
-    }
-
-    function createHistoryState(value?: string): Record<string, unknown> {
-        return {
-            ...page.state,
-            [detailSheetHistoryStateKey]: value
-                ? {
-                      key: historyKey,
-                      value
-                  }
-                : undefined
-        };
-    }
-
-    function getHistoryEntry(historyState: unknown): DetailSheetHistoryEntry | undefined {
-        if (!historyState || typeof historyState !== 'object') {
-            return undefined;
+    function handleOpenChange(nextOpen: boolean) {
+        if (!nextOpen) {
+            consumeOwnedHistoryEntry();
+            onClose();
         }
-
-        const rawHistoryState = historyState as Record<string, unknown>;
-        const pageState = (rawHistoryState[svelteKitPageStateKey] ?? rawHistoryState) as DetailSheetPageState;
-        const entry = pageState[detailSheetHistoryStateKey];
-        return entry?.key === historyKey && typeof entry.value === 'string' ? entry : undefined;
     }
 
     function restoreOwnedHistoryEntry(entry: DetailSheetHistoryEntry): void {
@@ -117,25 +149,6 @@
 
         if (!open || historyValue !== entry.value) {
             onOpen(entry.value);
-        }
-    }
-
-    function consumeOwnedHistoryEntry(): void {
-        if (!browser || !ownsHistoryEntry) {
-            return;
-        }
-
-        const shouldTraverseBack = historyEntryUrl === getCurrentUrl();
-        clearOwnedHistoryEntry();
-        if (shouldTraverseBack) {
-            window.history.back();
-        }
-    }
-
-    function handleOpenChange(nextOpen: boolean) {
-        if (!nextOpen) {
-            consumeOwnedHistoryEntry();
-            onClose();
         }
     }
 
@@ -253,7 +266,7 @@
 
 <Sheet.Root onOpenChange={handleOpenChange} {open}>
     <Sheet.Content
-        class="bg-background top-15.25! bottom-0! z-40 h-auto! w-full scrollbar-gutter-stable gap-0 overflow-y-auto rounded-l-lg border-l text-base shadow-2xl duration-150 ease-out will-change-transform sm:max-w-full! md:w-5/6!"
+        class="bg-background top-15.25! bottom-0! z-40 h-auto! w-[calc(100%-1rem)]! scrollbar-gutter-stable gap-0 overflow-y-auto rounded-l-lg border-l text-base shadow-2xl duration-150 ease-out will-change-transform sm:max-w-full! md:w-5/6!"
         onInteractOutside={preserveDetailSheetForAssistant}
         overlayProps={{
             class: 'top-15.25! z-40 bg-black/5 dark:bg-black/40 supports-backdrop-filter:backdrop-blur-[0.5px]'
@@ -262,6 +275,15 @@
     >
         <div class="absolute top-3 right-12 z-10 flex items-center gap-1">
             {@render actions?.()}
+            <Button
+                aria-label={`Copy ${title.toLowerCase()} link`}
+                onclick={copyDetailsLink}
+                size="icon-sm"
+                title={`Copy ${title.toLowerCase()} link`}
+                variant="ghost"
+            >
+                <Copy aria-hidden="true" />
+            </Button>
             <Button aria-label="Open details in new window" href={detailsHref} size="icon-sm" title="Open in new window" variant="ghost">
                 <ExternalLink aria-hidden="true" />
             </Button>

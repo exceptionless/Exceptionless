@@ -1,12 +1,12 @@
 <script lang="ts">
     import type { ViewUser } from '$features/users/models';
 
+    import { page } from '$app/state';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import { Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { addOrganizationUser } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
     import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import { type GetOrganizationUsersParams, getOrganizationUsersQuery } from '$features/users/api.svelte';
     import InviteUserDialog from '$features/users/components/invite-user-dialog.svelte';
@@ -18,7 +18,7 @@
     import { createTable } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
 
-    const organizationId = organization.current!;
+    const organizationId = $derived(page.params.organizationId || '');
 
     const DEFAULT_PARAMS = {
         limit: DEFAULT_LIMIT
@@ -52,7 +52,7 @@
         }
     });
 
-    const table = createTable(getTableOptions<ViewUser>(usersQueryParameters, usersQuery, organizationId));
+    const table = createTable(getTableOptions<ViewUser>(usersQueryParameters, usersQuery, () => organizationId));
 
     const addUserMutation = addOrganizationUser({
         route: {

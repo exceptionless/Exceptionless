@@ -4,6 +4,7 @@ import Footer from './data-table-footer.svelte';
 import Loading from './data-table-loading.svelte';
 import PageCount from './data-table-page-count.svelte';
 import PageSize from './data-table-page-size.svelte';
+import Pager from './data-table-pager.svelte';
 import Pagination from './data-table-pagination.svelte';
 import Refresh from './data-table-refresh.svelte';
 import Selection from './data-table-selection.svelte';
@@ -18,6 +19,7 @@ export {
     Footer as DataTableFooter,
     Loading as DataTableLoading,
     PageCount as DataTablePageCount,
+    Pager as DataTablePager,
     PageSize as DataTablePageSize,
     Pagination as DataTablePagination,
     Refresh as DataTableRefresh,
@@ -27,6 +29,7 @@ export {
     Footer,
     Loading,
     PageCount,
+    Pager,
     PageSize,
     Pagination,
     Refresh,

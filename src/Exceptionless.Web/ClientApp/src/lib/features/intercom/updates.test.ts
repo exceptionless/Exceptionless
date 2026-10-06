@@ -69,11 +69,11 @@ describe('Intercom updates', () => {
     it('uses the normalized route ID instead of resource identifiers in the pathname', () => {
         const routeId = '/(app)/project/[projectId]/event/[eventId]';
 
-        expect(getIntercomRouteKey(routeId, '/next/project/project-a/event/event-a')).toBe(routeId);
-        expect(getIntercomRouteKey(routeId, '/next/project/project-a/event/event-b')).toBe(routeId);
+        expect(getIntercomRouteKey(routeId, '/project/project-a/event/event-a')).toBe(routeId);
+        expect(getIntercomRouteKey(routeId, '/project/project-a/event/event-b')).toBe(routeId);
     });
 
     it('falls back to the pathname when SvelteKit has no route ID', () => {
-        expect(getIntercomRouteKey(null, '/next/status')).toBe('/next/status');
+        expect(getIntercomRouteKey(null, '/status')).toBe('/status');
     });
 });

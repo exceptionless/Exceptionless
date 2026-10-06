@@ -4,6 +4,14 @@
     import { CodeBlock, Muted, P } from '$comp/typography';
     import * as Card from '$comp/ui/card';
     import * as Select from '$comp/ui/select';
+    import { getServerUrl } from '$shared/api/urls';
+
+    type AiTool = {
+        description: string;
+        id: AiToolId;
+        name: string;
+        steps: CommandStep[];
+    };
 
     type AiToolId = 'claude' | 'codex' | 'github-copilot' | 'opencode';
 
@@ -14,21 +22,15 @@
         title: string;
     };
 
-    type AiTool = {
-        description: string;
-        id: AiToolId;
-        name: string;
-        steps: CommandStep[];
-    };
-
     let mcpEndpoint = $state('/mcp');
     let mcpServerName = $state('exceptionless');
     let selectedToolId = $state<AiToolId>('claude');
 
     $effect(() => {
         if (browser) {
-            mcpEndpoint = `${window.location.origin}/mcp`;
-            mcpServerName = getMcpServerName(window.location.hostname);
+            const endpoint = new URL(getServerUrl('mcp'), window.location.origin);
+            mcpEndpoint = endpoint.href;
+            mcpServerName = getMcpServerName(endpoint.hostname);
         }
     });
 

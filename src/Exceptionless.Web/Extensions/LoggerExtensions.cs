@@ -98,11 +98,11 @@ internal static class LoggerExtensions
             new EventId(15, nameof(UserRemovedExternalLogin)),
             "{EmailAddress} removed an external login: {ProviderName}");
 
-    private static readonly Action<ILogger, string, string, Exception?> _unableToAddInvitedUserInvalidToken =
-        LoggerMessage.Define<string, string>(
+    private static readonly Action<ILogger, string, Exception?> _unableToAddInvitedUserInvalidToken =
+        LoggerMessage.Define<string>(
             LogLevel.Information,
             new EventId(16, nameof(UnableToAddInvitedUserInvalidToken)),
-            "Unable to add the invited user {EmailAddress}. Invalid invite token: {Token}");
+            "Unable to add the invited user {EmailAddress}. Invalid invite token.");
 
     private static readonly Action<ILogger, long, string, Exception?> _removedUserTokens =
         LoggerMessage.Define<long, string>(
@@ -158,8 +158,8 @@ internal static class LoggerExtensions
     public static void UserRemovedExternalLogin(this ILogger logger, string email, string providerName)
         => _userRemovedExternalLogin(logger, email, providerName, null);
 
-    public static void UnableToAddInvitedUserInvalidToken(this ILogger logger, string email, string token)
-        => _unableToAddInvitedUserInvalidToken(logger, email, token, null);
+    public static void UnableToAddInvitedUserInvalidToken(this ILogger logger, string email)
+        => _unableToAddInvitedUserInvalidToken(logger, email, null);
 
     public static void RemovedUserTokens(this ILogger logger, long total, string email)
         => _removedUserTokens(logger, total, email, null);

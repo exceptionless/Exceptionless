@@ -12,9 +12,6 @@ import { defineConfig } from 'vitest/config';
 const apiTarget = process.env.API_HTTPS || process.env.API_HTTP;
 const apiProxy = { changeOrigin: true, target: apiTarget };
 
-const oldAppTarget = process.env.OLDAPP_HTTPS || process.env.OLDAPP_HTTP;
-const oldAppProxy = { changeOrigin: true, secure: false, target: oldAppTarget };
-
 const port = Number(process.env.PORT) || 7131;
 const codespaceName = process.env.CODESPACE_NAME;
 const codespaceDomain = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
@@ -25,7 +22,6 @@ if (codespaceName && codespaceDomain) {
 }
 
 const SVELTE_RUNTIME_DIAGNOSTICS_GLOBAL = '__exceptionlessSvelteEffectDepthDiagnostics';
-const SUPPORTED_SVELTE_RUNTIME_VERSION = '5.56.8';
 
 // Svelte's useful effect-depth diagnostics are development-only. Preserve the
 // minimal state-write tracking needed to diagnose production-only loops.
@@ -45,14 +41,23 @@ function svelteEffectDepthDiagnostics(): Plugin {
     const effectDepthNeedle = '\t} catch (error) {\n\t\tif (DEV) {\n\t\t\t// stack contains no useful information, replace it\n';
     const effectDepthReplacement = `\t} catch (error) {\n\t\tglobalThis.${SVELTE_RUNTIME_DIAGNOSTICS_GLOBAL}?.attachEffectDepthError(error, last_scheduled_effect);\n\n\t\tif (DEV) {\n\t\t\t// stack contains no useful information, replace it\n`;
 
+    function findRuntimePatchTarget(code: string, id: string, needle: string) {
+        const start = code.indexOf(needle);
+        if (start < 0) {
+            throw new Error(`Unable to instrument ${id}; the expected Svelte runtime source was not found.`);
+        }
+
+        if (code.indexOf(needle, start + needle.length) >= 0) {
+            throw new Error(`Unable to instrument ${id}; the expected Svelte runtime source was found more than once.`);
+        }
+
+        return start;
+    }
+
     function instrumentRuntime(code: string, id: string, replacements: [needle: string, replacement: string][]) {
         const instrumented = new MagicString(code, { filename: id });
         for (const [needle, replacement] of replacements) {
-            const start = code.indexOf(needle);
-            if (start < 0) {
-                throw new Error(`Unable to instrument ${id}; the expected Svelte runtime source was not found.`);
-            }
-
+            const start = findRuntimePatchTarget(code, id, needle);
             instrumented.overwrite(start, start + needle.length, replacement);
         }
 
@@ -63,23 +68,12 @@ function svelteEffectDepthDiagnostics(): Plugin {
     }
 
     function assertRuntimeShape() {
-        const packageJson = JSON.parse(readFileSync(packagePath, 'utf8')) as { version?: string };
-        if (packageJson.version !== SUPPORTED_SVELTE_RUNTIME_VERSION) {
-            throw new Error(
-                `Svelte effect-depth diagnostics support ${SUPPORTED_SVELTE_RUNTIME_VERSION}, but ${packageJson.version ?? 'an unknown version'} is installed. Review Svelte's runtime before updating the supported version.`
-            );
-        }
-
         const sources = readFileSync(sourcesPath, 'utf8');
         const batch = readFileSync(batchPath, 'utf8');
-        if (
-            !sources.includes(stateUpdateNeedle) ||
-            !batch.includes(flushStartNeedle) ||
-            !batch.includes(flushEndNeedle) ||
-            !batch.includes(effectDepthNeedle)
-        ) {
-            throw new Error('Svelte runtime internals changed; update the effect-depth diagnostic instrumentation before building.');
-        }
+        findRuntimePatchTarget(sources, sourcesPath, stateUpdateNeedle);
+        findRuntimePatchTarget(batch, batchPath, flushStartNeedle);
+        findRuntimePatchTarget(batch, batchPath, flushEndNeedle);
+        findRuntimePatchTarget(batch, batchPath, effectDepthNeedle);
     }
 
     return {
@@ -146,11 +140,12 @@ export default defineConfig({
         hmr,
         port,
         proxy: {
+            '/.well-known': apiProxy,
             '/api': { ...apiProxy, ws: true },
             '/docs': apiProxy,
             '/health': apiProxy,
-            '/ready': apiProxy,
-            '^/(?!(next|api|docs|health|ready|_)).*': oldAppProxy
+            '/mcp': apiProxy,
+            '/ready': apiProxy
         },
         strictPort: true,
         warmup: {

@@ -361,7 +361,14 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         var allowedScopes = GetAllowedScopes(client);
         if (requestedScopes.Any(s => !allowedScopes.Contains(s, StringComparer.Ordinal)))
-            return OAuthValidationResult.Invalid("invalid_scope", "One or more scopes are not allowed for this client.");
+        {
+            // Only name server-supported scopes; do not reflect arbitrary request values.
+            var disallowedScopes = SupportedScopes.Where(s => requestedScopes.Contains(s, StringComparer.Ordinal) && !allowedScopes.Contains(s, StringComparer.Ordinal)).ToArray();
+            string description = disallowedScopes.Length > 0
+                ? $"Scopes not allowed for this application: {String.Join(", ", disallowedScopes)}."
+                : "One or more scopes are not allowed for this application.";
+            return OAuthValidationResult.Invalid("invalid_scope", $"{description} Restart authorization with scopes allowed for this application.");
+        }
 
         if (resourceDefinition.RequiredScopes.Any(s => !requestedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthValidationResult.Invalid("invalid_scope", "One or more required resource scopes are missing.");
@@ -378,6 +385,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     public async Task<string> CreateAuthorizationCodeAsync(OAuthAuthorizeRequest request, string userId, IReadOnlyCollection<string> organizationIds)
     {
+        await oauthApplicationRepository.AddOrganizationIdsAsync(request.ClientId, organizationIds, o => o.ImmediateConsistency().Notifications(false));
+
         string code = StringExtensions.GetNewToken();
         var authorizationCode = new OAuthAuthorizationCode
         {

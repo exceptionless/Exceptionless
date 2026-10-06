@@ -1,23 +1,24 @@
 <script lang="ts">
     import type { PersistentEvent } from '$features/events/models';
 
-    import { resolve } from '$app/paths';
     import TimeAgo from '$comp/formatters/time-ago.svelte';
+    import { A } from '$comp/typography';
     import * as Alert from '$comp/ui/alert';
     import { Button } from '$comp/ui/button';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
     import { getSessionEventsQuery } from '$features/events/api.svelte';
-    import { SessionFilter } from '$features/events/components/filters';
-    import { buildFilterCacheKey, toFilter, updateFilterCache } from '$features/events/components/filters/helpers.svelte';
     import { buildEventDetailsHref } from '$features/events/components/summary';
     import Summary from '$features/events/components/summary/summary.svelte';
+    import EventsUserIdentitySummaryCell from '$features/events/components/table/events-user-identity-summary-cell.svelte';
     import { getSessionId } from '$features/events/utils/index';
     import { organization } from '$features/organizations/context.svelte';
+    import { getSavedViewsQuery, isSavedViewDeleted } from '$features/saved-views/api.svelte';
     import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import InfoIcon from '@lucide/svelte/icons/info';
 
     import SessionEventDuration from '../session-event-duration.svelte';
+    import { getSessionEventsHref, getSessionEventsPath } from './session-events-navigation';
 
     interface Props {
         event: PersistentEvent;
@@ -30,19 +31,20 @@
 
     const sessionId = $derived(getSessionId(event));
     const isSessionStart = $derived(event.type === 'session');
-    const eventsPath = $derived(resolve('/(app)/event'));
-    const sessionEventsHref = $derived.by(() => {
-        const filter = getSessionFilter();
-        if (!filter) {
-            return undefined;
+    const savedViewsQuery = getSavedViewsQuery({
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
         }
-
-        const query = new URLSearchParams({
-            filter: filter.toFilter(),
-            time: 'all'
-        });
-        return `${eventsPath}?${query.toString()}`;
     });
+    const eventsPath = $derived(
+        getSessionEventsPath(
+            savedViewsQuery.data?.filter((savedView) => !isSavedViewDeleted(savedView)),
+            savedViewsQuery.isPending
+        )
+    );
+    const sessionEventsHref = $derived(getSessionEventsHref(eventsPath, sessionId));
 
     const userInfo = $derived(event.data?.['@user']);
     const userIdentity = $derived(userInfo?.identity);
@@ -76,22 +78,7 @@
         return buildEventDetailsHref(eventId);
     }
 
-    function getSessionFilter(): SessionFilter | undefined {
-        return sessionId ? new SessionFilter(sessionId) : undefined;
-    }
-
-    function prepareSessionEventsFilter(): void {
-        const filter = getSessionFilter();
-        if (!filter) {
-            return;
-        }
-
-        const filterQuery = toFilter([filter]);
-        updateFilterCache(buildFilterCacheKey(organization.current, eventsPath, filterQuery), [filter]);
-    }
-
     function handleSessionFilterClick(): void {
-        prepareSessionEventsFilter();
         onSessionFilter?.();
     }
 </script>
@@ -104,7 +91,7 @@
     </Alert.Root>
 {/if}
 
-<div class="relative pr-10" class:opacity-60={!hasPremiumFeatures}>
+<div class:opacity-60={!hasPremiumFeatures}>
     {#if isSessionStart}
         <Table.Root class="mb-4">
             <Table.Body>
@@ -133,7 +120,7 @@
         </Table.Root>
     {/if}
 
-    <div class="absolute top-0 right-0 z-10">
+    <div class="mb-2 flex justify-end">
         <Button
             aria-label="Open events filtered to this session"
             disabled={!sessionEventsHref}
@@ -143,7 +130,7 @@
             title="Open events filtered to this session"
             variant="outline"
         >
-            <EventsIcon class="size-4" />
+            <EventsIcon aria-hidden="true" class="size-4" />
         </Button>
     </div>
 
@@ -160,10 +147,11 @@
             <Alert.Description>{sessionEventsQuery.error?.message ?? 'Unknown error'}</Alert.Description>
         </Alert.Root>
     {:else if (sessionEventsQuery.data ?? []).length > 0}
-        <Table.Root>
+        <Table.Root class="table-fixed">
             <Table.Header>
                 <Table.Row>
                     <Table.Head>Summary</Table.Head>
+                    <Table.Head class="w-56">User</Table.Head>
                     <Table.Head class="w-32">Session Time</Table.Head>
                 </Table.Row>
             </Table.Header>
@@ -171,20 +159,20 @@
                 {#each sessionEventsQuery.data ?? [] as sessionEvent (sessionEvent.id)}
                     {@const eventHref = getEventHref(sessionEvent.id)}
                     <Table.Row class="cursor-pointer">
-                        <Table.Cell class="p-0">
-                            <a class="text-foreground block p-2 no-underline" href={eventHref} title="Open event details">
+                        <Table.Cell class="p-0 wrap-anywhere whitespace-normal [&_.line-clamp-1]:line-clamp-none [&_.line-clamp-2]:line-clamp-none">
+                            <a class="text-foreground block p-2 wrap-anywhere whitespace-normal no-underline" href={eventHref} title="Open event details">
                                 <Summary linkToDetails={false} summary={sessionEvent} showType={true} showStatus={false} />
                             </a>
                         </Table.Cell>
                         <Table.Cell class="p-0">
-                            <a
-                                aria-label={`Open event ${sessionEvent.id}`}
-                                class="text-foreground block p-2 no-underline"
-                                href={eventHref}
-                                title="Open event details"
-                            >
-                                <TimeAgo value={sessionEvent.date} />
+                            <a class="text-foreground block p-2 no-underline" href={eventHref} title="Open event details">
+                                <EventsUserIdentitySummaryCell summary={sessionEvent} />
                             </a>
+                        </Table.Cell>
+                        <Table.Cell class="p-0">
+                            <A aria-label={`Open event ${sessionEvent.id}`} class="text-foreground block p-2" href={eventHref} variant="ghost">
+                                <TimeAgo value={sessionEvent.date} />
+                            </A>
                         </Table.Cell>
                     </Table.Row>
                 {/each}

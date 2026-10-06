@@ -12,6 +12,7 @@ public class Error : InnerError
     public static class KnownDataKeys
     {
         public const string ExtraProperties = "@ext";
+        public const string SourceMap = "@source_map";
         public const string TargetInfo = "@target";
     }
 

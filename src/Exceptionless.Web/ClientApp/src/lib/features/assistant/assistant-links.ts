@@ -1,3 +1,6 @@
+import { resolve } from '$app/paths';
+import { page } from '$app/state';
+
 import type { AssistantToolActivity } from './models';
 
 interface AssistantResourceLink {
@@ -32,7 +35,8 @@ export function normalizeAssistantUrl(url: string, key: string): string {
 
     try {
         const parsedUrl = new URL(url);
-        if (parsedUrl.pathname === '/next' || parsedUrl.pathname.startsWith('/next/')) {
+        // At the root, the pathname alone cannot distinguish app links from external links.
+        if (isAssistantPath(parsedUrl.pathname) && (resolve('/') !== '/' || parsedUrl.origin === page.url.origin)) {
             return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
         }
     } catch {
@@ -49,7 +53,7 @@ function collectAssistantResourceLink(value: unknown, urlsByLabel: Map<string, S
 
     const label = readNonEmptyString(value, 'title') ?? readNonEmptyString(value, 'name');
     const url = readNonEmptyString(value, 'webUrl');
-    if (label && url && (url === '/next' || url.startsWith('/next/'))) {
+    if (label && url && isAssistantPath(url)) {
         const urls = urlsByLabel.get(label) ?? new Set<string>();
         urls.add(url);
         urlsByLabel.set(label, urls);
@@ -226,6 +230,11 @@ function getAssistantResourceLinks(tools: AssistantToolActivity[]): AssistantRes
         .sort((left, right) => right.label.length - left.label.length);
 }
 
+function isAssistantPath(value: string): boolean {
+    const root = resolve('/');
+    return !value.startsWith('//') && !/[\\\s]/.test(value) && (value === root.slice(0, -1) || value.startsWith(root));
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
 }
@@ -237,8 +246,10 @@ function readNonEmptyString(record: Record<string, unknown>, key: string): strin
 
 function replaceOutsideProtectedMarkdown(content: string, replace: (text: string) => string): string {
     const protectedMarkdown =
-        /(^(?:(?: {0,3}>[\t ]?)*(?: {4}|\t)[^\r\n]*(?:\r?\n|$))+|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*|(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}|https?:\/\/[^\s<]+|\/next(?:\/[^\s<]*)?)/gm;
-    const protectedRanges = [...content.matchAll(protectedMarkdown)].map((match) => ({
+        /(^(?:(?: {0,3}>[\t ]?)*(?: {4}|\t)[^\r\n]*(?:\r?\n|$))+|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*|(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}|https?:\/\/[^\s<]+)/gm;
+    const root = resolve('/');
+    const appPathPattern = root === '/' ? /\/[^\s<]*/g : new RegExp(`${escapeRegularExpression(root.slice(0, -1))}(?:/[^\\s<]*)?`, 'g');
+    const protectedRanges = [...content.matchAll(protectedMarkdown), ...content.matchAll(appPathPattern)].map((match) => ({
         end: match.index + match[0].length,
         start: match.index
     }));

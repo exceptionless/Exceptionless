@@ -8,16 +8,16 @@ const resizeObservers: ResizeObserverMock[] = [];
 
 class ResizeObserverMock {
     private observedElements = new Set<Element>();
-    disconnect = vi.fn(() => {
+    public disconnect = vi.fn(() => {
         this.observedElements.clear();
     });
 
-    observe = vi.fn((element: Element) => {
+    public observe = vi.fn((element: Element) => {
         this.observedElements.add(element);
     });
 
-    takeRecords = vi.fn(() => []);
-    unobserve = vi.fn((element: Element) => {
+    public takeRecords = vi.fn(() => []);
+    public unobserve = vi.fn((element: Element) => {
         this.observedElements.delete(element);
     });
     private callback: ResizeObserverCallback;
@@ -26,7 +26,7 @@ class ResizeObserverMock {
         resizeObservers.push(this);
     }
 
-    trigger(element: Element) {
+    public trigger(element: Element) {
         if (this.observedElements.has(element)) {
             this.callback([{ target: element } as ResizeObserverEntry], this as unknown as ResizeObserver);
         }
@@ -66,6 +66,27 @@ describe('TagList', () => {
             expect(badge.classList).toContain('text-muted-foreground');
             expect(badge.classList).toContain('rounded-md');
         }
+    });
+
+    it('shows more tags before overflow when the surrounding column wraps', () => {
+        const { container } = render(TagList, {
+            maxVisible: 2,
+            tags: ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'],
+            wrappedMaxVisible: 6
+        });
+
+        const thirdTagTrigger = screen.getByText('three').closest<HTMLElement>('[data-slot="tooltip-trigger"]');
+        expect(thirdTagTrigger?.classList).toContain('hidden');
+        expect(thirdTagTrigger?.classList).toContain('group-data-[wrap=true]/wrapped:inline-flex');
+        expect(screen.queryByText('seven')).toBeNull();
+
+        const compactOverflow = screen.getByText('+6').closest<HTMLElement>('[data-slot="tooltip-trigger"]');
+        expect(compactOverflow?.classList).toContain('group-data-[wrap=true]/wrapped:hidden');
+
+        const wrappedOverflow = screen.getByText('+2').closest<HTMLElement>('[data-slot="tooltip-trigger"]');
+        expect(wrappedOverflow?.classList).toContain('hidden');
+        expect(wrappedOverflow?.classList).toContain('group-data-[wrap=true]/wrapped:inline-flex');
+        expect(container.querySelectorAll('[data-slot="badge"]')).toHaveLength(6);
     });
 
     it('shows full hidden tags and preserves filter actions in the overflow tooltip', async () => {

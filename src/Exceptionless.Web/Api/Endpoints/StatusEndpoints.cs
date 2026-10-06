@@ -2,6 +2,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.Mvc;
@@ -39,19 +40,19 @@ public static class StatusEndpoints
             return result.Date == DateTime.MinValue ? HttpResults.NoContent() : HttpResults.Ok(result);
         });
 
-        group.MapPost("notifications/system", async (IMediator mediator, [FromBody] SetSystemNotificationRequest request, bool publish = true) =>
+        group.MapPost("notifications/system", async (HttpContext httpContext, IMediator mediator, [FromBody] SetSystemNotificationRequest request, bool publish = true) =>
         {
             if (String.IsNullOrWhiteSpace(request.Message))
                 return HttpResults.NotFound();
 
-            var result = await mediator.InvokeAsync<object>(new PostSystemNotification(request.Message, request.Level, request.Target, publish));
+            var result = await mediator.InvokeAsync<object>(new PostSystemNotification(request.Message, httpContext.Request.GetUser().Id, request.Level, request.Target, publish));
             return HttpResults.Ok(result);
         })
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy);
 
-        group.MapDelete("notifications/system", async (IMediator mediator, bool publish = true) =>
+        group.MapDelete("notifications/system", async (HttpContext httpContext, IMediator mediator, bool publish = true) =>
         {
-            await mediator.InvokeAsync(new RemoveSystemNotification(publish));
+            await mediator.InvokeAsync(new RemoveSystemNotification(httpContext.Request.GetUser().Id, publish));
             return HttpResults.Ok();
         })
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy);

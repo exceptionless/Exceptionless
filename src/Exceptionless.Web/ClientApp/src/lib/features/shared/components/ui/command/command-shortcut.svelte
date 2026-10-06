@@ -15,7 +15,7 @@
 	bind:this={ref}
 	data-slot="command-shortcut"
 	class={cn(
-		"border-border bg-muted text-muted-foreground group-data-selected/command-item:bg-background group-data-selected/command-item:text-foreground ml-auto h-5 w-fit min-w-5 gap-1 rounded-sm border px-1 font-sans text-xs font-medium [&_svg:not([class*='size-'])]:size-3 pointer-events-none inline-flex items-center justify-center select-none",
+		"border-border bg-muted text-foreground shadow-xs group-data-selected/command-item:bg-background group-data-selected/command-item:text-foreground ml-auto h-5 w-fit min-w-5 gap-1 rounded-sm border px-1 font-sans text-xs font-semibold [&_svg:not([class*='size-'])]:size-3 pointer-events-none inline-flex items-center justify-center select-none",
 		className
 	)}
 	{...restProps}

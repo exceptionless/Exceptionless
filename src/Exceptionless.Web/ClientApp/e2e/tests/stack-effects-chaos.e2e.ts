@@ -3,7 +3,13 @@ import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
-import { dispatchWebSocketMessages, installWebSocketTestHarness } from '../support/web-socket';
+import {
+    churnDocumentVisibility,
+    dispatchWebSocketMessages,
+    installWebSocketTestHarness,
+    setDocumentHidden,
+    waitForWebSocketConnection
+} from '../support/web-socket';
 
 const STACK_NOTIFICATION_TRAILING_REFRESH_MS = 5_000;
 
@@ -28,7 +34,8 @@ interface RuntimeDiagnostics {
 
 test('stack effects stay bounded through background, paging, and navigation chaos @signup', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     test.slow();
-    await installWebSocketTestHarness(page);
+    await page.clock.install();
+    await installWebSocketTestHarness(page, { ignoreServerMessages: true });
 
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const diagnostics: RuntimeDiagnostics = {
@@ -57,9 +64,9 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     await test.step('load the stack page with one page of results', async () => {
         const response = page.waitForResponse((candidate) => isStackListResponse(candidate, e2eScenario.organizationId));
-        await page.goto('/next/stack?limit=5');
+        await page.goto('/stack/all?limit=5');
         expect((await response).ok()).toBe(true);
-        await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
+        await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
         await expect(page.locator('tbody tr:visible').first()).toBeVisible();
         await expect(page.getByRole('button', { name: 'Go to next page' })).toBeEnabled();
     });
@@ -79,16 +86,16 @@ test('stack effects stay bounded through background, paging, and navigation chao
         page.on('requestfailed', recordFailedDetailRequest);
 
         try {
-            await page.goto(`/next/stack/${journey.stackId}`);
-            await expect(page).toHaveURL(new RegExp(`/next/stack/${journey.stackId}$`));
+            await page.goto(`/stack/${journey.stackId}`);
+            await expect(page).toHaveURL(new RegExp(`/stack/${journey.stackId}$`));
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         } finally {
             page.off('requestfailed', recordFailedDetailRequest);
         }
 
         expect(failedDetailRequests).toEqual([]);
-        await page.goto('/next/stack?limit=5');
-        await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
+        await page.goto('/stack/all?limit=5');
+        await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
     });
 
     await measureAction(diagnostics, 'stack timeline drag', async () => {
@@ -122,7 +129,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await expect(rowSelection).toBeChecked();
 
         const response = page.waitForResponse((candidate) => isStackListResponse(candidate, e2eScenario.organizationId));
-        await page.getByTitle('Return to the first page to refresh results').click();
+        await page.getByTitle('Refresh results').click();
         expect((await response).ok()).toBe(true);
         await expect(rowSelection).not.toBeChecked();
     });
@@ -148,15 +155,12 @@ test('stack effects stay bounded through background, paging, and navigation chao
     });
     expect(actionSample(diagnostics, 'stack detail mount and teardown').listRequests).toBe(0);
 
+    let reconnects = 0;
     await measureAction(diagnostics, 'rapid visibility changes', async () => {
-        for (let index = 0; index < 30; index++) {
-            await setDocumentHidden(page, true);
-            await setDocumentHidden(page, false);
-        }
-
-        await page.waitForTimeout(2_000);
+        reconnects = await churnDocumentVisibility(page);
     });
-    expect(actionSample(diagnostics, 'rapid visibility changes').listRequests).toBeLessThanOrEqual(1);
+    expect(actionSample(diagnostics, 'rapid visibility changes').listRequests).toBeGreaterThanOrEqual(1);
+    expect(actionSample(diagnostics, 'rapid visibility changes').listRequests).toBeLessThanOrEqual(reconnects);
 
     await measureAction(diagnostics, 'background ingestion and resume', async () => {
         await setDocumentHidden(page, true);
@@ -164,6 +168,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await e2eApi.submitEvent(e2eScenario.projectId, e2eScenario.projectToken, event);
         await e2eApi.pollForEventByReference(e2eScenario.userToken, e2eScenario.projectId, referenceId);
         await setDocumentHidden(page, false);
+        await waitForWebSocketConnection(page);
         await page.waitForTimeout(2_000);
     });
     expect(actionSample(diagnostics, 'background ingestion and resume').listRequests).toBeLessThanOrEqual(2);
@@ -194,27 +199,43 @@ test('stack effects stay bounded through background, paging, and navigation chao
     expect(actionSample(diagnostics, 'removal notification trailing reconciliation').countRequests).toBe(1);
     expect(actionSample(diagnostics, 'removal notification trailing reconciliation').listRequests).toBe(1);
 
+    // Keep all four waves inside one throttle window even when browser round trips are slow.
+    // The other chaos phases still exercise real-time visibility and navigation behavior.
+    await page.clock.pauseAt(new Date(Date.now() + 1_000));
     await measureAction(diagnostics, 'sustained stack change notifications', async () => {
         for (let wave = 0; wave < 4; wave++) {
-            await dispatchWebSocketMessages(
-                page,
-                Array.from({ length: 30 }, (_, index) => ({
-                    message: {
-                        change_type: 1,
-                        data: {},
-                        id: `chaos-missing-stack-${wave}-${index}`,
-                        organization_id: e2eScenario.organizationId,
-                        project_id: e2eScenario.projectId,
-                        type: 'Stack'
-                    },
-                    type: 'StackChanged'
-                }))
-            );
-            await page.waitForTimeout(1_600);
+            const dispatchWave = () =>
+                dispatchWebSocketMessages(
+                    page,
+                    Array.from({ length: 30 }, (_, index) => ({
+                        message: {
+                            change_type: 1,
+                            data: {},
+                            id: `chaos-missing-stack-${wave}-${index}`,
+                            organization_id: e2eScenario.organizationId,
+                            project_id: e2eScenario.projectId,
+                            type: 'Stack'
+                        },
+                        type: 'StackChanged'
+                    }))
+                );
+            if (wave === 0) {
+                await runAndWaitForDashboardRefresh(page, e2eScenario.organizationId, dispatchWave);
+            } else {
+                await dispatchWave();
+            }
+
+            const advanceWave = () => page.clock.runFor(1_600);
+            if (wave === 3) {
+                await runAndWaitForDashboardRefresh(page, e2eScenario.organizationId, advanceWave);
+            } else {
+                await advanceWave();
+            }
         }
 
-        await page.waitForTimeout(2_000);
+        await page.clock.runFor(2_000);
     });
+    await page.clock.resume();
     const sustainedNotificationSample = actionSample(diagnostics, 'sustained stack change notifications');
     expect(sustainedNotificationSample.countRequests).toBeGreaterThanOrEqual(1);
     expect(sustainedNotificationSample.countRequests).toBeLessThanOrEqual(2);
@@ -224,16 +245,16 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     await measureAction(diagnostics, 'route remounts', async () => {
         for (let index = 0; index < 5; index++) {
-            await page.goto(`/next/event/${journey.eventId}`);
+            await page.goto(`/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
-            await page.goto('/next/stack?limit=5');
+            await page.goto('/stack?limit=5');
             await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
         }
     });
     expect(actionSample(diagnostics, 'route remounts').listRequests).toBeLessThanOrEqual(5);
 
     await testInfo.attach('stack-effect-chaos-diagnostics', {
-        body: Buffer.from(JSON.stringify(diagnostics, null, 2)),
+        body: Buffer.from(JSON.stringify({ ...diagnostics, visibilityReconnects: reconnects }, null, 2)),
         contentType: 'application/json'
     });
 
@@ -340,17 +361,16 @@ function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request)
     });
 }
 
-async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
-    await page.evaluate((nextHidden) => {
-        Object.defineProperty(document, 'hidden', {
-            configurable: true,
-            get: () => nextHidden
-        });
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            get: () => (nextHidden ? 'hidden' : 'visible')
-        });
-        document.dispatchEvent(new Event('visibilitychange'));
-        window.dispatchEvent(new Event('visibilitychange'));
-    }, hidden);
+async function runAndWaitForDashboardRefresh(page: Page, organizationId: string, action: () => Promise<void>): Promise<void> {
+    const responses = Promise.all([
+        page.waitForResponse((response) => isStackListResponse(response, organizationId)),
+        page.waitForResponse((response) => new URL(response.url()).pathname === `/api/v2/organizations/${organizationId}/events/count`)
+    ]);
+
+    await action();
+    for (const response of await responses) {
+        expect(response.ok()).toBe(true);
+        // Browser time advances independently of real HTTP; finish the response before the next invalidation or navigation.
+        expect(await response.finished()).toBeNull();
+    }
 }

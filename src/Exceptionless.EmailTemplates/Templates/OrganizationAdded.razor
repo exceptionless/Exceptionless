@@ -1,0 +1,11 @@
+@namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<OrganizationAddedEmail>
+
+<EmailLayout Model="Model">
+    <EmailSection>
+        <h1 style="@EmailStyles.Heading1">@Model.Subject</h1>
+        <EmailButton Url="@Model.Action!.Url">View Organization</EmailButton>
+        <p style="@EmailStyles.Paragraph">What is <a href="https://exceptionless.com" style="@EmailStyles.Link">Exceptionless</a>? Exceptionless is an error reporting service. Go from signing up to catching every error in your application in 15 minutes or less.</p>
+    </EmailSection>
+    <SocialFooter />
+</EmailLayout>

@@ -44,9 +44,8 @@
             return;
         }
 
-        if (organizationQuery.isSuccess && organization.current && organizationId !== organization.current) {
-            goto(page.url.pathname.replace(`/organization/${organizationId}`, `/organization/${organization.current}`));
-            return;
+        if (organizationQuery.isSuccess) {
+            organization.current = organizationQuery.data.id;
         }
     });
 </script>
@@ -83,6 +82,8 @@
                 </A>
             {/each}
         </nav>
-        {@render children()}
+        {#if organizationQuery.isSuccess}
+            {@render children()}
+        {/if}
     </div>
 </div>

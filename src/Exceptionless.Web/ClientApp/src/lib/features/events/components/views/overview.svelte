@@ -25,6 +25,7 @@
     import LogLevel from '../log-level.svelte';
     import SessionEventDuration from '../session-event-duration.svelte';
     import SimpleStackTrace from '../simple-stack-trace/simple-stack-trace.svelte';
+    import SourceMapStatus from '../stack-trace/source-map-status.svelte';
     import StackTrace from '../stack-trace/stack-trace.svelte';
 
     interface Props {
@@ -156,7 +157,7 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Message</Table.Head>
                 <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="message" value={message} /></Table.Cell>
-                <Table.Cell>{message}</Table.Cell>
+                <Table.Cell class="wrap-anywhere whitespace-normal">{message}</Table.Cell>
             </Table.Row>
         {/if}
         {#if version}
@@ -186,9 +187,15 @@
             <Table.Row class="group">
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">URL</Table.Head>
                 <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.StringTrigger changed={filterChanged} term="path" value={requestUrlPath} /></Table.Cell>
-                <Table.Cell class="flex items-center gap-x-1"
-                    >{requestUrl}<Button href={requestUrl} rel="noopener noreferrer" size="sm" target="_blank" title="Open in new window" variant="ghost"
-                        ><ExternalLink /></Button
+                <Table.Cell class="wrap-anywhere whitespace-normal"
+                    >{requestUrl}<Button
+                        class="ml-1"
+                        href={requestUrl}
+                        rel="noopener noreferrer"
+                        size="sm"
+                        target="_blank"
+                        title="Open in new window"
+                        variant="ghost"><ExternalLink /></Button
                     ></Table.Cell
                 >
             </Table.Row>
@@ -237,11 +244,14 @@
 {#if hasError}
     <div class="mt-4 flex justify-between">
         <H3>Stack Trace</H3>
-        <div class="flex justify-end">
+        <div class="flex items-center justify-end gap-1.5">
+            {#if event.data?.['@error']}
+                <SourceMapStatus error={event.data['@error']} projectId={event.project_id} />
+            {/if}
             <CopyToClipboardButton size="icon-sm" title="Copy Stack Trace to Clipboard" value={stackTrace} variant="outline"></CopyToClipboardButton>
         </div>
     </div>
-    <div class="mt-2 max-h-75 grow overflow-auto text-xs">
+    <div class="mt-2 grow text-xs">
         {#if event.data?.['@error']}
             <StackTrace error={event.data['@error']} />
         {:else if event.data?.['@simple_error']}

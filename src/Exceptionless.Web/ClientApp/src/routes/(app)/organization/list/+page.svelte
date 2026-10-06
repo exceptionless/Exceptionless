@@ -49,6 +49,10 @@
 
     const table = createTable(getTableOptions<ViewOrganization>(organizationsQueryParameters, organizationsQuery));
 
+    async function addOrganization() {
+        await goto(resolve('/(app)/organization/add'));
+    }
+
     async function rowClick(org: ViewOrganization) {
         if (org.id) {
             organization.current = org.id;
@@ -64,10 +68,6 @@
         return resolve('/(app)/organization/[organizationId]/manage', {
             organizationId: org.id
         });
-    }
-
-    async function addOrganization() {
-        await goto(resolve('/(app)/organization/add'));
     }
 
     useHideOrganizationNotifications();

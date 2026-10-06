@@ -4,8 +4,22 @@ public class JobRunnerOptions
 {
     public JobRunnerOptions(string[] args)
     {
+        if (args.Length == 3
+            && String.Equals(args[0], nameof(Migration), StringComparison.OrdinalIgnoreCase)
+            && String.Equals(args[1], "--rerun", StringComparison.OrdinalIgnoreCase)
+            && !String.IsNullOrWhiteSpace(args[2]))
+        {
+            Migration = true;
+            RerunMigrationId = args[2];
+            JobName = $"{nameof(Migration)} Rerun {RerunMigrationId}";
+            ConfigurationArguments = [];
+            return;
+        }
+
         if (args.Length > 1)
-            throw new ArgumentException("More than one job argument specified. You must either specify 1 named job or don't pass any arguments to run all jobs.");
+            throw new ArgumentException("Specify one named job, no arguments to run all jobs, or 'Migration --rerun <id>' to rerun a supported migration.");
+
+        ConfigurationArguments = args;
 
         AllJobs = args.Length == 0;
 
@@ -79,6 +93,7 @@ public class JobRunnerOptions
     }
 
     public string JobName { get; } = "All";
+    public string[] ConfigurationArguments { get; }
     public bool AllJobs { get; }
     public bool CleanupData { get; }
     public bool CleanupOrphanedData { get; }
@@ -93,6 +108,7 @@ public class JobRunnerOptions
     public bool MailMessage { get; }
     public bool MaintainIndexes { get; }
     public bool Migration { get; }
+    public string? RerunMigrationId { get; }
     public bool RunDataSeedStartupAction => !Migration;
     public bool StackStatus { get; }
     public bool StackEventCount { get; }

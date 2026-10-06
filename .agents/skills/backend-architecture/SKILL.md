@@ -1,175 +1,36 @@
 ---
 name: backend-architecture
-description: >
-  Use this skill when working on the ASP.NET Core backend — adding controllers, services,
-  repositories, validators, authorization, WebSocket endpoints, jobs, Foundatio infrastructure,
-  configuration, or Aspire orchestration. Prefer this as the backend entrypoint for project
-  layering, C# conventions, logging, ProblemDetails, security-sensitive config, and OpenAPI
-  baseline updates.
+description: Apply Exceptionless backend boundaries when changing API endpoints, mediator handlers, services, or jobs.
 ---
 
 # Backend Architecture
 
-## Quick Start
+## Current boundaries
 
-Run `Exceptionless.AppHost` from your IDE, or start everything from the repo root:
+- `src/Exceptionless.Web/Api/Endpoints/`: Minimal API route registration, binding, authorization, and response metadata.
+- `Api/Messages/` and `Api/Handlers/`: mediator requests and their application behavior. Follow the corresponding endpoint family.
+- `Api/Filters/`, `Api/Infrastructure/`, and `Api/Results/`: shared validation, request helpers, and HTTP result mapping.
+- `Exceptionless.Core`: domain models, services, repositories, billing, and serialization.
+- `Exceptionless.Insulation`: provider implementations for storage, caching, mail, and other infrastructure.
+- `Exceptionless.Job`: background processing.
 
-```bash
-aspire run
-```
+For an endpoint example, read `src/Exceptionless.Web/Api/Endpoints/OrganizationEndpoints.cs` together with its messages and handler. Endpoint groups use `AuthorizationRoles` policies and `AutoValidationEndpointFilter`; mediator results map through `ToHttpResult` and the configured result mapper. Preserve the endpoint's response and authorization contract rather than recreating it from a generic example.
 
-## Project Layering
+## Repository conventions
 
-```text
-Exceptionless.Core        → Domain logic, services, repositories, validation
-Exceptionless.Insulation  → Infrastructure implementations (Redis, GeoIP, Mail, HealthChecks)
-Exceptionless.Web         → ASP.NET Core host, controllers, WebSocket hubs
-Exceptionless.Job         → Background job workers
-```
+Keep domain behavior in Core: Web and Job consume Core, while Insulation supplies infrastructure implementations. Do not move HTTP concerns into domain services.
 
-**Dependency Direction:** `Web → Core ← Insulation` / `Job → Core ← Insulation`
+- Inject `AppOptions` directly. Non-secret settings use `appsettings.yml`; environment overrides use the `EX_` prefix.
+- Use Foundatio abstractions for cache, queue, message bus, file storage, distributed locks, and resilience. Use [foundatio-repositories](../foundatio-repositories/SKILL.md) for Elasticsearch operations.
+- Queue entries complete after durable processing succeeds. Distinguish retryable failures from invalid input.
+- Propagate cancellation where supported. Use structured logging and `ExceptionlessState` scopes for organization/project context.
+- WebSocket notifications use `MessageBusBroker` and `WebSocketConnectionManager`, backed by the message bus.
+- Follow root guidance for OpenAPI snapshots and compatibility. See [serialization architecture](../../../docs/serialization-architecture.md) when changing JSON behavior.
 
-## Exceptionless.Core
+## Implementation details
 
-### Services (`src/Exceptionless.Core/Services/`)
-
-`UsageService`, `EventPostService`, `StackService`, `OrganizationService`, `MessageService`, `SlackService`
-
-### Repositories
-
-Repositories derive from the local repository base classes over `ElasticRepositoryBase<T>` and use `MiniValidationValidator` plus `AppOptions`. They use Foundatio Parsers for query parsing. See `foundatio-repositories` for query, pagination, patch, and aggregation patterns.
-
-### Validation
-
-Use MiniValidator with DataAnnotations on API and domain models:
-
-```csharp
-public record Login
-{
-    [Required]
-    public required string Email { get; init; }
-
-    [Required, StringLength(100, MinimumLength = 6)]
-    public required string Password { get; init; }
-}
-```
-
-`AutoValidationActionFilter` handles API model validation automatically. `MiniValidationValidator` wraps `MiniValidator.TryValidateAsync` and throws `MiniValidatorException` on failure.
-
-## Exceptionless.Insulation
-
-Infrastructure only — `Configuration/` (YAML), `Geo/` (MaxMind), `HealthChecks/`, `Mail/` (MailKit), `Redis/`.
-
-## C# Project Conventions
-
-- Follow `.editorconfig`, use file-scoped namespaces, and keep diffs minimal.
-- Always use braces for control flow and never add `#region` / `#endregion`.
-- Async methods use the `Async` suffix and pass `CancellationToken` through call chains when available.
-- Prefer constructor injection with `readonly` fields.
-- Use `ValueTask<T>` only for hot paths that often complete synchronously.
-- `ConfigureAwait(false)` is not required in ASP.NET Core code.
-
-## Logging
-
-Use structured message templates with named placeholders. Do not use string interpolation in log messages.
-
-```csharp
-_logger.LogInformation("Saving org ({OrganizationId}-{OrganizationName}) event usage",
-    organizationId, organization.Name);
-```
-
-For cross-cutting context, use `ExceptionlessState` scopes:
-
-```csharp
-using var _ = _logger.BeginScope(new ExceptionlessState()
-    .Organization(organizationId)
-    .Project(projectId));
-```
-
-Never log passwords, API keys, full tokens, or sensitive user data. Log identifiers and safe prefixes only.
-
-## Foundatio Infrastructure
-
-Use Foundatio abstractions rather than provider-specific clients:
-
-| Need | Use |
-| ---- | --- |
-| Distributed cache | `ICacheClient` |
-| Queues | `IQueue<T>` |
-| Pub/sub | `IMessageBus` |
-| File storage | `IFileStorage` |
-| Distributed locks | `ILockProvider` |
-| Retry/circuit breaker | `IResiliencePolicyProvider` |
-
-Queue jobs usually derive from `QueueJobBase<T>`. Scheduled jobs generally derive Foundatio job base classes such as `JobWithLockBase` and use `[Job]` attributes for `InitialDelay`, `Interval`, and related scheduling options. Queue entries should be completed only after durable processing succeeds; abandon transient failures and do not retry validation failures.
-
-Use `foundatio-repositories` for Elasticsearch repository querying, patching, aggregations, and pagination rules.
-
-## Authorization
-
-Use `AuthorizationRoles` constants (NOT string literals):
-
-```csharp
-public static class AuthorizationRoles
-{
-    public const string ClientPolicy = nameof(ClientPolicy);
-    public const string Client = "client";
-    public const string UserPolicy = nameof(UserPolicy);
-    public const string User = "user";
-    public const string GlobalAdminPolicy = nameof(GlobalAdminPolicy);
-    public const string GlobalAdmin = "global";
-}
-
-// Usage
-[Authorize(Policy = AuthorizationRoles.UserPolicy)]
-public class OrganizationController : RepositoryApiController<...> { }
-
-[Authorize(Policy = AuthorizationRoles.GlobalAdminPolicy)]
-public class AdminController : ExceptionlessApiController { }
-```
-
-## Controller Patterns
-
-Most controllers extend `RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel>`. Auth/special-case controllers extend `ExceptionlessApiController` directly.
-
-```csharp
-[Route(API_PREFIX + "/organizations")]
-[Authorize(Policy = AuthorizationRoles.UserPolicy)]
-public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization>
-{
-    [HttpGet]
-    public async Task<ActionResult<IReadOnlyCollection<ViewOrganization>>> GetAllAsync(string? mode = null)
-    {
-        var organizations = await GetModelsAsync(GetAssociatedOrganizationIds().ToArray());
-        return Ok(await MapCollectionAsync<ViewOrganization>(organizations, true));
-    }
-}
-```
-
-## ProblemDetails and Error Handling
-
-Return helpers from `ExceptionlessApiController`: `Ok()`, `Created()`, `NoContent()`, `Unauthorized()`, `Forbidden()`, `NotFound()`, `ValidationProblem(ModelState)`.
-
-Exceptions auto-convert via `ExceptionToProblemDetailsHandler`: `MiniValidatorException`/`ValidationException` → 422, others → 500.
-
-## OpenAPI Baseline
-
-After any API change (new endpoint, changed status codes, modified request/response models), **always regenerate the OpenAPI baseline**:
-
-```powershell
-# Requires the API to be running (`aspire run` or the AppHost)
-Invoke-WebRequest -Uri "https://api-ex.dev.localhost:7111/docs/v2/openapi.json" -OutFile "tests/Exceptionless.Tests/Api/Data/openapi.json"
-```
-
-Then include the updated `openapi.json` in the same commit as the API change (or amend). The `OpenApiControllerTests.GetOpenApiJson_Default_ReturnsExpectedBaseline` test will fail if the baseline is stale.
-If local TLS tooling fails, use the Aspire-described HTTP endpoint: `http://api-ex.dev.localhost:7110/docs/v2/openapi.json`.
-
-## WebSocket Hubs (NOT SignalR)
-
-Custom WebSocket implementation using Foundatio `IMessageBus`. `MessageBusBroker` subscribes to `EntityChanged`, `PlanChanged`, `UserMembershipChanged` and broadcasts to connected WebSocket clients via `WebSocketConnectionManager`.
-
-## Configuration
-
-Uses YAML files (`appsettings.yml`) + `AddCustomEnvironmentVariables()`. All config binds to `AppOptions` with nested options (`EmailOptions`, `AuthOptions`, `IntercomOptions`, `SlackOptions`, `StripeOptions`). Inject `AppOptions` directly — not `IOptions<T>`.
-
-Secrets come from environment variables or deployment secrets, never committed config. Non-secret configuration belongs in `appsettings.yml`; environment overrides use the `EX_` prefix.
+- Prefer constructor injection and readonly dependency fields. Follow `.editorconfig`, use the `Async` suffix for asynchronous methods, and avoid adding regions.
+- Use `ICacheClient`, `IQueue<T>`, `IMessageBus`, `IFileStorage`, `ILockProvider`, and `IResiliencePolicyProvider` rather than creating provider-specific parallel abstractions.
+- Queue consumers commonly derive from `QueueJobBase<T>`; scheduled jobs use bases such as `JobWithLockBase` and `[Job]` scheduling attributes. Preserve lock, completion, abandonment, and cancellation behavior when modifying a job. Invalid input should not enter an endless retry cycle.
+- Use DataAnnotations and the existing MiniValidation integration for model validation. Preserve endpoint binding/validation errors and mediator-to-HTTP result mapping; inspect `Api/Filters/AutoValidationEndpointFilter.cs`, `Api/Results/ApiResultMapper.cs`, and the endpoint's tests for the expected status and ProblemDetails shape.
+- Use structured message templates, not interpolated log messages, and `ExceptionlessState` for shared context. Never log passwords, API keys, full tokens, or sensitive payloads; prefer necessary identifiers and safe summaries.

@@ -17,6 +17,7 @@
     import { Spinner } from '$comp/ui/spinner';
     import { signup } from '$features/auth/api.svelte';
     import {
+        accessToken,
         enableOAuthLogin,
         facebookClientId,
         facebookLogin,
@@ -25,15 +26,27 @@
         googleClientId,
         googleLogin,
         liveLogin,
+        logout,
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { type SignupFormData, SignupSchema } from '$features/auth/schemas';
     import { validateEmailAvailability } from '$features/auth/validators';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
+    import { onMount } from 'svelte';
 
     const inviteToken = page.url.searchParams.get('token');
     const redirectUrl = inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add');
+
+    onMount(async () => {
+        if (accessToken.current) {
+            try {
+                await logout();
+            } catch {
+                // The signup flow can continue when an existing session cannot be ended.
+            }
+        }
+    });
 
     const form = createForm(() => ({
         defaultValues: {
@@ -57,7 +70,7 @@
     }));
 </script>
 
-<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg">
+<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg" inert={!!accessToken.current}>
     <Card.Header>
         <Logo />
         <Card.Title class="text-center text-2xl">Signup for a FREE account in seconds</Card.Title>
@@ -68,22 +81,22 @@
                 <P class="text-center">Sign up with</P>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl)}>
+                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl, inviteToken)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl)}>
+                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if facebookClientId}
-                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl)}>
+                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl, inviteToken)}>
                             <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl)}>
+                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl, inviteToken)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}
@@ -199,7 +212,7 @@
 
             <P class="mt-4 text-center text-sm">
                 Already have an account?
-                <A href={inviteToken ? `${resolve('/(auth)/login')}?token=${inviteToken}` : resolve('/(auth)/login')}>Log In</A>
+                <A href={inviteToken ? `${resolve('/(auth)/login')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/login')}>Log In</A>
             </P>
 
             <P class="text-center text-sm">

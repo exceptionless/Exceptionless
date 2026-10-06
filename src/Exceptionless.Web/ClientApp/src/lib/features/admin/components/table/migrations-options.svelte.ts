@@ -4,6 +4,7 @@ import DateTime from '$comp/formatters/date-time.svelte';
 import { getSharedTableOptions, type TableMemoryPagingParameters, withClientSortedRowModel } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
+import MigrationActionsCell from './migration-actions-cell.svelte';
 import MigrationDurationCell from './migration-duration-cell.svelte';
 import MigrationErrorCell from './migration-error-cell.svelte';
 import MigrationStatusCell from './migration-status-cell.svelte';
@@ -87,6 +88,21 @@ export function getColumns(): ColumnDef<StockFeatures, MigrationStateRow, unknow
             header: 'Error',
             meta: {
                 class: 'max-w-xs'
+            }
+        },
+        {
+            cell: ({ row }) =>
+                row.original.can_rerun
+                    ? renderComponent(MigrationActionsCell, {
+                          migration: row.original
+                      })
+                    : '',
+            enableHiding: false,
+            enableSorting: false,
+            header: '',
+            id: 'actions',
+            meta: {
+                class: 'w-10'
             }
         }
     ];

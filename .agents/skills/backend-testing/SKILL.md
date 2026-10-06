@@ -1,108 +1,47 @@
 ---
 name: backend-testing
-description: >
-    Use this skill when writing or modifying C# tests — unit tests, integration tests, or
-    test fixtures. Covers xUnit patterns, AppWebHostFactory for integration testing, FluentClient
-    for API assertions, ProxyTimeProvider for time manipulation, and test data builders. Apply
-    when adding new test cases, debugging test failures, or setting up test infrastructure.
+description: Write Exceptionless C# tests using local fixtures, HTTP helpers, and controlled time.
 ---
 
 # Backend Testing
 
-## Test Naming Standards
+## Unit test structure
 
-**Pattern**: `MethodUnderTest_Scenario_ExpectedBehavior`
+Follow [Microsoft's .NET unit testing best practices](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices).
 
-- **MethodUnderTest** — The actual method on the class being tested, not necessarily the entry point you call.
-- **Scenario** — The input, state, or condition being tested.
-- **ExpectedBehavior** — What the method should do or return.
+Organize tests as **Arrange–Act–Assert**:
 
-```csharp
-// ✅ Good
-[Fact]
-public void GetValue_JObjectWithUserInfo_ReturnsTypedUserInfo() { }
-[Fact]
-public async Task PostEvent_WithValidPayload_ReturnsAccepted() { }
+- **Arrange:** create the subject, minimal input, and required dependencies.
+- **Act:** perform the behavior under test, awaiting asynchronous work.
+- **Assert:** check the observable result and relevant side effects. Keep assertions separate from the action.
 
-// ❌ Bad: Vague or wrong method name
-[Fact]
-public void TestGetValue() { }
-[Fact]
-public void Deserialize_EmptyArray_ReturnsEmptyList() { }  // Wrong: name the method under test, not the entry point
-```
+Keep unit tests fast, isolated, repeatable, and self-checking. Use clear names and minimal setup; test behavior rather than implementation details. Avoid branching or recreating production logic to calculate expected results. Before adding a test, identify the distinct regression it catches and inspect existing coverage. Extend an existing scenario or parameterize equivalent cases instead of duplicating setup. Combine assertions for the same behavior when they share expensive setup, while keeping independent behaviors separately diagnosable. Do not add trivial accessor, framework, or implementation-mirroring tests. Infrastructure-dependent checks belong in integration tests, using the fixtures below. Coverage percentages and test counts alone do not establish test quality.
 
-## Test Folder Structure
+Use the smallest fixture that proves the behavior. For batching/pagination, cross the real boundary rather than generating arbitrary thousands of records. Keep benchmarks out of the correctness suite. Inspect CI timing reports for expensive tests and preserve automatic shard discovery when restructuring test classes.
 
-```text
-tests/Exceptionless.Tests/
-├── AppWebHostFactory.cs         # WebApplicationFactory for integration tests
-├── IntegrationTestsBase.cs      # Base class for integration tests
-├── TestWithServices.cs          # Base class for unit tests with DI
-├── Api/                         # Minimal API tests, organized by production layer
-│   ├── Endpoints/               # HTTP integration tests by endpoint family
-│   ├── Filters/                 # Endpoint filter unit tests
-│   ├── Handlers/                # Mediator handler unit tests
-│   └── Results/                 # API result mapping tests
-├── Jobs/                        # Job tests
-├── Repositories/                # Repository tests
-├── Services/                    # Service tests
-├── Utility/                     # Test data builders
-│   ├── AppSendBuilder.cs        # Fluent HTTP request builder
-│   ├── DataBuilder.cs           # Test data creation
-│   ├── ProxyTimeProvider.cs     # Time manipulation
-│   └── ...
-└── Validation/                  # Validator tests
-```
+## Fixtures and locations
 
-## Integration Test Base
+Under `tests/Exceptionless.Tests/`:
 
-Inherit from `IntegrationTestsBase` (extends Foundatio.Xunit's `TestWithLoggingBase`):
+- `IntegrationTestsBase.cs` and `AppWebHostFactory.cs`: HTTP/service integration fixtures.
+- `TestWithServices.cs`: tests needing dependency injection.
+- `Api/Endpoints/`, `Api/Filters/`, `Api/Handlers/`, and `Api/Results/`: API tests by boundary.
+- `Utility/AppSendBuilder.cs`: fluent HTTP requests and assertions.
+- `Utility/DataBuilder.cs`: synthetic records.
+- `Utility/ProxyTimeProvider.cs`: controlled time.
 
-```csharp
-public abstract class IntegrationTestsBase : TestWithLoggingBase, IAsyncLifetime, IClassFixture<AppWebHostFactory>
-```
+Name tests `MethodUnderTest_Scenario_ExpectedBehavior`.
 
-Key members: `GetService<T>()`, `CreateFluentClient()`, `SendRequestAsync()`, `RefreshDataAsync()`, `ResetDataAsync()`, `TimeProvider` (ProxyTimeProvider).
+## HTTP and state
 
-## HTTP Test Pattern
+Use `SendRequestAsync` with `AppSendBuilder` and its authorization helpers: `AsGlobalAdminUser`, `AsTestOrganizationUser`, `AsFreeOrganizationUser`, and `AsTestOrganizationClientUser`. Match an existing endpoint test for the expected response and fixture setup.
 
-Use `SendRequestAsync` with `AppSendBuilder` for HTTP testing:
+Use `CreateDataAsync` for synthetic data and `RefreshDataAsync` after database writes when reads require index refresh. `ResetDataAsync` clears the integration fixture's data; never point these fixtures at production.
 
-```csharp
-await SendRequestAsync(r => r
-    .Post()
-    .AsTestOrganizationUser()
-    .AppendPath("organizations")
-    .Content(new NewOrganization { Name = "Test" })
-    .StatusCodeShouldBeCreated()
-);
-```
+Tests use the production serializer. For JSON compatibility, inspect `Serializer/` and the relevant API snapshots.
 
-Auth helpers: `AsGlobalAdminUser()`, `AsTestOrganizationUser()`, `AsFreeOrganizationUser()`, `AsTestOrganizationClientUser()` (API key bearer token).
+## Time
 
-## Test Data Builders
+Use the fixture's `TimeProvider`: `Advance`, `SetUtcNow`, and `Restore`. Prefer controlled time to real waits.
 
-```csharp
-var (stacks, events) = await CreateDataAsync(b => b
-    .Event()
-    .TestProject()
-    .Type(Event.KnownTypes.Error)
-    .Message("Test error"));
-```
-
-## ProxyTimeProvider
-
-**NOT `ISystemClock`** — use .NET 8+ `TimeProvider` with `ProxyTimeProvider`:
-
-```csharp
-TimeProvider.Advance(TimeSpan.FromHours(1));
-TimeProvider.SetUtcNow(new DateTimeOffset(2024, 1, 15, 12, 0, 0, TimeSpan.Zero));
-TimeProvider.Restore();
-```
-
-## Test Principles
-
-- **Regression coverage** — Add a focused failing test first when a bug fix can be reproduced cheaply
-- **Use real serializer** — Tests use the same JSON serializer as production
-- **Refresh after writes** — Call `RefreshDataAsync()` after database changes
-- **Clean state** — `ResetDataAsync()` clears data between integration tests
+Follow root guidance for focused commands, conditional Aspire startup, and API contract verification.

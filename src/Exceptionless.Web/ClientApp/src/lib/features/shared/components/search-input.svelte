@@ -5,9 +5,9 @@
     import { type WithElementRef } from '$lib/utils';
     import Search from '@lucide/svelte/icons/search';
 
-    type InputType = Exclude<HTMLInputTypeAttribute, 'file'>;
-
     type BaseProps = WithElementRef<Omit<HTMLInputAttributes, 'type'> & ({ files?: FileList; type: 'file' } | { files?: undefined; type?: InputType })>;
+
+    type InputType = Exclude<HTMLInputTypeAttribute, 'file'>;
 
     type Props = BaseProps & {
         groupClass?: string;

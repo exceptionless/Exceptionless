@@ -9,10 +9,9 @@ namespace Exceptionless.Core.Repositories.Configuration;
 
 public sealed class OAuthApplicationIndex : VersionedIndex<OAuthApplication>
 {
-    internal const string KEYWORD_LOWERCASE_ANALYZER = "keyword_lowercase";
     private readonly ExceptionlessElasticConfiguration _configuration;
 
-    public OAuthApplicationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "oauth-applications", 1)
+    public OAuthApplicationIndex(ExceptionlessElasticConfiguration configuration) : base(configuration, configuration.Options.ScopePrefix + "oauth-applications", 2)
     {
         _configuration = configuration;
     }
@@ -23,10 +22,11 @@ public sealed class OAuthApplicationIndex : VersionedIndex<OAuthApplication>
             .Dynamic(DynamicMapping.False)
             .Properties(p => p
                 .SetupDefaults()
-                .Text(e => e.Name, t => t.Analyzer(KEYWORD_LOWERCASE_ANALYZER).AddKeywordField())
+                .Text(e => e.Name, t => t.AddKeywordField())
                 .Keyword(e => e.ClientId)
                 .Keyword(e => e.RedirectUris)
                 .Keyword(e => e.Scopes)
+                .Keyword(e => e.OrganizationIds)
                 .Keyword(e => e.CreatedByUserId)
                 .Keyword(e => e.UpdatedByUserId)
                 .Boolean(e => e.IsDisabled));
@@ -36,7 +36,6 @@ public sealed class OAuthApplicationIndex : VersionedIndex<OAuthApplication>
     {
         base.ConfigureIndex(idx);
         idx.Settings(s => s
-            .Analysis(d => d.Analyzers(b => b.Custom(KEYWORD_LOWERCASE_ANALYZER, c => c.Filter("lowercase").Tokenizer("keyword"))))
             .NumberOfShards(_configuration.Options.NumberOfShards)
             .NumberOfReplicas(_configuration.Options.NumberOfReplicas)
             .Priority(5));

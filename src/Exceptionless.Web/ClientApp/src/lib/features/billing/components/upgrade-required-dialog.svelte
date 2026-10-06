@@ -9,6 +9,16 @@
 
     const canOpenBilling = $derived(isStripeEnabled() && !!upgradeRequiredDialog.organizationId);
 
+    function handleOpenChange(open: boolean) {
+        if (!open) {
+            onCancel();
+        }
+    }
+
+    function onCancel() {
+        upgradeRequiredDialog.reset();
+    }
+
     function onUpgrade() {
         const organizationId = upgradeRequiredDialog.organizationId;
         if (!isStripeEnabled() || !organizationId) {
@@ -21,16 +31,6 @@
         showChangePlanDialog(organizationId, {
             onSuccess
         });
-    }
-
-    function onCancel() {
-        upgradeRequiredDialog.reset();
-    }
-
-    function handleOpenChange(open: boolean) {
-        if (!open) {
-            onCancel();
-        }
     }
 </script>
 

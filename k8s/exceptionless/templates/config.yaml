@@ -17,7 +17,6 @@ data:
     {{- end }}
     EX_DisabledPlugins: GeoPlugin,LocationPlugin
     EX_EnableSsl: "true"
-    EX_Html5Mode: "true"
     EX_ConnectionStrings__Elasticsearch: {{ default "server=http://elasticsearch:9200" .Values.elasticsearch.connectionString }}
     {{- if (empty .Values.redis.connectionString) }}
     EX_ConnectionStrings__Redis: {{ template "exceptionless.fullname" . }}-redis-master,abortConnect=false

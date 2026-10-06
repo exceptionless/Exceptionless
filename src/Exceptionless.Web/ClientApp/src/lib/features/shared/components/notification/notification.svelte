@@ -27,13 +27,13 @@
         }
     });
 
-    export type NotificationVariant = VariantProps<typeof notificationVariants>['variant'];
-
     export type NotificationProps = WithElementRef<HTMLAttributes<HTMLDivElement>> & {
         action?: Snippet;
         icon?: Snippet;
         variant?: NotificationVariant;
     };
+
+    export type NotificationVariant = VariantProps<typeof notificationVariants>['variant'];
 </script>
 
 <script lang="ts">

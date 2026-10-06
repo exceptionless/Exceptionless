@@ -6,13 +6,18 @@
     import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
 
     import * as Select from '$comp/ui/select';
+    import { cn } from '$lib/utils';
 
     interface Props {
+        joined?: boolean;
+        onBeforePageSizeChange?: () => void;
+        onPageSizeChange?: () => void;
+        size?: 'default' | 'sm';
         table: Table<StockFeatures, TData>;
         value: number;
     }
 
-    let { table, value = $bindable() }: Props = $props();
+    let { joined = false, onBeforePageSizeChange, onPageSizeChange, size = 'sm', table, value = $bindable() }: Props = $props();
 
     type Item = { label: string; value: string };
     const items: Item[] = [
@@ -46,21 +51,22 @@
     let selected = $derived((items.find((item) => item.value === valueString) || items[0]) as Item);
 
     function onValueChange(newValue: string) {
+        onBeforePageSizeChange?.();
         value = Number(newValue);
         table.setPageSize(Number(newValue));
+        onPageSizeChange?.();
     }
 </script>
 
-<div class="flex min-w-0 items-center gap-2">
-    <p class="hidden truncate text-sm font-medium sm:inline">Rows per page</p>
-    <Select.Root type="single" {items} value={valueString} {onValueChange}>
-        <Select.Trigger class="h-8 w-[70px] min-w-[46px]">
-            {selected.label}
-        </Select.Trigger>
-        <Select.Content>
+<Select.Root type="single" {items} value={valueString} {onValueChange}>
+    <Select.Trigger aria-label="Rows per page" class={cn('min-w-14 sm:min-w-18', joined && 'rounded-none border-y-0')} {size} title="Rows per page">
+        {selected.label} <span class="hidden sm:inline">rows</span>
+    </Select.Trigger>
+    <Select.Content>
+        <Select.Group>
             {#each items as item (item.value)}
-                <Select.Item value={item.value}>{item.label}</Select.Item>
+                <Select.Item value={item.value}>{item.label} rows</Select.Item>
             {/each}
-        </Select.Content>
-    </Select.Root>
-</div>
+        </Select.Group>
+    </Select.Content>
+</Select.Root>

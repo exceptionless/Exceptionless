@@ -6,8 +6,8 @@ public record GetAboutInfo;
 public record GetQueueStats;
 public record PostReleaseNotification(string Message, bool Critical);
 public record GetSystemNotification;
-public record PostSystemNotification(string Message, SystemNotificationLevel Level = SystemNotificationLevel.Info, SystemNotificationTarget Target = SystemNotificationTarget.Both, bool Publish = true);
-public record RemoveSystemNotification(bool Publish = true);
+public record PostSystemNotification(string Message, string UserId, SystemNotificationLevel Level = SystemNotificationLevel.Info, SystemNotificationTarget Target = SystemNotificationTarget.Both, bool Publish = true);
+public record RemoveSystemNotification(string UserId, bool Publish = true);
 public record ValidateSearchQuery(string Query);
 
 public record SetSystemNotificationRequest

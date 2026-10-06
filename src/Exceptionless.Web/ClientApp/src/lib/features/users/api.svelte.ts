@@ -1,13 +1,13 @@
+import type { ProductTourKey } from '$features/product-tours/models';
 import type { WebSocketMessageValue } from '$features/websockets/models';
 import type { WorkInProgressResult } from '$shared/models';
 
-import { setUserIdentity } from '$features/auth/exceptionless-session';
 import { accessToken } from '$features/auth/index.svelte';
 import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { OAuthGrant, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
+import type { OAuthGrant, RecordProductTourResult, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
 
 export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
     const { id } = message;
@@ -41,6 +41,7 @@ export const queryKeys = {
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     patchUser: (id: string | undefined) => [...queryKeys.id(id), 'patch'] as const,
     postEmailAddress: (id: string | undefined) => [...queryKeys.idEmailAddress(id), 'update'] as const,
+    productTour: () => [...queryKeys.me(), 'product-tour'] as const,
     type: ['User'] as const
 };
 
@@ -135,9 +136,8 @@ export function getMeQuery() {
 
     return createQuery<ViewCurrentUser, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current,
-        onSuccess: async (data: ViewCurrentUser) => {
+        onSuccess: (data: ViewCurrentUser) => {
             queryClient.setQueryData(queryKeys.id(data.id!), data);
-            await setUserIdentity(data.id, data.full_name);
         },
         queryClient,
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
@@ -260,6 +260,27 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
     }));
 }
 
+export function putCurrentUserProductTour() {
+    const queryClient = useQueryClient();
+    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey; userId: string }>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async ({ tourName, userId }) => {
+            if (queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.id !== userId) {
+                throw new Error('The current user changed before the product tour preference was recorded.');
+            }
+
+            return await fetchApiJson<RecordProductTourResult>(`users/me/product-tours/${tourName}/record`, {
+                method: 'PUT'
+            });
+        },
+        mutationKey: queryKeys.productTour(),
+        onSuccess: () =>
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.type
+            })
+    }));
+}
+
 export function resendVerificationEmail(request: ResendVerificationEmailRequest) {
     return createMutation<void, ProblemDetails, void>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
@@ -269,6 +290,47 @@ export function resendVerificationEmail(request: ResendVerificationEmailRequest)
         },
         mutationKey: [...queryKeys.id(request.route.id), 'resend-verification-email']
     }));
+}
+
+export function setCurrentUserSavedViewDefault(queryClient: QueryClient, organizationId: string, savedViewId: null | string) {
+    const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+    if (!currentUser) {
+        return;
+    }
+
+    const organizationPreferences = currentUser.organization_preferences.filter((preference) => preference.organization_id !== organizationId);
+    if (savedViewId) {
+        organizationPreferences.push({
+            default_saved_view_id: savedViewId,
+            organization_id: organizationId
+        });
+    }
+
+    setCurrentUser(queryClient, currentUser, {
+        organization_preferences: organizationPreferences
+    });
+}
+
+export function setCurrentUserSavedViewOrder(queryClient: QueryClient, organizationId: string, viewType: string, savedViewIds: string[]): void {
+    const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+    if (!currentUser) {
+        return;
+    }
+
+    const savedViewOrders = (currentUser.saved_view_orders ?? []).filter(
+        (preference) => preference.organization_id !== organizationId || preference.view_type !== viewType
+    );
+    if (savedViewIds.length > 0) {
+        savedViewOrders.push({
+            organization_id: organizationId,
+            saved_view_ids: [...savedViewIds],
+            view_type: viewType
+        });
+    }
+
+    setCurrentUser(queryClient, currentUser, {
+        saved_view_orders: savedViewOrders
+    });
 }
 
 export function uploadUserAvatar(request: UserAvatarRequest) {
@@ -293,4 +355,13 @@ export function uploadUserAvatar(request: UserAvatarRequest) {
             }
         }
     }));
+}
+
+function setCurrentUser(queryClient: QueryClient, currentUser: ViewCurrentUser, changes: Partial<ViewCurrentUser>): void {
+    const updatedUser = {
+        ...currentUser,
+        ...changes
+    };
+    queryClient.setQueryData(queryKeys.me(), updatedUser);
+    queryClient.setQueryData(queryKeys.id(currentUser.id), updatedUser);
 }

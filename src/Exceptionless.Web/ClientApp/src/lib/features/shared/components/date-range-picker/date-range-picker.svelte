@@ -1,8 +1,9 @@
 <script lang="ts">
     import DateTime from '$comp/formatters/date-time.svelte';
     import { Button } from '$comp/ui/button';
+    import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
-    import { extractRangeExpressions, validateAndResolveTime, validateDateMath } from '$features/shared/utils/datemath';
+    import { extractRangeExpressions, parseDateMath } from '$features/shared/utils/datemath';
     import Check from '@lucide/svelte/icons/check';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
@@ -14,6 +15,7 @@
     };
 
     let { cancel, class: className, onselect, value = $bindable() }: Props = $props();
+    const id = $props.id();
 
     // Simplified quick ranges — just the most commonly used
     const commonRanges = [
@@ -69,20 +71,30 @@
         }
     });
 
-    const startValidation = $derived(validateDateMath(startValue));
-    const startResolved = $derived(startValidation.valid ? validateAndResolveTime(startValue) : null);
-    const endValidation = $derived(validateDateMath(endValue));
-    const endResolved = $derived(endValidation.valid ? validateAndResolveTime(endValue) : null);
-    const isCustomValid = $derived(startValidation.valid && endValidation.valid && !!startValue && !!endValue);
+    const resolvedRange = $derived.by(() => {
+        const referenceTime = new Date();
+        return {
+            end: parseDateMath(endValue, referenceTime, true),
+            start: parseDateMath(startValue, referenceTime)
+        };
+    });
+    const startValidation = $derived(resolvedRange.start);
+    const endValidation = $derived(resolvedRange.end);
+    const rangeError = $derived(
+        startValidation.success && endValidation.success && startValidation.date > endValidation.date ? 'End must be on or after start.' : undefined
+    );
+    const isCustomValid = $derived(startValidation.success && endValidation.success && !rangeError);
+    const inputError = 'Enter a year, month, date, timestamp, or relative time such as now-1h.';
 
-    function selectRange(rangeValue: string) {
-        value = rangeValue;
-        onselect?.(rangeValue);
+    export function apply() {
+        if (showCustom && isCustomValid) {
+            applyCustom();
+        }
     }
 
     function applyCustom() {
         if (isCustomValid) {
-            const customValue = `[${startValue} TO ${endValue}]`;
+            const customValue = `[${startValue.trim()} TO ${endValue.trim()}]`;
             value = customValue;
             onselect?.(customValue);
         }
@@ -98,10 +110,9 @@
         }
     }
 
-    export function apply() {
-        if (showCustom && isCustomValid) {
-            applyCustom();
-        }
+    function selectRange(rangeValue: string) {
+        value = rangeValue;
+        onselect?.(rangeValue);
     }
 </script>
 
@@ -125,6 +136,8 @@
         <button
             type="button"
             class="hover:bg-muted hover:text-foreground flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none"
+            aria-expanded={showCustom}
+            aria-controls={`${id}-custom`}
             onclick={() => (showCustom = !showCustom)}
         >
             <ChevronRight class={['text-muted-foreground size-4 shrink-0 transition-transform', showCustom && 'rotate-90']} />
@@ -132,37 +145,53 @@
         </button>
 
         {#if showCustom}
-            <div class="space-y-2 px-2 pt-2 pb-1">
-                <div>
+            <Field.FieldGroup id={`${id}-custom`} class="gap-3 px-2 pt-2 pb-1">
+                <Field.FieldDescription id={`${id}-help`}>
+                    Use 2024, 2024-01, or 2024-01-01. Start and end include the whole year, month, or day in local time.
+                </Field.FieldDescription>
+                <Field.Field class="gap-1" data-invalid={!!startValue && !startValidation.success}>
+                    <Field.FieldLabel for={`${id}-start`}>Start</Field.FieldLabel>
                     <Input
-                        placeholder="Start: now-1h, 2024-01-01"
+                        id={`${id}-start`}
+                        placeholder="e.g. 2024-01-01 or now-1h"
                         class="h-7 font-mono text-xs"
                         bind:value={startValue}
-                        aria-invalid={startValue ? !startValidation.valid : undefined}
+                        aria-invalid={startValue ? !startValidation.success : undefined}
+                        aria-describedby={`${id}-help ${id}-start-status`}
                         onkeydown={handleKeyDown}
                     />
-                    {#if startValue && startValidation.valid && startResolved}
-                        <p class="text-muted-foreground mt-0.5 text-[11px]"><DateTime value={startResolved} /></p>
-                    {:else if startValue && !startValidation.valid}
-                        <p class="text-destructive mt-0.5 text-[11px]">{startValidation.error}</p>
-                    {/if}
-                </div>
-                <div>
+                    <div id={`${id}-start-status`} aria-live="polite">
+                        {#if startValue && startValidation.success}
+                            <p class="text-muted-foreground text-[11px]"><DateTime value={startValidation.date} /></p>
+                        {:else if startValue}
+                            <Field.FieldError>{inputError}</Field.FieldError>
+                        {/if}
+                    </div>
+                </Field.Field>
+                <Field.Field class="gap-1" data-invalid={(!!endValue && !endValidation.success) || !!rangeError}>
+                    <Field.FieldLabel for={`${id}-end`}>End</Field.FieldLabel>
                     <Input
-                        placeholder="End: now, 2024-12-31"
+                        id={`${id}-end`}
+                        placeholder="e.g. 2024-01-31 or now"
                         class="h-7 font-mono text-xs"
                         bind:value={endValue}
-                        aria-invalid={endValue ? !endValidation.valid : undefined}
+                        aria-invalid={endValue ? !endValidation.success || !!rangeError : undefined}
+                        aria-describedby={`${id}-help ${id}-end-status`}
                         onkeydown={handleKeyDown}
                     />
-                    {#if endValue && endValidation.valid && endResolved}
-                        <p class="text-muted-foreground mt-0.5 text-[11px]"><DateTime value={endResolved} /></p>
-                    {:else if endValue && !endValidation.valid}
-                        <p class="text-destructive mt-0.5 text-[11px]">{endValidation.error}</p>
-                    {/if}
-                </div>
+                    <div id={`${id}-end-status`} aria-live="polite">
+                        {#if endValue && endValidation.success}
+                            <p class="text-muted-foreground text-[11px]"><DateTime value={endValidation.date} /></p>
+                        {:else if endValue}
+                            <Field.FieldError>{inputError}</Field.FieldError>
+                        {/if}
+                        {#if rangeError}
+                            <Field.FieldError>{rangeError}</Field.FieldError>
+                        {/if}
+                    </div>
+                </Field.Field>
                 <Button size="sm" class="w-full" disabled={!isCustomValid} onclick={applyCustom}>Apply</Button>
-            </div>
+            </Field.FieldGroup>
         {/if}
     </div>
 </div>

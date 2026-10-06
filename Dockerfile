@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0.301 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.401 AS build
 ARG MinVerVersionOverride
 WORKDIR /app
 
@@ -40,7 +40,7 @@ RUN dotnet publish -c Release -o out --no-build
 
 # job
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.9 AS job
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.12 AS job
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 
@@ -59,7 +59,7 @@ RUN dotnet publish -c Release -o out --no-build /p:SkipSpaPublish=true
 
 # api
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.9 AS api
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.12 AS api
 WORKDIR /app
 COPY --from=api-publish /app/src/Exceptionless.Web/out ./
 
@@ -77,22 +77,19 @@ RUN dotnet publish -c Release -o out --no-build
 
 # app
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.9 AS app
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.12 AS app
 
 WORKDIR /app
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/app-docker-entrypoint.sh ./
 COPY ./build/update-config.sh /usr/local/bin/update-config
-COPY ./build/update-config-next.sh /usr/local/bin/update-config-next
 
 ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
-    ASPNETCORE_URLS=http://+:8080 \
-    EX_Html5Mode=true
+    ASPNETCORE_URLS=http://+:8080
 
 RUN chmod +x /app/app-docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/update-config
-RUN chmod +x /usr/local/bin/update-config-next
 
 EXPOSE 8080
 
@@ -100,14 +97,13 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:8.19.15 AS exceptionless
+FROM exceptionless/elasticsearch:8.19.22 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/update-config.sh /usr/local/bin/update-config
-COPY ./build/update-config-next.sh /usr/local/bin/update-config-next
 COPY ./build/supervisord.conf /etc/
 
 USER root
@@ -137,12 +133,10 @@ ENV discovery.type=single-node \
     DOTNET_RUNNING_IN_CONTAINER=true \
     EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_ConnectionStrings__Elasticsearch=server=http://localhost:9200 \
-    EX_RunJobsInProcess=true \
-    EX_Html5Mode=true
+    EX_RunJobsInProcess=true
 
 RUN chmod +x /app/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/update-config && \
-    chmod +x /usr/local/bin/update-config-next && \
     chown -R elasticsearch:elasticsearch /app && \
     mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
     chown -R elasticsearch:elasticsearch /var/log/supervisor
@@ -151,7 +145,7 @@ USER elasticsearch
 
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --version 10.0.9 --runtime aspnetcore && \
+    ./dotnet-install.sh --version 10.0.12 --runtime aspnetcore && \
     rm dotnet-install.sh
 
 EXPOSE 8080 9200

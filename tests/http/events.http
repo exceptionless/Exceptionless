@@ -2,9 +2,9 @@
 @email = admin@exceptionless.test
 @password = tester
 @clientToken = LhhP1C9gijpSKCslHHCvwdSIz298twx271nTest
-@organizationId = 537650f3b77efe23a47914f3
 @projectId = 537650f3b77efe23a47914f4
 @referenceId = ref123456
+@sessionId = 12345
 
 ### login to test account
 # @name login
@@ -20,85 +20,21 @@ Content-Type: application/json
 
 @token = {{login.response.body.$.token}}
 
-### All
+### List recent events
 # @name allEvents
-GET {{apiUrl}}/events?limit=1
-Authorization: Bearer {{token}}
-
-### Stack summaries (includes project and tags)
-GET {{apiUrl}}/events?mode=stack_frequent&limit=10
+GET {{apiUrl}}/events?limit=10&sort=-date
 Authorization: Bearer {{token}}
 
 ###
 @eventId = {{allEvents.response.body.$[0].id}}
-@stackId = {{allEvents.response.body.$[0].stack_id}}
 
 ### By Id
 GET {{apiUrl}}/events/{{eventId}}
 Authorization: Bearer {{token}}
 
-### By Id With Expected Stack
-GET {{apiUrl}}/events/{{eventId}}?expected_stack_id={{stackId}}
-Authorization: Bearer {{token}}
-
-### By Organization
-GET {{apiUrl}}/events?organization={{organizationId}}
-Authorization: Bearer {{token}}
-
-### By Stack
-GET {{apiUrl}}/stacks/{{stackId}}/events
-Authorization: Bearer {{token}}
-
-### By Project
-GET {{apiUrl}}/projects/{{projectId}}/events
-Authorization: Bearer {{token}}
-
-### By Project With Premium Filter (returns 426 for a free organization)
-GET {{apiUrl}}/projects/{{projectId}}/events?filter=tags:important
-Authorization: Bearer {{token}}
-
-### Count
+### Count open events with monthly aggregations
 GET {{apiUrl}}/events/count?aggregations=date:(date~month+cardinality:stack+sum:count~1)+cardinality:stack+terms:(first+@include:true)+sum:count~1&filter=(status:open+OR+status:regressed)
 Authorization: Bearer {{token}}
-
-### Count By Project With Premium Filter (returns 426 for a free organization)
-GET {{apiUrl}}/projects/{{projectId}}/events/count?filter=tags:important
-Authorization: Bearer {{token}}
-
-### Simple Strings
-POST {{apiUrl}}/events?access_token={{clientToken}}
-Content-Type: application/json
-
-Event 1
-Event 2
-Event 3
-Event 4
-
-### Post With ReferenceId
-POST {{apiUrl}}/events?access_token={{clientToken}}
-Content-Type: application/json
-
-{
-  "message": "Test with reference id",
-  "reference_id": "{{referenceId}}"
-}
-
-### Post User Description
-POST {{apiUrl}}/events/by-ref/{{referenceId}}/user-description?access_token={{clientToken}}
-Content-Type: application/json
-
-{
-  "description": "Test Description"
-}
-
-### Update Event By ReferenceId
-POST {{apiUrl}}/events/by-ref/{{referenceId}}/user-description?access_token={{clientToken}}
-Content-Type: application/json
-
-{
-  "email_address": "{{email}}",
-  "description": "testing reference id"
-}
 
 ### Post Custom Event
 POST {{apiUrl}}/events?access_token={{clientToken}}
@@ -110,8 +46,8 @@ Content-Type: application/json
   "message": null,
   "geo": "40,-70",
   "value": 1,
-  "reference_id": "12345678",
-  "session_id": "12345",
+  "reference_id": "{{referenceId}}",
+  "session_id": "{{sessionId}}",
   "data": {
     "number": 1,
     "decimal": 1.1,
@@ -127,36 +63,19 @@ Content-Type: application/json
   }
 }
 
-### GET Submit Random Parameters
-GET {{apiUrl}}/events/submit?access_token={{clientToken}}&foo=bar&edit=&spam=eggs=ham&tags=blue&tags=red&message=foo
-
-### Raygun Post
-POST {{apiUrl}}/events?access_token={{clientToken}}
+### Add user feedback to the submitted event
+POST {{apiUrl}}/events/by-ref/{{referenceId}}/user-description?access_token={{clientToken}}
 Content-Type: application/json
-X-ApiKey: {{clientToken}}
 
-Event 1
+{
+  "email_address": "{{email}}",
+  "description": "testing reference id"
+}
 
-### Sessions - Get session count with stats and chart aggregations
-GET {{apiUrl}}/organizations/{{organizationId}}/events/count?filter=type:session&aggregations=avg:value+cardinality:user+date:(date^-06:00+cardinality:user)&time=last+7+days
-Authorization: Bearer {{token}}
-
-### Sessions - Get session events by session ID (returns 426 for a free-only organization selection)
-GET {{apiUrl}}/events/sessions/12345?mode=summary
-Authorization: Bearer {{token}}
-
-### Sessions - Get project session events by session ID (returns 426 for a free project)
-GET {{apiUrl}}/projects/{{projectId}}/events/sessions/12345?mode=summary
-Authorization: Bearer {{token}}
-
-### Sessions - Get organization sessions list (returns 426 for a free organization)
-GET {{apiUrl}}/organizations/{{organizationId}}/events/sessions?mode=summary&limit=10&sort=-date
-Authorization: Bearer {{token}}
-
-### Sessions - Get project sessions list (returns 426 for a free project)
+### List project sessions (requires a paid plan)
 GET {{apiUrl}}/projects/{{projectId}}/events/sessions?mode=summary&limit=10&sort=-date
 Authorization: Bearer {{token}}
 
-### Sessions - Get all sessions (returns 426 for a free-only organization selection)
-GET {{apiUrl}}/events/sessions?mode=summary&limit=10&sort=-date
+### Get the events in a session
+GET {{apiUrl}}/projects/{{projectId}}/events/sessions/{{sessionId}}?mode=summary
 Authorization: Bearer {{token}}

@@ -85,7 +85,8 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
             id: 'summary',
             maxSize: 1200,
             meta: {
-                class: 'w-full'
+                class: 'w-full',
+                enableWrapping: true
             },
             minSize: 240,
             size: 480
@@ -149,7 +150,8 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 id: 'tags',
                 maxSize: 800,
                 meta: {
-                    class: 'w-52 min-w-52 max-w-52'
+                    class: 'w-52 min-w-52 max-w-52',
+                    enableWrapping: true
                 },
                 minSize: 120,
                 size: 208
@@ -162,7 +164,8 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 id: 'message',
                 maxSize: 800,
                 meta: {
-                    class: 'w-full'
+                    class: 'w-full',
+                    enableWrapping: true
                 },
                 minSize: 160,
                 size: 320
@@ -259,7 +262,8 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 id: 'tags',
                 maxSize: 800,
                 meta: {
-                    class: 'w-52 min-w-52 max-w-52'
+                    class: 'w-52 min-w-52 max-w-52',
+                    enableWrapping: true
                 },
                 minSize: 120,
                 size: 208

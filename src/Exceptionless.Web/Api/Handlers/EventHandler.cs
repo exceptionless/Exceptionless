@@ -47,6 +47,7 @@ public class EventHandler(
     PersistentEventQueryValidator validator,
     EventStackQueryValidator stackModeValidator,
     AppOptions appOptions,
+    SystemSettingsService systemSettingsService,
     UsageService usageService,
     TimeProvider timeProvider,
     LinkGenerator linkGenerator,
@@ -395,7 +396,7 @@ public class EventHandler(
     public async Task<Result> Handle(RecordEventHeartbeat message)
     {
         var httpContext = message.Context;
-        if (appOptions.EventSubmissionDisabled || String.IsNullOrEmpty(message.Id))
+        if (!await systemSettingsService.IsEventSubmissionEnabledAsync() || String.IsNullOrEmpty(message.Id))
             return Result.Success();
 
         string? projectId = httpContext.Request.GetDefaultProjectId();
@@ -657,7 +658,7 @@ public class EventHandler(
         foreach (var projectGroup in projectGroups)
         {
             var ev = projectGroup.First();
-            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ev.OrganizationId).Project(ev.ProjectId).Tag("Delete").Identity(currentUser.EmailAddress).Property("User", currentUser).SetHttpContext(httpContext));
+            using var _ = _logger.BeginScope(new ExceptionlessState().Organization(ev.OrganizationId).Project(ev.ProjectId).Tag("Delete").Identity(currentUser.EmailAddress).SetHttpContext(httpContext));
             _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", currentUser.Id, projectGroup.Count(), ev.ProjectId);
         }
 
@@ -719,7 +720,7 @@ public class EventHandler(
         catch (Exception ex)
         {
             var currentUser = httpContext.Request.GetUser();
-            using var _ = _logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(currentUser.EmailAddress).Property("User", currentUser).SetHttpContext(httpContext));
+            using var _ = _logger.BeginScope(new ExceptionlessState().Property("Search Filter", new { SystemFilter = sf, UserFilter = filter, Time = ti, Aggregations = aggregations }).Tag("Search").Identity(currentUser.EmailAddress).SetHttpContext(httpContext));
             _logger.LogError(ex, "An error has occurred. Please check your filter or aggregations: {Message}", ex.Message);
 
             throw;
@@ -745,7 +746,6 @@ public class EventHandler(
             })
             .Tag("Search")
             .Identity(currentUser.EmailAddress)
-            .Property("User", currentUser)
             .SetHttpContext(httpContext)
         );
 

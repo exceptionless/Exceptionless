@@ -20,6 +20,70 @@
     }
   ],
   "paths": {
+    "/api/v2/assistant/conversation-sharing": {
+      "get": {
+        "tags": [
+          "AssistantEndpoints"
+        ],
+        "operationId": "GetAssistantConversationSharing",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantConversationSharingSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AssistantEndpoints"
+        ],
+        "description": "Saves the current user\u0027s choice. Null follows the admin default; true and false remain explicit choices when the default changes.",
+        "operationId": "SetAssistantConversationSharing",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantConversationSharing"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantConversationSharingSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/v2/assistant/access": {
       "get": {
         "tags": [
@@ -70,6 +134,7 @@
         "tags": [
           "AssistantEndpoints"
         ],
+        "description": "The X-Exie-Full-Logging response header indicates whether the browser should record prompts and responses for this turn. Missing or false disables conversation logging.",
         "operationId": "StreamAssistantChat",
         "requestBody": {
           "content": {
@@ -173,6 +238,258 @@
         "deprecated": true
       }
     },
+    "/api/v2/admin/assistant-settings": {
+      "get": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Get Exie assistant settings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantModelSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Update Exie assistant settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantModelSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/assistant-settings/enabled": {
+      "put": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Update Exie assistant availability",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantEnabledSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantEnabledSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantModelSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/assistant-settings/conversation-sharing": {
+      "put": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Update Exie full conversation logging",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantConversationSharingSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAssistantConversationSharingSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantModelSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/event-submission-settings": {
+      "get": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Get event submission settings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSubmissionSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Update event submission settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventSubmissionSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventSubmissionSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventSubmissionSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/assistant-usage": {
       "get": {
         "tags": [
@@ -232,6 +549,7 @@
         "tags": [
           "OAuth"
         ],
+        "description": "OAuth issuer and endpoint URLs use the configured public ApiUrl origin, falling back to BaseURL when ApiUrl is unset.",
         "responses": {
           "200": {
             "description": "OK",
@@ -251,6 +569,7 @@
         "tags": [
           "OAuth"
         ],
+        "description": "MCP resource and authorization server URLs use the configured public ApiUrl origin, falling back to BaseURL when ApiUrl is unset.",
         "responses": {
           "200": {
             "description": "OK",
@@ -270,6 +589,7 @@
         "tags": [
           "OAuth"
         ],
+        "description": "REST API resource and authorization server URLs use the configured public ApiUrl origin, falling back to BaseURL when ApiUrl is unset.",
         "responses": {
           "200": {
             "description": "OK",
@@ -3102,6 +3422,249 @@
         }
       }
     },
+    "/api/v2/organizations/{organizationId}/saved-view-defaults/user": {
+      "put": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Update the current user\u0027s saved view default",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The personal saved view default. A null saved view identifier clears the preference.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewDefault"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewDefault"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The personal saved view default was updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSavedViewDefault"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The saved view preferences could not be updated due to a concurrent request.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The saved view is not accessible in this organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/organizations/{organizationId}/saved-view-order/{viewType}": {
+      "put": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Update the current user\u0027s saved view order",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "viewType",
+            "in": "path",
+            "description": "The dashboard view type (events, sessions, stacks, or stream).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The ordered saved view identifiers for one dashboard section. An empty list resets the section to alphabetical order.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewOrder"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The personal saved view order was updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSavedViewOrder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request body is malformed or omits the saved view identifiers.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The saved view preferences could not be updated due to a concurrent request.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The dashboard view type or saved view identifiers are invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/organizations/{organizationId}/saved-view-defaults/organization": {
+      "put": {
+        "tags": [
+          "SavedView"
+        ],
+        "summary": "Update the organization\u0027s saved view default",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The shared saved view default. A null saved view identifier clears the preference.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewDefault"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSavedViewDefault"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The organization saved view default was updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateSavedViewDefault"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The saved view is private or is not accessible in this organization.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/organizations/{organizationId}/saved-views/predefined": {
       "post": {
         "tags": [
@@ -3493,6 +4056,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WorkInProgressResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The current user could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/users/me/product-tours/{tourName}/record": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Record current user product tour",
+        "parameters": [
+          {
+            "name": "tourName",
+            "in": "path",
+            "description": "A UI-defined product tour identifier using lowercase letters, digits, and hyphens (up to 64 characters).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The tour was recorded. New completions replace the oldest entries at the 100-entry limit; values without a valid timestamp are removed first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordProductTourResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The product tour name is invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -7646,6 +8260,7 @@
         "tags": [
           "OAuth"
         ],
+        "description": "Redirects to /oauth/authorize on the configured application BaseURL, preserving the authorization request query string.",
         "parameters": [
           {
             "name": "client_id",
@@ -11355,6 +11970,65 @@
           }
         }
       },
+      "AssistantConversationSharingSettings": {
+        "required": [
+          "enabled",
+          "default_enabled",
+          "is_overridden"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "default_enabled": {
+            "type": "boolean"
+          },
+          "is_overridden": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AssistantModelSettings": {
+        "required": [
+          "model",
+          "configured_model",
+          "is_overridden",
+          "enabled",
+          "configured_enabled",
+          "is_enabled_overridden",
+          "is_configured",
+          "conversation_sharing_default_enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "configured_model": {
+            "type": "string"
+          },
+          "is_overridden": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "configured_enabled": {
+            "type": "boolean"
+          },
+          "is_enabled_overridden": {
+            "type": "boolean"
+          },
+          "is_configured": {
+            "type": "boolean"
+          },
+          "conversation_sharing_default_enabled": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
       "BillingPlan": {
         "required": [
           "id",
@@ -11539,6 +12213,25 @@
               "null",
               "object"
             ]
+          }
+        }
+      },
+      "EventSubmissionSettings": {
+        "required": [
+          "enabled",
+          "configured_enabled",
+          "is_overridden"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "configured_enabled": {
+            "type": "boolean"
+          },
+          "is_overridden": {
+            "type": "boolean"
           }
         }
       },
@@ -12731,6 +13424,18 @@
           }
         }
       },
+      "RecordProductTourResult": {
+        "required": [
+          "recorded_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "recorded_utc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ResetPasswordModel": {
         "required": [
           "password_reset_token",
@@ -12766,6 +13471,13 @@
               "boolean"
             ],
             "description": "Whether the column fills the table\u0027s remaining width. Null or false means use fixed-width behavior."
+          },
+          "wrap": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Whether cell content wraps onto multiple lines. Null or false means keep content on one line."
           },
           "position": {
             "maximum": 49,
@@ -13068,6 +13780,54 @@
           }
         }
       },
+      "UpdateAssistantConversationSharing": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "UpdateAssistantConversationSharingSettings": {
+        "required": [
+          "enabled"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateAssistantEnabledSettings": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "UpdateAssistantSettings": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "maxLength": 200,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "UpdateEmailAddressResult": {
         "required": [
           "is_verified"
@@ -13097,6 +13857,17 @@
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
+      },
+      "UpdateEventSubmissionSettings": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
       },
       "UpdateProject": {
         "type": "object",
@@ -13181,6 +13952,35 @@
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
+      },
+      "UpdateSavedViewDefault": {
+        "type": "object",
+        "properties": {
+          "saved_view_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "UpdateSavedViewOrder": {
+        "required": [
+          "saved_view_ids"
+        ],
+        "type": "object",
+        "properties": {
+          "saved_view_ids": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
       },
       "UpdateToken": {
         "type": "object",
@@ -13296,6 +14096,9 @@
           "organization_ids",
           "password_reset_token_expiration",
           "o_auth_accounts",
+          "organization_preferences",
+          "saved_view_orders",
+          "product_tours",
           "email_notifications_enabled",
           "is_email_address_verified",
           "verify_email_address_token_expiration",
@@ -13349,6 +14152,21 @@
               "$ref": "#/components/schemas/OAuthAccount"
             }
           },
+          "organization_preferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserOrganizationPreference"
+            }
+          },
+          "saved_view_orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserSavedViewOrderPreference"
+            }
+          },
+          "product_tours": {
+            "type": "object"
+          },
           "full_name": {
             "type": "string",
             "description": "Gets or sets the users Full Name."
@@ -13367,6 +14185,12 @@
           },
           "email_notifications_enabled": {
             "type": "boolean"
+          },
+          "assistant_conversation_sharing_enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
           },
           "is_email_address_verified": {
             "type": "boolean"
@@ -13428,10 +14252,59 @@
           }
         }
       },
+      "UserOrganizationPreference": {
+        "required": [
+          "organization_id",
+          "default_saved_view_id"
+        ],
+        "type": "object",
+        "properties": {
+          "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "default_saved_view_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          }
+        }
+      },
+      "UserSavedViewOrderPreference": {
+        "required": [
+          "view_type",
+          "organization_id",
+          "saved_view_ids"
+        ],
+        "type": "object",
+        "properties": {
+          "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "view_type": {
+            "type": "string"
+          },
+          "saved_view_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ViewCurrentUser": {
         "required": [
           "has_local_account",
           "o_auth_accounts",
+          "organization_preferences",
+          "saved_view_orders",
+          "product_tours",
           "id",
           "organization_ids",
           "full_name",
@@ -13458,6 +14331,21 @@
             "items": {
               "$ref": "#/components/schemas/OAuthAccount"
             }
+          },
+          "organization_preferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserOrganizationPreference"
+            }
+          },
+          "saved_view_orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserSavedViewOrderPreference"
+            }
+          },
+          "product_tours": {
+            "type": "object"
           },
           "id": {
             "maxLength": 24,
@@ -13646,6 +14534,15 @@
           },
           "name": {
             "type": "string"
+          },
+          "default_saved_view_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "icon_url": {
             "type": [
@@ -13940,6 +14837,12 @@
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "predefined_key": {
             "type": [
               "null",
               "string"

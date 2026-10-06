@@ -1,0 +1,18 @@
+<table role="presentation" align="center" cellpadding="0" cellspacing="0" style="margin:16px auto 21px">
+    <tr>
+        <td bgcolor="@BackgroundColor" style="background:@BackgroundColor;border-radius:3px;text-align:center">
+            <a href="@Url" target="_blank" style="background:@BackgroundColor;border:1px solid @BackgroundColor;border-radius:3px;color:@EmailStyles.White;display:inline-block;font-family:Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;line-height:1.3;padding:8px 16px;text-decoration:none">@ChildContent</a>
+        </td>
+    </tr>
+</table>
+
+@code {
+    [Parameter, EditorRequired]
+    public required string Url { get; set; }
+
+    [Parameter]
+    public string BackgroundColor { get; set; } = EmailStyles.Primary;
+
+    [Parameter, EditorRequired]
+    public required RenderFragment ChildContent { get; set; }
+}

@@ -1,11 +1,13 @@
+import { resolve } from '$app/paths';
+
 const OBJECTID_SEGMENT_REGEX = /^[0-9a-f]{24}$/i;
 const UUID_SEGMENT_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const NUMERIC_SEGMENT_REGEX = /^\d+$/;
 
-export function normalizePath(path: string, basePath = '/next'): string {
+export function normalizePath(path: string, basePath = resolve('/').replace(/\/$/, '')): string {
     let normalized = path;
 
-    if (basePath && normalized.startsWith(basePath)) {
+    if (basePath && (normalized === basePath || normalized.startsWith(`${basePath}/`))) {
         normalized = normalized.slice(basePath.length);
     }
 

@@ -11,7 +11,7 @@ test('invited user can accept an organization invitation @signup', async ({ brow
 
     try {
         await test.step('invite a user through organization settings', async () => {
-            await page.goto(`/next/organization/${e2eScenario.organizationId}/users`);
+            await page.goto(`/organization/${e2eScenario.organizationId}/users`);
             await page.getByTitle('Invite User').click();
 
             const dialog = page.getByRole('alertdialog', { name: 'Invite User' });
@@ -21,16 +21,19 @@ test('invited user can accept an organization invitation @signup', async ({ brow
             await expect(page.getByText('User invited successfully')).toBeVisible();
         });
 
-        const inviteToken = await test.step('read the invitation from local mail', async () => {
-            return await e2eApi.pollForMailToken(invitedEmail, 'signup');
+        const inviteLink = await test.step('read the invitation from local mail', async () => {
+            return await e2eApi.pollForMailLink(invitedEmail, 'signup');
         });
+
+        const inviteToken = new URL(inviteLink).searchParams.get('token')!;
 
         await test.step('sign up through the invitation route', async () => {
             const invitedContext = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
             const invitedPage = await invitedContext.newPage();
 
             try {
-                await invitedPage.goto(`/next/signup?token=${encodeURIComponent(inviteToken)}`);
+                await invitedPage.goto(inviteLink);
+                await expect(invitedPage.getByRole('link', { name: 'Log In' })).toHaveAttribute('href', `/login?token=${encodeURIComponent(inviteToken)}`);
                 await invitedPage.getByLabel('Name', { exact: true }).fill(`Invited User ${e2eScenario.run}`);
                 await invitedPage.getByLabel('Email', { exact: true }).fill(invitedEmail);
                 await waitForEmailValidation(invitedPage);
@@ -46,7 +49,7 @@ test('invited user can accept an organization invitation @signup', async ({ brow
                 expect((await signupResponse).ok()).toBe(true);
 
                 invitedUserToken = await getUserToken(invitedPage);
-                await expect(invitedPage).toHaveURL(/\/next\/project\/add(?:[?#]|$)/, { timeout: 30_000 });
+                await expect(invitedPage).toHaveURL(/\/project\/add(?:[?#]|$)/, { timeout: 30_000 });
                 await e2eApi.waitForOrganizationListed(invitedUserToken, e2eScenario.organizationId, 60_000);
                 await invitedPage.reload();
                 await expect(invitedPage.getByRole('heading', { name: 'Add Project' })).toBeVisible();
@@ -73,6 +76,75 @@ test('invited user can accept an organization invitation @signup', async ({ brow
             });
 
             await runCleanupStep(cleanupErrors, 'delete invited user', async () => {
+                await e2eApi.deleteCurrentUser(token);
+                await e2eApi.waitForCurrentUserDeleted(token);
+            });
+        }
+
+        throwIfCleanupFailed(cleanupErrors);
+    }
+});
+
+test('existing invited user can accept an organization invitation when logging in @signup', async ({ browser, e2eApi, e2eScenario }) => {
+    const invitedEmail = `existing-invited-${e2eScenario.run}@exceptionless.test`.toLowerCase();
+    let invitedUserToken: string | undefined;
+
+    try {
+        await test.step('create an invitation for a new address', async () => {
+            await e2eApi.inviteOrganizationUser(e2eScenario.userToken, e2eScenario.organizationId, invitedEmail);
+        });
+
+        const inviteToken = await e2eApi.pollForMailToken(invitedEmail, 'signup');
+        const existingUserToken = await e2eApi.signup(`Existing Invited User ${e2eScenario.run}`, invitedEmail, E2E_TEST_PASSWORD);
+        invitedUserToken = existingUserToken;
+        const invitedContext = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
+        await invitedContext.addInitScript((token) => window.localStorage.setItem('satellizer_token', token), existingUserToken);
+        const invitedPage = await invitedContext.newPage();
+
+        try {
+            const logoutResponse = invitedPage.waitForResponse((response) => {
+                const url = new URL(response.url());
+                return response.request().method() === 'GET' && url.pathname.endsWith('/api/v2/auth/logout');
+            });
+
+            await invitedPage.goto(`/login?token=${encodeURIComponent(inviteToken)}`);
+            expect((await logoutResponse).ok()).toBe(true);
+            await expect(invitedPage.getByRole('link', { name: 'Start a free trial' })).toHaveAttribute(
+                'href',
+                `/signup?token=${encodeURIComponent(inviteToken)}`
+            );
+            await invitedPage.getByLabel('Email', { exact: true }).fill(invitedEmail);
+            await invitedPage.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);
+
+            const loginResponse = invitedPage.waitForResponse((response) => {
+                const url = new URL(response.url());
+                return response.request().method() === 'POST' && url.pathname.endsWith('/api/v2/auth/login');
+            });
+
+            await invitedPage.getByRole('button', { exact: true, name: 'Login' }).click();
+            const response = await loginResponse;
+            const requestBody = response.request().postDataJSON() as { invite_token?: string };
+            expect(requestBody.invite_token).toBe(inviteToken);
+            expect(response.ok()).toBe(true);
+
+            invitedUserToken = await getUserToken(invitedPage);
+            await e2eApi.waitForOrganizationListed(invitedUserToken, e2eScenario.organizationId, 60_000);
+            await expect(invitedPage.getByRole('button').filter({ hasText: e2eScenario.organizationName }).filter({ visible: true }).first()).toBeVisible();
+        } finally {
+            await invitedContext.close();
+        }
+    } finally {
+        const cleanupErrors: Error[] = [];
+
+        if (invitedUserToken) {
+            const token = invitedUserToken;
+
+            await runCleanupStep(cleanupErrors, 'remove existing invited user from organization', async () => {
+                await e2eApi.deleteOrganizationUser(e2eScenario.userToken, e2eScenario.organizationId, invitedEmail);
+                await e2eApi.waitForOrganizationNotListed(token, e2eScenario.organizationId);
+            });
+
+            await runCleanupStep(cleanupErrors, 'delete existing invited user', async () => {
                 await e2eApi.deleteCurrentUser(token);
                 await e2eApi.waitForCurrentUserDeleted(token);
             });

@@ -1,3 +1,5 @@
+import { fromDate, getLocalTimeZone, isSameDay, isSameYear } from '@internationalized/date';
+
 /**
  * Configuration options for date and time formatting
  */
@@ -54,19 +56,19 @@ export function formatDate(value: Date): string {
 export function formatDateLabel(date: Date, currentDate: Date = new Date(), options: DateLabelFormatOptions = {}): string {
     const { hour12 = true, includeRelative = true, joiner = ' at ', month = 'long', timeZone } = options;
 
-    const sameDay = date.toDateString() === currentDate.toDateString();
-    const yesterday = new Date(currentDate);
-    yesterday.setDate(currentDate.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-    const isSameYear = date.getFullYear() === currentDate.getFullYear();
+    const displayDate = fromDate(date, timeZone ?? getLocalTimeZone());
+    const displayCurrentDate = fromDate(currentDate, timeZone ?? getLocalTimeZone());
+    const sameDay = isSameDay(displayDate, displayCurrentDate);
+    const isYesterday = isSameDay(displayDate, displayCurrentDate.subtract({ days: 1 }));
+    const sameYear = isSameYear(displayDate, displayCurrentDate);
 
-    const isMidnight = date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0;
+    const isMidnight = displayDate.hour === 0 && displayDate.minute === 0 && displayDate.second === 0 && displayDate.millisecond === 0;
 
     // Build the date formatter (omit year if same year)
     const dateFmt = new Intl.DateTimeFormat(undefined, {
         day: 'numeric',
         month,
-        ...(isSameYear ? undefined : { year: 'numeric' }),
+        ...(sameYear ? undefined : { year: 'numeric' }),
         ...(timeZone ? { timeZone } : undefined)
     });
 
@@ -80,8 +82,8 @@ export function formatDateLabel(date: Date, currentDate: Date = new Date(), opti
     }
 
     // Minimal time components per your rules
-    const sec = date.getSeconds();
-    const min = date.getMinutes();
+    const sec = displayDate.second;
+    const min = displayDate.minute;
 
     const timeOpts: Intl.DateTimeFormatOptions = {
         hour: 'numeric',

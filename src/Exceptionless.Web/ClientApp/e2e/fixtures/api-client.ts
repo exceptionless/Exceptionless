@@ -5,6 +5,7 @@ import type { E2EEnvironment } from './environment';
 export interface E2ECurrentUser {
     email_address?: string;
     id: string;
+    product_tours?: Record<string, unknown>;
 }
 
 export interface E2EEvent {
@@ -22,6 +23,7 @@ export interface E2EOrganization {
 
 export interface E2EProject {
     id: string;
+    is_configured?: boolean;
     name: string;
     organization_id?: string;
 }
@@ -38,10 +40,10 @@ interface TokenResult {
 export class E2EApiClient {
     constructor(
         private readonly request: APIRequestContext,
-        readonly environment: E2EEnvironment
+        public readonly environment: E2EEnvironment
     ) {}
 
-    async createOrganization(token: string, name: string): Promise<E2EOrganization> {
+    public async createOrganization(token: string, name: string): Promise<E2EOrganization> {
         const response = await this.request.post(this.url('organizations'), {
             data: { name },
             headers: this.authHeaders(token)
@@ -51,7 +53,7 @@ export class E2EApiClient {
         return toOrganization(await readJson(response));
     }
 
-    async createProject(token: string, organizationId: string, name: string): Promise<E2EProject> {
+    public async createProject(token: string, organizationId: string, name: string): Promise<E2EProject> {
         const response = await this.request.post(this.url('projects'), {
             data: {
                 delete_bot_data_enabled: true,
@@ -62,10 +64,23 @@ export class E2EApiClient {
         });
 
         await expectStatus(response, [201], 'create project');
-        return toProject(await readJson(response));
+        const project = toProject(await readJson(response));
+        await waitForCondition(
+            async () => {
+                const listed = await this.request.get(this.url(`organizations/${organizationId}/projects`), {
+                    headers: this.authHeaders(token)
+                });
+                await expectStatus(listed, [200], 'list projects');
+                const projects = await readJson(listed);
+                return Array.isArray(projects) && projects.some((item) => toProject(item).id === project.id);
+            },
+            30_000,
+            `Timed out waiting for E2E project ${project.id} to appear in the projects list`
+        );
+        return project;
     }
 
-    async deleteCurrentUser(token: string): Promise<number> {
+    public async deleteCurrentUser(token: string): Promise<number> {
         const response = await this.request.delete(this.url('users/me'), {
             headers: this.authHeaders(token)
         });
@@ -74,7 +89,7 @@ export class E2EApiClient {
         return response.status();
     }
 
-    async deleteOrganization(token: string, organizationId: string): Promise<number> {
+    public async deleteOrganization(token: string, organizationId: string): Promise<number> {
         const response = await this.request.delete(this.url(`organizations/${organizationId}`), {
             headers: this.authHeaders(token)
         });
@@ -83,7 +98,7 @@ export class E2EApiClient {
         return response.status();
     }
 
-    async deleteOrganizationUser(token: string, organizationId: string, email: string): Promise<number> {
+    public async deleteOrganizationUser(token: string, organizationId: string, email: string): Promise<number> {
         const response = await this.request.delete(this.url(`organizations/${organizationId}/users/${encodeURIComponent(email)}`), {
             headers: this.authHeaders(token)
         });
@@ -92,7 +107,7 @@ export class E2EApiClient {
         return response.status();
     }
 
-    async deleteProject(token: string, projectId: string): Promise<number> {
+    public async deleteProject(token: string, projectId: string): Promise<number> {
         const response = await this.request.delete(this.url(`projects/${projectId}`), {
             headers: this.authHeaders(token)
         });
@@ -101,14 +116,14 @@ export class E2EApiClient {
         return response.status();
     }
 
-    async getAbout(): Promise<Record<string, unknown>> {
+    public async getAbout(): Promise<Record<string, unknown>> {
         const response = await this.request.get(this.url('about'));
 
         await expectStatus(response, [200], 'get about');
         return toRecord(await readJson(response), 'about response');
     }
 
-    async getCurrentUser(token: string): Promise<E2ECurrentUser | undefined> {
+    public async getCurrentUser(token: string): Promise<E2ECurrentUser | undefined> {
         const response = await this.request.get(this.url('users/me'), {
             headers: this.authHeaders(token)
         });
@@ -122,7 +137,7 @@ export class E2EApiClient {
         return toCurrentUser(await readJson(response));
     }
 
-    async getEvent(token: string, eventId: string): Promise<E2EEvent> {
+    public async getEvent(token: string, eventId: string): Promise<E2EEvent> {
         const response = await this.request.get(this.url(`events/${eventId}`), {
             headers: this.authHeaders(token)
         });
@@ -131,7 +146,7 @@ export class E2EApiClient {
         return toEvent(await readJson(response));
     }
 
-    async getEventsByReference(token: string, projectId: string, referenceId: string): Promise<E2EEvent[]> {
+    public async getEventsByReference(token: string, projectId: string, referenceId: string): Promise<E2EEvent[]> {
         const response = await this.request.get(this.url(`projects/${projectId}/events/by-ref/${encodeURIComponent(referenceId)}`), {
             headers: this.authHeaders(token)
         });
@@ -145,7 +160,7 @@ export class E2EApiClient {
         return toEventArray(await readJson(response));
     }
 
-    async getOrganization(token: string, organizationId: string): Promise<E2EOrganization | undefined> {
+    public async getOrganization(token: string, organizationId: string): Promise<E2EOrganization | undefined> {
         const response = await this.request.get(this.url(`organizations/${organizationId}`), {
             headers: this.authHeaders(token)
         });
@@ -159,7 +174,7 @@ export class E2EApiClient {
         return toOrganization(await readJson(response));
     }
 
-    async getOrganizations(token: string): Promise<E2EOrganization[]> {
+    public async getOrganizations(token: string): Promise<E2EOrganization[]> {
         const response = await this.request.get(this.url('organizations'), {
             headers: this.authHeaders(token)
         });
@@ -168,7 +183,7 @@ export class E2EApiClient {
         return toOrganizationArray(await readJson(response));
     }
 
-    async getProject(token: string, projectId: string): Promise<E2EProject | undefined> {
+    public async getProject(token: string, projectId: string): Promise<E2EProject | undefined> {
         const response = await this.request.get(this.url(`projects/${projectId}`), {
             headers: this.authHeaders(token)
         });
@@ -182,7 +197,7 @@ export class E2EApiClient {
         return toProject(await readJson(response));
     }
 
-    async getProjectDefaultToken(token: string, projectId: string): Promise<E2EToken> {
+    public async getProjectDefaultToken(token: string, projectId: string): Promise<E2EToken> {
         const response = await this.request.get(this.url(`projects/${projectId}/tokens/default`), {
             headers: this.authHeaders(token)
         });
@@ -191,7 +206,15 @@ export class E2EApiClient {
         return toToken(await readJson(response));
     }
 
-    async login(email = this.environment.email, password = this.environment.password): Promise<string> {
+    public async inviteOrganizationUser(token: string, organizationId: string, email: string): Promise<void> {
+        const response = await this.request.post(this.url(`organizations/${organizationId}/users/${encodeURIComponent(email)}`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200], 'invite organization user');
+    }
+
+    public async login(email = this.environment.email, password = this.environment.password): Promise<string> {
         const token = await this.loginIfExists(email, password);
         if (!token) {
             throw new Error('login failed with status 401');
@@ -200,7 +223,7 @@ export class E2EApiClient {
         return token;
     }
 
-    async loginIfExists(email: string, password: string): Promise<string | undefined> {
+    public async loginIfExists(email: string, password: string): Promise<string | undefined> {
         if (!email || !password) {
             throw new Error('Email and password are required when using API login.');
         }
@@ -222,7 +245,7 @@ export class E2EApiClient {
         return result.token;
     }
 
-    async pollForEventByReference(token: string, projectId: string, referenceId: string, timeoutMs = 90_000): Promise<E2EEvent> {
+    public async pollForEventByReference(token: string, projectId: string, referenceId: string, timeoutMs = 90_000): Promise<E2EEvent> {
         const deadline = Date.now() + timeoutMs;
 
         while (Date.now() < deadline) {
@@ -239,7 +262,7 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for E2E event with reference id ${referenceId}`);
     }
 
-    async pollForMailToken(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
+    public async pollForMailLink(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
         const deadline = Date.now() + timeoutMs;
         const normalizedEmail = email.toLowerCase();
 
@@ -265,9 +288,15 @@ export class E2EApiClient {
                 await expectStatus(messageResponse, [200], 'read local mail');
                 const messageResult = toRecord(await readJson(messageResponse), 'mail message response');
                 const content = `${getOptionalString(messageResult, 'HTML') ?? ''}\n${getOptionalString(messageResult, 'Text') ?? ''}`;
-                const token = extractMailToken(content, path);
-                if (token) {
-                    return token;
+                const link = extractMailLink(content, path);
+                if (link) {
+                    // Keep the delivered path, query, and fragment; only adapt the local Aspire origin.
+                    const delivered = new URL(link);
+                    const local = new URL(this.environment.appUrl);
+                    if (!delivered.hostname.endsWith('.localhost') && delivered.hostname !== 'localhost' && delivered.hostname !== '127.0.0.1') {
+                        throw new Error('Expected a local application link in test mail.');
+                    }
+                    return new URL(delivered.pathname + delivered.search + delivered.hash, local.origin).href;
                 }
             }
 
@@ -277,10 +306,24 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for ${path} email sent to ${email}`);
     }
 
-    async signup(name: string, email: string, password: string): Promise<string> {
+    public async pollForMailToken(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
+        const link = new URL(await this.pollForMailLink(email, path, timeoutMs));
+        return path === 'signup' ? link.searchParams.get('token')! : decodeURIComponent(link.pathname.split('/').at(-1)!);
+    }
+
+    public async recordProductTour(token: string, tourName: string): Promise<void> {
+        const response = await this.request.put(this.url(`users/me/product-tours/${tourName}/record`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200], 'record product tour');
+    }
+
+    public async signup(name: string, email: string, password: string, inviteToken?: string): Promise<string> {
         const response = await this.request.post(this.url('auth/signup'), {
             data: {
                 email,
+                invite_token: inviteToken,
                 name,
                 password
             }
@@ -292,7 +335,7 @@ export class E2EApiClient {
         return result.token;
     }
 
-    async submitEvent(projectId: string, projectToken: string, event: Record<string, unknown>): Promise<void> {
+    public async submitEvent(projectId: string, projectToken: string, event: Record<string, unknown>): Promise<void> {
         const response = await this.request.post(this.url(`projects/${projectId}/events`), {
             data: event,
             headers: this.authHeaders(projectToken)
@@ -301,7 +344,7 @@ export class E2EApiClient {
         await expectStatus(response, [202], 'submit event');
     }
 
-    async waitForCurrentUserDeleted(token: string, timeoutMs = 30_000): Promise<void> {
+    public async waitForCurrentUserDeleted(token: string, timeoutMs = 30_000): Promise<void> {
         await waitForCondition(
             async () => !(await this.getCurrentUser(token)),
             timeoutMs,
@@ -309,7 +352,33 @@ export class E2EApiClient {
         );
     }
 
-    async waitForOrganizationDeleted(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
+    public async waitForInvitationListed(token: string, organizationId: string, inviteToken: string): Promise<void> {
+        await waitForCondition(
+            async () => {
+                const response = await this.request.get(this.url('organizations'), {
+                    headers: this.authHeaders(token),
+                    params: { filter: `id:${organizationId}` }
+                });
+                await expectStatus(response, [200], 'find indexed invitation');
+                const organizations = await readJson(response);
+                return (
+                    Array.isArray(organizations) &&
+                    organizations.some((value) => {
+                        const organization = toRecord(value, 'organization');
+                        return (
+                            organization.id === organizationId &&
+                            Array.isArray(organization.invites) &&
+                            organization.invites.some((invite) => toRecord(invite, 'invitation').token === inviteToken)
+                        );
+                    })
+                );
+            },
+            30_000,
+            'Timed out waiting for the test invitation to be indexed'
+        );
+    }
+
+    public async waitForOrganizationDeleted(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
         await waitForCondition(
             async () => !(await this.getOrganization(token, organizationId)),
             timeoutMs,
@@ -317,7 +386,7 @@ export class E2EApiClient {
         );
     }
 
-    async waitForOrganizationListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
+    public async waitForOrganizationListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
         await waitForCondition(
             async () => (await this.getOrganizations(token)).some((organization) => organization.id === organizationId),
             timeoutMs,
@@ -325,7 +394,7 @@ export class E2EApiClient {
         );
     }
 
-    async waitForOrganizationNotListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
+    public async waitForOrganizationNotListed(token: string, organizationId: string, timeoutMs = 30_000): Promise<void> {
         await waitForCondition(
             async () => !(await this.getOrganizations(token)).some((organization) => organization.id === organizationId),
             timeoutMs,
@@ -333,7 +402,7 @@ export class E2EApiClient {
         );
     }
 
-    async waitForProjectDeleted(token: string, projectId: string, timeoutMs = 30_000): Promise<void> {
+    public async waitForProjectDeleted(token: string, projectId: string, timeoutMs = 30_000): Promise<void> {
         await waitForCondition(
             async () => !(await this.getProject(token, projectId)),
             timeoutMs,
@@ -366,10 +435,14 @@ async function expectStatus(response: APIResponse, expectedStatuses: number[], o
     throw new Error(`${operation} failed with status ${response.status()} ${response.statusText()}${body ? `: ${body}` : ''}`);
 }
 
-function extractMailToken(content: string, path: 'reset-password' | 'signup'): string | undefined {
-    const pattern = path === 'reset-password' ? /\/reset-password\/([^?"'<\\\s]+)/ : /\/signup\?token=([^&"'<\\\s]+)/;
-    const match = pattern.exec(content.replaceAll('&amp;', '&'));
-    return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+function extractMailLink(content: string, path: 'reset-password' | 'signup'): string | undefined {
+    const links = content.replaceAll('&amp;', '&').match(/https?:\/\/[^"'<\\\s]+/g) ?? [];
+    return links.find((link) => {
+        const url = new URL(link);
+        return path === 'signup'
+            ? url.pathname === '/signup' && url.searchParams.has('token')
+            : url.pathname.startsWith('/reset-password/') && !url.searchParams.has('cancel');
+    });
 }
 
 function getOptionalString(value: Record<string, unknown>, key: string): string | undefined {
@@ -406,7 +479,8 @@ function toCurrentUser(value: unknown): E2ECurrentUser {
 
     return {
         email_address: getOptionalString(record, 'email_address'),
-        id: getRequiredString(record, 'id', 'current user response')
+        id: getRequiredString(record, 'id', 'current user response'),
+        product_tours: record.product_tours == null ? undefined : toRecord(record.product_tours, 'current user product tours')
     };
 }
 
@@ -452,6 +526,7 @@ function toProject(value: unknown): E2EProject {
 
     return {
         id: getRequiredString(record, 'id', 'project response'),
+        is_configured: typeof record.is_configured === 'boolean' ? record.is_configured : undefined,
         name: getRequiredString(record, 'name', 'project response'),
         organization_id: getOptionalString(record, 'organization_id')
     };

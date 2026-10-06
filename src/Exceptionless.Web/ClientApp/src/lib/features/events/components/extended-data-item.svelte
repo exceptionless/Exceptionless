@@ -36,18 +36,6 @@
         title
     }: Props = $props();
 
-    function transformData(data: unknown): unknown {
-        if (isJSONString(data)) {
-            try {
-                return JSON.parse(data);
-            } catch {
-                return data;
-            }
-        }
-
-        return data;
-    }
-
     function getFilteredData(data: unknown, exclusions: string[]): unknown {
         if (Array.isArray(data)) {
             return data.map((item) => getFilteredData(item, exclusions));
@@ -88,6 +76,18 @@
 
     function onToggleView() {
         showRaw = !showRaw;
+    }
+
+    function transformData(data: unknown): unknown {
+        if (isJSONString(data)) {
+            try {
+                return JSON.parse(data);
+            } catch {
+                return data;
+            }
+        }
+
+        return data;
     }
 
     let showRaw = $state(false);

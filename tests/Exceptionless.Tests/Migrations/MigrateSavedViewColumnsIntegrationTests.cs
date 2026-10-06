@@ -1,10 +1,12 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Elastic.Clients.Elasticsearch;
+using Exceptionless.Core;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Seed;
+using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
@@ -96,8 +98,8 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         var migrationStateRepository = GetService<IMigrationStateRepository>();
         await migrationStateRepository.AddAsync(new MigrationState
         {
-            Id = "7",
-            Version = 7,
+            Id = "9",
+            Version = 9,
             MigrationType = MigrationType.VersionedAndResumable,
             StartedUtc = DateTime.UtcNow,
             CompletedUtc = DateTime.UtcNow
@@ -111,6 +113,127 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
             PredefinedSavedViewsDataSeed.SystemOrganizationId,
             o => o.ImmediateConsistency());
         Assert.NotEmpty(savedViews.Documents);
+    }
+
+    [Fact]
+    public async Task RerunAsync_CompletedMigration_ConvertsLegacyDocumentWithoutChangingMigrationState()
+    {
+        // Arrange
+        const string savedViewId = "770000000000000000000094";
+        var source = JsonNode.Parse(
+            $$"""
+            {
+              "id": "{{savedViewId}}",
+              "organization_id": "550000000000000000000001",
+              "created_by_user_id": "660000000000000000000001",
+              "name": "Legacy Columns Written After Migration",
+              "slug": "legacy-columns-after-migration",
+              "view_type": "events",
+              "columns": {
+                "level": true
+              },
+              "version": 1,
+              "created_utc": "2026-01-01T00:00:00Z",
+              "updated_utc": "2026-01-01T00:00:00Z"
+            }
+            """
+        )!.AsObject();
+
+        var completedUtc = DateTime.UtcNow.AddDays(-1);
+        var migrationStateRepository = GetService<IMigrationStateRepository>();
+        await migrationStateRepository.AddAsync(new MigrationState
+        {
+            Id = "5",
+            Version = 5,
+            MigrationType = MigrationType.VersionedAndResumable,
+            StartedUtc = completedUtc.AddMinutes(-1),
+            CompletedUtc = completedUtc
+        });
+        await migrationStateRepository.AddAsync(new MigrationState
+        {
+            Id = "9",
+            Version = 9,
+            MigrationType = MigrationType.VersionedAndResumable,
+            StartedUtc = completedUtc,
+            CompletedUtc = completedUtc
+        });
+
+        var indexResponse = await _client.IndexAsync(
+            source,
+            request => request
+                .Index(_configuration.SavedViews.VersionedName)
+                .Id(savedViewId)
+                .Refresh(Refresh.WaitFor),
+            TestCancellationToken);
+        Assert.True(indexResponse.IsValidResponse);
+
+        // Act
+        var rerunService = GetService<MigrationRerunService>();
+        var operation = await rerunService.QueueAsync("5", MigrationRerunSource.CommandLine, null, TestCancellationToken);
+        operation = await rerunService.RunAsync(operation.Id, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(MigrationRerunStatus.Completed, operation.Status);
+        var savedView = await _repository.GetByIdAsync(savedViewId, options => options.ImmediateConsistency());
+        Assert.NotNull(savedView);
+        Assert.True(savedView.Columns?["level"].Visible);
+
+        var migrationState = await migrationStateRepository.GetByIdAsync("5");
+        Assert.NotNull(migrationState);
+        Assert.Equal(completedUtc, migrationState.CompletedUtc);
+
+        var duplicateResult = await rerunService.RunAsync(operation.Id, TestCancellationToken);
+        Assert.Equal(MigrationRerunStatus.Completed, duplicateResult.Status);
+        Assert.Equal(1, duplicateResult.AttemptCount);
+    }
+
+    [Fact]
+    public async Task RunAsync_RedeliveredRunningOperation_ResumesAndCompletes()
+    {
+        // Arrange
+        var completedUtc = DateTime.UtcNow.AddDays(-1);
+        var migrationStateRepository = GetService<IMigrationStateRepository>();
+        await migrationStateRepository.AddAsync(new MigrationState
+        {
+            Id = "5",
+            Version = 5,
+            MigrationType = MigrationType.VersionedAndResumable,
+            StartedUtc = completedUtc.AddMinutes(-1),
+            CompletedUtc = completedUtc
+        });
+        await migrationStateRepository.AddAsync(new MigrationState
+        {
+            Id = "9",
+            Version = 9,
+            MigrationType = MigrationType.VersionedAndResumable,
+            StartedUtc = completedUtc,
+            CompletedUtc = completedUtc
+        });
+
+        var rerunService = GetService<MigrationRerunService>();
+        var appOptions = GetService<AppOptions>();
+        bool runJobsInProcess = appOptions.RunJobsInProcess;
+        MigrationRerunOperation operation;
+        try
+        {
+            appOptions.RunJobsInProcess = true;
+            operation = await rerunService.QueueAsync("5", MigrationRerunSource.UserInterface, null, TestCancellationToken);
+        }
+        finally
+        {
+            appOptions.RunJobsInProcess = runJobsInProcess;
+        }
+        operation.Status = MigrationRerunStatus.Running;
+        operation.StartedUtc = DateTime.UtcNow.AddHours(-1);
+        operation.AttemptCount = 1;
+        await GetService<ICacheClient>().SetAsync($"migration-rerun:operation:{operation.Id}", operation, TimeSpan.FromDays(7));
+
+        // Act
+        operation = await rerunService.RunAsync(operation.Id, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(MigrationRerunStatus.Completed, operation.Status);
+        Assert.Equal(2, operation.AttemptCount);
     }
 
     [Fact]

@@ -9,21 +9,90 @@
     import * as Table from '$comp/ui/table';
     import { type Cell, FlexRender, type Header, type RowData, type StockFeatures, type Table as SvelteTable } from '@tanstack/svelte-table';
 
+    import { getDataTableColumnMeta, supportsColumnWrapping } from './column-meta';
     import DataTableColumnHeader from './data-table-column-header.svelte';
+    import { setDataTableLayoutContext } from './data-table-layout-context.svelte';
+    import DataTableScrollContainer from './data-table-scroll-container.svelte';
 
     interface Props {
         autoFillColumnId?: null | string;
         children?: Snippet;
         onAutoFillColumnResized?: (columnId: string) => void;
         rowClick?: (row: TData, event?: MouseEvent) => void;
+        rowDetails?: Snippet<[TData]>;
         rowHref?: (row: TData) => string;
         table: SvelteTable<StockFeatures, TData>;
+        wrappedColumnIds?: readonly string[];
     }
 
-    let { autoFillColumnId, children, onAutoFillColumnResized, rowClick, rowHref, table }: Props = $props();
+    let { autoFillColumnId, children, onAutoFillColumnResized, rowClick, rowDetails, rowHref, table, wrappedColumnIds = [] }: Props = $props();
 
     const selectColumnClass = 'w-8 min-w-8 max-w-8';
     const selectColumnWidth = 32;
+
+    setDataTableLayoutContext({
+        getFillerColumnCount
+    });
+
+    function getCellClass(cell: Cell<StockFeatures, TData, unknown>) {
+        if (cell.column.id === 'select') {
+            return selectColumnClass;
+        }
+
+        const isOnlyDataColumn = getVisibleDataColumnCount() === 1;
+        const metaClass = isOnlyDataColumn ? removeWidthClasses(getMetaClass(cell.column.columnDef.meta)) : getMetaClass(cell.column.columnDef.meta);
+        const contentClass = isColumnWrapped(cell.column)
+            ? 'group/wrapped whitespace-normal break-words [&_.line-clamp-1]:line-clamp-none [&_.line-clamp-2]:line-clamp-none'
+            : 'truncate';
+        const classes = rowClick
+            ? ['cursor-pointer', contentClass, !isOnlyDataColumn && 'max-w-sm', metaClass]
+            : [contentClass, !isOnlyDataColumn && 'max-w-sm', metaClass];
+        return classes.filter(Boolean).join(' ');
+    }
+
+    function getClientPosition(event: MouseEvent | TouchEvent): number | undefined {
+        return event instanceof TouchEvent ? event.touches[0]?.clientX : event.clientX;
+    }
+
+    function getColumnStyle(column: Cell<StockFeatures, TData, unknown>['column'] | Header<StockFeatures, TData, unknown>['column']): string | undefined {
+        if (column.id === 'select') {
+            return `width: ${selectColumnWidth}px; min-width: ${selectColumnWidth}px; max-width: ${selectColumnWidth}px;`;
+        }
+
+        if (hasSelectColumn() && column.id === getFlexibleDataColumnId()) {
+            return 'width: 100%;';
+        }
+
+        if (!column.getCanResize() || getVisibleDataColumnCount() === 1) {
+            return undefined;
+        }
+
+        return `width: ${column.getSize()}px; min-width: ${column.getSize()}px; max-width: ${column.getSize()}px;`;
+    }
+
+    function getFillerColumnCount(): number {
+        return hasSelectColumn() && !getFlexibleDataColumnId() ? 1 : 0;
+    }
+
+    function getFlexibleDataColumnId(): string | undefined {
+        const columnSizing = table.atoms.columnSizing?.get() ?? {};
+        const visibleDataColumns = getVisibleDataColumns();
+        if (autoFillColumnId !== undefined) {
+            if (autoFillColumnId === null) {
+                return undefined;
+            }
+
+            const autoFillColumn = visibleDataColumns.find((column) => column.id === autoFillColumnId);
+            return autoFillColumn && columnSizing[autoFillColumn.id] === undefined ? autoFillColumn.id : undefined;
+        }
+
+        const fullWidthColumns = visibleDataColumns.filter((column) => getMetaClass(column.columnDef.meta).split(' ').includes('w-full'));
+        if (fullWidthColumns.length > 0) {
+            return fullWidthColumns.find((column) => columnSizing[column.id] === undefined)?.id;
+        }
+
+        return visibleDataColumns.filter((column) => columnSizing[column.id] === undefined).at(-1)?.id;
+    }
 
     function getHeaderColumnClass(header: Header<StockFeatures, TData, unknown>) {
         if (header.column.id === 'select') {
@@ -47,61 +116,30 @@
         return className;
     }
 
-    function getCellClass(cell: Cell<StockFeatures, TData, unknown>) {
-        if (cell.column.id === 'select') {
-            return selectColumnClass;
-        }
-
-        const isOnlyDataColumn = getVisibleDataColumnCount() === 1;
-        const metaClass = isOnlyDataColumn ? removeWidthClasses(getMetaClass(cell.column.columnDef.meta)) : getMetaClass(cell.column.columnDef.meta);
-        const classes = rowClick
-            ? ['cursor-pointer', 'truncate', !isOnlyDataColumn && 'max-w-sm', metaClass]
-            : ['truncate', !isOnlyDataColumn && 'max-w-sm', metaClass];
-        return classes.filter(Boolean).join(' ');
-    }
-
     function getHeaderContentClass(header: Header<StockFeatures, TData, unknown>, headerClass: string): string {
         return header.column.getCanResize() ? removeWidthClasses(headerClass) : headerClass;
     }
 
-    function getColumnStyle(column: Cell<StockFeatures, TData, unknown>['column'] | Header<StockFeatures, TData, unknown>['column']): string | undefined {
-        if (column.id === 'select') {
-            return `width: ${selectColumnWidth}px; min-width: ${selectColumnWidth}px; max-width: ${selectColumnWidth}px;`;
+    function getMetaClass(meta: unknown): string {
+        return getDataTableColumnMeta(meta).class ?? '';
+    }
+
+    function getResizeStartSize(event: KeyboardEvent | MouseEvent | TouchEvent, header: Header<StockFeatures, TData, unknown>): number {
+        if (header.column.id !== getFlexibleDataColumnId()) {
+            return header.column.getSize();
         }
 
-        if (hasSelectColumn() && column.id === getFlexibleDataColumnId()) {
-            return 'width: 100%;';
-        }
+        const headerElement = (event.currentTarget as HTMLElement | null)?.closest('th');
+        return headerElement?.getBoundingClientRect().width || header.column.getSize();
+    }
 
-        if (!column.getCanResize() || getVisibleDataColumnCount() === 1) {
+    function getTableStyle(): string | undefined {
+        if (!hasSelectColumn()) {
             return undefined;
         }
 
-        return `width: ${column.getSize()}px; min-width: ${column.getSize()}px; max-width: ${column.getSize()}px;`;
-    }
-
-    function getMetaClass(meta: unknown): string {
-        return (meta as { class?: string })?.class ?? '';
-    }
-
-    function getFlexibleDataColumnId(): string | undefined {
-        const columnSizing = table.atoms.columnSizing?.get() ?? {};
-        const visibleDataColumns = getVisibleDataColumns();
-        if (autoFillColumnId !== undefined) {
-            if (autoFillColumnId === null) {
-                return undefined;
-            }
-
-            const autoFillColumn = visibleDataColumns.find((column) => column.id === autoFillColumnId);
-            return autoFillColumn && columnSizing[autoFillColumn.id] === undefined ? autoFillColumn.id : undefined;
-        }
-
-        const fullWidthColumns = visibleDataColumns.filter((column) => getMetaClass(column.columnDef.meta).split(' ').includes('w-full'));
-        if (fullWidthColumns.length > 0) {
-            return fullWidthColumns.find((column) => columnSizing[column.id] === undefined)?.id;
-        }
-
-        return visibleDataColumns.filter((column) => columnSizing[column.id] === undefined).at(-1)?.id;
+        const minimumWidth = selectColumnWidth + getVisibleDataColumns().reduce((total, column) => total + column.getSize(), 0);
+        return getFlexibleDataColumnId() ? `min-width: ${minimumWidth}px;` : `width: 100%; min-width: ${minimumWidth}px;`;
     }
 
     function getVisibleDataColumnCount(): number {
@@ -112,17 +150,18 @@
         return table.getVisibleLeafColumns().filter((column) => column.id !== 'select');
     }
 
-    function getTableStyle(): string | undefined {
-        if (!hasSelectColumn()) {
-            return undefined;
+    function handleAutoFillColumnResize(header: Header<StockFeatures, TData, unknown>): void {
+        if (header.column.id === autoFillColumnId) {
+            onAutoFillColumnResized?.(header.column.id);
         }
-
-        const minimumWidth = selectColumnWidth + getVisibleDataColumns().reduce((total, column) => total + column.getSize(), 0);
-        return getFlexibleDataColumnId() ? `min-width: ${minimumWidth}px;` : `width: ${minimumWidth}px; min-width: ${minimumWidth}px;`;
     }
 
     function hasSelectColumn(): boolean {
         return table.getVisibleLeafColumns().some((column) => column.id === 'select');
+    }
+
+    function isColumnWrapped(column: Cell<StockFeatures, TData, unknown>['column']): boolean {
+        return supportsColumnWrapping(column.columnDef.meta) && wrappedColumnIds.includes(column.id);
     }
 
     function isWidthClass(className: string): boolean {
@@ -238,14 +277,11 @@
         }
     }
 
-    function handleAutoFillColumnResize(header: Header<StockFeatures, TData, unknown>): void {
-        if (header.column.id === autoFillColumnId) {
-            onAutoFillColumnResized?.(header.column.id);
-        }
-    }
-
-    function getClientPosition(event: MouseEvent | TouchEvent): number | undefined {
-        return event instanceof TouchEvent ? event.touches[0]?.clientX : event.clientX;
+    function removeWidthClasses(className: string): string {
+        return className
+            .split(' ')
+            .filter((part) => !isWidthClass(part))
+            .join(' ');
     }
 
     function setColumnSize(header: Header<StockFeatures, TData, unknown>, size: number): void {
@@ -254,91 +290,99 @@
             [header.column.id]: Math.min(header.column.columnDef.maxSize ?? Number.MAX_SAFE_INTEGER, Math.max(header.column.columnDef.minSize ?? 20, size))
         }));
     }
-
-    function getResizeStartSize(event: KeyboardEvent | MouseEvent | TouchEvent, header: Header<StockFeatures, TData, unknown>): number {
-        if (header.column.id !== getFlexibleDataColumnId()) {
-            return header.column.getSize();
-        }
-
-        const headerElement = (event.currentTarget as HTMLElement | null)?.closest('th');
-        return headerElement?.getBoundingClientRect().width || header.column.getSize();
-    }
-
-    function removeWidthClasses(className: string): string {
-        return className
-            .split(' ')
-            .filter((part) => !isWidthClass(part))
-            .join(' ');
-    }
 </script>
 
-<div class="rounded-md border">
-    <Table.Root class={hasSelectColumn() ? 'table-fixed' : undefined} style={getTableStyle()}>
-        <Table.Header class="bg-card">
-            {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
-                <Table.Row>
-                    {#each headerGroup.headers as header (header.id)}
-                        {@const headerClass = getHeaderColumnClass(header)}
-                        <Table.Head class={[headerClass, header.column.getCanResize() && 'group relative']} style={getColumnStyle(header.column)}>
-                            <DataTableColumnHeader class={getHeaderContentClass(header, headerClass)} column={header.column}
-                                ><FlexRender {header} /></DataTableColumnHeader
-                            >
-                            {#if header.column.getCanResize()}
-                                <button
-                                    aria-label={`Resize ${header.column.id} column`}
-                                    class={[
-                                        'hover:bg-primary focus-visible:bg-primary absolute top-0 right-0 z-10 h-full w-1.5 cursor-col-resize touch-none outline-none select-none',
-                                        'after:bg-border after:absolute after:top-1/4 after:right-0 after:h-1/2 after:w-px',
-                                        header.column.getIsResizing() && 'bg-primary'
-                                    ]}
-                                    ondblclick={() => header.column.resetSize()}
-                                    onkeydown={(event) => onResizeKeydown(event, header)}
-                                    onmousedown={(event) => onResizeStart(event, header)}
-                                    ontouchstart={(event) => onResizeStart(event, header)}
-                                    title={`Resize ${header.column.id} column`}
-                                    type="button"
-                                ></button>
-                            {/if}
-                        </Table.Head>
-                    {/each}
-                </Table.Row>
-            {/each}
-        </Table.Header>
-        <Table.Body>
-            {#if children}
-                {@render children()}
-            {/if}
-            {#each table.getRowModel().rows as row (row.id)}
-                <Table.Row
-                    tabindex={rowClick ? 0 : undefined}
-                    onkeydown={rowClick
-                        ? (event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault();
-                                  const firstCell = row.getVisibleCells()[0];
-                                  if (firstCell) {
-                                      rowClick(firstCell.row.original);
+<div data-slot="data-table-body">
+    <DataTableScrollContainer>
+        <Table.Root class={hasSelectColumn() ? 'table-fixed' : undefined} style={getTableStyle()}>
+            <Table.Header class="bg-card">
+                {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
+                    <Table.Row>
+                        {#each headerGroup.headers as header (header.id)}
+                            {@const headerClass = getHeaderColumnClass(header)}
+                            <Table.Head class={[headerClass, header.column.getCanResize() && 'group relative']} style={getColumnStyle(header.column)}>
+                                <DataTableColumnHeader class={getHeaderContentClass(header, headerClass)} column={header.column}
+                                    ><FlexRender {header} /></DataTableColumnHeader
+                                >
+                                {#if header.column.getCanResize()}
+                                    <button
+                                        aria-label={`Resize ${header.column.id} column`}
+                                        class={[
+                                            'hover:bg-primary focus-visible:bg-primary absolute top-0 right-0 z-10 h-full w-1.5 cursor-col-resize touch-none outline-none select-none',
+                                            'after:bg-border after:absolute after:top-1/4 after:right-0 after:h-1/2 after:w-px',
+                                            header.column.getIsResizing() && 'bg-primary'
+                                        ]}
+                                        ondblclick={() => header.column.resetSize()}
+                                        onkeydown={(event) => onResizeKeydown(event, header)}
+                                        onmousedown={(event) => onResizeStart(event, header)}
+                                        ontouchstart={(event) => onResizeStart(event, header)}
+                                        title={`Resize ${header.column.id} column`}
+                                        type="button"
+                                    ></button>
+                                {/if}
+                            </Table.Head>
+                        {/each}
+                        {#if getFillerColumnCount() > 0}
+                            <Table.Head aria-hidden="true" class="w-full p-0"></Table.Head>
+                        {/if}
+                    </Table.Row>
+                {/each}
+            </Table.Header>
+            <Table.Body>
+                {#if children}
+                    {@render children()}
+                {/if}
+                {#each table.getRowModel().rows as row (row.id)}
+                    <Table.Row
+                        tabindex={rowClick ? 0 : undefined}
+                        onkeydown={rowClick
+                            ? (event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                      event.preventDefault();
+                                      const firstCell = row.getVisibleCells()[0];
+                                      if (firstCell) {
+                                          rowClick(firstCell.row.original);
+                                      }
                                   }
                               }
-                          }
-                        : undefined}
-                >
-                    {#each row.getVisibleCells() as cell (cell.id)}
-                        {#if rowHref && cell.row.original}
-                            {@const href = rowHref(cell.row.original)}
-                            <A {href} class="contents" onclick={(event) => onCellClick(event, cell)} variant="ghost">
-                                <Table.Cell class={getCellClass(cell)} style={getColumnStyle(cell.column)}>
+                            : undefined}
+                    >
+                        {#each row.getVisibleCells() as cell (cell.id)}
+                            {#if rowHref && cell.row.original}
+                                {@const href = rowHref(cell.row.original)}
+                                <A {href} class="contents" onclick={(event) => onCellClick(event, cell)} variant="ghost">
+                                    <Table.Cell
+                                        class={getCellClass(cell)}
+                                        data-wrap={isColumnWrapped(cell.column) ? 'true' : undefined}
+                                        style={getColumnStyle(cell.column)}
+                                    >
+                                        <FlexRender {cell} />
+                                    </Table.Cell>
+                                </A>
+                            {:else}
+                                <Table.Cell
+                                    class={getCellClass(cell)}
+                                    data-wrap={isColumnWrapped(cell.column) ? 'true' : undefined}
+                                    onclick={(event) => onCellClick(event, cell)}
+                                    style={getColumnStyle(cell.column)}
+                                >
                                     <FlexRender {cell} />
                                 </Table.Cell>
-                            </A>
-                        {:else}
-                            <Table.Cell class={getCellClass(cell)} onclick={(event) => onCellClick(event, cell)} style={getColumnStyle(cell.column)}>
-                                <FlexRender {cell} />
-                            </Table.Cell>
+                            {/if}
+                        {/each}
+                        {#if getFillerColumnCount() > 0}
+                            <Table.Cell aria-hidden="true" class="w-full p-0"></Table.Cell>
                         {/if}
-                    {/each}
-                </Table.Row>
-            {/each}
-        </Table.Body>
-    </Table.Root>
+                    </Table.Row>
+                    {#if rowDetails && row.getIsExpanded()}
+                        <Table.Row class="bg-muted/30 hover:bg-muted/30">
+                            <Table.Cell colspan={table.getVisibleLeafColumns().length + getFillerColumnCount()} class="whitespace-normal">
+                                {@render rowDetails(row.original)}
+                            </Table.Cell>
+                        </Table.Row>
+                    {/if}
+                {/each}
+            </Table.Body>
+        </Table.Root>
+    </DataTableScrollContainer>
 </div>

@@ -9,11 +9,13 @@
 
     import { Badge } from '$comp/ui/badge';
     import { Button } from '$comp/ui/button';
+    import { Checkbox } from '$comp/ui/checkbox';
     import * as Dialog from '$comp/ui/dialog';
     import * as InputGroup from '$comp/ui/input-group';
     import { Label } from '$comp/ui/label';
     import * as RadioGroup from '$comp/ui/radio-group';
     import { Separator } from '$comp/ui/separator';
+    import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import ChevronUp from '@lucide/svelte/icons/chevron-up';
     import GripVertical from '@lucide/svelte/icons/grip-vertical';
@@ -22,17 +24,19 @@
     import Search from '@lucide/svelte/icons/search';
     import X from '@lucide/svelte/icons/x';
 
-    import type { AutoFillColumnSelection } from '../column-settings';
+    import type { AutoFillColumnSelection, WrappedColumnIds } from '../column-settings';
 
     interface Props {
         autoFillColumnId: AutoFillColumnSelection;
         defaultAutoFillColumnId?: string;
         open: boolean;
         setAutoFillColumnId: (columnId: AutoFillColumnSelection) => void;
+        setWrappedColumnIds: (columnIds: WrappedColumnIds) => void;
         table: Table<StockFeatures, TData>;
+        wrappedColumnIds: WrappedColumnIds;
     }
 
-    let { autoFillColumnId, defaultAutoFillColumnId, open = $bindable(), setAutoFillColumnId, table }: Props = $props();
+    let { autoFillColumnId, defaultAutoFillColumnId, open = $bindable(), setAutoFillColumnId, setWrappedColumnIds, table, wrappedColumnIds }: Props = $props();
 
     let draggedColumnId = $state<null | string>(null);
     let search = $state('');
@@ -47,6 +51,19 @@
         normalizedSearch.length === 0 ? availableColumns : availableColumns.filter((column) => getColumnLabel(column).toLowerCase().includes(normalizedSearch))
     );
 
+    function addColumn(column: (typeof allColumns)[number]): void {
+        column.toggleVisibility(true);
+    }
+
+    function applyColumnOrder(columnIds: string[]): void {
+        const hiddenIds = allColumns.filter((c) => !c.getIsVisible()).map((c) => c.id);
+        table.setColumnOrder(['select', ...columnIds, ...hiddenIds]);
+    }
+
+    function canRemoveColumn(column: (typeof allColumns)[number]): boolean {
+        return column.getCanHide() && visibleColumns.length > 1;
+    }
+
     function getColumnLabel(column: (typeof allColumns)[number]): string {
         if (typeof column.columnDef.header === 'string') {
             return column.columnDef.header;
@@ -55,91 +72,12 @@
         return column.id.replace(/[_-]/g, ' ').replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
     }
 
-    function addColumn(column: (typeof allColumns)[number]): void {
-        column.toggleVisibility(true);
-    }
-
-    function removeColumn(column: (typeof allColumns)[number]): void {
-        if (visibleColumns.length > 1) {
-            if (column.id === autoFillColumnId) {
-                selectAutoFillColumn(null);
-            }
-
-            column.toggleVisibility(false);
-        }
-    }
-
     function handleAutoFillValueChange(value: string): void {
         selectAutoFillColumn(value === AUTO_FILL_NONE_VALUE ? null : value);
     }
 
-    function selectAutoFillColumn(columnId: AutoFillColumnSelection): void {
-        if (columnId) {
-            table.setColumnSizing((current) => {
-                const next = {
-                    ...current
-                };
-                delete next[columnId];
-                return next;
-            });
-        }
-
-        setAutoFillColumnId(columnId);
-    }
-
-    function canRemoveColumn(column: (typeof allColumns)[number]): boolean {
-        return column.getCanHide() && visibleColumns.length > 1;
-    }
-
-    function moveColumnUp(columnId: string): void {
-        const columnIds = visibleColumns.map((c) => c.id);
-        const index = columnIds.indexOf(columnId);
-        if (index <= 0) {
-            return;
-        }
-
-        const temp = columnIds[index]!;
-        columnIds[index] = columnIds[index - 1]!;
-        columnIds[index - 1] = temp;
-        applyColumnOrder(columnIds);
-    }
-
-    function moveColumnDown(columnId: string): void {
-        const columnIds = visibleColumns.map((c) => c.id);
-        const index = columnIds.indexOf(columnId);
-        if (index === -1 || index >= columnIds.length - 1) {
-            return;
-        }
-
-        const temp = columnIds[index]!;
-        columnIds[index] = columnIds[index + 1]!;
-        columnIds[index + 1] = temp;
-        applyColumnOrder(columnIds);
-    }
-
-    function applyColumnOrder(columnIds: string[]): void {
-        const hiddenIds = allColumns.filter((c) => !c.getIsVisible()).map((c) => c.id);
-        table.setColumnOrder(['select', ...columnIds, ...hiddenIds]);
-    }
-
-    function resetColumns(): void {
-        table.resetColumnVisibility();
-        table.resetColumnOrder();
-        table.resetColumnSizing();
-        if (defaultAutoFillColumnId) {
-            setAutoFillColumnId(defaultAutoFillColumnId);
-        } else {
-            setAutoFillColumnId(null);
-        }
-        search = '';
-    }
-
-    function handleDragStart(event: DragEvent, columnId: string): void {
-        draggedColumnId = columnId;
-        if (event.dataTransfer) {
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/plain', columnId);
-        }
+    function handleDragEnd(): void {
+        draggedColumnId = null;
     }
 
     function handleDragOver(event: DragEvent, targetColumnId: string): void {
@@ -164,8 +102,87 @@
         }
     }
 
-    function handleDragEnd(): void {
-        draggedColumnId = null;
+    function handleDragStart(event: DragEvent, columnId: string): void {
+        draggedColumnId = columnId;
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', columnId);
+        }
+    }
+
+    function moveColumnDown(columnId: string): void {
+        const columnIds = visibleColumns.map((c) => c.id);
+        const index = columnIds.indexOf(columnId);
+        if (index === -1 || index >= columnIds.length - 1) {
+            return;
+        }
+
+        const temp = columnIds[index]!;
+        columnIds[index] = columnIds[index + 1]!;
+        columnIds[index + 1] = temp;
+        applyColumnOrder(columnIds);
+    }
+
+    function moveColumnUp(columnId: string): void {
+        const columnIds = visibleColumns.map((c) => c.id);
+        const index = columnIds.indexOf(columnId);
+        if (index <= 0) {
+            return;
+        }
+
+        const temp = columnIds[index]!;
+        columnIds[index] = columnIds[index - 1]!;
+        columnIds[index - 1] = temp;
+        applyColumnOrder(columnIds);
+    }
+
+    function removeColumn(column: (typeof allColumns)[number]): void {
+        if (visibleColumns.length > 1) {
+            if (column.id === autoFillColumnId) {
+                selectAutoFillColumn(null);
+            }
+
+            column.toggleVisibility(false);
+        }
+    }
+
+    function resetColumns(): void {
+        table.resetColumnVisibility();
+        table.resetColumnOrder();
+        table.resetColumnSizing();
+        if (defaultAutoFillColumnId) {
+            setAutoFillColumnId(defaultAutoFillColumnId);
+        } else {
+            setAutoFillColumnId(null);
+        }
+        setWrappedColumnIds([]);
+        search = '';
+    }
+
+    function selectAutoFillColumn(columnId: AutoFillColumnSelection): void {
+        if (columnId) {
+            table.setColumnSizing((current) => {
+                const next = {
+                    ...current
+                };
+                delete next[columnId];
+                return next;
+            });
+        }
+
+        setAutoFillColumnId(columnId);
+    }
+
+    function setColumnWrapped(columnId: string, wrapped: boolean): void {
+        if (wrapped) {
+            if (!wrappedColumnIds.includes(columnId)) {
+                setWrappedColumnIds([...wrappedColumnIds, columnId]);
+            }
+
+            return;
+        }
+
+        setWrappedColumnIds(wrappedColumnIds.filter((id) => id !== columnId));
     }
 </script>
 
@@ -177,7 +194,7 @@
     >
         <Dialog.Header class="border-b px-6 py-5 pr-14">
             <Dialog.Title>Column Picker</Dialog.Title>
-            <Dialog.Description>Select, reorder, and choose which column fills the available table width.</Dialog.Description>
+            <Dialog.Description>Select, reorder, wrap text, and choose which column fills the available table width.</Dialog.Description>
         </Dialog.Header>
 
         <div class="grid min-h-0 gap-0 lg:grid-cols-[minmax(0,1fr)_5rem_minmax(0,1fr)]">
@@ -244,7 +261,7 @@
                             <h3 id="selected-columns-heading" class="text-sm font-semibold">Selected Columns</h3>
                             <Badge variant="secondary">{visibleColumns.length}</Badge>
                         </div>
-                        <p class="text-muted-foreground text-sm">Drag to reorder, or mark one column to auto fill the available width.</p>
+                        <p class="text-muted-foreground text-sm">Drag to reorder, wrap text, or mark one column to auto fill the available width.</p>
                     </div>
                 </div>
 
@@ -278,7 +295,7 @@
                                 <Button
                                     variant="ghost"
                                     size="icon-sm"
-                                    class="hover:bg-muted/70 my-1 ml-1 shrink-0"
+                                    class="hover:bg-muted/70 ml-1 shrink-0 self-center"
                                     disabled={!canRemoveColumn(column)}
                                     onclick={() => removeColumn(column)}
                                     aria-label={`Remove ${getColumnLabel(column)} column`}
@@ -286,6 +303,22 @@
                                     <X class="shrink-0" aria-hidden="true" />
                                 </Button>
                                 <span class="min-w-0 flex-1 self-center truncate px-2 text-left font-medium">{getColumnLabel(column)}</span>
+                                {#if supportsColumnWrapping(column.columnDef.meta)}
+                                    <Label
+                                        class="hover:bg-muted/70 flex w-16 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md text-xs font-normal"
+                                        for={`wrap-column-${column.id}`}
+                                    >
+                                        <Checkbox
+                                            aria-label={`${getColumnLabel(column)} wrap text`}
+                                            checked={wrappedColumnIds.includes(column.id)}
+                                            id={`wrap-column-${column.id}`}
+                                            onCheckedChange={(checked) => setColumnWrapped(column.id, checked)}
+                                        />
+                                        Wrap
+                                    </Label>
+                                {:else}
+                                    <span class="w-16 shrink-0" aria-hidden="true"></span>
+                                {/if}
                                 <Label
                                     class="hover:bg-muted/70 mr-1 flex shrink-0 cursor-pointer items-center gap-2 rounded-md px-2 text-xs font-normal"
                                     for={`auto-fill-column-${column.id}`}

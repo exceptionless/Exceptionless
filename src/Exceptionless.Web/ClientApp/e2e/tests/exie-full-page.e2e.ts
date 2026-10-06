@@ -16,7 +16,7 @@ test('Exie opens from navigation and expands without losing the conversation', a
         });
     });
 
-    await page.goto('/next/event?filter=status%3Aopen');
+    await page.goto('/event?filter=status%3Aopen');
     await expect(page.getByText(e2eScenario.organizationName, { exact: true })).toBeVisible();
 
     await test.step('open the full-page chat without rendering the outgoing page in the Exie layout', async () => {
@@ -43,7 +43,7 @@ test('Exie opens from navigation and expands without losing the conversation', a
 
         await page.getByRole('link', { exact: true, name: 'Exie' }).click();
 
-        await expect(page).toHaveURL(/\/next\/exie(?:[?#]|$)/);
+        await expect(page).toHaveURL(/\/exie(?:[?#]|$)/);
         await expect(page.locator('[data-assistant-page]')).toBeVisible();
         await expect(page.getByRole('log', { name: 'Conversation with Exie' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Clear conversation' })).toBeDisabled();
@@ -53,20 +53,20 @@ test('Exie opens from navigation and expands without losing the conversation', a
 
     await test.step('expand the side panel and retain its conversation and source URL', async () => {
         await page.getByRole('link', { name: 'Collapse Exie to side panel' }).click();
-        await expect(page).toHaveURL(/\/next\/stack(?:[?#]|$)/);
+        await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
         await expect(page.locator('[data-assistant-panel]')).toBeVisible();
         await page.getByRole('button', { name: 'Close Exie' }).click();
 
-        await page.goto('/next/stack?filter=status%3Aopen');
+        await page.goto('/stack?filter=status%3Aopen');
         await page.getByRole('button', { name: 'Open Exie' }).click();
         await page.getByRole('textbox', { name: 'Message Exie' }).fill('Keep this conversation when I expand it.');
         await page.getByRole('button', { name: 'Send message' }).click();
         await expect(page.getByText('This conversation followed you into the full-page chat.')).toBeVisible();
 
         await page.getByRole('link', { name: 'Expand Exie to full page' }).click();
-        await expect(page).toHaveURL(/\/next\/exie\?/);
+        await expect(page).toHaveURL(/\/exie\?/);
         const expandedUrl = new URL(page.url());
-        expect(expandedUrl.searchParams.get('from')).toBe('/next/stack?filter=status%3Aopen');
+        expect(expandedUrl.searchParams.get('from')).toBe('/stack?filter=status%3Aopen');
 
         const fullPageChat = page.locator('[data-assistant-page]');
         await expect(fullPageChat).toBeVisible();

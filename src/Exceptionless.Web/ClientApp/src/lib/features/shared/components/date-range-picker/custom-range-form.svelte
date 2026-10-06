@@ -81,6 +81,12 @@
     const endResolved = $derived(endValidation.valid ? validateAndResolveTime(endValue) : null);
     const isValid = $derived(startValidation.valid && endValidation.valid && startValue && endValue);
 
+    export function submitIfValid() {
+        if (!cancel && isValid) {
+            form.handleSubmit();
+        }
+    }
+
     function handleKeyDown(event: KeyboardEvent) {
         if (event.key === 'Enter' && !cancel && isValid) {
             event.preventDefault();
@@ -88,12 +94,6 @@
         } else if (event.key === 'Escape') {
             event.preventDefault();
             cancel?.();
-        }
-    }
-
-    export function submitIfValid() {
-        if (!cancel && isValid) {
-            form.handleSubmit();
         }
     }
 

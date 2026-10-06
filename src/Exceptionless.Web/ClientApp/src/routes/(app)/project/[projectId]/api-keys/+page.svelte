@@ -30,20 +30,20 @@
         }
     });
 
-    async function addToken(scope: ProjectTokenScope) {
-        const isSourceMapToken = scope === 'source-maps:write';
-        const token = createProjectToken(organization.current!, projectId, scope);
-
-        await newToken.mutateAsync(token);
-        toast.success(isSourceMapToken ? 'Source map upload token added successfully' : 'Client API key added successfully');
-    }
-
     async function addClientApiKey() {
         await addToken('client');
     }
 
     async function addSourceMapToken() {
         await addToken('source-maps:write');
+    }
+
+    async function addToken(scope: ProjectTokenScope) {
+        const isSourceMapToken = scope === 'source-maps:write';
+        const token = createProjectToken(organization.current!, projectId, scope);
+
+        await newToken.mutateAsync(token);
+        toast.success(isSourceMapToken ? 'Source map upload token added successfully' : 'Client API key added successfully');
     }
 
     const DEFAULT_PARAMS = {

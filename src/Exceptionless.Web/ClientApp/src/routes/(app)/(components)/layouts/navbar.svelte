@@ -29,9 +29,9 @@
             <div class="flex items-center justify-start">
                 <Sidebar.Trigger variant="outline" class="size-9" />
 
-                <A variant="ghost" class="mr-14 ml-2 flex md:min-w-62.5 lg:ml-3 dark:text-white" href={resolve('/(app)/stack')}>
+                <A variant="ghost" class="mr-14 ml-2 flex md:min-w-62.5 lg:ml-3 dark:text-white" href={resolve('/')}>
                     {#if isMediumScreenQuery.current}
-                        <Logo class="absolute top-1 mr-3 h-14" />
+                        <Logo class="absolute top-1.5 mr-3 h-12" />
                     {:else}
                         <img alt="Exceptionless Logo" class="mr-3 h-8" src={logoSmall} />
                     {/if}
@@ -41,6 +41,7 @@
                 <Button
                     aria-label="Search Exceptionless"
                     class="w-9 justify-center sm:w-56 sm:justify-start md:w-72"
+                    data-tour="command-search"
                     onclick={openCommand}
                     size="default"
                     variant="outline"
@@ -55,6 +56,7 @@
                         aria-label={isAssistantOpen ? 'Close Exie' : 'Open Exie'}
                         class="px-2"
                         data-assistant-trigger
+                        data-tour="exie-trigger"
                         onclick={toggleAssistant}
                         title="Ask Exie"
                         variant="outline"

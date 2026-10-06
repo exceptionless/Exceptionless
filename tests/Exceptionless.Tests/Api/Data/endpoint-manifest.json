@@ -261,6 +261,62 @@
   },
   {
     "method": "GET",
+    "route": "/api/v2/admin/assistant-settings",
+    "displayName": "HTTP: GET api/v2/admin/assistant-settings",
+    "tags": [
+      "AdminEndpoints"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/admin/assistant-settings",
+    "displayName": "HTTP: PUT api/v2/admin/assistant-settings",
+    "tags": [
+      "AdminEndpoints"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/admin/assistant-settings/conversation-sharing",
+    "displayName": "HTTP: PUT api/v2/admin/assistant-settings/conversation-sharing",
+    "tags": [
+      "AdminEndpoints"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/admin/assistant-settings/enabled",
+    "displayName": "HTTP: PUT api/v2/admin/assistant-settings/enabled",
+    "tags": [
+      "AdminEndpoints"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
     "route": "/api/v2/admin/assistant-usage",
     "displayName": "HTTP: GET api/v2/admin/assistant-usage =\u003E GetAssistantUsageAsync",
     "tags": [],
@@ -324,6 +380,34 @@
     "authenticationSchemes": []
   },
   {
+    "method": "GET",
+    "route": "/api/v2/admin/event-submission-settings",
+    "displayName": "HTTP: GET api/v2/admin/event-submission-settings =\u003E GetEventSubmissionSettingsAsync",
+    "tags": [
+      "AdminEndpoints"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/admin/event-submission-settings",
+    "displayName": "HTTP: PUT api/v2/admin/event-submission-settings =\u003E UpdateEventSubmissionSettingsAsync",
+    "tags": [
+      "AdminEndpoints"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "POST",
     "route": "/api/v2/admin/generate-sample-events",
     "displayName": "HTTP: POST api/v2/admin/generate-sample-events",
@@ -365,6 +449,30 @@
   },
   {
     "method": "GET",
+    "route": "/api/v2/admin/migrations/reruns/{operationId}",
+    "displayName": "HTTP: GET api/v2/admin/migrations/reruns/{operationId}",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/admin/migrations/{version:int}/rerun",
+    "displayName": "HTTP: POST api/v2/admin/migrations/{version:int}/rerun",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
     "route": "/api/v2/admin/oauth-applications",
     "displayName": "HTTP: GET api/v2/admin/oauth-applications",
     "tags": [],
@@ -391,6 +499,18 @@
     "method": "DELETE",
     "route": "/api/v2/admin/oauth-applications/{id:objectid}",
     "displayName": "HTTP: DELETE api/v2/admin/oauth-applications/{id:objectid}",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/admin/oauth-applications/{id:objectid}",
+    "displayName": "HTTP: GET api/v2/admin/oauth-applications/{id:objectid}",
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -511,6 +631,30 @@
     "method": "POST",
     "route": "/api/v2/assistant/chat",
     "displayName": "HTTP: POST api/v2/assistant/chat =\u003E StreamChatAsync",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/assistant/conversation-sharing",
+    "displayName": "HTTP: GET api/v2/assistant/conversation-sharing =\u003E GetConversationSharingAsync",
+    "tags": [],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/assistant/conversation-sharing",
+    "displayName": "HTTP: PUT api/v2/assistant/conversation-sharing =\u003E SetConversationSharingAsync",
     "tags": [],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -1390,6 +1534,48 @@
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/projects/check-name",
     "tags": [
       "Project"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/organizations/{organizationId:objectid}/saved-view-defaults/organization",
+    "displayName": "HTTP: PUT api/v2/organizations/{organizationId:objectid}/saved-view-defaults/organization",
+    "tags": [
+      "SavedView"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/organizations/{organizationId:objectid}/saved-view-defaults/user",
+    "displayName": "HTTP: PUT api/v2/organizations/{organizationId:objectid}/saved-view-defaults/user",
+    "tags": [
+      "SavedView"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/organizations/{organizationId:objectid}/saved-view-order/{viewType}",
+    "displayName": "HTTP: PUT api/v2/organizations/{organizationId:objectid}/saved-view-order/{viewType}",
+    "tags": [
+      "SavedView"
     ],
     "allowAnonymous": false,
     "authorizationPolicies": [
@@ -2592,6 +2778,20 @@
     "method": "DELETE",
     "route": "/api/v2/users/me/oauth-grants/{id:minlength(1)}",
     "displayName": "HTTP: DELETE api/v2/users/me/oauth-grants/{id:minlength(1)}",
+    "tags": [
+      "User"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/users/me/product-tours/{tourName}/record",
+    "displayName": "HTTP: PUT api/v2/users/me/product-tours/{tourName}/record",
     "tags": [
       "User"
     ],

@@ -11,21 +11,9 @@
     import EventsOverview from '$features/events/components/events-overview.svelte';
     import { buildEventDetailsHref } from '$features/events/components/summary';
     import { organization } from '$features/organizations/context.svelte';
-    import { watch } from 'runed';
     import { toast } from 'svelte-sonner';
 
     import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../redirect-to-events.svelte.js';
-
-    // TODO: Have this happen automatically when the organization changes.
-    watch(
-        () => organization.current,
-        () => {
-            goto(resolve('/(app)/event'));
-        },
-        {
-            lazy: true
-        }
-    );
 
     async function filterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));
@@ -41,6 +29,7 @@
     }
 
     async function handleEventLoaded(event: PersistentEvent) {
+        organization.current = event.organization_id;
         assistantPageContext.setPageEvent(event);
         await goto(buildEventDetailsHref(event.id, event.stack_id), {
             replaceState: true

@@ -31,24 +31,8 @@
         updatedValue = value;
     });
 
-    function scheduleApply() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            const normalized = updatedValue?.trim() || undefined;
-            if (normalized !== value) {
-                changed(normalized);
-            }
-        }, DEBOUNCE_MS);
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            applyAndClose();
-        } else if (event.key === 'Escape') {
-            event.preventDefault();
-            cancelAndClose();
-        }
+    export function onClearFilter() {
+        updatedValue = undefined;
     }
 
     function applyAndClose() {
@@ -67,9 +51,13 @@
         open = false;
     }
 
-    function onOpenChange(isOpen: boolean) {
-        if (!isOpen) {
+    function handleKeyDown(event: KeyboardEvent) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
             applyAndClose();
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            cancelAndClose();
         }
     }
 
@@ -78,8 +66,20 @@
         cancelAndClose();
     }
 
-    export function onClearFilter() {
-        updatedValue = undefined;
+    function onOpenChange(isOpen: boolean) {
+        if (!isOpen) {
+            applyAndClose();
+        }
+    }
+
+    function scheduleApply() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const normalized = updatedValue?.trim() || undefined;
+            if (normalized !== value) {
+                changed(normalized);
+            }
+        }, DEBOUNCE_MS);
     }
 </script>
 

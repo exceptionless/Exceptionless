@@ -1,5 +1,10 @@
 import { array, boolean, date, type infer as Infer, object, string } from 'zod';
 
+export const AssistantSettingsSchema = object({
+    model: string().trim().min(1, 'Enter an OpenRouter model ID.').max(200)
+});
+export type AssistantSettingsFormData = Infer<typeof AssistantSettingsSchema>;
+
 export const RunMaintenanceJobSchema = object({
     confirmText: string().min(1),
     organizationId: string().optional(),

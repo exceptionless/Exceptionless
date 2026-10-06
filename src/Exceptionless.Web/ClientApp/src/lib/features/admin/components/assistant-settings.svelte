@@ -1,0 +1,295 @@
+<script lang="ts">
+    import ErrorMessage from '$comp/error-message.svelte';
+    import { Badge } from '$comp/ui/badge';
+    import { Button } from '$comp/ui/button';
+    import * as Field from '$comp/ui/field';
+    import { Separator } from '$comp/ui/separator';
+    import { Spinner } from '$comp/ui/spinner';
+    import { Switch } from '$comp/ui/switch';
+    import { Textarea } from '$comp/ui/textarea';
+    import {
+        getAdminAssistantSettingsQuery,
+        putAdminAssistantConversationSharingSettingsMutation,
+        putAdminAssistantEnabledSettingsMutation,
+        putAdminAssistantSettingsMutation
+    } from '$features/admin/api.svelte';
+    import { type AssistantSettingsFormData, AssistantSettingsSchema } from '$features/admin/schemas';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
+    import { createForm } from '@tanstack/svelte-form';
+    import { toast } from 'svelte-sonner';
+
+    const settingsQuery = getAdminAssistantSettingsQuery();
+    const updateEnabledSettings = putAdminAssistantEnabledSettingsMutation();
+    const updateConversationSharingSettings = putAdminAssistantConversationSharingSettingsMutation();
+    const updateSettings = putAdminAssistantSettingsMutation();
+    let assistantEnabled = $state(false);
+    let conversationSharingDefaultEnabled = $state(false);
+    let loadedAvailabilityKey = $state<null | string>(null);
+    let loadedConversationSharingDefaultEnabled = $state<boolean>();
+    let loadedSettingsKey = $state<null | string>(null);
+    const settings = $derived(settingsQuery.data);
+    const availabilityKey = $derived(
+        settings ? JSON.stringify([settings.enabled, settings.configured_enabled, settings.is_enabled_overridden, settings.is_configured]) : null
+    );
+    const settingsKey = $derived(settings ? JSON.stringify([settings.model, settings.configured_model, settings.is_overridden]) : null);
+
+    const settingsForm = createForm(() => ({
+        defaultValues: {
+            model: ''
+        } as AssistantSettingsFormData,
+        validators: {
+            onSubmit: AssistantSettingsSchema,
+            onSubmitAsync: async ({ value }) => {
+                try {
+                    const saved = await updateSettings.mutateAsync({
+                        model: value.model.trim()
+                    });
+                    settingsForm.setFieldValue('model', saved.model);
+                    toast.success(saved.is_overridden ? 'Exie model override saved.' : 'Exie is using the deployment-configured model.');
+                    return null;
+                } catch (error: unknown) {
+                    if (error instanceof ProblemDetails) {
+                        return problemDetailsToFormErrors(error);
+                    }
+
+                    return {
+                        form: 'Failed to update the Exie model.'
+                    };
+                }
+            }
+        }
+    }));
+
+    $effect(() => {
+        if (!settings || loadedAvailabilityKey === availabilityKey) {
+            return;
+        }
+
+        loadedAvailabilityKey = availabilityKey;
+        assistantEnabled = settings.enabled;
+    });
+
+    $effect(() => {
+        if (!settings || loadedConversationSharingDefaultEnabled === settings.conversation_sharing_default_enabled) {
+            return;
+        }
+
+        loadedConversationSharingDefaultEnabled = settings.conversation_sharing_default_enabled;
+        conversationSharingDefaultEnabled = settings.conversation_sharing_default_enabled;
+    });
+
+    $effect(() => {
+        if (!settings || loadedSettingsKey === settingsKey) {
+            return;
+        }
+
+        loadedSettingsKey = settingsKey;
+        settingsForm.setFieldValue('model', settings.model);
+    });
+
+    async function resetAvailability() {
+        try {
+            const saved = await updateEnabledSettings.mutateAsync({
+                enabled: null
+            });
+            assistantEnabled = saved.enabled;
+            toast.success('Exie availability reset to the deployment default.');
+        } catch {
+            toast.error('Failed to reset Exie availability.');
+        }
+    }
+
+    async function resetModel() {
+        try {
+            const saved = await updateSettings.mutateAsync({
+                model: null
+            });
+            settingsForm.setFieldValue('model', saved.model);
+            toast.success('Exie model reset to the deployment default.');
+        } catch {
+            toast.error('Failed to reset the Exie model.');
+        }
+    }
+
+    async function saveAvailability() {
+        try {
+            const saved = await updateEnabledSettings.mutateAsync({
+                enabled: assistantEnabled
+            });
+            assistantEnabled = saved.enabled;
+            toast.success(saved.enabled ? 'Exie is enabled.' : 'Exie is disabled.');
+        } catch {
+            toast.error('Failed to update Exie availability.');
+        }
+    }
+
+    async function saveConversationSharingDefault() {
+        try {
+            const saved = await updateConversationSharingSettings.mutateAsync({
+                enabled: conversationSharingDefaultEnabled
+            });
+            conversationSharingDefaultEnabled = saved.conversation_sharing_default_enabled;
+            toast.success(
+                saved.conversation_sharing_default_enabled ? 'Exie conversation sharing default is enabled.' : 'Exie conversation sharing default is disabled.'
+            );
+        } catch {
+            toast.error('Failed to update Exie conversation sharing default.');
+        }
+    }
+</script>
+
+{#if settingsQuery.isPending}
+    <div class="flex items-center gap-2 p-4">
+        <Spinner />
+        <span class="text-muted-foreground text-sm">Loading Exie settings...</span>
+    </div>
+{:else if settingsQuery.isError}
+    <div class="p-4">
+        <p class="text-destructive text-sm">Failed to load Exie settings.</p>
+    </div>
+{:else}
+    <Field.Field orientation="responsive" class="gap-4 p-4">
+        <Field.Content>
+            <div class="flex flex-wrap items-center gap-2">
+                <Field.Label for="assistant-enabled">Exie availability</Field.Label>
+                {#if settings}
+                    <Badge variant={settings.is_enabled_overridden ? 'secondary' : 'outline'}>
+                        {settings.is_enabled_overridden ? 'Runtime override' : 'Deployment default'}
+                    </Badge>
+                {/if}
+            </div>
+            <Field.Description>Enable or disable Exie for all organizations. Changes apply without restarting the app.</Field.Description>
+            {#if settings && !settings.is_configured}
+                <p class="text-destructive text-sm">An OpenRouter API key must be configured before Exie can be used.</p>
+            {/if}
+        </Field.Content>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <Switch id="assistant-enabled" bind:checked={assistantEnabled} disabled={updateEnabledSettings.isPending} />
+            {#if settings?.is_enabled_overridden}
+                <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    aria-label="Reset Exie availability to deployment default"
+                    disabled={updateEnabledSettings.isPending}
+                    onclick={resetAvailability}>Reset</Button
+                >
+            {/if}
+            <Button
+                type="button"
+                size="sm"
+                aria-label="Save Exie availability"
+                disabled={updateEnabledSettings.isPending || assistantEnabled === settings?.enabled}
+                onclick={saveAvailability}
+            >
+                {updateEnabledSettings.isPending ? 'Saving...' : 'Save'}
+            </Button>
+        </div>
+    </Field.Field>
+
+    <Separator />
+
+    <Field.Field orientation="responsive" class="gap-4 p-4">
+        <Field.Content>
+            <Field.Label for="assistant-conversation-sharing-default">Conversation sharing default</Field.Label>
+            <Field.Description>
+                Choose whether users share Exie messages and replies by default to help improve the feature. Users can change this in Exie; their saved choice
+                always takes precedence. Usage and error diagnostics remain available either way.
+            </Field.Description>
+        </Field.Content>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+            <Switch
+                id="assistant-conversation-sharing-default"
+                bind:checked={conversationSharingDefaultEnabled}
+                disabled={updateConversationSharingSettings.isPending}
+            />
+            <Button
+                type="button"
+                size="sm"
+                aria-label="Save Exie conversation sharing default"
+                disabled={updateConversationSharingSettings.isPending || conversationSharingDefaultEnabled === settings?.conversation_sharing_default_enabled}
+                onclick={saveConversationSharingDefault}
+            >
+                {updateConversationSharingSettings.isPending ? 'Saving...' : 'Save'}
+            </Button>
+        </div>
+    </Field.Field>
+
+    <Separator />
+
+    <form
+        onsubmit={(event) => {
+            event.preventDefault();
+            void settingsForm.handleSubmit();
+        }}
+    >
+        <settingsForm.Field name="model">
+            {#snippet children(field)}
+                <Field.Field class="gap-4 p-4" data-invalid={ariaInvalid(field)}>
+                    <Field.Content>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <Field.Label for={field.name}>Exie model</Field.Label>
+                            {#if settings}
+                                <Badge variant={settings.is_overridden ? 'secondary' : 'outline'}>
+                                    {settings.is_overridden ? 'Runtime override' : 'Deployment default'}
+                                </Badge>
+                            {/if}
+                        </div>
+                        <Field.Description>OpenRouter model used for new Exie conversations and turns. Changes apply without restarting.</Field.Description>
+                    </Field.Content>
+                    <div class="flex min-w-0 flex-col gap-2">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
+                            <Textarea
+                                class="min-h-9 min-w-0 flex-1 resize-none wrap-anywhere"
+                                id={field.name}
+                                rows={1}
+                                value={field.state.value}
+                                onblur={field.handleBlur}
+                                oninput={(event) => {
+                                    event.currentTarget.value = event.currentTarget.value.replace(/[\r\n]/g, '');
+                                    field.handleChange(event.currentTarget.value);
+                                }}
+                                onkeydown={(event) => {
+                                    if (event.key === 'Enter' && !event.isComposing) {
+                                        event.preventDefault();
+                                        event.currentTarget.form?.requestSubmit();
+                                    }
+                                }}
+                                aria-invalid={ariaInvalid(field)}
+                                autocomplete="off"
+                                spellcheck={false}
+                                placeholder="provider/model"
+                            />
+                            <div class="flex shrink-0 items-center justify-end gap-2">
+                                {#if settings?.is_overridden}
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        aria-label="Reset Exie model to deployment default"
+                                        disabled={updateSettings.isPending}
+                                        onclick={resetModel}>Reset</Button
+                                    >
+                                {/if}
+                                <settingsForm.Subscribe selector={(state) => state.isSubmitting}>
+                                    {#snippet children(isSubmitting)}
+                                        <Button type="submit" size="sm" aria-label="Save Exie model" disabled={isSubmitting || updateSettings.isPending}>
+                                            {isSubmitting || updateSettings.isPending ? 'Saving...' : 'Save'}
+                                        </Button>
+                                    {/snippet}
+                                </settingsForm.Subscribe>
+                            </div>
+                        </div>
+                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                        <settingsForm.Subscribe selector={(state) => state.errors}>
+                            {#snippet children(errors)}
+                                <ErrorMessage message={getFormErrorMessages(errors)} />
+                            {/snippet}
+                        </settingsForm.Subscribe>
+                    </div>
+                </Field.Field>
+            {/snippet}
+        </settingsForm.Field>
+    </form>
+{/if}

@@ -7,6 +7,7 @@ import DatabaseZap from '@lucide/svelte/icons/database-zap';
 import KeyRound from '@lucide/svelte/icons/key-round';
 import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
 import Play from '@lucide/svelte/icons/play';
+import Settings from '@lucide/svelte/icons/settings';
 
 import type { NavigationItem } from '../../routes.svelte';
 
@@ -32,6 +33,13 @@ export function routes(): NavigationItem[] {
             icon: Bot,
             show: (context) => context.user?.roles?.includes('global') ?? false,
             title: 'Exie'
+        },
+        {
+            group: 'System',
+            href: resolve('/(app)/system/settings'),
+            icon: Settings,
+            show: (context) => context.user?.roles?.includes('global') ?? false,
+            title: 'Settings'
         },
         {
             group: 'System',
