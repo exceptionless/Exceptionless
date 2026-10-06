@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -424,11 +425,11 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData(null, null, 0, new[] { "Alpha Ordering", "Alpha Ordering", "alpha Ordering", "Beta Ordering", "Zulu Ordering" })]
-    [InlineData(null, "stats", 1, new[] { "Alpha Ordering", "Alpha Ordering", "alpha Ordering", "Beta Ordering", "Zulu Ordering" })]
-    [InlineData("name:Ordering", null, 0, new[] { "Alpha Ordering", "Alpha Ordering", "Beta Ordering", "Zulu Ordering", "alpha Ordering" })]
-    [InlineData("name:Ordering", "stats", 1, new[] { "Alpha Ordering", "Alpha Ordering", "Beta Ordering", "Zulu Ordering", "alpha Ordering" })]
-    public async Task GetAllAsync_WithDuplicateOrganizationNames_ReturnsNameThenIdOrder(string? filter, string? mode, long expectedProjectCount, string[] expectedNames)
+    [InlineData(null, null, 0)]
+    [InlineData(null, "stats", 1)]
+    [InlineData("*", null, 0)]
+    [InlineData("*", "stats", 1)]
+    public async Task GetAllAsync_WithOrganizationNames_ReturnsRepositoryNameThenIdOrder(string? filter, string? mode, long expectedProjectCount)
     {
         // Arrange
         var zulu = new Organization { Name = "Zulu Ordering", PlanId = _plans.FreePlan.Id };
@@ -436,13 +437,22 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var duplicateAlphaHigh = new Organization { Id = "650000000000000000000002", Name = "Alpha Ordering", PlanId = _plans.FreePlan.Id };
         var duplicateAlphaLow = new Organization { Id = "650000000000000000000001", Name = "Alpha Ordering", PlanId = _plans.FreePlan.Id };
         var beta = new Organization { Name = "Beta Ordering", PlanId = _plans.FreePlan.Id };
+        var accented = new Organization { Name = "é Ordering", PlanId = _plans.FreePlan.Id };
+        var privateUse = new Organization { Name = "\uE000 Ordering", PlanId = _plans.FreePlan.Id };
+        var supplementary = new Organization { Name = "\U00010000 Ordering", PlanId = _plans.FreePlan.Id };
+        var maximumKeyword = new Organization { Name = new string('A', 256), PlanId = _plans.FreePlan.Id };
+        var ignoredKeyword = new Organization { Id = "650000000000000000000005", Name = new string('A', 257), PlanId = _plans.FreePlan.Id };
+        var maximumSupplementaryKeyword = new Organization { Name = String.Concat(Enumerable.Repeat("\U00010000", 128)), PlanId = _plans.FreePlan.Id };
+        var ignoredSupplementaryKeyword = new Organization { Id = "650000000000000000000004", Name = String.Concat(Enumerable.Repeat("\U00010000", 129)), PlanId = _plans.FreePlan.Id };
         var unauthorized = new Organization { Name = "Aardvark Ordering", PlanId = _plans.FreePlan.Id };
-        await _organizationRepository.AddAsync([zulu, alpha, beta, duplicateAlphaHigh, duplicateAlphaLow, unauthorized], options => options.ImmediateConsistency());
+        Organization[] authorizedOrganizations = [zulu, alpha, beta, duplicateAlphaHigh, duplicateAlphaLow, supplementary, privateUse,
+            accented, ignoredKeyword, maximumKeyword, ignoredSupplementaryKeyword, maximumSupplementaryKeyword];
+        await _organizationRepository.AddAsync([.. authorizedOrganizations, unauthorized], options => options.ImmediateConsistency());
 
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
         user.OrganizationIds.Clear();
-        user.OrganizationIds.UnionWith([zulu.Id, alpha.Id, beta.Id, duplicateAlphaHigh.Id, duplicateAlphaLow.Id]);
+        user.OrganizationIds.UnionWith(authorizedOrganizations.Select(organization => organization.Id));
         await _userRepository.SaveAsync(user, options => options.ImmediateConsistency().Cache());
         await _projectRepository.AddAsync(new Project
         {
@@ -450,8 +460,12 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             OrganizationId = beta.Id,
             NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
         }, options => options.ImmediateConsistency());
+        string[] expectedIds = [maximumKeyword.Id, duplicateAlphaLow.Id, duplicateAlphaHigh.Id, beta.Id, zulu.Id, alpha.Id,
+            accented.Id, privateUse.Id, supplementary.Id, maximumSupplementaryKeyword.Id, ignoredSupplementaryKeyword.Id, ignoredKeyword.Id];
 
         // Act
+        var repositoryOrganizations = await _organizationRepository.GetByFilterAsync(
+            new AppFilter(authorizedOrganizations) { IsUserOrganizationsFilter = true }, "*", null, options => options.PageLimit(authorizedOrganizations.Length));
         var organizations = await SendRequestAsAsync<IReadOnlyCollection<ViewOrganization>>(request => request
             .AsTestOrganizationUser()
             .AppendPath("organizations")
@@ -461,10 +475,8 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(organizations);
-        Assert.Equal(expectedNames, organizations.Select(organization => organization.Name));
-        Assert.Equal([duplicateAlphaLow.Id, duplicateAlphaHigh.Id], organizations
-            .Where(organization => String.Equals(organization.Name, "Alpha Ordering", StringComparison.Ordinal))
-            .Select(organization => organization.Id));
+        Assert.Equal(expectedIds, repositoryOrganizations.Documents.Select(organization => organization.Id));
+        Assert.Equal(repositoryOrganizations.Documents.Select(organization => organization.Id), organizations.Select(organization => organization.Id));
         Assert.DoesNotContain(organizations, organization => String.Equals(organization.Id, unauthorized.Id, StringComparison.Ordinal));
         Assert.Equal(expectedProjectCount, organizations.Single(organization => String.Equals(organization.Id, beta.Id, StringComparison.Ordinal)).ProjectCount);
     }

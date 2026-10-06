@@ -1,3 +1,4 @@
+using System.Text;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -48,6 +49,16 @@ public class OrganizationHandler(
     LinkGenerator linkGenerator,
     ILoggerFactory loggerFactory)
 {
+    private static readonly IComparer<byte[]?> _organizationNameComparer = Comparer<byte[]?>.Create((left, right) =>
+    {
+        if (left is null)
+            return right is null ? 0 : 1;
+        if (right is null)
+            return -1;
+
+        return left.AsSpan().SequenceCompareTo(right);
+    });
+
     private readonly ILogger _logger = loggerFactory.CreateLogger<OrganizationHandler>();
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
@@ -58,10 +69,13 @@ public class OrganizationHandler(
             return Result<IReadOnlyCollection<ViewOrganization>>.Success(Array.Empty<ViewOrganization>());
 
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        // Match the repository's Name/Id sort priority. Unlike its case-sensitive name.keyword field,
-        // the unfiltered list compares names case-insensitively.
+        // Match Elasticsearch's name.keyword UTF-8 ordering and ignore_above: 256 (UTF-16 length).
+        // Missing keywords sort last, with the repository's ascending ID tiebreaker.
         organizations = String.IsNullOrWhiteSpace(message.Filter)
-            ? organizations.OrderBy(organization => organization.Name, StringComparer.OrdinalIgnoreCase).ThenBy(organization => organization.Id, StringComparer.Ordinal).ToList()
+            ? organizations.OrderBy(organization => organization.Name is null || organization.Name.Length > 256
+                    ? null
+                    : Encoding.UTF8.GetBytes(organization.Name), _organizationNameComparer)
+                .ThenBy(organization => organization.Id, StringComparer.Ordinal).ToList()
             : (await repository.GetByFilterAsync(sf, message.Filter, null, o => o.PageLimit(Pagination.MaximumSkip))).Documents;
         var viewOrganizations = mapper.MapToViewOrganizations(organizations);
         await AfterResultMapAsync(viewOrganizations);
