@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using Exceptionless.Core.Authorization;
@@ -164,19 +165,24 @@ public static class HttpExtensions
         ArgumentNullException.ThrowIfNull(request);
 
         string? authHeader = request.Headers.TryGetAndReturn("Authorization");
-        if (authHeader is null || !authHeader.StartsWith("basic", StringComparison.OrdinalIgnoreCase))
+        if (!AuthenticationHeaderValue.TryParse(authHeader, out var header)
+            || !String.Equals(header.Scheme, "Basic", StringComparison.OrdinalIgnoreCase)
+            || String.IsNullOrWhiteSpace(header.Parameter))
             return null;
 
-        string token = authHeader.Substring(6).Trim();
-        string credentialString = Encoding.UTF8.GetString(Convert.FromBase64String(token));
-        string[] credentials = credentialString.Split(':', StringSplitOptions.RemoveEmptyEntries);
-        if (credentials.Length != 2)
+        byte[] credentialBytes = new byte[header.Parameter.Length];
+        if (!Convert.TryFromBase64String(header.Parameter, credentialBytes, out int bytesWritten))
+            return null;
+
+        string credentialString = Encoding.UTF8.GetString(credentialBytes, 0, bytesWritten);
+        int separator = credentialString.IndexOf(':');
+        if (separator <= 0 || String.IsNullOrWhiteSpace(credentialString[..separator]))
             return null;
 
         return new AuthInfo
         {
-            Username = credentials[0],
-            Password = credentials[1]
+            Username = credentialString[..separator],
+            Password = credentialString[(separator + 1)..]
         };
     }
 
