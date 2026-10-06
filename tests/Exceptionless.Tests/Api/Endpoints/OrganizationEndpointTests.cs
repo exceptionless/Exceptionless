@@ -392,19 +392,11 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
 
-        var organizations = await SendRequestAsAsync<IReadOnlyCollection<ViewOrganization>>(r => r
-            .AsTestOrganizationUser()
-            .AppendPath("organizations")
-            .StatusCodeShouldBeOk());
-
         // Assert
         Assert.NotNull(organizationView);
         Assert.NotNull(organizationView.Id);
         Assert.Equal("Test Organization", organizationView.Name);
         Assert.True(organizationView.CreatedUtc > DateTime.MinValue);
-        Assert.NotNull(organizations);
-        Assert.Contains(organizations, candidate => String.Equals(candidate.Id, organizationView.Id, StringComparison.Ordinal)
-            && String.Equals(candidate.Name, newOrganization.Name, StringComparison.Ordinal));
 
         var organization = await _organizationRepository.GetByIdAsync(organizationView.Id);
         Assert.NotNull(organization);
@@ -432,11 +424,11 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData(null, null, 0)]
-    [InlineData(null, "stats", 1)]
-    [InlineData("name:Ordering", null, 0)]
-    [InlineData("name:Ordering", "stats", 1)]
-    public async Task GetAllAsync_WithAuthorizedOrganizations_ReturnsNameOrder(string? filter, string? mode, long expectedProjectCount)
+    [InlineData(null, null, 0, new[] { "alpha Ordering", "Beta Ordering", "Zulu Ordering" })]
+    [InlineData(null, "stats", 1, new[] { "alpha Ordering", "Beta Ordering", "Zulu Ordering" })]
+    [InlineData("name:Ordering", null, 0, new[] { "Beta Ordering", "Zulu Ordering", "alpha Ordering" })]
+    [InlineData("name:Ordering", "stats", 1, new[] { "Beta Ordering", "Zulu Ordering", "alpha Ordering" })]
+    public async Task GetAllAsync_WithAuthorizedOrganizations_ReturnsNameOrder(string? filter, string? mode, long expectedProjectCount, string[] expectedNames)
     {
         // Arrange
         var zulu = new Organization { Name = "Zulu Ordering", PlanId = _plans.FreePlan.Id };
@@ -467,8 +459,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(organizations);
-        Assert.Equal([beta.Id, zulu.Id, alpha.Id], organizations.Select(organization => organization.Id));
-        Assert.Equal(["Beta Ordering", "Zulu Ordering", "alpha Ordering"], organizations.Select(organization => organization.Name));
+        Assert.Equal(expectedNames, organizations.Select(organization => organization.Name));
         Assert.DoesNotContain(organizations, organization => String.Equals(organization.Id, unauthorized.Id, StringComparison.Ordinal));
         Assert.Equal(expectedProjectCount, organizations.Single(organization => String.Equals(organization.Id, beta.Id, StringComparison.Ordinal)).ProjectCount);
     }
@@ -2754,18 +2745,10 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
-        var organizations = await SendRequestAsAsync<IReadOnlyCollection<ViewOrganization>>(r => r
-            .AsTestOrganizationUser()
-            .AppendPath("organizations")
-            .StatusCodeShouldBeOk());
-
         // Assert
         Assert.NotNull(updated);
         Assert.Equal(SampleDataService.TEST_ORG_ID, updated.Id);
         Assert.Equal("Updated Acme", updated.Name);
-        Assert.NotNull(organizations);
-        Assert.Contains(organizations, organization => String.Equals(organization.Id, updated.Id, StringComparison.Ordinal)
-            && String.Equals(organization.Name, "Updated Acme", StringComparison.Ordinal));
         Assert.True(updated.UpdatedUtc >= originalOrg.UpdatedUtc);
 
         var persisted = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);

@@ -58,14 +58,10 @@ public class OrganizationHandler(
             return Result<IReadOnlyCollection<ViewOrganization>>.Success(Array.Empty<ViewOrganization>());
 
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
-        bool isUnfiltered = String.IsNullOrWhiteSpace(message.Filter);
-        var results = await repository.GetByFilterAsync(sf, message.Filter, null,
-            o => o.PageLimit(Pagination.MaximumSkip).SearchAfterPaging(isUnfiltered));
-        var viewOrganizations = new List<ViewOrganization>();
-        do
-        {
-            viewOrganizations.AddRange(mapper.MapToViewOrganizations(results.Documents));
-        } while (isUnfiltered && !message.Context.RequestAborted.IsCancellationRequested && await results.NextPageAsync());
+        organizations = String.IsNullOrWhiteSpace(message.Filter)
+            ? organizations.OrderBy(organization => organization.Name, StringComparer.OrdinalIgnoreCase).ToList()
+            : (await repository.GetByFilterAsync(sf, message.Filter, null, o => o.PageLimit(Pagination.MaximumSkip))).Documents;
+        var viewOrganizations = mapper.MapToViewOrganizations(organizations);
         await AfterResultMapAsync(viewOrganizations);
 
         if (IsStatsMode(message.Mode))
@@ -140,7 +136,7 @@ public class OrganizationHandler(
             return error;
 
         message.Changes.Patch(original);
-        await repository.SaveAsync(original, o => o.ImmediateConsistency().Cache());
+        await repository.SaveAsync(original, o => o.Cache());
         return await MapToViewAsync(original);
     }
 
@@ -840,7 +836,7 @@ public class OrganizationHandler(
             : plans.FreePlan;
         billingManager.ApplyBillingPlan(value, plan, user);
 
-        var organization = await repository.AddAsync(value, o => o.ImmediateConsistency().Cache());
+        var organization = await repository.AddAsync(value, o => o.Cache());
 
         user.OrganizationIds.Add(organization.Id);
         await userRepository.SaveAsync(user, o => o.Cache());
