@@ -1,5 +1,3 @@
-using Exceptionless.Core.Models.Ingestion;
-
 namespace Exceptionless.Ingestion.Load;
 
 internal enum IngestionProtocol
@@ -44,9 +42,11 @@ internal sealed record LoadOptions(
     string? EnvironmentLabel,
     string Message,
     TimeSpan Timeout,
-    TimeSpan PollInterval,
-    int CompletionPollConcurrency)
+    TimeSpan PollInterval)
 {
+    // The event pipeline truncates longer messages, which would make the two protocols' payloads differ.
+    private const int MaximumMessageLength = 2000;
+
     public static LoadOptions Parse(string[] args)
     {
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -100,10 +100,9 @@ internal sealed record LoadOptions(
             throw new ArgumentException("--discard-percent requires --event-type error.");
         if (discardPercent > 0 && stackScenario is StackScenario.New)
             throw new ArgumentException("Discard comparisons require --stack-scenario hot so the pre-discarded stack identities remain stable.");
-        int messageBytes = GetInt(values, "message-bytes", 64, 0, EventIngestionV3Limits.MaximumMessageLength);
+        int messageBytes = GetInt(values, "message-bytes", 64, 0, MaximumMessageLength);
         int timeoutSeconds = GetInt(values, "timeout-seconds", 300, 1, 86_400);
         int pollIntervalMilliseconds = GetInt(values, "poll-interval-ms", 250, 10, 60_000);
-        int completionPollConcurrency = GetInt(values, "completion-poll-concurrency", 4, 1, 64);
         string compression = values.GetValueOrDefault("compression", "none").ToLowerInvariant();
         if (compression is not ("none" or "gzip"))
             throw new ArgumentException("Apples-to-apples comparisons support the encodings common to both APIs: none or gzip.");
@@ -132,13 +131,12 @@ internal sealed record LoadOptions(
             values.GetValueOrDefault("environment-label"),
             new string('x', messageBytes),
             TimeSpan.FromSeconds(timeoutSeconds),
-            TimeSpan.FromMilliseconds(pollIntervalMilliseconds),
-            completionPollConcurrency);
+            TimeSpan.FromMilliseconds(pollIntervalMilliseconds));
     }
 
     public static void WriteUsage()
     {
-        Console.Error.WriteLine("dotnet run -c Release --project benchmarks/Exceptionless.Ingestion.Load -- --base-url <origin> --project-id <id> --protocol v2|v3|both [--submission-token <key>] [--read-token <token> | --read-user <email> --read-password <password>] [--events 10000] [--batch-size 1|1000] [--concurrency 4] [--trials 3] [--warmup-events 100] [--event-type log|error] [--stack-scenario hot|new] [--signature-cardinality 10] [--discard-percent 0] [--compression none|gzip] [--completion-poll-concurrency 4] [--results result.json] [--environment-label text]");
+        Console.Error.WriteLine("dotnet run -c Release --project benchmarks/Exceptionless.Ingestion.Load -- --base-url <origin> --project-id <id> --protocol v2|v3|both [--submission-token <key>] [--read-token <token> | --read-user <email> --read-password <password>] [--events 10000] [--batch-size 1|1000] [--concurrency 4] [--trials 3] [--warmup-events 100] [--event-type log|error] [--stack-scenario hot|new] [--signature-cardinality 10] [--discard-percent 0] [--compression none|gzip] [--poll-interval-ms 250] [--results result.json] [--environment-label text]");
     }
 
     private static IReadOnlyList<IngestionProtocol> ParseProtocols(string value)

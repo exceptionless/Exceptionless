@@ -4,6 +4,12 @@ public static class Program
 {
     public static async Task<int> Main(string[] args)
     {
+        if (args is ["--help"] or ["-h"])
+        {
+            LoadOptions.WriteUsage();
+            return 0;
+        }
+
         LoadOptions options;
         try
         {

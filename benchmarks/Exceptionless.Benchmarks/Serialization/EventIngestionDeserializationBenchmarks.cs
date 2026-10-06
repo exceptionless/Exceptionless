@@ -16,17 +16,21 @@ public class EventIngestionDeserializationBenchmarks
 {
     private const int MaximumEventSize = 512 * 1024;
     private byte[] _v2Payload = null!;
-    private byte[] _v3StreamPayload = null!;
-    private JsonSerializerOptions _v2JsonOptions = null!;
+    private byte[] _v3NdjsonPayload = null!;
+    private byte[] _v3ArrayPayload = null!;
+    private JsonSerializerOptions _readOptions = null!;
 
     [Params(1, 100, 1000)]
     public int EventCount { get; set; }
 
     [GlobalSetup]
-    public void Setup()
+    public async Task SetupAsync()
     {
-        _v2JsonOptions = new JsonSerializerOptions().ConfigureExceptionlessDefaults();
-        _v2JsonOptions.RespectNullableAnnotations = false;
+        // Payloads are written with the app options, like a client following the V3 contract. The
+        // read options match what the V2 parser and EventIngestionV3Processor use.
+        var jsonOptions = new JsonSerializerOptions().ConfigureExceptionlessDefaults();
+        _readOptions = new JsonSerializerOptions(jsonOptions) { RespectNullableAnnotations = false };
+
         var v2Events = new V2BenchmarkEvent[EventCount];
         var v3Events = new EventIngestionV3Event[EventCount];
         for (int index = 0; index < v3Events.Length; index++)
@@ -42,7 +46,7 @@ public class EventIngestionDeserializationBenchmarks
             v3Events[index] = new EventIngestionV3Event
             {
                 Id = $"01J0000000000000000000{index:D4}",
-                Type = "error",
+                Type = Event.KnownTypes.Error,
                 Date = DateTimeOffset.UnixEpoch.AddSeconds(index),
                 Message = message,
                 ExceptionType = exceptionType,
@@ -54,17 +58,20 @@ public class EventIngestionDeserializationBenchmarks
             ? JsonSerializer.SerializeToUtf8Bytes(v2Events[0])
             : JsonSerializer.SerializeToUtf8Bytes(v2Events);
 
-        using var stream = new MemoryStream(_v2Payload.Length);
-        for (int index = 0; index < v3Events.Length; index++)
+        using var ndjson = new MemoryStream();
+        foreach (var v3Event in v3Events)
         {
-            JsonSerializer.Serialize(
-                stream,
-                v3Events[index],
-                EventIngestionJsonContext.Default.EventIngestionV3Event);
-            stream.WriteByte((byte)'\n');
+            JsonSerializer.Serialize(ndjson, v3Event, jsonOptions);
+            ndjson.WriteByte((byte)'\n');
         }
 
-        _v3StreamPayload = stream.ToArray();
+        _v3NdjsonPayload = ndjson.ToArray();
+        _v3ArrayPayload = JsonSerializer.SerializeToUtf8Bytes(v3Events, jsonOptions);
+
+        // Fail fast if a payload stops matching the V3 contract, so the benchmarks never time the
+        // reader's invalid-event path.
+        if (await ReadV3Async(_v3NdjsonPayload) != EventCount || await ReadV3Async(_v3ArrayPayload) != EventCount)
+            throw new InvalidOperationException("The V3 benchmark payloads must contain only valid events.");
     }
 
     [Benchmark(Baseline = true)]
@@ -73,44 +80,35 @@ public class EventIngestionDeserializationBenchmarks
         string input = Encoding.UTF8.GetString(_v2Payload);
         return input.GetJsonType() switch
         {
-            JsonType.Object => JsonSerializer.Deserialize<PersistentEvent>(input, _v2JsonOptions) is null ? 0 : 1,
-            JsonType.Array => JsonSerializer.Deserialize<PersistentEvent[]>(input, _v2JsonOptions)?.Length ?? 0,
+            JsonType.Object => JsonSerializer.Deserialize<PersistentEvent>(input, _readOptions) is null ? 0 : 1,
+            JsonType.Array => JsonSerializer.Deserialize<PersistentEvent[]>(input, _readOptions)?.Length ?? 0,
             _ => 0
         };
     }
 
     [Benchmark]
-    public Task<int> FrameAndRouteV3NdjsonAsync() => ReadV3NdjsonAsync(materializeSurvivors: false);
+    public Task<int> ReadV3NdjsonAsync() => ReadV3Async(_v3NdjsonPayload);
 
     [Benchmark]
-    public Task<int> FrameRouteAndMaterializeV3SurvivorsAsync() => ReadV3NdjsonAsync(materializeSurvivors: true);
+    public Task<int> ReadV3JsonArrayAsync() => ReadV3Async(_v3ArrayPayload);
 
-    private async Task<int> ReadV3NdjsonAsync(bool materializeSurvivors)
+    private async Task<int> ReadV3Async(byte[] payload)
     {
-        using var stream = new MemoryStream(_v3StreamPayload, writable: false);
-        var reader = PipeReader.Create(stream);
+        using var stream = new MemoryStream(payload, writable: false);
+        var pipeReader = PipeReader.Create(stream);
+        var reader = new EventIngestionV3StreamReader(pipeReader, MaximumEventSize, _readOptions);
         int count = 0;
         try
         {
-            while (await EventIngestionV3StreamReader.ReadAsync(reader, MaximumEventSize, CancellationToken.None) is { } record)
+            while (await reader.ReadAsync(CancellationToken.None) is { } record)
             {
-                try
-                {
-                    EventIngestionV3Event parsed = materializeSurvivors
-                        ? record.BufferedRecord.Materialize()
-                        : record.Event;
-                    if (!String.IsNullOrEmpty(parsed.Id))
-                        count++;
-                }
-                finally
-                {
-                    record.BufferedRecord.Dispose();
-                }
+                if (record.Event is not null)
+                    count++;
             }
         }
         finally
         {
-            await reader.CompleteAsync();
+            await pipeReader.CompleteAsync();
         }
 
         return count;
@@ -141,17 +139,17 @@ public class LargeStackEventIngestionDeserializationBenchmarks
     private const int MaximumEventSize = 512 * 1024;
     private byte[] _v2Payload = null!;
     private byte[] _v3Payload = null!;
-    private JsonSerializerOptions _v2JsonOptions = null!;
+    private JsonSerializerOptions _readOptions = null!;
 
     [Params(16 * 1024, 128 * 1024)]
     public int StackTraceLength { get; set; }
 
     [GlobalSetup]
-    public void Setup()
+    public async Task SetupAsync()
     {
         string stackTrace = new('x', StackTraceLength);
-        _v2JsonOptions = new JsonSerializerOptions().ConfigureExceptionlessDefaults();
-        _v2JsonOptions.RespectNullableAnnotations = false;
+        var jsonOptions = new JsonSerializerOptions().ConfigureExceptionlessDefaults();
+        _readOptions = new JsonSerializerOptions(jsonOptions) { RespectNullableAnnotations = false };
         _v2Payload = JsonSerializer.SerializeToUtf8Bytes(new Dictionary<string, object?>
         {
             ["type"] = "error",
@@ -166,57 +164,45 @@ public class LargeStackEventIngestionDeserializationBenchmarks
                 }
             }
         });
-        _v3Payload = JsonSerializer.SerializeToUtf8Bytes(new
-        {
-            id = "large-stack-event",
-            type = "error",
-            message = "Operation failed",
-            exception_type = "Example.Exception",
-            stack_trace = stackTrace
-        });
+        _v3Payload = JsonSerializer.SerializeToUtf8Bytes(
+            new EventIngestionV3Event
+            {
+                Id = "large-stack-event",
+                Type = Event.KnownTypes.Error,
+                Message = "Operation failed",
+                ExceptionType = "Example.Exception",
+                StackTrace = stackTrace
+            },
+            jsonOptions);
+
+        if (await ReadV3Async(_v3Payload) != StackTraceLength)
+            throw new InvalidOperationException("The V3 benchmark payload must contain one valid event.");
     }
 
     [Benchmark(Baseline = true)]
     public PersistentEvent? DeserializeV2Payload()
     {
         string input = Encoding.UTF8.GetString(_v2Payload);
-        return JsonSerializer.Deserialize<PersistentEvent>(input, _v2JsonOptions);
+        return JsonSerializer.Deserialize<PersistentEvent>(input, _readOptions);
     }
 
     [Benchmark]
-    public Task<int> FrameAndRouteV3NdjsonAsync() => ReadV3NdjsonAsync(materializeSurvivor: false);
+    public Task<int> ReadV3Async() => ReadV3Async(_v3Payload);
 
-    [Benchmark]
-    public Task<int> FrameRouteAndMaterializeV3SurvivorAsync() => ReadV3NdjsonAsync(materializeSurvivor: true);
-
-    private async Task<int> ReadV3NdjsonAsync(bool materializeSurvivor)
+    private async Task<int> ReadV3Async(byte[] payload)
     {
-        using var stream = new MemoryStream(_v3Payload, writable: false);
-        var reader = PipeReader.Create(stream);
+        using var stream = new MemoryStream(payload, writable: false);
+        var pipeReader = PipeReader.Create(stream);
+        var reader = new EventIngestionV3StreamReader(pipeReader, MaximumEventSize, _readOptions);
         try
         {
-            EventIngestionV3StreamRecord? record = await EventIngestionV3StreamReader.ReadAsync(
-                reader,
-                MaximumEventSize,
-                CancellationToken.None);
-            if (record is null)
-                return 0;
-
-            try
-            {
-                EventIngestionV3Event parsed = materializeSurvivor
-                    ? record.Value.BufferedRecord.Materialize()
-                    : record.Value.Event;
-                return parsed.StackTrace?.Length ?? 0;
-            }
-            finally
-            {
-                record.Value.BufferedRecord.Dispose();
-            }
+            return await reader.ReadAsync(CancellationToken.None) is { Event: { } parsed }
+                ? parsed.StackTrace?.Length ?? 0
+                : 0;
         }
         finally
         {
-            await reader.CompleteAsync();
+            await pipeReader.CompleteAsync();
         }
     }
 }

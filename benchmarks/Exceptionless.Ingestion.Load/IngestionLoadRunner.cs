@@ -14,9 +14,7 @@ namespace Exceptionless.Ingestion.Load;
 
 internal sealed class IngestionLoadRunner
 {
-    private const string EventPostIdHeader = "X-Exceptionless-Event-Post-Id";
-    private const string TrackEventPostHeader = "X-Exceptionless-Track-Event-Post";
-    private static readonly JsonSerializerOptions _protocolJsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions().ConfigureExceptionlessDefaults();
     private readonly LoadOptions _options;
     private readonly HttpClient _client;
 
@@ -31,8 +29,8 @@ internal sealed class IngestionLoadRunner
 
     public async Task<int> RunAsync()
     {
-        Console.WriteLine($"Comparing {String.Join(" and ", _options.Protocols)}: event_type={_options.EventType.ToString().ToLowerInvariant()} stack_scenario={_options.StackScenario.ToString().ToLowerInvariant()} events={_options.EventCount} expected_persisted={_options.ExpectedPersisted} batch_size={_options.BatchSize} requests={(int)Math.Ceiling((double)_options.EventCount / _options.BatchSize)} concurrency={_options.Concurrency} trials={_options.Trials} compression={_options.Compression} completion_poll_concurrency={_options.CompletionPollConcurrency}");
-        Console.WriteLine("Submission headers and query visibility use common boundaries. Instrumented terminal processing includes observer counters because V2 tracks requests while V3 tracks persisted events; V3 durable acknowledgement is reported separately.");
+        Console.WriteLine($"Comparing {String.Join(" and ", _options.Protocols)}: event_type={_options.EventType.ToString().ToLowerInvariant()} stack_scenario={_options.StackScenario.ToString().ToLowerInvariant()} events={_options.EventCount} expected_persisted={_options.ExpectedPersisted} batch_size={_options.BatchSize} requests={(int)Math.Ceiling((double)_options.EventCount / _options.BatchSize)} concurrency={_options.Concurrency} trials={_options.Trials} compression={_options.Compression}");
+        Console.WriteLine("Submission latency ends when the final response arrives: V2 acknowledges a queued post, while V3 responds after its events are stored. Query visibility is the common end-to-end boundary.");
 
         if (_options.WarmupEvents > 0)
         {
@@ -69,18 +67,13 @@ internal sealed class IngestionLoadRunner
         string phase = isWarmup ? "warm" : $"t{trial + 1}";
         string runMarker = $"load-{_options.Seed}-{protocol.ToString().ToLowerInvariant()}-{phase}-{Guid.NewGuid():N}";
         string signatureNamespace = GetSignatureNamespace(protocol, phase, isWarmup);
-        string[] expectedV3ClientIds = protocol is IngestionProtocol.V3 && expectedPersisted > 0
-            ? GetExpectedV3ClientIds(runMarker, eventCount, expectedPersisted)
-            : [];
         DateTimeOffset eventDate = DateTimeOffset.UtcNow;
         int requestCount = (eventCount + _options.BatchSize - 1) / _options.BatchSize;
         int nextRequest = -1;
         var requestLatencies = new ConcurrentBag<double>();
-        var processingCorrelationIds = new ConcurrentBag<string>();
         var totals = new LoadTotals();
         long runStarted = Stopwatch.GetTimestamp();
         long lastSubmissionResponse = runStarted;
-        long lastDurableAcknowledgement = runStarted;
 
         Task[] workers = Enumerable.Range(0, Math.Min(_options.Concurrency, requestCount)).Select(_ => Task.Run(async () =>
         {
@@ -95,8 +88,6 @@ internal sealed class IngestionLoadRunner
                 using var content = new StreamingEventContent(_options, protocol, runMarker, signatureNamespace, eventDate, start, count);
                 using var request = new HttpRequestMessage(HttpMethod.Post, GetIngestionUrl(protocol)) { Content = content };
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.SubmissionToken);
-                if (protocol is IngestionProtocol.V2)
-                    request.Headers.Add(TrackEventPostHeader, "true");
 
                 long started = Stopwatch.GetTimestamp();
                 using HttpResponseMessage response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellation.Token);
@@ -109,20 +100,13 @@ internal sealed class IngestionLoadRunner
                     throw new InvalidOperationException($"{protocol} request {requestIndex + 1} returned {(int)response.StatusCode}: {Limit(detail)}");
                 }
 
-                if (protocol is IngestionProtocol.V2)
-                {
-                    if (!response.Headers.TryGetValues(EventPostIdHeader, out var values) || values.SingleOrDefault() is not { Length: > 0 } processingCorrelationId)
-                        throw new InvalidOperationException($"V2 request {requestIndex + 1} did not return the required {EventPostIdHeader} tracking header.");
-                    processingCorrelationIds.Add(processingCorrelationId);
-                }
-                else
+                if (protocol is IngestionProtocol.V3)
                 {
                     await using Stream body = await response.Content.ReadAsStreamAsync(cancellation.Token);
-                    EventIngestionV3Response? terminal = await JsonSerializer.DeserializeAsync(body, EventIngestionJsonContext.Default.EventIngestionV3Response, cancellation.Token);
+                    EventIngestionV3Response? terminal = await JsonSerializer.DeserializeAsync<EventIngestionV3Response>(body, _jsonOptions, cancellation.Token);
                     if (terminal is null)
                         throw new InvalidOperationException($"V3 request {requestIndex + 1} returned an empty terminal response.");
                     totals.Add(terminal);
-                    UpdateMaximum(ref lastDurableAcknowledgement, Stopwatch.GetTimestamp());
                 }
 
                 Interlocked.Add(ref totals.UncompressedBytes, content.UncompressedBytes);
@@ -139,23 +123,13 @@ internal sealed class IngestionLoadRunner
             if (totals.Received != eventCount)
                 throw new InvalidOperationException($"V3 terminal responses reported {totals.Received} received events; expected {eventCount}.");
             if (!isWarmup && totals.Persisted != expectedPersisted)
-                throw new InvalidOperationException($"V3 terminal responses reported {totals.Persisted} persisted events; expected {expectedPersisted}.");
+                throw new InvalidOperationException($"V3 terminal responses reported {totals.Persisted} persisted events; expected {expectedPersisted}. discarded={totals.Discarded} duplicate={totals.Duplicate} blocked={totals.Blocked} invalid={totals.Invalid} failed={totals.Failed}.");
         }
 
-        TimeSpan? durableAcknowledgementElapsed = protocol is IngestionProtocol.V3
-            ? Stopwatch.GetElapsedTime(runStarted, Volatile.Read(ref lastDurableAcknowledgement))
+        // Warmup waits too, so V2's queued work has drained before the measured trials start.
+        QueryVisibilityObservation? queryVisibility = expectedPersisted > 0
+            ? await WaitForQueryVisibilityAsync(runMarker, expectedPersisted, runStarted, cancellation.Token)
             : null;
-        Task<CompletionObservation> fullProcessingTask = protocol is IngestionProtocol.V2
-            ? WaitForV2PipelineCompletionAsync(processingCorrelationIds.ToArray(), requestCount, runStarted, cancellation.Token)
-            : expectedPersisted > 0
-                ? WaitForV3FullProcessingAsync(expectedV3ClientIds, runStarted, cancellation.Token)
-                : Task.FromResult(new CompletionObservation(durableAcknowledgementElapsed!.Value, 0, 0, 0, 0));
-        Task<QueryVisibilityObservation?> queryVisibilityTask = !isWarmup && expectedPersisted > 0
-            ? WaitForQueryVisibilityAsync(runMarker, expectedPersisted, runStarted, cancellation.Token)
-            : Task.FromResult<QueryVisibilityObservation?>(null);
-
-        CompletionObservation fullProcessing = await fullProcessingTask;
-        QueryVisibilityObservation? queryVisibility = await queryVisibilityTask;
 
         return new LoadRunResult(
             protocol,
@@ -169,19 +143,8 @@ internal sealed class IngestionLoadRunner
             totals.UncompressedBytes,
             totals.TransferredBytes,
             submissionElapsed,
-            fullProcessing.Elapsed,
-            durableAcknowledgementElapsed,
             queryVisibility?.Elapsed,
             queryVisibility?.ObservedPersisted ?? 0,
-            protocol is IngestionProtocol.V2
-                ? CompletionIdentifierKind.EventPost
-                : expectedPersisted > 0
-                    ? CompletionIdentifierKind.PersistedEvent
-                    : CompletionIdentifierKind.None,
-            fullProcessing.TrackedIdentifiers,
-            fullProcessing.StatusRequests,
-            fullProcessing.IdentifierReads,
-            fullProcessing.Sweeps,
             queryVisibility?.Requests ?? 0,
             Percentile(requestLatencies, 0.50),
             Percentile(requestLatencies, 0.95),
@@ -191,118 +154,8 @@ internal sealed class IngestionLoadRunner
             totals.Discarded,
             totals.Duplicate,
             totals.Blocked,
-            totals.Invalid);
-    }
-
-    private Task<CompletionObservation> WaitForV3FullProcessingAsync(string[] clientIds, long runStarted, CancellationToken cancellationToken)
-    {
-        string[][] chunks = clientIds.Chunk(1000).Select(chunk => chunk.ToArray()).ToArray();
-        return WaitForCompletionAsync(
-            chunks,
-            runStarted,
-            GetV3ProcessingSummaryAsync,
-            static (chunk, summary) => summary.Requested == chunk.Length && summary.Completed == chunk.Length,
-            cancellationToken);
-    }
-
-    private async Task<EventIngestionV3ProcessingSummary> GetV3ProcessingSummaryAsync(string[] clientIds, CancellationToken cancellationToken)
-    {
-        Uri url = new(_options.BaseUrl, $"api/v3/projects/{_options.ProjectId}/events/processing/status");
-        using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.SubmissionToken);
-        byte[] payload = JsonSerializer.SerializeToUtf8Bytes(new EventIngestionV3ProcessingStatusRequest(clientIds), _protocolJsonOptions);
-        request.Content = new ByteArrayContent(payload);
-        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
-        using HttpResponseMessage response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            string detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"V3 full-processing status returned {(int)response.StatusCode}: {Limit(detail)}");
-        }
-
-        await using Stream body = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<EventIngestionV3ProcessingSummary>(body, _protocolJsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("V3 full-processing status returned an empty response.");
-    }
-
-    private Task<CompletionObservation> WaitForV2PipelineCompletionAsync(string[] processingCorrelationIds, int requestCount, long runStarted, CancellationToken cancellationToken)
-    {
-        if (processingCorrelationIds.Length != requestCount)
-            throw new InvalidOperationException($"V2 returned {processingCorrelationIds.Length} tracked event-post ids for {requestCount} successful requests.");
-
-        string[][] chunks = processingCorrelationIds.Chunk(1000).Select(chunk => chunk.ToArray()).ToArray();
-        return WaitForCompletionAsync(
-            chunks,
-            runStarted,
-            GetV2ProcessingSummaryAsync,
-            static (chunk, summary) => summary.Requested == chunk.Length && summary.Completed == chunk.Length,
-            cancellationToken);
-    }
-
-    private async Task<CompletionObservation> WaitForCompletionAsync<TSummary>(
-        string[][] chunks,
-        long runStarted,
-        Func<string[], CancellationToken, Task<TSummary>> getSummaryAsync,
-        Func<string[], TSummary, bool> isComplete,
-        CancellationToken cancellationToken)
-    {
-        var pending = chunks.ToList();
-        int statusRequests = 0;
-        long identifierReads = 0;
-        int sweeps = 0;
-        while (pending.Count > 0)
-        {
-            sweeps++;
-            var nextPending = new List<string[]>();
-            foreach (string[][] page in pending.Chunk(_options.CompletionPollConcurrency))
-            {
-                TSummary[] summaries = await Task.WhenAll(page.Select(chunk => getSummaryAsync(chunk, cancellationToken)));
-                statusRequests += page.Length;
-                identifierReads += page.Sum(chunk => (long)chunk.Length);
-                for (int index = 0; index < page.Length; index++)
-                {
-                    if (!isComplete(page[index], summaries[index]))
-                        nextPending.Add(page[index]);
-                }
-            }
-
-            if (nextPending.Count == 0)
-            {
-                return new CompletionObservation(
-                    Stopwatch.GetElapsedTime(runStarted),
-                    chunks.Sum(chunk => (long)chunk.Length),
-                    statusRequests,
-                    identifierReads,
-                    sweeps);
-            }
-
-            pending = nextPending;
-            await Task.Delay(_options.PollInterval, cancellationToken);
-        }
-
-        throw new InvalidOperationException("At least one completion identifier is required.");
-    }
-
-    private async Task<EventPostProcessingSummary> GetV2ProcessingSummaryAsync(string[] processingCorrelationIds, CancellationToken cancellationToken)
-    {
-        Uri url = new(_options.BaseUrl, $"api/v2/projects/{_options.ProjectId}/events/posts/status");
-        using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.SubmissionToken);
-        byte[] payload = JsonSerializer.SerializeToUtf8Bytes(new EventPostProcessingStatusRequest(processingCorrelationIds), _protocolJsonOptions);
-        request.Content = new ByteArrayContent(payload);
-        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-
-        using HttpResponseMessage response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            string detail = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new InvalidOperationException($"V2 processing status returned {(int)response.StatusCode}: {Limit(detail)}");
-        }
-
-        await using Stream body = await response.Content.ReadAsStreamAsync(cancellationToken);
-        return await JsonSerializer.DeserializeAsync<EventPostProcessingSummary>(body, _protocolJsonOptions, cancellationToken)
-            ?? throw new InvalidOperationException("V2 processing status returned an empty response.");
+            totals.Invalid,
+            totals.Failed);
     }
 
     private async Task<QueryVisibilityObservation?> WaitForQueryVisibilityAsync(string runMarker, int expectedPersisted, long runStarted, CancellationToken cancellationToken)
@@ -339,23 +192,6 @@ internal sealed class IngestionLoadRunner
         return $"{prefix}-{phase}-{(isWarmup ? "warm" : "new")}-{Guid.NewGuid():N}";
     }
 
-    private string[] GetExpectedV3ClientIds(string runMarker, int eventCount, int expectedPersisted)
-    {
-        IEnumerable<int> expectedIndexes = Enumerable.Range(0, eventCount);
-        if (expectedPersisted != eventCount)
-            expectedIndexes = expectedIndexes.Where(index => index % 100 >= _options.DiscardPercent);
-
-        int[] indexes = expectedIndexes.ToArray();
-        if (indexes.Length != expectedPersisted)
-        {
-            throw new InvalidOperationException(
-                $"Cannot identify the {expectedPersisted} V3 events expected to persist from this corpus. " +
-                "Use the discard-derived default, zero, or the full event count for --expected-persisted.");
-        }
-
-        return indexes.Select(index => StreamingEventContent.GetV3ClientId(runMarker, index)).ToArray();
-    }
-
     private int GetExpectedPersistedCount(int eventCount)
     {
         if (_options.ExpectedPersisted == _options.EventCount)
@@ -389,7 +225,7 @@ internal sealed class IngestionLoadRunner
             Directory.CreateDirectory(directory);
 
         var evidence = new LoadEvidence(
-            "3",
+            "4",
             DateTimeOffset.UtcNow,
             new LoadEnvironment(
                 _options.EnvironmentLabel,
@@ -416,8 +252,7 @@ internal sealed class IngestionLoadRunner
                 _options.Seed,
                 _options.Message.Length,
                 _options.Timeout.TotalSeconds,
-                _options.PollInterval.TotalMilliseconds,
-                _options.CompletionPollConcurrency),
+                _options.PollInterval.TotalMilliseconds),
             results);
         var serializerOptions = new JsonSerializerOptions
         {
@@ -456,17 +291,12 @@ internal sealed class IngestionLoadRunner
     private static void WriteResult(LoadRunResult result)
     {
         double submissionRate = Rate(result.EventCount, result.SubmissionElapsed);
-        string durableAcknowledgement = result.V3DurableAcknowledgementElapsed.HasValue
-            ? $" durable_ack={Rate(result.EventCount, result.V3DurableAcknowledgementElapsed.Value):F0} events/s {result.V3DurableAcknowledgementElapsed.Value.TotalSeconds:F3}s"
-            : String.Empty;
         string queryVisible = result.QueryVisibleElapsed.HasValue
             ? $"{Rate(result.ExpectedPersisted, result.QueryVisibleElapsed.Value):F0} persisted/s {result.QueryVisibleElapsed.Value.TotalSeconds:F3}s"
             : "n/a";
-        Console.WriteLine($"{result.Protocol} trial={result.Trial + 1} requests={result.SuccessfulRequests}/{result.RequestCount} submission={submissionRate:F0} events/s full_processing_observed={Rate(result.EventCount, result.ObservedFullProcessingElapsed):F0} events/s {result.ObservedFullProcessingElapsed.TotalSeconds:F3}s{durableAcknowledgement} query_visible={queryVisible} observed_persisted={result.ObservedPersisted} latency_ms_p50/p95/p99={result.P50Milliseconds:F1}/{result.P95Milliseconds:F1}/{result.P99Milliseconds:F1} bytes={result.TransferredBytes} raw_bytes={result.UncompressedBytes}");
-        string completionIdentifierKind = JsonNamingPolicy.SnakeCaseLower.ConvertName(result.CompletionIdentifierKind.ToString());
-        Console.WriteLine($"  completion_observer identifier_kind={completionIdentifierKind} tracked_ids={result.CompletionTrackedIdentifiers} status_requests={result.CompletionStatusRequests} identifier_reads={result.CompletionIdentifierReads} sweeps={result.CompletionSweeps} query_requests={result.QueryVisibilityRequests}");
+        Console.WriteLine($"{result.Protocol} trial={result.Trial + 1} requests={result.SuccessfulRequests}/{result.RequestCount} submission={submissionRate:F0} events/s {result.SubmissionElapsed.TotalSeconds:F3}s query_visible={queryVisible} observed_persisted={result.ObservedPersisted} query_requests={result.QueryVisibilityRequests} latency_ms_p50/p95/p99={result.P50Milliseconds:F1}/{result.P95Milliseconds:F1}/{result.P99Milliseconds:F1} bytes={result.TransferredBytes} raw_bytes={result.UncompressedBytes}");
         if (result.Protocol is IngestionProtocol.V3)
-            Console.WriteLine($"  terminal received={result.Received} persisted={result.Persisted} discarded={result.Discarded} duplicate={result.Duplicate} blocked={result.Blocked} invalid={result.Invalid}");
+            Console.WriteLine($"  terminal received={result.Received} persisted={result.Persisted} discarded={result.Discarded} duplicate={result.Duplicate} blocked={result.Blocked} invalid={result.Invalid} failed={result.Failed}");
     }
 
     private static void WriteSummary(IReadOnlyList<LoadRunResult> results)
@@ -475,16 +305,11 @@ internal sealed class IngestionLoadRunner
         foreach (IGrouping<IngestionProtocol, LoadRunResult> group in results.GroupBy(r => r.Protocol).OrderBy(g => g.Key))
         {
             double submissionRate = Median(group.Select(r => Rate(r.EventCount, r.SubmissionElapsed)));
-            double? queryVisibleRate = group.All(r => r.QueryVisibleElapsed.HasValue)
-                ? Median(group.Select(r => Rate(r.ExpectedPersisted, r.QueryVisibleElapsed!.Value)))
-                : null;
-            double fullProcessingRate = Median(group.Select(r => Rate(r.EventCount, r.ObservedFullProcessingElapsed)));
-            string durableAcknowledgement = group.Key is IngestionProtocol.V3
-                ? $" durable_ack={Median(group.Select(r => Rate(r.EventCount, r.V3DurableAcknowledgementElapsed!.Value))):F0} events/s"
-                : String.Empty;
-            Console.WriteLine($"  {group.Key}: submission={submissionRate:F0} events/s full_processing_observed={fullProcessingRate:F0} events/s{durableAcknowledgement} query_visible={(queryVisibleRate.HasValue ? $"{queryVisibleRate:F0} persisted/s" : "n/a")}");
+            string queryVisible = group.All(r => r.QueryVisibleElapsed.HasValue)
+                ? $"{Median(group.Select(r => Rate(r.ExpectedPersisted, r.QueryVisibleElapsed!.Value))):F0} persisted/s {Median(group.Select(r => r.QueryVisibleElapsed!.Value.TotalSeconds)):F3}s"
+                : "n/a";
+            Console.WriteLine($"  {group.Key}: submission={submissionRate:F0} events/s latency_ms_p50/p95/p99={Median(group.Select(r => r.P50Milliseconds)):F1}/{Median(group.Select(r => r.P95Milliseconds)):F1}/{Median(group.Select(r => r.P99Milliseconds)):F1} query_visible={queryVisible}");
         }
-        Console.WriteLine("Full-processing observations include protocol-specific tracking and polling overhead; use the recorded observer counters and server telemetry before attributing a difference to pipeline efficiency.");
     }
 
     private static double Rate(long count, TimeSpan elapsed) => count / Math.Max(elapsed.TotalSeconds, 0.001);
@@ -507,6 +332,7 @@ internal sealed class IngestionLoadRunner
         public long Duplicate;
         public long Blocked;
         public long Invalid;
+        public long Failed;
 
         public void Add(EventIngestionV3Response value)
         {
@@ -516,29 +342,12 @@ internal sealed class IngestionLoadRunner
             Interlocked.Add(ref Duplicate, value.Duplicate);
             Interlocked.Add(ref Blocked, value.Blocked);
             Interlocked.Add(ref Invalid, value.Invalid);
+            Interlocked.Add(ref Failed, value.Failed);
         }
     }
 }
 
-internal sealed record EventPostProcessingStatusRequest(string[] Ids);
-internal sealed record EventPostProcessingSummary(int Requested, int Queued, int Completed, int Unknown);
-internal sealed record EventIngestionV3ProcessingStatusRequest(
-    [property: JsonPropertyName("client_ids")] string[] ClientIds);
-internal sealed record EventIngestionV3ProcessingSummary(int Requested, int Pending, int Completed);
-internal sealed record CompletionObservation(
-    TimeSpan Elapsed,
-    long TrackedIdentifiers,
-    int StatusRequests,
-    long IdentifierReads,
-    int Sweeps);
 internal sealed record QueryVisibilityObservation(TimeSpan Elapsed, long ObservedPersisted, int Requests);
-
-internal enum CompletionIdentifierKind
-{
-    None,
-    EventPost,
-    PersistedEvent
-}
 
 internal sealed record LoadRunResult(
     IngestionProtocol Protocol,
@@ -552,15 +361,8 @@ internal sealed record LoadRunResult(
     long UncompressedBytes,
     long TransferredBytes,
     TimeSpan SubmissionElapsed,
-    TimeSpan ObservedFullProcessingElapsed,
-    TimeSpan? V3DurableAcknowledgementElapsed,
     TimeSpan? QueryVisibleElapsed,
     long ObservedPersisted,
-    CompletionIdentifierKind CompletionIdentifierKind,
-    long CompletionTrackedIdentifiers,
-    int CompletionStatusRequests,
-    long CompletionIdentifierReads,
-    int CompletionSweeps,
     int QueryVisibilityRequests,
     double P50Milliseconds,
     double P95Milliseconds,
@@ -570,7 +372,8 @@ internal sealed record LoadRunResult(
     long Discarded,
     long Duplicate,
     long Blocked,
-    long Invalid);
+    long Invalid,
+    long Failed);
 
 internal sealed record LoadEvidence(
     string SchemaVersion,
@@ -605,5 +408,4 @@ internal sealed record LoadConfiguration(
     string Seed,
     int MessageBytes,
     double TimeoutSeconds,
-    double PollIntervalMilliseconds,
-    int CompletionPollConcurrency);
+    double PollIntervalMilliseconds);

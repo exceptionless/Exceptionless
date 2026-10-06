@@ -11,6 +11,7 @@ namespace Exceptionless.Ingestion.Load;
 
 internal sealed class StreamingEventContent : HttpContent
 {
+    private static readonly JsonSerializerOptions _v3JsonOptions = new JsonSerializerOptions().ConfigureExceptionlessDefaults();
     private static readonly byte[] _arrayStart = [(byte)'['];
     private static readonly byte[] _arrayEnd = [(byte)']'];
     private static readonly byte[] _comma = [(byte)','];
@@ -96,7 +97,7 @@ internal sealed class StreamingEventContent : HttpContent
             {
                 var source = new EventIngestionV3Event
                 {
-                    Id = GetV3ClientId(_runMarker, index),
+                    Id = $"{_runMarker}-{index:D8}-v3",
                     Type = _options.EventType is LoadEventType.Error ? Event.KnownTypes.Error : Event.KnownTypes.Log,
                     Date = _eventDate,
                     Message = _options.Message,
@@ -105,7 +106,7 @@ internal sealed class StreamingEventContent : HttpContent
                     ExceptionType = exceptionType,
                     StackTrace = stackTrace
                 };
-                await JsonSerializer.SerializeAsync(uncompressed, source, EventIngestionJsonContext.Default.EventIngestionV3Event, cancellationToken);
+                await JsonSerializer.SerializeAsync(uncompressed, source, _v3JsonOptions, cancellationToken);
                 await uncompressed.WriteAsync(_newline, cancellationToken);
             }
         }
@@ -120,8 +121,6 @@ internal sealed class StreamingEventContent : HttpContent
         UncompressedBytes = uncompressed.BytesWritten;
         TransferredBytes = transferred.BytesWritten;
     }
-
-    internal static string GetV3ClientId(string runMarker, int index) => $"{runMarker}-{index:D8}-v3";
 }
 
 internal sealed record V2LoadEvent(
