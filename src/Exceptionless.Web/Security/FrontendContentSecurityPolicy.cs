@@ -74,7 +74,7 @@ internal static partial class FrontendContentSecurityPolicy
         ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, siteBaseUrl);
         ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, apiUrl);
 
-        // Stripe Payment Element, 3DS and Link frames; self includes the Scalar request editor.
+        // Stripe Payment Element, 3DS and Link frames.
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-src
         // https://docs.stripe.com/security/guide#content-security-policy
         csp.AllowFrames.FromSelf().From("https://*.stripe.com")
