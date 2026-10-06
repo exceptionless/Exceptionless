@@ -424,23 +424,25 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData(null, null, 0, new[] { "alpha Ordering", "Beta Ordering", "Zulu Ordering" })]
-    [InlineData(null, "stats", 1, new[] { "alpha Ordering", "Beta Ordering", "Zulu Ordering" })]
-    [InlineData("name:Ordering", null, 0, new[] { "Beta Ordering", "Zulu Ordering", "alpha Ordering" })]
-    [InlineData("name:Ordering", "stats", 1, new[] { "Beta Ordering", "Zulu Ordering", "alpha Ordering" })]
-    public async Task GetAllAsync_WithAuthorizedOrganizations_ReturnsNameOrder(string? filter, string? mode, long expectedProjectCount, string[] expectedNames)
+    [InlineData(null, null, 0, new[] { "Alpha Ordering", "Alpha Ordering", "alpha Ordering", "Beta Ordering", "Zulu Ordering" })]
+    [InlineData(null, "stats", 1, new[] { "Alpha Ordering", "Alpha Ordering", "alpha Ordering", "Beta Ordering", "Zulu Ordering" })]
+    [InlineData("name:Ordering", null, 0, new[] { "Alpha Ordering", "Alpha Ordering", "Beta Ordering", "Zulu Ordering", "alpha Ordering" })]
+    [InlineData("name:Ordering", "stats", 1, new[] { "Alpha Ordering", "Alpha Ordering", "Beta Ordering", "Zulu Ordering", "alpha Ordering" })]
+    public async Task GetAllAsync_WithDuplicateOrganizationNames_ReturnsNameThenIdOrder(string? filter, string? mode, long expectedProjectCount, string[] expectedNames)
     {
         // Arrange
         var zulu = new Organization { Name = "Zulu Ordering", PlanId = _plans.FreePlan.Id };
-        var alpha = new Organization { Name = "alpha Ordering", PlanId = _plans.FreePlan.Id };
+        var alpha = new Organization { Id = "650000000000000000000003", Name = "alpha Ordering", PlanId = _plans.FreePlan.Id };
+        var duplicateAlphaHigh = new Organization { Id = "650000000000000000000002", Name = "Alpha Ordering", PlanId = _plans.FreePlan.Id };
+        var duplicateAlphaLow = new Organization { Id = "650000000000000000000001", Name = "Alpha Ordering", PlanId = _plans.FreePlan.Id };
         var beta = new Organization { Name = "Beta Ordering", PlanId = _plans.FreePlan.Id };
         var unauthorized = new Organization { Name = "Aardvark Ordering", PlanId = _plans.FreePlan.Id };
-        await _organizationRepository.AddAsync([zulu, alpha, beta, unauthorized], options => options.ImmediateConsistency());
+        await _organizationRepository.AddAsync([zulu, alpha, beta, duplicateAlphaHigh, duplicateAlphaLow, unauthorized], options => options.ImmediateConsistency());
 
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
         user.OrganizationIds.Clear();
-        user.OrganizationIds.UnionWith([zulu.Id, alpha.Id, beta.Id]);
+        user.OrganizationIds.UnionWith([zulu.Id, alpha.Id, beta.Id, duplicateAlphaHigh.Id, duplicateAlphaLow.Id]);
         await _userRepository.SaveAsync(user, options => options.ImmediateConsistency().Cache());
         await _projectRepository.AddAsync(new Project
         {
@@ -460,6 +462,9 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(organizations);
         Assert.Equal(expectedNames, organizations.Select(organization => organization.Name));
+        Assert.Equal([duplicateAlphaLow.Id, duplicateAlphaHigh.Id], organizations
+            .Where(organization => String.Equals(organization.Name, "Alpha Ordering", StringComparison.Ordinal))
+            .Select(organization => organization.Id));
         Assert.DoesNotContain(organizations, organization => String.Equals(organization.Id, unauthorized.Id, StringComparison.Ordinal));
         Assert.Equal(expectedProjectCount, organizations.Single(organization => String.Equals(organization.Id, beta.Id, StringComparison.Ordinal)).ProjectCount);
     }
