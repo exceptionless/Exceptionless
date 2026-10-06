@@ -131,12 +131,15 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
         if (!String.IsNullOrEmpty(tokenRecord.UserId))
         {
-            var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
+            var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache(false));
             if (user is null)
             {
                 Logger.LogInformation("Could not find user {UserId} for token on {Path}", tokenRecord.UserId, Request.Path);
                 return AuthenticateResult.Fail("Token is not valid");
             }
+
+            if (!user.IsActive || !String.Equals(user.AuthenticationVersion, tokenRecord.AuthenticationVersion, StringComparison.Ordinal))
+                return AuthenticateResult.Fail("Token is not valid");
 
             return AuthenticateResult.Success(CreateUserAuthenticationTicket(user, tokenRecord));
         }
@@ -242,14 +245,14 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (!await _oauthService.IsAccessTokenClientValidAsync(tokenRecord.ClientId))
             return AuthenticateResult.Fail("OAuth client is not valid");
 
-        var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
+        var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache(false));
         if (user is null)
         {
             Logger.LogInformation("Could not find user {UserId} for OAuth token on {Path}", tokenRecord.UserId, Request.Path);
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (!user.IsActive)
+        if (!user.IsActive || !String.Equals(user.AuthenticationVersion, tokenRecord.AuthenticationVersion, StringComparison.Ordinal))
         {
             await DisableOAuthTokenAsync(tokenRecord);
             return AuthenticateResult.Fail("User is not valid");
