@@ -86,8 +86,33 @@ public sealed class CspResponseTests(ITestOutputHelper output) : TestWithLogging
         Assert.DoesNotContain("cdn.jsdelivr.net", firstBody);
     }
 
+    [Fact]
+    public async Task Configure_ConfiguredOrigins_RestrictsConnectionsWithoutTrustingRequestHeaders()
+    {
+        // Arrange
+        using IHost host = await CreateMiddlewareHostAsync(siteBaseUrl: "https://site.localhost:8111", apiUrl: "https://api.localhost:9443/backend?ignored=true");
+        using HttpClient client = host.GetTestClient();
+        client.DefaultRequestHeaders.Host = "poisoned.localhost:4444";
+        client.DefaultRequestHeaders.Add("X-Forwarded-Host", "forwarded.localhost:5555");
+        client.DefaultRequestHeaders.Add("Forwarded", "host=forwarded.localhost:5555;proto=http");
+
+        // Act
+        using HttpResponseMessage response = await client.GetAsync("/docs/", TestContext.Current.CancellationToken);
+        string policy = response.Headers.GetValues("Content-Security-Policy").Single();
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        string connections = Assert.Single(policy.Split(';').Select(directive => directive.Trim()), directive => directive.StartsWith("connect-src ", StringComparison.Ordinal));
+        Assert.Equal([
+            "connect-src", "'self'", "https://*.exceptionless.io", "https://api.stripe.com",
+            "https://link.com", "https://*.link.com", "https://*.intercom.io", "wss://*.intercom.io",
+            "https://*.intercom-messenger.com", "wss://*.intercom-messenger.com",
+            "https://site.localhost:8111", "wss://site.localhost:8111", "https://api.localhost:9443", "wss://api.localhost:9443"
+        ], connections.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+    }
+
     // Exercise the middleware boundary without starting unrelated databases or copying app routing.
-    private async Task<IHost> CreateMiddlewareHostAsync(string? webRoot = null)
+    private async Task<IHost> CreateMiddlewareHostAsync(string? webRoot = null, string? siteBaseUrl = null, string? apiUrl = null)
     {
         IHost host = Host.CreateDefaultBuilder()
             .ConfigureServices(services => services.AddSingleton<ILoggerFactory>(Log))
@@ -104,7 +129,8 @@ public sealed class CspResponseTests(ITestOutputHelper output) : TestWithLogging
                     .Configure(app =>
                     {
                         var environment = app.ApplicationServices.GetRequiredService<IWebHostEnvironment>();
-                        app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, environment.WebRootFileProvider, upgradeInsecureRequests: true));
+                        app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, environment.WebRootFileProvider,
+                            upgradeInsecureRequests: true, siteBaseUrl, apiUrl));
                         app.UseStaticFiles();
                         app.UseRouting();
                         app.UseEndpoints(endpoints => endpoints.MapScalarApiReference("/docs", (options, context) =>

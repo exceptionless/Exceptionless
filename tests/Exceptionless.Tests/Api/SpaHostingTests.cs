@@ -1,16 +1,17 @@
 using System.Net;
 using Exceptionless.Tests.Extensions;
+using Foundatio.Xunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace Exceptionless.Tests.Api;
 
-public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
+public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebHostFactory>
 {
     private readonly AppWebHostFactory _factory;
 
-    public SpaHostingTests(AppWebHostFactory factory) => _factory = factory;
+    public SpaHostingTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output) => _factory = factory;
 
     [Theory]
     [InlineData("/login")]
@@ -72,7 +73,7 @@ public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
     }
 
     [Fact]
-    public async Task GetAsync_ConfiguredApiOrigin_UsesOpenConnectionsAndStrictScripts()
+    public async Task GetAsync_ConfiguredApiOrigin_UsesRestrictedConnectionsAndStrictScripts()
     {
         // Arrange
         const string apiUrl = "https://localhost:9443/backend?ignored=true";
@@ -89,10 +90,14 @@ public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
         string policy = Assert.Single(response.Headers.GetValues("Content-Security-Policy"));
         string connections = Assert.Single(policy.Split(';'), directive => directive.StartsWith("connect-src ", StringComparison.Ordinal));
         string[] sources = connections.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal(["connect-src", "*", "ws:"], sources);
+        Assert.DoesNotContain("*", sources);
+        Assert.DoesNotContain("ws:", sources);
+        Assert.DoesNotContain("wss:", sources);
+        Assert.Contains("https://localhost:9443", sources);
+        Assert.Contains("wss://localhost:9443", sources);
         Assert.DoesNotContain(apiUrl, sources);
 
-        // Open connections must not weaken script execution restrictions.
+        // Connection configuration must not weaken script execution restrictions.
         string scripts = Assert.Single(policy.Split(';'), directive => directive.StartsWith("script-src ", StringComparison.Ordinal));
         string[] scriptSources = scripts.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         Assert.DoesNotContain("'unsafe-inline'", scriptSources);
