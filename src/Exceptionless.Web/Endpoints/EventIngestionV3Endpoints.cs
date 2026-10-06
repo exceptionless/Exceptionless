@@ -212,8 +212,28 @@ public static class EventIngestionV3Endpoints
         AppDiagnostics.IngestionV3ActiveStreams.Add(1);
         try
         {
-            while (await reader.ReadAsync(cancellationToken) is { } record)
+            BodyRejection? failure = null;
+            while (true)
             {
+                EventIngestionV3StreamRecord? next;
+                try
+                {
+                    next = await reader.ReadAsync(cancellationToken);
+                }
+                catch (Exception ex) when (ex is JsonException or InvalidDataException)
+                {
+                    failure = GetBodyRejection(limitedBody, compressedBodyState) ?? (ex is JsonException
+                        ? new BodyRejection(StatusCodes.Status400BadRequest, "The request body is not a valid JSON array of events.", ex.Message)
+                        : new BodyRejection(StatusCodes.Status400BadRequest, "The compressed request body is invalid.", ex.Message));
+                    break;
+                }
+
+                if (next is not { } record)
+                {
+                    failure = GetBodyRejection(limitedBody, compressedBodyState);
+                    break;
+                }
+
                 if (record.Event is null)
                 {
                     response.Received++;
@@ -237,28 +257,17 @@ public static class EventIngestionV3Endpoints
                 }
             }
 
-            if (GetBodyRejection(limitedBody, compressedBodyState) is { } rejection)
-            {
-                return Problem(response, rejection.StatusCode, rejection.Reason);
-            }
-
+            // Events that were completely read before a problem with the body are still processed
+            // and reported in partial_result.
             if (batch.Count > 0)
             {
                 await ProcessBatchAsync();
             }
-        }
-        catch (Exception ex) when ((ex is JsonException or InvalidDataException) && GetBodyRejection(limitedBody, compressedBodyState) is not null)
-        {
-            var rejection = GetBodyRejection(limitedBody, compressedBodyState)!;
-            return Problem(response, rejection.StatusCode, rejection.Reason);
-        }
-        catch (JsonException ex)
-        {
-            return Problem(response, StatusCodes.Status400BadRequest, "The request body is not a valid JSON array of events.", ex.Message);
-        }
-        catch (InvalidDataException ex)
-        {
-            return Problem(response, StatusCodes.Status400BadRequest, "The compressed request body is invalid.", ex.Message);
+
+            if (failure is not null)
+            {
+                return Problem(response, failure.StatusCode, failure.Reason, failure.Detail);
+            }
         }
         catch (ProcessingCapacityUnavailableException)
         {
@@ -394,7 +403,7 @@ public static class EventIngestionV3Endpoints
         return Results.Problem(statusCode: statusCode, title: title, detail: detail, extensions: extensions);
     }
 
-    private sealed record BodyRejection(int StatusCode, string? Reason);
+    private sealed record BodyRejection(int StatusCode, string? Reason, string? Detail = null);
 
     private sealed class ProcessingCapacityUnavailableException : Exception;
 }

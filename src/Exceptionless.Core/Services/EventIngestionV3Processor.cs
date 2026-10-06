@@ -63,32 +63,33 @@ public sealed class EventIngestionV3Processor(
             pending.Add(new PendingEvent(record, ToPersistentEvent(record.Event, receivedDate), idempotencyKey));
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         pending = await RemoveDuplicatesAsync(pending, response);
         if (pending.Count == 0)
         {
             return RecordOutcome(response);
         }
 
-        cancellationToken.ThrowIfCancellationRequested();
-
-        int eventsLeft = Math.Max(await usageService.GetEventsLeftAsync(organization.Id), 0);
-        if (eventsLeft < pending.Count)
-        {
-            var blocked = pending.GetRange(eventsLeft, pending.Count - eventsLeft);
-            pending.RemoveRange(eventsLeft, blocked.Count);
-            response.Blocked = blocked.Count;
-            await usageService.IncrementBlockedAsync(organization.Id, project.Id, blocked.Count);
-            await ReleaseIdempotencyKeysAsync(blocked);
-        }
-
-        if (pending.Count == 0)
-        {
-            return RecordOutcome(response);
-        }
-
+        // From here until the pipeline returns, any failure releases the claimed ids so a resend
+        // of these events is processed instead of being acknowledged as a duplicate.
         ICollection<EventContext> contexts;
         try
         {
+            int eventsLeft = Math.Max(await usageService.GetEventsLeftAsync(organization.Id), 0);
+            if (eventsLeft < pending.Count)
+            {
+                var blocked = pending.GetRange(eventsLeft, pending.Count - eventsLeft);
+                pending.RemoveRange(eventsLeft, blocked.Count);
+                response.Blocked = blocked.Count;
+                await ReleaseIdempotencyKeysAsync(blocked);
+                await usageService.IncrementBlockedAsync(organization.Id, project.Id, blocked.Count);
+            }
+
+            if (pending.Count == 0)
+            {
+                return RecordOutcome(response);
+            }
+
             contexts = await eventPipeline.RunAsync(pending.Select(p => p.Event), organization, project, eventPostInfo);
         }
         catch
@@ -128,6 +129,8 @@ public sealed class EventIngestionV3Processor(
             }
         }
 
+        await ReleaseIdempotencyKeysAsync(released);
+
         // Match EventPostsJob usage accounting for events that completed the pipeline.
         if (response.Persisted > 0)
         {
@@ -140,7 +143,6 @@ public sealed class EventIngestionV3Processor(
             await usageService.IncrementDiscardedAsync(organization.Id, project.Id, discardedByRule);
         }
 
-        await ReleaseIdempotencyKeysAsync(released);
         return RecordOutcome(response);
     }
 
@@ -214,7 +216,18 @@ public sealed class EventIngestionV3Processor(
 
         // A key is claimed before processing and released again when the event is not stored,
         // so a resend after a failure is processed while a resend after success is a duplicate.
-        bool[] claimed = await Task.WhenAll(keyed.Select(p => cacheClient.AddAsync(p.IdempotencyKey!, true, options.EventIngestionV3.IdempotencyWindow)));
+        bool[] claimed;
+        try
+        {
+            claimed = await Task.WhenAll(keyed.Select(p => cacheClient.AddAsync(p.IdempotencyKey!, true, options.EventIngestionV3.IdempotencyWindow)));
+        }
+        catch
+        {
+            // Some claims may have succeeded. Releasing them can at worst allow a duplicate,
+            // while keeping them could drop the events when they are resent.
+            await ReleaseIdempotencyKeysAsync(keyed);
+            throw;
+        }
         var duplicates = new HashSet<PendingEvent>(ReferenceEqualityComparer.Instance);
         for (int index = 0; index < keyed.Count; index++)
         {
