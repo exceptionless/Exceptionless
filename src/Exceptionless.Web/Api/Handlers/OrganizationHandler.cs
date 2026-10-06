@@ -58,6 +58,8 @@ public class OrganizationHandler(
             return Result<IReadOnlyCollection<ViewOrganization>>.Success(Array.Empty<ViewOrganization>());
 
         var sf = new AppFilter(organizations) { IsUserOrganizationsFilter = true };
+        // Match the repository's Name/Id sort priority. Unlike its case-sensitive name.keyword field,
+        // the unfiltered list compares names case-insensitively.
         organizations = String.IsNullOrWhiteSpace(message.Filter)
             ? organizations.OrderBy(organization => organization.Name, StringComparer.OrdinalIgnoreCase).ThenBy(organization => organization.Id, StringComparer.Ordinal).ToList()
             : (await repository.GetByFilterAsync(sf, message.Filter, null, o => o.PageLimit(Pagination.MaximumSkip))).Documents;
