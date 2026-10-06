@@ -1,7 +1,7 @@
+using System.Runtime.CompilerServices;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
-using System.Runtime.CompilerServices;
 
 namespace Exceptionless.Core.Services;
 
@@ -26,6 +26,14 @@ public sealed class AuthService
         ArgumentNullException.ThrowIfNull(logger);
 
         _cache = new ScopedCacheClient(cacheClient, "Auth");
+
+        // Foundatio 13.0.4's in-memory conditional mutations are not atomic. Keep this
+        // workaround until FoundatioFx/Foundatio#570 is released and verified. Scope
+        // wrappers must share the underlying cache's lock; Redis uses its own atomic
+        // operations. This lock never covers repository access or password hashing.
+        while (cacheClient is ScopedCacheClient scopedCache)
+            cacheClient = scopedCache.UnscopedCache;
+
         _inMemoryMutationLock = cacheClient is InMemoryCacheClient ? InMemoryMutationLocks.GetValue(cacheClient, _ => new SemaphoreSlim(1, 1)) : null;
         _timeProvider = timeProvider;
         _logger = logger;
@@ -85,6 +93,11 @@ public sealed class AuthService
     {
         ArgumentNullException.ThrowIfNull(attempt);
 
+        // Claim the outcome before cache I/O. A failed or ambiguous write must not
+        // let disposal refund a password that was already checked and found wrong.
+        if (!attempt.TryComplete())
+            return;
+
         var remaining = attempt.ExpiresUtc - _timeProvider.GetUtcNow().UtcDateTime;
         if (remaining <= TimeSpan.Zero)
             return;
@@ -97,6 +110,9 @@ public sealed class AuthService
     public async Task RecordLoginSuccessAsync(LoginAttempt attempt)
     {
         ArgumentNullException.ThrowIfNull(attempt);
+
+        if (!attempt.TryComplete())
+            return;
 
         await ReleaseCacheKeysAsync(attempt.CacheKeys, attempt.Reservation);
         await RemoveFailuresAsync(attempt.ObservedFailures);
@@ -220,11 +236,13 @@ public sealed class AuthService
         => Enumerable.Range(0, IpAddressFailureLimit).Select(index => $"ip:{ipAddress}:attempts:{expiresUtc.Ticks}:{index}").ToArray();
 
     /// <summary>
-    /// Owns one login admission reservation and releases unfinished entries when disposed.
+    /// Owns one login admission reservation. Only an unfinished check is released by disposal;
+    /// a known failure remains charged until expiration even when recording its outcome fails.
     /// </summary>
     public sealed class LoginAttempt : IAsyncDisposable
     {
         private readonly Func<Task> _releaseAsync;
+        private int _completed;
 
         internal LoginAttempt(DateTime expiresUtc, string[] cacheKeys, string reservation, KeyValuePair<string, string>[] observedFailures, Func<Task> releaseAsync)
         {
@@ -240,6 +258,8 @@ public sealed class AuthService
         internal string Reservation { get; }
         internal KeyValuePair<string, string>[] ObservedFailures { get; }
 
-        public ValueTask DisposeAsync() => new(_releaseAsync());
+        internal bool TryComplete() => Interlocked.CompareExchange(ref _completed, 1, 0) == 0;
+
+        public ValueTask DisposeAsync() => TryComplete() ? new(_releaseAsync()) : ValueTask.CompletedTask;
     }
 }
