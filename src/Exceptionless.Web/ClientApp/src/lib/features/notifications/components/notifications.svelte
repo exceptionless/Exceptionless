@@ -97,7 +97,9 @@
 
     const queryTarget = $derived<SystemNotificationTarget>(normalizeSystemNotificationTarget(currentNotificationQuery.data?.target));
     const effectiveTarget = $derived(hasRealtimeSystemNotification ? systemTarget : queryTarget);
-    const showForModern = $derived(effectiveTarget === 'Both' || effectiveTarget === 'Modern');
+    // Existing notifications and WebSocket messages retain their public target values.
+    // Do not surface a previously hidden banner merely because the other UI was removed.
+    const showSystemNotification = $derived(effectiveTarget === 'Both' || effectiveTarget === 'Modern');
 
     const displayMessage = $derived(
         hasRealtimeSystemNotification ? systemMessage || fallbackMessage : currentNotificationQuery.data?.message || fallbackMessage
@@ -140,7 +142,7 @@
     });
 </script>
 
-{#if displayMessage && showForModern && systemNotificationKey !== dismissedSystemNotificationKey}
+{#if displayMessage && showSystemNotification && systemNotificationKey !== dismissedSystemNotificationKey}
     {@const LevelIcon = levelIconMap[displayLevel]}
     <Notification variant={levelVariantMap[displayLevel]} role="alert" aria-live="assertive" class="mb-4">
         {#snippet icon()}

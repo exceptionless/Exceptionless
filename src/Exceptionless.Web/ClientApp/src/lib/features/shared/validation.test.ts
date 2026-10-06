@@ -33,14 +33,27 @@ describe('getProblemMessage', () => {
 });
 
 describe('problemDetailsToFormErrors', () => {
-    it('uses the resolved problem message for non-validation form errors', () => {
-        const problem = {
-            status: 400,
-            title: 'An organization cannot be deleted if it has a subscription.'
-        };
+    it.each([{ status: 400 }, { status: 422 }, { errors: {}, status: 422 }, { errors: { version: [] }, status: 422 }])(
+        'shows the problem message when there are no field errors: %j',
+        (details) => {
+            const problem = {
+                ...details,
+                title: 'An organization cannot be deleted if it has a subscription.'
+            };
 
-        expect(problemDetailsToFormErrors(problem as never)).toEqual({
-            form: 'An organization cannot be deleted if it has a subscription.'
-        });
+            expect(problemDetailsToFormErrors(problem as never)).toEqual({
+                form: 'An organization cannot be deleted if it has a subscription.'
+            });
+        }
+    );
+
+    it('preserves specific field errors without adding the generic title', () => {
+        expect(
+            problemDetailsToFormErrors({
+                errors: { version: ['Version is invalid.'] },
+                status: 422,
+                title: 'Validation failed.'
+            } as never)
+        ).toEqual({ fields: { version: 'Version is invalid.' } });
     });
 });

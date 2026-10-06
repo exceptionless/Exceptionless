@@ -42,7 +42,7 @@ test('OAuth applications default to authorized and expose configuration and orga
     });
 
     const initialRequest = page.waitForRequest((request) => request.url().includes('/api/v2/admin/oauth-applications?'));
-    await page.goto('/next/system/oauth-applications');
+    await page.goto('/system/oauth-applications');
     const params = new URL((await initialRequest).url()).searchParams;
     expect(params.get('authorized')).toBe('true');
     expect(params.get('sort')).toBe('-updated_utc');
@@ -62,11 +62,11 @@ test('OAuth applications default to authorized and expose configuration and orga
     await expect(page.getByRole('button', { name: /copy/i })).toHaveCount(0);
     await expect(page.getByRole('link', { exact: true, name: 'Edit application' })).toHaveAttribute(
         'href',
-        `/next/system/oauth-applications/${authorizedApplication.id}`
+        `/system/oauth-applications/${authorizedApplication.id}`
     );
     await expect(page.getByRole('link', { exact: true, name: 'Second authorized organization' })).toHaveAttribute(
         'href',
-        '/next/organization/000000000000000000000103/manage'
+        '/organization/000000000000000000000103/manage'
     );
 
     await page.screenshot({ fullPage: true, path: test.info().outputPath('oauth-application-details.png') });
@@ -88,5 +88,5 @@ test('OAuth applications default to authorized and expose configuration and orga
     await expect(page.getByRole('button', { name: 'Filter by authorization' })).toHaveText('All applications');
 
     await page.getByRole('link', { exact: true, name: e2eScenario.organizationName }).click();
-    await expect(page).toHaveURL(new RegExp(`/next/organization/${e2eScenario.organizationId}/manage`));
+    await expect(page).toHaveURL(new RegExp(`/organization/${e2eScenario.organizationId}/manage`));
 });

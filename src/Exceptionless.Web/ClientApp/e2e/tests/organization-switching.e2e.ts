@@ -26,7 +26,7 @@ test('operator can switch organizations without leaking event data', async ({ e2
     });
 
     await test.step('show only the active organization data', async () => {
-        await page.goto('/next/event?time=all');
+        await page.goto('/event?time=all');
 
         await expect(getVisibleText(page, e2eScenario.message)).toBeVisible({ timeout: 30_000 });
         await expect(getVisibleText(page, e2eSecondaryOrganization.message)).toBeHidden();
@@ -39,7 +39,7 @@ test('operator can switch organizations without leaking event data', async ({ e2
             .poll(async () => page.evaluate(() => JSON.parse(window.localStorage.getItem('organization') ?? 'null')))
             .toBe(e2eSecondaryOrganization.organizationId);
 
-        await page.goto('/next/event?time=all');
+        await page.goto('/event?time=all');
 
         await expect(getVisibleText(page, e2eSecondaryOrganization.message)).toBeVisible({ timeout: 30_000 });
         await expect(getVisibleText(page, e2eScenario.message)).toBeHidden();
