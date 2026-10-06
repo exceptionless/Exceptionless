@@ -392,11 +392,19 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeCreated()
         );
 
+        var organizations = await SendRequestAsAsync<IReadOnlyCollection<ViewOrganization>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations")
+            .StatusCodeShouldBeOk());
+
         // Assert
         Assert.NotNull(organizationView);
         Assert.NotNull(organizationView.Id);
         Assert.Equal("Test Organization", organizationView.Name);
         Assert.True(organizationView.CreatedUtc > DateTime.MinValue);
+        Assert.NotNull(organizations);
+        Assert.Contains(organizations, candidate => String.Equals(candidate.Id, organizationView.Id, StringComparison.Ordinal)
+            && String.Equals(candidate.Name, newOrganization.Name, StringComparison.Ordinal));
 
         var organization = await _organizationRepository.GetByIdAsync(organizationView.Id);
         Assert.NotNull(organization);
@@ -459,10 +467,10 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(organizations);
-        Assert.Equal([alpha.Id, beta.Id, zulu.Id], organizations.Select(organization => organization.Id));
-        Assert.Equal(["alpha Ordering", "Beta Ordering", "Zulu Ordering"], organizations.Select(organization => organization.Name));
-        Assert.DoesNotContain(organizations, organization => organization.Id == unauthorized.Id);
-        Assert.Equal(expectedProjectCount, organizations.Single(organization => organization.Id == beta.Id).ProjectCount);
+        Assert.Equal([beta.Id, zulu.Id, alpha.Id], organizations.Select(organization => organization.Id));
+        Assert.Equal(["Beta Ordering", "Zulu Ordering", "alpha Ordering"], organizations.Select(organization => organization.Name));
+        Assert.DoesNotContain(organizations, organization => String.Equals(organization.Id, unauthorized.Id, StringComparison.Ordinal));
+        Assert.Equal(expectedProjectCount, organizations.Single(organization => String.Equals(organization.Id, beta.Id, StringComparison.Ordinal)).ProjectCount);
     }
 
     [Fact]
@@ -2746,10 +2754,18 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeOk()
         );
 
+        var organizations = await SendRequestAsAsync<IReadOnlyCollection<ViewOrganization>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPath("organizations")
+            .StatusCodeShouldBeOk());
+
         // Assert
         Assert.NotNull(updated);
         Assert.Equal(SampleDataService.TEST_ORG_ID, updated.Id);
         Assert.Equal("Updated Acme", updated.Name);
+        Assert.NotNull(organizations);
+        Assert.Contains(organizations, organization => String.Equals(organization.Id, updated.Id, StringComparison.Ordinal)
+            && String.Equals(organization.Name, "Updated Acme", StringComparison.Ordinal));
         Assert.True(updated.UpdatedUtc >= originalOrg.UpdatedUtc);
 
         var persisted = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
