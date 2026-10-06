@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Security.Claims;
-using System.Text;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
@@ -125,7 +124,6 @@ public partial class Program
             builder.Services.AddAppOptions(options);
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddCsp(nonceByteAmount: 32);
-            builder.Services.AddSingleton<FrontendScriptNonces>();
 
             builder.Services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
@@ -269,7 +267,7 @@ public partial class Program
             if (ssl)
                 app.UseHttpsRedirection();
 
-            app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, options.BaseURL));
+            app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, app.Environment.WebRootFileProvider, options.AppMode != AppMode.Development));
 
             app.UseSerilogRequestLogging(o =>
             {
@@ -294,9 +292,9 @@ public partial class Program
                 };
             });
 
-            app.UseDefaultFiles();
-            app.Use(InjectCspNonceAsync);
             app.UseStaticFiles();
+            app.UseDefaultFiles();
+            app.UseFileServer();
             app.UseRouting();
             app.UseMiddleware<McpOriginValidationMiddleware>();
             app.UseCors("AllowAny");
@@ -380,73 +378,6 @@ public partial class Program
         return TypedResults
             .Problem(statusCode: statusCodeContext.HttpContext.Response.StatusCode)
             .ExecuteAsync(statusCodeContext.HttpContext);
-    }
-
-    internal static async Task InjectCspNonceAsync(HttpContext context, RequestDelegate next)
-    {
-        bool isHead = HttpMethods.IsHead(context.Request.Method);
-        bool hasNonHtmlExtension = Path.HasExtension(context.Request.Path)
-            && !context.Request.Path.Value!.EndsWith(".html", StringComparison.OrdinalIgnoreCase);
-
-        if ((!HttpMethods.IsGet(context.Request.Method) && !isHead)
-            || context.Request.Path.StartsWithSegments("/api")
-            || context.Request.Path.StartsWithSegments("/mcp")
-            || hasNonHtmlExtension)
-        {
-            await next(context);
-            return;
-        }
-
-        // Each HTML response needs a new nonce, so cached or partial bodies cannot be reused.
-        context.Request.Headers.Remove(HeaderNames.IfNoneMatch);
-        context.Request.Headers.Remove(HeaderNames.IfModifiedSince);
-        context.Request.Headers.Remove(HeaderNames.Range);
-        context.Request.Headers.Remove(HeaderNames.IfRange);
-
-        Stream responseBody = context.Response.Body;
-        await using var buffer = new MemoryStream();
-        context.Response.Body = buffer;
-
-        try
-        {
-            await next(context);
-
-            buffer.Position = 0;
-            if (context.Response.StatusCode != StatusCodes.Status200OK
-                || context.Response.ContentType?.StartsWith("text/html", StringComparison.OrdinalIgnoreCase) is not true)
-            {
-                context.Response.Body = responseBody;
-                await buffer.CopyToAsync(context.Response.Body, context.RequestAborted);
-                return;
-            }
-
-            context.Response.Headers.CacheControl = "no-store";
-            context.Response.Headers.Remove(HeaderNames.ETag);
-            context.Response.Headers.Remove(HeaderNames.LastModified);
-            context.Response.Headers.Remove(HeaderNames.AcceptRanges);
-            context.Response.Headers.Remove(HeaderNames.ContentRange);
-
-            if (isHead)
-            {
-                context.Response.ContentLength = null;
-                return;
-            }
-
-            using var reader = new StreamReader(buffer, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true);
-            string html = await reader.ReadToEndAsync(context.RequestAborted);
-            string responseHtml = context.RequestServices.GetRequiredService<FrontendScriptNonces>()
-                .AddNonce(html, context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce());
-            byte[] responseBytes = Encoding.UTF8.GetBytes(responseHtml);
-
-            context.Response.ContentLength = responseBytes.Length;
-
-            context.Response.Body = responseBody;
-            await context.Response.Body.WriteAsync(responseBytes, context.RequestAborted);
-        }
-        finally
-        {
-            context.Response.Body = responseBody;
-        }
     }
 
     internal static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
