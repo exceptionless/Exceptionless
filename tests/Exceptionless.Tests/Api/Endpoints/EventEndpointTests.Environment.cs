@@ -1,0 +1,175 @@
+using System.Text.Json;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Models;
+using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Utility;
+using Foundatio.Jobs;
+using Foundatio.Repositories.Models;
+using Xunit;
+
+namespace Exceptionless.Tests.Api.Endpoints;
+
+public partial class EventEndpointTests
+{
+    [Theory]
+    [InlineData("{\"region\":\"west\"}", null, "environment")]
+    [InlineData("{\"region\":\"west\"}", null, "Environment")]
+    [InlineData("\"west\"", "west", "environment")]
+    [InlineData("\" Production \"", "Production", "environment")]
+    [InlineData("\" Production \"", "Production", "ENVIRONMENT")]
+    [InlineData("\"   \"", null, "environment")]
+    [InlineData("\"bad\\nenvironment\"", null, "environment")]
+    public async Task PostEvent_LegacyRootEnvironment_PreservesCustomDataThroughStorageAndApi(string environment, string? expected, string propertyName)
+    {
+        await SendRequestAsync(request => request.Post()
+            .AsTestOrganizationClientUser().AppendPath("events")
+            .Content(new Dictionary<string, object?>
+            {
+                ["type"] = "log",
+                ["message"] = "Legacy environment metadata",
+                ["reference_id"] = "legacy-environment-reference",
+                [propertyName] = JsonSerializer.Deserialize<JsonElement>(environment)
+            }).StatusCodeShouldBeAccepted());
+
+        await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        var events = await SendRequestAsAsync<List<PersistentEvent>>(request => request
+            .AsTestOrganizationUser().AppendPath("events")
+            .QueryString("filter", "reference:legacy-environment-reference").StatusCodeShouldBeOk());
+        var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(events));
+        Assert.Equal(expected, ev.Environment);
+        Assert.NotNull(ev.Data);
+        Assert.Contains(propertyName, ev.Data.Keys, StringComparer.Ordinal);
+        Assert.True(JsonElement.DeepEquals(JsonSerializer.Deserialize<JsonElement>(environment), JsonSerializer.SerializeToElement(ev.Data["environment"])));
+        Assert.False(ev.Data.ContainsKey("environment1"));
+    }
+
+    [Theory]
+    [InlineData(" Production ", "Production", "environment")]
+    [InlineData(" Production ", "Production", "Environment")]
+    [InlineData("preview-42", "preview-42", "environment")]
+    [InlineData("   ", null, "environment")]
+    [InlineData("bad\nenvironment", null, "environment")]
+    [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm", null, "environment")]
+    public async Task GetSubmitEvent_EnvironmentParameter_TrimsAndPreservesCasing(string environment, string? expected, string propertyName)
+    {
+        await SendRequestAsync(request => request
+            .AsTestOrganizationClientUser().AppendPaths("events", "submit")
+            .QueryString("message", "GET environment submission")
+            .QueryString("reference", "get-environment-reference")
+            .QueryString(propertyName, environment).StatusCodeShouldBeOk());
+
+        await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        var ev = Assert.Single((await _eventRepository.GetAllAsync()).Documents,
+            item => item.ReferenceId == "get-environment-reference");
+        Assert.Equal(expected, ev.Environment);
+        Assert.NotNull(ev.Data);
+        Assert.Contains(propertyName, ev.Data.Keys, StringComparer.Ordinal);
+        Assert.Equal(environment, ev.Data["environment"]);
+        Assert.False(ev.Data.ContainsKey("environment1"));
+    }
+
+    [Fact]
+    public async Task GetStacks_EnvironmentFilter_ScopesUserCountsAndTheirCache()
+    {
+        await CreateDataAsync(data =>
+        {
+            var first = data.Event().FreeProject().Type(Event.KnownTypes.Error).Mutate(ev => { ev.Environment = "production"; ev.SetUserIdentity("production-0"); });
+            for (int i = 1; i < 12; i++)
+            {
+                string identity = $"production-{i}";
+                data.Event().FreeProject().Type(Event.KnownTypes.Error).Stack(first).Mutate(ev => { ev.Environment = "production"; ev.SetUserIdentity(identity); });
+            }
+            data.Event().FreeProject().Type(Event.KnownTypes.Error).Stack(first).Mutate(ev => { ev.Environment = "staging"; ev.SetUserIdentity("staging-user"); });
+            data.Event().FreeProject().Type(Event.KnownTypes.Log).Mutate(ev => { ev.Environment = "production"; ev.SetUserIdentity("unaffected-production-user"); });
+            data.Event().FreeProject().Type(Event.KnownTypes.Error).Stack(first).Mutate(ev => { ev.Environment = "development"; ev.SetUserIdentity("development-user"); });
+            data.Event().FreeProject().Type(Event.KnownTypes.Log).Mutate(ev => { ev.Environment = "development"; ev.SetUserIdentity("unaffected-development-user"); });
+            data.Event().FreeProject().Type(Event.KnownTypes.Error).Stack(first).Mutate(ev => ev.SetUserIdentity("unspecified-user"));
+            data.Event().FreeProject().Type(Event.KnownTypes.Log).Mutate(ev => ev.SetUserIdentity("unaffected-unspecified-user"));
+        });
+
+        foreach (var (filter, expected, totalUsers) in new[]
+        {
+            ("environment:production", 12, 13), ("environment:staging", 1, 1), ("environment:production", 12, 13),
+            ("environment:(production OR staging)", 13, 14), ("_missing_:environment", 1, 2), ("_exists_:environment", 14, 16),
+            ("(_missing_:environment OR environment:production)", 13, 15), ("", 15, 18)
+        })
+        {
+            var stacks = await SendRequestAsAsync<List<StackSummaryModel>>(request => request
+                .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "stack_frequent")
+                .QueryString("filter", $"type:error {filter}").StatusCodeShouldBeOk());
+            var stack = Assert.Single(Assert.IsType<List<StackSummaryModel>>(stacks));
+            Assert.Equal(expected, stack.Total);
+            Assert.Equal(expected, stack.Users);
+            Assert.Equal(totalUsers, stack.TotalUsers);
+        }
+    }
+
+    [Theory]
+    [InlineData("environment")]
+    [InlineData("Environment")]
+    public async Task GetSubmitEvent_RepeatedEnvironments_PreservesCollectionWithoutDuplicateData(string propertyName)
+    {
+        await SendRequestAsync(request => request
+            .AsTestOrganizationClientUser().AppendPaths("events", "submit")
+            .QueryString("message", "Repeated GET environments")
+            .QueryString("reference", "repeated-environment-reference")
+            .QueryStrings(propertyName, new[] { " Production ", "staging" }).StatusCodeShouldBeOk());
+
+        await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        var ev = Assert.Single((await _eventRepository.GetAllAsync()).Documents,
+            item => item.ReferenceId == "repeated-environment-reference");
+        Assert.Equal("Production", ev.Environment);
+        Assert.NotNull(ev.Data);
+        Assert.Contains(propertyName, ev.Data.Keys, StringComparer.Ordinal);
+        Assert.Equal(new[] { " Production ", "staging" }, JsonSerializer.SerializeToElement(ev.Data[propertyName]).EnumerateArray().Select(value => value.GetString()));
+        Assert.False(ev.Data.ContainsKey("environment1"));
+    }
+
+    [Fact]
+    public async Task GetEvents_EnvironmentOnFreePlan_FiltersEventsSummariesAndStacks()
+    {
+        await CreateDataAsync(data =>
+        {
+            var production = data.Event().FreeProject().Mutate(ev => ev.Environment = " Production ");
+            data.Event().FreeProject().Stack(production).Mutate(ev => ev.Environment = "production");
+            data.Event().FreeProject().Stack(production).Mutate(ev => ev.Environment = "staging");
+            data.Event().FreeProject().Stack(production);
+            data.Event().TestProject().Mutate(ev => ev.Environment = "private-environment");
+        });
+
+        var events = await SendRequestAsAsync<List<PersistentEvent>>(request => request
+            .AsFreeOrganizationUser().AppendPath("events")
+            .QueryString("filter", "environment:PRODUCTION").StatusCodeShouldBeOk());
+        Assert.Equal(new[] { "Production", "production" }, Assert.IsType<List<PersistentEvent>>(events).Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
+
+        var summaries = await SendRequestAsAsync<List<EventSummaryModel>>(request => request
+            .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "summary")
+            .QueryString("filter", "environment:production").StatusCodeShouldBeOk());
+        Assert.Equal(new[] { "Production", "production" }, Assert.IsType<List<EventSummaryModel>>(summaries).Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
+
+        var stacks = await SendRequestAsAsync<List<StackSummaryModel>>(request => request
+            .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "stack_frequent")
+            .QueryString("filter", "environment:production").StatusCodeShouldBeOk());
+        Assert.Equal(2, Assert.Single(Assert.IsType<List<StackSummaryModel>>(stacks)).Total);
+
+        var missing = await SendRequestAsAsync<List<PersistentEvent>>(request => request
+            .AsFreeOrganizationUser().AppendPath("events")
+            .QueryString("filter", "_missing_:environment").StatusCodeShouldBeOk());
+        Assert.Null(Assert.Single(Assert.IsType<List<PersistentEvent>>(missing)).Environment);
+
+        var count = await SendRequestAsAsync<CountResult>(request => request
+            .AsFreeOrganizationUser().AppendPaths("events", "count")
+            .QueryString("aggregations", "terms:(environment~100)").StatusCodeShouldBeOk());
+        Assert.NotNull(count);
+        Assert.Equal(4, count.Total);
+        Assert.Equal(new[] { "production", "staging" }, count.Aggregations.Terms<string>("terms_environment")!.Buckets.Select(bucket => bucket.Key).Order().ToArray());
+        Assert.Equal(2, count.Aggregations.Terms<string>("terms_environment")!.Buckets.Single(bucket => bucket.Key == "production").Total);
+    }
+}

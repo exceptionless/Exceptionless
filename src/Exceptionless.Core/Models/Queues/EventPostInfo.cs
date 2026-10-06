@@ -1,4 +1,6 @@
-﻿namespace Exceptionless.Core.Queues.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace Exceptionless.Core.Queues.Models;
 
 public record EventPostInfo
 {
@@ -7,6 +9,10 @@ public record EventPostInfo
     public string? CharSet { get; init; }
     public string? MediaType { get; init; }
     public int ApiVersion { get; init; }
+    // Internal GET submissions and retries already contain normalized event data.
+    // Missing metadata on older queued posts retains the normal ingestion path.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool IsNormalized { get; init; }
     public string? UserAgent { get; init; }
     public string? ContentEncoding { get; init; }
     public string? IpAddress { get; init; }

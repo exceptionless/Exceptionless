@@ -3,6 +3,7 @@ export type SearchResource = 'event' | 'event-stack' | 'stack';
 // Alias and indexed-field variants intentionally mirror the backend validators.
 const EVENT_FREE_QUERY_FIELDS = new Set([
     'date',
+    'environment',
     'organization',
     'organization_id',
     'project',
