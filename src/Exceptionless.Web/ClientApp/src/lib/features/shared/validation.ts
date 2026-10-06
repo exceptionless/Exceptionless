@@ -117,6 +117,16 @@ export function getFormErrorMessages(errors?: unknown[]): string | string[] | un
 }
 
 export function getProblemMessage(error: unknown, fallback: string): string {
+    // OAuth uses its own error format; FetchClient also stores these bodies in response.problem.
+    if (error && typeof error === 'object') {
+        if ('error_description' in error && isNonEmptyString(error.error_description)) {
+            return error.error_description;
+        }
+        if ('error' in error && isNonEmptyString(error.error)) {
+            return error.error;
+        }
+    }
+
     if (!isProblemDetailsLike(error)) {
         return fallback;
     }
