@@ -1,14 +1,16 @@
 using System.Collections.Concurrent;
 using System.Net;
-using System.Reflection;
 using System.Text;
 using System.Text.Encodings.Web;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Validation;
 using Exceptionless.Web.Security;
 using Foundatio.Caching;
 using Microsoft.AspNetCore.Authentication;
@@ -38,12 +40,12 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
         var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
         using var cache = new InMemoryCacheClient(options => options.TimeProvider(clock));
         var service = new AuthService(cache, clock, NullLogger<AuthService>.Instance);
-        var repository = DispatchProxy.Create<IUserRepository, UserRepositoryProxy>();
+        using var repository = CreateUserRepository();
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         string passwordHash = Password.ToSaltedHash(Salt);
         int lookups = 0;
         int requestCount = limit + 1;
-        ((UserRepositoryProxy)(object)repository).Lookup = async email =>
+        repository.Lookup = async email =>
         {
             Interlocked.Increment(ref lookups);
             await release.Task.WaitAsync(TestTimeout, TestCancellationToken);
@@ -91,9 +93,9 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
         using var logger = new CapturingLoggerFactory();
         var service = new AuthService(cache, System.TimeProvider.System, NullLogger<AuthService>.Instance);
-        var repository = DispatchProxy.Create<IUserRepository, UserRepositoryProxy>();
+        using var repository = CreateUserRepository();
         Exception failure = cancellationException ? new OperationCanceledException(cancellation.Token) : new IOException("Synthetic repository failure.");
-        ((UserRepositoryProxy)(object)repository).Lookup = _ =>
+        repository.Lookup = _ =>
         {
             if (cancelRequest)
                 cancellation.Cancel();
@@ -110,6 +112,12 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
         Assert.Empty(cache.Keys);
         Assert.Equal(expectedErrors, logger.Errors.Count);
         Assert.All(logger.Errors, exception => Assert.Same(failure, exception));
+    }
+
+    protected override void RegisterServices(IServiceCollection services, AppOptions options)
+    {
+        base.RegisterServices(services, options);
+        services.AddSingleton(options.OAuthServerOptions);
     }
 
     private async Task<AuthenticateResult> AuthenticateAsync(string emailAddress, string password, IUserRepository repository, AuthService service,
@@ -130,6 +138,9 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
         await handler.InitializeAsync(new AuthenticationScheme(ApiKeyAuthenticationOptions.ApiKeySchema, null, typeof(ApiKeyAuthenticationHandler)), context);
         return await handler.AuthenticateAsync();
     }
+
+    private TestUserRepository CreateUserRepository()
+        => new(GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), GetService<AppOptions>());
 
     private sealed class CapturingLoggerFactory : ILoggerFactory, ILogger
     {
@@ -154,16 +165,11 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
         public IDisposable? OnChange(Action<ApiKeyAuthenticationOptions, string?> listener) => null;
     }
 
-    private class UserRepositoryProxy : DispatchProxy
+    private sealed class TestUserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
+        : UserRepository(configuration, validator, options), IUserRepository
     {
         public Func<string, Task<User?>> Lookup { get; set; } = null!;
 
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
-        {
-            if (targetMethod?.Name == nameof(IUserRepository.GetByEmailAddressAsync))
-                return Lookup((string)args![0]!);
-
-            throw new NotSupportedException($"Unexpected repository call: {targetMethod?.Name}");
-        }
+        Task<User?> IUserRepository.GetByEmailAddressAsync(string emailAddress) => Lookup(emailAddress);
     }
 }

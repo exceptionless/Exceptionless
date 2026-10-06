@@ -53,30 +53,49 @@ public sealed class AuthService
     public async Task<LoginAttempt?> WaitForLoginAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken = default)
     {
         long started = _timeProvider.GetTimestamp();
+        long lastAttempt = started;
         var result = await TryBeginLoginCoreAsync(emailAddress, ipAddress, cancellationToken);
         while (result.Attempt is null && result.BlockedCacheKeys is not null)
         {
-            if (!await WaitForAvailableSlotAsync(result.BlockedCacheKeys, started, cancellationToken))
+            if (!await WaitForAvailableSlotAsync(result.BlockedCacheKeys, started, lastAttempt, cancellationToken))
                 return null;
 
+            lastAttempt = _timeProvider.GetTimestamp();
             result = await TryBeginLoginCoreAsync(emailAddress, ipAddress, cancellationToken);
+            if (_timeProvider.GetElapsedTime(started) >= AdmissionWaitTimeout)
+            {
+                if (result.Attempt is not null)
+                    await result.Attempt.DisposeAsync();
+
+                return null;
+            }
         }
 
         return result.Attempt;
     }
 
-    private async Task<bool> WaitForAvailableSlotAsync(string[] cacheKeys, long started, CancellationToken cancellationToken)
+    private async Task<bool> WaitForAvailableSlotAsync(string[] cacheKeys, long started, long lastAttempt, CancellationToken cancellationToken)
     {
         while (_timeProvider.GetElapsedTime(started) < AdmissionWaitTimeout)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var entries = await _cache.GetAllAsync<string>(cacheKeys);
+            cancellationToken.ThrowIfCancellationRequested();
             var remaining = AdmissionWaitTimeout - _timeProvider.GetElapsedTime(started);
             if (remaining <= TimeSpan.Zero)
                 return false;
 
             if (cacheKeys.Any(key => !entries.TryGetValue(key, out var value) || !value.HasValue))
-                return true;
+            {
+                // A rejected write does not guarantee the slot is occupied. Pace retries
+                // even when reads report space, avoiding a write loop on provider rejection.
+                var delay = AdmissionRetryDelay - _timeProvider.GetElapsedTime(lastAttempt);
+                if (delay > TimeSpan.Zero)
+                    await Task.Delay(remaining < delay ? remaining : delay, _timeProvider, cancellationToken);
+
+                cancellationToken.ThrowIfCancellationRequested();
+                return _timeProvider.GetElapsedTime(started) < AdmissionWaitTimeout;
+            }
 
             if (!entries.Values.Any(value => value.HasValue && value.Value.StartsWith("pending:", StringComparison.Ordinal)))
                 return false;
