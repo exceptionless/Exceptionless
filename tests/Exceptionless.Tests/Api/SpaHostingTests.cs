@@ -72,7 +72,7 @@ public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
     }
 
     [Fact]
-    public async Task GetAsync_ConfiguredApiOrigin_AllowsApiAndWebSocketConnections()
+    public async Task GetAsync_ConfiguredApiOrigin_UsesOpenConnectionsAndStrictScripts()
     {
         // Arrange
         const string apiUrl = "https://localhost:9443/backend?ignored=true";
@@ -89,18 +89,16 @@ public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
         string policy = Assert.Single(response.Headers.GetValues("Content-Security-Policy"));
         string connections = Assert.Single(policy.Split(';'), directive => directive.StartsWith("connect-src ", StringComparison.Ordinal));
         string[] sources = connections.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Contains("'self'", sources);
-        Assert.Contains("https://localhost:9443", sources);
-        Assert.Contains("wss://localhost:9443", sources);
-        Assert.DoesNotContain("*", sources);
+        Assert.Equal(["connect-src", "*", "ws:"], sources);
         Assert.DoesNotContain(apiUrl, sources);
 
-        // API-origin validation must preserve the existing script compatibility policy.
+        // Open connections must not weaken script execution restrictions.
         string scripts = Assert.Single(policy.Split(';'), directive => directive.StartsWith("script-src ", StringComparison.Ordinal));
         string[] scriptSources = scripts.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Contains("'unsafe-inline'", scriptSources);
-        Assert.Contains("'unsafe-eval'", scriptSources);
-        Assert.Contains("https://js.stripe.com", scriptSources);
-        Assert.Contains("https://widget.intercom.io", scriptSources);
+        Assert.DoesNotContain("'unsafe-inline'", scriptSources);
+        Assert.DoesNotContain("'unsafe-eval'", scriptSources);
+        Assert.Contains("'strict-dynamic'", scriptSources);
+        Assert.Contains("https://*.stripe.com", scriptSources);
+        Assert.Contains("https://*.intercom.io", scriptSources);
     }
 }
