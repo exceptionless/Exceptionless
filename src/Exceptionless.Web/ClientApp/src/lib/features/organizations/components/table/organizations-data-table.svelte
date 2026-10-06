@@ -10,14 +10,13 @@
         bodyChildren?: Snippet;
         footerChildren?: Snippet;
         isLoading: boolean;
-        limit: number;
         rowClick?: (row: ViewOrganization, event?: MouseEvent) => void;
         rowHref?: (row: ViewOrganization) => string;
         table: Table<StockFeatures, ViewOrganization>;
         toolbarChildren?: Snippet;
     }
 
-    let { bodyChildren, footerChildren, isLoading, limit = $bindable(), rowClick, rowHref, table, toolbarChildren }: Props = $props();
+    let { bodyChildren, footerChildren, isLoading, rowClick, rowHref, table, toolbarChildren }: Props = $props();
 </script>
 
 <DataTable.Root>
@@ -28,13 +27,11 @@
     {:else}
         <DataTable.Toolbar {table} />
     {/if}
-    <DataTable.Footer {table} class="w-full">
-        {#if footerChildren}
+    {#if footerChildren}
+        <DataTable.Footer {table} class="gap-6 lg:gap-8">
             {@render footerChildren()}
-        {:else}
-            <DataTable.Pager bind:value={limit} {table} />
-        {/if}
-    </DataTable.Footer>
+        </DataTable.Footer>
+    {/if}
     <DataTable.Body {rowClick} {rowHref} {table}>
         {#if isLoading}
             <DelayedRender>

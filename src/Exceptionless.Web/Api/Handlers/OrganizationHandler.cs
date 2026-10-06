@@ -61,7 +61,7 @@ public class OrganizationHandler(
         organizations = String.IsNullOrWhiteSpace(message.Filter)
             ? organizations
             : (await repository.GetByFilterAsync(sf, message.Filter, null, o => o.PageLimit(Pagination.MaximumSkip))).Documents;
-        var viewOrganizations = mapper.MapToViewOrganizations(organizations);
+        var viewOrganizations = mapper.MapToViewOrganizations(organizations.OrderBy(organization => organization.Name, StringComparer.OrdinalIgnoreCase));
         await AfterResultMapAsync(viewOrganizations);
 
         if (IsStatsMode(message.Mode))
