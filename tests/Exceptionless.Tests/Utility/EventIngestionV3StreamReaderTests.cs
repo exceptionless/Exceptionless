@@ -276,6 +276,65 @@ public sealed class EventIngestionV3StreamReaderTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReadAsync_SingleHugeTokenArrivingInSmallChunks_IsSkippedAndTheStreamContinues(bool asArray)
+    {
+        // Arrange
+        string huge = $$"""{"message":"{{new string('x', 256 * 1024)}}\"quoted\" {not structure}"}""";
+        string small = """{"message":"small"}""";
+        string payload = asArray ? $"[{huge},{small}]" : $"{huge}\n{small}";
+
+        // Act
+        var records = await ReadAllAsync(Encoding.UTF8.GetBytes(payload), maximumEventSize: 1024, chunkSize: 7);
+
+        // Assert
+        Assert.Equal(2, records.Count);
+        Assert.Equal(EventIngestionV3ErrorCodes.EventTooLarge, records[0].ErrorCode);
+        Assert.True(records[0].Size > 256 * 1024);
+        Assert.Equal("small", records[1].Event?.Message);
+    }
+
+    [Fact]
+    public async Task ReadAsync_OversizedTopLevelString_IsSkipped()
+    {
+        // Arrange
+        string payload = $"\"{new string('x', 4096)}\"\n{{\"message\":\"after\"}}";
+
+        // Act
+        var records = await ReadAllAsync(Encoding.UTF8.GetBytes(payload), maximumEventSize: 1024, chunkSize: 100);
+
+        // Assert
+        Assert.Equal(EventIngestionV3ErrorCodes.EventTooLarge, records[0].ErrorCode);
+        Assert.Equal("after", records[1].Event?.Message);
+    }
+
+    [Fact]
+    public async Task ReadAsync_InvalidPrettyPrintedObjectWithIndentedObjects_ResumesOnlyAtTopLevelObject()
+    {
+        // Arrange
+        const string payload = """
+            {
+              "message": "broken",
+              "frames": [
+                {
+                  "name": "Run"
+                } oops
+              ]
+            }
+            {"message":"next"}
+            """;
+
+        // Act
+        var records = await ReadAllAsync(payload);
+
+        // Assert
+        Assert.Equal(2, records.Count);
+        Assert.Equal(EventIngestionV3ErrorCodes.InvalidJson, records[0].ErrorCode);
+        Assert.Equal("next", records[1].Event?.Message);
+    }
+
+    [Theory]
     [InlineData("[{\"message\":\"a\"} {\"message\":\"b\"}]")]
     [InlineData("[{\"message\":\"a\"},]")]
     [InlineData("[{\"message\":\"a\"}")]
@@ -292,9 +351,9 @@ public sealed class EventIngestionV3StreamReaderTests
         return ReadAllAsync(Encoding.UTF8.GetBytes(payload), maximumEventSize);
     }
 
-    private static async Task<List<EventIngestionV3StreamRecord>> ReadAllAsync(byte[] payload, long maximumEventSize = 64 * 1024, bool oneByteAtATime = false)
+    private static async Task<List<EventIngestionV3StreamRecord>> ReadAllAsync(byte[] payload, long maximumEventSize = 64 * 1024, bool oneByteAtATime = false, int? chunkSize = null)
     {
-        Stream stream = oneByteAtATime ? new OneByteAtATimeStream(payload) : new MemoryStream(payload);
+        Stream stream = oneByteAtATime || chunkSize.HasValue ? new ChunkedStream(payload, chunkSize ?? 1) : new MemoryStream(payload);
         var pipeReader = PipeReader.Create(stream);
         var reader = new EventIngestionV3StreamReader(pipeReader, maximumEventSize, _serializerOptions);
         var records = new List<EventIngestionV3StreamRecord>();
@@ -313,16 +372,16 @@ public sealed class EventIngestionV3StreamReaderTests
         return records;
     }
 
-    private sealed class OneByteAtATimeStream(byte[] payload) : MemoryStream(payload)
+    private sealed class ChunkedStream(byte[] payload, int chunkSize) : MemoryStream(payload)
     {
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return base.ReadAsync(buffer.Length > 1 ? buffer[..1] : buffer, cancellationToken);
+            return base.ReadAsync(buffer.Length > chunkSize ? buffer[..chunkSize] : buffer, cancellationToken);
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return base.Read(buffer, offset, Math.Min(count, 1));
+            return base.Read(buffer, offset, Math.Min(count, chunkSize));
         }
     }
 }

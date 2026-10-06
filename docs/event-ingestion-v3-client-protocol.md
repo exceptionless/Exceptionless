@@ -139,7 +139,7 @@ same pipeline.
 
 | Concern | V3 field | Client work |
 | --- | --- | --- |
-| Idempotency | `id` | Generate once and keep it when resending; also keep `date`. |
+| Idempotency | `id` | Generate once and keep it when resending; also keep `date`. Not copied into `reference_id`. |
 | Classification | `type` | Optional; defaults to `error` or `log`. |
 | Capture time | `date` | RFC 3339 timestamp; server receipt time is the fallback. |
 | Display | `source`, `message`, `value`, `tags` | Optional scalars and string tags. |
@@ -189,10 +189,12 @@ A `200` response counts every event in exactly one outcome:
 - `blocked`: the organization reached its event limit during the request.
 - `invalid`: the event could not be read or failed validation. Resending it
   unchanged fails again. Errors include the event's zero-based `index`.
-- `failed`: a temporary server problem. Only non-zero in a `503` response.
+- `failed`: a temporary server problem, or another request is still processing
+  an event with the same id (`event_in_progress`). Only non-zero in a `503`
+  response.
 
 One invalid event never prevents the rest of the request from being processed.
-Invalid NDJSON is skipped by resuming at the next line that starts with `{`.
+Invalid NDJSON is skipped by resuming at the next line that begins with `{`.
 
 | Status | Client action |
 | --- | --- |
@@ -203,7 +205,7 @@ Invalid NDJSON is skipped by resuming at the next line that starts with `{`.
 | `413` | Send smaller requests. |
 | `415` | Send UTF-8 JSON with a supported content type and encoding. |
 | `422` | Every event was invalid. Fix the events. |
-| `429`, `503` | Resend the same request after `Retry-After`. |
+| `429`, `503` | Resend the same request after `Retry-After`, with a bounded number of attempts. |
 
 Error responses are RFC 9457 problem details. When some events were processed
 before a request failed, the response includes `partial_result` with the counts

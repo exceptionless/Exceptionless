@@ -61,16 +61,20 @@ The request body can be:
 `EventIngestionV3StreamReader` finds event boundaries by scanning JSON tokens
 from the request `PipeReader`, carrying its scanner state across reads so a
 fragmented event is never rescanned. An event's bytes stay in the pipe until the
-event is complete and are deserialized in place. Each event is limited to
-`MaximumEventSize`; a larger event is scanned to its end without being retained
-and reported as `event_too_large`.
+event is complete and are deserialized in place. Because the token scanner cannot
+consume part of a token, a long incomplete token is rescanned only after the
+unscanned bytes double, which keeps the work linear. Each event is limited to
+`MaximumEventSize`; a larger event is skipped by a byte scanner that tracks
+strings and nesting, consumes every byte so nothing is retained, and reports the
+event as `event_too_large`.
 
 A problem with one event does not fail the request:
 
 - An event that is not a JSON object, or that does not match the event format,
   is reported as invalid and skipped.
 - Invalid JSON outside an array is reported and skipped by resuming at the next
-  line that starts with `{`.
+  line that begins with `{` (in the first column, so nested objects in a broken
+  pretty-printed event are not mistaken for events).
 - Invalid JSON inside an array cannot be resynchronized reliably, so it ends the
   request with `400` and a partial result.
 
@@ -84,19 +88,22 @@ compressed and decompressed size limits.
 Events are grouped into microbatches of up to `MicroBatchSize` events and
 `MaximumMicroBatchBytes` bytes. For each microbatch the processor:
 
-1. Maps each V3 event to a `PersistentEvent`, storing first-class properties
-   under the same data keys V2 clients use (`@error`, `@simple_error`,
-   `@request`, `@environment`, `@user`, `@stack`, `@version`, `@level`) and
-   defaulting the type exactly as V2 does.
-2. Claims the idempotency key of every event that has an `id`. An event whose
-   key is already claimed is acknowledged as a duplicate.
+1. Maps each V3 event to a `PersistentEvent`. Custom `data` is normalized the
+   same way V2 normalizes deserialized event data, then first-class properties
+   are stored under the data keys V2 clients use (`@error`, `@simple_error`,
+   `@request`, `@environment`, `@user`, `@stack`, `@version`, `@level`) and the
+   type is defaulted exactly as V2 does.
+2. Claims the `id` of every event that has one. An event whose id is already
+   stored is acknowledged as a duplicate; one whose id is still being processed
+   by another request is reported as in progress.
 3. Applies the organization event limit with `UsageService.GetEventsLeftAsync`,
    as `EventPostsJob` does, and counts the remainder as blocked.
 4. Runs `EventPipeline.RunAsync` with an `EventPostInfo` that carries the
    client user agent, IP address, and API version 3.
 5. Records usage with the same `UsageService` calls as `EventPostsJob`.
-6. Releases the idempotency keys of events that were blocked, invalid, or
-   failed, so a resend is processed again.
+6. Marks the ids of stored and discarded events as stored, and releases the ids
+   of events that were blocked, invalid, or failed, so a resend is processed
+   again.
 
 Each pipeline outcome maps to one response count: processed events are
 `persisted`, cancelled events (for example a discarded stack or an event older
@@ -110,15 +117,22 @@ later optimization if measurements show a benefit.
 ### Idempotency
 
 An event `id` is optional. When present, the processor hashes it into a
-project-scoped cache key and claims it with an atomic add for
-`IdempotencyWindow` (one day by default). The key is released if the event is
-not stored, so only successfully processed events are deduplicated. This costs
-one cache operation per event that has an id and none for events without one.
+project-scoped cache key and claims it as pending with an atomic add. The claim
+becomes stored for `IdempotencyWindow` (one day by default) once the event is
+stored or discarded, and is released if the event is not processed. A pending
+claim expires shortly after the request timeout, so an instance that stops
+mid-request cannot block the id for long.
 
-If a client resends a request while the original is still being processed and
-the original then fails, the resend may already have been acknowledged as a
-duplicate. Clients avoid this by waiting for a response or for the request
-timeout before resending.
+A resend whose id is stored is acknowledged as a duplicate. A resend whose id is
+still pending, because the original request is still running, is reported as
+`event_in_progress` and the request returns `503` with `Retry-After`. Reporting
+it as a duplicate would lose the event if the original request then failed.
+This costs one cache add per event with an id, one batched write per microbatch,
+and a read only when an id was already claimed. Events without an id cost
+nothing.
+
+Unlike V2, V3 does not copy `id` into `reference_id`: the id is only for
+duplicate detection, and `reference_id` remains an application identifier.
 
 ### Limits and backpressure
 

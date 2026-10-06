@@ -6,6 +6,7 @@ using Exceptionless.Core.Models.Ingestion;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
 using Foundatio.Caching;
@@ -26,6 +27,9 @@ public sealed class EventIngestionV3Processor(
     TimeProvider timeProvider,
     ILogger<EventIngestionV3Processor> logger)
 {
+    private const string PendingClaim = "pending";
+    private const string StoredClaim = "stored";
+
     /// <summary>
     /// Options for reading V3 events. Like V2 event parsing, missing values are accepted rather than
     /// rejected so clients are not required to send every property of the nested data models.
@@ -99,6 +103,7 @@ public sealed class EventIngestionV3Processor(
         }
 
         var released = new List<PendingEvent>();
+        var completed = new List<PendingEvent>();
         int index = 0;
         foreach (var context in contexts)
         {
@@ -106,10 +111,12 @@ public sealed class EventIngestionV3Processor(
             if (context.IsProcessed)
             {
                 response.Persisted++;
+                completed.Add(item);
             }
             else if (context.IsCancelled)
             {
                 response.Discarded++;
+                completed.Add(item);
             }
             else if (context.Exception is MiniValidatorException)
             {
@@ -130,6 +137,7 @@ public sealed class EventIngestionV3Processor(
         }
 
         await ReleaseIdempotencyKeysAsync(released);
+        await MarkIdempotencyKeysStoredAsync(completed, project.Id);
 
         // Match EventPostsJob usage accounting for events that completed the pipeline.
         if (response.Persisted > 0)
@@ -161,7 +169,9 @@ public sealed class EventIngestionV3Processor(
             CreatedUtc = receivedDate.UtcDateTime
         };
 
-        // First-class properties are stored under the same data keys V2 clients use.
+        // Apply the same normalization V2 applies to deserialized event data before adding the
+        // typed first-class values, which V2 clients send under the same data keys.
+        EventDataNormalizer.Normalize(ev.Data);
         if (source.Error is not null)
         {
             ev.Data[Event.KnownDataKeys.Error] = source.Error;
@@ -214,12 +224,16 @@ public sealed class EventIngestionV3Processor(
             return pending;
         }
 
-        // A key is claimed before processing and released again when the event is not stored,
-        // so a resend after a failure is processed while a resend after success is a duplicate.
+        // An id is claimed as pending before processing. It becomes stored for the idempotency window
+        // once the event is stored or discarded, and is released when the event is not processed, so
+        // a resend after a failure is processed again. A pending claim expires shortly after the
+        // request timeout in case this instance stops before finishing.
+        var ingestionOptions = options.EventIngestionV3;
+        TimeSpan pendingExpiration = TimeSpan.FromTicks(Math.Min(ingestionOptions.IdempotencyWindow.Ticks, (ingestionOptions.RequestTimeout + TimeSpan.FromMinutes(1)).Ticks));
         bool[] claimed;
         try
         {
-            claimed = await Task.WhenAll(keyed.Select(p => cacheClient.AddAsync(p.IdempotencyKey!, true, options.EventIngestionV3.IdempotencyWindow)));
+            claimed = await Task.WhenAll(keyed.Select(p => cacheClient.AddAsync(p.IdempotencyKey!, PendingClaim, pendingExpiration)));
         }
         catch
         {
@@ -228,22 +242,50 @@ public sealed class EventIngestionV3Processor(
             await ReleaseIdempotencyKeysAsync(keyed);
             throw;
         }
-        var duplicates = new HashSet<PendingEvent>(ReferenceEqualityComparer.Instance);
-        for (int index = 0; index < keyed.Count; index++)
-        {
-            if (!claimed[index])
-            {
-                duplicates.Add(keyed[index]);
-            }
-        }
 
-        if (duplicates.Count == 0)
+        var unclaimed = keyed.Where((_, index) => !claimed[index]).ToList();
+        if (unclaimed.Count == 0)
         {
             return pending;
         }
 
-        response.Duplicate += duplicates.Count;
-        return pending.Where(p => !duplicates.Contains(p)).ToList();
+        var claims = await cacheClient.GetAllAsync<string>(unclaimed.Select(p => p.IdempotencyKey!));
+        foreach (var item in unclaimed)
+        {
+            if (claims.TryGetValue(item.IdempotencyKey!, out var claim) && claim.HasValue && claim.Value == StoredClaim)
+            {
+                response.Duplicate++;
+                continue;
+            }
+
+            // Another request is still processing this id. Reporting it as a duplicate would lose the
+            // event if that request fails, so ask the client to resend it later instead.
+            response.Failed++;
+            response.AddError(item.Record.Index, item.Record.Event.Id, EventIngestionV3ErrorCodes.EventInProgress, "Another request is processing an event with this id. Resend it after the Retry-After delay.");
+        }
+
+        var unclaimedSet = new HashSet<PendingEvent>(unclaimed, ReferenceEqualityComparer.Instance);
+        return pending.Where(p => !unclaimedSet.Contains(p)).ToList();
+    }
+
+    private async Task MarkIdempotencyKeysStoredAsync(IReadOnlyCollection<PendingEvent> events, string projectId)
+    {
+        var keys = events.Select(p => p.IdempotencyKey).OfType<string>().ToDictionary(key => key, _ => StoredClaim);
+        if (keys.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await cacheClient.SetAllAsync(keys, options.EventIngestionV3.IdempotencyWindow);
+        }
+        catch (Exception ex)
+        {
+            // The events are stored. Failing the request would make the client resend them while the
+            // pending claims still exist, so only log; resends after the claims expire may duplicate.
+            logger.LogError(ex, "Unable to record stored V3 event ids for project {ProjectId}: {Message}", projectId, ex.Message);
+        }
     }
 
     private async Task ReleaseIdempotencyKeysAsync(IEnumerable<PendingEvent> events)

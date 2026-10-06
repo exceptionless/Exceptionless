@@ -287,6 +287,40 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Post_ResendWhileOriginalIsInProgress_IsRetryableInsteadOfDuplicate()
+    {
+        // Arrange
+        const string id = "1b7c2a90-4f0e-4d8f-8f5e-6c0d9e3b2a10";
+        await GetService<ICacheClient>().AddAsync($"ingestion:v3:id:{TestConstants.ProjectId}:{id.ToSHA256()}", "pending", TimeSpan.FromMinutes(1));
+
+        // Act
+        using var httpResponse = await PostAsync(new StringContent($$"""{"id":"{{id}}","message":"in progress"}""", Encoding.UTF8, "application/json"));
+        using var problem = JsonDocument.Parse(await httpResponse.Content.ReadAsStringAsync(TestCancellationToken));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, httpResponse.StatusCode);
+        Assert.NotNull(httpResponse.Headers.RetryAfter);
+        var partialResult = problem.RootElement.GetProperty("partial_result");
+        Assert.Equal(1, partialResult.GetProperty("failed").GetInt32());
+        Assert.Equal(0, partialResult.GetProperty("duplicate").GetInt32());
+        Assert.Equal(EventIngestionV3ErrorCodes.EventInProgress, partialResult.GetProperty("errors")[0].GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task Post_NonObjectValueForMappedDataKey_IsStoredUnderEscapedKey()
+    {
+        // Act
+        using var httpResponse = await PostAsync(new StringContent("""{"message":"escaped","reference_id":"v3-escaped-0001","data":{"@error":"boom"}}""", Encoding.UTF8, "application/json"));
+        var response = await DeserializeAsync(httpResponse);
+
+        // Assert
+        Assert.Equal(1, response.Persisted);
+        var ev = await GetEventByReferenceIdAsync("v3-escaped-0001");
+        Assert.False(ev.Data?.ContainsKey(Event.KnownDataKeys.Error));
+        Assert.Equal("boom", ev.Data?["_@error"]);
+    }
+
+    [Fact]
     public async Task Post_EventForDiscardedStack_IsDiscarded()
     {
         // Arrange

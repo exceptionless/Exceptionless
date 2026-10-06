@@ -69,4 +69,5 @@ public static class EventIngestionV3ErrorCodes
     public const string InvalidEvent = "invalid_event";
     public const string EventTooLarge = "event_too_large";
     public const string ProcessingFailed = "processing_failed";
+    public const string EventInProgress = "event_in_progress";
 }
