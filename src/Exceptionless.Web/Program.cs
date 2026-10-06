@@ -319,14 +319,7 @@ public partial class Program
             }
 
             app.MapOpenApi("/docs/v2/openapi.json");
-            app.MapScalarApiReference("/docs", (o, context) =>
-            {
-                o.WithNonce(context.RequestServices.GetRequiredService<ICspNonceService>().GetNonce())
-                    .DisableDefaultFonts()
-                    .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
-                    .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
-                    .AddPreferredSecuritySchemes("Bearer");
-            });
+            app.MapScalarApiReference("/docs", ConfigureScalar);
             app.MapApiEndpoints();
             app.MapGet("/mcp", () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed))
                 .RequireAuthorization(AuthorizationRoles.McpPolicy)
@@ -380,7 +373,19 @@ public partial class Program
             .ExecuteAsync(statusCodeContext.HttpContext);
     }
 
-    internal static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
+    internal static void ConfigureScalar(ScalarOptions options, HttpContext context)
+    {
+        // Resolve per request so the document and CSP header share a fresh nonce.
+        var nonceService = context.RequestServices.GetRequiredService<ICspNonceService>();
+        string nonce = nonceService.GetNonce();
+        options.WithNonce(nonce)
+            .DisableDefaultFonts()
+            .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
+            .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
+            .AddPreferredSecuritySchemes("Bearer");
+    }
+
+    private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
     {
         var app = endpoints.CreateApplicationBuilder();
         string[] reservedPrefixes = ["/api", "/docs", "/health", "/ready", "/mcp", "/.well-known", "/_app"];
