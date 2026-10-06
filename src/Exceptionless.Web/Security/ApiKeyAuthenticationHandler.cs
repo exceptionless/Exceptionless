@@ -174,7 +174,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     {
         string emailAddress = authInfo.Username.Trim().ToLowerInvariant();
         string? ipAddress = Request.GetClientIpAddress();
-        await using var loginAttempt = await _authService.TryBeginLoginAsync(emailAddress, ipAddress, Context.RequestAborted);
+        await using var loginAttempt = await _authService.WaitForLoginAsync(emailAddress, ipAddress, Context.RequestAborted);
         if (loginAttempt is null)
         {
             Logger.LogError("Login denied for {EmailAddress}", emailAddress);
