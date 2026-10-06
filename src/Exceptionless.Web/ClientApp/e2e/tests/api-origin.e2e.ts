@@ -98,15 +98,18 @@ test('the application sends API requests and push connections to its configured 
         telemetryRequests.push(new URL(route.request().url()).pathname);
         await route.fulfill({ json: { settings: {}, version: 1 } });
     });
-    // Intercept a distinct local origin and forward HTTP requests to this test's actual API.
+    const pushConnections: string[] = [];
+    // Intercept SSE separately: forwarding its open response would never finish route.fetch.
     await page.route(`${apiOrigin}/api/v2/**`, async (route) => {
         const url = new URL(route.request().url());
+        if (url.pathname === '/api/v2/push') {
+            pushConnections.push(url.pathname);
+            await route.fulfill({ body: ': configured-origin push\n\n', contentType: 'text/event-stream' });
+            return;
+        }
+
         const response = await route.fetch({ url: new URL(url.pathname + url.search, e2eApi.environment.appUrl).href });
         await route.fulfill({ response });
-    });
-    const pushConnections: string[] = [];
-    await page.routeWebSocket('wss://localhost:65533/api/v2/push*', (socket) => {
-        pushConnections.push(new URL(socket.url()).pathname);
     });
     const sameOriginApiRequests: string[] = [];
     page.on('request', (request) => {

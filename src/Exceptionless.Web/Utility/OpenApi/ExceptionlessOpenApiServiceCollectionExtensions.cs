@@ -14,6 +14,7 @@ internal static class ExceptionlessOpenApiServiceCollectionExtensions
             options.AddDocumentTransformer<AggregateDocumentTransformer>();
             options.AddDocumentTransformer<XmlDocumentationDocumentTransformer>();
             options.AddDocumentTransformer<DocumentInfoTransformer>();
+            options.AddDocumentTransformer<PushDocumentTransformer>();
             options.AddDocumentTransformer<RemoveProblemJsonFromSuccessResponsesTransformer>();
             options.AddOperationTransformer<ObsoleteOperationTransformer>();
             options.AddOperationTransformer<RequestBodyContentOperationTransformer>();

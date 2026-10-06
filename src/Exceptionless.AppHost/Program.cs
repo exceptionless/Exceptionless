@@ -7,6 +7,16 @@ string? scope = WorktreeScope.Resolve();
 bool isScoped = !String.IsNullOrWhiteSpace(scope);
 var worktreePorts = isScoped ? WorktreeScope.AssignFreePorts() : null;
 var builder = DistributedApplication.CreateBuilder(args);
+// Lease-store tests need their own Redis and no shared application services.
+if (HasArgument("--test-redis"))
+{
+    builder.AddRedis("Redis")
+        .WithImageTag("8.6")
+        .WithEndpointProxySupport(false);
+    await builder.Build().RunAsync();
+    return;
+}
+
 IResourceBuilder<ParameterResource>? assistantApiKey = !String.IsNullOrWhiteSpace(builder.Configuration["Parameters:assistant-api-key"])
     ? builder.AddParameter("assistant-api-key", secret: true)
     : null;

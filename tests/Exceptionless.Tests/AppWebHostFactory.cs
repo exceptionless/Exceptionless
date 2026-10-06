@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Text.Json;
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using Exceptionless.Core;
@@ -22,6 +23,8 @@ namespace Exceptionless.Tests;
 public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program>, IAsyncLifetime
 {
     private const string SharedElasticsearchUrl = "http://localhost:9200";
+    private static readonly string[] s_indexPrefixes = ["events", "migrations", "organizations", "projects", "saved-views", "stacks", "tokens", "users", "webhooks"];
+    private static readonly string s_runScope = $"test-{Guid.NewGuid().ToString("N")[..8]}";
     private static readonly TimeSpan SharedElasticsearchStartupTimeout = TimeSpan.FromMinutes(3);
     private static int s_counter = -1;
     private static readonly Lazy<Task<DistributedApplication>> s_sharedAppHost = new(StartSharedAppHostAsync, LazyThreadSafetyMode.ExecutionAndPublication);
@@ -34,7 +37,7 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
             instanceId = Interlocked.Increment(ref s_counter);
 
         InstanceId = instanceId;
-        AppScope = instanceId == 0 ? "test" : $"test-{instanceId}";
+        AppScope = instanceId == 0 ? s_runScope : $"{s_runScope}-{instanceId}";
     }
 
     public string AppScope { get; }
@@ -44,7 +47,9 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
     public async ValueTask InitializeAsync()
     {
         _ = await s_sharedAppHost.Value;
-        await WaitForElasticsearchAsync(new Uri(SharedElasticsearchUrl));
+        var elasticsearchUri = new Uri(SharedElasticsearchUrl);
+        await WaitForElasticsearchAsync(elasticsearchUri);
+        await CleanupElasticsearchSliceAsync(elasticsearchUri);
     }
 
     private static async Task<DistributedApplication> StartSharedAppHostAsync()
@@ -67,7 +72,7 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
         {
             try
             {
-                using var response = await client.GetAsync(elasticsearchUri);
+                using var response = await client.GetAsync(new Uri(elasticsearchUri, "/_cluster/health?wait_for_status=yellow&timeout=1s"));
                 if (response.StatusCode == HttpStatusCode.OK)
                     return;
             }
@@ -82,6 +87,40 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
         }
 
         throw new TimeoutException("Timed out waiting for the shared Elasticsearch container to be ready.");
+    }
+
+    private async Task CleanupElasticsearchSliceAsync(Uri elasticsearchUri)
+    {
+        await WaitForElasticsearchAsync(elasticsearchUri);
+
+        using var client = new HttpClient
+        {
+            BaseAddress = elasticsearchUri,
+            Timeout = TimeSpan.FromSeconds(10)
+        };
+
+        foreach (string pattern in s_indexPrefixes.Select(prefix => Uri.EscapeDataString($"{AppScope}-{prefix}*")))
+        {
+            using var listResponse = await client.GetAsync($"/_cat/indices/{pattern}?h=index&format=json&expand_wildcards=all");
+            if (listResponse.StatusCode == HttpStatusCode.NotFound)
+                continue;
+
+            listResponse.EnsureSuccessStatusCode();
+
+            string payloadJson = await listResponse.Content.ReadAsStringAsync();
+            var payload = JsonSerializer.Deserialize<List<CatIndexRecord>>(payloadJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            })
+                ?? [];
+
+            foreach (string indexName in payload.Select(record => record.Index).Where(name => !String.IsNullOrEmpty(name)).Distinct())
+            {
+                using var deleteResponse = await client.DeleteAsync($"/{Uri.EscapeDataString(indexName)}?ignore_unavailable=true");
+                if (deleteResponse.StatusCode != HttpStatusCode.NotFound)
+                    deleteResponse.EnsureSuccessStatusCode();
+            }
+        }
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -120,7 +159,7 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
 
         // In the minimal hosting model, Program.Main reads AppOptions BEFORE Build() applies
         // ConfigureAppConfiguration overrides. Re-register AppOptions from the final configuration
-        // so the per-instance AppScope (test, test-1, test-2) is used correctly.
+        // so each instance uses its unique test scope.
         builder.ConfigureTestServices(services =>
         {
             services.AddSingleton(sp =>
@@ -181,14 +220,24 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
             : storage;
     }
 
-    public override ValueTask DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
-        if (!_sliceReleased)
+        try
         {
-            s_pool.Enqueue(InstanceId);
-            _sliceReleased = true;
+            await base.DisposeAsync();
         }
+        finally
+        {
+            if (!_sliceReleased)
+            {
+                s_pool.Enqueue(InstanceId);
+                _sliceReleased = true;
+            }
+        }
+    }
 
-        return base.DisposeAsync();
+    private sealed class CatIndexRecord
+    {
+        public string Index { get; set; } = String.Empty;
     }
 }

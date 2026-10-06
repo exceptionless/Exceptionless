@@ -47,6 +47,12 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         var paths = document.RootElement.GetProperty("paths");
 
         // Assert
+        Assert.True(paths.TryGetProperty("/api/v2/push", out var pushPath));
+        var pushGet = pushPath.GetProperty("get");
+        AssertResponseCodes(pushGet, "200", "401", "404", "429", "503");
+        Assert.True(pushGet.GetProperty("responses").GetProperty("200").GetProperty("content").TryGetProperty("text/event-stream", out _));
+        Assert.Contains(pushGet.GetProperty("security").EnumerateArray(), requirement => requirement.TryGetProperty("Bearer", out _));
+
         Assert.True(paths.TryGetProperty("/api/v2/auth/login", out var loginPath));
         Assert.True(loginPath.TryGetProperty("post", out var loginPost));
         Assert.True(loginPost.TryGetProperty("requestBody", out _));
