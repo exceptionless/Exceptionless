@@ -5,6 +5,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Validation;
 using Exceptionless.Web.Api.Handlers;
 using Exceptionless.Web.Api.Messages;
@@ -62,6 +63,7 @@ public sealed class AuthHandlerTests : TestWithServices
             GetService<IOAuthTokenRepository>(),
             GetService<IOAuthProviderClient>(),
             GetService<ICacheClient>(),
+            GetService<AuthService>(),
             GetService<IMailer>(),
             GetService<IDomainLoginProvider>(),
             TimeProvider,
