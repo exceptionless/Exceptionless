@@ -1,10 +1,12 @@
-using System.Reflection;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Extensions;
 using Foundatio.AsyncEx;
@@ -362,9 +364,8 @@ public sealed class UsageServiceTests : IntegrationTestsBase
             MaxEventsPerMonth = 75_000,
             PlanId = _plans.MediumPlan.Id
         }, options => options.ImmediateConsistency().Cache());
-        var repository = DispatchProxy.Create<IOrganizationRepository, FailOnceOrganizationSaveProxy>();
-        var repositoryProxy = (FailOnceOrganizationSaveProxy)(object)repository;
-        repositoryProxy.Inner = _organizationRepository;
+        using var repository = new FailOnceOrganizationSaveRepository(
+            GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), _plans, GetService<AppOptions>());
         var usageService = new UsageService(
             repository,
             _projectRepository,
@@ -390,7 +391,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(2, usage.Turns);
         Assert.Equal(1_000, usage.PromptTokens);
         Assert.Equal(2_500, usage.CostInMicrodollars);
-        Assert.Equal(2, repositoryProxy.SaveAttempts);
+        Assert.Equal(2, repository.SaveAttempts);
     }
 
     [Fact]
@@ -968,20 +969,20 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         }
     }
 
-    private class FailOnceOrganizationSaveProxy : DispatchProxy
+    private sealed class FailOnceOrganizationSaveRepository(
+        ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, BillingPlans plans, AppOptions options)
+        : OrganizationRepository(configuration, validator, plans, options), IOrganizationRepository
     {
         private int _saveAttempts;
 
-        public IOrganizationRepository Inner { get; set; } = null!;
         public int SaveAttempts => _saveAttempts;
 
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        Task<Organization> IRepository<Organization>.SaveAsync(Organization document, CommandOptionsDescriptor<Organization>? options)
         {
-            ArgumentNullException.ThrowIfNull(targetMethod);
-            if (targetMethod.Name == "SaveAsync" && Interlocked.Increment(ref _saveAttempts) == 1)
-                throw new InvalidOperationException("Simulated organization usage save failure.");
+            if (Interlocked.Increment(ref _saveAttempts) == 1)
+                return Task.FromException<Organization>(new InvalidOperationException("Simulated organization usage save failure."));
 
-            return targetMethod.Invoke(Inner, args);
+            return base.SaveAsync(document, options);
         }
     }
 }
