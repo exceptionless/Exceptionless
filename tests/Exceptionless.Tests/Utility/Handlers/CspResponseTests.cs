@@ -40,6 +40,7 @@ public sealed class CspResponseTests(ITestOutputHelper output) : TestWithLogging
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal(changedHtml, body);
+            Assert.Contains("default-src 'none'", policy);
             Assert.Contains($"'sha256-{hash}'", policy);
             Assert.DoesNotContain(injectedHash, policy);
             Assert.DoesNotContain("nonce=", body);
@@ -83,6 +84,7 @@ public sealed class CspResponseTests(ITestOutputHelper output) : TestWithLogging
         Assert.Contains("<script>injected()</script>", firstBody);
         Assert.Contains("<script>injected()</script>", secondBody);
         Assert.Contains("\"withDefaultFonts\":false", firstBody);
+        Assert.Contains("\"agent\":{\"disabled\":true}", firstBody);
         Assert.DoesNotContain("cdn.jsdelivr.net", firstBody);
     }
 
