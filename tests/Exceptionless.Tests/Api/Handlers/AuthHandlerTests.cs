@@ -1,11 +1,12 @@
-using System.Reflection;
 using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Validation;
 using Exceptionless.Web.Api.Handlers;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Models;
@@ -26,7 +27,9 @@ public sealed class AuthHandlerTests : TestWithServices
     public async Task Handle_LoginRepositoryException_ReturnsUnauthorizedResult(Exception exception)
     {
         // Arrange
-        var handler = CreateHandler(exception);
+        using var userRepository = new ThrowingUserRepository(
+            GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), GetService<AppOptions>(), exception);
+        var handler = CreateHandler(userRepository);
         var message = new LoginMessage(
             new Login { Email = "test@example.com", Password = "password" },
             new DefaultHttpContext());
@@ -37,6 +40,8 @@ public sealed class AuthHandlerTests : TestWithServices
         // Assert
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
         Assert.Equal("Login failed.", result.Message);
+        Assert.Equal("test@example.com", userRepository.RequestedEmailAddress);
+        Assert.Equal(1, userRepository.GetByEmailAddressCallCount);
     }
 
     public static TheoryData<Exception> LoginRepositoryExceptions => new()
@@ -45,10 +50,8 @@ public sealed class AuthHandlerTests : TestWithServices
         new OperationCanceledException("Repository operation was canceled.")
     };
 
-    private AuthHandler CreateHandler(Exception repositoryException)
+    private AuthHandler CreateHandler(IUserRepository userRepository)
     {
-        var userRepository = DispatchProxy.Create<IUserRepository, ThrowingUserRepositoryProxy>();
-        ((ThrowingUserRepositoryProxy)(object)userRepository).Exception = repositoryException;
         var appOptions = GetService<AppOptions>();
 
         return new AuthHandler(
@@ -67,16 +70,18 @@ public sealed class AuthHandlerTests : TestWithServices
             Log.CreateLogger<AuthHandler>());
     }
 
-    private class ThrowingUserRepositoryProxy : DispatchProxy
+    private sealed class ThrowingUserRepository(
+        ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options, Exception exception)
+        : UserRepository(configuration, validator, options), IUserRepository
     {
-        public Exception Exception { get; set; } = null!;
+        public string? RequestedEmailAddress { get; private set; }
+        public int GetByEmailAddressCallCount { get; private set; }
 
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        Task<User?> IUserRepository.GetByEmailAddressAsync(string emailAddress)
         {
-            if (targetMethod?.Name == nameof(IUserRepository.GetByEmailAddressAsync))
-                return Task.FromException<User?>(Exception);
-
-            throw new NotSupportedException($"Unexpected repository call: {targetMethod?.Name}");
+            RequestedEmailAddress = emailAddress;
+            GetByEmailAddressCallCount++;
+            return Task.FromException<User?>(exception);
         }
     }
 }
