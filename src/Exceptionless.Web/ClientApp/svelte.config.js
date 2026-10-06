@@ -40,7 +40,7 @@ const config = {
                     'https://www.gravatar.com'
                 ],
                 'manifest-src': ['self'],
-                'media-src': ['self', 'blob:', 'https://js.intercomcdn.com'],
+                'media-src': ['self', 'https://js.intercomcdn.com'],
                 'object-src': ['none'],
                 'script-src': ['self', 'strict-dynamic', 'https://*.stripe.com', 'https://*.intercom.io', 'https://js.intercomcdn.com'],
                 'style-src': ['self', 'unsafe-inline'],

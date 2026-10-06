@@ -36,7 +36,7 @@ internal static partial class FrontendContentSecurityPolicy
         csp.AllowConnections.ToAnywhere().To("ws:");
         csp.AllowFrames.FromSelf().From("https://*.stripe.com")
             .From("https://link.com").From("https://*.link.com");
-        csp.AllowAudioAndVideo.FromSelf().From("blob:").From("https://js.intercomcdn.com");
+        csp.AllowAudioAndVideo.FromSelf().From("https://js.intercomcdn.com");
         csp.AllowWorkers.FromSelf();
         csp.AllowFormActions.ToSelf();
         csp.AllowManifest.FromSelf();
