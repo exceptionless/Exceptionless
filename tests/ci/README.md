@@ -6,6 +6,7 @@ The normal build targets a roughly **10-minute critical path**. Track elapsed wo
 
 - `.NET`: four isolated runners build the suite and discover tests through Microsoft Testing Platform's JSON discovery. `backend-shards.mjs` groups whole classes, then distributes the longest classes first using `backend-durations.json`. New classes are included automatically; stale timing entries cannot select or exclude tests. Each runner retains the existing six collection workers and coverage collection.
 - CI tooling uses the project's Node.js runtime (Node 24 in CI), built-in modules, and `node:test`, with no additional packages. Backend summaries read xUnit's native CTRF JSON output; TRX reports remain available as artifacts.
+- Frontend CI runs `build/update-config.test.mjs` against the real configuration writer and container entrypoints. Process stubs check configuration failures, argument preservation, and app process replacement without starting containers. CSP input cases use fast unit tests, with a representative HTTP response-header test covering integration.
 - Browser: six isolated Aspire applications run Playwright's native `--shard=N/6` with `fullyParallel` enabled for sharding. Each runner uses **one worker** because scenarios can change the shared administrator's preferences. This splits large spec files without introducing concurrent mutations of that user. Shard IDs are included in generated data names.
 - Frontend unit/component tests actually execute in `test-client`, with two Vitest workers to bound memory. Previously the workflow only echoed the command.
 - `test-api` and `test-e2e` remain the required checks. They depend on every shard, reject missing/duplicate/inconsistent results, and fail if any shard fails, is cancelled, or is skipped. `fail-fast: false` retains diagnostics from the other shards.
@@ -21,6 +22,12 @@ Playwright's unsharded local and synthetic-monitoring configurations retain thei
 ## Stability
 
 The chaos tests measure requests with controlled notifications while retaining real WebSocket connections. Background jobs can publish delayed seed-data notifications, so the request-budget scenarios intercept those messages and inject explicit bursts. The existing event-visibility journey separately verifies that a real server push updates the visible list without navigation or manual refresh.
+
+The sustained stack-notification phase advances a controlled browser clock. Four waves spaced 1.6 seconds apart must stay inside one five-second throttle window; browser round-trip overhead can otherwise push the last wave into a new window and correctly trigger an extra refresh. It waits for real HTTP responses to finish before advancing to another invalidation or navigating. The request budget is unchanged, and the other chaos phases continue to use real time.
+
+The API-origin scenario gives application traffic and telemetry distinct localhost origins. It verifies that the telemetry SDK checks configuration at its own mocked endpoint while every application request and push connection uses the configured API origin.
+
+The navigation-cache scenario also intercepts server broadcasts. First-time saved-view creation legitimately invalidates those queries, so its notifications must not affect the scenario's unchanged-data request counts. Its navigation helper waits for saved-view groups instead of selecting the temporary direct links shown before the sidebar data loads. Saved-view invalidation and live updates retain separate coverage.
 
 Thirty hide/resume cycles can complete different numbers of WebSocket handshakes on different machines. Each completed reconnect legitimately refreshes active queries. Visibility assertions therefore enforce at most one fetch per observed reconnect and at most one reconnect per resume, with a bounded observation window for late repeated work. Navigation has a separate request budget and waits for each URL transition. These checks still detect repeated listeners, query loops, and excess requests without assuming a particular handshake speed.
 

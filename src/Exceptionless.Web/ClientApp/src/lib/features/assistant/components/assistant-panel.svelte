@@ -6,6 +6,7 @@
     import { Button } from '$comp/ui/button';
     import * as Sheet from '$comp/ui/sheet';
     import { accessToken } from '$features/auth/index.svelte';
+    import { getApiUrl } from '$shared/api/urls';
     import ArrowDown from '@lucide/svelte/icons/arrow-down';
     import Bot from '@lucide/svelte/icons/bot';
     import CircleAlert from '@lucide/svelte/icons/circle-alert';
@@ -473,7 +474,7 @@
 
         try {
             await scrollToLatest('smooth', true);
-            const response = await fetch('/api/v2/assistant/chat', {
+            const response = await fetch(getApiUrl('assistant/chat'), {
                 body: JSON.stringify(request),
                 headers: {
                     Authorization: `Bearer ${accessToken.current}`,

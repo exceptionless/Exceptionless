@@ -103,7 +103,7 @@ public sealed class AssistantServiceTests
         var request = new AssistantChatRequest(
             [new AssistantChatMessage("user", "Say hello")],
             ProjectId: "project-id",
-            Path: "/next/stack/stack-id/event/event-id?tab=details");
+            Path: "/stack/stack-id/event/event-id?tab=details");
         var planOptions = CreatePlanOptions();
         var events = new List<AssistantStreamEvent>();
 

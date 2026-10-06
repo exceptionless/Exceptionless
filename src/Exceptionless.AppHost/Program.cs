@@ -13,10 +13,6 @@ IResourceBuilder<ParameterResource>? assistantApiKey = !String.IsNullOrWhiteSpac
 bool servicesOnly = HasArgument("--services-only");
 bool ciE2E = HasArgument("--ci-e2e");
 bool includeDevTools = !ciE2E;
-int oldAppHttpPort = worktreePorts?.OldAppHttp ?? 7120;
-int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
-int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
-string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
 string appOrigin = worktreePorts?.AppHttpsUrl ?? $"https://web-ex.dev.localhost:{appPort}";
 int docsPort = worktreePorts?.DocsHttp ?? 7141;
@@ -25,7 +21,8 @@ string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.d
 const string SharedEmailConnectionString = "smtp://localhost:1026";
 
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
-    .WithDataVolume("exceptionless.data.v1")
+    // Increment the volume version for breaking data changes and preserve the previous volume.
+    .WithDataVolume("exceptionless.data.v2")
     .WithEndpointProxySupport(false);
 
 // Backend tests use in-memory queues/cache and scoped file storage. Starting the
@@ -129,6 +126,7 @@ if (!servicesOnly)
         .WithReference(storageBlobs, "AzureStorage")
         .WithReference(storageQueues, "AzureQueues")
         .WithEnvironment("ConnectionStrings:Email", SharedEmailConnectionString)
+        .WithEnvironment("EX_BaseURL", appOrigin)
         .WithEnvironment("Mcp:AllowedOrigins:0", appOrigin)
         .WithEnvironment("RunJobsInProcess", "false")
         .WaitFor(elastic)
@@ -161,6 +159,7 @@ if (!servicesOnly)
         .WithReference(storageBlobs, "AzureStorage")
         .WithReference(storageQueues, "AzureQueues")
         .WithEnvironment("ConnectionStrings:Email", SharedEmailConnectionString)
+        .WithEnvironment("EX_BaseURL", appOrigin)
         .WithEnvironment("EX_ExceptionlessApiKey", builder.Configuration["ExceptionlessApiKey"])
         .WithEnvironment("EX_ExceptionlessServerUrl", api.GetEndpoint("http"))
         .WaitFor(api)
@@ -188,35 +187,9 @@ if (!servicesOnly)
     }
 
 #pragma warning disable ASPIREBROWSERLOGS001
-    var oldApp = builder.AddJavaScriptApp("OldApp", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
-        .WithBrowserLogs()
-        .WithReference(api)
-        .WithEnvironment("ASPNETCORE_URLS", oldAppAspNetCoreUrls)
-        .WithEnvironment("USE_HTTPS", "true")
-        .WithEnvironment("LIVERELOAD_PORT", oldAppLiveReloadPort.ToString())
-        .WithHttpEndpoint(port: oldAppPort, targetPort: oldAppPort, name: "https", env: "PORT", isProxied: false)
-        .WithEndpoint("https", e =>
-        {
-            e.TargetHost = "angular-ex.dev.localhost";
-            e.UriScheme = "https";
-        })
-        .WithHttpsDeveloperCertificate()
-        .WithUrlForEndpoint("https", u =>
-        {
-            u.DisplayText = "Open App (Old)";
-        })
-        .WithParentRelationship(api);
-
-    if (worktreePorts is not null)
-    {
-        oldApp.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)
-            .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
-    }
-
     var app = builder.AddViteApp("App", "../Exceptionless.Web/ClientApp")
         .WithBrowserLogs()
         .WithReference(api)
-        .WithReference(oldApp)
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_API_KEY", builder.Configuration["PUBLIC_EXCEPTIONLESS_API_KEY"])
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL", builder.Configuration["PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL"] ?? String.Empty)
@@ -234,16 +207,13 @@ if (!servicesOnly)
         .WithUrlForEndpoint("http", u =>
         {
             u.DisplayText = "Open App";
-            u.Url = $"{u.Url.TrimEnd('/')}/next/";
         })
         .WithParentRelationship(api);
 
     if (worktreePorts is not null)
     {
         app.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)
-            .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl)
-            .WithEnvironment("OLDAPP_HTTP", worktreePorts.OldAppHttpsUrl)
-            .WithEnvironment("OLDAPP_HTTPS", worktreePorts.OldAppHttpsUrl);
+            .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
     }
 
     if (includeDevTools)
