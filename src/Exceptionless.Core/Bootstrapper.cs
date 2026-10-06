@@ -189,6 +189,7 @@ public class Bootstrapper
         services.AddSingleton<SemanticVersionParser>();
         services.AddSingleton<EventParserPluginManager>();
         services.AddSingleton<EventPipeline>();
+        services.AddSingleton<EventIngestionV3Processor>();
         services.AddSingleton<EventPluginManager>();
         services.AddSingleton<EventUpgraderPluginManager>();
         services.AddSingleton<FormattingPluginManager>();

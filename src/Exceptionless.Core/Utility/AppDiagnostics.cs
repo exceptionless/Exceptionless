@@ -133,6 +133,18 @@ public static class AppDiagnostics
     internal static readonly Histogram<double> PostsDecompressionTime = Meter.CreateHistogram<double>("ex.posts.decompression.time", description: "Time to get event post", unit: "ms");
     internal static readonly Counter<int> PostsDecompressionErrors = Meter.CreateCounter<int>("ex.posts.decompression.errors", description: "Time to get event post");
 
+    internal static readonly Counter<int> IngestionV3Received = Meter.CreateCounter<int>("ex.ingestion.v3.received", description: "V3 events read from requests");
+    internal static readonly Counter<int> IngestionV3Persisted = Meter.CreateCounter<int>("ex.ingestion.v3.persisted", description: "V3 events stored");
+    internal static readonly Counter<int> IngestionV3Discarded = Meter.CreateCounter<int>("ex.ingestion.v3.discarded", description: "V3 events accepted but not stored");
+    internal static readonly Counter<int> IngestionV3Duplicate = Meter.CreateCounter<int>("ex.ingestion.v3.duplicate", description: "V3 events acknowledged as duplicates");
+    internal static readonly Counter<int> IngestionV3Blocked = Meter.CreateCounter<int>("ex.ingestion.v3.blocked", description: "V3 events blocked by the organization event limit");
+    internal static readonly Counter<int> IngestionV3Invalid = Meter.CreateCounter<int>("ex.ingestion.v3.invalid", description: "Invalid V3 events");
+    internal static readonly Counter<int> IngestionV3Failed = Meter.CreateCounter<int>("ex.ingestion.v3.failed", description: "V3 events that failed with a retryable error");
+    internal static readonly Counter<int> IngestionV3RequestFailures = Meter.CreateCounter<int>("ex.ingestion.v3.request.failures", description: "V3 requests that failed before every event reached a terminal outcome");
+    internal static readonly Histogram<double> IngestionV3MicroBatchSize = Meter.CreateHistogram<double>("ex.ingestion.v3.microbatch.size", description: "Events per V3 microbatch", unit: "events");
+    internal static readonly Histogram<long> IngestionV3DecompressedSize = Meter.CreateHistogram<long>("ex.ingestion.v3.decompressed.size", description: "Decompressed size of V3 requests", unit: "bytes");
+    internal static readonly UpDownCounter<int> IngestionV3ActiveStreams = Meter.CreateUpDownCounter<int>("ex.ingestion.v3.active_streams", description: "Open V3 ingestion requests");
+
     internal static readonly Counter<int> UsageGeocodingApi = Meter.CreateCounter<int>("ex.usage.geocoding", description: "Geocode API calls");
 
     internal static readonly Counter<int> SavedViewsSize = Meter.CreateCounter<int>("ex.savedviews.size", description: "Size of user saved views");

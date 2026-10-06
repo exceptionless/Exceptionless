@@ -1,5 +1,8 @@
 using System.IO.Pipelines;
 using System.Text;
+using System.Text.Json;
+using Exceptionless.Core.Models.Ingestion;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Web.Utility;
 using Xunit;
 
@@ -7,181 +10,319 @@ namespace Exceptionless.Tests.Utility;
 
 public sealed class EventIngestionV3StreamReaderTests
 {
-    [Fact]
-    public async Task ReadAsync_NewlineDelimitedObjects_ReturnsOneBoundedRecordAtATime()
+    private static readonly JsonSerializerOptions _serializerOptions = new(new JsonSerializerOptions().ConfigureExceptionlessDefaults())
     {
+        RespectNullableAnnotations = false
+    };
+
+    [Fact]
+    public async Task ReadAsync_SingleObject_ReturnsEvent()
+    {
+        // Act
+        var records = await ReadAllAsync("""{"message":"hello"}""");
+
+        // Assert
+        var record = Assert.Single(records);
+        Assert.Equal(0, record.Index);
+        Assert.Equal("hello", record.Event?.Message);
+    }
+
+    [Fact]
+    public async Task ReadAsync_PrettyPrintedObject_ReturnsEvent()
+    {
+        // Arrange
         const string payload = """
-              {"id":"first","type":"log"}
-
-            {"id":"second","type":"log"}
+            {
+              "id": "one",
+              "type": "log",
+              "message": "hello",
+              "tags": [
+                "a",
+                "b"
+              ]
+            }
             """;
-        PipeReader reader = PipeReader.Create(new MemoryStream(Encoding.UTF8.GetBytes(payload)));
 
-        EventIngestionV3StreamRecord? first = await EventIngestionV3StreamReader.ReadAsync(reader, 1024, TestContext.Current.CancellationToken);
-        EventIngestionV3StreamRecord? second = await EventIngestionV3StreamReader.ReadAsync(reader, 1024, TestContext.Current.CancellationToken);
-        EventIngestionV3StreamRecord? end = await EventIngestionV3StreamReader.ReadAsync(reader, 1024, TestContext.Current.CancellationToken);
+        // Act
+        var records = await ReadAllAsync(payload);
 
-        Assert.Equal("first", first?.Event?.Id);
-        Assert.Equal("second", second?.Event?.Id);
-        Assert.Null(end);
-        first?.BufferedRecord.Dispose();
-        second?.BufferedRecord.Dispose();
-        await reader.CompleteAsync();
+        // Assert
+        var ev = Assert.Single(records).Event;
+        Assert.NotNull(ev);
+        Assert.Equal("one", ev.Id);
+        Assert.Equal(["a", "b"], ev.Tags ?? []);
     }
 
     [Fact]
-    public async Task ReadAsync_AdjacentObjectsOnOneLine_RejectsAmbiguousFraming()
+    public async Task ReadAsync_NewlineDelimitedObjectsWithBlankLinesAndCrLf_ReturnsEventsInOrder()
     {
-        const string payload = """{"id":"first","type":"log"}{"id":"second","type":"log"}""";
-        PipeReader reader = PipeReader.Create(new MemoryStream(Encoding.UTF8.GetBytes(payload)));
+        // Arrange
+        const string payload = "{\"message\":\"first\"}\r\n\r\n  {\"message\":\"second\"}\n{\"message\":\"third\"}";
 
-        await Assert.ThrowsAnyAsync<System.Text.Json.JsonException>(async () =>
-            await EventIngestionV3StreamReader.ReadAsync(reader, 1024, TestContext.Current.CancellationToken));
+        // Act
+        var records = await ReadAllAsync(payload);
 
-        await reader.CompleteAsync();
+        // Assert
+        Assert.Equal(["first", "second", "third"], records.Select(r => r.Event?.Message));
+        Assert.Equal([0, 1, 2], records.Select(r => r.Index));
     }
 
     [Fact]
-    public async Task ReadAsync_RecordPrefixOverLimit_RejectsBeforeDeserialization()
+    public async Task ReadAsync_ConcatenatedObjectsOnOneLine_ReturnsEachEvent()
     {
-        string payload = $$"""{"id":"large","type":"log","unknown":"{{new string('x', 4096)}}"}""";
-        PipeReader reader = PipeReader.Create(new MemoryStream(Encoding.UTF8.GetBytes(payload)));
+        // Act
+        var records = await ReadAllAsync("""{"message":"first"}{"message":"second"}""");
 
-        await Assert.ThrowsAsync<EventIngestionV3RecordTooLargeException>(async () =>
-            await EventIngestionV3StreamReader.ReadAsync(reader, 128, TestContext.Current.CancellationToken));
-
-        await reader.CompleteAsync();
+        // Assert
+        Assert.Equal(["first", "second"], records.Select(r => r.Event?.Message));
     }
 
     [Fact]
-    public async Task ReadAsync_TopLevelArray_RejectsWithoutBufferingWholeValue()
+    public async Task ReadAsync_JsonArray_ReturnsEachElement()
     {
-        string payload = $"[{{\"id\":\"first\",\"type\":\"log\"}},\"{new string('x', 4096)}\"]";
-        PipeReader reader = PipeReader.Create(new MemoryStream(Encoding.UTF8.GetBytes(payload)));
-
-        await Assert.ThrowsAsync<System.Text.Json.JsonException>(async () =>
-            await EventIngestionV3StreamReader.ReadAsync(reader, 128, TestContext.Current.CancellationToken));
-
-        await reader.CompleteAsync();
-    }
-
-    [Fact]
-    public async Task ReadAsync_MissingRequiredEventFields_DefersToPerEventValidation()
-    {
-        PipeReader reader = PipeReader.Create(new MemoryStream("{}"u8.ToArray()));
-
-        EventIngestionV3StreamRecord? record = await EventIngestionV3StreamReader.ReadAsync(
-            reader,
-            128,
-            TestContext.Current.CancellationToken);
-
-        Assert.True(record.HasValue);
-        Assert.NotNull(record.Value.Event);
-        Assert.Null(record.Value.Event.Id);
-        Assert.Null(record.Value.Event.Type);
-        record.Value.BufferedRecord.Dispose();
-        await reader.CompleteAsync();
-    }
-
-    [Fact]
-    public async Task ReadAsync_LargeRecordArrivingInSmallFragments_IsReadOnce()
-    {
-        string payload = "{\"id\":\"fragmented\",\"type\":\"log\",\"data\":{\"value\":\""
-            + new string('x', 512 * 1024)
-            + "\"}}";
-        await using var stream = new FragmentedReadStream(Encoding.UTF8.GetBytes(payload), 257);
-        PipeReader reader = PipeReader.Create(stream, new StreamPipeReaderOptions(
-            bufferSize: 512,
-            minimumReadSize: 1,
-            leaveOpen: true));
-
-        EventIngestionV3StreamRecord? record = await EventIngestionV3StreamReader.ReadAsync(
-            reader,
-            1024 * 1024,
-            TestContext.Current.CancellationToken);
-
-        Assert.Equal("fragmented", record?.Event?.Id);
-        Assert.True(stream.ReadCount > 1000);
-        record?.BufferedRecord.Dispose();
-        await reader.CompleteAsync();
-    }
-
-    [Fact]
-    public async Task ReadAsync_RoutingProjection_RetainsPooledBytesUntilExplicitlyMaterialized()
-    {
+        // Arrange
         const string payload = """
-            {"id":"projected","type":"log","source":"Example.Service","stacking":{"title":"Orders failed","signature_data":{"Type":"orders"}},"data":{"large":"context"},"request":{"path":"/orders"}}
+            [
+              {"message":"first"},
+              {"message":"second"}
+            ]
             """;
-        using var pool = new TrackingMemoryPool();
-        PipeReader reader = PipeReader.Create(new MemoryStream(Encoding.UTF8.GetBytes(payload)));
 
-        EventIngestionV3StreamRecord? record = await EventIngestionV3StreamReader.ReadAsync(
-            reader,
-            1024,
-            TestContext.Current.CancellationToken,
-            pool);
+        // Act
+        var records = await ReadAllAsync(payload);
 
-        Assert.True(record.HasValue);
-        Assert.Equal(1, pool.OutstandingRentals);
-        Assert.False(record.Value.BufferedRecord.IsMaterialized);
-        Assert.Equal("projected", record.Value.Event.Id);
-        Assert.Equal("orders", record.Value.Event.Stacking?.SignatureData["Type"]);
-        Assert.Null(record.Value.Event.Stacking?.Title);
-        Assert.Null(record.Value.Event.Data);
-        Assert.Null(record.Value.Event.Request);
+        // Assert
+        Assert.Equal(["first", "second"], records.Select(r => r.Event?.Message));
+    }
 
-        var materialized = record.Value.BufferedRecord.Materialize();
-        Assert.True(record.Value.BufferedRecord.IsMaterialized);
-        record.Value.BufferedRecord.Dispose();
-        Assert.Equal(0, pool.OutstandingRentals);
-        Assert.Equal("context", materialized.Data?.GetProperty("large").GetString());
-        Assert.Equal("/orders", materialized.Request?.Path);
-        Assert.Equal("Orders failed", materialized.Stacking?.Title);
-        Assert.Same(record.Value.Event.Id, materialized.Id);
-        Assert.Same(record.Value.Event.Type, materialized.Type);
-        Assert.Same(record.Value.Event.Source, materialized.Source);
-        Assert.Same(record.Value.Event.Stacking?.SignatureData, materialized.Stacking?.SignatureData);
-        await reader.CompleteAsync();
+    [Theory]
+    [InlineData("")]
+    [InlineData("   \r\n ")]
+    [InlineData("[]")]
+    [InlineData(" [ \n ] ")]
+    public async Task ReadAsync_NoEvents_ReturnsNoRecords(string payload)
+    {
+        // Act
+        var records = await ReadAllAsync(payload);
+
+        // Assert
+        Assert.Empty(records);
     }
 
     [Fact]
-    public async Task Materialize_LargeRawStack_ReusesRoutingStringInsteadOfAllocatingItTwice()
+    public async Task ReadAsync_ByteOrderMark_IsIgnored()
     {
-        string stackTrace = new('x', 128 * 1024);
-        string payload = $$"""{"id":"large-stack","type":"error","exception_type":"Example.Exception","stack_trace":"{{stackTrace}}","message":"failed"}""";
-        PipeReader reader = PipeReader.Create(new MemoryStream(Encoding.UTF8.GetBytes(payload)));
+        // Arrange
+        byte[] payload = [.. "﻿"u8, .. """{"message":"hello"}"""u8];
 
-        EventIngestionV3StreamRecord? record = await EventIngestionV3StreamReader.ReadAsync(
-            reader,
-            256 * 1024,
-            TestContext.Current.CancellationToken);
+        // Act
+        var records = await ReadAllAsync(payload);
 
-        Assert.True(record.HasValue);
-        var materialized = record.Value.BufferedRecord.Materialize();
-        Assert.Same(record.Value.Event.Id, materialized.Id);
-        Assert.Same(record.Value.Event.Type, materialized.Type);
-        Assert.Same(record.Value.Event.ExceptionType, materialized.ExceptionType);
-        Assert.Same(record.Value.Event.StackTrace, materialized.StackTrace);
-        Assert.Equal("failed", materialized.Message);
-
-        record.Value.BufferedRecord.Dispose();
-        await reader.CompleteAsync();
+        // Assert
+        Assert.Equal("hello", Assert.Single(records).Event?.Message);
     }
 
-    private sealed class FragmentedReadStream(byte[] value, int maximumReadSize) : MemoryStream(value)
+    [Fact]
+    public async Task ReadAsync_NestedDataModels_DeserializeLikeVersionTwoData()
     {
-        public int ReadCount { get; private set; }
+        // Arrange
+        const string payload = """
+            {"type":"error","error":{"message":"boom","type":"System.InvalidOperationException","stack_trace":[{"name":"Run","declaring_namespace":"Example","declaring_type":"Service","line_number":42}]},"request":{"http_method":"GET","path":"/orders","headers":{"Accept":["application/json"]}},"user":{"identity":"user@example.com","name":"Example User"},"stacking":{"title":"Orders","signature_data":{"area":"orders"}},"data":{"order":{"id":12,"total":10.5}}}
+            """;
 
-        public override int Read(Span<byte> buffer)
+        // Act
+        var ev = Assert.Single(await ReadAllAsync(payload)).Event;
+
+        // Assert
+        Assert.NotNull(ev);
+        Assert.Equal("System.InvalidOperationException", ev.Error?.Type);
+        var frame = Assert.Single(ev.Error!.StackTrace!);
+        Assert.Equal("Run", frame.Name);
+        Assert.Equal(42, frame.LineNumber);
+        Assert.Equal("/orders", ev.Request?.Path);
+        Assert.Equal(["application/json"], ev.Request?.Headers?["Accept"] ?? []);
+        Assert.Equal("user@example.com", ev.User?.Identity);
+        Assert.Equal("orders", ev.Stacking?.SignatureData?["area"]);
+        Assert.True(ev.Data?.ContainsKey("order"));
+    }
+
+    [Theory]
+    [InlineData("\"text\"\n{\"message\":\"after\"}")]
+    [InlineData("42\n{\"message\":\"after\"}")]
+    [InlineData("null\n{\"message\":\"after\"}")]
+    [InlineData("{\"message\":\"x\"}"+"\n[1,2]\n{\"message\":\"after\"}")]
+    [InlineData("[1, {\"message\":\"after\"}]")]
+    [InlineData("[[{\"message\":\"nested\"}], {\"message\":\"after\"}]")]
+    public async Task ReadAsync_NonObjectValue_ReportsInvalidAndContinues(string payload)
+    {
+        // Act
+        var records = (await ReadAllAsync(payload)).Where(r => r.Event?.Message != "x").ToList();
+
+        // Assert
+        Assert.Equal(2, records.Count);
+        Assert.Equal(EventIngestionV3ErrorCodes.InvalidEvent, records[0].ErrorCode);
+        Assert.Null(records[0].Event);
+        Assert.Equal("after", records[1].Event?.Message);
+    }
+
+    [Fact]
+    public async Task ReadAsync_WrongPropertyType_ReportsInvalidAndContinues()
+    {
+        // Act
+        var records = await ReadAllAsync("{\"id\":1,\"message\":\"bad\"}\n{\"id\":\"2\",\"message\":\"good\"}");
+
+        // Assert
+        Assert.Equal(EventIngestionV3ErrorCodes.InvalidEvent, records[0].ErrorCode);
+        Assert.Contains("$.id", records[0].ErrorMessage);
+        Assert.Equal("good", records[1].Event?.Message);
+    }
+
+    [Fact]
+    public async Task ReadAsync_InvalidJsonLine_ReportsInvalidAndResumesAtNextLine()
+    {
+        // Arrange
+        const string payload = "{\"message\":\"first\"}\n{\"message\": oops}\n{\"message\":\"third\"}";
+
+        // Act
+        var records = await ReadAllAsync(payload);
+
+        // Assert
+        Assert.Equal(3, records.Count);
+        Assert.Equal("first", records[0].Event?.Message);
+        Assert.Equal(EventIngestionV3ErrorCodes.InvalidJson, records[1].ErrorCode);
+        Assert.Equal("third", records[2].Event?.Message);
+        Assert.Equal(2, records[2].Index);
+    }
+
+    [Fact]
+    public async Task ReadAsync_InvalidPrettyPrintedObject_ResumesAtNextObject()
+    {
+        // Arrange
+        const string payload = """
+            {
+              "message": "broken",
+              "tags": [ "a" "b" ],
+              "type": "log"
+            }
+            {
+              "message": "next"
+            }
+            """;
+
+        // Act
+        var records = await ReadAllAsync(payload);
+
+        // Assert
+        Assert.Equal(2, records.Count);
+        Assert.Equal(EventIngestionV3ErrorCodes.InvalidJson, records[0].ErrorCode);
+        Assert.Equal("next", records[1].Event?.Message);
+    }
+
+    [Fact]
+    public async Task ReadAsync_TruncatedFinalObject_ReportsInvalid()
+    {
+        // Act
+        var records = await ReadAllAsync("{\"message\":\"first\"}\n{\"message\":\"sec");
+
+        // Assert
+        Assert.Equal("first", records[0].Event?.Message);
+        Assert.Equal(EventIngestionV3ErrorCodes.InvalidJson, records[1].ErrorCode);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReadAsync_EventLargerThanLimit_ReportsTooLargeAndContinues(bool asArray)
+    {
+        // Arrange
+        string large = $$"""{"message":"{{new string('x', 4096)}}"}""";
+        string small = """{"message":"small"}""";
+        string payload = asArray ? $"[{large},{small}]" : $"{large}\n{small}";
+
+        // Act
+        var records = await ReadAllAsync(payload, maximumEventSize: 1024);
+
+        // Assert
+        Assert.Equal(2, records.Count);
+        Assert.Equal(EventIngestionV3ErrorCodes.EventTooLarge, records[0].ErrorCode);
+        Assert.Equal("small", records[1].Event?.Message);
+    }
+
+    [Theory]
+    [InlineData("{\"message\":\"first\"}\n{\"message\":\"second\"}\n")]
+    [InlineData("[{\"message\":\"first\"} , {\"message\":\"second\"}]")]
+    [InlineData("{\n \"message\": \"first\"\n}\n{\"message\":\"second\"}")]
+    public async Task ReadAsync_OneByteAtATime_ReturnsSameEvents(string payload)
+    {
+        // Act
+        var records = await ReadAllAsync(Encoding.UTF8.GetBytes(payload), oneByteAtATime: true);
+
+        // Assert
+        Assert.Equal(["first", "second"], records.Select(r => r.Event?.Message));
+    }
+
+    [Fact]
+    public async Task ReadAsync_LargeEventOneByteAtATime_SkipsWithoutFailingTheStream()
+    {
+        // Arrange
+        string payload = $$"""{"message":"{{new string('x', 2048)}}"}""" + "\n" + """{"message":"small"}""";
+
+        // Act
+        var records = await ReadAllAsync(Encoding.UTF8.GetBytes(payload), maximumEventSize: 256, oneByteAtATime: true);
+
+        // Assert
+        Assert.Equal(EventIngestionV3ErrorCodes.EventTooLarge, records[0].ErrorCode);
+        Assert.Equal("small", records[1].Event?.Message);
+    }
+
+    [Theory]
+    [InlineData("[{\"message\":\"a\"} {\"message\":\"b\"}]")]
+    [InlineData("[{\"message\":\"a\"},]")]
+    [InlineData("[{\"message\":\"a\"}")]
+    [InlineData("[{\"message\":\"a\"}] {\"message\":\"b\"}")]
+    [InlineData("[{\"message\": oops}]")]
+    public Task ReadAsync_MalformedArray_Throws(string payload)
+    {
+        // Act & Assert
+        return Assert.ThrowsAnyAsync<JsonException>(() => ReadAllAsync(payload));
+    }
+
+    private static Task<List<EventIngestionV3StreamRecord>> ReadAllAsync(string payload, long maximumEventSize = 64 * 1024)
+    {
+        return ReadAllAsync(Encoding.UTF8.GetBytes(payload), maximumEventSize);
+    }
+
+    private static async Task<List<EventIngestionV3StreamRecord>> ReadAllAsync(byte[] payload, long maximumEventSize = 64 * 1024, bool oneByteAtATime = false)
+    {
+        Stream stream = oneByteAtATime ? new OneByteAtATimeStream(payload) : new MemoryStream(payload);
+        var pipeReader = PipeReader.Create(stream);
+        var reader = new EventIngestionV3StreamReader(pipeReader, maximumEventSize, _serializerOptions);
+        var records = new List<EventIngestionV3StreamRecord>();
+        try
         {
-            ReadCount++;
-            return base.Read(buffer[..Math.Min(buffer.Length, maximumReadSize)]);
+            while (await reader.ReadAsync(TestContext.Current.CancellationToken) is { } record)
+            {
+                records.Add(record);
+            }
+        }
+        finally
+        {
+            await pipeReader.CompleteAsync();
         }
 
+        return records;
+    }
+
+    private sealed class OneByteAtATimeStream(byte[] payload) : MemoryStream(payload)
+    {
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            ReadCount++;
-            return base.ReadAsync(buffer[..Math.Min(buffer.Length, maximumReadSize)], cancellationToken);
+            return base.ReadAsync(buffer.Length > 1 ? buffer[..1] : buffer, cancellationToken);
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return base.Read(buffer, offset, Math.Min(count, 1));
         }
     }
 }

@@ -12,7 +12,6 @@ internal sealed class EventIngestionV3ActiveStreamMiddleware(RequestDelegate nex
         AppOptions options)
     {
         if (!options.EventIngestionV3.Enabled
-            || options.EventSubmissionDisabled
             || context.GetEndpoint()?.Metadata.GetMetadata<EventIngestionV3EndpointMetadata>() is null)
         {
             await next(context);
@@ -25,6 +24,7 @@ internal sealed class EventIngestionV3ActiveStreamMiddleware(RequestDelegate nex
         using RateLimitLease lease = await concurrencyLimiter.AcquireGlobalActiveStreamAsync(context.RequestAborted);
         if (!lease.IsAcquired)
         {
+            context.Response.Headers.RetryAfter = EventIngestionV3Endpoints.BusyRetryAfterSeconds;
             await Microsoft.AspNetCore.Http.Results.Problem(
                 statusCode: StatusCodes.Status429TooManyRequests,
                 title: "Event ingestion stream capacity is busy.")

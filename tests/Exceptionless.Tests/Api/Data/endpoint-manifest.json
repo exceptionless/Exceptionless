@@ -2118,20 +2118,6 @@
     "authenticationSchemes": []
   },
   {
-    "method": "POST",
-    "route": "/api/v2/projects/{projectId:objectid}/events/posts/status",
-    "displayName": "HTTP: POST api/v2/projects/{projectId:objectid}/events/posts/status =\u003E GetStatusesAsync",
-    "tags": [
-      "Event"
-    ],
-    "allowAnonymous": false,
-    "authorizationPolicies": [
-      "ClientPolicy"
-    ],
-    "authorizationRoles": [],
-    "authenticationSchemes": []
-  },
-  {
     "method": "GET",
     "route": "/api/v2/projects/{projectId:objectid}/events/sessions",
     "displayName": "HTTP: GET api/v2/projects/{projectId:objectid}/events/sessions",
@@ -3163,20 +3149,6 @@
     "method": "POST",
     "route": "/api/v3/projects/{projectId:objectid}/events",
     "displayName": "HTTP: POST /api/v3/projects/{projectId:objectid}/events =\u003E HandleProjectAsync",
-    "tags": [
-      "Event Ingestion V3"
-    ],
-    "allowAnonymous": false,
-    "authorizationPolicies": [
-      "ClientPolicy"
-    ],
-    "authorizationRoles": [],
-    "authenticationSchemes": []
-  },
-  {
-    "method": "POST",
-    "route": "/api/v3/projects/{projectId:objectid}/events/processing/status",
-    "displayName": "HTTP: POST /api/v3/projects/{projectId:objectid}/events/processing/status =\u003E GetProcessingStatusAsync",
     "tags": [
       "Event Ingestion V3"
     ],

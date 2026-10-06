@@ -1,20 +1,17 @@
-using System.IO.Compression;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Ingestion;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Utility;
 using Exceptionless.Web.Extensions;
-using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Exceptionless.Web.Utility.Handlers;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Exceptions;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Net.Http.Headers;
@@ -24,89 +21,58 @@ namespace Exceptionless.Web.Endpoints;
 
 public static class EventIngestionV3Endpoints
 {
-    private const string ContentType = "application/x-ndjson";
+    internal const string BusyRetryAfterSeconds = "5";
+    internal const string UnavailableRetryAfterSeconds = "30";
 
-    public static IEndpointRouteBuilder MapEventIngestionV3(this IEndpointRouteBuilder endpoints, AppOptions options)
+    private const string Description = """
+        Submits one or more events. The request body can be a single JSON event object, a JSON array of
+        event objects, or event objects separated by whitespace or newlines (NDJSON). Events are read and
+        processed as they arrive, so a request can stream a large number of events.
+
+        Every event property is optional. A request is acknowledged after every event reaches an outcome:
+        stored, discarded, duplicate, blocked by the plan limit, or invalid. Invalid events are reported
+        with their position in the request and do not prevent the remaining events from being processed.
+        Include an `id` on each event to make resending a request safe.
+        """;
+
+    private static readonly HashSet<string> _supportedMediaTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "application/json",
+        "application/x-ndjson",
+        "application/ndjson",
+        "application/jsonl",
+        "application/x-jsonl",
+        "application/jsonlines",
+        "application/x-jsonlines"
+    };
+
+    public static IEndpointRouteBuilder MapEventIngestionV3(this IEndpointRouteBuilder endpoints, EventIngestionV3Options options)
     {
         var group = endpoints.MapGroup("/api/v3")
             .RequireAuthorization(AuthorizationRoles.ClientPolicy)
             .WithTags("Event Ingestion V3");
 
         Map(group.MapPost("/events", HandleDefaultProjectAsync), options)
-            .WithName("PostEventsV3");
+            .WithName("PostEventsV3")
+            .WithSummary("Submit events to the project of the API key.");
         Map(group.MapPost("/projects/{projectId:objectid}/events", HandleProjectAsync), options)
-            .WithName("PostEventsByProjectV3");
-        group.MapPost("/projects/{projectId:objectid}/events/processing/status", GetProcessingStatusAsync)
-            .WithName("GetEventIngestionProcessingStatusV3")
-            .ExcludeFromDescription()
-            .WithSummary("Get full processing status for V3 events.")
-            .WithDescription("Returns benchmark-oriented completion status for client event ids while terminal side-effect markers remain available.")
-            .Accepts<EventIngestionV3ProcessingStatusRequest>("application/json")
-            .Produces<EventIngestionV3ProcessingSummary>()
-            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-            .Produces(StatusCodes.Status404NotFound)
-            .AddOpenApiOperationTransformer(AddBearerSecurityAsync);
+            .WithName("PostEventsByProjectV3")
+            .WithSummary("Submit events to a project.");
 
         return endpoints;
     }
 
-    private static async Task<IResult> GetProcessingStatusAsync(
-        string projectId,
-        EventIngestionV3ProcessingStatusRequest statusRequest,
-        HttpRequest request,
-        IEventIngestionIdStore eventIngestionIdStore,
-        IngestionSideEffectExecutor sideEffectExecutor,
-        AppOptions options,
-        CancellationToken cancellationToken)
-    {
-        if (!options.EventIngestionV3.EnableProcessingStatus)
-        {
-            return Results.NotFound();
-        }
-
-        string? claimProjectId = request.GetProjectId();
-        if (claimProjectId is null || !String.Equals(projectId, claimProjectId, StringComparison.Ordinal))
-        {
-            return Results.NotFound();
-        }
-
-        if (statusRequest.ClientIds is not { Count: >= 1 and <= 1000 })
-        {
-            return InvalidProcessingIdentifiers("Between 1 and 1000 client event ids are required.");
-        }
-
-        string[] clientIds = statusRequest.ClientIds.Distinct(StringComparer.Ordinal).ToArray();
-        if (clientIds.Any(id => String.IsNullOrWhiteSpace(id) || id.Length > EventIngestionV3Limits.MaximumEventIdLength))
-        {
-            return InvalidProcessingIdentifiers($"Client event ids must contain between 1 and {EventIngestionV3Limits.MaximumEventIdLength} characters.");
-        }
-
-        var assignedIds = await eventIngestionIdStore.GetAsync(projectId, clientIds, cancellationToken);
-        string[] eventIds = assignedIds.Values
-            .Select(identity => identity.EventId)
-            .ToArray();
-        var completed = await sideEffectExecutor.GetCompletedIdentitiesAsync(IngestionSideEffectExecutor.TerminalStage, projectId, eventIds);
-        return Results.Ok(new EventIngestionV3ProcessingSummary(clientIds.Length, clientIds.Length - completed.Count, completed.Count));
-    }
-
-    private static IResult InvalidProcessingIdentifiers(string detail)
-    {
-        return Results.Problem(
-            detail,
-            statusCode: StatusCodes.Status422UnprocessableEntity,
-            title: "Invalid client event ids");
-    }
-
-    private static RouteHandlerBuilder Map(RouteHandlerBuilder builder, AppOptions options)
+    private static RouteHandlerBuilder Map(RouteHandlerBuilder builder, EventIngestionV3Options options)
     {
         builder
+            .WithDescription(Description)
             .WithMetadata(EventIngestionV3EndpointMetadata.Instance)
-            .Accepts<EventIngestionV3Event>(ContentType)
+            .Accepts<EventIngestionV3Event>("application/json", "application/x-ndjson")
             .Produces<EventIngestionV3Response>(StatusCodes.Status200OK, "application/json")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status402PaymentRequired)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status413RequestEntityTooLarge)
             .ProducesProblem(StatusCodes.Status415UnsupportedMediaType)
@@ -115,7 +81,7 @@ public static class EventIngestionV3Endpoints
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .WithRequestTimeout(new RequestTimeoutPolicy
             {
-                Timeout = options.EventIngestionV3.RequestTimeout,
+                Timeout = options.RequestTimeout,
                 TimeoutStatusCode = StatusCodes.Status503ServiceUnavailable
             })
             .AddOpenApiOperationTransformer(AddBearerSecurityAsync);
@@ -136,61 +102,34 @@ public static class EventIngestionV3Endpoints
         return Task.CompletedTask;
     }
 
-    private static Task<IResult> HandleDefaultProjectAsync(
-        HttpRequest request,
-        EventIngestionV3Processor processor,
-        EventIngestionV3ConcurrencyLimiter concurrencyLimiter,
-        IProjectRepository projectRepository,
-        IOrganizationRepository organizationRepository,
-        AppOptions options,
-        CancellationToken cancellationToken) =>
-        HandleAsync(request, null, processor, concurrencyLimiter, projectRepository, organizationRepository, options, cancellationToken);
+    private static Task<IResult> HandleDefaultProjectAsync(HttpContext httpContext, [AsParameters] EventIngestionV3Services services, CancellationToken cancellationToken) =>
+        HandleAsync(httpContext, null, services, cancellationToken);
 
-    private static Task<IResult> HandleProjectAsync(
-        HttpRequest request,
-        string projectId,
-        EventIngestionV3Processor processor,
-        EventIngestionV3ConcurrencyLimiter concurrencyLimiter,
-        IProjectRepository projectRepository,
-        IOrganizationRepository organizationRepository,
-        AppOptions options,
-        CancellationToken cancellationToken) =>
-        HandleAsync(request, projectId, processor, concurrencyLimiter, projectRepository, organizationRepository, options, cancellationToken);
+    private static Task<IResult> HandleProjectAsync(HttpContext httpContext, string projectId, [AsParameters] EventIngestionV3Services services, CancellationToken cancellationToken) =>
+        HandleAsync(httpContext, projectId, services, cancellationToken);
 
-    private static async Task<IResult> HandleAsync(
-        HttpRequest request,
-        string? projectId,
-        EventIngestionV3Processor processor,
-        EventIngestionV3ConcurrencyLimiter concurrencyLimiter,
-        IProjectRepository projectRepository,
-        IOrganizationRepository organizationRepository,
-        AppOptions options,
-        CancellationToken cancellationToken)
+    private static async Task<IResult> HandleAsync(HttpContext httpContext, string? projectId, EventIngestionV3Services services, CancellationToken cancellationToken)
     {
-        if (!options.EventIngestionV3.Enabled || options.EventSubmissionDisabled)
+        var request = httpContext.Request;
+        var options = services.Options.EventIngestionV3;
+        if (!options.Enabled)
         {
-            return Results.Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "Event ingestion is unavailable.");
+            return Results.NotFound();
         }
 
-        if (!MediaTypeHeaderValue.TryParse(request.ContentType, out MediaTypeHeaderValue? mediaType)
-            || !String.Equals(mediaType.MediaType.Value, ContentType, StringComparison.OrdinalIgnoreCase))
+        if (!await services.SystemSettingsService.IsEventSubmissionEnabledAsync())
         {
-            return Results.Problem(statusCode: StatusCodes.Status415UnsupportedMediaType, title: $"Content-Type must be {ContentType}.");
+            return Unavailable(httpContext, "Event submission is temporarily disabled.");
         }
 
-        string[] contentEncodings = request.Headers.ContentEncoding
-            .SelectMany(value => value?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [])
-            .ToArray();
-        if (contentEncodings.Length > 1)
+        if (!TryGetMediaType(request, out string? mediaType, out string? charSet))
         {
-            return Results.Problem(statusCode: StatusCodes.Status415UnsupportedMediaType, title: "Only one Content-Encoding may be specified.");
+            return Results.Problem(
+                statusCode: StatusCodes.Status415UnsupportedMediaType,
+                title: "Content-Type must be application/json or application/x-ndjson with UTF-8 encoding.");
         }
 
-        string? contentEncoding = contentEncodings.FirstOrDefault();
-        if (!String.IsNullOrEmpty(contentEncoding)
-            && !String.Equals(contentEncoding, "identity", StringComparison.OrdinalIgnoreCase)
-            && !String.Equals(contentEncoding, "gzip", StringComparison.OrdinalIgnoreCase)
-            && !String.Equals(contentEncoding, "br", StringComparison.OrdinalIgnoreCase))
+        if (!TryGetContentEncoding(request, out string? contentEncoding))
         {
             return Results.Problem(statusCode: StatusCodes.Status415UnsupportedMediaType, title: "Content-Encoding must be gzip, br, or identity.");
         }
@@ -207,23 +146,19 @@ public static class EventIngestionV3Endpoints
             return Results.Problem(statusCode: StatusCodes.Status400BadRequest, title: "No project was specified and no default project was found.");
         }
 
-        var project = await projectRepository.GetByIdAsync(projectId, o => o.Cache());
+        var project = await services.ProjectRepository.GetByIdAsync(projectId, o => o.Cache());
         if (project is null || !request.CanAccessOrganization(project.OrganizationId))
         {
             return Results.NotFound();
         }
 
-        if (options.EventIngestionV3.AllowedProjectIds.Count > 0 && !options.EventIngestionV3.AllowedProjectIds.Contains(project.Id))
+        if ((options.AllowedProjectIds.Count > 0 && !options.AllowedProjectIds.Contains(project.Id))
+            || (options.AllowedOrganizationIds.Count > 0 && !options.AllowedOrganizationIds.Contains(project.OrganizationId)))
         {
             return Results.NotFound();
         }
 
-        if (options.EventIngestionV3.AllowedOrganizationIds.Count > 0 && !options.EventIngestionV3.AllowedOrganizationIds.Contains(project.OrganizationId))
-        {
-            return Results.NotFound();
-        }
-
-        var organization = await organizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
+        var organization = await services.OrganizationRepository.GetByIdAsync(project.OrganizationId, o => o.Cache());
         if (organization is null)
         {
             return Results.NotFound();
@@ -231,78 +166,74 @@ public static class EventIngestionV3Endpoints
 
         if (organization.IsSuspended)
         {
-            return Results.Problem(statusCode: StatusCodes.Status402PaymentRequired, title: "The organization cannot accept events.");
+            return Results.Problem(statusCode: StatusCodes.Status402PaymentRequired, title: "The organization is suspended and cannot accept events.");
         }
 
-        using RateLimitLease organizationStreamLease = await concurrencyLimiter.AcquireOrganizationActiveStreamAsync(organization.Id, cancellationToken);
+        if (await services.UsageService.GetEventsLeftAsync(organization.Id) <= 0)
+        {
+            await services.UsageService.IncrementBlockedAsync(organization.Id, project.Id);
+            return Results.Problem(statusCode: StatusCodes.Status402PaymentRequired, title: "The organization has reached its event limit.");
+        }
+
+        using RateLimitLease organizationStreamLease = await services.ConcurrencyLimiter.AcquireOrganizationActiveStreamAsync(organization.Id, cancellationToken);
         if (!organizationStreamLease.IsAcquired)
         {
-            return Results.Problem(
-                statusCode: StatusCodes.Status429TooManyRequests,
-                title: "Event ingestion stream capacity is busy.");
+            return Busy(httpContext, null, "Too many event streams are open for this organization.");
         }
 
         request.SetProject(project);
-        var compressedBodyState = request.HttpContext.Features.Get<EventIngestionV3RequestBodyState>();
         var limitedBody = new EventPostRequestBodyStream(
             request.Body,
-            options.EventIngestionV3.MaximumDecompressedBodySize,
+            options.MaximumDecompressedBodySize,
             "The decompressed request body is too large.",
             StatusCodes.Status400BadRequest,
             "The compressed request body is invalid.");
         request.Body = limitedBody;
 
-        var response = new EventIngestionV3Response();
-        var batch = new List<EventIngestionV3BufferedRecord>(options.EventIngestionV3.MicroBatchSize);
-        long batchBytes = 0;
-        int received = 0;
-        long maximumRecordSize = Math.Min(options.EventIngestionV3.MaximumEventSize, options.EventIngestionV3.MaximumMicroBatchBytes);
-
-        using var activity = AppDiagnostics.StartActivity("Ingestion V3 Request");
-        if (request.ContentLength.HasValue)
+        var eventPostInfo = new EventPostInfo
         {
-            AppDiagnostics.IngestionV3CompressedSize.Record(request.ContentLength.Value);
-        }
+            ApiVersion = 3,
+            CharSet = charSet,
+            ContentEncoding = contentEncoding,
+            IpAddress = request.GetClientIpAddress(),
+            MediaType = mediaType,
+            OrganizationId = organization.Id,
+            ProjectId = project.Id,
+            ClientKeyHash = request.GetClientKeyHash(),
+            UserAgent = request.GetClientUserAgent()
+        };
+
+        var compressedBodyState = httpContext.Features.Get<EventIngestionV3RequestBodyState>();
+        var reader = new EventIngestionV3StreamReader(request.BodyReader, options.MaximumEventSize, services.Processor.SerializerOptions);
+        var response = new EventIngestionV3Response();
+        var batch = new List<EventIngestionV3Record>(options.MicroBatchSize);
+        long batchBytes = 0;
 
         AppDiagnostics.IngestionV3ActiveStreams.Add(1);
         try
         {
-            while (await EventIngestionV3StreamReader.ReadAsync(request.BodyReader, maximumRecordSize, cancellationToken) is { } record)
+            while (await reader.ReadAsync(cancellationToken) is { } record)
             {
-                EventIngestionV3BufferedRecord bufferedRecord = record.BufferedRecord;
-                bool addedToBatch = false;
-                try
+                if (record.Event is null)
                 {
-                    received++;
-                    if (received > options.EventIngestionV3.MaximumEventsPerRequest)
-                    {
-                        return Problem(response, StatusCodes.Status413RequestEntityTooLarge, "The request contains too many events.");
-                    }
-
-                    long eventSize = record.Size;
-                    if (batch.Count > 0 && batchBytes + eventSize > options.EventIngestionV3.MaximumMicroBatchBytes)
-                    {
-                        response.Add(await ProcessBatchAsync(processor, concurrencyLimiter, batch, organization, project, cancellationToken));
-                        batchBytes = 0;
-                    }
-
-                    batch.Add(bufferedRecord);
-                    addedToBatch = true;
-                    batchBytes += eventSize;
-                    if (batch.Count < options.EventIngestionV3.MicroBatchSize)
-                    {
-                        continue;
-                    }
-
-                    response.Add(await ProcessBatchAsync(processor, concurrencyLimiter, batch, organization, project, cancellationToken));
-                    batchBytes = 0;
+                    response.Received++;
+                    response.Invalid++;
+                    response.AddError(record.Index, null, record.ErrorCode!, record.ErrorMessage!);
+                    AppDiagnostics.IngestionV3Received.Add(1);
+                    AppDiagnostics.IngestionV3Invalid.Add(1);
+                    continue;
                 }
-                finally
+
+                if (batch.Count > 0 && batchBytes + record.Size > options.MaximumMicroBatchBytes)
                 {
-                    if (!addedToBatch)
-                    {
-                        bufferedRecord.Dispose();
-                    }
+                    await ProcessBatchAsync();
+                }
+
+                batch.Add(new EventIngestionV3Record(record.Index, record.Event));
+                batchBytes += record.Size;
+                if (batch.Count >= options.MicroBatchSize)
+                {
+                    await ProcessBatchAsync();
                 }
             }
 
@@ -313,127 +244,150 @@ public static class EventIngestionV3Endpoints
 
             if (batch.Count > 0)
             {
-                response.Add(await ProcessBatchAsync(processor, concurrencyLimiter, batch, organization, project, cancellationToken));
+                await ProcessBatchAsync();
             }
         }
-        catch (EventIngestionV3RecordTooLargeException)
+        catch (Exception ex) when ((ex is JsonException or InvalidDataException) && GetBodyRejection(limitedBody, compressedBodyState) is not null)
         {
-            return Problem(response, StatusCodes.Status413RequestEntityTooLarge, "An event exceeds the maximum event size.");
-        }
-        catch (JsonException) when (GetBodyRejection(limitedBody, compressedBodyState) is not null)
-        {
-            BodyRejection rejection = GetBodyRejection(limitedBody, compressedBodyState)!;
+            var rejection = GetBodyRejection(limitedBody, compressedBodyState)!;
             return Problem(response, rejection.StatusCode, rejection.Reason);
         }
         catch (JsonException ex)
         {
-            AppDiagnostics.IngestionV3Failures.Add(1);
-            return Problem(response, StatusCodes.Status400BadRequest, "The event stream contains invalid JSON.", ex.Message);
-        }
-        catch (InvalidDataException) when (GetBodyRejection(limitedBody, compressedBodyState) is not null)
-        {
-            BodyRejection rejection = GetBodyRejection(limitedBody, compressedBodyState)!;
-            return Problem(response, rejection.StatusCode, rejection.Reason);
+            return Problem(response, StatusCodes.Status400BadRequest, "The request body is not a valid JSON array of events.", ex.Message);
         }
         catch (InvalidDataException ex)
         {
-            AppDiagnostics.IngestionV3Failures.Add(1);
             return Problem(response, StatusCodes.Status400BadRequest, "The compressed request body is invalid.", ex.Message);
         }
-        catch (ProcessingConcurrencyRejectedException)
+        catch (ProcessingCapacityUnavailableException)
         {
-            return Problem(response, StatusCodes.Status429TooManyRequests, "Event ingestion processing capacity is busy.");
+            return Busy(httpContext, response, "Event processing capacity is busy.");
         }
-        catch (EventBatchWriteException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            AppDiagnostics.IngestionV3Failures.Add(1);
-            return Problem(response, StatusCodes.Status503ServiceUnavailable, "Durable event processing is unavailable.");
-        }
-        catch (RepositoryException)
-        {
-            AppDiagnostics.IngestionV3Failures.Add(1);
-            return Problem(response, StatusCodes.Status503ServiceUnavailable, "Durable event storage is unavailable.");
-        }
-        catch (Exception)
-        {
-            AppDiagnostics.IngestionV3Failures.Add(1);
-            throw;
+            AppDiagnostics.IngestionV3RequestFailures.Add(1);
+            services.LoggerFactory.CreateLogger(typeof(EventIngestionV3Endpoints)).LogError(ex, "Error processing V3 events for project {ProjectId}: {Message}", project.Id, ex.Message);
+            return Unavailable(httpContext, "Events could not be processed.", response);
         }
         finally
         {
-            DisposeBatch(batch);
             AppDiagnostics.IngestionV3DecompressedSize.Record(limitedBody.BytesRead);
             AppDiagnostics.IngestionV3ActiveStreams.Add(-1);
         }
 
+        if (response.Failed > 0)
+        {
+            AppDiagnostics.IngestionV3RequestFailures.Add(1);
+            return Unavailable(httpContext, "Some events could not be processed.", response);
+        }
+
         if (response.Received > 0 && response.Invalid == response.Received)
         {
-            return Problem(response, StatusCodes.Status422UnprocessableEntity, "The stream did not contain any valid event records.");
+            return Problem(response, StatusCodes.Status422UnprocessableEntity, "The request did not contain any valid events.");
         }
 
-        return Results.Json(response, EventIngestionJsonContext.Default.EventIngestionV3Response);
-    }
+        return Results.Ok(response);
 
-    private static async Task<EventIngestionV3Response> ProcessBatchAsync(
-        EventIngestionV3Processor processor,
-        EventIngestionV3ConcurrencyLimiter concurrencyLimiter,
-        List<EventIngestionV3BufferedRecord> batch,
-        Organization organization,
-        Project project,
-        CancellationToken cancellationToken)
-    {
-        try
+        async Task ProcessBatchAsync()
         {
-            using RateLimitLease lease = await concurrencyLimiter.AcquireProcessingAsync(organization.Id, cancellationToken);
-            if (!lease.IsAcquired)
+            using (RateLimitLease lease = await services.ConcurrencyLimiter.AcquireProcessingAsync(organization.Id, cancellationToken))
             {
-                throw new ProcessingConcurrencyRejectedException();
+                if (!lease.IsAcquired)
+                {
+                    throw new ProcessingCapacityUnavailableException();
+                }
+
+                AppDiagnostics.IngestionV3Received.Add(batch.Count);
+                response.Add(await services.Processor.ProcessAsync(batch, organization, project, eventPostInfo, cancellationToken));
             }
 
-            return await processor.ProcessBufferedAsync(batch, organization, project, cancellationToken);
-        }
-        finally
-        {
-            DisposeBatch(batch);
+            batch.Clear();
+            batchBytes = 0;
         }
     }
 
-    private static void DisposeBatch(List<EventIngestionV3BufferedRecord> batch)
+    private static bool TryGetMediaType(HttpRequest request, out string? mediaType, out string? charSet)
     {
-        foreach (EventIngestionV3BufferedRecord record in batch)
+        mediaType = null;
+        charSet = null;
+        if (String.IsNullOrEmpty(request.ContentType))
         {
-            record.Dispose();
+            return true;
         }
 
-        batch.Clear();
+        if (!MediaTypeHeaderValue.TryParse(request.ContentType, out MediaTypeHeaderValue? contentType))
+        {
+            return false;
+        }
+
+        mediaType = contentType.MediaType.Value;
+        charSet = contentType.Charset.Value;
+        bool isJson = mediaType is not null
+            && (_supportedMediaTypes.Contains(mediaType)
+                || (mediaType.StartsWith("application/", StringComparison.OrdinalIgnoreCase) && mediaType.EndsWith("+json", StringComparison.OrdinalIgnoreCase)));
+        bool isUtf8 = String.IsNullOrEmpty(charSet)
+            || String.Equals(charSet, "utf-8", StringComparison.OrdinalIgnoreCase)
+            || String.Equals(charSet, "utf8", StringComparison.OrdinalIgnoreCase);
+        return isJson && isUtf8;
     }
 
-    private static BodyRejection? GetBodyRejection(
-        EventPostRequestBodyStream decompressedBody,
-        EventIngestionV3RequestBodyState? compressedBodyState)
+    private static bool TryGetContentEncoding(HttpRequest request, out string? contentEncoding)
     {
-        if (decompressedBody.RejectedStatusCode is { } decompressedStatusCode)
+        string[] encodings = request.Headers.ContentEncoding
+            .SelectMany(value => value?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [])
+            .ToArray();
+        contentEncoding = encodings.FirstOrDefault();
+        if (encodings.Length > 1)
         {
-            return new BodyRejection(decompressedStatusCode, decompressedBody.RejectionReason);
+            return false;
         }
 
+        return String.IsNullOrEmpty(contentEncoding)
+            || String.Equals(contentEncoding, "identity", StringComparison.OrdinalIgnoreCase)
+            || String.Equals(contentEncoding, "gzip", StringComparison.OrdinalIgnoreCase)
+            || String.Equals(contentEncoding, "br", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static BodyRejection? GetBodyRejection(EventPostRequestBodyStream decompressedBody, EventIngestionV3RequestBodyState? compressedBodyState)
+    {
         if (compressedBodyState?.CompressedBody.RejectedStatusCode is { } compressedStatusCode)
         {
             return new BodyRejection(compressedStatusCode, compressedBodyState.CompressedBody.RejectionReason);
         }
 
+        if (decompressedBody.RejectedStatusCode is { } decompressedStatusCode)
+        {
+            return new BodyRejection(decompressedStatusCode, decompressedBody.RejectionReason);
+        }
+
         return null;
     }
 
-    private static IResult Problem(EventIngestionV3Response response, int statusCode, string? title, string? detail = null)
+    private static IResult Busy(HttpContext httpContext, EventIngestionV3Response? response, string title)
+    {
+        httpContext.Response.Headers.RetryAfter = BusyRetryAfterSeconds;
+        return Problem(response, StatusCodes.Status429TooManyRequests, title);
+    }
+
+    private static IResult Unavailable(HttpContext httpContext, string title, EventIngestionV3Response? response = null)
+    {
+        httpContext.Response.Headers.RetryAfter = UnavailableRetryAfterSeconds;
+        return Problem(response, StatusCodes.Status503ServiceUnavailable, title);
+    }
+
+    private static IResult Problem(EventIngestionV3Response? response, int statusCode, string? title, string? detail = null)
     {
         Dictionary<string, object?>? extensions = null;
-        if (response.Received > 0)
+        if (response is { Received: > 0 })
         {
+            bool isRetryable = statusCode is StatusCodes.Status429TooManyRequests or StatusCodes.Status503ServiceUnavailable;
             extensions = new Dictionary<string, object?>
             {
                 ["partial_result"] = response,
-                ["retry_guidance"] = "Some earlier events were processed. Retry the complete request; event ids make replay idempotent."
+                ["retry_guidance"] = isRetryable
+                    ? "Resend the request after the Retry-After delay. Events with an id that were already stored are acknowledged as duplicates."
+                    : "The events in partial_result were processed. Resending this request unchanged fails the same way; correct it or send the remaining events separately. Events with an id that were already stored are acknowledged as duplicates."
             };
         }
 
@@ -442,8 +396,18 @@ public static class EventIngestionV3Endpoints
 
     private sealed record BodyRejection(int StatusCode, string? Reason);
 
-    private sealed class ProcessingConcurrencyRejectedException : Exception { }
+    private sealed class ProcessingCapacityUnavailableException : Exception;
 }
+
+internal sealed record EventIngestionV3Services(
+    EventIngestionV3Processor Processor,
+    EventIngestionV3ConcurrencyLimiter ConcurrencyLimiter,
+    IProjectRepository ProjectRepository,
+    IOrganizationRepository OrganizationRepository,
+    UsageService UsageService,
+    SystemSettingsService SystemSettingsService,
+    AppOptions Options,
+    ILoggerFactory LoggerFactory);
 
 internal sealed class EventIngestionV3EndpointMetadata
 {

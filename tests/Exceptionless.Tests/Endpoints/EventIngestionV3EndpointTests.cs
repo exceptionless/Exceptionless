@@ -6,18 +6,18 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Models.Ingestion;
-using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
-using Foundatio.Jobs;
-using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Endpoints;
@@ -25,16 +25,15 @@ namespace Exceptionless.Tests.Endpoints;
 public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
 {
     private readonly IEventRepository _eventRepository;
-    private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
+    private readonly JsonSerializerOptions _jsonOptions;
 
     public EventIngestionV3EndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         GetService<AppOptions>().EventIngestionV3.Enabled = true;
         _eventRepository = GetService<IEventRepository>();
-        _projectRepository = GetService<IProjectRepository>();
         _stackRepository = GetService<IStackRepository>();
-        _ = GetService<EventIngestionSideEffectsWorkItemHandler>();
+        _jsonOptions = GetService<JsonSerializerOptions>();
     }
 
     protected override async Task ResetDataAsync()
@@ -44,466 +43,351 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task Post_ChunkedTopLevelValues_PersistsEveryEventInline()
+    public async Task Post_MinimalJsonObject_PersistsLogEvent()
     {
-        const string payload = """
-            {"id":"v3-stream-event-0001","type":"log","source":"Example.Service","message":"first","reference_id":"v3-stream-ref-0001"}
-            {"id":"v3-stream-event-0002","type":"log","source":"Example.Service","message":"second","reference_id":"v3-stream-ref-0002"}
-            """;
+        // Act
+        using var httpResponse = await PostAsync(new StringContent("""{"message":"hello v3","reference_id":"v3-minimal-0001"}""", Encoding.UTF8, "application/json"));
+        var response = await DeserializeAsync(httpResponse);
 
-        using var content = new UnknownLengthJsonContent(Encoding.UTF8.GetBytes(payload));
-        using HttpResponseMessage httpResponse = await PostAsync(content);
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
-
+        // Assert
         Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
-        Assert.Equal(2, response.Received);
-        Assert.Equal(2, response.Persisted);
-        Assert.Equal(0, response.Discarded);
-        await RefreshDataAsync();
-        Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-stream-ref-0001")).Documents);
-        Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-stream-ref-0002")).Documents);
+        Assert.Equal(1, response.Received);
+        Assert.Equal(1, response.Persisted);
+
+        var ev = await GetEventByReferenceIdAsync("v3-minimal-0001");
+        Assert.Equal(Event.KnownTypes.Log, ev.Type);
+        Assert.Equal("hello v3", ev.Message);
+        Assert.NotNull(ev.StackId);
     }
 
     [Fact]
-    public async Task Post_GzipError_ParsesStructuredStackOnServer()
+    public async Task Post_PrettyPrintedObjectWithoutContentType_PersistsEvent()
     {
+        // Arrange
         const string payload = """
-            {"id":"v3-gzip-error-0001","type":"error","message":"failed","reference_id":"v3-gzip-ref-0001","exception_type":"System.InvalidOperationException","stack_trace":"at Example.OrderService.Save() in /src/OrderService.cs:line 42"}
+            {
+              "message": "pretty",
+              "reference_id": "v3-pretty-0001"
+            }
             """;
+        var content = new StringContent(payload, Encoding.UTF8);
+        content.Headers.ContentType = null;
+
+        // Act
+        using var httpResponse = await PostAsync(content);
+        var response = await DeserializeAsync(httpResponse);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
+        Assert.Equal(1, response.Persisted);
+        Assert.Equal("pretty", (await GetEventByReferenceIdAsync("v3-pretty-0001")).Message);
+    }
+
+    [Fact]
+    public async Task Post_JsonArray_PersistsEachEvent()
+    {
+        // Arrange
+        const string payload = """[{"message":"first","reference_id":"v3-array-0001"},{"message":"second","reference_id":"v3-array-0002"}]""";
+
+        // Act
+        using var httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/json"));
+        var response = await DeserializeAsync(httpResponse);
+
+        // Assert
+        Assert.Equal(2, response.Persisted);
+        Assert.Equal("first", (await GetEventByReferenceIdAsync("v3-array-0001")).Message);
+        Assert.Equal("second", (await GetEventByReferenceIdAsync("v3-array-0002")).Message);
+    }
+
+    [Fact]
+    public async Task Post_NewlineDelimitedStreamOfUnknownLength_PersistsEveryEventAcrossMicrobatches()
+    {
+        // Arrange
+        var options = GetService<AppOptions>().EventIngestionV3;
+        int originalMicroBatchSize = options.MicroBatchSize;
+        options.MicroBatchSize = 2;
+        string payload = String.Join('\n', Enumerable.Range(1, 5).Select(i => $$"""{"message":"stream {{i}}","reference_id":"v3-stream-000{{i}}"}"""));
+
+        try
+        {
+            // Act
+            using var httpResponse = await PostAsync(new UnknownLengthContent(Encoding.UTF8.GetBytes(payload), "application/x-ndjson"));
+            var response = await DeserializeAsync(httpResponse);
+
+            // Assert
+            Assert.Equal(5, response.Received);
+            Assert.Equal(5, response.Persisted);
+            Assert.Equal("stream 5", (await GetEventByReferenceIdAsync("v3-stream-0005")).Message);
+        }
+        finally
+        {
+            options.MicroBatchSize = originalMicroBatchSize;
+        }
+    }
+
+    [Fact]
+    public async Task Post_InvalidEventInStream_ReportsItsIndexAndPersistsTheRest()
+    {
+        // Arrange
+        const string payload = """
+            {"message":"first","reference_id":"v3-invalid-0001"}
+            {"message": broken}
+            {"id":5,"message":"wrong id type"}
+            {"message":"last","reference_id":"v3-invalid-0004"}
+            """;
+
+        // Act
+        using var httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
+        var response = await DeserializeAsync(httpResponse);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
+        Assert.Equal(4, response.Received);
+        Assert.Equal(2, response.Persisted);
+        Assert.Equal(2, response.Invalid);
+        Assert.Equal([1, 2], response.Errors.Select(e => e.Index));
+        Assert.Equal(EventIngestionV3ErrorCodes.InvalidJson, response.Errors[0].Code);
+        Assert.Equal(EventIngestionV3ErrorCodes.InvalidEvent, response.Errors[1].Code);
+        Assert.Equal("last", (await GetEventByReferenceIdAsync("v3-invalid-0004")).Message);
+    }
+
+    [Fact]
+    public async Task Post_OversizedFields_AreTruncatedInsteadOfRejected()
+    {
+        // Arrange
+        string payload = JsonSerializer.Serialize(new
+        {
+            message = new string('m', 3000),
+            reference_id = "v3-truncate-0001",
+            tags = Enumerable.Range(0, 60).Select(i => $"tag-{i}").ToArray()
+        });
+
+        // Act
+        using var httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/json"));
+        var response = await DeserializeAsync(httpResponse);
+
+        // Assert
+        Assert.Equal(1, response.Persisted);
+        var ev = await GetEventByReferenceIdAsync("v3-truncate-0001");
+        Assert.Equal(2000, ev.Message?.Length);
+        Assert.True(ev.Tags?.Count < 60);
+    }
+
+    [Fact]
+    public async Task Post_FirstClassProperties_AreStoredAsVersionTwoEventData()
+    {
+        // Arrange
+        const string payload = """
+            {"type":"log","message":"started","reference_id":"v3-data-0001","version":"3.4.0","level":"info","user":{"identity":"user@example.com","name":"Example User"},"request":{"http_method":"POST","path":"/orders"},"environment":{"machine_name":"web-1"},"data":{"order_id":12}}
+            """;
+
+        // Act
+        using var httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/json"));
+        var response = await DeserializeAsync(httpResponse);
+
+        // Assert
+        Assert.Equal(1, response.Persisted);
+        var ev = await GetEventByReferenceIdAsync("v3-data-0001");
+        var serializer = GetService<ITextSerializer>();
+        Assert.Equal("3.4.0", ev.GetVersion());
+        Assert.Equal("info", ev.GetLevel());
+        Assert.Equal("user@example.com", ev.GetUserIdentity(serializer, _logger)?.Identity);
+        Assert.Equal("/orders", ev.GetRequestInfo(serializer, _logger)?.Path);
+        Assert.Equal("web-1", ev.GetEnvironmentInfo(serializer, _logger)?.MachineName);
+        Assert.True(ev.Data?.ContainsKey("order_id"));
+    }
+
+    [Fact]
+    public async Task Post_StructuredError_UsesTheSameStackAsVersionTwo()
+    {
+        // Arrange
+        var error = new Error
+        {
+            Message = "Order failed",
+            Type = "System.InvalidOperationException",
+            StackTrace =
+            [
+                new StackFrame { DeclaringNamespace = "Example.Orders", DeclaringType = "OrderService", Name = "Place", LineNumber = 42 }
+            ]
+        };
+
+        // Act
+        var versionTwoEvent = await PostVersionTwoEventAsync(new Event
+        {
+            Type = Event.KnownTypes.Error,
+            Message = "Order failed",
+            ReferenceId = "v2-parity-error-0001",
+            Data = new DataDictionary { { Event.KnownDataKeys.Error, error } }
+        });
+
+        string payload = JsonSerializer.Serialize(new { message = "Order failed", reference_id = "v3-parity-error-0001", error }, _jsonOptions);
+        using var httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/json"));
+        var response = await DeserializeAsync(httpResponse);
+
+        // Assert
+        Assert.Equal(1, response.Persisted);
+        var versionThreeEvent = await GetEventByReferenceIdAsync("v3-parity-error-0001");
+        Assert.Equal(Event.KnownTypes.Error, versionThreeEvent.Type);
+        Assert.Equal(versionTwoEvent.StackId, versionThreeEvent.StackId);
+    }
+
+    [Fact]
+    public async Task Post_RawStackTrace_UsesTheSameStackAsVersionTwoSimpleError()
+    {
+        // Arrange
+        const string stackTrace = "   at Example.Orders.OrderService.Place() in /src/OrderService.cs:line 42";
+
+        // Act
+        var versionTwoEvent = await PostVersionTwoEventAsync(new Event
+        {
+            Type = Event.KnownTypes.Error,
+            Message = "Order failed",
+            ReferenceId = "v2-parity-simple-0001",
+            Data = new DataDictionary
+            {
+                { Event.KnownDataKeys.SimpleError, new SimpleError { Message = "Order failed", Type = "System.InvalidOperationException", StackTrace = stackTrace } }
+            }
+        });
+
+        string payload = JsonSerializer.Serialize(new
+        {
+            message = "Order failed",
+            reference_id = "v3-parity-simple-0001",
+            exception_type = "System.InvalidOperationException",
+            stack_trace = stackTrace
+        });
+        using var httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/json"));
+        var response = await DeserializeAsync(httpResponse);
+
+        // Assert
+        Assert.Equal(1, response.Persisted);
+        var versionThreeEvent = await GetEventByReferenceIdAsync("v3-parity-simple-0001");
+        Assert.Equal(Event.KnownTypes.Error, versionThreeEvent.Type);
+        Assert.Equal(versionTwoEvent.StackId, versionThreeEvent.StackId);
+    }
+
+    [Fact]
+    public async Task Post_ResentEventId_IsAcknowledgedAsDuplicate()
+    {
+        // Arrange
+        const string payload = """{"id":"0f0b9a8e-5d4c-4b7a-9a43-3f0f2c1d1e11","message":"once","reference_id":"v3-replay-0001"}""";
+
+        // Act
+        using var firstResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/json"));
+        var first = await DeserializeAsync(firstResponse);
+        using var secondResponse = await PostAsync(new StringContent($"{payload}\n{payload}", Encoding.UTF8, "application/x-ndjson"));
+        var second = await DeserializeAsync(secondResponse);
+
+        // Assert
+        Assert.Equal(1, first.Persisted);
+        Assert.Equal(0, second.Persisted);
+        Assert.Equal(2, second.Duplicate);
+        await RefreshDataAsync();
+        Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-replay-0001")).Documents);
+    }
+
+    [Fact]
+    public async Task Post_EventForDiscardedStack_IsDiscarded()
+    {
+        // Arrange
+        using (var firstResponse = await PostAsync(new StringContent("""{"message":"discard me","reference_id":"v3-discard-0001"}""", Encoding.UTF8, "application/json")))
+        {
+            Assert.Equal(1, (await DeserializeAsync(firstResponse)).Persisted);
+        }
+
+        var stack = await _stackRepository.GetByIdAsync((await GetEventByReferenceIdAsync("v3-discard-0001")).StackId);
+        Assert.NotNull(stack);
+        stack.Status = StackStatus.Discarded;
+        await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency().Cache());
+
+        // Act
+        using var httpResponse = await PostAsync(new StringContent("""{"message":"discard me","reference_id":"v3-discard-0002"}""", Encoding.UTF8, "application/json"));
+        var response = await DeserializeAsync(httpResponse);
+
+        // Assert
+        Assert.Equal(1, response.Discarded);
+        Assert.Equal(0, response.Persisted);
+        await RefreshDataAsync();
+        Assert.Empty((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-discard-0002")).Documents);
+    }
+
+    [Fact]
+    public async Task Post_OrganizationAtEventLimit_ReturnsPaymentRequired()
+    {
+        // Arrange
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var organization = await organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
+        Assert.NotNull(organization);
+        organization.MaxEventsPerMonth = 1;
+        organization.GetCurrentUsage(TimeProvider).Total = 1;
+        await organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+        await GetService<ICacheClient>().RemoveAllAsync();
+
+        // Act
+        using var httpResponse = await PostAsync(new StringContent("""{"message":"blocked"}""", Encoding.UTF8, "application/json"));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.PaymentRequired, httpResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Post_GzipBody_PersistsEvent()
+    {
+        // Arrange
         byte[] compressed;
         await using (var output = new MemoryStream())
         {
             await using (var gzip = new GZipStream(output, CompressionMode.Compress, leaveOpen: true))
-                await gzip.WriteAsync(Encoding.UTF8.GetBytes(payload), TestCancellationToken);
+            {
+                await gzip.WriteAsync("""{"message":"compressed","reference_id":"v3-gzip-0001"}"""u8.ToArray(), TestCancellationToken);
+            }
+
             compressed = output.ToArray();
         }
 
-        using var content = new ByteArrayContent(compressed);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
+        var content = new ByteArrayContent(compressed);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         content.Headers.ContentEncoding.Add("gzip");
-        using HttpResponseMessage httpResponse = await PostAsync(content);
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
 
+        // Act
+        using var httpResponse = await PostAsync(content);
+        var response = await DeserializeAsync(httpResponse);
+
+        // Assert
         Assert.Equal(1, response.Persisted);
-        await RefreshDataAsync();
-        var ev = Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-gzip-ref-0001")).Documents);
-        Assert.NotNull(ev);
-        var error = ev.GetError(GetService<Foundatio.Serializer.ITextSerializer>(), GetService<ILogger<EventIngestionV3EndpointTests>>());
-        var frame = Assert.Single(error!.StackTrace!);
-        Assert.Equal("Example", frame.DeclaringNamespace);
-        Assert.Equal("OrderService", frame.DeclaringType);
-        Assert.Equal("Save", frame.Name);
-        Assert.Equal(42, frame.LineNumber);
+        Assert.Equal("compressed", (await GetEventByReferenceIdAsync("v3-gzip-0001")).Message);
     }
 
     [Fact]
     public async Task Post_MalformedGzipBody_ReturnsBadRequest()
     {
-        using var content = new ByteArrayContent("not-a-gzip-stream"u8.ToArray());
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
+        // Arrange
+        var content = new ByteArrayContent("not-a-gzip-stream"u8.ToArray());
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
         content.Headers.ContentEncoding.Add("gzip");
 
-        using HttpResponseMessage response = await PostAsync(content);
+        // Act
+        using var response = await PostAsync(content);
 
+        // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-    }
-
-    [Fact]
-    public async Task Post_MalformedBrotliBody_ReturnsBadRequest()
-    {
-        using var content = new ByteArrayContent("not-a-brotli-stream"u8.ToArray());
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
-        content.Headers.ContentEncoding.Add("br");
-
-        using HttpResponseMessage response = await PostAsync(content);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-    }
-
-    [Fact]
-    public async Task Post_ClientMetadata_PersistsFirstClassEventData()
-    {
-        const string payload = """
-            {"id":"v3-client-metadata-0001","type":"log","message":"started","reference_id":"v3-client-metadata-ref-0001","version":"3.4.0","level":"info","client":{"name":"exceptionless.go","version":"1.2.0"}}
-            """;
-
-        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
-
-        Assert.Equal(1, response.Persisted);
-        await RefreshDataAsync();
-        var ev = Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-client-metadata-ref-0001")).Documents);
-        Assert.Equal("3.4.0", ev.GetVersion());
-        Assert.Equal("info", ev.GetLevel());
-        var client = ev.GetSubmissionClient(
-            GetService<Foundatio.Serializer.ITextSerializer>(),
-            GetService<ILogger<EventIngestionV3EndpointTests>>());
-        Assert.NotNull(client);
-        Assert.Equal("exceptionless.go", client.UserAgent);
-        Assert.Equal("1.2.0", client.Version);
-    }
-
-    [Fact]
-    public async Task Post_ValuesAtDurableLimits_PersistsWithoutTruncationOrDropping()
-    {
-        string message = new('m', EventIngestionV3Limits.MaximumMessageLength);
-        string referenceId = new('r', EventIngestionV3Limits.MaximumReferenceIdLength);
-        string tag = new('t', EventIngestionV3Limits.MaximumTagLength);
-        string title = new('s', EventIngestionV3Limits.MaximumStackTitleLength);
-        var source = new EventIngestionV3Event
-        {
-            Id = "v3-durable-boundaries-0001",
-            Type = Event.KnownTypes.Log,
-            Message = message,
-            ReferenceId = referenceId,
-            Tags = [tag],
-            Stacking = new EventIngestionV3Stacking
-            {
-                Title = title,
-                SignatureData = new Dictionary<string, string> { ["boundary"] = "exact" }
-            }
-        };
-        string payload = JsonSerializer.Serialize(
-            source,
-            Exceptionless.Core.Serialization.EventIngestionJsonContext.Default.EventIngestionV3Event);
-
-        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
-
-        Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
-        Assert.Equal(1, response.Persisted);
-        await RefreshDataAsync();
-        var ev = Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, referenceId)).Documents);
-        Assert.Equal(message, ev.Message);
-        Assert.Equal(tag, Assert.Single(ev.Tags!));
-        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
-        Assert.NotNull(stack);
-        Assert.Equal(title, stack.Title);
-    }
-
-    [Fact]
-    public async Task Post_ReservedTopLevelDataKey_ReturnsValidationProblemWithoutPersistence()
-    {
-        const string referenceId = "v3-reserved-data-ref-0001";
-        const string payload = """
-            {"id":"v3-reserved-data-0001","type":"log","reference_id":"v3-reserved-data-ref-0001","data":{"@request":{"cookies":{"authorization":"secret"}}}}
-            """;
-
-        using HttpResponseMessage response = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-        await RefreshDataAsync();
-        Assert.Empty((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, referenceId)).Documents);
-    }
-
-    [Fact]
-    public async Task Post_NullManualStackingValue_ReturnsValidationProblem()
-    {
-        const string payload = """
-            {"id":"v3-null-manual-stack-0001","type":"log","stacking":{"signature_data":{"hash":null}}}
-            """;
-
-        using HttpResponseMessage response = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-    }
-
-    [Fact]
-    public async Task Post_ReplayedEvent_ReturnsDuplicateWithoutSecondWrite()
-    {
-        const string payload = """{"id":"v3-duplicate-event-0001","type":"log","message":"once","reference_id":"v3-duplicate-ref-0001"}""";
-        var workItemQueue = GetService<IQueue<WorkItemData>>();
-        var initialQueueStats = await workItemQueue.GetQueueStatsAsync();
-
-        using HttpResponseMessage firstHttpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-        EventIngestionV3Response first = await DeserializeAsync(firstHttpResponse);
-        var firstQueueStats = await workItemQueue.GetQueueStatsAsync();
-        await RefreshDataAsync();
-        using HttpResponseMessage secondHttpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-        EventIngestionV3Response second = await DeserializeAsync(secondHttpResponse);
-        var secondQueueStats = await workItemQueue.GetQueueStatsAsync();
-
-        Assert.Equal(1, first.Persisted);
-        Assert.Equal(0, first.Duplicate);
-        Assert.Equal(0, second.Persisted);
-        Assert.Equal(1, second.Duplicate);
-        Assert.Equal(initialQueueStats.Enqueued + 1, firstQueueStats.Enqueued);
-        Assert.Equal(firstQueueStats.Enqueued, secondQueueStats.Enqueued);
-        Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-duplicate-ref-0001")).Documents);
-    }
-
-    [Fact]
-    public async Task Post_RetryAfterStackOnlyWrite_RecoversFirstOccurrence()
-    {
-        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
-        Assert.NotNull(project);
-        var organization = await GetService<IOrganizationRepository>().GetByIdAsync(project.OrganizationId);
-        Assert.NotNull(organization);
-        DateTimeOffset eventDate = TimeProvider.GetUtcNow();
-        var source = new EventIngestionV3Event
-        {
-            Id = "v3-first-occurrence-recovery-01",
-            Type = Event.KnownTypes.Log,
-            Date = eventDate,
-            Source = "Example.FirstOccurrence",
-            Message = "recover first event",
-            ReferenceId = "v3-first-recovery-ref-01"
-        };
-        StackFingerprint fingerprint = GetService<StackFingerprintService>().Create(source, organization, project);
-        string eventId = EventBatchWriter.GetDeterministicEventId(project.Id, source.Id, eventDate.UtcDateTime);
-        await _stackRepository.AddAsync(new Stack
-        {
-            OrganizationId = organization.Id,
-            ProjectId = project.Id,
-            Type = source.Type,
-            Status = StackStatus.Open,
-            SignatureHash = fingerprint.SignatureHash,
-            SignatureInfo = new SettingsDictionary(fingerprint.SignatureData.ToDictionary(pair => pair.Key, pair => pair.Value)),
-            DuplicateSignature = $"{project.Id}:{fingerprint.SignatureHash}",
-            Title = source.Message,
-            TotalOccurrences = 0,
-            FirstOccurrence = TimeProvider.GetUtcNow().UtcDateTime,
-            LastOccurrence = TimeProvider.GetUtcNow().UtcDateTime,
-            IngestionFirstEventId = eventId
-        }, o => o.ImmediateConsistency().Cache());
-
-        string payload = JsonSerializer.Serialize(source, Exceptionless.Core.Serialization.EventIngestionJsonContext.Default.EventIngestionV3Event);
-        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
-
-        Assert.Equal(1, response.Persisted);
-        await RefreshDataAsync();
-        var persisted = Assert.Single((await _eventRepository.GetByReferenceIdAsync(project.Id, source.ReferenceId)).Documents);
-        Assert.Equal(eventId, persisted.Id);
-        Assert.True(persisted.IsFirstOccurrence);
-    }
-
-    [Fact]
-    public async Task Post_DiscardedStack_DoesNotMaterializeOrPersistEvent()
-    {
-        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
-        Assert.NotNull(project);
-        var organization = await GetService<IOrganizationRepository>().GetByIdAsync(project.OrganizationId);
-        Assert.NotNull(organization);
-        var source = new EventIngestionV3Event
-        {
-            Id = "v3-discarded-event-01",
-            Type = Event.KnownTypes.Error,
-            Message = "discard me",
-            ExceptionType = "System.InvalidOperationException",
-            StackTrace = "at Example.OrderService.Save() in /src/OrderService.cs:line 42",
-            ReferenceId = "v3-discard-ref-0001"
-        };
-        StackFingerprint fingerprint = GetService<StackFingerprintService>().Create(source, organization, project);
-        await _stackRepository.AddAsync(new Stack
-        {
-            OrganizationId = TestConstants.OrganizationId,
-            ProjectId = TestConstants.ProjectId,
-            Type = Event.KnownTypes.Error,
-            Status = StackStatus.Discarded,
-            SignatureHash = fingerprint.SignatureHash,
-            SignatureInfo = new SettingsDictionary(fingerprint.SignatureData.ToDictionary(pair => pair.Key, pair => pair.Value)),
-            DuplicateSignature = $"{TestConstants.ProjectId}:{fingerprint.SignatureHash}",
-            Title = "discarded",
-            FirstOccurrence = TimeProvider.GetUtcNow().UtcDateTime,
-            LastOccurrence = TimeProvider.GetUtcNow().UtcDateTime
-        }, o => o.ImmediateConsistency().Cache());
-
-        string payload = JsonSerializer.Serialize(source, Exceptionless.Core.Serialization.EventIngestionJsonContext.Default.EventIngestionV3Event);
-        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
-
-        Assert.Equal(1, response.Discarded);
-        Assert.Equal(0, response.Persisted);
-        await RefreshDataAsync();
-        Assert.Empty((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, source.ReferenceId)).Documents);
-    }
-
-    [Fact]
-    public async Task Post_DiscardedStackWithHugeInvalidOptionalContext_DiscardsBeforeFullDeserialization()
-    {
-        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
-        Assert.NotNull(project);
-        var organization = await GetService<IOrganizationRepository>().GetByIdAsync(project.OrganizationId);
-        Assert.NotNull(organization);
-        var routingEvent = new EventIngestionV3Event
-        {
-            Id = "v3-discarded-projection-01",
-            Type = Event.KnownTypes.Error,
-            ExceptionType = "Example.ProjectedException",
-            StackTrace = "at Example.Projected.Run() in /src/Projected.cs:line 42"
-        };
-        StackFingerprint fingerprint = GetService<StackFingerprintService>().Create(routingEvent, organization, project);
-        await _stackRepository.AddAsync(new Stack
-        {
-            OrganizationId = TestConstants.OrganizationId,
-            ProjectId = TestConstants.ProjectId,
-            Type = Event.KnownTypes.Error,
-            Status = StackStatus.Discarded,
-            SignatureHash = fingerprint.SignatureHash,
-            SignatureInfo = new SettingsDictionary(fingerprint.SignatureData.ToDictionary(pair => pair.Key, pair => pair.Value)),
-            DuplicateSignature = $"{TestConstants.ProjectId}:{fingerprint.SignatureHash}",
-            Title = "discarded projection",
-            FirstOccurrence = TimeProvider.GetUtcNow().UtcDateTime,
-            LastOccurrence = TimeProvider.GetUtcNow().UtcDateTime
-        }, o => o.ImmediateConsistency().Cache());
-
-        string payload = $$"""
-            {"id":"{{routingEvent.Id}}","type":"error","exception_type":"{{routingEvent.ExceptionType}}","stack_trace":"{{routingEvent.StackTrace}}","data":{"value":"{{new string('x', 64 * 1024)}}"},"request":"not-an-object"}
-            """;
-        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
-
-        Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
-        Assert.Equal(1, response.Received);
-        Assert.Equal(1, response.Discarded);
-        Assert.Equal(0, response.Invalid);
-        Assert.Equal(0, response.Persisted);
-    }
-
-    [Fact]
-    public async Task Post_TopLevelArray_ReturnsProblemDetails()
-    {
-        using HttpResponseMessage response = await PostAsync(new StringContent("[{\"id\":\"event-1\",\"type\":\"log\"}]", Encoding.UTF8, "application/x-ndjson"));
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-    }
-
-    [Fact]
-    public async Task Post_BrotliBody_PersistsEvent()
-    {
-        const string payload = """{"id":"v3-brotli-event-0001","type":"log","message":"brotli","reference_id":"v3-brotli-ref-0001"}""";
-        byte[] compressed;
-        await using (var output = new MemoryStream())
-        {
-            await using (var brotli = new BrotliStream(output, CompressionMode.Compress, leaveOpen: true))
-                await brotli.WriteAsync(Encoding.UTF8.GetBytes(payload), TestCancellationToken);
-            compressed = output.ToArray();
-        }
-
-        using var content = new ByteArrayContent(compressed);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
-        content.Headers.ContentEncoding.Add("br");
-        using HttpResponseMessage httpResponse = await PostAsync(content);
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
-
-        Assert.Equal(1, response.Persisted);
-        await RefreshDataAsync();
-        Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-brotli-ref-0001")).Documents);
-    }
-
-    [Fact]
-    public async Task Post_UnsupportedContentEncoding_ReturnsUnsupportedMediaType()
-    {
-        using var content = new StringContent("{\"id\":\"event-1\",\"type\":\"log\"}", Encoding.UTF8, "application/x-ndjson");
-        content.Headers.ContentEncoding.Add("deflate");
-
-        using HttpResponseMessage response = await PostAsync(content);
-
-        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Post_EmptyStream_ReturnsEmptySuccess()
-    {
-        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(String.Empty, Encoding.UTF8, "application/x-ndjson"));
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
-
-        Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
-        Assert.Equal(0, response.Received);
-        Assert.Equal(0, response.Persisted);
-    }
-
-    [Fact]
-    public async Task Post_TruncatedJson_ReturnsBadRequest()
-    {
-        using HttpResponseMessage response = await PostAsync(new StringContent("{\"id\":\"event-1\",\"type\":", Encoding.UTF8, "application/x-ndjson"));
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Post_TooManyEvents_ReturnsRequestEntityTooLarge()
-    {
-        var options = GetService<AppOptions>().EventIngestionV3;
-        int originalLimit = options.MaximumEventsPerRequest;
-        options.MaximumEventsPerRequest = 1;
-        try
-        {
-            const string payload = """
-                {"id":"v3-limit-event-0001","type":"log"}
-                {"id":"v3-limit-event-0002","type":"log"}
-                """;
-            using HttpResponseMessage response = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-
-            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
-        }
-        finally
-        {
-            options.MaximumEventsPerRequest = originalLimit;
-        }
-    }
-
-    [Fact]
-    public async Task Post_DuplicateIdInSameStream_PersistsAndChargesOnce()
-    {
-        const string payload = """
-            {"id":"v3-stream-duplicate-0001","type":"log","message":"first","reference_id":"v3-stream-duplicate-ref-0001"}
-            {"id":"v3-stream-duplicate-0001","type":"log","message":"retry","reference_id":"v3-stream-duplicate-ref-0001"}
-            """;
-
-        using HttpResponseMessage httpResponse = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
-
-        Assert.Equal(2, response.Received);
-        Assert.Equal(1, response.Persisted);
-        Assert.Equal(1, response.Duplicate);
-        await RefreshDataAsync();
-        Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-stream-duplicate-ref-0001")).Documents);
-    }
-
-    [Fact]
-    public async Task Post_AllInvalidEvents_ReturnsUnprocessableEntity()
-    {
-        using HttpResponseMessage response = await PostAsync(new StringContent("{\"id\":\"\",\"type\":\"log\"}", Encoding.UTF8, "application/x-ndjson"));
-
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-    }
-
-    [Fact]
-    public async Task Post_CompressedBodyOverLimit_ReturnsRequestEntityTooLarge()
-    {
-        var options = GetService<AppOptions>().EventIngestionV3;
-        long originalLimit = options.MaximumCompressedBodySize;
-        options.MaximumCompressedBodySize = 8;
-        try
-        {
-            using HttpResponseMessage response = await PostAsync(new StringContent("{\"id\":\"v3-compressed-limit\",\"type\":\"log\"}", Encoding.UTF8, "application/x-ndjson"));
-
-            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
-        }
-        finally
-        {
-            options.MaximumCompressedBodySize = originalLimit;
-        }
     }
 
     [Fact]
     public async Task Post_DecompressedBodyOverLimit_ReturnsRequestEntityTooLarge()
     {
+        // Arrange
         var options = GetService<AppOptions>().EventIngestionV3;
         long originalLimit = options.MaximumDecompressedBodySize;
         options.MaximumDecompressedBodySize = 16;
+
         try
         {
-            using HttpResponseMessage response = await PostAsync(new StringContent("{\"id\":\"v3-decompressed-limit\",\"type\":\"log\"}", Encoding.UTF8, "application/x-ndjson"));
+            // Act
+            using var response = await PostAsync(new StringContent("""{"message":"too large for the body limit"}""", Encoding.UTF8, "application/json"));
 
+            // Assert
             Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
         }
         finally
@@ -513,98 +397,23 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task Post_HighCompressionRatioWithinIndependentLimits_PersistsEvent()
+    public async Task Post_MalformedArray_ReturnsBadRequestWithPartialResult()
     {
-        var options = GetService<AppOptions>().EventIngestionV3;
-        long originalCompressedLimit = options.MaximumCompressedBodySize;
-        long originalDecompressedLimit = options.MaximumDecompressedBodySize;
-        options.MaximumCompressedBodySize = 1024;
-        options.MaximumDecompressedBodySize = 8192;
-        try
-        {
-            string payload = $$"""{"id":"v3-high-ratio-0001","type":"log","reference_id":"v3-high-ratio-ref-0001","message":"{{new string('x', 1900)}}"}""";
-            byte[] compressed;
-            await using (var output = new MemoryStream())
-            {
-                await using (var gzip = new GZipStream(output, CompressionMode.Compress, leaveOpen: true))
-                    await gzip.WriteAsync(Encoding.UTF8.GetBytes(payload), TestCancellationToken);
-                compressed = output.ToArray();
-            }
-            Assert.True(compressed.Length < options.MaximumCompressedBodySize);
-
-            using var content = new ByteArrayContent(compressed);
-            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
-            content.Headers.ContentEncoding.Add("gzip");
-            using HttpResponseMessage httpResponse = await PostAsync(content);
-            EventIngestionV3Response response = await DeserializeAsync(httpResponse);
-
-            Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
-            Assert.Equal(1, response.Persisted);
-        }
-        finally
-        {
-            options.MaximumCompressedBodySize = originalCompressedLimit;
-            options.MaximumDecompressedBodySize = originalDecompressedLimit;
-        }
-    }
-
-    [Fact]
-    public async Task Post_CompressedBodyOverDecompressedLimit_ReturnsRequestEntityTooLarge()
-    {
-        var options = GetService<AppOptions>().EventIngestionV3;
-        long originalCompressedLimit = options.MaximumCompressedBodySize;
-        long originalDecompressedLimit = options.MaximumDecompressedBodySize;
-        options.MaximumCompressedBodySize = 1024;
-        options.MaximumDecompressedBodySize = 128;
-        try
-        {
-            string payload = $$"""{"id":"v3-decompressed-gzip-limit","type":"log","message":"{{new string('x', 512)}}"}""";
-            byte[] compressed;
-            await using (var output = new MemoryStream())
-            {
-                await using (var gzip = new GZipStream(output, CompressionMode.Compress, leaveOpen: true))
-                    await gzip.WriteAsync(Encoding.UTF8.GetBytes(payload), TestCancellationToken);
-                compressed = output.ToArray();
-            }
-
-            using var content = new ByteArrayContent(compressed);
-            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
-            content.Headers.ContentEncoding.Add("gzip");
-            using HttpResponseMessage response = await PostAsync(content);
-
-            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
-        }
-        finally
-        {
-            options.MaximumCompressedBodySize = originalCompressedLimit;
-            options.MaximumDecompressedBodySize = originalDecompressedLimit;
-        }
-    }
-
-    [Fact]
-    public async Task Post_InvalidJsonAfterPersistedPrefix_ReturnsReplayablePartialResult()
-    {
+        // Arrange
         var options = GetService<AppOptions>().EventIngestionV3;
         int originalMicroBatchSize = options.MicroBatchSize;
         options.MicroBatchSize = 1;
+
         try
         {
-            const string payload = """
-                {"id":"v3-partial-prefix-0001","type":"log","reference_id":"v3-partial-prefix-ref-0001"}
-                {"id":"broken"
-                """;
-            using HttpResponseMessage response = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-            string json = await response.Content.ReadAsStringAsync(TestCancellationToken);
-            using JsonDocument document = JsonDocument.Parse(json);
+            // Act
+            using var response = await PostAsync(new StringContent("""[{"message":"kept","reference_id":"v3-partial-0001"} {"message":"no comma"}]""", Encoding.UTF8, "application/json"));
+            using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestCancellationToken));
 
+            // Assert
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            JsonElement partialResult = document.RootElement.GetProperty("partial_result");
-            Assert.Equal(1, partialResult.GetProperty("received").GetInt32());
-            Assert.Equal(1, partialResult.GetProperty("persisted").GetInt32());
-            Assert.Contains("Retry the complete request", document.RootElement.GetProperty("retry_guidance").GetString() ?? String.Empty);
-
-            await RefreshDataAsync();
-            Assert.Single((await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, "v3-partial-prefix-ref-0001")).Documents);
+            Assert.Equal(1, problem.RootElement.GetProperty("partial_result").GetProperty("persisted").GetInt32());
+            Assert.Equal("kept", (await GetEventByReferenceIdAsync("v3-partial-0001")).Message);
         }
         finally
         {
@@ -613,194 +422,179 @@ public sealed class EventIngestionV3EndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task Post_NullNestedHeaderValue_ReturnsValidationProblem()
+    public async Task Post_OnlyInvalidEvents_ReturnsUnprocessableEntity()
     {
-        const string payload = """{"id":"v3-null-header-0001","type":"log","request":{"headers":{"x-test":null}}}""";
+        // Act
+        using var response = await PostAsync(new StringContent("\"not an event\"\n42", Encoding.UTF8, "application/x-ndjson"));
 
-        using HttpResponseMessage response = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-
+        // Assert
         Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
     }
 
     [Fact]
-    public async Task Post_AtQuota_DiscardsKnownStackAndBlocksNewEvent()
+    public async Task Post_EmptyBody_ReturnsEmptyResult()
     {
-        var organizationRepository = GetService<IOrganizationRepository>();
-        var organization = await organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
-        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
-        Assert.NotNull(organization);
-        Assert.NotNull(project);
+        // Act
+        using var httpResponse = await PostAsync(new StringContent("", Encoding.UTF8, "application/json"));
+        var response = await DeserializeAsync(httpResponse);
 
-        organization.MaxEventsPerMonth = 1;
-        organization.GetCurrentUsage(TimeProvider).Total = 1;
-        await organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache());
-        var cache = GetService<ICacheClient>();
-        await cache.RemoveAsync($"usage:limits:{organization.Id}");
-        await cache.RemoveByPrefixAsync("usage:total:");
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
+        Assert.Equal(0, response.Received);
+    }
 
-        var discarded = new EventIngestionV3Event
-        {
-            Id = "v3-at-quota-discarded-0001",
-            Type = Event.KnownTypes.Error,
-            ExceptionType = "Example.DiscardedException",
-            StackTrace = "at Example.Discarded.Run() in /src/Discarded.cs:line 10",
-            ReferenceId = "v3-at-quota-discarded-ref-0001"
-        };
-        StackFingerprint fingerprint = GetService<StackFingerprintService>().Create(discarded, organization, project);
-        await _stackRepository.AddAsync(new Stack
-        {
-            OrganizationId = organization.Id,
-            ProjectId = project.Id,
-            Type = Event.KnownTypes.Error,
-            Status = StackStatus.Discarded,
-            SignatureHash = fingerprint.SignatureHash,
-            SignatureInfo = new SettingsDictionary(fingerprint.SignatureData),
-            DuplicateSignature = $"{project.Id}:{fingerprint.SignatureHash}",
-            Title = "discarded at quota",
-            FirstOccurrence = TimeProvider.GetUtcNow().UtcDateTime,
-            LastOccurrence = TimeProvider.GetUtcNow().UtcDateTime
-        }, o => o.ImmediateConsistency().Cache());
+    [Theory]
+    [InlineData("text/plain")]
+    [InlineData("application/xml")]
+    [InlineData("application/json; charset=utf-16")]
+    public async Task Post_UnsupportedContentType_ReturnsUnsupportedMediaType(string contentType)
+    {
+        // Arrange
+        var content = new ByteArrayContent("""{"message":"hello"}"""u8.ToArray());
+        content.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
 
-        string discardedJson = JsonSerializer.Serialize(discarded, Exceptionless.Core.Serialization.EventIngestionJsonContext.Default.EventIngestionV3Event);
-        const string activeJson = """{"id":"v3-at-quota-active-0001","type":"log","source":"new-source","reference_id":"v3-at-quota-active-ref-0001"}""";
-        using HttpResponseMessage httpResponse = await PostAsync(new StringContent($"{discardedJson}\n{activeJson}", Encoding.UTF8, "application/x-ndjson"));
-        EventIngestionV3Response response = await DeserializeAsync(httpResponse);
+        // Act
+        using var response = await PostAsync(content);
 
-        Assert.Equal(2, response.Received);
-        Assert.Equal(1, response.Discarded);
-        Assert.Equal(1, response.Blocked);
-        Assert.Equal(0, response.Persisted);
-        await RefreshDataAsync();
-        Assert.Empty((await _eventRepository.GetByReferenceIdAsync(project.Id, discarded.ReferenceId)).Documents);
-        Assert.Empty((await _eventRepository.GetByReferenceIdAsync(project.Id, "v3-at-quota-active-ref-0001")).Documents);
+        // Assert
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
     }
 
     [Fact]
-    public async Task Post_EventOverUtf8RecordSizeLimit_ReturnsRequestEntityTooLarge()
+    public async Task Post_WhenDisabled_ReturnsNotFound()
     {
+        // Arrange
         var options = GetService<AppOptions>().EventIngestionV3;
-        long originalLimit = options.MaximumEventSize;
-        options.MaximumEventSize = 60;
+        options.Enabled = false;
+
         try
         {
-            using HttpResponseMessage response = await PostAsync(new StringContent("{\"id\":\"v3-event-size-limit\",\"type\":\"log\",\"message\":\"payload\"}", Encoding.UTF8, "application/x-ndjson"));
+            // Act
+            using var response = await PostAsync(new StringContent("""{"message":"hello"}""", Encoding.UTF8, "application/json"));
 
-            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+            // Assert
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
         finally
         {
-            options.MaximumEventSize = originalLimit;
+            options.Enabled = true;
         }
     }
 
     [Fact]
-    public async Task Post_WithoutClientAuthorization_ReturnsUnauthorized()
+    public async Task Post_WithoutAuthorization_ReturnsUnauthorized()
     {
+        // Arrange
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_server.BaseAddress, "/api/v3/events"))
         {
-            Content = new StringContent("{\"id\":\"event-1\",\"type\":\"log\"}", Encoding.UTF8, "application/x-ndjson")
+            Content = new StringContent("""{"message":"hello"}""", Encoding.UTF8, "application/json")
         };
 
-        using HttpResponseMessage response = await _server.CreateClient().SendAsync(request, TestCancellationToken);
+        // Act
+        using var response = await _server.CreateClient().SendAsync(request, TestCancellationToken);
 
+        // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
     public async Task Post_ExplicitProjectMismatch_ReturnsNotFound()
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_server.BaseAddress, "/api/v3/projects/507f1f77bcf86cd799439011/events"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TestConstants.ApiKey);
-        request.Content = new StringContent("{\"id\":\"event-1\",\"type\":\"log\"}", Encoding.UTF8, "application/x-ndjson");
+        // Act
+        using var response = await PostAsync(new StringContent("""{"message":"hello"}""", Encoding.UTF8, "application/json"), "/api/v3/projects/507f1f77bcf86cd799439011/events");
 
-        using HttpResponseMessage response = await _server.CreateClient().SendAsync(request, TestCancellationToken);
-
+        // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
-    public async Task Post_ExplicitProject_AcquiresActualOrganizationStreamPermit()
+    public async Task Post_ExplicitProject_PersistsEvent()
     {
-        var project = await _projectRepository.GetByIdAsync(SampleDataService.INTERNAL_PROJECT_ID);
-        Assert.NotNull(project);
-        Assert.NotEqual(TestConstants.OrganizationId, project.OrganizationId);
+        // Act
+        using var httpResponse = await PostAsync(new StringContent("""{"message":"explicit","reference_id":"v3-explicit-0001"}""", Encoding.UTF8, "application/json"), $"/api/v3/projects/{TestConstants.ProjectId}/events");
+        var response = await DeserializeAsync(httpResponse);
 
+        // Assert
+        Assert.Equal(1, response.Persisted);
+        Assert.Equal("explicit", (await GetEventByReferenceIdAsync("v3-explicit-0001")).Message);
+    }
+
+    [Fact]
+    public async Task Post_OrganizationStreamCapacityBusy_ReturnsTooManyRequestsWithRetryAfter()
+    {
+        // Arrange
         var limiter = GetService<EventIngestionV3ConcurrencyLimiter>();
         int permitLimit = GetService<AppOptions>().EventIngestionV3.MaximumActiveStreamsPerOrganization;
         var heldLeases = new List<RateLimitLease>(permitLimit);
+
         try
         {
             for (int index = 0; index < permitLimit; index++)
             {
-                RateLimitLease lease = await limiter.AcquireOrganizationActiveStreamAsync(project.OrganizationId, TestCancellationToken);
+                var lease = await limiter.AcquireOrganizationActiveStreamAsync(TestConstants.OrganizationId, TestCancellationToken);
                 Assert.True(lease.IsAcquired);
                 heldLeases.Add(lease);
             }
 
-            using var request = new HttpRequestMessage(
-                HttpMethod.Post,
-                new Uri(_server.BaseAddress, $"/api/v3/projects/{project.Id}/events"));
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TestConstants.UserApiKey);
-            request.Content = new StringContent(
-                "{\"id\":\"v3-explicit-project-limit-0001\",\"type\":\"log\"}",
-                Encoding.UTF8,
-                "application/x-ndjson");
+            // Act
+            using var response = await PostAsync(new StringContent("""{"message":"busy"}""", Encoding.UTF8, "application/json"));
 
-            using HttpResponseMessage response = await _server.CreateClient().SendAsync(request, TestCancellationToken);
-
+            // Assert
             Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
+            Assert.NotNull(response.Headers.RetryAfter);
         }
         finally
         {
-            foreach (RateLimitLease lease in heldLeases)
+            foreach (var lease in heldLeases)
+            {
                 lease.Dispose();
+            }
         }
     }
 
-    [Fact]
-    public async Task Post_UnsupportedMediaType_ReturnsUnsupportedMediaType()
+    private async Task<PersistentEvent> PostVersionTwoEventAsync(Event ev)
     {
-        using HttpResponseMessage response = await PostAsync(new StringContent("{\"id\":\"event-1\",\"type\":\"log\"}", Encoding.UTF8, "application/json"));
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events")
+            .Content(ev)
+            .StatusCodeShouldBeAccepted());
 
-        Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
+        await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
+        return await GetEventByReferenceIdAsync(ev.ReferenceId!);
     }
 
-    [Fact]
-    public async Task Post_JsonOverDepthLimit_ReturnsBadRequest()
+    private async Task<PersistentEvent> GetEventByReferenceIdAsync(string referenceId)
     {
-        string nested = String.Concat(Enumerable.Repeat("{\"value\":", EventIngestionV3Limits.MaximumJsonDepth + 1));
-        nested += "true" + new string('}', EventIngestionV3Limits.MaximumJsonDepth + 1);
-        string payload = $"{{\"id\":\"event-1\",\"type\":\"log\",\"data\":{nested}}}";
-
-        using HttpResponseMessage response = await PostAsync(new StringContent(payload, Encoding.UTF8, "application/x-ndjson"));
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await RefreshDataAsync();
+        var results = await _eventRepository.GetByReferenceIdAsync(TestConstants.ProjectId, referenceId);
+        return Assert.Single(results.Documents);
     }
 
-    private async Task<HttpResponseMessage> PostAsync(HttpContent content)
+    private async Task<HttpResponseMessage> PostAsync(HttpContent content, string path = "/api/v3/events")
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_server.BaseAddress, "/api/v3/events"));
+        using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_server.BaseAddress, path));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TestConstants.ApiKey);
         request.Content = content;
         return await _server.CreateClient().SendAsync(request, TestCancellationToken);
     }
 
-    private static async Task<EventIngestionV3Response> DeserializeAsync(HttpResponseMessage response)
+    private async Task<EventIngestionV3Response> DeserializeAsync(HttpResponseMessage response)
     {
-        string json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize(json, Exceptionless.Core.Serialization.EventIngestionJsonContext.Default.EventIngestionV3Response)
-            ?? throw new InvalidOperationException(json);
+        string json = await response.Content.ReadAsStringAsync(TestCancellationToken);
+        Assert.True(response.IsSuccessStatusCode, json);
+        return JsonSerializer.Deserialize<EventIngestionV3Response>(json, _jsonOptions) ?? throw new InvalidOperationException(json);
     }
 
-    private sealed class UnknownLengthJsonContent : HttpContent
+    private sealed class UnknownLengthContent : HttpContent
     {
         private readonly byte[] _bytes;
 
-        public UnknownLengthJsonContent(byte[] bytes)
+        public UnknownLengthContent(byte[] bytes, string mediaType)
         {
             _bytes = bytes;
-            Headers.ContentType = new MediaTypeHeaderValue("application/x-ndjson");
+            Headers.ContentType = new MediaTypeHeaderValue(mediaType);
         }
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)

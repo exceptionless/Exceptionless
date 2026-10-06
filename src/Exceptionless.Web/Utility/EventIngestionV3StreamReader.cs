@@ -6,352 +6,312 @@ using Exceptionless.Core.Models.Ingestion;
 namespace Exceptionless.Web.Utility;
 
 /// <summary>
-/// Frames newline-delimited JSON before materialization so a single record can never cause an
-/// unbounded allocation. It projects routing fields first and materializes only surviving records.
+/// Reads V3 events from a request body one at a time without buffering the body. The body may be
+/// a single JSON object, a JSON array of objects, or whitespace-separated objects such as
+/// newline-delimited JSON. Event boundaries come from the JSON structure, so pretty-printed events
+/// work. Each event is size limited before it is deserialized. An event that is too large, is not
+/// an object, or does not match the event shape is reported and skipped. Invalid JSON outside an
+/// array is reported and skipped by resuming at the next line that starts with <c>{</c>.
 /// </summary>
-internal static class EventIngestionV3StreamReader
+internal sealed class EventIngestionV3StreamReader
 {
-    private static readonly JsonReaderOptions _readerOptions = new()
-    {
-        AllowTrailingCommas = false,
-        CommentHandling = JsonCommentHandling.Disallow,
-        MaxDepth = EventIngestionV3Limits.MaximumJsonDepth
-    };
+    private static readonly JsonReaderOptions _scanOptions = new() { MaxDepth = 64 };
 
-    public static async ValueTask<EventIngestionV3StreamRecord?> ReadAsync(
-        PipeReader pipeReader,
-        long maximumEventSize,
-        CancellationToken cancellationToken,
-        MemoryPool<byte>? memoryPool = null)
+    private readonly PipeReader _reader;
+    private readonly long _maximumEventSize;
+    private readonly JsonSerializerOptions _serializerOptions;
+
+    private Framing _framing;
+    private ArrayPosition _arrayPosition;
+    private bool _checkedByteOrderMark;
+    private int _nextIndex;
+
+    private bool _inValue;
+    private bool _skippingValue;
+    private long _valueBytesScanned;
+    private JsonReaderState _valueState;
+
+    private bool _resynchronizing;
+    private bool _resynchronizingAtLineStart;
+
+    public EventIngestionV3StreamReader(PipeReader reader, long maximumEventSize, JsonSerializerOptions serializerOptions)
     {
-        ArgumentNullException.ThrowIfNull(pipeReader);
+        ArgumentNullException.ThrowIfNull(reader);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumEventSize);
-        maximumEventSize = Math.Min(maximumEventSize, Array.MaxLength);
+        ArgumentNullException.ThrowIfNull(serializerOptions);
 
-        // PipeReader retains an incomplete record between reads. Remember how much of that record
-        // has already been searched so a client that fragments a large line into tiny writes cannot
-        // make us rescan the prefix on every read (quadratic work).
-        long examinedLength = 0;
-        bool objectPrefixValidated = false;
+        _reader = reader;
+        _maximumEventSize = maximumEventSize;
+        _serializerOptions = serializerOptions;
+    }
+
+    /// <summary>
+    /// Returns the next event, or <see langword="null"/> at the end of the body.
+    /// </summary>
+    /// <exception cref="JsonException">The body is a JSON array that is malformed.</exception>
+    public async ValueTask<EventIngestionV3StreamRecord?> ReadAsync(CancellationToken cancellationToken)
+    {
         while (true)
         {
-            ReadResult readResult = await pipeReader.ReadAsync(cancellationToken);
-            ReadOnlySequence<byte> buffer = readResult.Buffer;
-            ReadOnlySequence<byte> remaining = buffer;
-
+            ReadResult result = await _reader.ReadAsync(cancellationToken);
+            ReadOnlySequence<byte> buffer = result.Buffer;
+            EventIngestionV3StreamRecord? record;
             try
             {
-                while (true)
-                {
-                    if (examinedLength > remaining.Length)
-                    {
-                        throw new InvalidOperationException("The ingestion pipe returned less data than it retained.");
-                    }
-
-                    ReadOnlySequence<byte> unexamined = remaining.Slice(examinedLength);
-                    if (unexamined.PositionOf((byte)'\n') is not { } newline)
-                    {
-                        break;
-                    }
-
-                    ReadOnlySequence<byte> record = remaining.Slice(0, newline);
-                    SequencePosition consumed = remaining.GetPosition(1, newline);
-                    if (record.Length > maximumEventSize)
-                    {
-                        throw new EventIngestionV3RecordTooLargeException();
-                    }
-
-                    if (!objectPrefixValidated)
-                    {
-                        objectPrefixValidated = EnsureObjectPrefix(unexamined.Slice(0, newline));
-                    }
-
-                    if (IsJsonWhitespace(record))
-                    {
-                        remaining = remaining.Slice(consumed);
-                        examinedLength = 0;
-                        objectPrefixValidated = false;
-                        continue;
-                    }
-
-                    EventIngestionV3BufferedRecord bufferedRecord = Buffer(record, memoryPool ?? MemoryPool<byte>.Shared);
-                    pipeReader.AdvanceTo(consumed, consumed);
-                    return new EventIngestionV3StreamRecord(bufferedRecord);
-                }
-
-                ReadOnlySequence<byte> newlyExamined = remaining.Slice(examinedLength);
-                if (!objectPrefixValidated)
-                {
-                    objectPrefixValidated = EnsureObjectPrefix(newlyExamined);
-                }
-
-                if (remaining.Length > maximumEventSize)
-                {
-                    throw new EventIngestionV3RecordTooLargeException();
-                }
-
-                if (readResult.IsCompleted)
-                {
-                    if (IsJsonWhitespace(remaining))
-                    {
-                        pipeReader.AdvanceTo(buffer.End, buffer.End);
-                        return null;
-                    }
-
-                    EventIngestionV3BufferedRecord bufferedRecord = Buffer(remaining, memoryPool ?? MemoryPool<byte>.Shared);
-                    pipeReader.AdvanceTo(buffer.End, buffer.End);
-                    return new EventIngestionV3StreamRecord(bufferedRecord);
-                }
-
-                examinedLength = remaining.Length;
-                pipeReader.AdvanceTo(remaining.Start, buffer.End);
+                record = TryRead(ref buffer, result.IsCompleted);
             }
             catch
             {
-                pipeReader.AdvanceTo(buffer.Start, buffer.End);
+                _reader.AdvanceTo(buffer.Start, buffer.End);
                 throw;
             }
+
+            if (record is not null)
+            {
+                _reader.AdvanceTo(buffer.Start);
+                return record;
+            }
+
+            if (result.IsCompleted)
+            {
+                _reader.AdvanceTo(buffer.End);
+                return null;
+            }
+
+            _reader.AdvanceTo(buffer.Start, buffer.End);
         }
     }
 
-    private static EventIngestionV3BufferedRecord Buffer(ReadOnlySequence<byte> record, MemoryPool<byte> memoryPool)
+    private EventIngestionV3StreamRecord? TryRead(ref ReadOnlySequence<byte> buffer, bool isCompleted)
     {
-        int length = checked((int)record.Length);
-        IMemoryOwner<byte> owner = memoryPool.Rent(length);
-        try
+        while (true)
         {
-            record.CopyTo(owner.Memory.Span);
-            EventIngestionV3Event routingEvent = ParseRoutingEvent(owner.Memory.Span[..length]);
-            return new EventIngestionV3BufferedRecord(owner, length, routingEvent);
-        }
-        catch
-        {
-            owner.Dispose();
-            throw;
-        }
-    }
-
-    private static EventIngestionV3Event ParseRoutingEvent(ReadOnlySpan<byte> record)
-    {
-        var jsonReader = new Utf8JsonReader(record, isFinalBlock: true, new JsonReaderState(_readerOptions));
-        if (!jsonReader.Read() || jsonReader.TokenType != JsonTokenType.StartObject)
-        {
-            throw new JsonException("Each NDJSON line must contain one event object.");
-        }
-
-        string? id = null;
-        string? type = null;
-        string? source = null;
-        string? exceptionType = null;
-        string? stackTrace = null;
-        EventIngestionV3Stacking? stacking = null;
-        while (jsonReader.Read() && jsonReader.TokenType != JsonTokenType.EndObject)
-        {
-            if (jsonReader.TokenType != JsonTokenType.PropertyName)
+            if (_resynchronizing)
             {
-                throw new JsonException("The event record must be a JSON object.");
-            }
-
-            bool isId = jsonReader.ValueTextEquals("id"u8);
-            bool isType = jsonReader.ValueTextEquals("type"u8);
-            bool isSource = jsonReader.ValueTextEquals("source"u8);
-            bool isExceptionType = jsonReader.ValueTextEquals("exception_type"u8);
-            bool isStackTrace = jsonReader.ValueTextEquals("stack_trace"u8);
-            bool isStacking = jsonReader.ValueTextEquals("stacking"u8);
-            if (!jsonReader.Read())
-            {
-                throw new JsonException("The event record ended before a property value was complete.");
-            }
-
-            if (isId)
-            {
-                id = ReadNullableString(ref jsonReader);
-            }
-            else if (isType)
-            {
-                type = ReadNullableString(ref jsonReader);
-            }
-            else if (isSource)
-            {
-                source = ReadNullableString(ref jsonReader);
-            }
-            else if (isExceptionType)
-            {
-                exceptionType = ReadNullableString(ref jsonReader);
-            }
-            else if (isStackTrace)
-            {
-                stackTrace = ReadNullableString(ref jsonReader);
-            }
-            else if (isStacking)
-            {
-                stacking = ReadStacking(ref jsonReader);
-            }
-            else
-            {
-                jsonReader.Skip();
-            }
-        }
-
-        if (jsonReader.TokenType != JsonTokenType.EndObject || jsonReader.Read())
-        {
-            throw new JsonException("Each NDJSON line must contain exactly one event object.");
-        }
-
-        return new EventIngestionV3Event
-        {
-            Id = id!,
-            Type = type!,
-            Source = source,
-            ExceptionType = exceptionType,
-            StackTrace = stackTrace,
-            Stacking = stacking
-        };
-    }
-
-    private static EventIngestionV3Stacking? ReadStacking(ref Utf8JsonReader jsonReader)
-    {
-        if (jsonReader.TokenType == JsonTokenType.Null)
-        {
-            return null;
-        }
-
-        if (jsonReader.TokenType != JsonTokenType.StartObject)
-        {
-            throw new JsonException("stacking must be a JSON object.");
-        }
-
-        Dictionary<string, string>? signatureData = null;
-        while (jsonReader.Read() && jsonReader.TokenType != JsonTokenType.EndObject)
-        {
-            if (jsonReader.TokenType != JsonTokenType.PropertyName)
-            {
-                throw new JsonException("stacking must be a JSON object.");
-            }
-
-            bool isSignatureData = jsonReader.ValueTextEquals("signature_data"u8);
-            if (!jsonReader.Read())
-            {
-                throw new JsonException("stacking ended before a property value was complete.");
-            }
-
-            if (isSignatureData)
-            {
-                signatureData = ReadSignatureData(ref jsonReader);
-            }
-            else
-            {
-                jsonReader.Skip();
-            }
-        }
-
-        if (jsonReader.TokenType != JsonTokenType.EndObject)
-        {
-            throw new JsonException("stacking must be a complete JSON object.");
-        }
-
-        return new EventIngestionV3Stacking
-        {
-            SignatureData = signatureData!
-        };
-    }
-
-    private static Dictionary<string, string>? ReadSignatureData(ref Utf8JsonReader jsonReader)
-    {
-        if (jsonReader.TokenType == JsonTokenType.Null)
-        {
-            return null;
-        }
-
-        if (jsonReader.TokenType != JsonTokenType.StartObject)
-        {
-            throw new JsonException("stacking.signature_data must be a JSON object.");
-        }
-
-        var values = new Dictionary<string, string>();
-        while (jsonReader.Read() && jsonReader.TokenType != JsonTokenType.EndObject)
-        {
-            if (jsonReader.TokenType != JsonTokenType.PropertyName)
-            {
-                throw new JsonException("stacking.signature_data must be a JSON object.");
-            }
-
-            string key = jsonReader.GetString()!;
-            if (!jsonReader.Read())
-            {
-                throw new JsonException("stacking.signature_data ended before a value was complete.");
-            }
-
-            values[key] = ReadNullableString(ref jsonReader)!;
-        }
-
-        if (jsonReader.TokenType != JsonTokenType.EndObject)
-        {
-            throw new JsonException("stacking.signature_data must be a complete JSON object.");
-        }
-
-        return values;
-    }
-
-    private static string? ReadNullableString(ref Utf8JsonReader jsonReader)
-    {
-        if (jsonReader.TokenType == JsonTokenType.Null)
-        {
-            return null;
-        }
-
-        if (jsonReader.TokenType != JsonTokenType.String)
-        {
-            throw new JsonException("The event property must be a JSON string or null.");
-        }
-
-        return jsonReader.GetString();
-    }
-
-    private static bool IsJsonWhitespace(ReadOnlySequence<byte> value)
-    {
-        foreach (ReadOnlyMemory<byte> segment in value)
-        {
-            foreach (byte item in segment.Span)
-            {
-                if (item is not (0x20 or 0x09 or 0x0A or 0x0D))
+                if (!TryResynchronize(ref buffer))
                 {
-                    return false;
+                    return null;
                 }
+
+                _resynchronizing = false;
             }
-        }
 
-        return true;
-    }
-
-    private static bool EnsureObjectPrefix(ReadOnlySequence<byte> value)
-    {
-        foreach (ReadOnlyMemory<byte> segment in value)
-        {
-            foreach (byte item in segment.Span)
+            if (_inValue)
             {
-                if (item is 0x20 or 0x09 or 0x0A or 0x0D)
+                return ContinueValue(ref buffer, isCompleted);
+            }
+
+            if (!_checkedByteOrderMark)
+            {
+                if (buffer.Length < 3 && !isCompleted && buffer.FirstSpan is [0xEF, ..])
                 {
+                    return null;
+                }
+
+                if (buffer.Length >= 3 && buffer.FirstSpan.Length >= 3 && buffer.FirstSpan[..3].SequenceEqual("﻿"u8))
+                {
+                    buffer = buffer.Slice(3);
+                }
+
+                _checkedByteOrderMark = true;
+            }
+
+            SkipWhitespace(ref buffer);
+            if (buffer.IsEmpty)
+            {
+                if (isCompleted && _framing is Framing.Array && _arrayPosition is not ArrayPosition.Ended)
+                {
+                    throw new JsonException("The request ended before the JSON array was closed.");
+                }
+
+                return null;
+            }
+
+            byte next = buffer.FirstSpan[0];
+            if (_framing is Framing.Unknown)
+            {
+                if (next == (byte)'[')
+                {
+                    _framing = Framing.Array;
+                    _arrayPosition = ArrayPosition.ValueOrEnd;
+                    buffer = buffer.Slice(1);
                     continue;
                 }
 
-                if (item != (byte)'{')
+                _framing = Framing.Sequence;
+            }
+            else if (_framing is Framing.Array)
+            {
+                switch (_arrayPosition)
                 {
-                    throw new JsonException("Each NDJSON line must contain one event object.");
+                    case ArrayPosition.Ended:
+                        throw new JsonException("The request contains data after the end of the JSON array.");
+                    case ArrayPosition.ValueOrEnd when next == (byte)']':
+                    case ArrayPosition.SeparatorOrEnd when next == (byte)']':
+                        _arrayPosition = ArrayPosition.Ended;
+                        buffer = buffer.Slice(1);
+                        continue;
+                    case ArrayPosition.SeparatorOrEnd when next == (byte)',':
+                        _arrayPosition = ArrayPosition.Value;
+                        buffer = buffer.Slice(1);
+                        continue;
+                    case ArrayPosition.SeparatorOrEnd:
+                        throw new JsonException("Expected ',' or ']' after an event in the JSON array.");
+                    case ArrayPosition.Value when next == (byte)']':
+                        throw new JsonException("The JSON array has a trailing comma.");
                 }
+            }
 
-                return true;
+            _inValue = true;
+            _skippingValue = false;
+            _valueBytesScanned = 0;
+            _valueState = new JsonReaderState(_scanOptions);
+        }
+    }
+
+    private EventIngestionV3StreamRecord? ContinueValue(ref ReadOnlySequence<byte> buffer, bool isCompleted)
+    {
+        // Until a value is complete its bytes stay in the pipe so it can be deserialized without a
+        // copy. A value over the size limit is scanned to its end without being retained.
+        ReadOnlySequence<byte> unscanned = _skippingValue ? buffer : buffer.Slice(_valueBytesScanned);
+        var scanner = new Utf8JsonReader(unscanned, isCompleted, _valueState);
+        bool isComplete = false;
+        try
+        {
+            while (scanner.Read())
+            {
+                if (scanner.CurrentDepth == 0 && scanner.TokenType is not (JsonTokenType.StartObject or JsonTokenType.StartArray))
+                {
+                    isComplete = true;
+                    break;
+                }
             }
         }
+        catch (JsonException ex)
+        {
+            if (_framing is Framing.Array)
+            {
+                throw;
+            }
 
+            // Skip the malformed value and resume at the next line that starts a new object.
+            _inValue = false;
+            _resynchronizing = true;
+            _resynchronizingAtLineStart = false;
+            return Invalid(_valueBytesScanned + scanner.BytesConsumed, EventIngestionV3ErrorCodes.InvalidJson, $"The event is not valid JSON: {ex.Message}");
+        }
+
+        long scannedThisRead = scanner.BytesConsumed;
+        if (!isComplete)
+        {
+            _valueState = scanner.CurrentState;
+            if (_skippingValue)
+            {
+                buffer = buffer.Slice(scannedThisRead);
+            }
+            else if (buffer.Length > _maximumEventSize)
+            {
+                buffer = buffer.Slice(_valueBytesScanned + scannedThisRead);
+                _skippingValue = true;
+            }
+
+            _valueBytesScanned += scannedThisRead;
+            return null;
+        }
+
+        _inValue = false;
+        if (_framing is Framing.Array)
+        {
+            _arrayPosition = ArrayPosition.SeparatorOrEnd;
+        }
+
+        long size = _valueBytesScanned + scannedThisRead;
+        if (_skippingValue || size > _maximumEventSize)
+        {
+            buffer = buffer.Slice(_skippingValue ? scannedThisRead : size);
+            return Invalid(size, EventIngestionV3ErrorCodes.EventTooLarge, $"The event is larger than the maximum event size of {_maximumEventSize} bytes.");
+        }
+
+        ReadOnlySequence<byte> value = buffer.Slice(0, size);
+        buffer = buffer.Slice(size);
+        if (value.FirstSpan[0] != (byte)'{')
+        {
+            return Invalid(size, EventIngestionV3ErrorCodes.InvalidEvent, "Each event must be a JSON object.");
+        }
+
+        try
+        {
+            var valueReader = new Utf8JsonReader(value, new JsonReaderOptions { MaxDepth = _scanOptions.MaxDepth });
+            var ev = JsonSerializer.Deserialize<EventIngestionV3Event>(ref valueReader, _serializerOptions);
+            return ev is null
+                ? Invalid(size, EventIngestionV3ErrorCodes.InvalidEvent, "Each event must be a JSON object.")
+                : new EventIngestionV3StreamRecord(_nextIndex++, size, ev, null, null);
+        }
+        catch (Exception ex) when (ex is JsonException or NotSupportedException or InvalidOperationException or FormatException or OverflowException)
+        {
+            return Invalid(size, EventIngestionV3ErrorCodes.InvalidEvent, $"The event does not match the event format: {ex.Message}");
+        }
+    }
+
+    private EventIngestionV3StreamRecord Invalid(long size, string code, string message)
+    {
+        return new EventIngestionV3StreamRecord(_nextIndex++, size, null, code, message);
+    }
+
+    private bool TryResynchronize(ref ReadOnlySequence<byte> buffer)
+    {
+        var reader = new SequenceReader<byte>(buffer);
+        while (reader.TryRead(out byte value))
+        {
+            if (value == (byte)'\n')
+            {
+                _resynchronizingAtLineStart = true;
+                continue;
+            }
+
+            if (!_resynchronizingAtLineStart || value is (byte)' ' or (byte)'\t' or (byte)'\r')
+            {
+                continue;
+            }
+
+            if (value == (byte)'{')
+            {
+                reader.Rewind(1);
+                buffer = buffer.Slice(reader.Position);
+                return true;
+            }
+
+            _resynchronizingAtLineStart = false;
+        }
+
+        buffer = buffer.Slice(buffer.End);
         return false;
+    }
+
+    private static void SkipWhitespace(ref ReadOnlySequence<byte> buffer)
+    {
+        var reader = new SequenceReader<byte>(buffer);
+        reader.AdvancePastAny((byte)' ', (byte)'\t', (byte)'\r', (byte)'\n');
+        buffer = buffer.Slice(reader.Position);
+    }
+
+    private enum Framing
+    {
+        Unknown,
+        Sequence,
+        Array
+    }
+
+    private enum ArrayPosition
+    {
+        ValueOrEnd,
+        Value,
+        SeparatorOrEnd,
+        Ended
     }
 }
 
-internal readonly record struct EventIngestionV3StreamRecord(EventIngestionV3BufferedRecord BufferedRecord)
-{
-    public EventIngestionV3Event Event => BufferedRecord.RoutingEvent;
-    public long Size => BufferedRecord.Length;
-}
-
-internal sealed class EventIngestionV3RecordTooLargeException : Exception;
+/// <summary>
+/// One event read from a V3 request. Either <see cref="Event"/> or <see cref="ErrorCode"/> is set.
+/// </summary>
+internal readonly record struct EventIngestionV3StreamRecord(int Index, long Size, EventIngestionV3Event? Event, string? ErrorCode, string? ErrorMessage);

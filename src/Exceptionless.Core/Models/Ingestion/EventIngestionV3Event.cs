@@ -1,125 +1,75 @@
-using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Models.Ingestion;
 
 /// <summary>
-/// A compact V3 ingestion event. Organization and project ownership come from
-/// the authenticated request rather than the event payload.
+/// One event submitted to the V3 ingestion API. Every property is optional; the smallest useful
+/// event is <c>{"message":"..."}</c>. Organization and project ownership come from the
+/// authenticated request. Nested objects use the same shapes as the V2 event data values, so V2
+/// and V3 events are processed, grouped, and stored identically.
 /// </summary>
 public sealed record EventIngestionV3Event
 {
-    [Required]
-    [StringLength(EventIngestionV3Limits.MaximumEventIdLength, MinimumLength = 1)]
-    public string Id { get; init; } = null!;
+    /// <summary>
+    /// A client-generated identifier such as a UUID. Resending an event with the same id within the
+    /// idempotency window acknowledges it as a duplicate instead of storing it twice.
+    /// </summary>
+    public string? Id { get; init; }
 
-    [Required]
-    [StringLength(EventIngestionV3Limits.MaximumTypeLength, MinimumLength = 1)]
-    public string Type { get; init; } = null!;
+    /// <summary>
+    /// The event type, such as <c>error</c>, <c>log</c>, <c>usage</c>, <c>404</c>, or a custom type.
+    /// Defaults to <c>error</c> when error information is present and <c>log</c> otherwise.
+    /// </summary>
+    public string? Type { get; init; }
 
+    /// <summary>When the event occurred. Defaults to the time the server received it.</summary>
     public DateTimeOffset? Date { get; init; }
 
-    [StringLength(EventIngestionV3Limits.MaximumSourceLength, MinimumLength = 1)]
+    /// <summary>The event source, such as a logger name or request path.</summary>
     public string? Source { get; init; }
 
-    [StringLength(EventIngestionV3Limits.MaximumMessageLength, MinimumLength = 1)]
+    /// <summary>The event message.</summary>
     public string? Message { get; init; }
 
-    [StringLength(EventIngestionV3Limits.MaximumReferenceIdLength, MinimumLength = EventIngestionV3Limits.MinimumReferenceIdLength)]
+    /// <summary>An application-defined identifier that can be used to look up the event.</summary>
     public string? ReferenceId { get; init; }
 
+    /// <summary>A numeric value associated with the event.</summary>
     public decimal? Value { get; init; }
 
-    [MaxLength(EventIngestionV3Limits.MaximumTags)]
+    /// <summary>Tags that categorize the event.</summary>
     public string[]? Tags { get; init; }
 
-    [StringLength(EventIngestionV3Limits.MaximumVersionLength, MinimumLength = 1)]
+    /// <summary>The application version that produced the event.</summary>
     public string? Version { get; init; }
 
-    [StringLength(EventIngestionV3Limits.MaximumLevelLength, MinimumLength = 1)]
+    /// <summary>The log level, such as <c>info</c> or <c>error</c>.</summary>
     public string? Level { get; init; }
 
-    public EventIngestionV3Client? Client { get; init; }
-
-    [StringLength(EventIngestionV3Limits.MaximumExceptionTypeLength, MinimumLength = 1)]
+    /// <summary>The runtime's exception type name. Used with <c>stack_trace</c>.</summary>
     public string? ExceptionType { get; init; }
 
-    [StringLength(EventIngestionV3Limits.MaximumStackTraceLength, MinimumLength = 1)]
+    /// <summary>The runtime's original stack trace text. Used with <c>exception_type</c>.</summary>
     public string? StackTrace { get; init; }
 
-    public EventIngestionV3Stacking? Stacking { get; init; }
+    /// <summary>
+    /// A structured error with parsed stack frames, in the same format as the V2 <c>@error</c> data
+    /// value. Takes precedence over <c>exception_type</c> and <c>stack_trace</c>.
+    /// </summary>
+    public Error? Error { get; init; }
 
-    public EventIngestionV3User? User { get; init; }
+    /// <summary>Overrides automatic grouping with a stack title and signature values.</summary>
+    public ManualStackingInfo? Stacking { get; init; }
 
-    public EventIngestionV3Request? Request { get; init; }
+    /// <summary>The user that the event happened to.</summary>
+    public UserInfo? User { get; init; }
 
-    public EventIngestionV3Environment? Environment { get; init; }
+    /// <summary>The HTTP request that the event happened during.</summary>
+    public RequestInfo? Request { get; init; }
 
-    public JsonElement? Data { get; init; }
-}
+    /// <summary>The machine and process that produced the event.</summary>
+    public EnvironmentInfo? Environment { get; init; }
 
-public sealed record EventIngestionV3Client
-{
-    [Required]
-    [StringLength(EventIngestionV3Limits.MaximumClientNameLength, MinimumLength = 1)]
-    public string Name { get; init; } = null!;
-
-    [Required]
-    [StringLength(EventIngestionV3Limits.MaximumClientVersionLength, MinimumLength = 1)]
-    public string Version { get; init; } = null!;
-}
-
-public sealed record EventIngestionV3Stacking
-{
-    [StringLength(EventIngestionV3Limits.MaximumStackTitleLength, MinimumLength = 1)]
-    public string? Title { get; init; }
-
-    [Required]
-    public Dictionary<string, string> SignatureData { get; init; } = null!;
-}
-
-public sealed record EventIngestionV3User
-{
-    [StringLength(EventIngestionV3Limits.MaximumUserIdentityLength, MinimumLength = 1)]
-    public string? Identity { get; init; }
-
-    [StringLength(EventIngestionV3Limits.MaximumUserNameLength, MinimumLength = 1)]
-    public string? Name { get; init; }
-
-    public JsonElement? Data { get; init; }
-}
-
-public sealed record EventIngestionV3Request
-{
-    public string? UserAgent { get; init; }
-    public string? HttpMethod { get; init; }
-    public bool? IsSecure { get; init; }
-    public string? Host { get; init; }
-    public int? Port { get; init; }
-    public string? Path { get; init; }
-    public string? Referrer { get; init; }
-    public string? ClientIpAddress { get; init; }
-    public Dictionary<string, string[]>? Headers { get; init; }
-    public Dictionary<string, string>? Cookies { get; init; }
-    public Dictionary<string, string>? QueryString { get; init; }
-    public JsonElement? PostData { get; init; }
-    public JsonElement? Data { get; init; }
-}
-
-public sealed record EventIngestionV3Environment
-{
-    public string? Architecture { get; init; }
-    public string? OSName { get; init; }
-    public string? OSVersion { get; init; }
-    public string? MachineName { get; init; }
-    public string? RuntimeVersion { get; init; }
-    public string? ProcessName { get; init; }
-    public string? ProcessId { get; init; }
-    public string? ThreadName { get; init; }
-    public string? ThreadId { get; init; }
-    public int? ProcessorCount { get; init; }
-    public long? TotalPhysicalMemory { get; init; }
-    public long? AvailablePhysicalMemory { get; init; }
-    public long? ProcessMemorySize { get; init; }
-    public JsonElement? Data { get; init; }
+    /// <summary>Additional custom data. Values for the first-class properties above take precedence.</summary>
+    public DataDictionary? Data { get; init; }
 }

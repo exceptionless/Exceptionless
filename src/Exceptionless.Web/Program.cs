@@ -116,11 +116,8 @@ public partial class Program
             {
                 c.AddServerHeader = false;
 
-                long maximumRequestBodySize = options.MaximumEventPostSize + EventPostRequestBodyStream.KestrelBodyLimitSlopBytes;
-                if (maximumRequestBodySize > 0)
-                {
-                    c.Limits.MaxRequestBodySize = maximumRequestBodySize;
-                }
+                if (options.MaximumEventPostSize > 0)
+                    c.Limits.MaxRequestBodySize = options.MaximumEventPostSize + EventPostRequestBodyStream.KestrelBodyLimitSlopBytes;
             });
 
             builder.Services.AddSingleton(configuration);
@@ -134,7 +131,7 @@ public partial class Program
                 .SetIsOriginAllowed(isOriginAllowed: _ => true)
                 .AllowCredentials()
                 .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
-                .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, Headers.EventPostId, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
+                .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
             builder.Services.Configure<ForwardedHeadersOptions>(o =>
             {
@@ -224,9 +221,10 @@ public partial class Program
             });
 
             var app = builder.Build();
-            var runtimeOptions = app.Services.GetRequiredService<AppOptions>();
+            // Read V3 settings from the registered instance so runtime changes apply to middleware and routes.
+            var ingestionOptions = app.Services.GetRequiredService<AppOptions>().EventIngestionV3;
 
-            Core.Bootstrapper.LogConfiguration(app.Services, runtimeOptions, app.Services.GetRequiredService<ILogger<Program>>());
+            Core.Bootstrapper.LogConfiguration(app.Services, options, app.Services.GetRequiredService<ILogger<Program>>());
 
             app.UseExceptionHandler(new ExceptionHandlerOptions
             {
@@ -245,22 +243,21 @@ public partial class Program
 
             app.UseHealthChecks("/health", new HealthCheckOptions
             {
-                Predicate = hcr => hcr.Tags.Contains("Critical") || (runtimeOptions.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
+                Predicate = hcr => hcr.Tags.Contains("Critical") || (options.RunJobsInProcess && hcr.Tags.Contains("AllJobs"))
             });
 
             List<string> readyTags = ["Critical"];
-            if (!runtimeOptions.EventSubmissionDisabled)
+            if (!options.EventSubmissionDisabled)
                 readyTags.Add("Storage");
-
             app.UseReadyHealthChecks(readyTags.ToArray());
             app.UseWaitForStartupActionsBeforeServingRequests();
 
-            if (!String.IsNullOrEmpty(runtimeOptions.ExceptionlessApiKey) && !String.IsNullOrEmpty(runtimeOptions.ExceptionlessServerUrl))
+            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
                 app.UseExceptionless(ExceptionlessClient.Default);
 
             app.Use(async (context, next) =>
             {
-                if (runtimeOptions.AppMode != AppMode.Development && !context.Request.IsLocal())
+                if (options.AppMode != AppMode.Development && !context.Request.IsLocal())
                     context.Response.Headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
 
                 context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
@@ -273,7 +270,7 @@ public partial class Program
             });
 
             var serverAddressesFeature = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>();
-            bool ssl = runtimeOptions.AppMode != AppMode.Development && serverAddressesFeature is not null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
+            bool ssl = options.AppMode != AppMode.Development && serverAddressesFeature is not null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
 
             if (ssl)
                 app.UseHttpsRedirection();
@@ -371,30 +368,23 @@ public partial class Program
             app.UseMiddleware<ProjectConfigMiddleware>();
             app.UseMiddleware<RecordSessionHeartbeatMiddleware>();
 
-            if (runtimeOptions.ApiThrottleLimit < Int32.MaxValue)
+            if (options.ApiThrottleLimit < Int32.MaxValue)
                 app.UseMiddleware<ThrottlingMiddleware>();
 
             app.UseMiddleware<OverageMiddleware>();
 
-            // Bound all admitted open streams globally before relaxing Kestrel's raw-body limit.
-            // The endpoint acquires the routed organization's stream permit after project lookup;
-            // processing concurrency is acquired separately only while a microbatch is executing.
+            // Bound open V3 streams before relaxing Kestrel's raw request body limit for them. The
+            // endpoint acquires the organization's stream permit after it resolves the project.
             app.UseMiddleware<EventIngestionV3ActiveStreamMiddleware>();
-
-            // Only relax Kestrel's single raw-body limit after authentication, authorization, and
-            // global active-stream admission. The V3 branch still enforces finite independent
-            // compressed and decompressed limits while the endpoint resolves organization admission.
             app.UseWhen(
-                context => runtimeOptions.EventIngestionV3.Enabled
-                    && !runtimeOptions.EventSubmissionDisabled
-                    && IsEventIngestionV3Endpoint(context),
+                context => ingestionOptions.Enabled && IsEventIngestionV3Endpoint(context),
                 branch =>
                 {
                     branch.UseMiddleware<EventIngestionV3RequestBodyMiddleware>();
                     branch.UseRequestDecompression();
                 });
 
-            if (runtimeOptions.EnableWebSockets)
+            if (options.EnableWebSockets)
             {
                 app.UseWebSockets();
                 app.UseMiddleware<MessageBusBrokerMiddleware>();
@@ -409,8 +399,7 @@ public partial class Program
                     .AddPreferredSecuritySchemes("Bearer");
             });
             app.MapApiEndpoints();
-            app.MapEventPostProcessing();
-            app.MapEventIngestionV3(runtimeOptions);
+            app.MapEventIngestionV3(ingestionOptions);
             app.MapGet("/mcp", () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed))
                 .RequireAuthorization(AuthorizationRoles.McpPolicy)
                 .ExcludeFromDescription();

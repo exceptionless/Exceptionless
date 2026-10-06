@@ -25,9 +25,16 @@
         "tags": [
           "Event Ingestion V3"
         ],
+        "summary": "Submit events to the project of the API key.",
+        "description": "Submits one or more events. The request body can be a single JSON event object, a JSON array of\nevent objects, or event objects separated by whitespace or newlines (NDJSON). Events are read and\nprocessed as they arrive, so a request can stream a large number of events.\n\nEvery event property is optional. A request is acknowledged after every event reaches an outcome:\nstored, discarded, duplicate, blocked by the plan limit, or invalid. Invalid events are reported\nwith their position in the request and do not prevent the remaining events from being processed.\nInclude an \u0060id\u0060 on each event to make resending a request safe.",
         "operationId": "PostEventsV3",
         "requestBody": {
           "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventIngestionV3Event"
+              }
+            },
             "application/x-ndjson": {
               "schema": {
                 "$ref": "#/components/schemas/EventIngestionV3Event"
@@ -67,8 +74,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
+          "402": {
+            "description": "Payment Required",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -77,8 +84,8 @@
               }
             }
           },
-          "402": {
-            "description": "Payment Required",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -160,6 +167,8 @@
         "tags": [
           "Event Ingestion V3"
         ],
+        "summary": "Submit events to a project.",
+        "description": "Submits one or more events. The request body can be a single JSON event object, a JSON array of\nevent objects, or event objects separated by whitespace or newlines (NDJSON). Events are read and\nprocessed as they arrive, so a request can stream a large number of events.\n\nEvery event property is optional. A request is acknowledged after every event reaches an outcome:\nstored, discarded, duplicate, blocked by the plan limit, or invalid. Invalid events are reported\nwith their position in the request and do not prevent the remaining events from being processed.\nInclude an \u0060id\u0060 on each event to make resending a request safe.",
         "operationId": "PostEventsByProjectV3",
         "parameters": [
           {
@@ -174,6 +183,11 @@
         ],
         "requestBody": {
           "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventIngestionV3Event"
+              }
+            },
             "application/x-ndjson": {
               "schema": {
                 "$ref": "#/components/schemas/EventIngestionV3Event"
@@ -213,8 +227,8 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
+          "402": {
+            "description": "Payment Required",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -223,8 +237,8 @@
               }
             }
           },
-          "402": {
-            "description": "Payment Required",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -304,87 +318,15 @@
   },
   "components": {
     "schemas": {
-      "EventIngestionV3Client": {
-        "required": [
-          "name",
-          "version"
-        ],
+      "EnvironmentInfo": {
         "type": "object",
         "properties": {
-          "name": {
-            "maxLength": 255,
-            "minLength": 1,
-            "type": "string"
-          },
-          "version": {
-            "maxLength": 255,
-            "minLength": 1,
-            "type": "string"
-          }
-        }
-      },
-      "EventIngestionV3Environment": {
-        "type": "object",
-        "properties": {
-          "architecture": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "os_name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "os_version": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "machine_name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "runtime_version": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "process_name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "process_id": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "thread_name": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "thread_id": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
           "processor_count": {
             "type": [
               "null",
               "integer"
             ],
+            "description": "Gets the number of processors for the current machine.",
             "format": "int32"
           },
           "total_physical_memory": {
@@ -392,6 +334,7 @@
               "null",
               "integer"
             ],
+            "description": "Gets the amount of physical memory for the current machine.",
             "format": "int64"
           },
           "available_physical_memory": {
@@ -399,150 +342,322 @@
               "null",
               "integer"
             ],
+            "description": "Gets the amount of physical memory mapped to the process context.",
             "format": "int64"
+          },
+          "command_line": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the command line information used to start the process."
+          },
+          "process_name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The name of the process that the error occurred in."
+          },
+          "process_id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the process id."
           },
           "process_memory_size": {
             "type": [
               "null",
               "integer"
             ],
+            "description": "Gets the amount of physical memory used by the process.",
             "format": "int64"
+          },
+          "thread_name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the name of the thread."
+          },
+          "thread_id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the win32 thread id."
+          },
+          "architecture": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets the OS architecture."
+          },
+          "o_s_name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The OS name that the error occurred on."
+          },
+          "o_s_version": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The OS version that the error occurred on."
+          },
+          "ip_address": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The Ip Address of the machine that the error occurred on."
+          },
+          "machine_name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The name of the machine that the error occurred on."
+          },
+          "install_id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "A unique value identifying each Exceptionless client installation."
+          },
+          "runtime_version": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The runtime version the application was running under when the error occurred."
           },
           "data": {
             "type": [
               "null",
               "object"
             ],
-            "additionalProperties": {}
+            "additionalProperties": {},
+            "description": "Extended data entries for this machine environment."
           }
-        }
+        },
+        "description": "The machine and process that produced the event."
+      },
+      "Error": {
+        "required": [
+          "modules"
+        ],
+        "type": "object",
+        "properties": {
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Module"
+            },
+            "description": "Any modules that were loaded / referenced when the error occurred."
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The error message."
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The error type."
+          },
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The error code."
+          },
+          "data": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {},
+            "description": "Extended data entries for this error."
+          },
+          "inner": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "An inner (nested) error.",
+                "$ref": "#/components/schemas/InnerError"
+              }
+            ]
+          },
+          "stack_trace": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/StackFrame"
+            },
+            "description": "The stack trace for the error."
+          },
+          "target_method": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The target method.",
+                "$ref": "#/components/schemas/Method"
+              }
+            ]
+          }
+        },
+        "description": "A structured error with parsed stack frames, in the same format as the V2 @error data\nvalue. Takes precedence over exception_type and stack_trace."
       },
       "EventIngestionV3Error": {
         "required": [
+          "index",
           "id",
           "code",
           "message"
         ],
         "type": "object",
         "properties": {
+          "index": {
+            "type": "integer",
+            "description": "The zero-based position of the event in the request.",
+            "format": "int32"
+          },
           "id": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The event id, when the event had one."
           },
           "code": {
-            "type": "string"
+            "type": "string",
+            "description": "A stable machine-readable error code."
           },
           "message": {
-            "type": "string"
+            "type": "string",
+            "description": "A description of the problem."
           }
-        }
+        },
+        "description": "Describes why one event was not processed."
       },
       "EventIngestionV3Event": {
-        "required": [
-          "id",
-          "type"
-        ],
         "type": "object",
         "properties": {
           "id": {
-            "maxLength": 100,
-            "minLength": 1,
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "A client-generated identifier such as a UUID. Resending an event with the same id within the\nidempotency window acknowledges it as a duplicate instead of storing it twice."
           },
           "type": {
-            "maxLength": 100,
-            "minLength": 1,
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The event type, such as error, log, usage, 404, or a custom type.\nDefaults to error when error information is present and log otherwise."
           },
           "date": {
             "type": [
               "null",
               "string"
             ],
+            "description": "When the event occurred. Defaults to the time the server received it.",
             "format": "date-time"
           },
           "source": {
-            "maxLength": 2000,
-            "minLength": 1,
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The event source, such as a logger name or request path."
           },
           "message": {
-            "maxLength": 2000,
-            "minLength": 1,
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The event message."
           },
           "reference_id": {
-            "maxLength": 100,
-            "minLength": 8,
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "An application-defined identifier that can be used to look up the event."
           },
           "value": {
             "type": [
               "null",
               "number"
             ],
+            "description": "A numeric value associated with the event.",
             "format": "double"
           },
           "tags": {
-            "maxItems": 50,
             "type": [
               "null",
               "array"
             ],
             "items": {
-              "maxLength": 100,
-              "minLength": 1,
               "type": "string"
-            }
+            },
+            "description": "Tags that categorize the event."
           },
           "version": {
-            "maxLength": 255,
-            "minLength": 1,
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The application version that produced the event."
           },
           "level": {
-            "maxLength": 32,
-            "minLength": 1,
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "The log level, such as info or error."
           },
-          "client": {
+          "exception_type": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The runtime\u0027s exception type name. Used with stack_trace."
+          },
+          "stack_trace": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The runtime\u0027s original stack trace text. Used with exception_type."
+          },
+          "error": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/EventIngestionV3Client"
+                "description": "A structured error with parsed stack frames, in the same format as the V2 \u0060@error\u0060 data\nvalue. Takes precedence over \u0060exception_type\u0060 and \u0060stack_trace\u0060.",
+                "$ref": "#/components/schemas/Error"
               }
-            ]
-          },
-          "exception_type": {
-            "maxLength": 2000,
-            "minLength": 1,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "stack_trace": {
-            "maxLength": 262144,
-            "minLength": 1,
-            "type": [
-              "null",
-              "string"
             ]
           },
           "stacking": {
@@ -551,7 +666,8 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/EventIngestionV3Stacking"
+                "description": "Overrides automatic grouping with a stack title and signature values.",
+                "$ref": "#/components/schemas/ManualStackingInfo"
               }
             ]
           },
@@ -561,7 +677,8 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/EventIngestionV3User"
+                "description": "The user that the event happened to.",
+                "$ref": "#/components/schemas/UserInfo"
               }
             ]
           },
@@ -571,7 +688,8 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/EventIngestionV3Request"
+                "description": "The HTTP request that the event happened during.",
+                "$ref": "#/components/schemas/RequestInfo"
               }
             ]
           },
@@ -581,7 +699,8 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/EventIngestionV3Environment"
+                "description": "The machine and process that produced the event.",
+                "$ref": "#/components/schemas/EnvironmentInfo"
               }
             ]
           },
@@ -590,111 +709,11 @@
               "null",
               "object"
             ],
-            "additionalProperties": {}
+            "additionalProperties": {},
+            "description": "Additional custom data. Values for the first-class properties above take precedence."
           }
         },
-        "description": "A compact V3 ingestion event. Organization and project ownership come from\nthe authenticated request rather than the event payload."
-      },
-      "EventIngestionV3Request": {
-        "type": "object",
-        "properties": {
-          "user_agent": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "http_method": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "is_secure": {
-            "type": [
-              "null",
-              "boolean"
-            ]
-          },
-          "host": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "port": {
-            "type": [
-              "null",
-              "integer"
-            ],
-            "format": "int32"
-          },
-          "path": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "referrer": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "client_ip_address": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "headers": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          "cookies": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "additionalProperties": {
-              "type": "string"
-            }
-          },
-          "query_string": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "additionalProperties": {
-              "type": "string"
-            }
-          },
-          "post_data": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/JsonElement"
-              }
-            ]
-          },
-          "data": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "additionalProperties": {}
-          }
-        }
+        "description": "One event submitted to the V3 ingestion API. Every property is optional; the smallest useful\nevent is {\u0022message\u0022:\u0022...\u0022}. Organization and project ownership come from the\nauthenticated request. Nested objects use the same shapes as the V2 event data values, so V2\nand V3 events are processed, grouped, and stored identically."
       },
       "EventIngestionV3Response": {
         "required": [
@@ -704,94 +723,55 @@
           "duplicate",
           "blocked",
           "invalid",
+          "failed",
           "errors"
         ],
         "type": "object",
         "properties": {
           "received": {
             "type": "integer",
+            "description": "The number of events read from the request.",
             "format": "int32"
           },
           "persisted": {
             "type": "integer",
+            "description": "Events that were stored.",
             "format": "int32"
           },
           "discarded": {
             "type": "integer",
+            "description": "Events that were accepted but intentionally not stored, such as events for a discarded stack.",
             "format": "int32"
           },
           "duplicate": {
             "type": "integer",
+            "description": "Events whose id was already received within the idempotency window.",
             "format": "int32"
           },
           "blocked": {
             "type": "integer",
+            "description": "Events rejected because the organization reached its event limit.",
             "format": "int32"
           },
           "invalid": {
             "type": "integer",
+            "description": "Events that could not be read or failed validation. Resending them unchanged fails again.",
+            "format": "int32"
+          },
+          "failed": {
+            "type": "integer",
+            "description": "Events that failed because of a temporary server problem. Resend them.",
             "format": "int32"
           },
           "errors": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/EventIngestionV3Error"
-            }
+            },
+            "description": "Details for up to the first 100 invalid or failed events."
           }
-        }
-      },
-      "EventIngestionV3Stacking": {
-        "required": [
-          "signature_data"
-        ],
-        "type": "object",
-        "properties": {
-          "title": {
-            "maxLength": 1000,
-            "minLength": 1,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "signature_data": {
-            "maxProperties": 100,
-            "minProperties": 1,
-            "type": "object",
-            "additionalProperties": {
-              "maxLength": 16384,
-              "type": "string"
-            }
-          }
-        }
-      },
-      "EventIngestionV3User": {
-        "type": "object",
-        "properties": {
-          "identity": {
-            "maxLength": 255,
-            "minLength": 1,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "name": {
-            "maxLength": 255,
-            "minLength": 1,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "data": {
-            "type": [
-              "null",
-              "object"
-            ],
-            "additionalProperties": {}
-          }
-        }
+        },
+        "description": "The outcome of a V3 ingestion request. Every received event is counted in exactly one outcome."
       },
       "IAggregate": {
         "type": "object",
@@ -804,7 +784,248 @@
         },
         "description": "Base interface for aggregation results. Concrete types include ValueAggregate, BucketAggregate, StatsAggregate, etc. See client-side type definitions for full type information."
       },
-      "JsonElement": {},
+      "InnerError": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The error message."
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The error type."
+          },
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The error code."
+          },
+          "data": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {},
+            "description": "Extended data entries for this error."
+          },
+          "inner": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "An inner (nested) error.",
+                "$ref": "#/components/schemas/InnerError"
+              }
+            ]
+          },
+          "stack_trace": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/StackFrame"
+            },
+            "description": "The stack trace for the error."
+          },
+          "target_method": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The target method.",
+                "$ref": "#/components/schemas/Method"
+              }
+            ]
+          }
+        },
+        "description": "An inner (nested) error."
+      },
+      "ManualStackingInfo": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Stack Title (defaults to the event message)"
+          },
+          "signature_data": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Key value pair that determines how the event is stacked."
+          }
+        },
+        "description": "Overrides automatic grouping with a stack title and signature values."
+      },
+      "Method": {
+        "type": "object",
+        "properties": {
+          "is_signature_target": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "declaring_namespace": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "declaring_type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "module_id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "data": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {}
+          },
+          "generic_arguments": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "parameters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/Parameter"
+            }
+          }
+        },
+        "description": "The target method."
+      },
+      "Module": {
+        "type": "object",
+        "properties": {
+          "module_id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "version": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "is_entry": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "created_date": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "modified_date": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "data": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {}
+          }
+        }
+      },
+      "Parameter": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "type_namespace": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "data": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {}
+          },
+          "generic_arguments": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "ProblemDetails": {
         "type": "object",
         "properties": {
@@ -840,6 +1061,222 @@
             ]
           }
         }
+      },
+      "RequestInfo": {
+        "type": "object",
+        "properties": {
+          "user_agent": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The user agent used for the request."
+          },
+          "http_method": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The HTTP method for the request."
+          },
+          "is_secure": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Whether the request was secure or not."
+          },
+          "host": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The host of the request."
+          },
+          "port": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "The port of the request.",
+            "format": "int32"
+          },
+          "path": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The path of the request."
+          },
+          "referrer": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The referring url for the request."
+          },
+          "client_ip_address": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The client\u0027s IP address when the error occurred."
+          },
+          "headers": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "description": "The header values from the request."
+          },
+          "cookies": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "The request cookies."
+          },
+          "post_data": {
+            "description": "The data that was POSTed for the request."
+          },
+          "query_string": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "The query string values from the request."
+          },
+          "data": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {},
+            "description": "Extended data entries for this request."
+          }
+        },
+        "description": "The HTTP request that the event happened during."
+      },
+      "StackFrame": {
+        "type": "object",
+        "properties": {
+          "file_name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "line_number": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "column": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "is_signature_target": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "declaring_namespace": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "declaring_type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "module_id": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "data": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {}
+          },
+          "generic_arguments": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "parameters": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/Parameter"
+            }
+          }
+        }
+      },
+      "UserInfo": {
+        "type": "object",
+        "properties": {
+          "identity": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Uniquely identifies the user."
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The Friendly name of the user."
+          },
+          "data": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {},
+            "description": "Extended data entries for this user."
+          }
+        },
+        "description": "The user that the event happened to."
       }
     },
     "securitySchemes": {

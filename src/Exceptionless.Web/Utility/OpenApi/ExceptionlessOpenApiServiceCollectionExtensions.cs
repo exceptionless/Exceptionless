@@ -39,8 +39,6 @@ internal static class ExceptionlessOpenApiServiceCollectionExtensions
         options.AddSchemaTransformer<DeltaSchemaTransformer>();
         options.AddSchemaTransformer<XmlDocumentationSchemaTransformer>();
         options.AddSchemaTransformer<DictionarySubclassSchemaTransformer>();
-        options.AddSchemaTransformer<EventIngestionV3ContractSchemaTransformer>();
-        options.AddSchemaTransformer<EventIngestionV3DataSchemaTransformer>();
         options.AddSchemaTransformer<NumericTypeSchemaTransformer>();
         options.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
         options.AddSchemaTransformer<RequiredPropertySchemaTransformer>();
