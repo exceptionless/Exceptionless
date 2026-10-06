@@ -10,7 +10,6 @@ public static class StackExtensions
         stack.Status = StackStatus.Fixed;
         stack.DateFixed = timeProvider.GetUtcNow().UtcDateTime;
         stack.FixedInVersion = version?.ToString();
-        stack.RegressionEventId = null;
         stack.SnoozeUntilUtc = null;
     }
 
@@ -19,26 +18,19 @@ public static class StackExtensions
         stack.Status = StackStatus.Open;
         stack.DateFixed = null;
         stack.FixedInVersion = null;
-        stack.RegressionEventId = null;
         stack.SnoozeUntilUtc = null;
     }
 
     public static Stack ApplyOffset(this Stack stack, TimeSpan offset)
     {
         if (stack.DateFixed.HasValue)
-        {
             stack.DateFixed = stack.DateFixed.Value.Add(offset);
-        }
 
         if (stack.FirstOccurrence != DateTime.MinValue)
-        {
             stack.FirstOccurrence = stack.FirstOccurrence.Add(offset);
-        }
 
         if (stack.LastOccurrence != DateTime.MinValue)
-        {
             stack.LastOccurrence = stack.LastOccurrence.Add(offset);
-        }
 
         return stack;
     }
@@ -46,9 +38,7 @@ public static class StackExtensions
     public static string? GetTypeName(this Stack stack)
     {
         if (stack.SignatureInfo.TryGetValue("ExceptionType", out string? type) && !String.IsNullOrEmpty(type))
-        {
             return type.TypeName();
-        }
 
         return type;
     }

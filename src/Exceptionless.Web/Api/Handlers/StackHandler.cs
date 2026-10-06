@@ -3,7 +3,6 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Ingestion;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queries.Validation;
@@ -12,7 +11,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Results;
@@ -42,7 +40,6 @@ public class StackHandler(
     FormattingPluginManager formattingPluginManager,
     SemanticVersionParser semanticVersionParser,
     StackQueryValidator validator,
-    IStackRouteResolver stackRouteResolver,
     AppOptions options,
     TimeProvider timeProvider,
     ILoggerFactory loggerFactory)
@@ -80,7 +77,7 @@ public class StackHandler(
         foreach (var stack in stacks)
             stack.MarkFixed(semanticVersion, timeProvider);
 
-        await SaveStacksAsync(stacks);
+        await stackRepository.SaveAsync(stacks);
 
         return Result.Success();
     }
@@ -120,7 +117,7 @@ public class StackHandler(
             stack.DateFixed = null;
         }
 
-        await SaveStacksAsync(stacks);
+        await stackRepository.SaveAsync(stacks);
 
         return Result.Success();
     }
@@ -137,7 +134,7 @@ public class StackHandler(
         if (!stack.References.Contains(message.Url.Value.Trim()))
         {
             stack.References.Add(message.Url.Value.Trim());
-            await SaveStacksAsync([stack]);
+            await stackRepository.SaveAsync(stack);
         }
 
         return Result.Success();
@@ -174,7 +171,7 @@ public class StackHandler(
         if (stack.References.Contains(message.Url.Value.Trim()))
         {
             stack.References.Remove(message.Url.Value.Trim());
-            await SaveStacksAsync([stack]);
+            await stackRepository.SaveAsync(stack);
         }
 
         return Result.NoContent();
@@ -192,7 +189,7 @@ public class StackHandler(
             foreach (var stack in stacks)
                 stack.OccurrencesAreCritical = true;
 
-            await SaveStacksAsync(stacks);
+            await stackRepository.SaveAsync(stacks);
         }
 
         return Result.Success();
@@ -210,7 +207,7 @@ public class StackHandler(
             foreach (var stack in stacks)
                 stack.OccurrencesAreCritical = false;
 
-            await SaveStacksAsync(stacks);
+            await stackRepository.SaveAsync(stacks);
         }
 
         return Result.NoContent();
@@ -244,7 +241,7 @@ public class StackHandler(
                 stack.SnoozeUntilUtc = null;
             }
 
-            await SaveStacksAsync(stacks);
+            await stackRepository.SaveAsync(stacks);
         }
 
         return Result.Success();
@@ -502,14 +499,6 @@ public class StackHandler(
         totals.AddRange(aggregations);
 
         return totals;
-    }
-
-    private async Task SaveStacksAsync(ICollection<Stack> stacks)
-    {
-        await stackRepository.SaveAsync(stacks);
-        await Task.WhenAll(stacks
-            .Where(stack => !String.IsNullOrEmpty(stack.ProjectId) && !String.IsNullOrEmpty(stack.SignatureHash))
-            .Select(stack => stackRouteResolver.UpdateAsync(stack.ProjectId, stack.SignatureHash, StackRouteResolver.CreateRoute(stack))));
     }
 
     private async Task<Stack?> GetModelAsync(string id, HttpContext httpContext, bool useCache = true)

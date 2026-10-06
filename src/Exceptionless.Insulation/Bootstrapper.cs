@@ -9,7 +9,6 @@ using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.Elastic;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Insulation.Geo;
 using Exceptionless.Insulation.HealthChecks;
@@ -98,8 +97,7 @@ public class Bootstrapper
             .AddAutoNamedCheck<MaintainIndexesJob>("AllJobs")
             .AddAutoNamedCheck<CleanupDataJob>("AllJobs")
             .AddAutoNamedCheck<StackStatusJob>("AllJobs")
-            .AddAutoNamedCheck<StackEventCountJob>("AllJobs")
-            .AddAutoNamedCheck<IngestionStackEventCountJob>("AllJobs");
+            .AddAutoNamedCheck<StackEventCountJob>("AllJobs");
     }
 
     private static void RegisterCache(IServiceCollection container, CacheOptions options)
@@ -113,14 +111,6 @@ public class Bootstrapper
             else
                 container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
 
-            container.ReplaceSingleton<IIngestionQuotaStore>(s => new RedisIngestionQuotaStore(
-                s.GetRequiredService<IConnectionMultiplexer>(),
-                s.GetRequiredService<TimeProvider>(),
-                options.Scope));
-            container.ReplaceSingleton<IIngestionStackUsageStore>(s => new RedisIngestionStackUsageStore(
-                s.GetRequiredService<IConnectionMultiplexer>(),
-                s.GetRequiredService<AppOptions>(),
-                options.Scope));
             container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
         }
     }

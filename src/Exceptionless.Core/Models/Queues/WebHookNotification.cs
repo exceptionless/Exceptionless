@@ -1,9 +1,6 @@
-﻿using System.Text.Json.Serialization;
-using Exceptionless.Core.Queues;
+﻿namespace Exceptionless.Core.Queues.Models;
 
-namespace Exceptionless.Core.Queues.Models;
-
-public record WebHookNotification : IHaveDurableUniqueIdentifier
+public record WebHookNotification
 {
     public required string OrganizationId { get; set; }
     public required string ProjectId { get; set; }
@@ -11,10 +8,6 @@ public record WebHookNotification : IHaveDurableUniqueIdentifier
     public required WebHookType Type { get; set; } = WebHookType.General;
     public required string Url { get; set; }
     public required object? Data { get; set; }
-    public string DeduplicationId { get; set; } = Guid.NewGuid().ToString("N");
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public bool UseDurableDeduplication { get; set; }
-    public string UniqueIdentifier => DeduplicationId;
 }
 
 public enum WebHookType
