@@ -2,7 +2,7 @@
 @email = admin@exceptionless.test
 @password = tester
 @projectId = 537650f3b77efe23a47914f4
-# Set this to your webhook receiver.
+# Use a public HTTP(S) receiver. Private receivers require WebHooks:AllowedPrivateNetworks in server configuration.
 @webhookUrl = https://example.com/exceptionless
 
 ### login to test account

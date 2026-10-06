@@ -220,6 +220,17 @@ public class Bootstrapper
                 serviceProvider.GetRequiredService<SourceMapRequestThrottle>(),
                 DecompressionMethods.None));
         services.AddSingleton<SourceMapService>();
+        services.AddSingleton<WebHookDestinationPolicy>();
+        services.AddHttpClient(WebHookDestinationPolicy.HttpClientName)
+            .RemoveAllLoggers()
+            .ConfigurePrimaryHttpMessageHandler(provider => new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false,
+                UseProxy = false,
+                UseCookies = false,
+                ActivityHeadersPropagator = null,
+                ConnectCallback = provider.GetRequiredService<WebHookDestinationPolicy>().ConnectAsync
+            });
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<IAssistantUsageRecorder>(provider => provider.GetRequiredService<UsageService>());
