@@ -38,3 +38,40 @@ describe('shared table selection scope', () => {
         expect(screen.getByLabelText('Selected rows').textContent).toBe('0');
     });
 });
+
+describe('shared memory pagination', () => {
+    it('MemoryTable_WithoutSortingHook_PagesInReceivedOrderAndClearsSelection', async () => {
+        // Arrange
+        render(TableSelectionTestHarness, { paginationStrategy: 'memory' });
+        await fireEvent.click(screen.getByRole('button', { name: 'Select row' }));
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+        // Assert
+        expect(screen.getByLabelText('Visible rows')).toHaveTextContent('row-2');
+        expect(screen.getByLabelText('Page index')).toHaveTextContent('1');
+        expect(screen.getByLabelText('Selected rows')).toHaveTextContent('0');
+    });
+
+    it('MemoryTable_WhenExternalPageAndLimitChange_ReslicesWithoutStaleSelection', async () => {
+        // Arrange
+        render(TableSelectionTestHarness, { paginationStrategy: 'memory' });
+        await fireEvent.click(screen.getByRole('button', { name: 'Select row' }));
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Restore page from URL' }));
+
+        // Assert
+        expect(screen.getByLabelText('Visible rows')).toHaveTextContent('row-2');
+        expect(screen.getByLabelText('Selected rows')).toHaveTextContent('0');
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Select row' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Restore limit from URL' }));
+
+        // Assert
+        expect(screen.getByLabelText('Visible rows')).toHaveTextContent('row-3');
+        expect(screen.getByLabelText('Selected rows')).toHaveTextContent('0');
+    });
+});
