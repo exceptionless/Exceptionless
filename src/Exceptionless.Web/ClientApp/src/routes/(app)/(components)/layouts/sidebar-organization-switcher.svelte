@@ -11,7 +11,6 @@
     import { useSidebar } from '$comp/ui/sidebar/index';
     import { Skeleton } from '$comp/ui/skeleton';
     import ImpersonateOrganizationDialog from '$features/organizations/components/dialogs/impersonate-organization-dialog.svelte';
-    import { sortOrganizationsByName } from '$features/organizations/utils';
     import GlobalUser from '$features/users/components/global-user.svelte';
     import { getInitials } from '$shared/strings';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
@@ -45,7 +44,6 @@
     }: Props = $props();
 
     const sidebar = useSidebar();
-    const sortedOrganizations = $derived(sortOrganizationsByName(organizations));
     const activeOrganization = $derived(impersonatedOrganization ?? organizations.find((organization) => organization.id === currentOrganizationId));
     const isImpersonating = $derived(!!impersonatedOrganization);
     const useSingleOrganizationShortcut = $derived(!isGlobalAdmin && !isImpersonating && organizations.length === 1 && !!activeOrganization?.id);
@@ -165,7 +163,7 @@
                     >
                         <DropdownMenu.Label class="text-muted-foreground text-xs">Organizations</DropdownMenu.Label>
                         {#if organizations.length > 0}
-                            {#each sortedOrganizations as organization (organization.id)}
+                            {#each organizations as organization (organization.id)}
                                 <DropdownMenu.Item
                                     onSelect={() => void onOrganizationSelected(organization)}
                                     data-current-organization={organization.id === currentOrganizationId && !isImpersonating ? 'true' : undefined}

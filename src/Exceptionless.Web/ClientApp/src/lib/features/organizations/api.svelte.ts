@@ -536,7 +536,12 @@ export function patchOrganization(request: PatchOrganizationRequest) {
                 queryKey: queryKeys.id(request.route.id, undefined)
             });
         },
-        onSuccess: (organization: ViewOrganization) => updateOrganizationCache(queryClient, request.route.id, organization)
+        onSuccess: async (organization: ViewOrganization) => {
+            updateOrganizationCache(queryClient, request.route.id, organization);
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.list(undefined)
+            });
+        }
     }));
 }
 

@@ -423,6 +423,48 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Equal("localhost", response.Headers.Location.Host);
     }
 
+    [Theory]
+    [InlineData(null, null, 0)]
+    [InlineData(null, "stats", 1)]
+    [InlineData("name:Ordering", null, 0)]
+    [InlineData("name:Ordering", "stats", 1)]
+    public async Task GetAllAsync_WithAuthorizedOrganizations_ReturnsNameOrder(string? filter, string? mode, long expectedProjectCount)
+    {
+        // Arrange
+        var zulu = new Organization { Name = "Zulu Ordering", PlanId = _plans.FreePlan.Id };
+        var alpha = new Organization { Name = "alpha Ordering", PlanId = _plans.FreePlan.Id };
+        var beta = new Organization { Name = "Beta Ordering", PlanId = _plans.FreePlan.Id };
+        var unauthorized = new Organization { Name = "Aardvark Ordering", PlanId = _plans.FreePlan.Id };
+        await _organizationRepository.AddAsync([zulu, alpha, beta, unauthorized], options => options.ImmediateConsistency());
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.OrganizationIds.Clear();
+        user.OrganizationIds.UnionWith([zulu.Id, alpha.Id, beta.Id]);
+        await _userRepository.SaveAsync(user, options => options.ImmediateConsistency().Cache());
+        await _projectRepository.AddAsync(new Project
+        {
+            Name = "Ordering Project",
+            OrganizationId = beta.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
+        }, options => options.ImmediateConsistency());
+
+        // Act
+        var organizations = await SendRequestAsAsync<IReadOnlyCollection<ViewOrganization>>(request => request
+            .AsTestOrganizationUser()
+            .AppendPath("organizations")
+            .QueryString("filter", filter)
+            .QueryString("mode", mode)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(organizations);
+        Assert.Equal([alpha.Id, beta.Id, zulu.Id], organizations.Select(organization => organization.Id));
+        Assert.Equal(["alpha Ordering", "Beta Ordering", "Zulu Ordering"], organizations.Select(organization => organization.Name));
+        Assert.DoesNotContain(organizations, organization => organization.Id == unauthorized.Id);
+        Assert.Equal(expectedProjectCount, organizations.Single(organization => organization.Id == beta.Id).ProjectCount);
+    }
+
     [Fact]
     public async Task GetAsync_ExistingOrganization_MapsToViewOrganization()
     {

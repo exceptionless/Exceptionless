@@ -33,13 +33,11 @@ export interface TableConfiguration<TData extends RowData, TPaginationStrategy e
     defaultColumnOrder?: ColumnOrderState;
     defaultColumnSizing?: ColumnSizingState;
     defaultColumnVisibility?: ColumnVisibilityState;
-    defaultSorting?: ColumnSort[];
     enableColumnResizing?: boolean;
     paginationStrategy: TPaginationStrategy;
     queryData?: TData[];
     queryMeta?: QueryMeta;
     queryParameters: TablePagingParameters<TPaginationStrategy>;
-    sortData?: (data: TData[], sorting: ColumnSort[]) => TData[];
 }
 
 export interface TableCursorPagingParameters {
@@ -129,7 +127,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
     const [data, setData] = createTableState<TData[]>([]);
     const [meta, setMeta] = createTableState<QueryMeta | undefined>(undefined);
     const [sorting, setSorting] = createTableState<ColumnSort[]>(
-        hasSortQueryParameter(configuration.queryParameters) ? parseSortString(configuration.queryParameters.sort) : (configuration.defaultSorting ?? [])
+        parseSortString(hasSortQueryParameter(configuration.queryParameters) ? configuration.queryParameters.sort : undefined)
     );
     const [rowSelection, setRowSelection] = createTableState<RowSelectionState>({});
 
@@ -151,7 +149,11 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
             configuration.queryParameters.limit = currentPageInfo.pageSize;
         }
 
-        if (isCursorPaging) {
+        // Handle memory pagination directly (no parameter change needed)
+        if (isMemoryPaging && allData().length > 0) {
+            const start = currentPageInfo.pageIndex * currentPageInfo.pageSize;
+            setData(allData().slice(start, start + currentPageInfo.pageSize));
+        } else if (isCursorPaging) {
             updateCursorPagingParameters(configuration.queryParameters as TableCursorPagingParameters, meta(), paginationChange);
         } else if (isOffsetPaging || isMemoryPaging) {
             updatePageNumberPagingParameters(configuration.queryParameters as TableMemoryPagingParameters | TableOffsetPagingParameters, currentPageInfo);
@@ -186,7 +188,6 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
 
     const setDataImpl = (data: TData[]) => {
         if (isMemoryPaging) {
-            data = configuration.sortData?.(data, sorting()) ?? data;
             setAllData(data);
 
             const pageInfo = pagination();
@@ -197,11 +198,6 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
 
             // Update pagination state only if needed
             if (needsAdjustment) {
-                setRowSelection({});
-                updatePageNumberPagingParameters(configuration.queryParameters as TableMemoryPagingParameters, {
-                    pageIndex: targetPageIndex,
-                    pageSize
-                });
                 setPagination((prev) => ({
                     ...prev,
                     pageIndex: targetPageIndex
