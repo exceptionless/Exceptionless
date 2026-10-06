@@ -134,10 +134,7 @@ public partial class Program
 
             builder.Services.Configure<ForwardedHeadersOptions>(o =>
             {
-                o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-                o.RequireHeaderSymmetry = false;
-                o.KnownIPNetworks.Clear();
-                o.KnownProxies.Clear();
+                ForwardedHeadersConfiguration.Configure(o, builder.Configuration);
             });
 
             builder.Services.ConfigureHttpJsonOptions(o =>
@@ -231,6 +228,7 @@ public partial class Program
                 }
             });
             app.UseStatusCodePages(WriteProblemDetailsStatusCodeResponseAsync);
+            app.UseForwardedHeaders();
 
             app.UseHealthChecks("/health", new HealthCheckOptions
             {
@@ -350,7 +348,6 @@ public partial class Program
             app.UseMiddleware<McpOriginValidationMiddleware>();
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
-            app.UseForwardedHeaders();
 
             app.UseAuthentication();
             app.UseAuthorization();
