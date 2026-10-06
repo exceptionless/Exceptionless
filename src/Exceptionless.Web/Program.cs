@@ -406,8 +406,7 @@ public partial class Program
             app.MapMcp("/mcp").RequireAuthorization(AuthorizationRoles.McpPolicy);
             // Reference IDs can contain dots; they are application routes, not static files.
             app.MapFallback("/event/by-ref/{referenceId}", CreateRequestDelegate(app, "/index.html"));
-            app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"))
-                .WithMetadata(new HttpMethodMetadata([HttpMethods.Get]));
+            app.MapFallback("{**slug:nonfile}", CreateRequestDelegate(app, "/index.html"));
 
             await app.RunAsync();
             return 0;

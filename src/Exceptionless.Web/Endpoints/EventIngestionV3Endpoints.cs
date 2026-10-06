@@ -67,7 +67,6 @@ public static class EventIngestionV3Endpoints
         builder
             .WithDescription(Description)
             .WithMetadata(EventIngestionV3EndpointMetadata.Instance)
-            .Accepts<EventIngestionV3Event>("application/json", "application/x-ndjson")
             .Produces<EventIngestionV3Response>(StatusCodes.Status200OK, "application/json")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -84,9 +83,37 @@ public static class EventIngestionV3Endpoints
                 Timeout = options.RequestTimeout,
                 TimeoutStatusCode = StatusCodes.Status503ServiceUnavailable
             })
+            .AddOpenApiOperationTransformer(AddRequestBodyAsync)
             .AddOpenApiOperationTransformer(AddBearerSecurityAsync);
 
         return builder;
+    }
+
+    // The request body is documented here instead of with Accepts metadata, which would also make
+    // routing reject requests without a JSON content type before the handler can accept or explain them.
+    private static async Task AddRequestBodyAsync(
+        OpenApiOperation operation,
+        OpenApiOperationTransformerContext context,
+        CancellationToken cancellationToken)
+    {
+        const string schemaId = nameof(EventIngestionV3Event);
+        if (context.Document?.Components?.Schemas?.ContainsKey(schemaId) is not true)
+        {
+            var schema = await context.GetOrCreateSchemaAsync(typeof(EventIngestionV3Event), null, cancellationToken);
+            context.Document?.AddComponent(schemaId, schema);
+        }
+
+        var eventSchema = new OpenApiSchemaReference(schemaId, context.Document);
+        operation.RequestBody = new OpenApiRequestBody
+        {
+            Required = true,
+            Description = "A single event, a JSON array of events, or events separated by newlines.",
+            Content = new Dictionary<string, OpenApiMediaType>
+            {
+                ["application/json"] = new() { Schema = eventSchema },
+                ["application/x-ndjson"] = new() { Schema = eventSchema }
+            }
+        };
     }
 
     private static Task AddBearerSecurityAsync(
