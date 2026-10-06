@@ -3,6 +3,7 @@
 @password = tester
 
 # External sign-in returns 401 when the account is unavailable. Existing provider links identify their exact provider and subject.
+# Concurrent account changes may return 409; retrieve the current state before retrying.
 
 ### login to test account
 # @name login
