@@ -499,7 +499,7 @@
             <Dialog.Description class="sr-only">Raw JSON representation of the event</Dialog.Description>
         </Dialog.Header>
         <div class="flex-1 overflow-y-auto rounded-md border p-4">
-            <CodeBlock code={JSON.stringify(event, null, 2)} language="json" class="text-xs break-all whitespace-pre-wrap" />
+            <CodeBlock code={JSON.stringify(event, null, 2)} language="json" class="text-xs break-all whitespace-pre-wrap [&_pre]:whitespace-pre-wrap" />
         </div>
         <Dialog.Footer>
             <CopyToClipboardButton size="sm" title="Copy JSON to Clipboard" value={JSON.stringify(event, null, 2)} variant="outline">
