@@ -163,7 +163,7 @@
                     >
                         <DropdownMenu.Label class="text-muted-foreground text-xs">Organizations</DropdownMenu.Label>
                         {#if organizations.length > 0}
-                            {#each organizations as organization (organization.name)}
+                            {#each organizations as organization (organization.id)}
                                 <DropdownMenu.Item
                                     onSelect={() => void onOrganizationSelected(organization)}
                                     data-current-organization={organization.id === currentOrganizationId && !isImpersonating ? 'true' : undefined}

@@ -423,6 +423,51 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Equal("localhost", response.Headers.Location.Host);
     }
 
+    [Theory]
+    [InlineData(null, null, 0)]
+    [InlineData(null, "stats", 1)]
+    [InlineData("name:Ordering", null, 0)]
+    [InlineData("name:Ordering", "stats", 1)]
+    public async Task GetAllAsync_WithDuplicateOrganizationNames_ReturnsNameThenIdOrder(string? filter, string? mode, long expectedProjectCount)
+    {
+        // Arrange
+        var zulu = new Organization { Name = "Zulu Ordering", PlanId = _plans.FreePlan.Id };
+        var alpha = new Organization { Id = "650000000000000000000003", Name = "alpha Ordering", PlanId = _plans.FreePlan.Id };
+        var duplicateAlphaHigh = new Organization { Id = "650000000000000000000002", Name = "Alpha Ordering", PlanId = _plans.FreePlan.Id };
+        var duplicateAlphaLow = new Organization { Id = "650000000000000000000001", Name = "Alpha Ordering", PlanId = _plans.FreePlan.Id };
+        var beta = new Organization { Name = "Beta Ordering", PlanId = _plans.FreePlan.Id };
+        var unauthorized = new Organization { Name = "Aardvark Ordering", PlanId = _plans.FreePlan.Id };
+        Organization[] authorizedOrganizations = [zulu, alpha, beta, duplicateAlphaHigh, duplicateAlphaLow];
+        await _organizationRepository.AddAsync([.. authorizedOrganizations, unauthorized], options => options.ImmediateConsistency());
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.OrganizationIds.Clear();
+        user.OrganizationIds.UnionWith(authorizedOrganizations.Select(organization => organization.Id));
+        await _userRepository.SaveAsync(user, options => options.ImmediateConsistency().Cache());
+        await _projectRepository.AddAsync(new Project
+        {
+            Name = "Ordering Project",
+            OrganizationId = beta.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
+        }, options => options.ImmediateConsistency());
+        string[] expectedIds = [duplicateAlphaLow.Id, duplicateAlphaHigh.Id, beta.Id, zulu.Id, alpha.Id];
+
+        // Act
+        var organizations = await SendRequestAsAsync<IReadOnlyCollection<ViewOrganization>>(request => request
+            .AsTestOrganizationUser()
+            .AppendPath("organizations")
+            .QueryString("filter", filter)
+            .QueryString("mode", mode)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(organizations);
+        Assert.Equal(expectedIds, organizations.Select(organization => organization.Id));
+        Assert.DoesNotContain(organizations, organization => String.Equals(organization.Id, unauthorized.Id, StringComparison.Ordinal));
+        Assert.Equal(expectedProjectCount, organizations.Single(organization => String.Equals(organization.Id, beta.Id, StringComparison.Ordinal)).ProjectCount);
+    }
+
     [Fact]
     public async Task GetAsync_ExistingOrganization_MapsToViewOrganization()
     {
