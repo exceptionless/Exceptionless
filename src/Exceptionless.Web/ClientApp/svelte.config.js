@@ -25,7 +25,7 @@ const config = {
                 'base-uri': ['none'],
                 // ws: also permits wss:; * alone covers HTTP(S), not WebSockets.
                 'connect-src': ['*', 'ws:'],
-                'default-src': ['self'],
+                'default-src': ['none'],
                 'font-src': ['self', 'https://*.intercomcdn.com'],
                 'form-action': ['self'],
                 'frame-ancestors': ['none'],

@@ -381,6 +381,8 @@ public partial class Program
         string nonce = nonceService.GetNonce();
         options.WithNonce(nonce)
             .DisableDefaultFonts()
+            // The optional AI agent queries Scalar services even without a key on localhost.
+            .DisableAgent()
             .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
             .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
             .AddPreferredSecuritySchemes("Bearer");
