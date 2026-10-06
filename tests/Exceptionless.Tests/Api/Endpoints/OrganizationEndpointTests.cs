@@ -427,8 +427,8 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     [Theory]
     [InlineData(null, null, 0)]
     [InlineData(null, "stats", 1)]
-    [InlineData("*", null, 0)]
-    [InlineData("*", "stats", 1)]
+    [InlineData("_exists_:id", null, 0)]
+    [InlineData("_exists_:id", "stats", 1)]
     public async Task GetAllAsync_WithOrganizationNames_ReturnsRepositoryNameThenIdOrder(string? filter, string? mode, long expectedProjectCount)
     {
         // Arrange
@@ -465,7 +465,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
         // Act
         var repositoryOrganizations = await _organizationRepository.GetByFilterAsync(
-            new AppFilter(authorizedOrganizations) { IsUserOrganizationsFilter = true }, "*", null, options => options.PageLimit(authorizedOrganizations.Length));
+            new AppFilter(authorizedOrganizations) { IsUserOrganizationsFilter = true }, "_exists_:id", null, options => options.PageLimit(authorizedOrganizations.Length));
         var organizations = await SendRequestAsAsync<IReadOnlyCollection<ViewOrganization>>(request => request
             .AsTestOrganizationUser()
             .AppendPath("organizations")
