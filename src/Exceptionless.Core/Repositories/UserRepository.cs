@@ -76,6 +76,30 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return updatedUser;
     }
 
+    public async Task<User?> UpgradePasswordHashAsync(User expectedUser, string salt, string passwordHash)
+    {
+        const string script = """
+            if (ctx._source.password == params.expected_password && ctx._source.salt == params.expected_salt) {
+                ctx._source.password = params.password;
+                ctx._source.salt = params.salt;
+            } else {
+                ctx.op = 'none';
+            }
+            """;
+        await PatchAsync(expectedUser.Id, new ScriptPatch(script)
+        {
+            Params = new Dictionary<string, object>
+            {
+                ["expected_password"] = expectedUser.Password!,
+                ["expected_salt"] = expectedUser.Salt!,
+                ["password"] = passwordHash,
+                ["salt"] = salt
+            }
+        });
+        await InvalidateCacheAsync(expectedUser);
+        return await GetByIdAsync(expectedUser.Id, o => o.Cache(false));
+    }
+
     public async Task<User?> UpdateProfileAsync(User user, string? fullName, bool? emailNotificationsEnabled)
     {
         var fields = new Dictionary<string, object?>();

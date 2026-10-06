@@ -183,6 +183,7 @@ public class Bootstrapper
         services.AddTransient<StripeEventHandler>();
         services.AddSingleton<IStripeBillingClient, StripeBillingClient>();
         services.AddSingleton<AuthService>();
+        services.AddSingleton<PasswordService>();
         services.AddSingleton<BillingManager>();
         services.AddSingleton<BillingPlans>();
         services.AddSingleton<EventPostService>();

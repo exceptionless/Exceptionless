@@ -32,6 +32,7 @@ public class AuthHandler(
     IOAuthProviderClient oauthProviderClient,
     ICacheClient cacheClient,
     AuthService authService,
+    PasswordService passwordService,
     IMailer mailer,
     IDomainLoginProvider domainLoginProvider,
     TimeProvider timeProvider,
@@ -90,10 +91,11 @@ public class AuthHandler(
                 return Result.Unauthorized("Login failed.");
             }
 
-            if (!user.IsCorrectPassword(model.Password))
+            user = await passwordService.AuthenticateAsync(user, model.Password);
+            if (user is null)
             {
                 await authService.RecordLoginFailureAsync(loginAttempt);
-                logger.LogError("Login failed for {EmailAddress}: Invalid Password", user.EmailAddress);
+                logger.LogError("Login failed for {EmailAddress}: Invalid Password", email);
                 return Result.Unauthorized("Login failed.");
             }
         }
@@ -230,8 +232,7 @@ public class AuthHandler(
 
         if (!authOptions.EnableActiveDirectoryAuth)
         {
-            user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
-            user.Password = model.Password.ToSaltedHash(user.Salt);
+            user.SetPassword(model.Password);
         }
 
         try
@@ -340,15 +341,13 @@ public class AuthHandler(
                 return TokenValidationProblem("current_password", "The current password is incorrect.");
             }
 
-            string encodedPassword = model.CurrentPassword.ToSaltedHash(user.Salt!);
-            if (!String.Equals(encodedPassword, user.Password))
+            if (!user.IsCorrectPassword(model.CurrentPassword))
             {
                 logger.LogError("Change password failed for {EmailAddress}: The current password is incorrect", user.EmailAddress);
                 return TokenValidationProblem("current_password", "The current password is incorrect.");
             }
 
-            string newPasswordHash = model.Password!.ToSaltedHash(user.Salt!);
-            if (String.Equals(newPasswordHash, user.Password))
+            if (user.IsCorrectPassword(model.Password!))
             {
                 logger.LogError("Change password failed for {EmailAddress}: The new password is the same as the current password", user.EmailAddress);
                 return TokenValidationProblem("password", "The new password must be different than the previous password.");
@@ -442,8 +441,7 @@ public class AuthHandler(
 
         if (!String.IsNullOrWhiteSpace(user.Password))
         {
-            string newPasswordHash = model.Password!.ToSaltedHash(user.Salt!);
-            if (String.Equals(newPasswordHash, user.Password))
+            if (user.IsCorrectPassword(model.Password!))
             {
                 logger.LogError("Reset password failed for {EmailAddress}: The new password is the same as the current password", user.EmailAddress);
                 return Result.Invalid(ValidationError.Create("password", "The new password must be different than the previous password"));
@@ -650,10 +648,7 @@ public class AuthHandler(
     private async Task ChangePasswordAsync(User user, string password, string tag, HttpContext httpContext)
     {
         using var _ = logger.BeginScope(new ExceptionlessState().Tag(tag).Identity(user.EmailAddress).SetHttpContext(httpContext));
-        if (String.IsNullOrEmpty(user.Salt))
-            user.Salt = Core.Extensions.StringExtensions.GetNewToken();
-
-        user.Password = password.ToSaltedHash(user.Salt);
+        user.SetPassword(password);
         user.ResetPasswordResetToken();
 
         try
