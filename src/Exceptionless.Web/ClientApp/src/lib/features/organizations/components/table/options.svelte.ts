@@ -3,6 +3,7 @@ import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclie
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
 import NumberFormatter from '$comp/formatters/number.svelte';
+import { sortOrganizationsByName } from '$features/organizations/utils';
 import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
 
@@ -148,6 +149,12 @@ export function getTableOptions<TOrganizations extends ViewOrganization>(
         get columns() {
             return getColumns<TOrganizations>(queryParameters.mode);
         },
+        defaultSorting: [
+            {
+                desc: false,
+                id: 'name'
+            }
+        ],
         paginationStrategy: 'memory',
         get queryData() {
             return queryResponse.data?.data ?? [];
@@ -157,6 +164,7 @@ export function getTableOptions<TOrganizations extends ViewOrganization>(
         },
         get queryParameters() {
             return queryParameters;
-        }
+        },
+        sortData: (data, sorting) => sortOrganizationsByName(data, sorting.find((column) => column.id === 'name')?.desc)
     });
 }

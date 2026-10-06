@@ -37,3 +37,11 @@ export function getRemainingEventLimit(organization?: ViewOrganization): number 
 export function getUtcMonthKey(date = new Date()): number {
     return date.getUTCFullYear() * 12 + date.getUTCMonth();
 }
+
+// Ignore case and accents, compare numeric suffixes naturally, and use IDs to keep ties stable.
+export function sortOrganizationsByName<T extends Pick<ViewOrganization, 'id' | 'name'>>(organizations: readonly T[], descending = false): T[] {
+    return [...organizations].sort((left, right) => {
+        const order = left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' }) || left.id.localeCompare(right.id);
+        return descending ? -order : order;
+    });
+}

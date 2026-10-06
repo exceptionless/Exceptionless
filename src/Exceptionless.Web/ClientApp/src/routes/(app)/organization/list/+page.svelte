@@ -14,6 +14,7 @@
     import { organization } from '$features/organizations/context.svelte';
     import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
     import { ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
+    import { DEFAULT_LIMIT } from '$shared/api/constants';
     import { createQueryParameters } from '$shared/query-params';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
@@ -37,12 +38,16 @@
         set filter(value) {
             queryParams.filter = value;
         },
+        limit: DEFAULT_LIMIT,
         mode: 'stats'
     });
 
     const organizationsQuery = getOrganizationsQuery({
         get params() {
-            return organizationsQueryParameters;
+            return {
+                filter: organizationsQueryParameters.filter,
+                mode: organizationsQueryParameters.mode
+            };
         },
         refetchInterval: ORGANIZATION_USAGE_REFETCH_INTERVAL_MS
     });
@@ -79,7 +84,7 @@
             <H3>Organizations</H3>
         </div>
     </div>
-    <OrganizationsDataTable isLoading={organizationsQuery.isLoading} {rowClick} {rowHref} {table}>
+    <OrganizationsDataTable bind:limit={organizationsQueryParameters.limit!} isLoading={organizationsQuery.isLoading} {rowClick} {rowHref} {table}>
         {#snippet toolbarChildren()}
             <Input type="search" placeholder="Filter organizations..." class="flex-1" bind:value={organizationsQueryParameters.filter} />
             <DataTableViewOptions size="icon-lg" {table} />
