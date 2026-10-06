@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-labelledby="title desc">
+  <title id="title">Redis connection ownership by exact effective connection string</title>
+  <desc id="desc">In this example Cache and MessageBus resolve to endpoint A while Queue resolves to endpoint B. The Redis connection registry creates one shared connection for endpoint A and one isolated connection for endpoint B. The compatibility IConnectionMultiplexer and WebSocket mapping explicitly use the Cache connection.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#475569"/>
+    </marker>
+    <style>
+      .heading { font: 700 25px system-ui, sans-serif; fill: #0f172a; }
+      .label { font: 650 17px system-ui, sans-serif; fill: #0f172a; }
+      .small { font: 14px system-ui, sans-serif; fill: #475569; }
+      .role { fill: #ffffff; stroke: #94a3b8; stroke-width: 2; rx: 10; }
+      .registry { fill: #eff6ff; stroke: #2563eb; stroke-width: 2.5; rx: 12; }
+      .connection { fill: #ecfdf5; stroke: #0f766e; stroke-width: 2.5; rx: 12; }
+      .consumer { fill: #fff7ed; stroke: #c2410c; stroke-width: 2; rx: 10; }
+      .arrow { fill: none; stroke: #475569; stroke-width: 2.25; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1200" height="500" fill="#f8fafc" rx="16"/>
+  <text x="40" y="44" class="heading">Redis connections are keyed by the exact effective string</text>
+  <text x="40" y="69" class="small">Example: equal endpoints share one connection; different role endpoints remain isolated.</text>
+
+  <rect x="40" y="105" width="260" height="72" class="role"/>
+  <text x="170" y="134" text-anchor="middle" class="label">Cache</text>
+  <text x="170" y="158" text-anchor="middle" class="small">effective string A</text>
+
+  <rect x="40" y="215" width="260" height="72" class="role"/>
+  <text x="170" y="244" text-anchor="middle" class="label">MessageBus</text>
+  <text x="170" y="268" text-anchor="middle" class="small">effective string A</text>
+
+  <rect x="40" y="325" width="260" height="72" class="role"/>
+  <text x="170" y="354" text-anchor="middle" class="label">Queue</text>
+  <text x="170" y="378" text-anchor="middle" class="small">effective string B</text>
+
+  <rect x="390" y="170" width="300" height="160" class="registry"/>
+  <text x="540" y="215" text-anchor="middle" class="label">RedisConnectionRegistry</text>
+  <text x="540" y="245" text-anchor="middle" class="small">lazy lookup by the complete,</text>
+  <text x="540" y="267" text-anchor="middle" class="small">exact effective connection string</text>
+  <text x="540" y="304" text-anchor="middle" class="small">owns connection disposal</text>
+
+  <path d="M300 141 H345 V210 H390" class="arrow"/>
+  <path d="M300 251 H390" class="arrow"/>
+  <path d="M300 361 H345 V290 H390" class="arrow"/>
+
+  <rect x="780" y="100" width="250" height="98" class="connection"/>
+  <text x="905" y="133" text-anchor="middle" class="label">Redis connection A</text>
+  <text x="905" y="157" text-anchor="middle" class="small">shared once by Cache</text>
+  <text x="905" y="178" text-anchor="middle" class="small">and MessageBus</text>
+
+  <rect x="780" y="300" width="250" height="98" class="connection"/>
+  <text x="905" y="333" text-anchor="middle" class="label">Redis connection B</text>
+  <text x="905" y="357" text-anchor="middle" class="small">isolated Queue endpoint</text>
+  <text x="905" y="378" text-anchor="middle" class="small">even when Cache differs</text>
+
+  <path d="M690 218 H735 V149 H780" class="arrow"/>
+  <path d="M690 282 H735 V349 H780" class="arrow"/>
+
+  <rect x="1045" y="84" width="145" height="80" class="consumer"/>
+  <text x="1117.5" y="105" text-anchor="middle" class="small">compatibility</text>
+  <text x="1117.5" y="128" text-anchor="middle" class="label">IConnection</text>
+  <text x="1117.5" y="149" text-anchor="middle" class="label">Multiplexer</text>
+  <rect x="1045" y="178" width="145" height="62" class="consumer"/>
+  <text x="1117.5" y="203" text-anchor="middle" class="small">WebSocket</text>
+  <text x="1117.5" y="224" text-anchor="middle" class="label">mapping</text>
+  <path d="M1030 130 H1045" class="arrow"/>
+  <path d="M1030 168 H1037 V209 H1045" class="arrow"/>
+
+  <rect x="220" y="435" width="760" height="42" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" rx="9"/>
+  <text x="600" y="461" text-anchor="middle" class="small">WebSocket mapping and IConnectionMultiplexer always follow Cache, never another Redis-backed role.</text>
+</svg>
