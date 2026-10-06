@@ -111,7 +111,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                     Content = JsonContent.Create(body.Data, options: jsonOptions)
                 };
                 request.Options.Set(WebHookDestinationPolicy.DeliveryRequest, true);
-                response = await _client.SendAsync(request, postCancellationTokenSource.Token);
+                response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, postCancellationTokenSource.Token);
                 if (!response.IsSuccessStatusCode)
                     successful = false;
                 else if (consecutiveErrors > 0)

@@ -1,5 +1,6 @@
 using Exceptionless.Core.Services;
 using Foundatio.Caching;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Exceptionless.Tests.Services;
@@ -7,125 +8,391 @@ namespace Exceptionless.Tests.Services;
 public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithServices(output)
 {
     [Fact]
-    public async Task TryBeginLoginAsync_ConcurrentInstances_BoundsChecksBeforeFailuresComplete()
+    public async Task ClearUserLoginAttemptsAsync_Recovery_PreservesIpFailuresAndChecksUnderway()
     {
-        var first = GetService<AuthService>();
-        var second = new AuthService(GetService<ICacheClient>(), TimeProvider);
-        var attempts = await Task.WhenAll(Enumerable.Range(0, 100).Select(i =>
-            (i % 2 == 0 ? first : second).TryBeginLoginAsync(" User@exceptionless.test ", null, TestCancellationToken)));
-        Assert.Equal(5, attempts.Count(a => a is not null));
-        await Task.WhenAll(attempts.Where(a => a is not null).Select(a => first.RecordLoginFailureAsync(a!)));
-        Assert.Null(await second.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken));
+        // Arrange
+        var service = GetService<AuthService>();
+        for (int i = 0; i < 4; i++)
+            await FailAsync(service);
+
+        await using var pending = await BeginAsync(service);
+
+        // Act
+        await service.ClearUserLoginAttemptsAsync(" User@exceptionless.test ");
+        var remaining = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken)));
+        await pending.DisposeAsync();
+        await DisposeAttemptsAsync(remaining);
+        for (int i = 0; i < 11; i++)
+            await FailAsync(service, $"other{i}@exceptionless.test");
+
+        var denied = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken);
+
+        // Assert
+        Assert.Equal(4, remaining.Count(attempt => attempt is not null));
+        Assert.Null(denied);
     }
 
     [Fact]
-    public async Task TryBeginLoginAsync_ConcurrentUsers_BoundsChecksAtSharedIpAddress()
+    public void Constructor_NullDependency_ThrowsArgumentNullException()
     {
-        var service = GetService<AuthService>();
-        var attempts = await Task.WhenAll(Enumerable.Range(0, 100).Select(i =>
-            service.TryBeginLoginAsync($"user{i}@exceptionless.test", "192.0.2.1", TestCancellationToken)));
-        Assert.Equal(15, attempts.Count(a => a is not null));
-        await Task.WhenAll(attempts.Where(a => a is not null).Select(a => service.RecordLoginFailureAsync(a!)));
-        Assert.Null(await service.TryBeginLoginAsync("other@exceptionless.test", "192.0.2.1", TestCancellationToken));
-        // Rejected IP admission must release the partially reserved account slot.
-        await using var allowed = await service.TryBeginLoginAsync("user99@exceptionless.test", "192.0.2.2", TestCancellationToken);
-        Assert.NotNull(allowed);
+        // Arrange
+        var cache = GetService<ICacheClient>();
+        var logger = Log.CreateLogger<AuthService>();
+
+        // Act
+        var cacheException = Record.Exception(() => new AuthService(null!, TimeProvider, logger));
+        var timeException = Record.Exception(() => new AuthService(cache, null!, logger));
+        var loggerException = Record.Exception(() => new AuthService(cache, TimeProvider, null!));
+
+        // Assert
+        Assert.Equal("cacheClient", Assert.IsType<ArgumentNullException>(cacheException).ParamName);
+        Assert.Equal("timeProvider", Assert.IsType<ArgumentNullException>(timeException).ParamName);
+        Assert.Equal("logger", Assert.IsType<ArgumentNullException>(loggerException).ParamName);
     }
 
-    [Fact]
-    public async Task RecordLoginSuccessAsync_ValidRequests_DoNotConsumeFailureQuota()
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task DisposeAsync_CleanupFailure_PreservesOriginalExceptionAndReleasesOtherCacheKeys(bool cancelled, bool asynchronousCleanupFailure)
     {
-        var service = GetService<AuthService>();
-        for (int batch = 0; batch < 20; batch++)
+        // Arrange
+        using var cache = new FaultingCacheClient(TimeProvider);
+        var logger = new CapturingLogger();
+        var service = new AuthService(cache, TimeProvider, logger);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        cancellation.Cancel();
+        Exception failure = cancelled ? new OperationCanceledException(cancellation.Token) : new InvalidOperationException("Synthetic request failure.");
+        var cleanupFailure = new IOException("Synthetic cleanup failure.");
+        var attemptedCacheKeys = new List<string>();
+        cache.BeforeRemove = cacheKey =>
         {
-            var attempts = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => BeginAsync(service)));
-            await Task.WhenAll(attempts.Select(service.RecordLoginSuccessAsync));
-            await Task.WhenAll(attempts.Select(a => a.DisposeAsync().AsTask()));
-        }
-        await using var next = await BeginAsync(service);
-    }
+            attemptedCacheKeys.Add(cacheKey);
+            if (!cacheKey.Contains("user:", StringComparison.Ordinal))
+                return null;
 
-    [Fact]
-    public async Task DisposeAsync_InterruptedAttempt_ReleasesBothReservations()
-    {
-        var service = GetService<AuthService>();
-        for (int i = 0; i < 30; i++)
-            await (await BeginAsync(service)).DisposeAsync();
-        await using var next = await BeginAsync(service);
+            return asynchronousCleanupFailure ? Task.FromException<bool>(cleanupFailure) : throw cleanupFailure;
+        };
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            await using var attempt = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken);
+            throw failure;
+        });
+        cache.BeforeRemove = null;
+        var ipAttempts = await Task.WhenAll(Enumerable.Range(0, 15).Select(index => service.TryBeginLoginAsync($"other{index}@exceptionless.test", "192.0.2.1", TestCancellationToken)));
+        await DisposeAttemptsAsync(ipAttempts);
+
+        // Assert
+        Assert.Same(failure, exception);
+        Assert.Equal(2, attemptedCacheKeys.Count);
+        Assert.All(ipAttempts, Assert.NotNull);
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.Same(cleanupFailure, entry.Exception);
+        Assert.Equal($"Error releasing login admission reservation: {cleanupFailure.Message}", entry.Message);
     }
 
     [Fact]
     public async Task DisposeAsync_CompletedFailure_RetainsCharge()
     {
+        // Arrange
         var service = GetService<AuthService>();
         for (int i = 0; i < 5; i++)
-        {
-            await using var attempt = await BeginAsync(service);
-            await service.RecordLoginFailureAsync(attempt);
-        }
-        Assert.Null(await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken));
+            await FailAsync(service);
+
+        // Act
+        var denied = await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken);
+
+        // Assert
+        Assert.Null(denied);
     }
 
     [Fact]
-    public async Task RecordLoginSuccessAsync_PreservesNewFailuresAndOtherReservations()
+    public async Task DisposeAsync_InterruptedAttempt_ReleasesBothReservations()
     {
+        // Arrange
+        var service = GetService<AuthService>();
+
+        // Act
+        for (int i = 0; i < 30; i++)
+            await (await BeginAsync(service)).DisposeAsync();
+
+        await using var next = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken);
+
+        // Assert
+        Assert.NotNull(next);
+    }
+
+    [Fact]
+    public async Task RecordLoginFailureAsync_NullAttempt_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = GetService<AuthService>();
+
+        // Act
+        var exception = await Record.ExceptionAsync(() => service.RecordLoginFailureAsync(null!));
+
+        // Assert
+        Assert.Equal("attempt", Assert.IsType<ArgumentNullException>(exception).ParamName);
+    }
+
+    [Fact]
+    public async Task RecordLoginSuccessAsync_ConcurrentFailures_PreservesNewFailuresAndOtherReservations()
+    {
+        // Arrange
         var service = GetService<AuthService>();
         await FailAsync(service);
-        var success = await BeginAsync(service);
+        await using var success = await BeginAsync(service);
         var failures = await Task.WhenAll(Enumerable.Range(0, 3).Select(_ => BeginAsync(service)));
         await Task.WhenAll(failures.Select(service.RecordLoginFailureAsync));
+        await DisposeAttemptsAsync(failures);
+
+        // Act
         await service.RecordLoginSuccessAsync(success);
         await FailAsync(service);
         await FailAsync(service);
         await service.RecordLoginSuccessAsync(success);
-        Assert.Null(await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken));
+        var denied = await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken);
+
+        // Assert
+        Assert.Null(denied);
     }
 
     [Fact]
-    public async Task RecordLoginSuccessAsync_DoesNotRefundOtherUsersIpFailures()
+    public async Task RecordLoginSuccessAsync_ConcurrentReservation_PreservesNewReservation()
     {
+        // Arrange
+        using var cache = new RacyInMemoryCacheClient(TimeProvider);
+        var service = new AuthService(cache, TimeProvider, Log.CreateLogger<AuthService>());
+        await FailAsync(service);
+        await using var success = await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken);
+        Assert.NotNull(success);
+
+        // Act
+        Task recordSuccess = service.RecordLoginSuccessAsync(success);
+        Task completed = await Task.WhenAny(recordSuccess, cache.MatchingFailureObserved);
+        var concurrent = await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken);
+        Assert.NotNull(concurrent);
+
+        if (completed == cache.MatchingFailureObserved)
+            cache.ContinueStaleRemoval();
+
+        await recordSuccess;
+        var remaining = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ =>
+            service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken)));
+        await concurrent.DisposeAsync();
+        await DisposeAttemptsAsync(remaining);
+
+        // Assert
+        Assert.Equal(4, remaining.Count(attempt => attempt is not null));
+    }
+
+    [Fact]
+    public async Task RecordLoginSuccessAsync_NullAttempt_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = GetService<AuthService>();
+
+        // Act
+        var exception = await Record.ExceptionAsync(() => service.RecordLoginSuccessAsync(null!));
+
+        // Assert
+        Assert.Equal("attempt", Assert.IsType<ArgumentNullException>(exception).ParamName);
+    }
+
+    [Fact]
+    public async Task RecordLoginSuccessAsync_SharedIpAddress_DoesNotRefundOtherUsersFailures()
+    {
+        // Arrange
         var service = GetService<AuthService>();
         for (int i = 0; i < 14; i++)
             await FailAsync(service, $"other{i}@exceptionless.test");
-        await service.RecordLoginSuccessAsync(await BeginAsync(service));
+
+        await using var success = await BeginAsync(service);
+
+        // Act
+        await service.RecordLoginSuccessAsync(success);
         await FailAsync(service, "last@exceptionless.test");
-        Assert.Null(await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken));
+        var denied = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken);
+
+        // Assert
+        Assert.Null(denied);
     }
 
     [Fact]
-    public async Task ClearUserLoginAttemptsAsync_PreservesIpFailuresAndChecksUnderway()
+    public async Task RecordLoginSuccessAsync_ValidRequests_DoNotConsumeFailureQuota()
     {
+        // Arrange
         var service = GetService<AuthService>();
-        for (int i = 0; i < 4; i++)
-            await FailAsync(service);
-        var pending = await BeginAsync(service);
-        await service.ClearUserLoginAttemptsAsync(" User@exceptionless.test ");
-        var remaining = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken)));
-        Assert.Equal(4, remaining.Count(a => a is not null));
-        await pending.DisposeAsync();
-        await Task.WhenAll(remaining.Where(a => a is not null).Select(a => a!.DisposeAsync().AsTask()));
-        for (int i = 0; i < 11; i++)
-            await FailAsync(service, $"other{i}@exceptionless.test");
-        Assert.Null(await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken));
+
+        // Act
+        for (int batch = 0; batch < 20; batch++)
+        {
+            var attempts = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => BeginAsync(service)));
+            await Task.WhenAll(attempts.Select(service.RecordLoginSuccessAsync));
+            await DisposeAttemptsAsync(attempts);
+        }
+
+        await using var next = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken);
+
+        // Assert
+        Assert.NotNull(next);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TryBeginLoginAsync_CancelledAfterReservation_ReleasesBothCacheKeys(bool includeIpAddress)
+    {
+        // Arrange
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        using var cache = new FaultingCacheClient(TimeProvider);
+        string? ipAddress = includeIpAddress ? "192.0.2.1" : null;
+        cache.AfterAdd = cacheKey =>
+        {
+            if (cacheKey.Contains(includeIpAddress ? "ip:" : "user:", StringComparison.Ordinal))
+                cancellation.Cancel();
+        };
+
+        var service = new AuthService(cache, TimeProvider, Log.CreateLogger<AuthService>());
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await service.TryBeginLoginAsync("user@exceptionless.test", ipAddress, cancellation.Token);
+        });
+        cache.AfterAdd = null;
+        var allowed = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", ipAddress, TestCancellationToken)));
+        var ipAllowed = await Task.WhenAll(Enumerable.Range(0, 10).Select(index => service.TryBeginLoginAsync($"other{index}@exceptionless.test", ipAddress, TestCancellationToken)));
+        await DisposeAttemptsAsync(allowed.Concat(ipAllowed));
+
+        // Assert
+        Assert.IsAssignableFrom<OperationCanceledException>(exception);
+        Assert.All(allowed, Assert.NotNull);
+        Assert.All(ipAllowed, Assert.NotNull);
     }
 
     [Fact]
-    public async Task TryBeginLoginAsync_QuarterHour_ExpiresFailuresAndAbandonedReservations()
+    public async Task TryBeginLoginAsync_CancelledRequest_Throws()
     {
-        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 14, 0, TimeSpan.Zero));
+        // Arrange
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        await cancellation.CancelAsync();
         var service = GetService<AuthService>();
-        var old = await BeginAsync(service);
-        for (int i = 0; i < 4; i++)
-            await FailAsync(service);
-        Assert.Null(await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken));
-        TimeProvider.Advance(TimeSpan.FromMinutes(1));
-        for (int i = 0; i < 5; i++)
-            await FailAsync(service);
-        await service.RecordLoginSuccessAsync(old);
-        await service.RecordLoginFailureAsync(old);
-        Assert.Null(await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken));
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await service.TryBeginLoginAsync("user@example.test", null, cancellation.Token);
+        });
+
+        // Assert
+        Assert.IsType<OperationCanceledException>(exception);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task TryBeginLoginAsync_CleanupFailure_PreservesOriginalExceptionAndLogsCleanupFailure(bool cancelled, bool asynchronousCleanupFailure)
+    {
+        // Arrange
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        using var cache = new FaultingCacheClient(TimeProvider);
+        var failure = new InvalidOperationException("Synthetic acquisition failure.");
+        cache.BeforeAdd = cacheKey =>
+        {
+            if (!cancelled && cacheKey.Contains("ip:", StringComparison.Ordinal))
+                throw failure;
+        };
+
+        cache.AfterAdd = cacheKey =>
+        {
+            if (cancelled && cacheKey.Contains("ip:", StringComparison.Ordinal))
+                cancellation.Cancel();
+        };
+
+        var cleanupFailure = new IOException("Synthetic cleanup failure.");
+        cache.BeforeRemove = _ => asynchronousCleanupFailure ? Task.FromException<bool>(cleanupFailure) : throw cleanupFailure;
+        var logger = new CapturingLogger();
+        var service = new AuthService(cache, TimeProvider, logger);
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", cancellation.Token);
+        });
+        cache.BeforeAdd = null;
+        cache.AfterAdd = null;
+        cache.BeforeRemove = null;
+        var beforeExpiration = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken)));
+        await DisposeAttemptsAsync(beforeExpiration);
         TimeProvider.Advance(TimeSpan.FromMinutes(15));
-        await using var next = await BeginAsync(service);
+        var afterExpiration = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken)));
+        await DisposeAttemptsAsync(afterExpiration);
+
+        // Assert
+        if (cancelled)
+            Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(exception).CancellationToken);
+        else
+            Assert.Same(failure, exception);
+
+        Assert.Equal(cancelled ? 2 : 1, logger.Entries.Count);
+        Assert.All(logger.Entries, entry =>
+        {
+            Assert.Equal(LogLevel.Error, entry.Level);
+            Assert.Same(cleanupFailure, entry.Exception);
+            Assert.Equal($"Error releasing login admission reservation: {cleanupFailure.Message}", entry.Message);
+        });
+
+        Assert.Equal(4, beforeExpiration.Count(attempt => attempt is not null));
+        Assert.All(afterExpiration, Assert.NotNull);
+    }
+
+    [Fact]
+    public async Task TryBeginLoginAsync_ConcurrentInstances_BoundsChecksBeforeFailuresComplete()
+    {
+        // Arrange
+        var first = GetService<AuthService>();
+        var second = new AuthService(GetService<ICacheClient>(), TimeProvider, Log.CreateLogger<AuthService>());
+
+        // Act
+        var attempts = await Task.WhenAll(Enumerable.Range(0, 100).Select(index =>
+            (index % 2 == 0 ? first : second).TryBeginLoginAsync(" User@exceptionless.test ", null, TestCancellationToken)));
+        await Task.WhenAll(attempts.Where(attempt => attempt is not null).Select(attempt => first.RecordLoginFailureAsync(attempt!)));
+        await DisposeAttemptsAsync(attempts);
+        var denied = await second.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(5, attempts.Count(attempt => attempt is not null));
+        Assert.Null(denied);
+    }
+
+    [Fact]
+    public async Task TryBeginLoginAsync_ConcurrentUsers_BoundsChecksAtSharedIpAddress()
+    {
+        // Arrange
+        var service = GetService<AuthService>();
+
+        // Act
+        var attempts = await Task.WhenAll(Enumerable.Range(0, 100).Select(index =>
+            service.TryBeginLoginAsync($"user{index}@exceptionless.test", "192.0.2.1", TestCancellationToken)));
+        await Task.WhenAll(attempts.Where(attempt => attempt is not null).Select(attempt => service.RecordLoginFailureAsync(attempt!)));
+        await DisposeAttemptsAsync(attempts);
+        var denied = await service.TryBeginLoginAsync("other@exceptionless.test", "192.0.2.1", TestCancellationToken);
+        var allowed = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ =>
+            service.TryBeginLoginAsync("other@exceptionless.test", "192.0.2.2", TestCancellationToken)));
+        await DisposeAttemptsAsync(allowed);
+
+        // Assert
+        Assert.Equal(15, attempts.Count(attempt => attempt is not null));
+        Assert.Null(denied);
+        Assert.All(allowed, Assert.NotNull);
     }
 
     [Theory]
@@ -134,45 +401,169 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     [InlineData(" ")]
     public async Task TryBeginLoginAsync_InvalidEmail_Throws(string? email)
     {
+        // Arrange
         var service = GetService<AuthService>();
-        await Assert.ThrowsAnyAsync<ArgumentException>(() => service.TryBeginLoginAsync(email!, null, TestCancellationToken));
-        await Assert.ThrowsAnyAsync<ArgumentException>(() => service.ClearUserLoginAttemptsAsync(email!));
+
+        // Act
+        var beginException = await Record.ExceptionAsync(async () =>
+        {
+            _ = await service.TryBeginLoginAsync(email!, null, TestCancellationToken);
+        });
+        var clearException = await Record.ExceptionAsync(() => service.ClearUserLoginAttemptsAsync(email!));
+
+        // Assert
+        Assert.IsAssignableFrom<ArgumentException>(beginException);
+        Assert.IsAssignableFrom<ArgumentException>(clearException);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
-    public Task TryBeginLoginAsync_InvalidIpAddress_Throws(string address)
-        => Assert.ThrowsAnyAsync<ArgumentException>(() => GetService<AuthService>().TryBeginLoginAsync("user@example.test", address, TestCancellationToken));
-
-    [Fact]
-    public async Task TryBeginLoginAsync_CancelledRequest_Throws()
+    public async Task TryBeginLoginAsync_InvalidIpAddress_Throws(string address)
     {
-        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        await cancellation.CancelAsync();
-        await Assert.ThrowsAsync<OperationCanceledException>(() => GetService<AuthService>().TryBeginLoginAsync("user@example.test", null, cancellation.Token));
+        // Arrange
+        var service = GetService<AuthService>();
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await service.TryBeginLoginAsync("user@example.test", address, TestCancellationToken);
+        });
+
+        // Assert
+        Assert.IsAssignableFrom<ArgumentException>(exception);
     }
 
     [Fact]
-    public async Task RecordLoginAsync_NullAttempt_Throws()
+    public async Task TryBeginLoginAsync_IpCacheFailure_ReleasesUserCacheKey()
     {
+        // Arrange
+        using var cache = new FaultingCacheClient(TimeProvider);
+        var failure = new InvalidOperationException("Synthetic cache failure.");
+        cache.BeforeAdd = cacheKey =>
+        {
+            if (cacheKey.Contains("ip:", StringComparison.Ordinal))
+                throw failure;
+        };
+
+        var service = new AuthService(cache, TimeProvider, Log.CreateLogger<AuthService>());
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken);
+        });
+        cache.BeforeAdd = null;
+        var allowed = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken)));
+        await DisposeAttemptsAsync(allowed);
+
+        // Assert
+        Assert.Same(failure, exception);
+        Assert.All(allowed, Assert.NotNull);
+    }
+
+    [Fact]
+    public async Task TryBeginLoginAsync_QuarterHour_ExpiresFailuresAndAbandonedReservations()
+    {
+        // Arrange
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 14, 0, TimeSpan.Zero));
         var service = GetService<AuthService>();
-        await Assert.ThrowsAsync<ArgumentNullException>(() => service.RecordLoginFailureAsync(null!));
-        await Assert.ThrowsAsync<ArgumentNullException>(() => service.RecordLoginSuccessAsync(null!));
-        Assert.Throws<ArgumentNullException>(() => new AuthService(null!, TimeProvider));
-        Assert.Throws<ArgumentNullException>(() => new AuthService(GetService<ICacheClient>(), null!));
+        await using var old = await BeginAsync(service);
+        for (int i = 0; i < 4; i++)
+            await FailAsync(service);
+
+        // Act
+        var beforeBoundary = await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken);
+        TimeProvider.Advance(TimeSpan.FromMinutes(1));
+        var current = await Task.WhenAll(Enumerable.Range(0, 5).Select(_ => service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken)));
+        await Task.WhenAll(current.Where(attempt => attempt is not null).Select(attempt => service.RecordLoginFailureAsync(attempt!)));
+        await DisposeAttemptsAsync(current);
+        await service.RecordLoginSuccessAsync(old);
+        await service.RecordLoginFailureAsync(old);
+        await old.DisposeAsync();
+        var afterOldCompletion = await service.TryBeginLoginAsync("user@exceptionless.test", null, TestCancellationToken);
+        TimeProvider.Advance(TimeSpan.FromMinutes(15));
+        await using var next = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken);
+
+        // Assert
+        Assert.Null(beforeBoundary);
+        Assert.All(current, Assert.NotNull);
+        Assert.Null(afterOldCompletion);
+        Assert.NotNull(next);
     }
 
     private async Task<AuthService.LoginAttempt> BeginAsync(AuthService service, string email = "user@exceptionless.test")
     {
         var attempt = await service.TryBeginLoginAsync(email, "192.0.2.1", TestCancellationToken);
         Assert.NotNull(attempt);
+
         return attempt;
     }
+
+    private static Task DisposeAttemptsAsync(IEnumerable<AuthService.LoginAttempt?> attempts)
+        => Task.WhenAll(attempts.Where(attempt => attempt is not null).Select(attempt => attempt!.DisposeAsync().AsTask()));
 
     private async Task FailAsync(AuthService service, string email = "user@exceptionless.test")
     {
         await using var attempt = await BeginAsync(service, email);
         await service.RecordLoginFailureAsync(attempt);
+    }
+
+    private sealed class CapturingLogger : ILogger<AuthService>
+    {
+        public List<(LogLevel Level, string Message, Exception? Exception)> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+            => Entries.Add((logLevel, formatter(state, exception), exception));
+    }
+
+    private sealed class FaultingCacheClient(TimeProvider timeProvider) : InMemoryCacheClient(options => options.TimeProvider(timeProvider)), ICacheClient
+    {
+        public Action<string>? BeforeAdd { get; set; }
+        public Action<string>? AfterAdd { get; set; }
+        public Func<string, Task<bool>?>? BeforeRemove { get; set; }
+
+        async Task<bool> ICacheClient.AddAsync<T>(string cacheKey, T value, TimeSpan? expiresIn)
+        {
+            BeforeAdd?.Invoke(cacheKey);
+
+            bool added = await base.AddAsync(cacheKey, value, expiresIn);
+            if (added)
+                AfterAdd?.Invoke(cacheKey);
+
+            return added;
+        }
+
+        Task<bool> ICacheClient.RemoveIfEqualAsync<T>(string cacheKey, T expected)
+            => BeforeRemove?.Invoke(cacheKey) ?? base.RemoveIfEqualAsync(cacheKey, expected);
+
+        Task<bool> ICacheClient.RemoveAsync(string cacheKey)
+            => BeforeRemove?.Invoke(cacheKey) ?? base.RemoveAsync(cacheKey);
+    }
+
+    private sealed class RacyInMemoryCacheClient(TimeProvider timeProvider) : InMemoryCacheClient(options => options.TimeProvider(timeProvider)), ICacheClient
+    {
+        private readonly TaskCompletionSource _continueStaleRemoval = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _matchingFailureObserved = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task MatchingFailureObserved => _matchingFailureObserved.Task;
+
+        public void ContinueStaleRemoval() => _continueStaleRemoval.TrySetResult();
+
+        async Task<bool> ICacheClient.RemoveIfEqualAsync<T>(string cacheKey, T expected)
+        {
+            bool removed = await base.RemoveIfEqualAsync(cacheKey, expected);
+            if (!removed || expected is not string value || !value.StartsWith("failed:", StringComparison.Ordinal))
+                return removed;
+
+            _matchingFailureObserved.TrySetResult();
+            await _continueStaleRemoval.Task;
+
+            return await base.RemoveAsync(cacheKey);
+        }
     }
 }

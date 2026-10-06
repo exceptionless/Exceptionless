@@ -14,7 +14,7 @@ test('complete tag suggestions filter locally without changing selected tags', a
         });
     });
     await test.step('filter a complete cache locally while preserving the selection', async () => {
-        await page.goto('/next/event?tag=Selected&time=%5Bnow-24h%20TO%20now%5D&project=000000000000000000000003');
+        await page.goto('/event?tag=Selected&time=%5Bnow-24h%20TO%20now%5D&project=000000000000000000000003');
         await page.getByRole('button', { name: /^Tag\s+Selected/ }).click();
         await expect(page.getByRole('option', { exact: true, name: 'Alpha' })).toBeVisible();
         await input.fill('Be');
@@ -81,7 +81,7 @@ test('incomplete suggestions debounce remote search, reuse cache and preserve se
         });
     });
     await test.step('debounce searches and add a tag without dropping the selection', async () => {
-        await page.goto('/next/event?tag=Selected');
+        await page.goto('/event?tag=Selected');
         await page.getByRole('button', { name: /^Tag\s+Selected/ }).click();
         await expect(page.getByRole('option', { exact: true, name: 'Common' })).toBeVisible();
         await input.fill('R');
@@ -126,7 +126,7 @@ test('initial failure retries the initial query and keeps saved tag selections',
             await route.fulfill({ json: tags(['Alpha']) });
         }
     });
-    await page.goto('/next/event?tag=Selected');
+    await page.goto('/event?tag=Selected');
     await page.getByRole('button', { name: /^Tag\s+Selected/ }).click();
     await expect(page.getByText('Could not load tags.')).toBeVisible();
     await page.getByRole('button', { exact: true, name: 'Retry' }).click();
@@ -142,7 +142,7 @@ test('closing during debounce cancels the search and tag actions keep working', 
         requests.push(aggregation);
         await route.fulfill({ json: tags(['Common'], 1) });
     });
-    await page.goto('/next/event?tag=Selected');
+    await page.goto('/event?tag=Selected');
     await page.getByRole('button', { name: /^Tag\s+Selected/ }).click();
     await expect(page.getByRole('option', { exact: true, name: 'Common' })).toBeVisible();
     const input = page.getByPlaceholder('Tag', { exact: true });
@@ -168,14 +168,14 @@ test('switching organizations discards the old picker and loads only the new org
         requestedOrganizations.push(organizationId);
         await route.fulfill({ json: tags([organizationId === ORGANIZATION_ID ? 'FirstOrganizationTag' : 'SecondOrganizationTag']) });
     });
-    await page.goto('/next/event?tag=Selected');
+    await page.goto('/event?tag=Selected');
     await page.getByRole('button', { name: /^Tag\s+Selected/ }).click();
     await expect(page.getByRole('option', { exact: true, name: 'FirstOrganizationTag' })).toBeVisible();
     await page.getByPlaceholder('Tag', { exact: true }).press('Escape');
     await page.getByRole('button', { name: /Test Organization.*Unlimited/ }).click();
     await page.getByRole('menuitem', { name: /Other Organization/ }).click();
     await expect(page.getByRole('button', { name: /Other Organization.*Unlimited/ })).toBeVisible();
-    await page.goto('/next/event?tag=OtherSelected');
+    await page.goto('/event?tag=OtherSelected');
     await page.getByRole('button', { name: /^Tag\s+OtherSelected/ }).click();
     await expect(page.getByRole('option', { exact: true, name: 'SecondOrganizationTag' })).toBeVisible();
     await expect(page.getByRole('option', { exact: true, name: 'FirstOrganizationTag' })).toHaveCount(0);

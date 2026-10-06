@@ -53,7 +53,40 @@ data:
         interval = "1m"
 
         ## Uncomment the following settings with valid string arrays for prometheus scraping
-        #fieldpass = ["metric_to_pass1", "metric_to_pass12"]
+        # Retain controller failure diagnostics; omit runtime internals and latency distributions.
+        fieldpass = [
+            "certmanager_certificate_ready_status",
+            "certmanager_certificate_expiration_timestamp_seconds",
+            "certmanager_certificate_renewal_timestamp_seconds",
+            "certmanager_issuer_ready_status",
+            "certmanager_clusterissuer_ready_status",
+            "certmanager_certificate_challenge_status",
+            "certmanager_controller_sync_error_count",
+            "certmanager_controller_sync_call_count",
+            "certmanager_http_acme_client_request_count",
+            "alb_controller_total_unhealthy_endpoints",
+            "alb_controller_total_healthy_endpoints",
+            "alb_controller_total_endpoints",
+            "alb_controller_total_deployments",
+            "alb_controller_total_endpoint_updates",
+            "alb_controller_total_config_updates",
+            "alb_controller_alb_reconnection_count",
+            "alb_controller_alb_connection_status",
+            "controller_runtime_reconcile_total",
+            "controller_runtime_reconcile_errors_total",
+            "controller_runtime_terminal_reconcile_errors_total",
+            "controller_runtime_reconcile_panics_total",
+            "controller_runtime_reconcile_timeouts_total",
+            "controller_runtime_webhook_requests_total",
+            "controller_runtime_webhook_panics_total",
+            "controller_runtime_conversion_webhook_panics_total",
+            "certwatcher_read_certificate_errors_total",
+            "workqueue_depth",
+            "workqueue_retries_total",
+            "workqueue_longest_running_processor_seconds",
+            "workqueue_unfinished_work_seconds",
+            "leader_election_master_status"
+        ]
 
         #fielddrop = ["metric_to_drop"]
 
@@ -69,7 +102,7 @@ data:
         #     set this to `https` & most likely set the tls config.
         # - prometheus.io/path: If the metrics path is not /metrics, define it with this annotation.
         # - prometheus.io/port: If port is not 9102 use this annotation
-        monitor_kubernetes_pods = false
+        monitor_kubernetes_pods = true
 
         ## Restricts Kubernetes monitoring to namespaces for pods that have annotations set and are scraped using the monitor_kubernetes_pods setting.
         ## This will take effect when monitor_kubernetes_pods is set to true

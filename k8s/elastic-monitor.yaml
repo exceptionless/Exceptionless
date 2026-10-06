@@ -4,7 +4,7 @@ metadata:
   name: elastic-monitor
   namespace: elastic-system
 spec:
-  version: 8.19.21
+  version: 8.19.22
   podDisruptionBudget: {}
   nodeSets:
     - name: main
@@ -228,7 +228,7 @@ metadata:
   name: kibana-monitor
   namespace: elastic-system
 spec:
-  version: 8.19.21
+  version: 8.19.22
   count: 1
   http:
     tls:
@@ -257,6 +257,8 @@ spec:
       - name: Fleet Server on ECK policy
         id: eck-fleet-server
         namespace: default
+        advanced_settings:
+          agent_logging_level: warning
         monitoring_enabled:
           - logs
           - metrics
@@ -269,6 +271,8 @@ spec:
       - name: Elastic Agent on ECK policy
         id: eck-agent
         namespace: default
+        advanced_settings:
+          agent_logging_level: warning
         monitoring_enabled:
           - logs
           - metrics
@@ -364,7 +368,7 @@ metadata:
   name: fleet-server
   namespace: elastic-system
 spec:
-  version: 8.19.21
+  version: 8.19.22
   kibanaRef:
     name: kibana-monitor
   elasticsearchRefs:
@@ -388,7 +392,7 @@ metadata:
   name: elastic-agent
   namespace: elastic-system
 spec:
-  version: 8.19.21
+  version: 8.19.22
   kibanaRef:
     name: kibana-monitor
   fleetServerRef:

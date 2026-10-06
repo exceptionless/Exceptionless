@@ -147,18 +147,18 @@ describe('useSavedViews', () => {
 
     describe('saved view URL override signatures', () => {
         it('ignores pagination-only query changes', () => {
-            const first = new URL('https://example.test/next/event/errors?time=90d&project=project-1&page=1&limit=10');
-            const second = new URL('https://example.test/next/event/errors?project=project-1&time=90d&page=4&limit=100');
+            const first = new URL('https://example.test/event/errors?time=90d&project=project-1&page=1&limit=10');
+            const second = new URL('https://example.test/event/errors?project=project-1&time=90d&page=4&limit=100');
 
             expect(getSavedViewOverrideSignature(first)).toBe(getSavedViewOverrideSignature(second));
         });
 
         it('detects additions, removals, and changes to saved view overrides', () => {
-            const baseline = getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d&status=open'));
+            const baseline = getSavedViewOverrideSignature(new URL('https://example.test/event/errors?time=90d&status=open'));
 
-            expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=30d&status=open'))).not.toBe(baseline);
-            expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d'))).not.toBe(baseline);
-            expect(getSavedViewOverrideSignature(new URL('https://example.test/next/event/errors?time=90d&status=open&sort=type'))).not.toBe(baseline);
+            expect(getSavedViewOverrideSignature(new URL('https://example.test/event/errors?time=30d&status=open'))).not.toBe(baseline);
+            expect(getSavedViewOverrideSignature(new URL('https://example.test/event/errors?time=90d'))).not.toBe(baseline);
+            expect(getSavedViewOverrideSignature(new URL('https://example.test/event/errors?time=90d&status=open&sort=type'))).not.toBe(baseline);
         });
     });
 
@@ -199,13 +199,13 @@ describe('useSavedViews', () => {
             const href = savedViewHref(savedView);
 
             // Assert
-            expect(href).toBe('/next/event/legacy-saved-view');
+            expect(href).toBe('/event/legacy-saved-view');
         });
 
         it('builds Sessions saved-view URLs on the Sessions route', () => {
             const savedView = buildSavedView({ id: 'view-1', name: 'Active Sessions', slug: 'active', view_type: 'sessions' });
 
-            expect(savedViewHref(savedView)).toBe('/next/sessions/active');
+            expect(savedViewHref(savedView)).toBe('/sessions/active');
         });
     });
 

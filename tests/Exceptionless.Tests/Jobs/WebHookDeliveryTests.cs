@@ -23,6 +23,39 @@ namespace Exceptionless.Tests.Jobs;
 
 public sealed class WebHookDeliveryTests(ITestOutputHelper output) : TestWithServices(output)
 {
+    [Fact]
+    public async Task ProcessQueueEntryAsync_SuccessfulDelivery_DoesNotBufferResponseBody()
+    {
+        var content = new TrackingContent();
+        using var handler = new StaticResponseHandler(new HttpResponseMessage(HttpStatusCode.OK) { Content = content });
+        using var client = new HttpClient(handler, disposeHandler: false);
+        var options = GetService<AppOptions>();
+        var hook = new WebHook
+        {
+            Id = "222222222222222222222222", OrganizationId = "333333333333333333333333", ProjectId = "444444444444444444444444",
+            Url = "https://example.com/webhook", Version = WebHook.KnownVersions.Version2,
+            EventTypes = [WebHook.KnownEventTypes.NewError]
+        };
+        var repository = DispatchProxy.Create<IWebHookRepository, HookRepositoryProxy>();
+        ((HookRepositoryProxy)(object)repository).Hook = hook;
+        using var queue = new InMemoryQueue<WebHookNotification>();
+        using var cache = new InMemoryCacheClient();
+        using var logs = new CaptureLoggerFactory();
+        using var job = new WebHooksJob(queue, GetService<IProjectRepository>(), GetService<SlackService>(), repository,
+            cache, GetService<ITextSerializer>(), GetService<JsonSerializerOptions>(), options, TimeProvider,
+            GetService<IResiliencePolicyProvider>(), logs, new SingleClientFactory(client), GetService<WebHookDestinationPolicy>());
+        await queue.EnqueueAsync(new WebHookNotification
+        {
+            OrganizationId = hook.OrganizationId, ProjectId = hook.ProjectId, WebHookId = hook.Id,
+            Type = WebHookType.General, Url = hook.Url, Data = new { synthetic = "delivery-test" }
+        });
+
+        await job.RunUntilEmptyAsync(TestCancellationToken);
+
+        Assert.Equal(1, handler.RequestCount);
+        Assert.False(content.WasSerialized);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -118,5 +151,45 @@ public sealed class WebHookDeliveryTests(ITestOutputHelper output) : TestWithSer
             Messages.Add(formatter(state, exception) + values + exception);
         }
         public void Dispose() { }
+    }
+
+    private sealed class SingleClientFactory(HttpClient client) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => client;
+    }
+
+    private sealed class StaticResponseHandler(HttpResponseMessage response) : HttpMessageHandler
+    {
+        public int RequestCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            RequestCount++;
+            return Task.FromResult(response);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+                response.Dispose();
+            base.Dispose(disposing);
+        }
+    }
+
+    private sealed class TrackingContent : HttpContent
+    {
+        public bool WasSerialized { get; private set; }
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+        {
+            WasSerialized = true;
+            return Task.CompletedTask;
+        }
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = -1;
+            return false;
+        }
     }
 }

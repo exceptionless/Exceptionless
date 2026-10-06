@@ -54,8 +54,6 @@ dotnet restore Exceptionless.slnx
 echo "Installing Svelte frontend dependencies..."
 npm ci --prefix src/Exceptionless.Web/ClientApp --prefer-offline --no-audit
 
-echo "Installing legacy Angular frontend dependencies..."
-npm ci --prefix src/Exceptionless.Web/ClientApp.angular --prefer-offline --no-audit
 
 echo "Setup complete. Use Run Aspire to start the app, Run Storybook for component work, or Run Lume Docs to test the static site."
 '''
@@ -157,6 +155,6 @@ if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
     Exceptionless-Mail \
     2>/dev/null || true
 
-  docker volume rm exceptionless.data.v1 2>/dev/null || true
+  docker volume rm exceptionless.data.v2 2>/dev/null || true
 fi
 '''

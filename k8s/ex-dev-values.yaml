@@ -18,6 +18,9 @@ jobs:
     repository: exceptionless/job-ci
 
 config:
+  # Public client-scoped ingestion key for the hosted-dev Exceptionless project.
+  EX_ExceptionlessApiKey: "sdyW9LA7y2MbRGkdwTV8Ufdqw2250O0LGZuW1nV4"
+  EX_InternalProjectId: "6ac286ada7bf6e0001a886cf"
   EX_EnableSnapshotJobs: "false"
   EX_TestEmailAddress: "test@exceptionless.io"
   EX_Serilog__MinimumLevel__Default: "Information"
