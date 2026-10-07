@@ -4,6 +4,14 @@ import { SuspensionCode } from './models';
 
 export { type NewOrganizationFormData, NewOrganizationSchema } from '$generated/schemas';
 
+export const OrganizationBillingInformationSchema = object({
+    address: string(),
+    name: string(),
+    vatId: string(),
+    vatNumber: string()
+});
+export type OrganizationBillingInformationFormData = Infer<typeof OrganizationBillingInformationSchema>;
+
 export const SetBonusOrganizationSchema = object({
     bonusEvents: number().int('Bonus events must be a whole number'),
     expires: date().optional()
