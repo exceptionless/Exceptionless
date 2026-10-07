@@ -827,7 +827,12 @@ export function uploadOrganizationIcon(request: OrganizationIconRequest) {
 async function cancelOrganizationDataRead(queryClient: QueryClient, organizationId: string) {
     await Promise.all([
         queryClient.cancelQueries({
+            exact: true,
             queryKey: queryKeys.id(organizationId, undefined)
+        }),
+        queryClient.cancelQueries({
+            exact: true,
+            queryKey: queryKeys.id(organizationId, 'stats')
         }),
         queryClient.cancelQueries({
             queryKey: queryKeys.list(undefined)

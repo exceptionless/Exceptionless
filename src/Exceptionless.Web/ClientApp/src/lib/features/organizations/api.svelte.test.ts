@@ -50,19 +50,63 @@ afterEach(() => {
 });
 
 describe('organization data mutations', () => {
-    it('cancels an in-flight organization read before each data write', async () => {
+    it.each([
+        ['save', postOrganizationDataMutation],
+        ['clear', deleteOrganizationDataMutation]
+    ] as const)('keeps pending invoices and plans while cancelling stale organization reads on %s', async (_, createDataMutation) => {
         const organizationId = 'organization-id';
-        const cancelQueries = vi.spyOn(queryClient, 'cancelQueries');
+        createDataMutation();
+        const mutation = mutationOptions[0]!;
 
-        postOrganizationDataMutation();
-        deleteOrganizationDataMutation();
+        for (const readTiming of ['before', 'during']) {
+            if (readTiming === 'during') {
+                await mutation.onMutate({ organizationId });
+            }
 
-        const postMutation = mutationOptions[0]!;
-        const deleteMutation = mutationOptions[1]!;
-        await postMutation.onMutate?.({ organizationId });
-        await deleteMutation.onMutate?.({ organizationId });
+            const reads = [
+                { cancelled: true, queryKey: queryKeys.id(organizationId, undefined) },
+                { cancelled: true, queryKey: queryKeys.id(organizationId, 'stats') },
+                { cancelled: false, queryKey: queryKeys.invoices(organizationId) },
+                { cancelled: false, queryKey: queryKeys.plans(organizationId) },
+                { cancelled: false, queryKey: queryKeys.id('other-organization-id', undefined) }
+            ].map(({ cancelled, queryKey }) => {
+                const response = { data: [{ id: 'synthetic-result' }] };
+                const pendingRead = Promise.withResolvers<typeof response>();
+                const aborted = vi.fn();
+                const queryFn = vi.fn(({ signal }: { signal: AbortSignal }) => {
+                    signal.addEventListener('abort', aborted);
+                    return pendingRead.promise;
+                });
+                const observer = new QueryObserver(queryClient, { queryFn, queryKey });
+                const unsubscribe = observer.subscribe(() => {});
+                return { aborted, cancelled, observer, pendingRead, queryFn, response, unsubscribe };
+            });
 
-        expect(cancelQueries).toHaveBeenCalledWith({ queryKey: queryKeys.id(organizationId, undefined) });
+            try {
+                if (readTiming === 'before') {
+                    await mutation.onMutate({ organizationId });
+                }
+                await mutation.onSuccess(true, { key: 'billing_name', organizationId, value: 'Saved name' });
+                await mutation.onSettled();
+
+                for (const read of reads) {
+                    expect(read.aborted).toHaveBeenCalledTimes(read.cancelled ? 1 : 0);
+                    if (!read.cancelled) {
+                        expect(read.observer.getCurrentResult().isFetching).toBe(true);
+                        read.pendingRead.resolve(read.response);
+                        await vi.waitFor(() => expect(read.observer.getCurrentResult().status).toBe('success'));
+                        expect(read.observer.getCurrentResult().data).toEqual(read.response);
+                        expect(read.queryFn).toHaveBeenCalledOnce();
+                    }
+                }
+            } finally {
+                for (const read of reads) {
+                    read.unsubscribe();
+                    read.pendingRead.resolve(read.response);
+                }
+                queryClient.clear();
+            }
+        }
     });
 
     it.each(['before', 'during'])('prevents a list read started %s a write from replacing saved billing data', async (readTiming) => {
