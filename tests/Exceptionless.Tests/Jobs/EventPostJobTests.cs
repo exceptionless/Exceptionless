@@ -176,6 +176,32 @@ public class EventPostJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CanRunJobWithOversizedPayloadFile_CompletesEntryAndDeletesPayload()
+    {
+        // Arrange
+        byte[] payload = new byte[_options.MaximumEventPostSize + 2048];
+        Random.Shared.NextBytes(payload);
+        var eventPost = new EventPost(false)
+        {
+            OrganizationId = TestConstants.OrganizationId,
+            ProjectId = TestConstants.ProjectId,
+            ApiVersion = 2,
+            ContentEncoding = "gzip",
+            MediaType = "application/json",
+            UserAgent = "exceptionless-test"
+        };
+        Assert.NotNull(await _eventPostService.EnqueueAsync(eventPost, new MemoryStream(payload), TestCancellationToken));
+
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal(1, (await _eventQueue.GetQueueStatsAsync()).Completed);
+        Assert.Empty(await _storage.GetFileListAsync(cancellationToken: TestCancellationToken));
+    }
+
+    [Fact]
     public async Task CanRunJobWithNonExistingEventDataAsync()
     {
         var ev = GenerateEvent();

@@ -44,8 +44,27 @@ public class EventPostService
         var saveTask = data.ShouldArchive ? _storage.SaveObjectAsync(data.FilePath, (EventPostInfo)data, cancellationToken) : Task.FromResult(true);
         var savePayloadTask = _storage.SaveFileAsync(Path.ChangeExtension(data.FilePath, ".payload"), stream, cancellationToken);
 
-        bool infoSaved = await saveTask;
-        bool payloadSaved = await savePayloadTask;
+        bool infoSaved;
+        bool payloadSaved;
+        try
+        {
+            await Task.WhenAll(saveTask, savePayloadTask);
+            infoSaved = await saveTask;
+            payloadSaved = await savePayloadTask;
+        }
+        catch (OperationCanceledException)
+        {
+            await DeleteSavedEventPostFilesAsync(data);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            using (BeginEventPostScope(data))
+                _logger.LogError(ex, "Unable to save event post");
+
+            await DeleteSavedEventPostFilesAsync(data);
+            return EventPostEnqueueResult.Failed;
+        }
 
         if (stream is IEventPostBodyReadState { RejectedStatusCode: { } statusCode } rejectedBody)
         {
@@ -53,24 +72,35 @@ public class EventPostService
             return EventPostEnqueueResult.Rejected(statusCode, rejectedBody.RejectionReason);
         }
 
-        if (!infoSaved)
+        if (!infoSaved || !payloadSaved)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
-                _logger.LogError("Unable to save event post info");
+            using (BeginEventPostScope(data))
+                _logger.LogError("Unable to save event post (info saved: {InfoSaved}, payload saved: {PayloadSaved})", infoSaved, payloadSaved);
 
+            await DeleteSavedEventPostFilesAsync(data);
             return EventPostEnqueueResult.Failed;
         }
 
-        if (!payloadSaved)
+        string? queueEntryId = null;
+        try
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
-                _logger.LogError("Unable to save event post payload");
+            queueEntryId = await _queue.EnqueueAsync(data);
+        }
+        catch (Exception ex)
+        {
+            using (BeginEventPostScope(data))
+                _logger.LogError(ex, "Unable to enqueue event post");
+        }
 
+        if (String.IsNullOrEmpty(queueEntryId))
+        {
+            // Without a queue entry nothing will process the saved files, so remove them and
+            // report the failure instead of acknowledging events that will never be processed.
+            await DeleteSavedEventPostFilesAsync(data);
             return EventPostEnqueueResult.Failed;
         }
 
-        string? queueEntryId = await _queue.EnqueueAsync(data);
-        return !String.IsNullOrEmpty(queueEntryId) ? EventPostEnqueueResult.Queued(queueEntryId) : EventPostEnqueueResult.Failed;
+        return EventPostEnqueueResult.Queued(queueEntryId);
     }
 
     public async Task<byte[]?> GetEventPostPayloadAsync(string path)
@@ -142,10 +172,15 @@ public class EventPostService
 
             await Task.WhenAll(tasks);
         }
-        catch (StorageException ex)
+        catch (Exception ex)
         {
-            using (_logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data)))
-                _logger.LogWarning(ex, "Unable to delete rejected event post payload");
+            using (BeginEventPostScope(data))
+                _logger.LogWarning(ex, "Unable to delete unqueued event post files");
         }
+    }
+
+    private IDisposable? BeginEventPostScope(EventPost data)
+    {
+        return _logger.BeginScope(new ExceptionlessState().Organization(data.OrganizationId).Property(nameof(EventPostInfo), data));
     }
 }

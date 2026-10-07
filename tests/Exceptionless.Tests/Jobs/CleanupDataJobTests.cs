@@ -139,6 +139,27 @@ public class CleanupDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_QueuedEventPostFiles_DeletesThemOnlyAfterTheyBecomeStale()
+    {
+        // Arrange
+        const string queuedPath = "q/abc/abc0000000000000000000000000000.payload";
+        const string archivedPath = "archive/26/01/01/00/00/project/archived.payload";
+        await _fileStorage.SaveFileAsync(queuedPath, new MemoryStream([1]), TestCancellationToken);
+        await _fileStorage.SaveFileAsync(archivedPath, new MemoryStream([1]), TestCancellationToken);
+
+        // Act
+        await _job.RunAsync(TestCancellationToken);
+        bool queuedFileKeptWhileRecent = await _fileStorage.ExistsAsync(queuedPath);
+        TimeProvider.Advance(TimeSpan.FromDays(8));
+        await _job.RunAsync(TestCancellationToken);
+
+        // Assert
+        Assert.True(queuedFileKeptWhileRecent);
+        Assert.False(await _fileStorage.ExistsAsync(queuedPath));
+        Assert.True(await _fileStorage.ExistsAsync(archivedPath));
+    }
+
+    [Fact]
     public async Task CanCleanupExpiredDisabledOAuthTokens()
     {
         var utcNow = DateTime.UtcNow;
