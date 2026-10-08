@@ -56,7 +56,7 @@
         "cross-env": "^10.1.0",
         "eslint": "^10.11.0",
         "eslint-config-prettier": "^10.1.8",
-        "eslint-plugin-perfectionist": "^5.11.1",
+        "eslint-plugin-perfectionist": "^5.12.1",
         "eslint-plugin-storybook": "^10.6.1",
         "eslint-plugin-svelte": "^3.23.0",
         "globals": "^17.12.0",
