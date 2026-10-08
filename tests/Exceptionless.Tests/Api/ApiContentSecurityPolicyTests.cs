@@ -1,9 +1,10 @@
 using Exceptionless.Web.Security;
+using Foundatio.Xunit;
 using Xunit;
 
 namespace Exceptionless.Tests.Api;
 
-public sealed class ApiContentSecurityPolicyTests
+public sealed class ApiContentSecurityPolicyTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
     [Theory]
     [InlineData(" https://api.localhost:9443/backend?ignored=true#ignored ", "https://api.localhost:9443", "wss://api.localhost:9443")]

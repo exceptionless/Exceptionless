@@ -9,8 +9,8 @@ using Exceptionless.Core.Validation;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Insulation.Security;
 using Exceptionless.Web.Api;
-using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Api.Results;
+using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Mcp;
@@ -123,6 +123,7 @@ public partial class Program
             builder.Services.AddSingleton(apmConfig);
             builder.Services.AddAppOptions(options);
             builder.Services.AddHttpContextAccessor();
+            builder.Services.AddCsp(nonceByteAmount: 32);
 
             builder.Services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
@@ -266,59 +267,8 @@ public partial class Program
             if (ssl)
                 app.UseHttpsRedirection();
 
-            app.UseCsp(csp =>
-            {
-                csp.AllowFonts.FromSelf()
-                    .From("https://fonts.gstatic.com")
-                    .From("https://www.gravatar.com")
-                    .From("https://fonts.intercomcdn.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowImages.FromSelf()
-                    .From("data:")
-                    .From("https://q.stripe.com")
-                    .From("https://js.intercomcdn.com")
-                    .From("https://downloads.intercomcdn.com")
-                    .From("https://uploads.intercomcdn.com")
-                    .From("https://static.intercomassets.com")
-                    .From("https://user-images.githubusercontent.com")
-                    .From("https://www.gravatar.com")
-                    .From("http://www.gravatar.com");
-                csp.AllowScripts.FromSelf()
-                    .AllowUnsafeInline()
-                    .AllowUnsafeEval()
-                    .From("https://js.stripe.com")
-                    .From("https://widget.intercom.io")
-                    .From("https://js.intercomcdn.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowStyles.FromSelf()
-                    .AllowUnsafeInline()
-                    .From("https://fonts.googleapis.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowConnections.ToSelf()
-                    .To("https://collector.exceptionless.io")
-                    .To("https://config.exceptionless.io")
-                    .To("https://heartbeat.exceptionless.io")
-                    .To("https://via.intercom.io")
-                    .To("https://api.intercom.io")
-                    .To("https://api-iam.intercom.io/")
-                    .To("https://api-ping.intercom.io")
-                    .To("https://*.intercom-messenger.com")
-                    .To("wss://*.intercom-messenger.com")
-                    .To("https://nexus-websocket-a.intercom.io")
-                    .To("wss://nexus-websocket-a.intercom.io")
-                    .To("https://nexus-websocket-b.intercom.io")
-                    .To("wss://nexus-websocket-b.intercom.io")
-                    .To("https://uploads.intercomcdn.com")
-                    .To("https://uploads.intercomusercontent.com");
-
-                ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, configuration.GetValue<string>("ApiUrl"));
-
-                csp.OnSendingHeader = new Func<CspSendingHeaderContext, Task>(context =>
-                {
-                    context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
-                    return Task.CompletedTask;
-                });
-            });
+            app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, app.Environment.WebRootFileProvider,
+                options.AppMode != AppMode.Development, configuration.GetValue<string>("BaseURL"), configuration.GetValue<string>("ApiUrl")));
 
             app.UseSerilogRequestLogging(o =>
             {
@@ -370,12 +320,7 @@ public partial class Program
             }
 
             app.MapOpenApi("/docs/v2/openapi.json");
-            app.MapScalarApiReference("/docs", o =>
-            {
-                o.WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
-                    .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
-                    .AddPreferredSecuritySchemes("Bearer");
-            });
+            app.MapScalarApiReference("/docs", ConfigureScalar);
             app.MapApiEndpoints();
             app.MapGet("/mcp", () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed))
                 .RequireAuthorization(AuthorizationRoles.McpPolicy)
@@ -427,6 +372,20 @@ public partial class Program
         return TypedResults
             .Problem(statusCode: statusCodeContext.HttpContext.Response.StatusCode)
             .ExecuteAsync(statusCodeContext.HttpContext);
+    }
+
+    internal static void ConfigureScalar(ScalarOptions options, HttpContext context)
+    {
+        // Resolve per request so the document and CSP header share a fresh nonce.
+        var nonceService = context.RequestServices.GetRequiredService<ICspNonceService>();
+        string nonce = nonceService.GetNonce();
+        options.WithNonce(nonce)
+            .DisableDefaultFonts()
+            // The optional AI agent queries Scalar services even without a key on localhost.
+            .DisableAgent()
+            .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
+            .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
+            .AddPreferredSecuritySchemes("Bearer");
     }
 
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)

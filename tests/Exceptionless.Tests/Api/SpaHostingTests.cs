@@ -1,16 +1,17 @@
 using System.Net;
 using Exceptionless.Tests.Extensions;
+using Foundatio.Xunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace Exceptionless.Tests.Api;
 
-public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
+public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebHostFactory>
 {
     private readonly AppWebHostFactory _factory;
 
-    public SpaHostingTests(AppWebHostFactory factory) => _factory = factory;
+    public SpaHostingTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output) => _factory = factory;
 
     [Theory]
     [InlineData("/login")]
@@ -72,7 +73,7 @@ public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
     }
 
     [Fact]
-    public async Task GetAsync_ConfiguredApiOrigin_AllowsApiAndWebSocketConnections()
+    public async Task GetAsync_ConfiguredApiOrigin_UsesRestrictedConnectionsAndStrictScripts()
     {
         // Arrange
         const string apiUrl = "https://localhost:9443/backend?ignored=true";
@@ -89,18 +90,36 @@ public sealed class SpaHostingTests : IClassFixture<AppWebHostFactory>
         string policy = Assert.Single(response.Headers.GetValues("Content-Security-Policy"));
         string connections = Assert.Single(policy.Split(';'), directive => directive.StartsWith("connect-src ", StringComparison.Ordinal));
         string[] sources = connections.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Contains("'self'", sources);
+        Assert.DoesNotContain("*", sources);
+        Assert.DoesNotContain("ws:", sources);
+        Assert.DoesNotContain("wss:", sources);
         Assert.Contains("https://localhost:9443", sources);
         Assert.Contains("wss://localhost:9443", sources);
-        Assert.DoesNotContain("*", sources);
         Assert.DoesNotContain(apiUrl, sources);
 
-        // API-origin validation must preserve the existing script compatibility policy.
+        // The published static shell relies on this response header for deny-by-default and
+        // anti-framing protection; frame-ancestors cannot be enforced by its meta policy.
+        string defaults = Assert.Single(policy.Split(';'), directive => directive.StartsWith("default-src ", StringComparison.Ordinal));
+        Assert.Equal(["default-src", "'none'"], defaults.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        string ancestors = Assert.Single(policy.Split(';'), directive => directive.StartsWith("frame-ancestors ", StringComparison.Ordinal));
+        Assert.Equal(["frame-ancestors", "'none'"], ancestors.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        Assert.Equal("DENY", Assert.Single(response.Headers.GetValues("X-Frame-Options")));
+
+        string frames = Assert.Single(policy.Split(';'), directive => directive.StartsWith("frame-src ", StringComparison.Ordinal));
+        Assert.DoesNotContain("'self'", frames.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        string media = Assert.Single(policy.Split(';'), directive => directive.StartsWith("media-src ", StringComparison.Ordinal));
+        Assert.DoesNotContain("'self'", media.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        string workers = Assert.Single(policy.Split(';'), directive => directive.StartsWith("worker-src ", StringComparison.Ordinal));
+        Assert.Equal(["worker-src", "'none'"], workers.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        Assert.DoesNotContain(policy.Split(';'), directive => directive.StartsWith("manifest-src ", StringComparison.Ordinal));
+
+        // Connection configuration must not weaken script execution restrictions.
         string scripts = Assert.Single(policy.Split(';'), directive => directive.StartsWith("script-src ", StringComparison.Ordinal));
         string[] scriptSources = scripts.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Contains("'unsafe-inline'", scriptSources);
-        Assert.Contains("'unsafe-eval'", scriptSources);
-        Assert.Contains("https://js.stripe.com", scriptSources);
-        Assert.Contains("https://widget.intercom.io", scriptSources);
+        Assert.DoesNotContain("'unsafe-inline'", scriptSources);
+        Assert.DoesNotContain("'unsafe-eval'", scriptSources);
+        Assert.Contains("'strict-dynamic'", scriptSources);
+        Assert.Contains("https://*.stripe.com", scriptSources);
+        Assert.Contains("https://*.intercom.io", scriptSources);
     }
 }
