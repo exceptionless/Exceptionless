@@ -100,7 +100,7 @@
         "oidc-client-ts": "^3.5.0",
         "pretty-ms": "^9.3.1",
         "runed": "^0.37.1",
-        "shiki": "^4.4.3",
+        "shiki": "^4.5.0",
         "streamdown-svelte": "^3.0.6",
         "svelte-intercom": "^0.0.35",
         "svelte-sonner": "^1.2.1",
