@@ -20,6 +20,8 @@ const config = {
             $shared: 'src/lib/features/shared'
         },
         // Native CSP covers Vite responses and hashes the static SPA bootstrap at build time.
+        // The published build must be served through ASP.NET: its header restricts these
+        // runtime/Vite connection targets and supplies frame-ancestors, which meta cannot.
         csp: {
             directives: {
                 'base-uri': ['none'],
@@ -28,8 +30,7 @@ const config = {
                 'default-src': ['none'],
                 'font-src': ['self', 'https://*.intercomcdn.com'],
                 'form-action': ['self'],
-                'frame-ancestors': ['none'],
-                'frame-src': ['self', 'https://*.stripe.com', 'https://link.com', 'https://*.link.com'],
+                'frame-src': ['https://*.stripe.com', 'https://link.com', 'https://*.link.com'],
                 'img-src': [
                     'self',
                     'blob:',
@@ -39,13 +40,13 @@ const config = {
                     'https://static.intercomassets.com',
                     'https://www.gravatar.com'
                 ],
-                'manifest-src': ['self'],
-                'media-src': ['self', 'https://js.intercomcdn.com'],
+                'media-src': ['https://js.intercomcdn.com'],
                 'object-src': ['none'],
                 'script-src': ['self', 'strict-dynamic', 'https://*.stripe.com', 'https://*.intercom.io', 'https://js.intercomcdn.com'],
                 'style-src': ['self', 'unsafe-inline'],
                 'upgrade-insecure-requests': process.env.NODE_ENV === 'production',
-                'worker-src': ['self']
+                // Explicitly deny workers; without this, worker-src falls back to script-src.
+                'worker-src': ['none']
             },
             mode: 'auto'
         }

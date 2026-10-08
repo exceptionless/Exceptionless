@@ -97,6 +97,22 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Assert.Contains("wss://localhost:9443", sources);
         Assert.DoesNotContain(apiUrl, sources);
 
+        // The published static shell relies on this response header for deny-by-default and
+        // anti-framing protection; frame-ancestors cannot be enforced by its meta policy.
+        string defaults = Assert.Single(policy.Split(';'), directive => directive.StartsWith("default-src ", StringComparison.Ordinal));
+        Assert.Equal(["default-src", "'none'"], defaults.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        string ancestors = Assert.Single(policy.Split(';'), directive => directive.StartsWith("frame-ancestors ", StringComparison.Ordinal));
+        Assert.Equal(["frame-ancestors", "'none'"], ancestors.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        Assert.Equal("DENY", Assert.Single(response.Headers.GetValues("X-Frame-Options")));
+
+        string frames = Assert.Single(policy.Split(';'), directive => directive.StartsWith("frame-src ", StringComparison.Ordinal));
+        Assert.DoesNotContain("'self'", frames.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        string media = Assert.Single(policy.Split(';'), directive => directive.StartsWith("media-src ", StringComparison.Ordinal));
+        Assert.DoesNotContain("'self'", media.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        string workers = Assert.Single(policy.Split(';'), directive => directive.StartsWith("worker-src ", StringComparison.Ordinal));
+        Assert.Equal(["worker-src", "'none'"], workers.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        Assert.DoesNotContain(policy.Split(';'), directive => directive.StartsWith("manifest-src ", StringComparison.Ordinal));
+
         // Connection configuration must not weaken script execution restrictions.
         string scripts = Assert.Single(policy.Split(';'), directive => directive.StartsWith("script-src ", StringComparison.Ordinal));
         string[] scriptSources = scripts.Split(' ', StringSplitOptions.RemoveEmptyEntries);

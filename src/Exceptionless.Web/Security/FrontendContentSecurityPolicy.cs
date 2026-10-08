@@ -12,6 +12,16 @@ internal static partial class FrontendContentSecurityPolicy
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/script-src
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/connect-src
     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/style-src
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/img-src
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/font-src
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-src
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/media-src
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/worker-src
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/form-action
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/object-src
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/base-uri
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors
+    // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/upgrade-insecure-requests
     // Build-generated hashes and provider requirements:
     // https://svelte.dev/docs/kit/configuration#csp
     // https://docs.stripe.com/security/guide#content-security-policy
@@ -22,6 +32,8 @@ internal static partial class FrontendContentSecurityPolicy
     // https://exceptionless.com/docs/clients/javascript/
     public static void Configure(CspBuilder csp, IFileProvider files, bool upgradeInsecureRequests, string? siteBaseUrl = null, string? apiUrl = null)
     {
+        // This header is the published SPA's security boundary. The static build's meta policy
+        // permits runtime/Vite connection targets and cannot enforce frame-ancestors.
         // Deny resource types unless their directive explicitly allows them.
         csp.ByDefaultAllow.FromNowhere();
 
@@ -72,15 +84,16 @@ internal static partial class FrontendContentSecurityPolicy
         ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, apiUrl);
 
         // Stripe Payment Element, 3DS and Link frames.
-        csp.AllowFrames.FromSelf().From("https://*.stripe.com")
+        csp.AllowFrames.From("https://*.stripe.com")
             .From("https://link.com").From("https://*.link.com");
 
         // Intercom's core messenger sounds; optional video/attachment sources are excluded.
-        csp.AllowAudioAndVideo.FromSelf().From("https://js.intercomcdn.com");
+        csp.AllowAudioAndVideo.From("https://js.intercomcdn.com");
 
-        csp.AllowWorkers.FromSelf();
+        // The SPA does not register workers; keep worker-src explicit because it otherwise
+        // falls back through script-src rather than directly to default-src.
+        csp.AllowWorkers.FromNowhere();
         csp.AllowFormActions.ToSelf();
-        csp.AllowManifest.FromSelf();
         csp.AllowPlugins.FromNowhere();
         csp.AllowBaseUri.FromNowhere();
         csp.AllowFraming.FromNowhere();
