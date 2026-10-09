@@ -16,6 +16,7 @@
         isLast?: boolean;
         isStreaming?: boolean;
         message: AssistantChatMessage;
+        onCopy?: () => void;
         onFeedback?: (feedback: AssistantFeedback | undefined) => void;
         onRegenerate?: () => Promise<void> | void;
         onSuggestedAction?: (action: AssistantSuggestedAction) => void;
@@ -27,6 +28,7 @@
         isLast = false,
         isStreaming = false,
         message,
+        onCopy,
         onFeedback,
         onRegenerate,
         onSuggestedAction,
@@ -40,7 +42,7 @@
 {#if message.role === 'user'}
     <article class="group/message ml-10 flex flex-col items-end" aria-label="You">
         <div class="bg-muted max-w-full rounded-2xl rounded-br-sm px-3 py-2 text-sm wrap-anywhere whitespace-pre-wrap">{message.content}</div>
-        <AssistantMessageActions align="end" content={message.content} />
+        <AssistantMessageActions align="end" content={message.content} {onCopy} />
     </article>
 {:else}
     <article class="group/message flex gap-2" aria-label="Exie">
@@ -95,6 +97,7 @@
                 <AssistantMessageActions
                     content={message.content}
                     feedback={message.feedback}
+                    {onCopy}
                     {onFeedback}
                     onRegenerate={isLast ? onRegenerate : undefined}
                     showFeedback={true}

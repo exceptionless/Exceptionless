@@ -229,6 +229,47 @@ public class AdminEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AssistantConversationSharingSettingsAsync_AsGlobalAdmin_PersistsBothStatesWithoutChangingOtherSettings()
+    {
+        var initial = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+            .AsGlobalAdminUser().AppendPaths("admin", "assistant-settings").StatusCodeShouldBeOk());
+        Assert.NotNull(initial);
+        Assert.False(initial.ConversationSharingDefaultEnabled);
+
+        foreach (bool enabled in new[] { true, false })
+        {
+            var updated = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+                .Put().AsGlobalAdminUser().AppendPaths("admin", "assistant-settings", "conversation-sharing")
+                .Content(new UpdateAssistantConversationSharingSettings { Enabled = enabled }).StatusCodeShouldBeOk());
+            Assert.NotNull(updated);
+            Assert.Equal(enabled, updated.ConversationSharingDefaultEnabled);
+
+            await GetService<ICacheClient>().RemoveAllAsync();
+            var persisted = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
+                .AsGlobalAdminUser().AppendPaths("admin", "assistant-settings").StatusCodeShouldBeOk());
+            Assert.NotNull(persisted);
+            Assert.Equal(enabled, persisted.ConversationSharingDefaultEnabled);
+            Assert.Equal(initial.Model, persisted.Model);
+            Assert.Equal(initial.Enabled, persisted.Enabled);
+        }
+    }
+
+    [Fact]
+    public Task AssistantConversationSharingSettingsAsync_AsOrganizationUser_ReturnsForbidden() => SendRequestAsync(request => request
+        .Put().AsTestOrganizationUser().AppendPaths("admin", "assistant-settings", "conversation-sharing")
+        .Content(new UpdateAssistantConversationSharingSettings { Enabled = true }).StatusCodeShouldBeForbidden());
+
+    [Fact]
+    public Task AssistantConversationSharingSettingsAsync_MissingChoice_ReturnsBadRequest() => SendRequestAsync(request => request
+        .Put().AsGlobalAdminUser().AppendPaths("admin", "assistant-settings", "conversation-sharing")
+        .Content(new { }).StatusCodeShouldBeBadRequest());
+
+    [Fact]
+    public Task AssistantConversationSharingSettingsAsync_AsAnonymous_ReturnsUnauthorized() => SendRequestAsync(request => request
+        .Put().AsAnonymousUser().AppendPaths("admin", "assistant-settings", "conversation-sharing")
+        .Content(new UpdateAssistantConversationSharingSettings { Enabled = true }).StatusCodeShouldBeUnauthorized());
+
+    [Fact]
     public async Task EventSubmissionSettingsAsync_AsGlobalAdmin_UpdatesAndClearsRuntimeOverride()
     {
         var initial = await SendRequestAsAsync<EventSubmissionSettings>(request => request
@@ -1355,6 +1396,7 @@ public class AdminEndpointTests : IntegrationTestsBase
         bool Enabled,
         bool ConfiguredEnabled,
         bool IsEnabledOverridden,
-        bool IsConfigured);
+        bool IsConfigured,
+        bool ConversationSharingDefaultEnabled);
     private sealed record RequeueResult([property: JsonPropertyName("enqueued")] int Enqueued);
 }

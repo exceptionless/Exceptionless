@@ -10,7 +10,7 @@ ConnectionStrings:
 #  Email: smtp://localhost:1025
 
 # Base url for the ui used to build links in emails and other places.
-BaseURL: 'http://localhost:9001/#!'
+BaseURL: https://web-ex.dev.localhost:7131
 
 Assistant:
   Enabled: true

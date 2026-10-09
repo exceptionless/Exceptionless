@@ -7,6 +7,21 @@ import type { EventSummaryModel, StackSummaryModel } from './index';
 import Summary from './summary.svelte';
 
 describe('Summary', () => {
+    it('keeps sessions without identity or session metadata readable and clickable', () => {
+        const summary: EventSummaryModel<'event-session-summary'> = {
+            data: { Type: 'session' },
+            date: '2026-09-09T00:00:00Z',
+            id: 'anonymous-session-event',
+            project_id: 'project-id',
+            tags: [],
+            template_key: 'event-session-summary'
+        };
+
+        render(Summary, { showStatus: false, showType: false, summary });
+
+        expect(screen.getByRole('link', { name: 'Anonymous session' }).getAttribute('href')).toBe('/event/anonymous-session-event');
+    });
+
     it('links an event summary to that event details page', () => {
         const summary: EventSummaryModel<'event-error-summary'> = {
             data: {
@@ -23,7 +38,7 @@ describe('Summary', () => {
 
         render(Summary, { showStatus: false, summary });
 
-        expect(screen.getByRole('link', { name: summary.data.Message }).getAttribute('href')).toBe('/next/event/event-id');
+        expect(screen.getByRole('link', { name: summary.data.Message }).getAttribute('href')).toBe('/event/event-id');
     });
 
     it('renders an event summary without an internal link when linking is disabled', () => {
@@ -68,6 +83,6 @@ describe('Summary', () => {
 
         render(Summary, { showStatus: false, summary });
 
-        expect(screen.getByRole('link', { name: summary.title }).getAttribute('href')).toBe('/next/stack/stack-id');
+        expect(screen.getByRole('link', { name: summary.title }).getAttribute('href')).toBe('/stack/stack-id');
     });
 });

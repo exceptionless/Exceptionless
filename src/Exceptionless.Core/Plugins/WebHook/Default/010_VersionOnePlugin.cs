@@ -41,7 +41,7 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
         var requestInfo = ev.GetRequestInfo(_serializer, _logger);
         var environmentInfo = ev.GetEnvironmentInfo(_serializer, _logger);
 
-        return Task.FromResult<object?>(new VersionOneWebHookEvent(_options.BaseURL)
+        return Task.FromResult<object?>(new VersionOneWebHookEvent(_options.BaseURL.GetOrigin())
         {
             Id = ev.Id,
             OccurrenceDate = ev.Date,
@@ -76,7 +76,7 @@ public sealed class VersionOnePlugin : WebHookDataPluginBase
         if (!String.Equals(ctx.WebHook.Version, Models.WebHook.KnownVersions.Version1))
             return Task.FromResult<object?>(null);
 
-        return Task.FromResult<object?>(new VersionOneWebHookStack(_options.BaseURL)
+        return Task.FromResult<object?>(new VersionOneWebHookStack(_options.BaseURL.GetOrigin())
         {
             Id = ctx.Stack.Id,
             Status = ctx.Stack.Status,

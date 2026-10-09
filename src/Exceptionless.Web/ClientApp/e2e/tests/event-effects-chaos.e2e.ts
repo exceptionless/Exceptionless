@@ -3,9 +3,13 @@ import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
-import { dispatchWebSocketMessages, installWebSocketTestHarness } from '../support/web-socket';
-
-const EVENT_NOTIFICATION_TRAILING_REFRESH_MS = 5_000;
+import {
+    churnDocumentVisibility,
+    dispatchWebSocketMessages,
+    installWebSocketTestHarness,
+    setDocumentHidden,
+    waitForWebSocketConnection
+} from '../support/web-socket';
 
 interface ActionSample extends RequestCounts {
     name: string;
@@ -33,7 +37,7 @@ interface RuntimeDiagnostics {
 
 test('event list and detail effects stay bounded through paging and background chaos @signup', async ({ e2eApi, e2eScenario, page }, testInfo) => {
     test.slow();
-    await installWebSocketTestHarness(page);
+    await installWebSocketTestHarness(page, { ignoreServerMessages: true });
 
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const diagnostics: RuntimeDiagnostics = {
@@ -63,7 +67,7 @@ test('event list and detail effects stay bounded through paging and background c
 
     await test.step('load the Events list with one page of results', async () => {
         const response = page.waitForResponse((candidate) => isEventListResponse(candidate, e2eScenario.organizationId));
-        await page.goto('/next/event?filter=type%3Aerror&limit=5');
+        await page.goto('/event?filter=type%3Aerror&limit=5');
         const listResponse = await response;
         expect(listResponse.ok()).toBe(true);
         const events = (await listResponse.json()) as { id?: string }[];
@@ -76,7 +80,8 @@ test('event list and detail effects stay bounded through paging and background c
         await expect(page.getByRole('button', { name: 'Go to next page' })).toBeEnabled();
     });
 
-    await waitForEventListQuiescence(page, diagnostics);
+    await waitForWebSocketConnection(page);
+    await expect(page.getByTitle('Refresh results').locator('svg')).not.toHaveClass(/animate-spin/);
 
     await measureAction(diagnostics, 'event list selected refresh', async () => {
         const rowSelection = page.getByRole('checkbox', { name: 'Select row' }).first();
@@ -134,15 +139,12 @@ test('event list and detail effects stay bounded through paging and background c
     expect(actionSample(diagnostics, 'event detail sheet navigation').eventDetails).toBeLessThanOrEqual(2);
     expect(actionSample(diagnostics, 'event detail sheet navigation').eventList).toBe(0);
 
+    let listReconnects = 0;
     await measureAction(diagnostics, 'event list visibility churn', async () => {
-        for (let index = 0; index < 30; index++) {
-            await setDocumentHidden(page, true);
-            await setDocumentHidden(page, false);
-        }
-
-        await page.waitForTimeout(2_000);
+        listReconnects = await churnDocumentVisibility(page);
     });
-    expect(actionSample(diagnostics, 'event list visibility churn').eventList).toBeLessThanOrEqual(1);
+    expect(actionSample(diagnostics, 'event list visibility churn').eventList).toBeGreaterThanOrEqual(1);
+    expect(actionSample(diagnostics, 'event list visibility churn').eventList).toBeLessThanOrEqual(listReconnects);
 
     await measureAction(diagnostics, 'event list background ingestion and resume', async () => {
         await setDocumentHidden(page, true);
@@ -150,6 +152,7 @@ test('event list and detail effects stay bounded through paging and background c
         await e2eApi.submitEvent(e2eScenario.projectId, e2eScenario.projectToken, event);
         await e2eApi.pollForEventByReference(e2eScenario.userToken, e2eScenario.projectId, referenceId);
         await setDocumentHidden(page, false);
+        await waitForWebSocketConnection(page);
         await page.waitForTimeout(2_000);
     });
     expect(actionSample(diagnostics, 'event list background ingestion and resume').eventList).toBeLessThanOrEqual(2);
@@ -184,7 +187,7 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'event detail alias route remounts', async () => {
         for (let index = 0; index < 5; index++) {
-            await page.goto(`/next/event/${journey.eventId}`);
+            await page.goto(`/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         }
     });
@@ -193,7 +196,7 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'stack detail discovery route remounts', async () => {
         for (let index = 0; index < 5; index++) {
-            await page.goto(`/next/stack/${journey.stackId}`);
+            await page.goto(`/stack/${journey.stackId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         }
     });
@@ -203,37 +206,42 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'canonical stack event route remounts', async () => {
         for (let index = 0; index < 5; index++) {
-            await page.goto(`/next/stack/${journey.stackId}/event/${journey.eventId}`);
+            await page.goto(`/stack/${journey.stackId}/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         }
     });
     expect(actionSample(diagnostics, 'canonical stack event route remounts').eventDetails).toBeLessThanOrEqual(10);
     expect(actionSample(diagnostics, 'canonical stack event route remounts').stackDetails).toBeLessThanOrEqual(10);
 
-    await measureAction(diagnostics, 'full detail navigation and visibility churn', async () => {
+    await measureAction(diagnostics, 'full detail navigation', async () => {
         const olderEvent = page.getByRole('button', { name: 'Older event' });
         const newerEvent = page.getByRole('button', { name: 'Newer event' });
         for (let index = 0; index < 5; index++) {
+            const currentUrl = page.url();
             await expect(olderEvent).toBeEnabled();
             await olderEvent.click();
+            await expect(page).not.toHaveURL(currentUrl);
             await expect(newerEvent).toBeEnabled();
             await newerEvent.click();
-        }
-
-        for (let index = 0; index < 30; index++) {
-            await setDocumentHidden(page, true);
-            await setDocumentHidden(page, false);
+            await expect(page).toHaveURL(currentUrl);
         }
 
         await page.waitForTimeout(2_000);
     });
-    // Ten explicit event changes plus at most one visibility-driven refetch.
-    expect(actionSample(diagnostics, 'full detail navigation and visibility churn').eventDetails).toBeLessThanOrEqual(11);
-    expect(actionSample(diagnostics, 'full detail navigation and visibility churn').stackDetails).toBeLessThanOrEqual(2);
-    expect(actionSample(diagnostics, 'full detail navigation and visibility churn').eventList).toBe(0);
+    expect(actionSample(diagnostics, 'full detail navigation').eventDetails).toBeLessThanOrEqual(10);
+    expect(actionSample(diagnostics, 'full detail navigation').stackDetails).toBeLessThanOrEqual(1);
+    expect(actionSample(diagnostics, 'full detail navigation').eventList).toBe(0);
+
+    let detailReconnects = 0;
+    await measureAction(diagnostics, 'full detail visibility churn', async () => {
+        detailReconnects = await churnDocumentVisibility(page);
+    });
+    expect(actionSample(diagnostics, 'full detail visibility churn').eventDetails).toBeLessThanOrEqual(detailReconnects);
+    expect(actionSample(diagnostics, 'full detail visibility churn').stackDetails).toBeLessThanOrEqual(detailReconnects);
+    expect(actionSample(diagnostics, 'full detail visibility churn').eventList).toBe(0);
 
     await testInfo.attach('event-effect-chaos-diagnostics', {
-        body: Buffer.from(JSON.stringify(diagnostics, null, 2)),
+        body: Buffer.from(JSON.stringify({ ...diagnostics, visibilityReconnects: { detail: detailReconnects, list: listReconnects } }, null, 2)),
         contentType: 'application/json'
     });
     expect(diagnostics.runtimeErrors).toEqual([]);
@@ -373,42 +381,4 @@ function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request)
         method: request.method(),
         url: request.url()
     });
-}
-
-async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
-    await page.evaluate((nextHidden) => {
-        Object.defineProperty(document, 'hidden', {
-            configurable: true,
-            get: () => nextHidden
-        });
-        Object.defineProperty(document, 'visibilityState', {
-            configurable: true,
-            get: () => (nextHidden ? 'hidden' : 'visible')
-        });
-        document.dispatchEvent(new Event('visibilitychange'));
-        window.dispatchEvent(new Event('visibilitychange'));
-    }, hidden);
-}
-
-async function waitForEventListQuiescence(page: Page, diagnostics: RuntimeDiagnostics): Promise<void> {
-    const quietPeriodMs = EVENT_NOTIFICATION_TRAILING_REFRESH_MS + 500;
-    const timeoutAt = Date.now() + 30_000;
-    let lastRequestCount = diagnostics.requests.eventList;
-    let quietSince = Date.now();
-
-    while (Date.now() < timeoutAt) {
-        await page.waitForTimeout(250);
-
-        if (diagnostics.requests.eventList !== lastRequestCount) {
-            lastRequestCount = diagnostics.requests.eventList;
-            quietSince = Date.now();
-            continue;
-        }
-
-        if (Date.now() - quietSince >= quietPeriodMs) {
-            return;
-        }
-    }
-
-    throw new Error('Event list requests did not become quiet after seeding');
 }

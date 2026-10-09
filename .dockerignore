@@ -11,3 +11,10 @@ LICENSE.txt
 **/obj/
 **/TestResult/
 **/out/
+**/node_modules/
+**/.svelte-kit/
+src/Exceptionless.Web/ClientApp/build/
+src/Exceptionless.Web/ClientApp/test-results/
+src/Exceptionless.Web/ClientApp/playwright-report/
+src/Exceptionless.Web/ClientApp/blob-report/
+dogfood-output/

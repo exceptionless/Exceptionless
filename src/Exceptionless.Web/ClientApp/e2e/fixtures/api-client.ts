@@ -262,7 +262,7 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for E2E event with reference id ${referenceId}`);
     }
 
-    public async pollForMailToken(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
+    public async pollForMailLink(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
         const deadline = Date.now() + timeoutMs;
         const normalizedEmail = email.toLowerCase();
 
@@ -288,9 +288,15 @@ export class E2EApiClient {
                 await expectStatus(messageResponse, [200], 'read local mail');
                 const messageResult = toRecord(await readJson(messageResponse), 'mail message response');
                 const content = `${getOptionalString(messageResult, 'HTML') ?? ''}\n${getOptionalString(messageResult, 'Text') ?? ''}`;
-                const token = extractMailToken(content, path);
-                if (token) {
-                    return token;
+                const link = extractMailLink(content, path);
+                if (link) {
+                    // Keep the delivered path, query, and fragment; only adapt the local Aspire origin.
+                    const delivered = new URL(link);
+                    const local = new URL(this.environment.appUrl);
+                    if (!delivered.hostname.endsWith('.localhost') && delivered.hostname !== 'localhost' && delivered.hostname !== '127.0.0.1') {
+                        throw new Error('Expected a local application link in test mail.');
+                    }
+                    return new URL(delivered.pathname + delivered.search + delivered.hash, local.origin).href;
                 }
             }
 
@@ -298,6 +304,11 @@ export class E2EApiClient {
         }
 
         throw new Error(`Timed out waiting for ${path} email sent to ${email}`);
+    }
+
+    public async pollForMailToken(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
+        const link = new URL(await this.pollForMailLink(email, path, timeoutMs));
+        return path === 'signup' ? link.searchParams.get('token')! : decodeURIComponent(link.pathname.split('/').at(-1)!);
     }
 
     public async recordProductTour(token: string, tourName: string): Promise<void> {
@@ -424,10 +435,14 @@ async function expectStatus(response: APIResponse, expectedStatuses: number[], o
     throw new Error(`${operation} failed with status ${response.status()} ${response.statusText()}${body ? `: ${body}` : ''}`);
 }
 
-function extractMailToken(content: string, path: 'reset-password' | 'signup'): string | undefined {
-    const pattern = path === 'reset-password' ? /\/reset-password\/([^?"'<\\\s]+)/ : /\/signup\?token=([^&"'<\\\s]+)/;
-    const match = pattern.exec(content.replaceAll('&amp;', '&'));
-    return match?.[1] ? decodeURIComponent(match[1]) : undefined;
+function extractMailLink(content: string, path: 'reset-password' | 'signup'): string | undefined {
+    const links = content.replaceAll('&amp;', '&').match(/https?:\/\/[^"'<\\\s]+/g) ?? [];
+    return links.find((link) => {
+        const url = new URL(link);
+        return path === 'signup'
+            ? url.pathname === '/signup' && url.searchParams.has('token')
+            : url.pathname.startsWith('/reset-password/') && !url.searchParams.has('cancel');
+    });
 }
 
 function getOptionalString(value: Record<string, unknown>, key: string): string | undefined {
