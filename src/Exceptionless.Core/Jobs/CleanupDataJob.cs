@@ -579,7 +579,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         var cutoff = _timeProvider.GetUtcNow().UtcDateTime.Date.SubtractDays(retentionDays);
         _logger.RetentionEnforcementEventStart(cutoff, organization.Name, organization.Id);
 
-        long removedEvents = await _eventRepository.RemoveAllAsync(organization.Id, null, null, cutoff);
+        long removedEvents = await _eventRepository.RemoveAllByOrganizationAndClientIpAsync(organization.Id, null, null, cutoff);
         _logger.RetentionEnforcementEventComplete(organization.Name, organization.Id, removedEvents);
     }
 
