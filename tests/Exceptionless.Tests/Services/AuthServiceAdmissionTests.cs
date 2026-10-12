@@ -13,6 +13,39 @@ public sealed class AuthServiceAdmissionTests
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
     private static CancellationToken TestCancellationToken => TestContext.Current.CancellationToken;
 
+    [Fact]
+    public async Task WaitForLoginAsync_CancelledDuringSaturationRead_PreservesCancellationAndFailures()
+    {
+        // Arrange
+        var clock = CreateTimeProvider();
+        using var cache = new AdmissionCacheClient(clock);
+        var service = CreateService(cache, clock);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        var occupied = await ReserveAsync(service, 5);
+        Assert.All(occupied, Assert.NotNull);
+        await Task.WhenAll(occupied.Select(attempt => service.RecordLoginFailureAsync(attempt!)));
+        int reads = 0;
+        cache.AfterRead = () =>
+        {
+            if (++reads == 2)
+                cancellation.Cancel();
+        };
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            await service.WaitForLoginAsync(EmailAddress, IpAddress, cancellation.Token);
+        });
+        cache.AfterRead = null;
+        await using var denied = await service.TryBeginLoginAsync(EmailAddress, IpAddress, TestCancellationToken);
+        await DisposeAsync(occupied);
+
+        // Assert
+        Assert.Equal(cancellation.Token, Assert.IsAssignableFrom<OperationCanceledException>(exception).CancellationToken);
+        Assert.Null(denied);
+        Assert.Equal(10, cache.Keys.Count);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -127,6 +160,65 @@ public sealed class AuthServiceAdmissionTests
     }
 
     [Fact]
+    public async Task WaitForLoginAsync_RejectedWrites_PacesRetriesUntilDeadline()
+    {
+        // Arrange
+        var clock = CreateTimeProvider();
+        using var cache = new AdmissionCacheClient(clock);
+        var service = CreateService(cache, clock);
+        var releaseRetry = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int writes = 0;
+        cache.BeforeAdd = async () =>
+        {
+            // Stop an unpaced implementation at its first retry instead of allowing a busy loop.
+            if (++writes > 5)
+                await releaseRetry.Task.WaitAsync(TestTimeout, TestCancellationToken);
+
+            return false;
+        };
+
+        // Act
+        var pending = service.WaitForLoginAsync(EmailAddress, IpAddress, TestCancellationToken);
+        int writesBeforeAdvance = writes;
+        clock.Advance(TimeSpan.FromSeconds(2));
+        releaseRetry.TrySetResult();
+        var result = await pending.WaitAsync(TestTimeout, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(5, writesBeforeAdvance);
+        Assert.Null(result);
+        Assert.Empty(cache.Keys);
+    }
+
+    [Fact]
+    public async Task WaitForLoginAsync_RetryCompletesAfterDeadline_ReleasesAdmission()
+    {
+        // Arrange
+        var clock = CreateTimeProvider();
+        using var cache = new AdmissionCacheClient(clock);
+        var service = CreateService(cache, clock);
+        var occupied = await ReserveAsync(service, 5);
+        Assert.All(occupied, Assert.NotNull);
+
+        // Act
+        var pending = service.WaitForLoginAsync(EmailAddress, IpAddress, TestCancellationToken);
+        await occupied[0]!.DisposeAsync();
+        cache.AfterAdd = () =>
+        {
+            cache.AfterAdd = null;
+            clock.Advance(TimeSpan.FromSeconds(2));
+        };
+        clock.Advance(TimeSpan.FromMilliseconds(50));
+        await using var result = await pending.WaitAsync(TestTimeout, TestCancellationToken);
+        int reservedEntries = cache.Keys.Count;
+        await DisposeAsync(occupied);
+
+        // Assert
+        Assert.Null(result);
+        Assert.Equal(8, reservedEntries);
+    }
+
+    [Fact]
     public async Task WaitForLoginAsync_SharedIpIsBusy_ReleasesUserCapacityBeforeWaiting()
     {
         // Arrange
@@ -163,4 +255,30 @@ public sealed class AuthServiceAdmissionTests
 
     private static Task<AuthService.LoginAttempt?[]> ReserveAsync(AuthService service, int count)
         => Task.WhenAll(Enumerable.Range(0, count).Select(_ => service.TryBeginLoginAsync(EmailAddress, IpAddress, TestCancellationToken)));
+
+    private sealed class AdmissionCacheClient(TimeProvider clock) : InMemoryCacheClient(options => options.TimeProvider(clock)), ICacheClient
+    {
+        public Func<Task<bool>>? BeforeAdd { get; set; }
+        public Action? AfterAdd { get; set; }
+        public Action? AfterRead { get; set; }
+
+        async Task<bool> ICacheClient.AddAsync<T>(string key, T value, TimeSpan? expiresIn)
+        {
+            if (BeforeAdd is not null)
+                return await BeforeAdd();
+
+            bool added = await base.AddAsync(key, value, expiresIn);
+            if (added)
+                AfterAdd?.Invoke();
+
+            return added;
+        }
+
+        async Task<IDictionary<string, CacheValue<T>>> ICacheClient.GetAllAsync<T>(IEnumerable<string> keys)
+        {
+            var entries = await base.GetAllAsync<T>(keys);
+            AfterRead?.Invoke();
+            return entries;
+        }
+    }
 }
