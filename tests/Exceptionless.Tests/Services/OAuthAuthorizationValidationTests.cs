@@ -1,34 +1,25 @@
 using System.Security.Claims;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
-using Exceptionless.Core.Validation;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Lock;
-using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Services;
 
-public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) : TestWithServices(output)
+public sealed class OAuthAuthorizationValidationTests
 {
     private const string Resource = "http://localhost/mcp";
     private const string RedirectUri = "http://localhost/callback";
     private const string FourReadScopes = "mcp:read projects:read stacks:read events:read";
     private const string AllScopes = "mcp:read projects:read stacks:read stacks:write events:read offline_access";
-
-    protected override void RegisterServices(IServiceCollection services, AppOptions options)
-    {
-        base.RegisterServices(services, options);
-        services.AddSingleton(new OAuthServerOptions());
-    }
 
     [Fact]
     public void GetActiveOAuthOrganizationIds_RemovedMembership_ReturnsNoOrganizations()
@@ -87,9 +78,7 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
     public async Task ValidateAuthorizationRequestAsync_ClientScopeCombinations_EnforcesAllowedScopes(string? clientScopes, string requestScopes, string? deniedScopes)
     {
         // Arrange
-        using var repository = CreateRepository(clientScopes);
-        var service = CreateService(repository);
-        var application = repository.Application;
+        var (service, application) = CreateService(clientScopes);
         string[] originalScopes = application.Scopes.ToArray();
 
         // Act
@@ -114,8 +103,7 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
     public async Task ValidateAuthorizationRequestAsync_InvalidScopes_DeniesWithoutReflectingUnknownScopes(string scopes)
     {
         // Arrange
-        using var repository = CreateRepository(AllScopes);
-        var service = CreateService(repository);
+        var (service, _) = CreateService(AllScopes);
 
         // Act
         var result = await service.ValidateAuthorizationRequestAsync(CreateRequest(scopes), Resource, OAuthService.McpResource);
@@ -136,9 +124,7 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
     public async Task ValidateAuthorizationRequestAsync_InvalidSecurityParameters_DoesNotDiscloseClientScopeDetails(string scenario, string error, string description)
     {
         // Arrange
-        using var repository = CreateRepository(FourReadScopes);
-        var service = CreateService(repository);
-        var application = repository.Application;
+        var (service, application) = CreateService(FourReadScopes);
         application.IsDisabled = scenario == "disabled";
         var request = CreateRequest(AllScopes) with
         {
@@ -169,7 +155,7 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
         Scope = scopes
     };
 
-    private TestOAuthApplicationRepository CreateRepository(string? scopes)
+    private static (OAuthService Service, OAuthApplication Application) CreateService(string? scopes)
     {
         var application = new OAuthApplication
         {
@@ -179,27 +165,20 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
             RedirectUris = [RedirectUri],
             Scopes = scopes?.Split(' ') ?? OAuthService.DefaultScopes.ToArray()
         };
-        return new TestOAuthApplicationRepository(
-            GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), GetService<AppOptions>(), application);
-    }
-
-    private OAuthService CreateService(IOAuthApplicationRepository repository) => new(
-        GetService<OAuthServerOptions>(),
-        GetService<ICacheClient>(),
-        GetService<ILockProvider>(),
-        repository,
-        GetService<IOAuthClientMetadataService>(),
-        GetService<IOAuthTokenRepository>(),
-        GetService<IUserRepository>(),
-        TimeProvider);
-
-    private sealed class TestOAuthApplicationRepository(
-        ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options, OAuthApplication application)
-        : OAuthApplicationRepository(configuration, validator, options), IOAuthApplicationRepository
-    {
-        public OAuthApplication Application { get; } = application;
-
-        Task<OAuthApplication?> IOAuthApplicationRepository.GetByClientIdAsync(string clientId, CommandOptionsDescriptor<OAuthApplication>? options)
-            => Task.FromResult(clientId == Application.ClientId ? Application : null);
+        var repository = new Mock<IOAuthApplicationRepository>(MockBehavior.Strict);
+        repository.Setup(repository => repository.GetByClientIdAsync(application.ClientId, null))
+            .ReturnsAsync(application);
+        repository.Setup(repository => repository.GetByClientIdAsync(It.Is<string>(clientId => clientId != application.ClientId), null))
+            .ReturnsAsync((OAuthApplication?)null);
+        var service = new OAuthService(
+            new OAuthServerOptions(),
+            Mock.Of<ICacheClient>(MockBehavior.Strict),
+            Mock.Of<ILockProvider>(MockBehavior.Strict),
+            repository.Object,
+            Mock.Of<IOAuthClientMetadataService>(MockBehavior.Strict),
+            Mock.Of<IOAuthTokenRepository>(MockBehavior.Strict),
+            Mock.Of<IUserRepository>(MockBehavior.Strict),
+            TimeProvider.System);
+        return (service, application);
     }
 }
