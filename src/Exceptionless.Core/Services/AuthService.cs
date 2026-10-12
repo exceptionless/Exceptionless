@@ -1,6 +1,7 @@
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
+using System.Runtime.CompilerServices;
 
 namespace Exceptionless.Core.Services;
 
@@ -12,7 +13,9 @@ public sealed class AuthService
     private const int UserFailureLimit = 5;
     private const int IpAddressFailureLimit = 15;
     private static readonly TimeSpan AttemptWindow = TimeSpan.FromMinutes(15);
+    private static readonly ConditionalWeakTable<ICacheClient, SemaphoreSlim> InMemoryMutationLocks = new();
     private readonly ScopedCacheClient _cache;
+    private readonly SemaphoreSlim? _inMemoryMutationLock;
     private readonly ILogger<AuthService> _logger;
     private readonly TimeProvider _timeProvider;
 
@@ -23,6 +26,7 @@ public sealed class AuthService
         ArgumentNullException.ThrowIfNull(logger);
 
         _cache = new ScopedCacheClient(cacheClient, "Auth");
+        _inMemoryMutationLock = cacheClient is InMemoryCacheClient ? InMemoryMutationLocks.GetValue(cacheClient, _ => new SemaphoreSlim(1, 1)) : null;
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -87,7 +91,7 @@ public sealed class AuthService
 
         // Pending checks and completed failures share the fixed-window admission budget.
         // Reservations expire at the boundary even if a check is still running.
-        await Task.WhenAll(attempt.CacheKeys.Select(cacheKey => _cache.ReplaceIfEqualAsync(cacheKey, $"failed:{attempt.Reservation}", attempt.Reservation, remaining)));
+        await Task.WhenAll(attempt.CacheKeys.Select(cacheKey => ReplaceIfEqualAsync(cacheKey, $"failed:{attempt.Reservation}", attempt.Reservation, remaining)));
     }
 
     public async Task RecordLoginSuccessAsync(LoginAttempt attempt)
@@ -118,7 +122,7 @@ public sealed class AuthService
     private async Task<string?> ReserveCacheKeyAsync(string[] cacheKeys, string reservation, DateTime expiresUtc)
     {
         foreach (string cacheKey in cacheKeys)
-            if (await _cache.AddAsync(cacheKey, reservation, expiresUtc))
+            if (await AddAsync(cacheKey, reservation, expiresUtc))
                 return cacheKey;
 
         return null;
@@ -134,7 +138,7 @@ public sealed class AuthService
         {
             try
             {
-                await _cache.RemoveIfEqualAsync(cacheKey, reservation);
+                await RemoveIfEqualAsync(cacheKey, reservation);
             }
             catch (Exception ex)
             {
@@ -144,7 +148,52 @@ public sealed class AuthService
     }
 
     private Task RemoveFailuresAsync(IEnumerable<KeyValuePair<string, string>> failures)
-        => Task.WhenAll(failures.Select(failure => _cache.RemoveIfEqualAsync(failure.Key, failure.Value)));
+        => Task.WhenAll(failures.Select(failure => RemoveIfEqualAsync(failure.Key, failure.Value)));
+
+    private Task<bool> AddAsync(string cacheKey, string value, DateTime expiresUtc)
+        => ExecuteInMemoryMutationAsync(() => _cache.AddAsync(cacheKey, value, expiresUtc));
+
+    private Task<bool> ReplaceIfEqualAsync(string cacheKey, string value, string expected, TimeSpan expiresIn)
+    {
+        if (_inMemoryMutationLock is null)
+            return _cache.ReplaceIfEqualAsync(cacheKey, value, expected, expiresIn);
+
+        return ExecuteInMemoryMutationAsync(async () =>
+        {
+            var current = await _cache.GetAsync<string>(cacheKey);
+            return current.HasValue && String.Equals(current.Value, expected, StringComparison.Ordinal)
+                && await _cache.SetAsync(cacheKey, value, expiresIn);
+        });
+    }
+
+    private Task<bool> RemoveIfEqualAsync(string cacheKey, string expected)
+    {
+        if (_inMemoryMutationLock is null)
+            return _cache.RemoveIfEqualAsync(cacheKey, expected);
+
+        return ExecuteInMemoryMutationAsync(async () =>
+        {
+            var current = await _cache.GetAsync<string>(cacheKey);
+            return current.HasValue && String.Equals(current.Value, expected, StringComparison.Ordinal)
+                && await _cache.RemoveAsync(cacheKey);
+        });
+    }
+
+    private async Task<T> ExecuteInMemoryMutationAsync<T>(Func<Task<T>> action)
+    {
+        if (_inMemoryMutationLock is null)
+            return await action();
+
+        await _inMemoryMutationLock.WaitAsync();
+        try
+        {
+            return await action();
+        }
+        finally
+        {
+            _inMemoryMutationLock.Release();
+        }
+    }
 
     private DateTime GetWindowExpiration() => _timeProvider.GetUtcNow().UtcDateTime.Floor(AttemptWindow).Add(AttemptWindow);
 
