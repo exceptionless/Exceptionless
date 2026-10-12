@@ -83,7 +83,7 @@
         "@internationalized/date": "^3.12.4",
         "@lucide/svelte": "^1.55.0",
         "@shikijs/themes": "^4.5.0",
-        "@stripe/stripe-js": "^9.16.0",
+        "@stripe/stripe-js": "^10.0.0",
         "@tanstack/svelte-form": "^1.33.5",
         "@tanstack/svelte-query": "^6.3.2",
         "@tanstack/svelte-query-devtools": "^6.3.2",
