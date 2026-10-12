@@ -28,9 +28,6 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
         _timeProvider = timeProvider;
     }
 
-    private static string CacheKey(string organizationId, string projectId, string clientIpAddress, long period) =>
-        String.Concat("Organization:", organizationId, ":Project:", projectId, ":bot:", period, ":", clientIpAddress);
-
     public override async Task EventBatchProcessingAsync(ICollection<EventContext> contexts)
     {
         if (_options.AppMode == AppMode.Development)
@@ -70,8 +67,8 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
             if (requestCount < _options.BotThrottleLimit)
                 continue;
 
-            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-            _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Organization: {OrganizationId} Project: {ProjectId}", scope.ClientIpAddress, utcNow.Floor(_throttlingPeriod), scope.OrganizationId, scope.ProjectId);
+            var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
+            _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Organization: {OrganizationId} Project: {ProjectId}", scope.ClientIpAddress, nowUtc.Floor(_throttlingPeriod), scope.OrganizationId, scope.ProjectId);
 
             // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
             await _workItemQueue.EnqueueAsync(new RemoveBotEventsWorkItem
@@ -79,8 +76,8 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
                 OrganizationId = scope.OrganizationId,
                 ProjectId = scope.ProjectId,
                 ClientIpAddress = scope.ClientIpAddress,
-                UtcStartDate = utcNow.Floor(_throttlingPeriod),
-                UtcEndDate = utcNow.Ceiling(_throttlingPeriod)
+                UtcStartDate = nowUtc.Floor(_throttlingPeriod),
+                UtcEndDate = nowUtc.Ceiling(_throttlingPeriod)
             });
 
             clientIpContexts.ForEach(c =>
@@ -90,4 +87,7 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
             });
         }
     }
+
+    private static string CacheKey(string organizationId, string projectId, string clientIpAddress, long period) =>
+        String.Concat("Organization:", organizationId, ":Project:", projectId, ":bot:", period, ":", clientIpAddress);
 }

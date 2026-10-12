@@ -220,9 +220,12 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Equal(3, results.Total);
     }
 
-    [Fact]
-    public async Task RemoveAllByOrganizationAndClientIpAsync_WithDateRange_RemovesMatchingEvents()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RemoveAllByOrganizationAndClientIpAsync_WithDateRange_RemovesMatchingEvents(bool useLegacyOverload)
     {
+        // Arrange
         const string _clientIpAddress = "123.123.12.255";
         const int NUMBER_OF_EVENTS_TO_CREATE = 50;
 
@@ -239,8 +242,15 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
             Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
         });
 
-        await _repository.RemoveAllByOrganizationAndClientIpAsync(TestConstants.OrganizationId, _clientIpAddress, DateTime.UtcNow.SubtractDays(3), DateTime.UtcNow.AddDays(2), o => o.ImmediateConsistency());
+        var startUtc = TimeProvider.GetUtcNow().UtcDateTime.SubtractDays(3);
+        var endUtc = TimeProvider.GetUtcNow().UtcDateTime.AddDays(2);
 
+        // Act
+        await (useLegacyOverload
+            ? _repository.RemoveAllAsync(TestConstants.OrganizationId, _clientIpAddress, startUtc, endUtc, o => o.ImmediateConsistency())
+            : _repository.RemoveAllByOrganizationAndClientIpAsync(TestConstants.OrganizationId, _clientIpAddress, startUtc, endUtc, o => o.ImmediateConsistency()));
+
+        // Assert
         events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
         Assert.Empty(events);
     }
@@ -252,30 +262,33 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
     [InlineData(false, false)]
     public async Task RemoveAllByProjectAndClientIpAsync_WithProjectScope_PreservesOtherScopesAndFilters(bool hasStart, bool hasEnd)
     {
+        // Arrange
         const string clientIpAddress = "203.0.113.10";
-        var start = DateTime.UtcNow.Date.AddHours(1);
-        var end = start.AddMinutes(5);
-        var inside = start.AddMinutes(1);
+        var startUtc = TimeProvider.GetUtcNow().UtcDateTime.Date.AddHours(1);
+        var endUtc = startUtc.AddMinutes(5);
+        var insideUtc = startUtc.AddMinutes(1);
 
-        PersistentEvent CreateEvent(string organizationId, string projectId, string ip, DateTime date)
+        PersistentEvent CreateEvent(string organizationId, string projectId, string ip, DateTime dateUtc)
         {
             var ev = _eventData.GenerateEvent(organizationId, projectId, TestConstants.StackId2,
-                occurrenceDate: date, generateData: false);
+                occurrenceDate: dateUtc, generateData: false);
             ev.AddRequestInfo(new RequestInfo { ClientIpAddress = ip });
             return ev;
         }
 
-        var matching = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, clientIpAddress, inside);
-        var otherProject = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectIdWithNoRoles, clientIpAddress, inside);
-        var otherOrganization = CreateEvent(TestConstants.OrganizationId2, TestConstants.ProjectId, clientIpAddress, inside);
-        var otherIp = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, "203.0.113.11", inside);
-        var before = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, clientIpAddress, start.AddMinutes(-1));
-        var after = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, clientIpAddress, end.AddMinutes(1));
+        var matching = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, clientIpAddress, insideUtc);
+        var otherProject = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectIdWithNoRoles, clientIpAddress, insideUtc);
+        var otherOrganization = CreateEvent(TestConstants.OrganizationId2, TestConstants.ProjectId, clientIpAddress, insideUtc);
+        var otherIp = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, "203.0.113.11", insideUtc);
+        var before = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, clientIpAddress, startUtc.AddMinutes(-1));
+        var after = CreateEvent(TestConstants.OrganizationId, TestConstants.ProjectId, clientIpAddress, endUtc.AddMinutes(1));
         await _repository.AddAsync([matching, otherProject, otherOrganization, otherIp, before, after], o => o.ImmediateConsistency());
 
+        // Act
         long deleted = await _repository.RemoveAllByProjectAndClientIpAsync(TestConstants.OrganizationId, TestConstants.ProjectId,
-            clientIpAddress, hasStart ? start : null, hasEnd ? end : null, o => o.ImmediateConsistency());
+            clientIpAddress, hasStart ? startUtc : null, hasEnd ? endUtc : null, o => o.ImmediateConsistency());
 
+        // Assert
         Assert.Equal(1 + (hasStart ? 0 : 1) + (hasEnd ? 0 : 1), deleted);
         Assert.Null(await _repository.GetByIdAsync(matching.Id));
         foreach (var preserved in new[] { otherProject, otherOrganization, otherIp })
