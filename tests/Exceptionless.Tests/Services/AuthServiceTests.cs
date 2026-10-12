@@ -33,6 +33,67 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     }
 
     [Fact]
+    public void Constructor_NullDependency_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var cache = GetService<ICacheClient>();
+        var logger = Log.CreateLogger<AuthService>();
+
+        // Act
+        var cacheException = Record.Exception(() => new AuthService(null!, TimeProvider, logger));
+        var timeException = Record.Exception(() => new AuthService(cache, null!, logger));
+        var loggerException = Record.Exception(() => new AuthService(cache, TimeProvider, null!));
+
+        // Assert
+        Assert.Equal("cacheClient", Assert.IsType<ArgumentNullException>(cacheException).ParamName);
+        Assert.Equal("timeProvider", Assert.IsType<ArgumentNullException>(timeException).ParamName);
+        Assert.Equal("logger", Assert.IsType<ArgumentNullException>(loggerException).ParamName);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DisposeAsync_CleanupFailure_PreservesOriginalExceptionAndReleasesOtherCacheKeys(bool cancelled)
+    {
+        // Arrange
+        using var cache = new FaultingCacheClient(TimeProvider);
+        var logger = new CapturingLogger();
+        var service = new AuthService(cache, TimeProvider, logger);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        cancellation.Cancel();
+        Exception failure = cancelled ? new OperationCanceledException(cancellation.Token) : new InvalidOperationException("Synthetic request failure.");
+        var attemptedCacheKeys = new List<string>();
+        cache.BeforeRemove = cacheKey =>
+        {
+            attemptedCacheKeys.Add(cacheKey);
+            if (cacheKey.Contains("user:", StringComparison.Ordinal))
+                throw new IOException("Sensitive provider message with user@exceptionless.test and a cache key.");
+        };
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            await using var attempt = await service.TryBeginLoginAsync("user@exceptionless.test", "192.0.2.1", TestCancellationToken);
+            throw failure;
+        });
+        cache.BeforeRemove = null;
+        var ipAttempts = await Task.WhenAll(Enumerable.Range(0, 15).Select(index => service.TryBeginLoginAsync($"other{index}@exceptionless.test", "192.0.2.1", TestCancellationToken)));
+        await DisposeAttemptsAsync(ipAttempts);
+
+        // Assert
+        Assert.Same(failure, exception);
+        Assert.Equal(2, attemptedCacheKeys.Count);
+        Assert.All(ipAttempts, Assert.NotNull);
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        var cleanupException = Assert.IsType<AggregateException>(entry.Exception);
+        var safeException = Assert.Single(cleanupException.InnerExceptions);
+        Assert.NotNull(safeException.StackTrace);
+        Assert.DoesNotContain("Sensitive provider message", cleanupException.ToString());
+        Assert.DoesNotContain("user@exceptionless.test", cleanupException.ToString());
+    }
+
+    [Fact]
     public async Task DisposeAsync_CompletedFailure_RetainsCharge()
     {
         // Arrange
@@ -64,22 +125,16 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     }
 
     [Fact]
-    public async Task RecordLoginAsync_NullAttempt_Throws()
+    public async Task RecordLoginFailureAsync_NullAttempt_ThrowsArgumentNullException()
     {
         // Arrange
         var service = GetService<AuthService>();
 
         // Act
-        var failureException = await Record.ExceptionAsync(() => service.RecordLoginFailureAsync(null!));
-        var successException = await Record.ExceptionAsync(() => service.RecordLoginSuccessAsync(null!));
-        var cacheException = Record.Exception(() => new AuthService(null!, TimeProvider));
-        var timeException = Record.Exception(() => new AuthService(GetService<ICacheClient>(), null!));
+        var exception = await Record.ExceptionAsync(() => service.RecordLoginFailureAsync(null!));
 
         // Assert
-        Assert.IsType<ArgumentNullException>(failureException);
-        Assert.IsType<ArgumentNullException>(successException);
-        Assert.IsType<ArgumentNullException>(cacheException);
-        Assert.IsType<ArgumentNullException>(timeException);
+        Assert.Equal("attempt", Assert.IsType<ArgumentNullException>(exception).ParamName);
     }
 
     [Fact]
@@ -102,6 +157,19 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
 
         // Assert
         Assert.Null(denied);
+    }
+
+    [Fact]
+    public async Task RecordLoginSuccessAsync_NullAttempt_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var service = GetService<AuthService>();
+
+        // Act
+        var exception = await Record.ExceptionAsync(() => service.RecordLoginSuccessAsync(null!));
+
+        // Assert
+        Assert.Equal("attempt", Assert.IsType<ArgumentNullException>(exception).ParamName);
     }
 
     [Fact]
@@ -158,7 +226,7 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
                 cancellation.Cancel();
         };
 
-        var service = new AuthService(cache, TimeProvider);
+        var service = new AuthService(cache, TimeProvider, Log.CreateLogger<AuthService>());
 
         // Act
         var exception = await Record.ExceptionAsync(async () =>
@@ -242,9 +310,16 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
 
         var entry = Assert.Single(logger.Entries);
         Assert.Equal(LogLevel.Error, entry.Level);
-        Assert.Null(entry.Exception);
-        Assert.Contains(cancelled ? nameof(OperationCanceledException) : nameof(InvalidOperationException), entry.Message);
-        Assert.Contains(nameof(IOException), entry.Message);
+        var cleanupException = Assert.IsType<AggregateException>(entry.Exception);
+        Assert.Equal(cancelled ? 2 : 1, cleanupException.InnerExceptions.Count);
+        Assert.All(cleanupException.InnerExceptions, failure =>
+        {
+            Assert.Equal(typeof(IOException).FullName, failure.Data["ExceptionType"]);
+            Assert.NotNull(failure.StackTrace);
+            Assert.Null(failure.InnerException);
+            Assert.DoesNotContain("sensitive", failure.ToString());
+        });
+
         Assert.DoesNotContain("sensitive", entry.Message);
         Assert.DoesNotContain("user@exceptionless.test", entry.Message);
         Assert.DoesNotContain("192.0.2.1", entry.Message);
@@ -257,7 +332,7 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     {
         // Arrange
         var first = GetService<AuthService>();
-        var second = new AuthService(GetService<ICacheClient>(), TimeProvider);
+        var second = new AuthService(GetService<ICacheClient>(), TimeProvider, Log.CreateLogger<AuthService>());
 
         // Act
         var attempts = await Task.WhenAll(Enumerable.Range(0, 100).Select(index =>
@@ -344,7 +419,7 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
                 throw failure;
         };
 
-        var service = new AuthService(cache, TimeProvider);
+        var service = new AuthService(cache, TimeProvider, Log.CreateLogger<AuthService>());
 
         // Act
         var exception = await Record.ExceptionAsync(async () =>

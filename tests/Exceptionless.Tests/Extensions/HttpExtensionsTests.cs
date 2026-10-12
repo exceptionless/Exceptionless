@@ -40,10 +40,10 @@ public sealed class HttpExtensionsTests
         HttpRequest request = null!;
 
         // Act
-        var exception = Assert.Throws<ArgumentNullException>(() => HttpExtensions.GetBasicAuth(request));
+        var exception = Record.Exception(() => HttpExtensions.GetBasicAuth(request));
 
         // Assert
-        Assert.Equal("request", exception.ParamName);
+        Assert.Equal("request", Assert.IsType<ArgumentNullException>(exception).ParamName);
     }
 
     [Theory]
