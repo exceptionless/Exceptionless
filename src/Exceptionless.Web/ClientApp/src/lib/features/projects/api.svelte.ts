@@ -376,33 +376,37 @@ export function generateSampleData(request: GenerateSampleDataRequest) {
 export function getOrganizationProjectsQuery(request: GetOrganizationProjectsRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<FetchClientResponse<ViewProject[]>, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
-        onSuccess: (data: FetchClientResponse<ViewProject[]>) => {
-            data.data?.forEach((project) => {
-                queryClient.setQueryData(queryKeys.id(project.id!), project);
-            });
-        },
-        queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<ViewProject[]>(`organizations/${request.route.organizationId}/projects`, {
-                params: {
-                    ...request.params,
-                    limit: request.params?.limit ?? 1000
-                },
-                signal
-            });
+    return createQuery<FetchClientResponse<ViewProject[]>, ProblemDetails>(() => {
+        const requestEnabled = request.enabled?.() ?? true;
 
-            return response;
-        },
-        queryKey: [
-            ...queryKeys.organization(request.route.organizationId),
-            {
-                params: request.params
-            }
-        ]
-    }));
+        return {
+            enabled: () => !!accessToken.current && !!request.route.organizationId && requestEnabled,
+            onSuccess: (data: FetchClientResponse<ViewProject[]>) => {
+                data.data?.forEach((project) => {
+                    queryClient.setQueryData(queryKeys.id(project.id!), project);
+                });
+            },
+            queryClient,
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+                const client = useFetchClient();
+                const response = await client.getJSON<ViewProject[]>(`organizations/${request.route.organizationId}/projects`, {
+                    params: {
+                        ...request.params,
+                        limit: request.params?.limit ?? 1000
+                    },
+                    signal
+                });
+
+                return response;
+            },
+            queryKey: [
+                ...queryKeys.organization(request.route.organizationId),
+                {
+                    params: request.params
+                }
+            ]
+        };
+    });
 }
 
 export function getProjectConfig(request: GetProjectConfigRequest) {
