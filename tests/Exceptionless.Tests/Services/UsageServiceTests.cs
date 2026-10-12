@@ -363,8 +363,8 @@ public sealed class UsageServiceTests : IntegrationTestsBase
             PlanId = _plans.MediumPlan.Id
         }, options => options.ImmediateConsistency().Cache());
         var repository = new Mock<IOrganizationRepository>(MockBehavior.Strict);
-        repository.Setup(repository => repository.GetByIdAsync(organization.Id, (CommandOptionsDescriptor<Organization>?)null))
-            .Returns((Id id, CommandOptionsDescriptor<Organization>? options) => _organizationRepository.GetByIdAsync(id, options));
+        repository.Setup(repository => repository.GetByIdAsync(organization.Id, (ICommandOptions?)null))
+            .Returns((Id id, ICommandOptions? options) => _organizationRepository.GetByIdAsync(id, options));
         int saveAttempts = 0;
         repository.Setup(repository => repository.SaveAsync(It.Is<Organization>(document => document.Id == organization.Id), It.IsAny<CommandOptionsDescriptor<Organization>>()))
             .Returns((Organization document, CommandOptionsDescriptor<Organization>? options) =>
