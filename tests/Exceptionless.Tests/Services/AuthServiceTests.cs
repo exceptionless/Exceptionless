@@ -139,7 +139,7 @@ public sealed class AuthServiceTests : TestWithServices
         // Assert
         Assert.Same(requestFailure, exception);
         Assert.All(ipAttempts, Assert.NotNull);
-        var entry = Assert.Single(Log.LogEntries.Where(entry => entry.LogLevel == LogLevel.Error));
+        var entry = Assert.Single(Log.LogEntries, entry => entry.LogLevel == LogLevel.Error);
         Assert.Same(cleanupFailure, entry.Exception);
         Assert.Equal($"Error releasing login admission reservation: {cleanupFailure.Message}", entry.Message);
     }
@@ -427,10 +427,10 @@ public sealed class AuthServiceTests : TestWithServices
         var service = GetService<AuthService>();
 
         // Act
-        Func<Task> begin = () => service.TryBeginLoginAsync(EmailAddress, null, cancellation.Token);
+        var exception = await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            service.TryBeginLoginAsync(EmailAddress, null, cancellation.Token));
 
         // Assert
-        var exception = await Assert.ThrowsAsync<OperationCanceledException>(begin);
         Assert.Equal(cancellation.Token, exception.CancellationToken);
     }
 
@@ -577,12 +577,11 @@ public sealed class AuthServiceTests : TestWithServices
         var service = GetService<AuthService>();
 
         // Act
-        Func<Task> begin = () => service.TryBeginLoginAsync(email!, null, TestCancellationToken);
-        Func<Task> clear = () => service.ClearUserLoginAttemptsAsync(email!);
+        var beginException = await Assert.ThrowsAnyAsync<ArgumentException>(() =>
+            service.TryBeginLoginAsync(email!, null, TestCancellationToken));
+        var clearException = await Assert.ThrowsAnyAsync<ArgumentException>(() => service.ClearUserLoginAttemptsAsync(email!));
 
         // Assert
-        var beginException = await Assert.ThrowsAnyAsync<ArgumentException>(begin);
-        var clearException = await Assert.ThrowsAnyAsync<ArgumentException>(clear);
         Assert.Equal("emailAddress", beginException.ParamName);
         Assert.Equal("emailAddress", clearException.ParamName);
     }
@@ -596,10 +595,10 @@ public sealed class AuthServiceTests : TestWithServices
         var service = GetService<AuthService>();
 
         // Act
-        Func<Task> begin = () => service.TryBeginLoginAsync(EmailAddress, ipAddress, TestCancellationToken);
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            service.TryBeginLoginAsync(EmailAddress, ipAddress, TestCancellationToken));
 
         // Assert
-        var exception = await Assert.ThrowsAsync<ArgumentException>(begin);
         Assert.Equal("ipAddress", exception.ParamName);
     }
 
@@ -881,7 +880,10 @@ public sealed class AuthServiceTests : TestWithServices
         finally
         {
             await cancellation.CancelAsync();
-            await Record.ExceptionAsync(() => Task.WhenAll(waiters.Append(excess)).WaitAsync(TestTimeout, TestCancellationToken));
+            await Record.ExceptionAsync(async () =>
+            {
+                _ = await Task.WhenAll(waiters.Append(excess)).WaitAsync(TestTimeout, TestCancellationToken);
+            });
             await DisposeAttemptsAsync(occupied);
         }
     }
@@ -962,7 +964,10 @@ public sealed class AuthServiceTests : TestWithServices
             rejectReads = false;
             await cancellation.CancelAsync();
             await retryCancellation.CancelAsync();
-            await Record.ExceptionAsync(() => Task.WhenAll(waiters.Concat(retries).Append(excess)).WaitAsync(TestTimeout, TestCancellationToken));
+            await Record.ExceptionAsync(async () =>
+            {
+                _ = await Task.WhenAll(waiters.Concat(retries).Append(excess)).WaitAsync(TestTimeout, TestCancellationToken);
+            });
             await DisposeAttemptsAsync(occupied);
         }
 
