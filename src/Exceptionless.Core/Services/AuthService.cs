@@ -13,6 +13,8 @@ public sealed class AuthService
     private const int UserFailureLimit = 5;
     private const int IpAddressFailureLimit = 15;
     private static readonly TimeSpan AttemptWindow = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan AdmissionWaitTimeout = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan AdmissionRetryDelay = TimeSpan.FromMilliseconds(50);
     private static readonly ConditionalWeakTable<ICacheClient, SemaphoreSlim> InMemoryMutationLocks = new();
     private readonly ScopedCacheClient _cache;
     private readonly SemaphoreSlim? _inMemoryMutationLock;
@@ -40,6 +42,53 @@ public sealed class AuthService
     }
 
     public async Task<LoginAttempt?> TryBeginLoginAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken = default)
+        => (await TryBeginLoginCoreAsync(emailAddress, ipAddress, cancellationToken)).Attempt;
+
+    /// <summary>
+    /// Allows a short Basic-password burst to wait for pending checks instead of failing immediately.
+    /// Completed failures still deny admission. Contention retries share a two-second budget, observe
+    /// cancellation, and never hold a user reservation while waiting for IP capacity. In-flight cache
+    /// operations remain subject to the provider's own timeout.
+    /// </summary>
+    public async Task<LoginAttempt?> WaitForLoginAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken = default)
+    {
+        long started = _timeProvider.GetTimestamp();
+        var result = await TryBeginLoginCoreAsync(emailAddress, ipAddress, cancellationToken);
+        while (result.Attempt is null && result.BlockedCacheKeys is not null)
+        {
+            if (!await WaitForAvailableSlotAsync(result.BlockedCacheKeys, started, cancellationToken))
+                return null;
+
+            result = await TryBeginLoginCoreAsync(emailAddress, ipAddress, cancellationToken);
+        }
+
+        return result.Attempt;
+    }
+
+    private async Task<bool> WaitForAvailableSlotAsync(string[] cacheKeys, long started, CancellationToken cancellationToken)
+    {
+        while (_timeProvider.GetElapsedTime(started) < AdmissionWaitTimeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var entries = await _cache.GetAllAsync<string>(cacheKeys);
+            var remaining = AdmissionWaitTimeout - _timeProvider.GetElapsedTime(started);
+            if (remaining <= TimeSpan.Zero)
+                return false;
+
+            if (cacheKeys.Any(key => !entries.TryGetValue(key, out var value) || !value.HasValue))
+                return true;
+
+            if (!entries.Values.Any(value => value.HasValue && value.Value.StartsWith("pending:", StringComparison.Ordinal)))
+                return false;
+
+            // Poll reads only while saturated; do not repeatedly probe every occupied slot with writes.
+            await Task.Delay(remaining < AdmissionRetryDelay ? remaining : AdmissionRetryDelay, _timeProvider, cancellationToken);
+        }
+
+        return false;
+    }
+
+    private async Task<(LoginAttempt? Attempt, string[]? BlockedCacheKeys)> TryBeginLoginCoreAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(emailAddress);
 
@@ -57,19 +106,20 @@ public sealed class AuthService
         var reservedCacheKeys = new List<string>(2);
         try
         {
-            string? userCacheKey = await ReserveCacheKeyAsync(userCacheKeys, reservation, expiresUtc);
+            string? userCacheKey = await ReserveCacheKeyAsync(userCacheKeys, reservation, expiresUtc, cancellationToken);
             if (userCacheKey is null)
-                return null;
+                return (null, userCacheKeys);
 
             reservedCacheKeys.Add(userCacheKey);
 
             if (ipAddress is not null)
             {
-                string? ipAddressCacheKey = await ReserveCacheKeyAsync(GetIpAddressCacheKeys(ipAddress, expiresUtc), reservation, expiresUtc);
+                string[] ipCacheKeys = GetIpAddressCacheKeys(ipAddress, expiresUtc);
+                string? ipAddressCacheKey = await ReserveCacheKeyAsync(ipCacheKeys, reservation, expiresUtc, cancellationToken);
                 if (ipAddressCacheKey is null)
                 {
                     await ReleaseCacheKeysAsync(reservedCacheKeys, reservation);
-                    return null;
+                    return (null, ipCacheKeys);
                 }
 
                 reservedCacheKeys.Add(ipAddressCacheKey);
@@ -79,7 +129,7 @@ public sealed class AuthService
 
             string[] cacheKeys = reservedCacheKeys.ToArray();
 
-            return new LoginAttempt(expiresUtc, cacheKeys, reservation, observedFailures, () => ReleaseCacheKeysAsync(cacheKeys, reservation));
+            return (new LoginAttempt(expiresUtc, cacheKeys, reservation, observedFailures, () => ReleaseCacheKeysAsync(cacheKeys, reservation)), null);
         }
         catch
         {
@@ -134,11 +184,12 @@ public sealed class AuthService
     /// <param name="cacheKeys">The entries belonging to one user's or IP address's admission budget.</param>
     /// <param name="reservation">The unique value used to conditionally release or charge the entry.</param>
     /// <param name="expiresUtc">The expiration captured before reserving either admission budget.</param>
+    /// <param name="cancellationToken">Cancellation while acquiring admission, but not while releasing it.</param>
     /// <returns>The reserved cache key, or <see langword="null"/> when the admission budget is exhausted.</returns>
-    private async Task<string?> ReserveCacheKeyAsync(string[] cacheKeys, string reservation, DateTime expiresUtc)
+    private async Task<string?> ReserveCacheKeyAsync(string[] cacheKeys, string reservation, DateTime expiresUtc, CancellationToken cancellationToken)
     {
         foreach (string cacheKey in cacheKeys)
-            if (await AddAsync(cacheKey, reservation, expiresUtc))
+            if (await AddAsync(cacheKey, reservation, expiresUtc, cancellationToken))
                 return cacheKey;
 
         return null;
@@ -166,8 +217,8 @@ public sealed class AuthService
     private Task RemoveFailuresAsync(IEnumerable<KeyValuePair<string, string>> failures)
         => Task.WhenAll(failures.Select(failure => RemoveIfEqualAsync(failure.Key, failure.Value)));
 
-    private Task<bool> AddAsync(string cacheKey, string value, DateTime expiresUtc)
-        => ExecuteInMemoryMutationAsync(() => _cache.AddAsync(cacheKey, value, expiresUtc));
+    private Task<bool> AddAsync(string cacheKey, string value, DateTime expiresUtc, CancellationToken cancellationToken)
+        => ExecuteInMemoryMutationAsync(() => _cache.AddAsync(cacheKey, value, expiresUtc), cancellationToken);
 
     private Task<bool> ReplaceIfEqualAsync(string cacheKey, string value, string expected, TimeSpan expiresIn)
     {
@@ -195,12 +246,13 @@ public sealed class AuthService
         });
     }
 
-    private async Task<T> ExecuteInMemoryMutationAsync<T>(Func<Task<T>> action)
+    private async Task<T> ExecuteInMemoryMutationAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (_inMemoryMutationLock is null)
             return await action();
 
-        await _inMemoryMutationLock.WaitAsync();
+        await _inMemoryMutationLock.WaitAsync(cancellationToken);
         try
         {
             return await action();
