@@ -172,14 +172,14 @@ public sealed class AuthService
             await ReleaseAsync(attempt.Reservations, attempt.ExpiresUtc, clearFailures: true);
     }
 
-    public async Task ClearUserLoginAttemptsAsync(string emailAddress)
+    public Task ClearUserLoginAttemptsAsync(string emailAddress)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(emailAddress);
 
         var expiresUtc = GetWindowExpiration();
         string key = GetUserCacheKey(emailAddress, expiresUtc);
         LoginState? observed = null;
-        await TryUpdateAttemptsAsync(key, expiresUtc, current =>
+        return TryUpdateAttemptsAsync(key, expiresUtc, current =>
         {
             // Fix the first snapshot so retries cannot erase newer failures.
             observed ??= current;
