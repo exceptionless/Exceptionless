@@ -164,7 +164,7 @@ public sealed class AuthServiceRedisTests(ITestOutputHelper output, AuthServiceR
         }
     }
 
-    public sealed class RedisFixture : IAsyncLifetime
+    public sealed class RedisFixture : Xunit.IAsyncLifetime
     {
         private DistributedApplication? _app;
 
