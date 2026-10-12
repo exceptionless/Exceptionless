@@ -8,22 +8,6 @@ title: "Upgrading"
 
 **If you are upgrading from v1 or [v2](https://github.com/exceptionless/Exceptionless/releases/tag/v2.0.0) you will need to upgrade to [v3.0](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) before upgrading to the latest release.**
 
-## Introducing shared password-login admission
-
-When first deploying a build containing [PR #2601](https://github.com/exceptionless/Exceptionless/pull/2601), coordinate the cutover of all HTTP/API instances. Interactive login and Basic username/password authentication now share five per-user and fifteen per-IP slots for pending checks and completed failures in each fixed fifteen-minute window. Successful requests release their reservations; API-key and Bearer authentication do not use this budget.
-
-The old interactive-login counters and the new admission slots use different cache keys. A mixed deployment has separate failure budgets, and old instances still allow Basic password authentication without this limiter. A normal rolling update therefore does not provide one admission budget throughout the transition.
-
-1. Stop routing new requests to the old HTTP/API instances and allow their in-flight requests to drain.
-2. Stop the old instances before routing requests to the upgraded instances. Keep the same shared Redis connection and cache scope on all upgraded instances. This coordinated cutover can require a brief interruption of API traffic.
-3. Treat the transition as a one-time reset of transient login-failure counts. Leave the old keys to expire naturally within their existing fifteen-minute window; no cache flush or persisted user-data migration is needed.
-
-Use the same coordinated cutover when rolling back. Password recovery on an upgraded instance does not clear an old instance's counters, and rolling back restores the old Basic-auth behavior.
-
-Basic password requests can retry pending admission for up to two seconds, with at most 100 retrying callers per application instance. Excess waiters are denied immediately; requests with available admission can still proceed. This bounds retry work, not all incoming requests or the duration of cache operations, which retain their provider timeouts.
-
-The change runs on the existing Foundatio packages. [Issue #2655](https://github.com/exceptionless/Exceptionless/issues/2655) tracks the later package upgrade and removal of the in-memory synchronization workaround after the upstream fix is released and verified.
-
 ## Upgrading from v7.1 to v8
 
 We simplified the self hosting process by integrating the UI into the existing app images. As such `exceptionless/ui` docker images are deprecated and we recommend using `exceptionless/app`.

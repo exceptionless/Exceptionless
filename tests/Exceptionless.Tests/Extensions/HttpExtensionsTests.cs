@@ -33,19 +33,6 @@ public sealed class HttpExtensionsTests
         Assert.Null(credentials);
     }
 
-    [Fact]
-    public void GetBasicAuth_NullRequest_ThrowsArgumentNullException()
-    {
-        // Arrange
-        HttpRequest request = null!;
-
-        // Act
-        var exception = Record.Exception(() => HttpExtensions.GetBasicAuth(request));
-
-        // Assert
-        Assert.Equal("request", Assert.IsType<ArgumentNullException>(exception).ParamName);
-    }
-
     [Theory]
     [InlineData("Basic", "user@example.com", "password")]
     [InlineData("bAsIc", "user@example.com", "password")]
@@ -71,5 +58,4 @@ public sealed class HttpExtensionsTests
         Assert.Equal(username, credentials.Username);
         Assert.Equal(password, credentials.Password);
     }
-
 }

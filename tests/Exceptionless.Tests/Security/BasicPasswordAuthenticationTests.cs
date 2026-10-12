@@ -1,23 +1,19 @@
-using System.Collections.Concurrent;
 using System.Net;
 using System.Text;
 using System.Text.Encodings.Web;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
-using Exceptionless.Core.Validation;
 using Exceptionless.Web.Security;
 using Foundatio.Caching;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
+using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Security;
@@ -39,33 +35,32 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
         // Arrange
         var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
         using var cache = new InMemoryCacheClient(options => options.TimeProvider(clock));
-        var service = new AuthService(cache, clock, NullLogger<AuthService>.Instance);
-        using var repository = CreateUserRepository();
+        var service = new AuthService(cache, clock, Log);
+        var repository = new Mock<IUserRepository>();
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         string passwordHash = Password.ToSaltedHash(Salt);
-        int lookups = 0;
         int requestCount = limit + 1;
-        repository.Lookup = async email =>
-        {
-            Interlocked.Increment(ref lookups);
-            await release.Task.WaitAsync(TestTimeout, TestCancellationToken);
-            return new User
+        repository.Setup(repository => repository.GetByEmailAddressAsync(It.IsAny<string>()))
+            .Returns(async (string email) =>
             {
-                Id = "123456789012345678901234",
-                EmailAddress = email,
-                FullName = "Admission Test User",
-                IsEmailAddressVerified = true,
-                Password = passwordHash,
-                Salt = Salt,
-                Roles = new HashSet<string> { AuthorizationRoles.User }
-            };
-        };
+                await release.Task.WaitAsync(TestTimeout, TestCancellationToken);
+                return new User
+                {
+                    Id = "123456789012345678901234",
+                    EmailAddress = email,
+                    FullName = "Admission Test User",
+                    IsEmailAddressVerified = true,
+                    Password = passwordHash,
+                    Salt = Salt,
+                    Roles = new HashSet<string> { AuthorizationRoles.User }
+                };
+            });
 
         // Act
         var requests = Enumerable.Range(0, requestCount).Select(index => AuthenticateAsync(
             differentUsers ? $"user{index}@exceptionless.test" : EmailAddress,
-            validPassword ? Password : "wrong-password", repository, service, cache, clock, TestCancellationToken)).ToArray();
-        int initiallyAdmitted = Volatile.Read(ref lookups);
+            validPassword ? Password : "wrong-password", repository.Object, service, cache, clock, TestCancellationToken)).ToArray();
+        int initiallyAdmitted = repository.Invocations.Count;
         bool allWaiting = requests.All(request => !request.IsCompleted);
         release.TrySetResult();
         await Task.WhenAll(requests.Take(limit)).WaitAsync(TestTimeout, TestCancellationToken);
@@ -78,7 +73,8 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
         Assert.Equal(limit, initiallyAdmitted);
         Assert.True(allWaiting);
         Assert.All(results, result => Assert.Equal(validPassword, result.Succeeded));
-        Assert.Equal(validPassword ? requestCount : limit, Volatile.Read(ref lookups));
+        repository.Verify(repository => repository.GetByEmailAddressAsync(It.IsAny<string>()), Times.Exactly(validPassword ? requestCount : limit));
+        repository.VerifyNoOtherCalls();
     }
 
     [Theory]
@@ -89,29 +85,35 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
     public async Task AuthenticateAsync_RepositoryException_LogsUnexpectedFailureAndReleasesAdmission(bool cancellationException, bool cancelRequest, int expectedErrors)
     {
         // Arrange
-        using var cache = new InMemoryCacheClient();
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
+        using var cache = new InMemoryCacheClient(options => options.TimeProvider(clock));
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        using var logger = new CapturingLoggerFactory();
-        var service = new AuthService(cache, System.TimeProvider.System, NullLogger<AuthService>.Instance);
-        using var repository = CreateUserRepository();
+        var service = new AuthService(cache, clock, Log);
+        var repository = new Mock<IUserRepository>();
         Exception failure = cancellationException ? new OperationCanceledException(cancellation.Token) : new IOException("Synthetic repository failure.");
-        repository.Lookup = _ =>
-        {
-            if (cancelRequest)
-                cancellation.Cancel();
-
-            return Task.FromException<User?>(failure);
-        };
+        repository.Setup(repository => repository.GetByEmailAddressAsync(EmailAddress))
+            .Callback(() =>
+            {
+                if (cancelRequest)
+                    cancellation.Cancel();
+            })
+            .ThrowsAsync(failure);
 
         // Act
-        var result = await AuthenticateAsync(EmailAddress, Password, repository, service, cache, System.TimeProvider.System, cancellation.Token, logger);
+        var result = await AuthenticateAsync(EmailAddress, Password, repository.Object, service, cache, clock, cancellation.Token);
+        var attempts = await Task.WhenAll(Enumerable.Range(0, 15).Select(index => service.TryBeginLoginAsync(
+            index < 5 ? EmailAddress : $"other{index}@exceptionless.test", "192.0.2.1", TestCancellationToken)));
+        await Task.WhenAll(attempts.OfType<AuthService.LoginAttempt>().Select(attempt => attempt.DisposeAsync().AsTask()));
 
         // Assert
         Assert.Same(failure, result.Failure);
         Assert.False(result.Succeeded);
-        Assert.Empty(cache.Keys);
-        Assert.Equal(expectedErrors, logger.Errors.Count);
-        Assert.All(logger.Errors, exception => Assert.Same(failure, exception));
+        Assert.All(attempts, Assert.NotNull);
+        var errors = Log.LogEntries.Where(entry => entry.CategoryName == typeof(ApiKeyAuthenticationHandler).FullName && entry.LogLevel >= LogLevel.Error).ToArray();
+        Assert.Equal(expectedErrors, errors.Length);
+        Assert.All(errors, entry => Assert.Same(failure, entry.Exception));
+        repository.Verify(repository => repository.GetByEmailAddressAsync(EmailAddress), Times.Once);
+        repository.VerifyNoOtherCalls();
     }
 
     protected override void RegisterServices(IServiceCollection services, AppOptions options)
@@ -121,12 +123,13 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
     }
 
     private async Task<AuthenticateResult> AuthenticateAsync(string emailAddress, string password, IUserRepository repository, AuthService service,
-        ICacheClient cache, TimeProvider clock, CancellationToken cancellationToken, ILoggerFactory? logger = null)
+        ICacheClient cache, TimeProvider clock, CancellationToken cancellationToken)
     {
+        var options = new Mock<IOptionsMonitor<ApiKeyAuthenticationOptions>>();
+        options.Setup(monitor => monitor.Get(It.IsAny<string>())).Returns(new ApiKeyAuthenticationOptions());
         var handler = new ApiKeyAuthenticationHandler(
             GetService<ITokenRepository>(), GetService<IOAuthTokenRepository>(), cache, service, repository,
-            GetService<OAuthService>(), GetService<AppOptions>(), new TestOptionsMonitor(), clock,
-            logger ?? NullLoggerFactory.Instance, UrlEncoder.Default);
+            GetService<OAuthService>(), GetService<AppOptions>(), options.Object, clock, Log, UrlEncoder.Default);
         var context = new DefaultHttpContext
         {
             RequestServices = GetService<IServiceProvider>(),
@@ -137,39 +140,5 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
         context.Request.Headers.Authorization = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{emailAddress}:{password}"));
         await handler.InitializeAsync(new AuthenticationScheme(ApiKeyAuthenticationOptions.ApiKeySchema, null, typeof(ApiKeyAuthenticationHandler)), context);
         return await handler.AuthenticateAsync();
-    }
-
-    private TestUserRepository CreateUserRepository()
-        => new(GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), GetService<AppOptions>());
-
-    private sealed class CapturingLoggerFactory : ILoggerFactory, ILogger
-    {
-        public ConcurrentQueue<Exception?> Errors { get; } = new();
-        public void AddProvider(ILoggerProvider provider) { }
-        public ILogger CreateLogger(string categoryName) => this;
-        public void Dispose() { }
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-        public bool IsEnabled(LogLevel logLevel) => true;
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-        {
-            if (logLevel >= LogLevel.Error)
-                Errors.Enqueue(exception);
-        }
-    }
-
-    private sealed class TestOptionsMonitor : IOptionsMonitor<ApiKeyAuthenticationOptions>
-    {
-        public ApiKeyAuthenticationOptions CurrentValue { get; } = new();
-        public ApiKeyAuthenticationOptions Get(string? name) => CurrentValue;
-        public IDisposable? OnChange(Action<ApiKeyAuthenticationOptions, string?> listener) => null;
-    }
-
-    private sealed class TestUserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
-        : UserRepository(configuration, validator, options), IUserRepository
-    {
-        public Func<string, Task<User?>> Lookup { get; set; } = null!;
-
-        Task<User?> IUserRepository.GetByEmailAddressAsync(string emailAddress) => Lookup(emailAddress);
     }
 }

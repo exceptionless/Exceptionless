@@ -20,15 +20,6 @@ const int DefaultApiHttpsPort = 7111;
 string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.dev.localhost:{DefaultApiHttpsPort}";
 const string SharedEmailConnectionString = "smtp://localhost:1026";
 
-// Cache coordination tests need an isolated Redis instance without the application stack.
-if (HasArgument("--test-redis"))
-{
-    builder.AddRedis("Redis")
-        .WithImageTag("8.6");
-    await builder.Build().RunAsync();
-    return;
-}
-
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
     // Increment the volume version for breaking data changes and preserve the previous volume.
     .WithDataVolume("exceptionless.data.v2")

@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
@@ -13,65 +12,51 @@ public sealed class AuthService
     private const int UserFailureLimit = 5;
     private const int IpAddressFailureLimit = 15;
     private const int MaximumAdmissionWaiters = 100;
+    private const int MaximumUpdateAttempts = 8;
     private static readonly TimeSpan AttemptWindow = TimeSpan.FromMinutes(15);
     private static readonly TimeSpan AdmissionWaitTimeout = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan AdmissionRetryDelay = TimeSpan.FromMilliseconds(50);
-    private static readonly ConditionalWeakTable<ICacheClient, SemaphoreSlim> InMemoryMutationLocks = new();
-    private readonly ScopedCacheClient _cache;
-    private readonly SemaphoreSlim? _inMemoryMutationLock;
-    private readonly ILogger<AuthService> _logger;
+    private readonly ICacheClient _cache;
+    private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
     private int _admissionWaiters;
 
-    public AuthService(ICacheClient cacheClient, TimeProvider timeProvider, ILogger<AuthService> logger)
+    public AuthService(ICacheClient cacheClient, TimeProvider timeProvider, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(cacheClient);
         ArgumentNullException.ThrowIfNull(timeProvider);
-        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(loggerFactory);
 
         _cache = new ScopedCacheClient(cacheClient, "Auth");
-
-        // Foundatio 13.0.4's in-memory conditional mutations are not atomic.
-        // TODO: Remove after the verified upgrade in https://github.com/exceptionless/Exceptionless/issues/2655.
-        // Scope wrappers must share the underlying cache's lock; Redis uses its own atomic
-        // operations. This lock never covers repository access or password hashing.
-        while (cacheClient is ScopedCacheClient scopedCache)
-            cacheClient = scopedCache.UnscopedCache;
-
-        _inMemoryMutationLock = cacheClient is InMemoryCacheClient ? InMemoryMutationLocks.GetValue(cacheClient, _ => new SemaphoreSlim(1, 1)) : null;
         _timeProvider = timeProvider;
-        _logger = logger;
+        _logger = loggerFactory.CreateLogger<AuthService>();
     }
 
     public async Task<LoginAttempt?> TryBeginLoginAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken = default)
         => (await TryBeginLoginCoreAsync(emailAddress, ipAddress, cancellationToken)).Attempt;
 
     /// <summary>
-    /// Allows a short Basic-password burst to wait for pending checks instead of failing immediately.
-    /// Completed failures still deny admission. Contention retries share a two-second budget, observe
-    /// cancellation, and never hold a user reservation while waiting for IP capacity. At most 100
-    /// callers can retry at once per service instance. In-flight cache operations remain subject
-    /// to the provider's own timeout.
+    /// Lets Basic-password callers retry pending checks for up to two seconds, with at most
+    /// 100 waiters per service instance. Completed failures deny admission immediately.
+    /// In-flight cache operations remain subject to the provider's own timeout.
     /// </summary>
     public async Task<LoginAttempt?> WaitForLoginAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken = default)
     {
         long started = _timeProvider.GetTimestamp();
         long lastAttempt = started;
         var result = await TryBeginLoginCoreAsync(emailAddress, ipAddress, cancellationToken);
-        if (result.Attempt is not null || result.BlockedCacheKeys is null)
+        if (result.Attempt is not null || result.BlockedBudget is null)
             return result.Attempt;
 
-        // AuthService is a singleton. Bound polling and retained waiters during contention
-        // without denying unrelated callers whose first admission attempt succeeds.
         int waiters = Interlocked.Increment(ref _admissionWaiters);
         try
         {
             if (waiters > MaximumAdmissionWaiters)
                 return null;
 
-            while (result.Attempt is null && result.BlockedCacheKeys is not null)
+            while (result.Attempt is null && result.BlockedBudget is not null)
             {
-                if (!await WaitForAvailableSlotAsync(result.BlockedCacheKeys, started, lastAttempt, cancellationToken))
+                if (!await WaitForCapacityAsync(result.BlockedBudget.Value, started, lastAttempt, cancellationToken))
                     return null;
 
                 lastAttempt = _timeProvider.GetTimestamp();
@@ -93,21 +78,20 @@ public sealed class AuthService
         }
     }
 
-    private async Task<bool> WaitForAvailableSlotAsync(string[] cacheKeys, long started, long lastAttempt, CancellationToken cancellationToken)
+    private async Task<bool> WaitForCapacityAsync((string Key, int Limit) budget, long started, long lastAttempt, CancellationToken cancellationToken)
     {
         while (_timeProvider.GetElapsedTime(started) < AdmissionWaitTimeout)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var entries = await _cache.GetAllAsync<string>(cacheKeys);
+            var entry = await _cache.GetAsync<LoginState>(budget.Key);
             cancellationToken.ThrowIfCancellationRequested();
             var remaining = AdmissionWaitTimeout - _timeProvider.GetElapsedTime(started);
             if (remaining <= TimeSpan.Zero)
                 return false;
 
-            if (cacheKeys.Any(key => !entries.TryGetValue(key, out var value) || !value.HasValue))
+            if (!entry.HasValue || entry.Value.Pending + entry.Value.TotalFailures - entry.Value.ClearedFailures < budget.Limit)
             {
-                // A rejected write does not guarantee the slot is occupied. Pace retries
-                // even when reads report space, avoiding a write loop on provider rejection.
+                // A conflicting write can leave capacity available. Pace admission retries too.
                 var delay = AdmissionRetryDelay - _timeProvider.GetElapsedTime(lastAttempt);
                 if (delay > TimeSpan.Zero)
                     await Task.Delay(remaining < delay ? remaining : delay, _timeProvider, cancellationToken);
@@ -116,63 +100,52 @@ public sealed class AuthService
                 return _timeProvider.GetElapsedTime(started) < AdmissionWaitTimeout;
             }
 
-            if (!entries.Values.Any(value => value.HasValue && value.Value.StartsWith("pending:", StringComparison.Ordinal)))
+            if (entry.Value.Pending == 0)
                 return false;
 
-            // Poll reads only while saturated; do not repeatedly probe every occupied slot with writes.
             await Task.Delay(remaining < AdmissionRetryDelay ? remaining : AdmissionRetryDelay, _timeProvider, cancellationToken);
         }
 
         return false;
     }
 
-    private async Task<(LoginAttempt? Attempt, string[]? BlockedCacheKeys)> TryBeginLoginCoreAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken)
+    private async Task<(LoginAttempt? Attempt, (string Key, int Limit)? BlockedBudget)> TryBeginLoginCoreAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(emailAddress);
-
         if (ipAddress is not null)
             ArgumentException.ThrowIfNullOrWhiteSpace(ipAddress);
 
         cancellationToken.ThrowIfCancellationRequested();
-
         var expiresUtc = GetWindowExpiration();
-        string[] userCacheKeys = GetUserCacheKeys(emailAddress, expiresUtc);
-        var failures = await _cache.GetAllAsync<string>(userCacheKeys);
-        var observedFailures = failures.Where(pair => pair.Value.HasValue && pair.Value.Value.StartsWith("failed:", StringComparison.Ordinal))
-            .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.Value)).ToArray();
-        string reservation = $"pending:{Guid.NewGuid():N}";
-        var reservedCacheKeys = new List<string>(2);
+        var budgets = new List<(string Key, int Limit)>(2) { (GetUserCacheKey(emailAddress, expiresUtc), UserFailureLimit) };
+        if (ipAddress is not null)
+            budgets.Add(($"ip:{ipAddress}:attempts:{expiresUtc.Ticks}", IpAddressFailureLimit));
+
+        var reservations = new List<Reservation>(2);
         try
         {
-            string? userCacheKey = await ReserveCacheKeyAsync(userCacheKeys, reservation, expiresUtc, cancellationToken);
-            if (userCacheKey is null)
-                return (null, userCacheKeys);
-
-            reservedCacheKeys.Add(userCacheKey);
-
-            if (ipAddress is not null)
+            foreach (var budget in budgets)
             {
-                string[] ipCacheKeys = GetIpAddressCacheKeys(ipAddress, expiresUtc);
-                string? ipAddressCacheKey = await ReserveCacheKeyAsync(ipCacheKeys, reservation, expiresUtc, cancellationToken);
-                if (ipAddressCacheKey is null)
+                var state = await TryUpdateAttemptsAsync(budget.Key, expiresUtc, current =>
+                    current.Pending + current.TotalFailures - current.ClearedFailures < budget.Limit
+                        ? current with { Pending = current.Pending + 1 }
+                        : null, cancellationToken);
+                if (state is null)
                 {
-                    await ReleaseCacheKeysAsync(reservedCacheKeys, reservation);
-                    return (null, ipCacheKeys);
+                    await ReleaseAsync(reservations, expiresUtc);
+                    return (null, budget);
                 }
 
-                reservedCacheKeys.Add(ipAddressCacheKey);
+                // Only account successes clear failures, and only those observed at admission.
+                reservations.Add(new Reservation(budget.Key, state.Epoch, reservations.Count == 0 ? state.TotalFailures : null));
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-
-            string[] cacheKeys = reservedCacheKeys.ToArray();
-
-            return (new LoginAttempt(expiresUtc, cacheKeys, reservation, observedFailures, () => ReleaseCacheKeysAsync(cacheKeys, reservation)), null);
+            return (new LoginAttempt(this, expiresUtc, reservations.ToArray()), null);
         }
         catch
         {
-            await ReleaseCacheKeysAsync(reservedCacheKeys, reservation);
-
+            await ReleaseAsync(reservations, expiresUtc);
             throw;
         }
     }
@@ -181,69 +154,85 @@ public sealed class AuthService
     {
         ArgumentNullException.ThrowIfNull(attempt);
 
-        // Claim the outcome before cache I/O. A failed or ambiguous write must not
-        // let disposal refund a password that was already checked and found wrong.
+        // Claim the outcome before I/O: a failed or ambiguous write must remain charged.
         if (!attempt.TryComplete())
             return;
 
-        var remaining = attempt.ExpiresUtc - _timeProvider.GetUtcNow().UtcDateTime;
-        if (remaining <= TimeSpan.Zero)
-            return;
-
-        // Pending checks and completed failures share the fixed-window admission budget.
-        // Reservations expire at the boundary even if a check is still running.
-        await Task.WhenAll(attempt.CacheKeys.Select(cacheKey => ReplaceIfEqualAsync(cacheKey, $"failed:{attempt.Reservation}", attempt.Reservation, remaining)));
+        await Task.WhenAll(attempt.Reservations.Select(reservation =>
+            TryUpdateAttemptsAsync(reservation.Key, attempt.ExpiresUtc, current =>
+                current.Epoch == reservation.Epoch && current.Pending > 0
+                    ? current with { Pending = current.Pending - 1, TotalFailures = current.TotalFailures + 1 }
+                    : null)));
     }
 
     public async Task RecordLoginSuccessAsync(LoginAttempt attempt)
     {
         ArgumentNullException.ThrowIfNull(attempt);
-
-        if (!attempt.TryComplete())
-            return;
-
-        await ReleaseCacheKeysAsync(attempt.CacheKeys, attempt.Reservation);
-        await RemoveFailuresAsync(attempt.ObservedFailures);
+        if (attempt.TryComplete())
+            await ReleaseAsync(attempt.Reservations, attempt.ExpiresUtc, clearFailures: true);
     }
 
     public async Task ClearUserLoginAttemptsAsync(string emailAddress)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(emailAddress);
 
-        var failures = await _cache.GetAllAsync<string>(GetUserCacheKeys(emailAddress, GetWindowExpiration()));
-        // Recovery clears completed failures while checks underway retain admission.
-        await RemoveFailuresAsync(failures.Where(pair => pair.Value.HasValue && pair.Value.Value.StartsWith("failed:", StringComparison.Ordinal))
-            .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.Value)));
+        var expiresUtc = GetWindowExpiration();
+        string key = GetUserCacheKey(emailAddress, expiresUtc);
+        LoginState? observed = null;
+        await TryUpdateAttemptsAsync(key, expiresUtc, current =>
+        {
+            // Fix the first snapshot so retries cannot erase newer failures.
+            observed ??= current;
+            return current.Epoch == observed.Epoch && current.ClearedFailures < observed.TotalFailures
+                ? current with { ClearedFailures = observed.TotalFailures }
+                : null;
+        });
     }
 
-    /// <summary>
-    /// Atomically reserves the first available cache entry until the captured window expires.
-    /// </summary>
-    /// <param name="cacheKeys">The entries belonging to one user's or IP address's admission budget.</param>
-    /// <param name="reservation">The unique value used to conditionally release or charge the entry.</param>
-    /// <param name="expiresUtc">The expiration captured before reserving either admission budget.</param>
-    /// <param name="cancellationToken">Cancellation while acquiring admission, but not while releasing it.</param>
-    /// <returns>The reserved cache key, or <see langword="null"/> when the admission budget is exhausted.</returns>
-    private async Task<string?> ReserveCacheKeyAsync(string[] cacheKeys, string reservation, DateTime expiresUtc, CancellationToken cancellationToken)
+    private async Task<LoginState?> TryUpdateAttemptsAsync(string key, DateTime expiresUtc, Func<LoginState, LoginState?> update, CancellationToken cancellationToken = default)
     {
-        foreach (string cacheKey in cacheKeys)
-            if (await AddAsync(cacheKey, reservation, expiresUtc, cancellationToken))
-                return cacheKey;
+        // TODO: Upgrade Foundatio before merging: https://github.com/exceptionless/Exceptionless/issues/2655.
+        for (int attempt = 0; attempt < MaximumUpdateAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var entry = await _cache.GetAsync<LoginState>(key);
+            cancellationToken.ThrowIfCancellationRequested();
+            var remaining = expiresUtc - _timeProvider.GetUtcNow().UtcDateTime;
+            if (remaining <= CacheClientExtensions.MinimumExpiration)
+                return null;
 
+            var current = entry.HasValue ? entry.Value : new LoginState(Guid.NewGuid(), 0, 0, 0);
+            var updated = update(current);
+            if (updated is null)
+                return null;
+
+            bool committed = entry.HasValue
+                ? await _cache.ReplaceIfEqualAsync(key, updated, current, remaining)
+                : await _cache.AddAsync(key, updated, remaining);
+            if (committed)
+                return updated;
+        }
+
+        // Exhausted contention fails closed. Exceptions are never retried: they may have committed.
         return null;
     }
 
-    /// <summary>
-    /// Releases every entry still owned by the reservation. Cleanup failures are logged and remain
-    /// charged until expiration, so disposal cannot replace an in-flight error or cancellation.
-    /// </summary>
-    private async Task ReleaseCacheKeysAsync(IEnumerable<string> cacheKeys, string reservation)
+    private async Task ReleaseAsync(IEnumerable<Reservation> reservations, DateTime expiresUtc, bool clearFailures = false)
     {
-        foreach (string cacheKey in cacheKeys)
+        foreach (var reservation in reservations)
         {
             try
             {
-                await RemoveIfEqualAsync(cacheKey, reservation);
+                await TryUpdateAttemptsAsync(reservation.Key, expiresUtc, current =>
+                    current.Epoch == reservation.Epoch && current.Pending > 0
+                        ? current with
+                        {
+                            Pending = current.Pending - 1,
+                            ClearedFailures = clearFailures && reservation.ObservedFailures.HasValue
+                                ? Math.Max(current.ClearedFailures, reservation.ObservedFailures.Value)
+                                : current.ClearedFailures
+                        }
+                        : null);
             }
             catch (Exception ex)
             {
@@ -252,104 +241,35 @@ public sealed class AuthService
         }
     }
 
-    private Task RemoveFailuresAsync(IEnumerable<KeyValuePair<string, string>> failures)
-        => Task.WhenAll(failures.Select(failure => RemoveIfEqualAsync(failure.Key, failure.Value)));
-
-    private Task<bool> AddAsync(string cacheKey, string value, DateTime expiresUtc, CancellationToken cancellationToken)
-        => ExecuteInMemoryMutationAsync(() => _cache.AddAsync(cacheKey, value, expiresUtc), cancellationToken);
-
-    private Task<bool> ReplaceIfEqualAsync(string cacheKey, string value, string expected, TimeSpan expiresIn)
-    {
-        if (_inMemoryMutationLock is null)
-            return _cache.ReplaceIfEqualAsync(cacheKey, value, expected, expiresIn);
-
-        return ExecuteInMemoryMutationAsync(async () =>
-        {
-            var current = await _cache.GetAsync<string>(cacheKey);
-            return current.HasValue && String.Equals(current.Value, expected, StringComparison.Ordinal)
-                && await _cache.SetAsync(cacheKey, value, expiresIn);
-        });
-    }
-
-    private Task<bool> RemoveIfEqualAsync(string cacheKey, string expected)
-    {
-        if (_inMemoryMutationLock is null)
-            return _cache.RemoveIfEqualAsync(cacheKey, expected);
-
-        return ExecuteInMemoryMutationAsync(async () =>
-        {
-            var current = await _cache.GetAsync<string>(cacheKey);
-            return current.HasValue && String.Equals(current.Value, expected, StringComparison.Ordinal)
-                && await _cache.RemoveAsync(cacheKey);
-        });
-    }
-
-    private async Task<T> ExecuteInMemoryMutationAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (_inMemoryMutationLock is null)
-            return await action();
-
-        await _inMemoryMutationLock.WaitAsync(cancellationToken);
-        try
-        {
-            return await action();
-        }
-        finally
-        {
-            _inMemoryMutationLock.Release();
-        }
-    }
-
     private DateTime GetWindowExpiration() => _timeProvider.GetUtcNow().UtcDateTime.Floor(AttemptWindow).Add(AttemptWindow);
 
-    /// <summary>
-    /// Gets the user admission cache keys for the captured window, normalizing email casing and whitespace.
-    /// </summary>
-    /// <param name="emailAddress">The email identity shared by interactive and Basic password authentication.</param>
-    /// <param name="expiresUtc">The captured window expiration, also used by the IP admission budget.</param>
-    /// <returns>The five cache entries sharing the user's fixed-window admission budget.</returns>
-    private static string[] GetUserCacheKeys(string emailAddress, DateTime expiresUtc)
-    {
-        string normalizedEmailAddress = emailAddress.Trim().ToLowerInvariant();
+    private static string GetUserCacheKey(string emailAddress, DateTime expiresUtc)
+        => $"user:{emailAddress.Trim().ToLowerInvariant()}:attempts:{expiresUtc.Ticks}";
 
-        return Enumerable.Range(0, UserFailureLimit).Select(index => $"user:{normalizedEmailAddress}:attempts:{expiresUtc.Ticks}:{index}").ToArray();
-    }
+    // Keep the epoch and monotonic failure watermarks until expiration, even at zero occupancy.
+    internal sealed record LoginState(Guid Epoch, int Pending, long TotalFailures, long ClearedFailures);
+    internal sealed record Reservation(string Key, Guid Epoch, long? ObservedFailures);
 
     /// <summary>
-    /// Gets the IP admission cache keys for the same captured window as the user reservation.
-    /// </summary>
-    /// <param name="ipAddress">The client IP address supplied by the authentication caller.</param>
-    /// <param name="expiresUtc">The same captured expiration used by the user admission budget.</param>
-    /// <returns>The fifteen cache entries sharing the IP address's fixed-window admission budget.</returns>
-    private static string[] GetIpAddressCacheKeys(string ipAddress, DateTime expiresUtc)
-        => Enumerable.Range(0, IpAddressFailureLimit).Select(index => $"ip:{ipAddress}:attempts:{expiresUtc.Ticks}:{index}").ToArray();
-
-    /// <summary>
-    /// Owns one login admission reservation. Only an unfinished check is released by disposal;
-    /// a known failure remains charged until expiration even when recording its outcome fails.
+    /// Owns one admitted password check. Disposal releases only an unfinished check.
     /// </summary>
     public sealed class LoginAttempt : IAsyncDisposable
     {
-        private readonly Func<Task> _releaseAsync;
+        private readonly AuthService _owner;
         private int _completed;
 
-        internal LoginAttempt(DateTime expiresUtc, string[] cacheKeys, string reservation, KeyValuePair<string, string>[] observedFailures, Func<Task> releaseAsync)
+        internal LoginAttempt(AuthService owner, DateTime expiresUtc, Reservation[] reservations)
         {
-            _releaseAsync = releaseAsync;
+            _owner = owner;
             ExpiresUtc = expiresUtc;
-            CacheKeys = cacheKeys;
-            Reservation = reservation;
-            ObservedFailures = observedFailures;
+            Reservations = reservations;
         }
 
         internal DateTime ExpiresUtc { get; }
-        internal string[] CacheKeys { get; }
-        internal string Reservation { get; }
-        internal KeyValuePair<string, string>[] ObservedFailures { get; }
+        internal Reservation[] Reservations { get; }
 
         internal bool TryComplete() => Interlocked.CompareExchange(ref _completed, 1, 0) == 0;
 
-        public ValueTask DisposeAsync() => TryComplete() ? new(_releaseAsync()) : ValueTask.CompletedTask;
+        public ValueTask DisposeAsync() => TryComplete() ? new(_owner.ReleaseAsync(Reservations, ExpiresUtc)) : ValueTask.CompletedTask;
     }
 }
