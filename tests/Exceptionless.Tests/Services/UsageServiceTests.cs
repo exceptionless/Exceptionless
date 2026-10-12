@@ -1,12 +1,9 @@
-using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
-using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Extensions;
 using Foundatio.AsyncEx;
@@ -15,6 +12,7 @@ using Foundatio.Messaging;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Models;
+using Moq;
 using Xunit;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -364,10 +362,17 @@ public sealed class UsageServiceTests : IntegrationTestsBase
             MaxEventsPerMonth = 75_000,
             PlanId = _plans.MediumPlan.Id
         }, options => options.ImmediateConsistency().Cache());
-        using var repository = new FailOnceOrganizationSaveRepository(
-            GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), _plans, GetService<AppOptions>());
+        var repository = new Mock<IOrganizationRepository>();
+        repository.Setup(repository => repository.GetByIdAsync(organization.Id, (ICommandOptions?)null))
+            .Returns((Id id, ICommandOptions? options) => _organizationRepository.GetByIdAsync(id, options));
+        int saveAttempts = 0;
+        repository.Setup(repository => repository.SaveAsync(It.Is<Organization>(document => document.Id == organization.Id), It.IsAny<CommandOptionsDescriptor<Organization>>()))
+            .Returns((Organization document, CommandOptionsDescriptor<Organization>? options) =>
+                Interlocked.Increment(ref saveAttempts) == 1
+                    ? Task.FromException<Organization>(new InvalidOperationException("Simulated organization usage save failure."))
+                    : _organizationRepository.SaveAsync(document, options));
         var usageService = new UsageService(
-            repository,
+            repository.Object,
             _projectRepository,
             GetService<ICacheClient>(),
             GetService<IMessagePublisher>(),
@@ -391,7 +396,7 @@ public sealed class UsageServiceTests : IntegrationTestsBase
         Assert.Equal(2, usage.Turns);
         Assert.Equal(1_000, usage.PromptTokens);
         Assert.Equal(2_500, usage.CostInMicrodollars);
-        Assert.Equal(2, repository.SaveAttempts);
+        repository.Verify(repository => repository.SaveAsync(It.Is<Organization>(document => document.Id == organization.Id), It.IsAny<CommandOptionsDescriptor<Organization>>()), Times.Exactly(2));
     }
 
     [Fact]
@@ -966,23 +971,6 @@ public sealed class UsageServiceTests : IntegrationTestsBase
                 return Task.FromException(new InvalidOperationException("Simulated hourly overage publication failure."));
 
             return inner.PublishAsync(messageType, message, options, cancellationToken);
-        }
-    }
-
-    private sealed class FailOnceOrganizationSaveRepository(
-        ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, BillingPlans plans, AppOptions options)
-        : OrganizationRepository(configuration, validator, plans, options), IOrganizationRepository
-    {
-        private int _saveAttempts;
-
-        public int SaveAttempts => _saveAttempts;
-
-        Task<Organization> IRepository<Organization>.SaveAsync(Organization document, CommandOptionsDescriptor<Organization>? options)
-        {
-            if (Interlocked.Increment(ref _saveAttempts) == 1)
-                return Task.FromException<Organization>(new InvalidOperationException("Simulated organization usage save failure."));
-
-            return base.SaveAsync(document, options);
         }
     }
 }
