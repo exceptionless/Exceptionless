@@ -12,6 +12,7 @@ public sealed class AuthService
 {
     private const int UserFailureLimit = 5;
     private const int IpAddressFailureLimit = 15;
+    private const int MaximumAdmissionWaiters = 100;
     private static readonly TimeSpan AttemptWindow = TimeSpan.FromMinutes(15);
     private static readonly TimeSpan AdmissionWaitTimeout = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan AdmissionRetryDelay = TimeSpan.FromMilliseconds(50);
@@ -20,6 +21,7 @@ public sealed class AuthService
     private readonly SemaphoreSlim? _inMemoryMutationLock;
     private readonly ILogger<AuthService> _logger;
     private readonly TimeProvider _timeProvider;
+    private int _admissionWaiters;
 
     public AuthService(ICacheClient cacheClient, TimeProvider timeProvider, ILogger<AuthService> logger)
     {
@@ -29,9 +31,9 @@ public sealed class AuthService
 
         _cache = new ScopedCacheClient(cacheClient, "Auth");
 
-        // Foundatio 13.0.4's in-memory conditional mutations are not atomic. Keep this
-        // workaround until FoundatioFx/Foundatio#570 is released and verified. Scope
-        // wrappers must share the underlying cache's lock; Redis uses its own atomic
+        // Foundatio 13.0.4's in-memory conditional mutations are not atomic.
+        // TODO: Remove after the verified upgrade in https://github.com/exceptionless/Exceptionless/issues/2655.
+        // Scope wrappers must share the underlying cache's lock; Redis uses its own atomic
         // operations. This lock never covers repository access or password hashing.
         while (cacheClient is ScopedCacheClient scopedCache)
             cacheClient = scopedCache.UnscopedCache;
@@ -47,31 +49,48 @@ public sealed class AuthService
     /// <summary>
     /// Allows a short Basic-password burst to wait for pending checks instead of failing immediately.
     /// Completed failures still deny admission. Contention retries share a two-second budget, observe
-    /// cancellation, and never hold a user reservation while waiting for IP capacity. In-flight cache
-    /// operations remain subject to the provider's own timeout.
+    /// cancellation, and never hold a user reservation while waiting for IP capacity. At most 100
+    /// callers can retry at once per service instance. In-flight cache operations remain subject
+    /// to the provider's own timeout.
     /// </summary>
     public async Task<LoginAttempt?> WaitForLoginAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken = default)
     {
         long started = _timeProvider.GetTimestamp();
         long lastAttempt = started;
         var result = await TryBeginLoginCoreAsync(emailAddress, ipAddress, cancellationToken);
-        while (result.Attempt is null && result.BlockedCacheKeys is not null)
+        if (result.Attempt is not null || result.BlockedCacheKeys is null)
+            return result.Attempt;
+
+        // AuthService is a singleton. Bound polling and retained waiters during contention
+        // without denying unrelated callers whose first admission attempt succeeds.
+        int waiters = Interlocked.Increment(ref _admissionWaiters);
+        try
         {
-            if (!await WaitForAvailableSlotAsync(result.BlockedCacheKeys, started, lastAttempt, cancellationToken))
+            if (waiters > MaximumAdmissionWaiters)
                 return null;
 
-            lastAttempt = _timeProvider.GetTimestamp();
-            result = await TryBeginLoginCoreAsync(emailAddress, ipAddress, cancellationToken);
-            if (_timeProvider.GetElapsedTime(started) >= AdmissionWaitTimeout)
+            while (result.Attempt is null && result.BlockedCacheKeys is not null)
             {
-                if (result.Attempt is not null)
-                    await result.Attempt.DisposeAsync();
+                if (!await WaitForAvailableSlotAsync(result.BlockedCacheKeys, started, lastAttempt, cancellationToken))
+                    return null;
 
-                return null;
+                lastAttempt = _timeProvider.GetTimestamp();
+                result = await TryBeginLoginCoreAsync(emailAddress, ipAddress, cancellationToken);
+                if (_timeProvider.GetElapsedTime(started) >= AdmissionWaitTimeout)
+                {
+                    if (result.Attempt is not null)
+                        await result.Attempt.DisposeAsync();
+
+                    return null;
+                }
             }
-        }
 
-        return result.Attempt;
+            return result.Attempt;
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _admissionWaiters);
+        }
     }
 
     private async Task<bool> WaitForAvailableSlotAsync(string[] cacheKeys, long started, long lastAttempt, CancellationToken cancellationToken)

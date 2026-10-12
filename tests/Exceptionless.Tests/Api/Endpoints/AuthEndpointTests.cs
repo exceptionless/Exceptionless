@@ -205,7 +205,7 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task BasicPasswordLogin_ConcurrentValidRequests_DoNotConsumeFailureQuota()
+    public async Task BasicPasswordLogin_ConcurrentValidRequests_AllowSubsequentLogin()
     {
         // Arrange
         using var client = _server.CreateClient();
@@ -225,6 +225,7 @@ public class AuthEndpointTests : IntegrationTestsBase
         using var next = await client.GetAsync("api/v2/users/me", TestCancellationToken);
 
         // Assert
+        // HTTP bursts can exhaust the bounded admission wait; a later valid login must still work.
         Assert.Contains(HttpStatusCode.OK, results);
         Assert.All(results, statusCode => Assert.True(statusCode is HttpStatusCode.OK or HttpStatusCode.Unauthorized));
         Assert.Equal(HttpStatusCode.OK, next.StatusCode);

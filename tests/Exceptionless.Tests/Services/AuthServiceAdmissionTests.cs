@@ -244,6 +244,121 @@ public sealed class AuthServiceAdmissionTests
         Assert.NotNull(result);
     }
 
+    [Fact]
+    public async Task WaitForLoginAsync_WaiterLimitReached_DeniesExcessWithoutBlockingAvailableAdmission()
+    {
+        // Arrange
+        var clock = CreateTimeProvider();
+        using var cache = new AdmissionCacheClient(clock);
+        var service = CreateService(cache, clock);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        var occupied = await ReserveAsync(service, 5);
+        Assert.All(occupied, Assert.NotNull);
+        var waiters = Enumerable.Range(0, 100).Select(_ =>
+            service.WaitForLoginAsync(EmailAddress, IpAddress, cancellation.Token)).ToArray();
+        Assert.All(waiters, waiter => Assert.False(waiter.IsCompleted));
+        int reads = 0;
+        cache.AfterRead = () => Interlocked.Increment(ref reads);
+
+        // Act
+        var excess = service.WaitForLoginAsync(EmailAddress, IpAddress, cancellation.Token);
+        try
+        {
+            var denied = await excess.WaitAsync(TestTimeout, TestCancellationToken);
+            int excessReads = reads;
+            await using var unrelated = await service.WaitForLoginAsync("other@exceptionless.test", "192.0.2.2", TestCancellationToken);
+
+            // Assert
+            Assert.Null(denied);
+            Assert.Equal(1, excessReads);
+            Assert.NotNull(unrelated);
+            Assert.Equal(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero), clock.GetUtcNow());
+        }
+        finally
+        {
+            await cancellation.CancelAsync();
+            await Record.ExceptionAsync(async () => await Task.WhenAll(waiters.Append(excess)));
+            await DisposeAsync(occupied);
+        }
+    }
+
+    [Theory]
+    [InlineData("cancellation")]
+    [InlineData("deadline")]
+    [InlineData("cache failure")]
+    public async Task WaitForLoginAsync_WaitersExit_RestoresRetryCapacity(string outcome)
+    {
+        // Arrange
+        var clock = CreateTimeProvider();
+        using var cache = new AdmissionCacheClient(clock);
+        var service = CreateService(cache, clock);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        using var retryCancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        var occupied = await ReserveAsync(service, 5);
+        Assert.All(occupied, Assert.NotNull);
+        var waiters = Enumerable.Range(0, 100).Select(_ =>
+            service.WaitForLoginAsync(EmailAddress, IpAddress, cancellation.Token)).ToArray();
+        Assert.All(waiters, waiter => Assert.False(waiter.IsCompleted));
+        var failure = new IOException("Admission read failed.");
+        Task<AuthService.LoginAttempt?>[] retries = [];
+        var excess = service.WaitForLoginAsync(EmailAddress, IpAddress, cancellation.Token);
+
+        try
+        {
+            // Act
+            var denied = await excess.WaitAsync(TestTimeout, TestCancellationToken);
+            switch (outcome)
+            {
+                case "cancellation":
+                    await cancellation.CancelAsync();
+                    break;
+                case "deadline":
+                    clock.Advance(TimeSpan.FromSeconds(2));
+                    break;
+                case "cache failure":
+                    cache.AfterRead = () => throw failure;
+                    clock.Advance(TimeSpan.FromMilliseconds(50));
+                    break;
+            }
+
+            AuthService.LoginAttempt?[]? results = null;
+            var exception = await Record.ExceptionAsync(async () =>
+            {
+                results = await Task.WhenAll(waiters).WaitAsync(TestTimeout, TestCancellationToken);
+            });
+            cache.AfterRead = null;
+            retries = Enumerable.Range(0, 100).Select(_ =>
+                service.WaitForLoginAsync(EmailAddress, IpAddress, retryCancellation.Token)).ToArray();
+
+            // Assert
+            Assert.Null(denied);
+            switch (outcome)
+            {
+                case "cancellation":
+                    Assert.Equal(cancellation.Token, Assert.IsAssignableFrom<OperationCanceledException>(exception).CancellationToken);
+                    break;
+                case "deadline":
+                    Assert.Null(exception);
+                    Assert.NotNull(results);
+                    Assert.All(results, Assert.Null);
+                    break;
+                case "cache failure":
+                    Assert.Same(failure, exception);
+                    break;
+            }
+
+            Assert.All(retries, retry => Assert.False(retry.IsCompleted));
+        }
+        finally
+        {
+            cache.AfterRead = null;
+            await cancellation.CancelAsync();
+            await retryCancellation.CancelAsync();
+            await Record.ExceptionAsync(async () => await Task.WhenAll(waiters.Concat(retries).Append(excess)));
+            await DisposeAsync(occupied);
+        }
+    }
+
     private static AuthService CreateService(ICacheClient cache, TimeProvider clock)
         => new(cache, clock, NullLogger<AuthService>.Instance);
 
