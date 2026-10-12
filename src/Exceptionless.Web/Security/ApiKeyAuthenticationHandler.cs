@@ -188,6 +188,9 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         }
         catch (Exception ex)
         {
+            if (ex is not OperationCanceledException || !Context.RequestAborted.IsCancellationRequested)
+                Logger.LogError(ex, "Error retrieving user during Basic password authentication: {Message}", ex.Message);
+
             return AuthenticateResult.Fail(ex);
         }
 

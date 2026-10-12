@@ -51,9 +51,11 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task DisposeAsync_CleanupFailure_PreservesOriginalExceptionAndReleasesOtherCacheKeys(bool cancelled)
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task DisposeAsync_CleanupFailure_PreservesOriginalExceptionAndReleasesOtherCacheKeys(bool cancelled, bool asynchronousCleanupFailure)
     {
         // Arrange
         using var cache = new FaultingCacheClient(TimeProvider);
@@ -62,12 +64,15 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
         cancellation.Cancel();
         Exception failure = cancelled ? new OperationCanceledException(cancellation.Token) : new InvalidOperationException("Synthetic request failure.");
+        var cleanupFailure = new IOException("Synthetic cleanup failure.");
         var attemptedCacheKeys = new List<string>();
         cache.BeforeRemove = cacheKey =>
         {
             attemptedCacheKeys.Add(cacheKey);
-            if (cacheKey.Contains("user:", StringComparison.Ordinal))
-                throw new IOException("Sensitive provider message with user@exceptionless.test and a cache key.");
+            if (!cacheKey.Contains("user:", StringComparison.Ordinal))
+                return null;
+
+            return asynchronousCleanupFailure ? Task.FromException<bool>(cleanupFailure) : throw cleanupFailure;
         };
 
         // Act
@@ -86,11 +91,8 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
         Assert.All(ipAttempts, Assert.NotNull);
         var entry = Assert.Single(logger.Entries);
         Assert.Equal(LogLevel.Error, entry.Level);
-        var cleanupException = Assert.IsType<AggregateException>(entry.Exception);
-        var safeException = Assert.Single(cleanupException.InnerExceptions);
-        Assert.NotNull(safeException.StackTrace);
-        Assert.DoesNotContain("Sensitive provider message", cleanupException.ToString());
-        Assert.DoesNotContain("user@exceptionless.test", cleanupException.ToString());
+        Assert.Same(cleanupFailure, entry.Exception);
+        Assert.Equal($"Error releasing login admission reservation: {cleanupFailure.Message}", entry.Message);
     }
 
     [Fact]
@@ -263,15 +265,17 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task TryBeginLoginAsync_CleanupFailure_PreservesOriginalExceptionAndLogsSafeDetails(bool cancelled)
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task TryBeginLoginAsync_CleanupFailure_PreservesOriginalExceptionAndLogsCleanupFailure(bool cancelled, bool asynchronousCleanupFailure)
     {
         // Arrange
         TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
         using var cache = new FaultingCacheClient(TimeProvider);
-        var failure = new InvalidOperationException("Synthetic sensitive acquisition detail.");
+        var failure = new InvalidOperationException("Synthetic acquisition failure.");
         cache.BeforeAdd = cacheKey =>
         {
             if (!cancelled && cacheKey.Contains("ip:", StringComparison.Ordinal))
@@ -284,7 +288,8 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
                 cancellation.Cancel();
         };
 
-        cache.BeforeRemove = _ => throw new IOException("Synthetic sensitive cleanup detail.");
+        var cleanupFailure = new IOException("Synthetic cleanup failure.");
+        cache.BeforeRemove = _ => asynchronousCleanupFailure ? Task.FromException<bool>(cleanupFailure) : throw cleanupFailure;
         var logger = new CapturingLogger();
         var service = new AuthService(cache, TimeProvider, logger);
 
@@ -308,21 +313,14 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
         else
             Assert.Same(failure, exception);
 
-        var entry = Assert.Single(logger.Entries);
-        Assert.Equal(LogLevel.Error, entry.Level);
-        var cleanupException = Assert.IsType<AggregateException>(entry.Exception);
-        Assert.Equal(cancelled ? 2 : 1, cleanupException.InnerExceptions.Count);
-        Assert.All(cleanupException.InnerExceptions, failure =>
+        Assert.Equal(cancelled ? 2 : 1, logger.Entries.Count);
+        Assert.All(logger.Entries, entry =>
         {
-            Assert.Equal(typeof(IOException).FullName, failure.Data["ExceptionType"]);
-            Assert.NotNull(failure.StackTrace);
-            Assert.Null(failure.InnerException);
-            Assert.DoesNotContain("sensitive", failure.ToString());
+            Assert.Equal(LogLevel.Error, entry.Level);
+            Assert.Same(cleanupFailure, entry.Exception);
+            Assert.Equal($"Error releasing login admission reservation: {cleanupFailure.Message}", entry.Message);
         });
 
-        Assert.DoesNotContain("sensitive", entry.Message);
-        Assert.DoesNotContain("user@exceptionless.test", entry.Message);
-        Assert.DoesNotContain("192.0.2.1", entry.Message);
         Assert.Equal(4, beforeExpiration.Count(attempt => attempt is not null));
         Assert.All(afterExpiration, Assert.NotNull);
     }
@@ -498,7 +496,7 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
     {
         public Action<string>? BeforeAdd { get; set; }
         public Action<string>? AfterAdd { get; set; }
-        public Action<string>? BeforeRemove { get; set; }
+        public Func<string, Task<bool>?>? BeforeRemove { get; set; }
 
         async Task<bool> ICacheClient.AddAsync<T>(string cacheKey, T value, TimeSpan? expiresIn)
         {
@@ -512,10 +510,6 @@ public sealed class AuthServiceTests(ITestOutputHelper output) : TestWithService
         }
 
         Task<bool> ICacheClient.RemoveIfEqualAsync<T>(string cacheKey, T expected)
-        {
-            BeforeRemove?.Invoke(cacheKey);
-
-            return base.RemoveIfEqualAsync(cacheKey, expected);
-        }
+            => BeforeRemove?.Invoke(cacheKey) ?? base.RemoveIfEqualAsync(cacheKey, expected);
     }
 }
