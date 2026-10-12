@@ -18,6 +18,7 @@ public sealed class AuthService
     {
         ArgumentNullException.ThrowIfNull(cacheClient);
         ArgumentNullException.ThrowIfNull(timeProvider);
+
         _cache = new ScopedCacheClient(cacheClient, "Auth");
         _timeProvider = timeProvider;
     }
@@ -25,39 +26,46 @@ public sealed class AuthService
     public async Task<LoginAttempt?> TryBeginLoginAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(emailAddress);
+
         if (ipAddress is not null)
             ArgumentException.ThrowIfNullOrWhiteSpace(ipAddress);
+
         cancellationToken.ThrowIfCancellationRequested();
 
         var expiresUtc = GetWindowExpiration();
-        string[] userKeys = GetKeys($"user:{emailAddress.Trim().ToLowerInvariant()}", UserFailureLimit, expiresUtc);
-        var failures = await _cache.GetAllAsync<string>(userKeys);
+        string[] userCacheKeys = GetCacheKeys($"user:{emailAddress.Trim().ToLowerInvariant()}", UserFailureLimit, expiresUtc);
+        var failures = await _cache.GetAllAsync<string>(userCacheKeys);
         var observedFailures = failures.Where(pair => pair.Value.HasValue && pair.Value.Value.StartsWith("failed:", StringComparison.Ordinal))
             .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.Value)).ToArray();
         string reservation = $"pending:{Guid.NewGuid():N}";
-        var keys = new List<string>(2);
+        var reservedCacheKeys = new List<string>(2);
         try
         {
-            string? userKey = await ReserveAsync(userKeys, reservation, expiresUtc);
-            if (userKey is null)
+            string? userCacheKey = await ReserveCacheKeyAsync(userCacheKeys, reservation, expiresUtc);
+            if (userCacheKey is null)
                 return null;
-            keys.Add(userKey);
+
+            reservedCacheKeys.Add(userCacheKey);
+
             if (ipAddress is not null)
             {
-                string? ipKey = await ReserveAsync(GetKeys($"ip:{ipAddress}", IpAddressFailureLimit, expiresUtc), reservation, expiresUtc);
-                if (ipKey is null)
+                string? ipAddressCacheKey = await ReserveCacheKeyAsync(GetCacheKeys($"ip:{ipAddress}", IpAddressFailureLimit, expiresUtc), reservation, expiresUtc);
+                if (ipAddressCacheKey is null)
                 {
-                    await ReleaseAsync(keys, reservation);
+                    await ReleaseCacheKeysAsync(reservedCacheKeys, reservation);
                     return null;
                 }
-                keys.Add(ipKey);
+
+                reservedCacheKeys.Add(ipAddressCacheKey);
             }
+
             cancellationToken.ThrowIfCancellationRequested();
-            return new LoginAttempt(this, expiresUtc, keys.ToArray(), reservation, observedFailures);
+
+            return new LoginAttempt(this, expiresUtc, reservedCacheKeys.ToArray(), reservation, observedFailures);
         }
         catch
         {
-            await ReleaseAsync(keys, reservation);
+            await ReleaseCacheKeysAsync(reservedCacheKeys, reservation);
             throw;
         }
     }
@@ -65,64 +73,73 @@ public sealed class AuthService
     public async Task RecordLoginFailureAsync(LoginAttempt attempt)
     {
         ArgumentNullException.ThrowIfNull(attempt);
+
         var remaining = attempt.ExpiresUtc - _timeProvider.GetUtcNow().UtcDateTime;
         if (remaining <= TimeSpan.Zero)
             return;
-        // A crashed worker stays charged until the boundary, so a slow check cannot
-        // outlive its reservation and silently restore admission.
-        await Task.WhenAll(attempt.Keys.Select(key => _cache.ReplaceIfEqualAsync(key, $"failed:{attempt.Reservation}", attempt.Reservation, remaining)));
+
+        // Pending checks and completed failures share the fixed-window admission budget.
+        // Reservations expire at the boundary even if a check is still running.
+        await Task.WhenAll(attempt.CacheKeys.Select(cacheKey => _cache.ReplaceIfEqualAsync(cacheKey, $"failed:{attempt.Reservation}", attempt.Reservation, remaining)));
     }
 
     public async Task RecordLoginSuccessAsync(LoginAttempt attempt)
     {
         ArgumentNullException.ThrowIfNull(attempt);
-        await ReleaseAsync(attempt.Keys, attempt.Reservation);
+
+        await ReleaseCacheKeysAsync(attempt.CacheKeys, attempt.Reservation);
         await RemoveFailuresAsync(attempt.ObservedFailures);
     }
 
     public async Task ClearUserLoginAttemptsAsync(string emailAddress)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(emailAddress);
-        var failures = await _cache.GetAllAsync<string>(GetKeys($"user:{emailAddress.Trim().ToLowerInvariant()}", UserFailureLimit, GetWindowExpiration()));
+
+        var failures = await _cache.GetAllAsync<string>(GetCacheKeys($"user:{emailAddress.Trim().ToLowerInvariant()}", UserFailureLimit, GetWindowExpiration()));
         // Recovery clears completed failures while checks underway retain admission.
         await RemoveFailuresAsync(failures.Where(pair => pair.Value.HasValue && pair.Value.Value.StartsWith("failed:", StringComparison.Ordinal))
             .Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.Value)));
     }
 
-    private async Task<string?> ReserveAsync(string[] keys, string reservation, DateTime expiresUtc)
+    private async Task<string?> ReserveCacheKeyAsync(string[] cacheKeys, string reservation, DateTime expiresUtc)
     {
-        foreach (string key in keys)
-            if (await _cache.AddAsync(key, reservation, expiresUtc))
-                return key;
+        foreach (string cacheKey in cacheKeys)
+            if (await _cache.AddAsync(cacheKey, reservation, expiresUtc))
+                return cacheKey;
+
         return null;
     }
 
-    private Task ReleaseAsync(IEnumerable<string> keys, string reservation)
-        => Task.WhenAll(keys.Select(key => _cache.RemoveIfEqualAsync(key, reservation)));
+    private Task ReleaseCacheKeysAsync(IEnumerable<string> cacheKeys, string reservation)
+        => Task.WhenAll(cacheKeys.Select(cacheKey => _cache.RemoveIfEqualAsync(cacheKey, reservation)));
 
     private Task RemoveFailuresAsync(IEnumerable<KeyValuePair<string, string>> failures)
         => Task.WhenAll(failures.Select(failure => _cache.RemoveIfEqualAsync(failure.Key, failure.Value)));
 
     private DateTime GetWindowExpiration() => _timeProvider.GetUtcNow().UtcDateTime.Floor(AttemptWindow).Add(AttemptWindow);
 
-    private static string[] GetKeys(string prefix, int limit, DateTime expiresUtc)
-        => Enumerable.Range(0, limit).Select(slot => $"{prefix}:attempts:{expiresUtc.Ticks}:{slot}").ToArray();
+    // The window selects expiration; separate cache entries atomically reserve admission.
+    private static string[] GetCacheKeys(string cacheKeyPrefix, int limit, DateTime expiresUtc)
+        => Enumerable.Range(0, limit).Select(index => $"{cacheKeyPrefix}:attempts:{expiresUtc.Ticks}:{index}").ToArray();
 
     public sealed class LoginAttempt : IAsyncDisposable
     {
         private readonly AuthService _owner;
-        internal LoginAttempt(AuthService owner, DateTime expiresUtc, string[] keys, string reservation, KeyValuePair<string, string>[] observedFailures)
+
+        internal LoginAttempt(AuthService owner, DateTime expiresUtc, string[] cacheKeys, string reservation, KeyValuePair<string, string>[] observedFailures)
         {
             _owner = owner;
             ExpiresUtc = expiresUtc;
-            Keys = keys;
+            CacheKeys = cacheKeys;
             Reservation = reservation;
             ObservedFailures = observedFailures;
         }
+
         internal DateTime ExpiresUtc { get; }
-        internal string[] Keys { get; }
+        internal string[] CacheKeys { get; }
         internal string Reservation { get; }
         internal KeyValuePair<string, string>[] ObservedFailures { get; }
-        public ValueTask DisposeAsync() => new(_owner.ReleaseAsync(Keys, Reservation));
+
+        public ValueTask DisposeAsync() => new(_owner.ReleaseCacheKeysAsync(CacheKeys, Reservation));
     }
 }
