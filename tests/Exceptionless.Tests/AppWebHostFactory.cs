@@ -21,7 +21,7 @@ namespace Exceptionless.Tests;
 
 public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program>, IAsyncLifetime
 {
-    private static readonly string SharedElasticsearchUrl = GetElasticsearchUrl();
+    private const string SharedElasticsearchUrl = "http://localhost:9200";
     private static readonly TimeSpan SharedElasticsearchStartupTimeout = TimeSpan.FromMinutes(3);
     private static int s_counter = -1;
     private static readonly Lazy<Task<DistributedApplication>> s_sharedAppHost = new(StartSharedAppHostAsync, LazyThreadSafetyMode.ExecutionAndPublication);
@@ -43,17 +43,8 @@ public class AppWebHostFactory : WebApplicationFactory<Exceptionless.Web.Program
 
     public async ValueTask InitializeAsync()
     {
-        if (String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("EX_TestElasticsearchUrl")))
-            _ = await s_sharedAppHost.Value;
+        _ = await s_sharedAppHost.Value;
         await WaitForElasticsearchAsync(new Uri(SharedElasticsearchUrl));
-    }
-
-    private static string GetElasticsearchUrl()
-    {
-        string url = Environment.GetEnvironmentVariable("EX_TestElasticsearchUrl") ?? "http://localhost:9200";
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !uri.IsLoopback || uri.Scheme != Uri.UriSchemeHttp)
-            throw new InvalidOperationException("Test Elasticsearch must use a local HTTP endpoint.");
-        return url;
     }
 
     private static async Task<DistributedApplication> StartSharedAppHostAsync()
