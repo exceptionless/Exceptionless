@@ -1,8 +1,8 @@
 using System.Net;
 using System.Text;
 using System.Text.Encodings.Web;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
