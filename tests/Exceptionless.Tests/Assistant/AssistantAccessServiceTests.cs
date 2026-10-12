@@ -4,18 +4,19 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Validation;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Assistant;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Assistant;
 
-public sealed class AssistantAccessServiceTests
+public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : TestWithServices(output)
 {
     [Fact]
     public void ReadFromConfiguration_DefaultsToDisabled()
@@ -83,16 +84,16 @@ public sealed class AssistantAccessServiceTests
     public async Task GetAccessAsync_RuntimeOverrideDisabled_HidesAssistant()
     {
         var options = CreateOptions(new Dictionary<string, string?> { ["Assistant:ApiKey"] = "test-key" });
-        var repository = new Mock<IOrganizationRepository>(MockBehavior.Strict);
+        using var repository = CreateRepository();
         var settings = new SystemSettings { AssistantEnabled = false };
-        var service = new AssistantAccessService(options, new BillingPlans(options), repository.Object, CreateSystemSettingsService(options, settings));
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository, CreateSystemSettingsService(options, settings));
 
         var access = await service.GetAccessAsync(CreateRequest(TestConstants.OrganizationId), TestConstants.OrganizationId);
 
         Assert.False(access.Enabled);
         Assert.False(access.HasAccess);
         Assert.Equal(AssistantAccessReason.Disabled, access.Reason);
-        repository.VerifyNoOtherCalls();
+        Assert.Equal(0, repository.GetByIdCallCount);
     }
 
     [Fact]
@@ -178,15 +179,15 @@ public sealed class AssistantAccessServiceTests
             ["AppMode"] = AppMode.Development.ToString(),
             ["Assistant:ApiKey"] = "test-key"
         });
-        var repository = new Mock<IOrganizationRepository>(MockBehavior.Strict);
-        var service = new AssistantAccessService(options, new BillingPlans(options), repository.Object, CreateSystemSettingsService(options));
+        using var repository = CreateRepository();
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository, CreateSystemSettingsService(options));
         var request = CreateRequest(TestConstants.OrganizationId2);
 
         var access = await service.GetAccessAsync(request, TestConstants.OrganizationId);
 
         Assert.False(access.HasAccess);
         Assert.Equal(AssistantAccessReason.OrganizationNotAccessible, access.Reason);
-        repository.VerifyNoOtherCalls();
+        Assert.Equal(0, repository.GetByIdCallCount);
     }
 
     [Fact]
@@ -198,18 +199,15 @@ public sealed class AssistantAccessServiceTests
             ["Assistant:ApiKey"] = "test-key"
         });
         var organization = new Organization { Id = TestConstants.OrganizationId, Name = "Test", PlanId = "EX_FREE", IsSuspended = true };
-        var repository = new Mock<IOrganizationRepository>(MockBehavior.Strict);
-        repository.Setup(repository => repository.GetByIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Organization>>()))
-            .ReturnsAsync(organization);
-        var service = new AssistantAccessService(options, new BillingPlans(options), repository.Object, CreateSystemSettingsService(options));
+        using var repository = CreateRepository(organization);
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository, CreateSystemSettingsService(options));
         var request = CreateRequest(organization.Id);
 
         var access = await service.GetAccessAsync(request, organization.Id);
 
         Assert.False(access.HasAccess);
         Assert.Equal(AssistantAccessReason.OrganizationNotAccessible, access.Reason);
-        repository.Verify(repository => repository.GetByIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Organization>>()), Times.Once);
-        repository.VerifyNoOtherCalls();
+        Assert.Equal(1, repository.GetByIdCallCount);
     }
 
     [Fact]
@@ -221,19 +219,16 @@ public sealed class AssistantAccessServiceTests
             ["Assistant:ApiKey"] = "test-key"
         });
         var organization = new Organization { Id = TestConstants.OrganizationId, Name = "Test", PlanId = "EX_FREE" };
-        var repository = new Mock<IOrganizationRepository>(MockBehavior.Strict);
-        repository.Setup(repository => repository.GetByIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Organization>>()))
-            .ReturnsAsync(organization);
+        using var repository = CreateRepository(organization);
         var billingPlans = new BillingPlans(options);
-        var service = new AssistantAccessService(options, billingPlans, repository.Object, CreateSystemSettingsService(options));
+        var service = new AssistantAccessService(options, billingPlans, repository, CreateSystemSettingsService(options));
         var request = CreateRequest(organization.Id);
 
         var access = await service.GetAccessAsync(request, organization.Id);
 
         Assert.True(access.HasAccess);
         Assert.Same(billingPlans.UnlimitedPlan.Assistant, access.PlanOptions);
-        repository.Verify(repository => repository.GetByIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Organization>>()), Times.Once);
-        repository.VerifyNoOtherCalls();
+        Assert.Equal(1, repository.GetByIdCallCount);
     }
 
     private static void AssertPlan(AssistantPlanOptions? options, int concurrentTurns, int turnsPerMinute, long monthlyTokens, decimal monthlyCost)
@@ -251,7 +246,7 @@ public sealed class AssistantAccessServiceTests
             () => Task.FromResult(settings),
             _ => Task.CompletedTask,
             appOptions,
-            TimeProvider.System);
+            System.TimeProvider.System);
     }
 
     private static AppOptions CreateOptions(Dictionary<string, string?>? values = null)
@@ -289,5 +284,21 @@ public sealed class AssistantAccessServiceTests
             User = new System.Security.Claims.ClaimsPrincipal(user.ToIdentity())
         };
         return context.Request;
+    }
+
+    private TestOrganizationRepository CreateRepository(Organization? organization = null) => new(
+        GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), GetService<BillingPlans>(), GetService<AppOptions>(), organization);
+
+    private sealed class TestOrganizationRepository(
+        ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, BillingPlans plans, AppOptions options, Organization? organization)
+        : OrganizationRepository(configuration, validator, plans, options)
+    {
+        public int GetByIdCallCount { get; private set; }
+
+        public override Task<Organization?> GetByIdAsync(Id id, ICommandOptions? options = null)
+        {
+            GetByIdCallCount++;
+            return Task.FromResult(organization?.Id == id.ToString() ? organization : null);
+        }
     }
 }
