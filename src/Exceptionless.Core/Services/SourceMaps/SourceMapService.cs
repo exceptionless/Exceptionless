@@ -598,7 +598,8 @@ public sealed class SourceMapService : IDisposable
     private Task<SourceMapLookupResult> CacheExpectedFailureAsync(string failureCacheKey, string generatedFileUrl, Exception exception, string reason)
     {
         _logger.LogDebug(
-            "Unable to download a source map for {GeneratedFileUrl}: {FailureType}: {FailureMessage}",
+            exception,
+            "Unable to download a source map for {GeneratedFileUrl}: {FailureType}: {Message}",
             generatedFileUrl,
             exception.GetType().Name,
             exception.Message);

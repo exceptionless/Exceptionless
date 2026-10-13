@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Utility;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
 
@@ -68,7 +69,7 @@ public sealed class SourceMapRequestThrottle
         bool addressThrottled = false;
         foreach (var address in addresses)
         {
-            if (!OAuthClientMetadataService.IsPublicAddress(address))
+            if (!PublicAddressPolicy.IsPublic(address))
                 continue;
 
             string addressHash = address.ToString().ToSHA256();
@@ -87,7 +88,12 @@ public sealed class SourceMapRequestThrottle
             catch (SocketException ex)
             {
                 lastException = ex;
-                socket.Dispose();
+                OutboundSocketCleanup.Dispose(socket, _logger);
+            }
+            catch
+            {
+                OutboundSocketCleanup.Dispose(socket, _logger);
+                throw;
             }
         }
 
