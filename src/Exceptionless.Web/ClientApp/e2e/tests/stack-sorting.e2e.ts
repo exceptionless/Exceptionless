@@ -14,7 +14,7 @@ test('stack sort survives reload and resets pagination and selection without sen
     });
 
     const initialResponse = waitForStackMode(page, 'stack_frequent');
-    await page.goto(`/next/stack?project=${e2eScenario.projectId}&page=2`);
+    await page.goto(`/stack?project=${e2eScenario.projectId}&page=2`);
     expect((await initialResponse).ok()).toBe(true);
     await expect(page.getByRole('button', { name: 'Sort by Events descending' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('button', { name: /Sort by First/ })).toHaveCount(0);
@@ -68,7 +68,7 @@ for (const [sort, label, mode, explicitSort] of [
         const savedView = (await createResponse.json()) as { id: string };
 
         const initialResponse = waitForStackMode(page, mode);
-        await page.goto(`/next/stack/${slug}${explicitSort ? `?sort=${sort}` : ''}`);
+        await page.goto(`/stack/${slug}${explicitSort ? `?sort=${sort}` : ''}`);
         expect((await initialResponse).ok()).toBe(true);
         await expect(page.getByRole('button', { name: `Sort by ${label} descending` })).toHaveAttribute('aria-pressed', 'true');
         await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
@@ -104,7 +104,7 @@ for (const [sort, label, mode, explicitSort] of [
         expect(response.request().postDataJSON().sort).toBe(otherMode);
         await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
 
-        await page.goto(`/next/stack/${slug}`);
+        await page.goto(`/stack/${slug}`);
         await expect(page.getByRole('button', { name: `Sort by ${otherLabel} descending` })).toHaveAttribute('aria-pressed', 'true');
         await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
     });
