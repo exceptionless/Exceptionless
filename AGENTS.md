@@ -69,6 +69,8 @@ tests/                         # C# tests and HTTP samples
 - NuGet feeds are in `NuGet.Config` — don't add sources
 - Prefer additive documentation updates — don't replace strategic docs wholesale, extend them
 - **Backwards compatibility:** Never break existing public APIs, WebSocket message formats, config keys, or exported library interfaces without explicit user approval. Call out any breaking change as a BLOCKER in reviews.
+- **Internal helpers:** Internal application helpers do not become supported external APIs solely because they are declared `public` for assembly access. Remove obsolete helpers and migrate repository callers; do not preserve legacy forwarding wrappers for these internal contracts. The backwards-compatibility rule still applies to supported HTTP APIs, WebSocket messages, configuration keys, and exported library interfaces.
+- **Exception logging:** Pass the exception object and include `: {Message}` with `exception.Message`. Do not end log templates with punctuation. In tests, reuse the inherited `_logger` rather than creating another logger.
 - **API contracts:** When an endpoint's route, response, or authorization changes, update `tests/Exceptionless.Tests/Api/Data/openapi.json`, then run the focused endpoint tests and `OpenApiSnapshotTests`.
 - **HTTP examples:** `.http` files are curated requests for trying things manually or showing users how to use the API. Add or change an example only when it serves one of those purposes. API changes do not require `.http` updates. Keep these files concise; automated tests own regression coverage, assertions, and edge cases.
 - **Abbreviations:** Never abbreviate `Organization` as `org` in code (variable names, parameters, method names, or comments). Always spell out `organization`.
