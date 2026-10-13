@@ -166,7 +166,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
                EventTypes = [WebHook.KnownEventTypes.StackPromoted],
                OrganizationId = SampleDataService.TEST_ORG_ID,
                ProjectId = SampleDataService.TEST_PROJECT_ID,
-               Url = "https://example.com/test"
+               Url = "https://localhost/test"
            })
            .StatusCodeShouldBeCreated()
         );
@@ -181,7 +181,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
             EventTypes = [WebHook.KnownEventTypes.StackPromoted],
             OrganizationId = SampleDataService.FREE_ORG_ID,
             ProjectId = SampleDataService.TEST_PROJECT_ID,
-            Url = "https://example.com/test"
+            Url = "https://localhost/test"
         };
 
         // Act
@@ -208,7 +208,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
             EventTypes = [WebHook.KnownEventTypes.StackPromoted],
             OrganizationId = SampleDataService.TEST_ORG_ID,
             ProjectId = SampleDataService.FREE_PROJECT_ID,
-            Url = "https://example.com/test"
+            Url = "https://localhost/test"
         };
 
         // Act
@@ -248,7 +248,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
         var newWebHook = new NewWebHook
         {
             EventTypes = [WebHook.KnownEventTypes.StackPromoted],
-            Url = "https://example.com/test"
+            Url = "https://localhost/test"
         };
 
         // Act
@@ -278,7 +278,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
                EventTypes = ["Invalid"],
                OrganizationId = SampleDataService.TEST_ORG_ID,
                ProjectId = SampleDataService.TEST_PROJECT_ID,
-               Url = "https://example.com/test"
+               Url = "https://localhost/test"
            })
            .StatusCodeShouldBeUnprocessableEntity()
        );
@@ -569,10 +569,10 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
     [InlineData("http://localhost/path")]
     [InlineData("http://169.254.169.254/path")]
     [InlineData("https://user:password@example.com/path")]
-    public Task PostAsync_DisallowedDestination_ReturnsBadRequest(string url)
+    public Task PostAsync_UserSuppliedDestination_ReturnsCreated(string url)
         => SendRequestAsync(r => r.Post().AsTestOrganizationUser().AppendPath("webhooks")
             .Content(new NewWebHook { ProjectId = SampleDataService.TEST_PROJECT_ID, Url = url, EventTypes = [WebHook.KnownEventTypes.NewError] })
-            .StatusCodeShouldBeBadRequest());
+            .StatusCodeShouldBeCreated());
 
     [Fact]
     public async Task UnsubscribeAsync_ExistingZapierHook_RemovesWebHook()

@@ -41,10 +41,9 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
     private readonly AppOptions _appOptions;
 
     private readonly HttpClient _client;
-    private readonly WebHookDestinationPolicy _destinationPolicy;
 
     public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, ITextSerializer serializer, JsonSerializerOptions jsonOptions, AppOptions appOptions, TimeProvider timeProvider,
-        IResiliencePolicyProvider resiliencePolicyProvider, ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory, WebHookDestinationPolicy destinationPolicy) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
+        IResiliencePolicyProvider resiliencePolicyProvider, ILoggerFactory loggerFactory, IHttpClientFactory httpClientFactory) : base(queue, timeProvider, resiliencePolicyProvider, loggerFactory)
     {
         _projectRepository = projectRepository;
         _slackService = slackService;
@@ -54,25 +53,17 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
         _jsonOptions = jsonOptions;
         _versionOneJsonOptions = VersionOnePlugin.CreateJsonSerializerOptions(jsonOptions);
         _appOptions = appOptions;
-        _client = httpClientFactory.CreateClient(WebHookDestinationPolicy.HttpClientName);
-        _destinationPolicy = destinationPolicy;
+        _client = httpClientFactory.CreateClient(WebHookDelivery.HttpClientName);
     }
 
     protected override async Task<JobResult> ProcessQueueEntryAsync(QueueEntryContext<WebHookNotification> context)
     {
         var body = context.QueueEntry.Value;
-        string destination = WebHookDestinationPolicy.GetLoggingDestination(body.Url);
 
         bool shouldLog = body.ProjectId != _appOptions.InternalProjectId;
         using (_logger.BeginScope(new ExceptionlessState().Organization(body.OrganizationId).Project(body.ProjectId)))
         {
-            if (shouldLog) _logger.RecordWebHook(context.QueueEntry.Id, body.ProjectId, destination);
-
-            if (!_destinationPolicy.IsValidDestination(body.Url))
-            {
-                _logger.LogWarning("Web hook destination is not allowed for {WebHookId}", body.WebHookId);
-                return JobResult.Cancelled;
-            }
+            if (shouldLog) _logger.RecordWebHook(context.QueueEntry.Id, body.ProjectId, body.Url);
 
             if (!await IsEnabledAsync(body))
             {
@@ -110,7 +101,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                 {
                     Content = JsonContent.Create(body.Data, options: jsonOptions)
                 };
-                request.Options.Set(WebHookDestinationPolicy.DeliveryRequest, true);
+                request.Options.Set(WebHookDelivery.DeliveryRequest, true);
                 response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, postCancellationTokenSource.Token);
                 if (!response.IsSuccessStatusCode)
                     successful = false;
@@ -120,24 +111,25 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
             catch (OperationCanceledException ex)
             {
                 successful = false;
-                if (shouldLog) _logger.WebHookTimeout(response?.StatusCode, body.OrganizationId, body.ProjectId, destination, ex);
+                if (shouldLog) _logger.WebHookTimeout(response?.StatusCode, body.OrganizationId, body.ProjectId, body.Url, ex);
                 return JobResult.Cancelled;
             }
             catch (Exception ex)
             {
                 successful = false;
-                if (shouldLog) _logger.WebHookError(response?.StatusCode, body.OrganizationId, body.ProjectId, destination, ex);
-                return JobResult.FromException(new HttpRequestException($"Web hook delivery failed ({ex.GetType().Name})."));
+                if (shouldLog) _logger.WebHookError(response?.StatusCode, body.OrganizationId, body.ProjectId, body.Url, ex);
+                return JobResult.FromException(ex);
             }
             finally
             {
+                using var responseToDispose = response;
                 if (successful)
                 {
-                    _logger.WebHookComplete(response?.StatusCode, body.OrganizationId, body.ProjectId, destination);
+                    _logger.WebHookComplete(response?.StatusCode, body.OrganizationId, body.ProjectId, body.Url);
                 }
                 else if (response is not null && (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.Gone))
                 {
-                    _logger.WebHookDisabledStatusCode(body.Type == WebHookType.Slack ? "Slack" : body.WebHookId!, response.StatusCode, body.OrganizationId, body.ProjectId, destination);
+                    _logger.WebHookDisabledStatusCode(body.Type == WebHookType.Slack ? "Slack" : body.WebHookId!, response.StatusCode, body.OrganizationId, body.ProjectId, body.Url);
                     await DisableIntegrationAsync(body);
                     await cache.RemoveAllAsync(_cacheKeys);
                 }
@@ -171,7 +163,6 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>, IDisposable
                         }
                     }
                 }
-                response?.Dispose();
             }
         }
 

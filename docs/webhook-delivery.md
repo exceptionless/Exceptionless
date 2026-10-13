@@ -1,11 +1,5 @@
-Webhooks use HTTP or HTTPS destinations. Connections resolve and check the destination address at delivery time, including URLs saved before deployment. Redirects are not followed, and requests do not use a proxy or cookies.
+Webhooks deliver to user-supplied HTTP or HTTPS URLs, including private receivers. No destination allowlist or private-network override is required. Redirects and proxy settings use the standard HTTP client behavior. Cookies are not shared between deliveries.
 
-For a self-hosted private receiver, explicitly configure its smallest required network on every API and job host:
+Delivery logs identify the destination origin instead of recording URL credentials, paths, or queries. Automatic HTTP delivery traces and client logs are omitted. Failures retain the original exception and message for troubleshooting; exception details are not redacted.
 
-```yaml
-WebHooks:
-  AllowedPrivateNetworks:
-    - 10.20.30.40/32
-```
-
-The default list is empty. Existing private receivers require this override before deploying. Their saved records are preserved. Delivery logs identify the destination origin; target paths, queries, credentials, and HTTP delivery traces are omitted.
+Only response headers are needed to determine delivery status. Response bodies are not buffered, and responses are disposed even when failure bookkeeping throws.
