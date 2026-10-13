@@ -118,32 +118,41 @@ public class OrganizationBudgetAlertWorkItemHandler : WorkItemHandlerBase
             return;
         }
 
-        var results = await _userRepository.GetByOrganizationIdAsync(organization.Id);
-        foreach (var user in results.Documents)
+        context.CancellationToken.ThrowIfCancellationRequested();
+
+        var results = await _userRepository.GetByOrganizationIdAsync(organization.Id, options => options.SearchAfterPaging());
+        do
         {
-            if (!user.IsEmailAddressVerified)
+            foreach (var user in results.Documents)
             {
-                Log.LogInformation("User {UserId} with email address {EmailAddress} has not been verified, skipping budget alert", user.Id, user.EmailAddress);
-                continue;
+                context.CancellationToken.ThrowIfCancellationRequested();
+
+                if (!user.IsEmailAddressVerified)
+                {
+                    Log.LogInformation("User {UserId} with email address {EmailAddress} has not been verified, skipping budget alert", user.Id, user.EmailAddress);
+                    continue;
+                }
+
+                if (!user.EmailNotificationsEnabled)
+                {
+                    Log.LogInformation("User {UserId} with email address {EmailAddress} has email notifications disabled, skipping budget alert", user.Id, user.EmailAddress);
+                    continue;
+                }
+
+                if (await _notificationService.IsUsageNotificationRecipientSentAsync(notificationIdentifier, user.Id))
+                    continue;
+
+                await using var recipientLock = await _notificationService.TryAcquireUsageNotificationRecipientLockAsync(notificationIdentifier, user.Id);
+                if (recipientLock is null || await _notificationService.IsUsageNotificationRecipientSentAsync(notificationIdentifier, user.Id))
+                    continue;
+
+                Log.LogTrace("Sending budget alert email to {EmailAddress}...", user.EmailAddress);
+                await _mailer.SendOrganizationBudgetAlertAsync(user, organization, wi.Threshold, thresholdEventCount, currentEventCount, eventLimit);
+                await _notificationService.MarkUsageNotificationRecipientSentAsync(notificationIdentifier, user.Id, usagePeriod);
             }
+        } while (!context.CancellationToken.IsCancellationRequested && await results.NextPageAsync());
 
-            if (!user.EmailNotificationsEnabled)
-            {
-                Log.LogInformation("User {UserId} with email address {EmailAddress} has email notifications disabled, skipping budget alert", user.Id, user.EmailAddress);
-                continue;
-            }
-
-            if (await _notificationService.IsUsageNotificationRecipientSentAsync(notificationIdentifier, user.Id))
-                continue;
-
-            await using var recipientLock = await _notificationService.TryAcquireUsageNotificationRecipientLockAsync(notificationIdentifier, user.Id);
-            if (recipientLock is null || await _notificationService.IsUsageNotificationRecipientSentAsync(notificationIdentifier, user.Id))
-                continue;
-
-            Log.LogTrace("Sending budget alert email to {EmailAddress}...", user.EmailAddress);
-            await _mailer.SendOrganizationBudgetAlertAsync(user, organization, wi.Threshold, thresholdEventCount, currentEventCount, eventLimit);
-            await _notificationService.MarkUsageNotificationRecipientSentAsync(notificationIdentifier, user.Id, usagePeriod);
-        }
+        context.CancellationToken.ThrowIfCancellationRequested();
 
         Log.LogTrace("Done sending budget alert emails");
     }
