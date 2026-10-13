@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Configuration;
@@ -8,6 +9,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Handlers;
 using Exceptionless.Web.Api.Messages;
+using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Security;
 using Foundatio.Caching;
@@ -54,14 +56,11 @@ public sealed class AuthHandlerTests : TestWithServices
     [Theory]
     [InlineData(null)]
     [InlineData("invitation-token")]
-    public async Task Handle_MicrosoftEmailMatchesUnlinkedUser_DoesNotModifyAccount(string? inviteToken)
+    public async Task Handle_UnlinkedMicrosoftIdentity_DoesNotLookUpEmailOrModifyAccounts(string? inviteToken)
     {
-        var user = new User { Id = "existing-user", EmailAddress = "matching-user@exceptionless.test" };
-        user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
         var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
         userRepository.Setup(repository => repository.GetUserByOAuthProviderAsync("Microsoft", "matching-user"))
             .ReturnsAsync((User?)null);
-        userRepository.Setup(repository => repository.GetByEmailAddressAsync(user.EmailAddress)).ReturnsAsync(user);
         var handler = CreateHandler(userRepository.Object);
 
         var result = await handler.Handle(new MicrosoftLogin(
@@ -70,8 +69,26 @@ public sealed class AuthHandlerTests : TestWithServices
 
         Assert.Equal(ResultStatus.Forbidden, result.Status);
         Assert.Contains("link", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("windowslive", Assert.Single(user.OAuthAccounts).Provider);
-        Assert.False(user.IsEmailAddressVerified);
+        userRepository.VerifyAll();
+        userRepository.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Handle_UnverifiedAuthenticatedUser_DoesNotLinkMicrosoft()
+    {
+        var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
+        userRepository.Setup(repository => repository.GetUserByOAuthProviderAsync("Microsoft", "unverified-user"))
+            .ReturnsAsync((User?)null);
+        var user = new User { Id = "unverified", EmailAddress = "unverified@exceptionless.test" };
+        var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(IdentityUtils.UserAuthenticationType)) };
+        context.Request.SetUser(user);
+
+        var result = await CreateHandler(userRepository.Object).Handle(new MicrosoftLogin(
+            new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = "unverified-user", RedirectUri = "http://localhost" }, context));
+
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
+        Assert.Contains("Verify", result.Message);
+        Assert.Empty(user.OAuthAccounts);
         userRepository.VerifyAll();
         userRepository.VerifyNoOtherCalls();
     }

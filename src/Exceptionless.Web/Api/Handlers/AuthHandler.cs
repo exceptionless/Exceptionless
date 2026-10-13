@@ -37,8 +37,6 @@ public class AuthHandler(
     TimeProvider timeProvider,
     ILogger<AuthHandler> logger)
 {
-    private sealed record ExternalLoginUser(User User, bool SendVerificationEmail);
-
     private const string LegacyMicrosoftOAuthProvider = "WindowsLive";
     private const string MicrosoftOAuthProvider = "Microsoft";
     private readonly ScopedCacheClient _cache = new(cacheClient, "Auth");
@@ -520,15 +518,13 @@ public class AuthHandler(
         }
 
         User? user;
-        bool sendVerificationEmail;
         try
         {
             var result = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext);
             if (!result.IsSuccess)
                 return Result<TokenResult>.FromResult(result);
 
-            user = result.Value.User;
-            sendVerificationEmail = result.Value.SendVerificationEmail;
+            user = result.Value;
         }
         catch (ApplicationException ex)
         {
@@ -544,14 +540,11 @@ public class AuthHandler(
         if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
             await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext);
 
-        if (sendVerificationEmail && !user.IsEmailAddressVerified)
-            await mailer.SendUserEmailVerifyAsync(user);
-
         logger.UserLoggedIn(user.EmailAddress);
         return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
-    private async Task<Result<ExternalLoginUser>> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext)
+    private async Task<Result<User>> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
@@ -564,6 +557,9 @@ public class AuthHandler(
         if (String.IsNullOrWhiteSpace(inviteToken) && httpContext.User.IsUserAuthType())
         {
             var currentUser = httpContext.Request.GetUser();
+            if (isMicrosoft && !currentUser.IsEmailAddressVerified)
+                return Result.Forbidden("Verify your account email address before linking Microsoft from your account settings.");
+
             if (existingUser is not null)
             {
                 if (existingUser.Id != currentUser.Id)
@@ -576,15 +572,15 @@ public class AuthHandler(
                 else
                 {
                     if (RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName))
-                        return new ExternalLoginUser(await userRepository.SaveAsync(currentUser, o => o.Cache()), false);
+                        return await userRepository.SaveAsync(currentUser, o => o.Cache());
 
-                    return new ExternalLoginUser(currentUser, false);
+                    return currentUser;
                 }
             }
 
             currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
             RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName);
-            return new ExternalLoginUser(await userRepository.SaveAsync(currentUser, o => o.Cache()), false);
+            return await userRepository.SaveAsync(currentUser, o => o.Cache());
         }
 
         if (existingUser is not null)
@@ -599,13 +595,14 @@ public class AuthHandler(
             if (hasChanges)
                 await userRepository.SaveAsync(existingUser, o => o.Cache());
 
-            return new ExternalLoginUser(existingUser, false);
+            return existingUser;
         }
 
+        // Microsoft Graph mail is editable. Never create or match an account using it.
+        if (isMicrosoft)
+            return Result.Forbidden("Create and verify an account, or sign in to your existing account, then link Microsoft from your account settings.");
+
         var user = !String.IsNullOrEmpty(userInfo.Email) ? await userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
-        // Microsoft Graph mail is editable and does not prove ownership of an existing account.
-        if (isMicrosoft && user is not null)
-            return Result.Forbidden("Sign in to your existing account first, then link Microsoft from your account settings.");
 
         if (user is null)
         {
@@ -618,10 +615,7 @@ public class AuthHandler(
             await AddGlobalAdminRoleIfFirstUserAsync(user);
         }
 
-        if (isMicrosoft)
-            user.ResetVerifyEmailAddressTokenAndExpiration(timeProvider);
-        else
-            user.MarkEmailAddressVerified();
+        user.MarkEmailAddressVerified();
         user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
 
         if (String.IsNullOrEmpty(user.Id))
@@ -629,7 +623,7 @@ public class AuthHandler(
         else
             await userRepository.SaveAsync(user, o => o.Cache());
 
-        return new ExternalLoginUser(user, isMicrosoft);
+        return user;
     }
 
     private static bool RemoveLegacyMicrosoftOAuthAccounts(User user, string providerName)

@@ -6,7 +6,6 @@
     import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
-    import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
     import Logo from '$comp/logo.svelte';
     import { A, P } from '$comp/typography';
     import { Button } from '$comp/ui/button';
@@ -18,16 +17,13 @@
     import { signup } from '$features/auth/api.svelte';
     import {
         accessToken,
-        enableOAuthLogin,
         facebookClientId,
         facebookLogin,
         gitHubClientId,
         githubLogin,
         googleClientId,
         googleLogin,
-        logout,
-        microsoftClientId,
-        microsoftLogin
+        logout
     } from '$features/auth/index.svelte';
     import { type SignupFormData, SignupSchema } from '$features/auth/schemas';
     import { validateEmailAvailability } from '$features/auth/validators';
@@ -77,14 +73,9 @@
     </Card.Header>
     <Card.Content>
         <div>
-            {#if enableOAuthLogin}
+            {#if googleClientId || facebookClientId || gitHubClientId}
                 <P class="text-center">Sign up with</P>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
-                    {#if microsoftClientId}
-                        <Button aria-label="Sign up with Microsoft" onclick={() => microsoftLogin(redirectUrl, inviteToken)}>
-                            <MicrosoftIcon class="size-4" /> Microsoft
-                        </Button>
-                    {/if}
                     {#if googleClientId}
                         <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google

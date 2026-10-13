@@ -556,16 +556,20 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task MicrosoftAsync_WithConfiguredProvider_ReturnsToken()
+    public async Task MicrosoftAsync_WithLinkedIdentity_ReturnsToken()
     {
         // Arrange
         const string code = "microsoft-user";
+        var user = new User { EmailAddress = TestOAuthProviderClient.GetEmailAddress(code), FullName = "Microsoft User" };
+        user.MarkEmailAddressVerified();
+        user.AddOAuthAccount("Microsoft", code, user.EmailAddress);
+        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
         // Act
         var result = await SendExternalLoginAsync("microsoft", code);
 
         // Assert
-        await AssertExternalLoginAsync(result, "microsoft", code, isEmailVerified: false);
+        await AssertExternalLoginAsync(result, "microsoft", code);
     }
 
     [Fact]

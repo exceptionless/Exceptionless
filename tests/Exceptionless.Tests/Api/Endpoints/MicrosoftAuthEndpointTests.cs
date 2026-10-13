@@ -70,8 +70,9 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         const string code = "authenticated-microsoft-user";
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
+        user.MarkEmailAddressVerified();
         user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
-        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
 
         // Act
         await SendMicrosoftLoginAsync(code, isAuthenticated: true);
@@ -142,7 +143,7 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task MicrosoftAsync_UnmatchedEmail_CreatesNewUserWithoutChangingLegacyUser()
+    public async Task MicrosoftAsync_UnmatchedEmail_DoesNotCreateUserOrChangeLegacyUser()
     {
         // Arrange
         const string code = "different-email-user";
@@ -151,7 +152,7 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         await _userRepository.AddAsync(legacyUser, o => o.ImmediateConsistency());
 
         // Act
-        await SendMicrosoftLoginAsync(code);
+        await AssertMicrosoftLoginForbiddenAsync(code);
 
         // Assert
         var unchangedLegacyUser = await _userRepository.GetByIdAsync(legacyUser.Id);
@@ -160,19 +161,12 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         Assert.Equal("windowslive", legacyAccount.Provider);
 
         var microsoftUser = await _userRepository.GetByEmailAddressAsync(TestOAuthProviderClient.GetEmailAddress(code));
-        Assert.NotNull(microsoftUser);
-        Assert.NotEqual(legacyUser.Id, microsoftUser.Id);
-        var microsoftAccount = Assert.Single(microsoftUser.OAuthAccounts);
-        Assert.Equal("microsoft", microsoftAccount.Provider);
-        Assert.Equal(code, microsoftAccount.ProviderUserId);
-        Assert.False(microsoftUser.IsEmailAddressVerified);
-        Assert.False(String.IsNullOrWhiteSpace(microsoftUser.VerifyEmailAddressToken));
-        Assert.True(microsoftUser.VerifyEmailAddressTokenExpiration > TimeProvider.GetUtcNow().UtcDateTime);
-        Assert.Equal(1, _mailer.UserEmailVerificationCount);
+        Assert.Null(microsoftUser);
+        Assert.Equal(0, _mailer.UserEmailVerificationCount);
     }
 
     [Fact]
-    public async Task MicrosoftAsync_MatchingInvitation_VerifiesWithoutSendingExpiredEmail()
+    public async Task MicrosoftAsync_MatchingInvitation_DoesNotBypassVerifiedAccountRequirement()
     {
         // Arrange
         const string code = "invited-microsoft-user";
@@ -187,15 +181,46 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         await _organizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
 
         // Act
-        await SendMicrosoftLoginAsync(code, inviteToken: invite.Token);
+        await AssertMicrosoftLoginForbiddenAsync(code, inviteToken: invite.Token);
 
         // Assert
         var user = await _userRepository.GetByEmailAddressAsync(emailAddress);
-        Assert.NotNull(user);
-        Assert.True(user.IsEmailAddressVerified);
-        Assert.Null(user.VerifyEmailAddressToken);
-        Assert.Contains(organization.Id, user.OrganizationIds);
+        Assert.Null(user);
+        var unchangedOrganization = await _organizationRepository.GetByIdAsync(organization.Id);
+        Assert.NotNull(unchangedOrganization);
+        Assert.Contains(unchangedOrganization.Invites, existing => existing.Token == invite.Token);
         Assert.Equal(0, _mailer.UserEmailVerificationCount);
+    }
+
+    [Fact]
+    public async Task MicrosoftAsync_UnverifiedAuthenticatedUser_CannotLinkIdentity()
+    {
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+
+        await AssertMicrosoftLoginForbiddenAsync("unverified-link", isAuthenticated: true);
+
+        var unchangedUser = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(unchangedUser);
+        Assert.False(unchangedUser.IsEmailAddressVerified);
+        Assert.Equal("windowslive", Assert.Single(unchangedUser.OAuthAccounts).Provider);
+    }
+
+    private async Task AssertMicrosoftLoginForbiddenAsync(string code, bool isAuthenticated = false, string? inviteToken = null)
+    {
+        var problem = await SendRequestAsAsync<ProblemDetails>(request =>
+        {
+            request.Post().AppendPaths("auth", "microsoft")
+                .Content(new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = code, RedirectUri = "http://localhost", InviteToken = inviteToken })
+                .StatusCodeShouldBeForbidden();
+            if (isAuthenticated)
+                request.AsTestOrganizationUser();
+        });
+        Assert.NotNull(problem);
+        Assert.Contains("Microsoft", problem.Title);
     }
 
     private static User CreateUser(string emailAddress)
