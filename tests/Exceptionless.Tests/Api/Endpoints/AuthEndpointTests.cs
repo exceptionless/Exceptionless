@@ -2101,18 +2101,27 @@ public class AuthEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task GetUserByOAuthProviderAsync_DifferentAccountEntries_DoNotMatch()
     {
+        // Arrange
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         Assert.NotNull(user);
         user.AddOAuthAccount("google", "shared-subject", user.EmailAddress);
         user.AddOAuthAccount("github", "other-subject", user.EmailAddress);
         await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
-        Assert.Null(await _userRepository.GetUserByOAuthProviderAsync("github", "shared-subject"));
-        Assert.Equal(user.Id, (await _userRepository.GetUserByOAuthProviderAsync("google", "shared-subject"))!.Id);
+
+        // Act
+        var githubUser = await _userRepository.GetUserByOAuthProviderAsync("github", "shared-subject");
+        var googleUser = await _userRepository.GetUserByOAuthProviderAsync("google", "shared-subject");
+
+        // Assert
+        Assert.Null(githubUser);
+        Assert.NotNull(googleUser);
+        Assert.Equal(user.Id, googleUser.Id);
     }
 
     [Fact]
     public async Task GetUserByOAuthProviderAsync_DuplicateIdentity_RejectsAmbiguousOwner()
     {
+        // Arrange
         foreach (string email in new[] { SampleDataService.TEST_USER_EMAIL, SampleDataService.TEST_ORG_USER_EMAIL })
         {
             var user = await _userRepository.GetByEmailAddressAsync(email);
@@ -2120,7 +2129,15 @@ public class AuthEndpointTests : IntegrationTestsBase
             user.AddOAuthAccount("github", "duplicate-subject", user.EmailAddress);
             await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
         }
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _userRepository.GetUserByOAuthProviderAsync("github", "duplicate-subject"));
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await _userRepository.GetUserByOAuthProviderAsync("github", "duplicate-subject");
+        });
+
+        // Assert
+        Assert.IsType<UnauthorizedAccessException>(exception);
     }
 
     private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId)
