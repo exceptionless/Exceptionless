@@ -11,7 +11,7 @@ test('transient API failures only open Service Status when the health probe fail
         }
     });
     page.on('framenavigated', (frame) => {
-        if (frame === page.mainFrame() && new URL(frame.url()).pathname === '/next/status') {
+        if (frame === page.mainFrame() && new URL(frame.url()).pathname === '/status') {
             serviceStatusNavigations.push(frame.url());
         }
     });
@@ -21,7 +21,7 @@ test('transient API failures only open Service Status when the health probe fail
         }
     });
 
-    const targetUrl = '/next/project/list?project=test-project#details';
+    const targetUrl = '/project/list?project=test-project#details';
     let transientFailuresRemaining = 1;
     await page.route('**/api/v2/projects**', async (route) => {
         if (transientFailuresRemaining > 0) {
@@ -61,7 +61,7 @@ test('transient API failures only open Service Status when the health probe fail
 
     await test.step('coalesce the redirect and preserve the current URL when the service is unavailable', async () => {
         await page.reload();
-        await expect(page).toHaveURL(/\/next\/status(?:[?#]|$)/);
+        await expect(page).toHaveURL(/\/status(?:[?#]|$)/);
 
         const statusUrl = new URL(page.url());
         expect(statusUrl.searchParams.get('redirect')).toBe(targetUrl);

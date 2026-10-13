@@ -72,6 +72,7 @@ for (const width of [1280, 390]) {
                                 is_email_address_verified: true,
                                 organization_ids: [ORGANIZATION_ID],
                                 organization_preferences: [],
+                                product_tours: { app_welcome: '2026-01-01T00:00:00Z' },
                                 roles: []
                             }
                         });
@@ -91,7 +92,7 @@ for (const width of [1280, 390]) {
                 });
 
                 const id = resource === 'project' ? PROJECT_ID : ORGANIZATION_ID;
-                await page.goto(`/next/${resource}/${id}/usage`);
+                await page.goto(`/${resource}/${id}/usage`);
                 if (resource === 'project') {
                     await expect(page.getByText('Current project limit', { exact: true })).toBeVisible({ timeout: 2000 });
                 }

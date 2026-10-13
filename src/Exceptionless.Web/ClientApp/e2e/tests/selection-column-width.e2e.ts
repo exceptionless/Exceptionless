@@ -8,7 +8,7 @@ test('row selection column stays fixed at desktop and narrow widths', async ({ e
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     await journey.submitRepresentativeEvent();
 
-    await page.goto(`/next/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
+    await page.goto(`/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
     await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
 
     const table = page.locator('table:has(thead [role="checkbox"])').first();

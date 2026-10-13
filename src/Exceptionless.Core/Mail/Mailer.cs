@@ -2,6 +2,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.EmailTemplates;
 using Exceptionless.EmailTemplates.Models;
@@ -16,7 +17,7 @@ public class Mailer : IMailer
 {
     private readonly IQueue<MailMessage> _queue;
     private readonly IEmailTemplateRenderer _templateRenderer;
-    private readonly EmailAppUrlBuilder _appUrls;
+    private readonly AppUrlBuilder _appUrls;
     private readonly FormattingPluginManager _pluginManager;
     private readonly AppOptions _appOptions;
     private readonly TimeProvider _timeProvider;
@@ -27,7 +28,7 @@ public class Mailer : IMailer
     {
         _queue = queue;
         _templateRenderer = templateRenderer;
-        _appUrls = new EmailAppUrlBuilder(appOptions.BaseURL);
+        _appUrls = new AppUrlBuilder(appOptions.BaseURL);
         _pluginManager = pluginManager;
         _appOptions = appOptions;
         _timeProvider = timeProvider;
