@@ -206,9 +206,13 @@ public sealed class AuthService
             if (updated is null)
                 return null;
 
-            bool committed = entry.HasValue
-                ? await _cache.ReplaceIfEqualAsync(key, updated, current, remaining)
-                : await _cache.AddAsync(key, updated, remaining);
+            bool committed;
+            if (!entry.HasValue)
+                committed = await _cache.AddAsync(key, updated, remaining);
+            else if (updated.Pending == 0 && updated.TotalFailures == updated.ClearedFailures)
+                committed = await _cache.RemoveIfEqualAsync(key, current);
+            else
+                committed = await _cache.ReplaceIfEqualAsync(key, updated, current, remaining);
             if (committed)
                 return updated;
         }
@@ -246,7 +250,7 @@ public sealed class AuthService
     private static string GetUserCacheKey(string emailAddress, DateTime expiresUtc)
         => $"user:{emailAddress.Trim().ToLowerInvariant()}:attempts:{expiresUtc.Ticks}";
 
-    // Keep the epoch and monotonic failure watermarks until expiration, even at zero occupancy.
+    // Epochs protect recreated entries; failure watermarks preserve failures newer than admission.
     internal sealed record LoginState(Guid Epoch, int Pending, long TotalFailures, long ClearedFailures);
     internal sealed record Reservation(string Key, Guid Epoch, long? ObservedFailures);
 

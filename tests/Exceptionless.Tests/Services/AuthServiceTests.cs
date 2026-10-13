@@ -30,17 +30,17 @@ public sealed class AuthServiceTests : TestWithServices
         var continueWrite = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         int writes = 0;
         bool? staleWriteCommitted = null;
-        cacheMock.Setup(client => client.ReplaceIfEqualAsync(
+        cacheMock.Setup(client => client.RemoveIfEqualAsync(
                 It.Is<string>(key => key.Contains("user:", StringComparison.Ordinal)),
-                It.IsAny<LoginState>(), It.IsAny<LoginState>(), It.IsAny<TimeSpan?>()))
-            .Returns(async (string key, LoginState value, LoginState expected, TimeSpan? expiresIn) =>
+                It.IsAny<LoginState>()))
+            .Returns(async (string key, LoginState expected) =>
             {
                 if (Interlocked.Increment(ref writes) != 1)
-                    return await cache.ReplaceIfEqualAsync(key, value, expected, expiresIn);
+                    return await cache.RemoveIfEqualAsync(key, expected);
 
                 observed.TrySetResult();
                 await continueWrite.Task.WaitAsync(TestTimeout, TestCancellationToken);
-                staleWriteCommitted = await cache.ReplaceIfEqualAsync(key, value, expected, expiresIn);
+                staleWriteCommitted = await cache.RemoveIfEqualAsync(key, expected);
                 return staleWriteCommitted.Value;
             });
 
@@ -119,11 +119,11 @@ public sealed class AuthServiceTests : TestWithServices
         var requestFailure = new InvalidOperationException("Synthetic request failure.");
         var cleanupFailure = new IOException("Synthetic cleanup failure.");
         bool rejectCleanup = true;
-        cacheMock.Setup(client => client.ReplaceIfEqualAsync(
+        cacheMock.Setup(client => client.RemoveIfEqualAsync(
                 It.Is<string>(key => key.Contains("user:", StringComparison.Ordinal)),
-                It.IsAny<LoginState>(), It.IsAny<LoginState>(), It.IsAny<TimeSpan?>()))
-            .Returns((string key, LoginState value, LoginState expected, TimeSpan? expiresIn) =>
-                rejectCleanup ? Task.FromException<bool>(cleanupFailure) : cache.ReplaceIfEqualAsync(key, value, expected, expiresIn));
+                It.IsAny<LoginState>()))
+            .Returns((string key, LoginState expected) =>
+                rejectCleanup ? Task.FromException<bool>(cleanupFailure) : cache.RemoveIfEqualAsync(key, expected));
 
         // Act
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -282,17 +282,17 @@ public sealed class AuthServiceTests : TestWithServices
         var continueWrite = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         int writes = 0;
         bool? staleWriteCommitted = null;
-        cacheMock.Setup(client => client.ReplaceIfEqualAsync(
+        cacheMock.Setup(client => client.RemoveIfEqualAsync(
                 It.Is<string>(key => key.Contains("user:", StringComparison.Ordinal)),
-                It.IsAny<LoginState>(), It.IsAny<LoginState>(), It.IsAny<TimeSpan?>()))
-            .Returns(async (string key, LoginState value, LoginState expected, TimeSpan? expiresIn) =>
+                It.IsAny<LoginState>()))
+            .Returns(async (string key, LoginState expected) =>
             {
                 if (Interlocked.Increment(ref writes) != 1)
-                    return await cache.ReplaceIfEqualAsync(key, value, expected, expiresIn);
+                    return await cache.RemoveIfEqualAsync(key, expected);
 
                 observed.TrySetResult();
                 await continueWrite.Task.WaitAsync(TestTimeout, TestCancellationToken);
-                staleWriteCommitted = await cache.ReplaceIfEqualAsync(key, value, expected, expiresIn);
+                staleWriteCommitted = await cache.RemoveIfEqualAsync(key, expected);
                 return staleWriteCommitted.Value;
             });
 
@@ -461,10 +461,9 @@ public sealed class AuthServiceTests : TestWithServices
 
                 return added;
             });
-        cacheMock.Setup(client => client.ReplaceIfEqualAsync(
-                It.IsAny<string>(), It.IsAny<LoginState>(), It.IsAny<LoginState>(), It.IsAny<TimeSpan?>()))
-            .Returns((string key, LoginState value, LoginState expected, TimeSpan? expiresIn) =>
-                injectFailures ? Task.FromException<bool>(cleanupFailure) : cache.ReplaceIfEqualAsync(key, value, expected, expiresIn));
+        cacheMock.Setup(client => client.RemoveIfEqualAsync(It.IsAny<string>(), It.IsAny<LoginState>()))
+            .Returns((string key, LoginState expected) =>
+                injectFailures ? Task.FromException<bool>(cleanupFailure) : cache.RemoveIfEqualAsync(key, expected));
 
         // Act
         var acquisition = service.TryBeginLoginAsync(EmailAddress, IpAddress, cancellation.Token);
@@ -671,6 +670,29 @@ public sealed class AuthServiceTests : TestWithServices
             It.Is<TimeSpan?>(expiresIn => expiresIn.HasValue && expiresIn.Value <= CacheClientExtensions.MinimumExpiration)), Times.Never);
         cacheMock.Verify(client => client.ReplaceIfEqualAsync(It.IsAny<string>(), It.IsAny<LoginState>(), It.IsAny<LoginState>(),
             It.Is<TimeSpan?>(expiresIn => expiresIn.HasValue && expiresIn.Value <= CacheClientExtensions.MinimumExpiration)), Times.Never);
+        cacheMock.Verify(client => client.RemoveIfEqualAsync(It.IsAny<string>(), It.IsAny<LoginState>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TryBeginLoginAsync_SaturatedIp_DoesNotRetainRejectedAccountState()
+    {
+        // Arrange
+        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var service = CreateService(cache);
+        var occupied = await Task.WhenAll(Enumerable.Range(0, 15).Select(index =>
+            service.TryBeginLoginAsync($"existing{index}@exceptionless.test", IpAddress, TestCancellationToken)));
+        Assert.All(occupied, Assert.NotNull);
+        int occupiedEntryCount = cache.Count;
+
+        // Act
+        var rejected = await Task.WhenAll(Enumerable.Range(0, 3).Select(index =>
+            service.TryBeginLoginAsync($"rejected{index}@exceptionless.test", IpAddress, TestCancellationToken)));
+        int retainedEntryCount = cache.Count;
+        await DisposeAttemptsAsync(occupied.Concat(rejected));
+
+        // Assert
+        Assert.All(rejected, Assert.Null);
+        Assert.Equal(occupiedEntryCount, retainedEntryCount);
     }
 
     [Fact]
@@ -993,6 +1015,8 @@ public sealed class AuthServiceTests : TestWithServices
         mock.Setup(client => client.ReplaceIfEqualAsync(
                 It.IsAny<string>(), It.IsAny<LoginState>(), It.IsAny<LoginState>(), It.IsAny<TimeSpan?>()))
             .Returns((string key, LoginState value, LoginState expected, TimeSpan? expiresIn) => cache.ReplaceIfEqualAsync(key, value, expected, expiresIn));
+        mock.Setup(client => client.RemoveIfEqualAsync(It.IsAny<string>(), It.IsAny<LoginState>()))
+            .Returns((string key, LoginState expected) => cache.RemoveIfEqualAsync(key, expected));
         return mock;
     }
 
