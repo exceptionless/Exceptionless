@@ -7,8 +7,10 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Security;
 using Foundatio.Caching;
+using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -34,10 +36,27 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         // Arrange
         TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
         var cache = GetService<ICacheClient>();
-        var service = GetService<AuthService>();
         var repository = new Mock<IUserRepository>();
+        var service = new AuthService(repository.Object, cache, TimeProvider, Log);
         string passwordHash = Password.ToSaltedHash(Salt);
         int requestCount = limit + 1;
+        var users = Enumerable.Range(0, differentUsers ? requestCount : 1)
+            .Select(index => new User
+            {
+                Id = index.ToString("D24"),
+                EmailAddress = differentUsers ? $"user{index}@exceptionless.test" : EmailAddress,
+                FullName = "Admission Test User",
+                IsEmailAddressVerified = true,
+                Password = passwordHash,
+                Salt = Salt,
+                Roles = new HashSet<string> { AuthorizationRoles.User }
+            }).ToArray();
+        var usersByEmail = users.ToDictionary(user => user.EmailAddress);
+        foreach (var user in users)
+        {
+            repository.Setup(repository => repository.GetByIdAsync(user.Id, It.IsAny<ICommandOptions>()))
+                .ReturnsAsync(user);
+        }
         var releases = Enumerable.Range(0, requestCount)
             .Select(_ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
         int repositoryCalls = 0;
@@ -46,16 +65,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
             {
                 int call = Interlocked.Increment(ref repositoryCalls) - 1;
                 await releases[call].Task.WaitAsync(TestTimeout, TestCancellationToken);
-                return new User
-                {
-                    Id = "123456789012345678901234",
-                    EmailAddress = email,
-                    FullName = "Admission Test User",
-                    IsEmailAddressVerified = true,
-                    Password = passwordHash,
-                    Salt = Salt,
-                    Roles = new HashSet<string> { AuthorizationRoles.User }
-                };
+                return usersByEmail[email];
             });
 
         // Act
@@ -80,26 +90,44 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         Assert.Equal(limit, initiallyAdmitted);
         Assert.True(allWaiting);
         Assert.All(results, result => Assert.Equal(validPassword, result.Succeeded));
-        repository.Verify(repository => repository.GetByEmailAddressAsync(It.IsAny<string>()), Times.Exactly(validPassword ? requestCount : limit));
+        int expectedChecks = validPassword ? requestCount : limit;
+        for (int index = 0; index < users.Length; index++)
+        {
+            var user = users[index];
+            int expectedCalls = differentUsers ? (index < expectedChecks ? 1 : 0) : expectedChecks;
+            repository.Verify(repository => repository.GetByEmailAddressAsync(user.EmailAddress), Times.Exactly(expectedCalls));
+            repository.Verify(repository => repository.GetByIdAsync(user.Id, It.IsAny<ICommandOptions>()), Times.Exactly(expectedCalls));
+        }
         repository.VerifyNoOtherCalls();
     }
 
     [Theory]
-    [InlineData(false, false, 1)]
-    [InlineData(false, true, 1)]
-    [InlineData(true, false, 1)]
-    [InlineData(true, true, 0)]
-    public async Task AuthenticateAsync_RepositoryException_LogsUnexpectedFailureAndReleasesAdmission(bool cancellationException, bool cancelRequest, int expectedErrors)
+    [InlineData(false, false, false, 1)]
+    [InlineData(false, true, false, 1)]
+    [InlineData(true, false, false, 1)]
+    [InlineData(true, true, false, 0)]
+    [InlineData(false, false, true, 1)]
+    [InlineData(false, true, true, 1)]
+    [InlineData(true, false, true, 1)]
+    [InlineData(true, true, true, 0)]
+    public async Task AuthenticateAsync_RepositoryException_LogsUnexpectedFailureAndReleasesAdmission(bool cancellationException, bool cancelRequest, bool currentRead, int expectedErrors)
     {
         // Arrange
         TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
         var cache = GetService<ICacheClient>();
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        var service = GetService<AuthService>();
         var repository = new Mock<IUserRepository>();
+        var service = new AuthService(repository.Object, cache, TimeProvider, Log);
         Exception failure = cancellationException ? new OperationCanceledException(cancellation.Token) : new IOException("Synthetic repository failure.");
-        repository.Setup(repository => repository.GetByEmailAddressAsync(EmailAddress))
-            .Callback(() =>
+        if (currentRead)
+        {
+            repository.Setup(repository => repository.GetByEmailAddressAsync(EmailAddress))
+                .ReturnsAsync(new User { Id = TestConstants.UserId, EmailAddress = EmailAddress });
+        }
+        var lookup = currentRead
+            ? repository.Setup(repository => repository.GetByIdAsync(TestConstants.UserId, It.IsAny<ICommandOptions>()))
+            : repository.Setup(repository => repository.GetByEmailAddressAsync(EmailAddress));
+        lookup.Callback(() =>
             {
                 if (cancelRequest)
                     cancellation.Cancel();
@@ -120,6 +148,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         Assert.Equal(expectedErrors, errors.Length);
         Assert.All(errors, entry => Assert.Same(failure, entry.Exception));
         repository.Verify(repository => repository.GetByEmailAddressAsync(EmailAddress), Times.Once);
+        repository.Verify(repository => repository.GetByIdAsync(TestConstants.UserId, It.IsAny<ICommandOptions>()), Times.Exactly(currentRead ? 1 : 0));
         repository.VerifyNoOtherCalls();
     }
 

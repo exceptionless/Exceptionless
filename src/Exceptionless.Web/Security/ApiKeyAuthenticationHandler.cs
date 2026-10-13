@@ -184,7 +184,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         User? user;
         try
         {
-            user = await _userRepository.GetByEmailAddressAsync(emailAddress);
+            user = await _authService.AuthenticateAsync(emailAddress, authInfo.Password);
         }
         catch (Exception ex)
         {
@@ -194,7 +194,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return AuthenticateResult.Fail(ex);
         }
 
-        if (user is not { IsActive: true } || !user.IsCorrectPassword(authInfo.Password))
+        if (user is null)
         {
             await _authService.RecordLoginFailureAsync(loginAttempt);
             return AuthenticateResult.Fail("User is not valid");
