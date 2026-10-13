@@ -202,12 +202,14 @@ public class Bootstrapper
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
         services.AddHttpClient<IOAuthClientMetadataService, OAuthClientMetadataService>()
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            .ConfigurePrimaryHttpMessageHandler(serviceProvider => new SocketsHttpHandler
             {
+                // Metadata is public and anonymous. Cookies or a proxy could send credentials or bypass destination validation.
                 AllowAutoRedirect = false,
                 UseCookies = false,
                 UseProxy = false,
-                ConnectCallback = ConnectToPublicAddressAsync
+                ConnectCallback = (context, cancellationToken) => ConnectToPublicAddressAsync(context, cancellationToken,
+                    serviceProvider.GetRequiredService<ILogger<OAuthClientMetadataService>>())
             });
         services.AddSingleton<SourceMapRequestThrottle>();
         services.AddHttpClient(SourceMapService.HttpClientName)
@@ -228,7 +230,7 @@ public class Bootstrapper
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
     }
 
-    private static async ValueTask<Stream> ConnectToPublicAddressAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    private static async ValueTask<Stream> ConnectToPublicAddressAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken, ILogger logger)
     {
         var addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken);
         Exception? lastException = null;
@@ -246,11 +248,11 @@ public class Bootstrapper
             catch (SocketException ex)
             {
                 lastException = ex;
-                socket.Dispose();
+                socket.DisposeFailedConnection(logger);
             }
             catch
             {
-                socket.Dispose();
+                socket.DisposeFailedConnection(logger);
                 throw;
             }
         }

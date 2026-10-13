@@ -88,11 +88,11 @@ public sealed class SourceMapRequestThrottle
             catch (SocketException ex)
             {
                 lastException = ex;
-                socket.Dispose();
+                socket.DisposeFailedConnection(_logger);
             }
             catch
             {
-                socket.Dispose();
+                socket.DisposeFailedConnection(_logger);
                 throw;
             }
         }

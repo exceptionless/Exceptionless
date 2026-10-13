@@ -1,21 +1,32 @@
+using System.Net;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.SourceMaps;
 using Xunit;
 
 namespace Exceptionless.Tests.Services;
 
 public sealed class OutboundTransportTests(ITestOutputHelper output) : TestWithServices(output)
 {
-    [Fact]
-    public void MetadataClient_Transport_UsesDirectPublicConnections()
+    [Theory]
+    [InlineData(nameof(IOAuthClientMetadataService), DecompressionMethods.None)]
+    [InlineData(SourceMapService.HttpClientName, DecompressionMethods.All)]
+    [InlineData(SourceMapService.GeneratedFileHttpClientName, DecompressionMethods.None)]
+    public void OutboundClient_RegisteredHandler_DisablesCookiesProxiesAndAutomaticRedirects(string clientName, DecompressionMethods expectedDecompression)
     {
+        // Arrange
         var factory = GetService<IHttpMessageHandlerFactory>();
-        HttpMessageHandler handler = factory.CreateHandler(nameof(IOAuthClientMetadataService));
+
+        // Act: inspect the actual registrations without making an outbound request.
+        HttpMessageHandler handler = factory.CreateHandler(clientName);
         while (handler is DelegatingHandler delegatingHandler)
             handler = Assert.IsAssignableFrom<HttpMessageHandler>(delegatingHandler.InnerHandler);
+
+        // Assert
         var sockets = Assert.IsType<SocketsHttpHandler>(handler);
         Assert.False(sockets.AllowAutoRedirect);
         Assert.False(sockets.UseCookies);
         Assert.False(sockets.UseProxy);
         Assert.NotNull(sockets.ConnectCallback);
+        Assert.Equal(expectedDecompression, sockets.AutomaticDecompression);
     }
 }
