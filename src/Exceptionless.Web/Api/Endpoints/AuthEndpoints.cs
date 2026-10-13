@@ -104,12 +104,14 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with GitHub")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
+                ["401"] = "Sign-in failed",
                 ["403"] = "Account Creation is currently disabled",
                 ["422"] = "Validation error",
             }
@@ -122,12 +124,14 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with Google")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
+                ["401"] = "Sign-in failed",
                 ["403"] = "Account Creation is currently disabled",
                 ["422"] = "Validation error",
             }
@@ -140,12 +144,14 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with Facebook")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
+                ["401"] = "Sign-in failed",
                 ["403"] = "Account Creation is currently disabled",
                 ["422"] = "Validation error",
             }
@@ -158,12 +164,14 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with Microsoft")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
+                ["401"] = "Sign-in failed",
                 ["403"] = "Account Creation is currently disabled",
                 ["422"] = "Validation error",
             }

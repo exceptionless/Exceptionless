@@ -524,6 +524,11 @@ public class AuthHandler(
         {
             user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            logger.LogWarning(ex, "External login failed for {EmailAddress}: Account unavailable", userInfo.Email);
+            return Result.Unauthorized("Login failed.");
+        }
         catch (ApplicationException ex)
         {
             logger.LogCritical(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
@@ -551,9 +556,13 @@ public class AuthHandler(
         var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(userInfo.ProviderName).Identity(userInfo.Email).SetHttpContext(httpContext));
 
+        if (existingUser is not null)
+            EnsureUserIsActive(existingUser);
+
         if (String.IsNullOrWhiteSpace(inviteToken) && httpContext.User.IsUserAuthType())
         {
             var currentUser = httpContext.Request.GetUser();
+            EnsureUserIsActive(currentUser);
             if (existingUser is not null)
             {
                 if (!String.Equals(existingUser.Id, currentUser.Id, StringComparison.Ordinal))
@@ -598,6 +607,7 @@ public class AuthHandler(
             await AddGlobalAdminRoleIfFirstUserAsync(user);
         }
 
+        EnsureUserIsActive(user);
         user.MarkEmailAddressVerified();
         user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
 
@@ -607,6 +617,12 @@ public class AuthHandler(
             await userRepository.SaveAsync(user, o => o.Cache());
 
         return user;
+    }
+
+    private static void EnsureUserIsActive(User user)
+    {
+        if (!user.IsActive)
+            throw new UnauthorizedAccessException("The user is inactive.");
     }
 
     private async Task<bool> IsAccountCreationEnabledAsync(string? token)
