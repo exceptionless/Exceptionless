@@ -28,8 +28,6 @@ internal sealed class AppUrlBuilder
 
     public string ProjectIntegrations(string projectId) => Build($"project/{projectId}/integrations");
 
-    public string RateNotificationSettings(string projectId) => ProjectNotifications(projectId);
-
     public string OrganizationDashboard(string organizationId) => Build($"organization/{organizationId}/dashboard");
 
     public string Signup(string token) => Build($"signup?token={Uri.EscapeDataString(token)}");

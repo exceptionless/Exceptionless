@@ -91,13 +91,13 @@ public sealed class MailerTests : TestWithServices
     [Theory]
     [InlineData("http://localhost:9001", "http://localhost:9001/account/notifications?project=project-1")]
     [InlineData("http://localhost:9001/#!", "http://localhost:9001/account/notifications?project=project-1")]
-    public void RateNotificationSettings_BaseUrlVariant_UsesSvelteRoute(string baseUrl, string expected)
+    public void ProjectNotifications_BaseUrlVariant_UsesSvelteRoute(string baseUrl, string expected)
     {
         // Arrange
         var appUrls = new AppUrlBuilder(baseUrl);
 
         // Act
-        string url = appUrls.RateNotificationSettings("project-1");
+        string url = appUrls.ProjectNotifications("project-1");
 
         // Assert
         Assert.Equal(expected, url);
@@ -119,7 +119,6 @@ public sealed class MailerTests : TestWithServices
             ("stack/stack-1/ignored", appUrls.IgnoreStack("stack-1")),
             ("stack/stack-1/discarded", appUrls.DiscardStack("stack-1")),
             ("account/notifications?project=project-1", appUrls.ProjectNotifications("project-1")),
-            ("account/notifications?project=project-1", appUrls.RateNotificationSettings("project-1")),
             ("organization/organization-1/dashboard", appUrls.OrganizationDashboard("organization-1")),
             ("signup?token=token-1", appUrls.Signup("token-1")),
             ("organization/organization-1/upgrade", appUrls.OrganizationUpgrade("organization-1")),

@@ -360,7 +360,7 @@ public class Mailer : IMailer
                 ? new EmailAction("View Project Timeline", _appUrls.ProjectTimeline(project.Id))
                 : new EmailAction("View Stack", stackLink.Url),
             stackLink,
-            [new("Manage rate notification rules", _appUrls.RateNotificationSettings(project.Id))]);
+            [new("Manage rate notification rules", _appUrls.ProjectNotifications(project.Id))]);
 
         await QueueMessageAsync(new MailMessage
         {
