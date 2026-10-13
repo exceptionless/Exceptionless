@@ -136,5 +136,4 @@ public sealed class AuthHandlerTests : TestWithServices
             TimeProvider,
             Log.CreateLogger<AuthHandler>());
     }
-
 }

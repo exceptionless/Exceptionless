@@ -249,11 +249,14 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (!user.HasValidAuthenticationVersion(tokenRecord.AuthenticationVersion))
+        if (!user.IsActive)
         {
             await DisableOAuthTokenAsync(tokenRecord);
             return AuthenticateResult.Fail("User is not valid");
         }
+
+        if (!user.HasValidAuthenticationVersion(tokenRecord.AuthenticationVersion))
+            return AuthenticateResult.Fail("User is not valid");
 
         var activeOAuthOrganizationIds = user.GetActiveOAuthOrganizationIds(tokenRecord);
         if (activeOAuthOrganizationIds.Count == 0)
