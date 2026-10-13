@@ -149,7 +149,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         // Assert
         Assert.Equal(expectedSuccess, result.Succeeded);
         users.Verify(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>()), Times.Once);
-        tokens.Verify(repository => repository.GetByIdAsync(tokenId, It.IsAny<CommandOptionsDescriptor<Token>>()), Times.Once);
+        tokens.Verify(repository => repository.GetByIdAsync(tokenId, It.IsAny<CommandOptionsDescriptor<Token>>()), Times.Exactly(2));
         users.VerifyNoOtherCalls();
         tokens.VerifyNoOtherCalls();
         oauthTokens.VerifyNoOtherCalls();
