@@ -202,23 +202,23 @@ public class Bootstrapper
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
         services.AddHttpClient<IOAuthClientMetadataService, OAuthClientMetadataService>()
-            .ConfigurePrimaryHttpMessageHandler(serviceProvider => new SocketsHttpHandler
+            .ConfigurePrimaryHttpMessageHandler(s => new SocketsHttpHandler
             {
-                // Metadata is public and anonymous. Cookies or a proxy could send credentials or bypass destination validation.
+                // Disable the cookie and proxy defaults: downloads are anonymous and proxies bypass destination address validation.
                 AllowAutoRedirect = false,
                 UseCookies = false,
                 UseProxy = false,
                 ConnectCallback = (context, cancellationToken) => ConnectToPublicAddressAsync(context, cancellationToken,
-                    serviceProvider.GetRequiredService<ILogger<OAuthClientMetadataService>>())
+                    s.GetRequiredService<ILogger<OAuthClientMetadataService>>())
             });
         services.AddSingleton<SourceMapRequestThrottle>();
         services.AddHttpClient(SourceMapService.HttpClientName)
-            .ConfigurePrimaryHttpMessageHandler(serviceProvider => CreateSourceMapHttpMessageHandler(
-                serviceProvider.GetRequiredService<SourceMapRequestThrottle>(),
+            .ConfigurePrimaryHttpMessageHandler(s => CreateSourceMapHttpMessageHandler(
+                s.GetRequiredService<SourceMapRequestThrottle>(),
                 DecompressionMethods.All));
         services.AddHttpClient(SourceMapService.GeneratedFileHttpClientName)
-            .ConfigurePrimaryHttpMessageHandler(serviceProvider => CreateSourceMapHttpMessageHandler(
-                serviceProvider.GetRequiredService<SourceMapRequestThrottle>(),
+            .ConfigurePrimaryHttpMessageHandler(s => CreateSourceMapHttpMessageHandler(
+                s.GetRequiredService<SourceMapRequestThrottle>(),
                 DecompressionMethods.None));
         services.AddSingleton<SourceMapService>();
         services.AddSingleton<OAuthService>();
@@ -248,11 +248,11 @@ public class Bootstrapper
             catch (SocketException ex)
             {
                 lastException = ex;
-                socket.DisposeFailedConnection(logger);
+                OutboundSocketCleanup.Dispose(socket, logger);
             }
             catch
             {
-                socket.DisposeFailedConnection(logger);
+                OutboundSocketCleanup.Dispose(socket, logger);
                 throw;
             }
         }

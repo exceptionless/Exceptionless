@@ -11,7 +11,7 @@ public sealed class OutboundTransportTests(ITestOutputHelper output) : TestWithS
     [InlineData(nameof(IOAuthClientMetadataService), DecompressionMethods.None)]
     [InlineData(SourceMapService.HttpClientName, DecompressionMethods.All)]
     [InlineData(SourceMapService.GeneratedFileHttpClientName, DecompressionMethods.None)]
-    public void OutboundClient_RegisteredHandler_DisablesCookiesProxiesAndAutomaticRedirects(string clientName, DecompressionMethods expectedDecompression)
+    public void CreateHandler_OutboundClientRegistrations_UsesRestrictedTransportSettings(string clientName, DecompressionMethods expectedDecompression)
     {
         // Arrange
         var factory = GetService<IHttpMessageHandlerFactory>();

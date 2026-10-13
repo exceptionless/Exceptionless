@@ -1,10 +1,8 @@
-using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Configuration;
-using Exceptionless.Core.Utility;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
 
@@ -67,14 +65,9 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         }
         catch (Exception ex) when (IsExpectedFetchError(ex))
         {
-            LogUnableToFetchMetadata(ex, clientId);
+            logger.LogWarning(ex, "Unable to fetch OAuth client metadata document for {ClientId} {Message}", clientId, ex.Message);
             return await CacheFailureAsync(failureCacheKey);
         }
-    }
-
-    private void LogUnableToFetchMetadata(Exception ex, string clientId)
-    {
-        logger.LogWarning(ex, "Unable to fetch OAuth client metadata document for {ClientId}.", clientId);
     }
 
     private async Task<OAuthClientMetadataDocument?> CacheFailureAsync(string failureCacheKey)
@@ -154,10 +147,6 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         memoryStream.Position = 0;
         return memoryStream;
     }
-
-
-    public static bool IsPublicAddress(IPAddress address) => PublicAddressPolicy.IsPublic(address);
-
     private static string GetCacheKey(string clientId)
     {
         return CachePrefix + GetCacheKeyHash(clientId);

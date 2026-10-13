@@ -599,7 +599,7 @@ public sealed class SourceMapService : IDisposable
     {
         _logger.LogDebug(
             exception,
-            "Unable to download a source map for {GeneratedFileUrl}: {FailureType}: {FailureMessage}",
+            "Unable to download a source map for {GeneratedFileUrl} {FailureType} {Message}",
             generatedFileUrl,
             exception.GetType().Name,
             exception.Message);
