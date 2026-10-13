@@ -29,20 +29,23 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
     [InlineData(true, true, 15)]
     [InlineData(false, false, 5)]
     [InlineData(true, false, 15)]
-    public async Task AuthenticateAsync_ConcurrentBasicRequests_PreservesValidBurstsAndBoundsFailedChecks(bool differentUsers, bool validPassword, int limit)
+    public async Task AuthenticateAsync_OverlappingBasicRequests_PreservesValidBurstsAndBoundsFailedChecks(bool differentUsers, bool validPassword, int limit)
     {
         // Arrange
         TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
         var cache = GetService<ICacheClient>();
         var service = GetService<AuthService>();
         var repository = new Mock<IUserRepository>();
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         string passwordHash = Password.ToSaltedHash(Salt);
         int requestCount = limit + 1;
+        var releases = Enumerable.Range(0, requestCount)
+            .Select(_ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
+        int repositoryCalls = 0;
         repository.Setup(repository => repository.GetByEmailAddressAsync(It.IsAny<string>()))
             .Returns(async (string email) =>
             {
-                await release.Task.WaitAsync(TestTimeout, TestCancellationToken);
+                int call = Interlocked.Increment(ref repositoryCalls) - 1;
+                await releases[call].Task.WaitAsync(TestTimeout, TestCancellationToken);
                 return new User
                 {
                     Id = "123456789012345678901234",
@@ -61,10 +64,15 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
             validPassword ? Password : "wrong-password", repository.Object, service, cache, TimeProvider, TestCancellationToken)).ToArray();
         int initiallyAdmitted = repository.Invocations.Count;
         bool allWaiting = requests.All(request => !request.IsCompleted);
-        release.TrySetResult();
-        await Task.WhenAll(requests.Take(limit)).WaitAsync(TestTimeout, TestCancellationToken);
-        // One request crosses the actual user/IP admission boundary. Complete the
-        // admitted checks before advancing the waiter, avoiding scheduler-dependent waves.
+        // Keep requests overlapping at admission, with controlled completion order.
+        // Simultaneous provider writes are tracked separately in #2655.
+        for (int index = 0; index < limit; index++)
+        {
+            releases[index].TrySetResult();
+            await requests[index].WaitAsync(TestTimeout, TestCancellationToken);
+        }
+
+        releases[limit].TrySetResult();
         TimeProvider.Advance(TimeSpan.FromMilliseconds(50));
         var results = await Task.WhenAll(requests).WaitAsync(TestTimeout, TestCancellationToken);
 
