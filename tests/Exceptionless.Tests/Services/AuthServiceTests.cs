@@ -22,7 +22,7 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task ClearUserLoginAttemptsAsync_ConcurrentFailure_PreservesNewFailureAndPendingReservation()
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         await FailAsync(service);
@@ -113,7 +113,7 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task DisposeAsync_CleanupFailure_PreservesRequestFailureAndReleasesOtherBudget()
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         var requestFailure = new InvalidOperationException("Synthetic request failure.");
@@ -169,7 +169,7 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task RecordLoginFailureAsync_FailedOutcomeWrite_RetainsBothBudgets(bool commitBeforeFailure)
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         var attempt = await BeginAsync(service);
@@ -230,7 +230,7 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task RecordLoginFailureAsync_ReplacedState_PreservesNewReservations()
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var service = CreateService(cache);
         await using var old = await BeginAsync(service);
         await cache.RemoveAllAsync();
@@ -260,6 +260,7 @@ public sealed class AuthServiceTests : TestWithServices
         await service.RecordLoginFailureAsync(failed);
 
         // Act
+        await service.RecordLoginFailureAsync(failed);
         await service.RecordLoginSuccessAsync(failed);
         var remaining = await ReserveAsync(service, 5, ipAddress: null);
         await DisposeAttemptsAsync(remaining);
@@ -272,7 +273,7 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task RecordLoginSuccessAsync_ConcurrentFailures_PreservesNewFailuresAndReservations()
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var first = CreateService(cacheMock.Object);
         var second = CreateService(cacheMock.Object);
@@ -384,7 +385,7 @@ public sealed class AuthServiceTests : TestWithServices
     {
         // Arrange
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         string? ipAddress = includeIpAddress ? IpAddress : null;
@@ -441,7 +442,7 @@ public sealed class AuthServiceTests : TestWithServices
     {
         // Arrange
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         var acquisitionFailure = new InvalidOperationException("Synthetic acquisition failure.");
@@ -498,7 +499,7 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task TryBeginLoginAsync_ConcurrentStateChange_RetriesWithinSharedAccountLimit()
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var first = CreateService(cacheMock.Object);
         var second = CreateService(cacheMock.Object);
@@ -605,7 +606,7 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task TryBeginLoginAsync_IpCacheFailure_ReleasesAccountReservation()
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         var failure = new IOException("Synthetic IP cache failure.");
@@ -632,7 +633,7 @@ public sealed class AuthServiceTests : TestWithServices
     {
         // Arrange
         TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 14, 0, TimeSpan.Zero));
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         await using var old = await BeginAsync(service);
@@ -677,29 +678,29 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task TryBeginLoginAsync_SaturatedIp_DoesNotRetainRejectedAccountState()
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var service = CreateService(cache);
         var occupied = await Task.WhenAll(Enumerable.Range(0, 15).Select(index =>
             service.TryBeginLoginAsync($"existing{index}@exceptionless.test", IpAddress, TestCancellationToken)));
         Assert.All(occupied, Assert.NotNull);
-        int occupiedEntryCount = cache.Count;
 
         // Act
         var rejected = await Task.WhenAll(Enumerable.Range(0, 3).Select(index =>
             service.TryBeginLoginAsync($"rejected{index}@exceptionless.test", IpAddress, TestCancellationToken)));
-        int retainedEntryCount = cache.Count;
+        var retainedStates = await Task.WhenAll(Enumerable.Range(0, 3).Select(index =>
+            cache.GetAsync<LoginState>($"Auth:user:rejected{index}@exceptionless.test:attempts:{new DateTime(2026, 1, 1, 12, 15, 0, DateTimeKind.Utc).Ticks}")));
         await DisposeAttemptsAsync(occupied.Concat(rejected));
 
         // Assert
         Assert.All(rejected, Assert.Null);
-        Assert.Equal(occupiedEntryCount, retainedEntryCount);
+        Assert.All(retainedStates, state => Assert.False(state.HasValue));
     }
 
     [Fact]
     public async Task WaitForLoginAsync_CancelledDuringSaturationRead_PreservesCancellationAndFailures()
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
@@ -743,6 +744,34 @@ public sealed class AuthServiceTests : TestWithServices
         // Assert
         Assert.Null(result);
         Assert.Equal(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero), TimeProvider.GetUtcNow());
+    }
+
+    [Fact]
+    public async Task WaitForLoginAsync_CacheReadCrossesDeadline_DeniesAdmission()
+    {
+        // Arrange
+        var cache = GetService<ICacheClient>();
+        var cacheMock = CreateCacheMock(cache);
+        var service = CreateService(cacheMock.Object);
+        var occupied = await ReserveAsync(service, 5);
+        int reads = 0;
+        cacheMock.Setup(client => client.GetAsync<LoginState>(It.IsAny<string>()))
+            .Returns(async (string key) =>
+            {
+                var state = await cache.GetAsync<LoginState>(key);
+                if (Interlocked.Increment(ref reads) == 2)
+                    TimeProvider.Advance(TimeSpan.FromSeconds(2));
+
+                return state;
+            });
+
+        // Act
+        var result = await service.WaitForLoginAsync(EmailAddress, IpAddress, TestCancellationToken);
+        await DisposeAttemptsAsync(occupied);
+
+        // Assert
+        Assert.Null(result);
+        Assert.All(occupied, Assert.NotNull);
     }
 
     [Fact]
@@ -791,7 +820,7 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task WaitForLoginAsync_RejectedWrites_PacesRetriesUntilDeadline()
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         var continueWrite = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -822,7 +851,7 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task WaitForLoginAsync_RetryCompletesAfterDeadline_ReleasesAdmission()
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         var occupied = await ReserveAsync(service, 5);
@@ -917,7 +946,7 @@ public sealed class AuthServiceTests : TestWithServices
     public async Task WaitForLoginAsync_WaitersExit_RestoresRetryCapacity(string outcome)
     {
         // Arrange
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(TimeProvider));
+        var cache = GetService<ICacheClient>();
         var cacheMock = CreateCacheMock(cache);
         var service = CreateService(cacheMock.Object);
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
@@ -1005,7 +1034,7 @@ public sealed class AuthServiceTests : TestWithServices
         return attempt;
     }
 
-    private static Mock<ICacheClient> CreateCacheMock(InMemoryCacheClient cache)
+    private static Mock<ICacheClient> CreateCacheMock(ICacheClient cache)
     {
         var mock = new Mock<ICacheClient>(MockBehavior.Strict);
         mock.Setup(client => client.GetAsync<LoginState>(It.IsAny<string>()))

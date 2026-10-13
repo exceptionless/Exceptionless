@@ -112,6 +112,7 @@ public sealed class AuthService
     private async Task<(LoginAttempt? Attempt, (string Key, int Limit)? BlockedBudget)> TryBeginLoginCoreAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(emailAddress);
+
         if (ipAddress is not null)
             ArgumentException.ThrowIfNullOrWhiteSpace(ipAddress);
 
@@ -168,6 +169,7 @@ public sealed class AuthService
     public async Task RecordLoginSuccessAsync(LoginAttempt attempt)
     {
         ArgumentNullException.ThrowIfNull(attempt);
+
         if (attempt.TryComplete())
             await ReleaseAsync(attempt.Reservations, attempt.ExpiresUtc, clearFailures: true);
     }
@@ -191,7 +193,6 @@ public sealed class AuthService
 
     private async Task<LoginState?> TryUpdateAttemptsAsync(string key, DateTime expiresUtc, Func<LoginState, LoginState?> update, CancellationToken cancellationToken = default)
     {
-        // TODO: Upgrade Foundatio before merging: https://github.com/exceptionless/Exceptionless/issues/2655.
         for (int attempt = 0; attempt < MaximumUpdateAttempts; attempt++)
         {
             cancellationToken.ThrowIfCancellationRequested();

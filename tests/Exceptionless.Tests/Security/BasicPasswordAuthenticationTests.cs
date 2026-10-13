@@ -12,7 +12,6 @@ using Foundatio.Caching;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Time.Testing;
 using Moq;
 using Xunit;
 
@@ -33,9 +32,9 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
     public async Task AuthenticateAsync_ConcurrentBasicRequests_PreservesValidBurstsAndBoundsFailedChecks(bool differentUsers, bool validPassword, int limit)
     {
         // Arrange
-        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(clock));
-        var service = new AuthService(cache, clock, Log);
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
+        var cache = GetService<ICacheClient>();
+        var service = GetService<AuthService>();
         var repository = new Mock<IUserRepository>();
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         string passwordHash = Password.ToSaltedHash(Salt);
@@ -59,14 +58,14 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
         // Act
         var requests = Enumerable.Range(0, requestCount).Select(index => AuthenticateAsync(
             differentUsers ? $"user{index}@exceptionless.test" : EmailAddress,
-            validPassword ? Password : "wrong-password", repository.Object, service, cache, clock, TestCancellationToken)).ToArray();
+            validPassword ? Password : "wrong-password", repository.Object, service, cache, TimeProvider, TestCancellationToken)).ToArray();
         int initiallyAdmitted = repository.Invocations.Count;
         bool allWaiting = requests.All(request => !request.IsCompleted);
         release.TrySetResult();
         await Task.WhenAll(requests.Take(limit)).WaitAsync(TestTimeout, TestCancellationToken);
         // One request crosses the actual user/IP admission boundary. Complete the
         // admitted checks before advancing the waiter, avoiding scheduler-dependent waves.
-        clock.Advance(TimeSpan.FromMilliseconds(50));
+        TimeProvider.Advance(TimeSpan.FromMilliseconds(50));
         var results = await Task.WhenAll(requests).WaitAsync(TestTimeout, TestCancellationToken);
 
         // Assert
@@ -85,10 +84,10 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
     public async Task AuthenticateAsync_RepositoryException_LogsUnexpectedFailureAndReleasesAdmission(bool cancellationException, bool cancelRequest, int expectedErrors)
     {
         // Arrange
-        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
-        using var cache = new InMemoryCacheClient(options => options.TimeProvider(clock));
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
+        var cache = GetService<ICacheClient>();
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        var service = new AuthService(cache, clock, Log);
+        var service = GetService<AuthService>();
         var repository = new Mock<IUserRepository>();
         Exception failure = cancellationException ? new OperationCanceledException(cancellation.Token) : new IOException("Synthetic repository failure.");
         repository.Setup(repository => repository.GetByEmailAddressAsync(EmailAddress))
@@ -100,7 +99,7 @@ public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) :
             .ThrowsAsync(failure);
 
         // Act
-        var result = await AuthenticateAsync(EmailAddress, Password, repository.Object, service, cache, clock, cancellation.Token);
+        var result = await AuthenticateAsync(EmailAddress, Password, repository.Object, service, cache, TimeProvider, cancellation.Token);
         var attempts = await Task.WhenAll(Enumerable.Range(0, 15).Select(index => service.TryBeginLoginAsync(
             index < 5 ? EmailAddress : $"other{index}@exceptionless.test", "192.0.2.1", TestCancellationToken)));
         await Task.WhenAll(attempts.OfType<AuthService.LoginAttempt>().Select(attempt => attempt.DisposeAsync().AsTask()));
