@@ -74,12 +74,12 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Theory]
-    [InlineData("http://localhost:9001", "http://localhost:9001/organization/organization-1/manage?tab=billing")]
-    [InlineData("http://localhost:9001/#!", "http://localhost:9001/#!/organization/organization-1/manage?tab=billing")]
+    [InlineData("http://localhost:9001", "http://localhost:9001/organization/organization-1/billing")]
+    [InlineData("http://localhost:9001/#!", "http://localhost:9001/organization/organization-1/billing")]
     public void OrganizationBilling_BaseUrlVariant_MatchesExistingTemplate(string baseUrl, string expected)
     {
         // Arrange
-        var appUrls = new EmailAppUrlBuilder(baseUrl);
+        var appUrls = new AppUrlBuilder(baseUrl);
 
         // Act
         string url = appUrls.OrganizationBilling("organization-1");
@@ -89,12 +89,12 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Theory]
-    [InlineData("http://localhost:9001", "http://localhost:9001/next/account/notifications?project=project-1")]
-    [InlineData("http://localhost:9001/#!", "http://localhost:9001/next/account/notifications?project=project-1")]
+    [InlineData("http://localhost:9001", "http://localhost:9001/account/notifications?project=project-1")]
+    [InlineData("http://localhost:9001/#!", "http://localhost:9001/account/notifications?project=project-1")]
     public void RateNotificationSettings_BaseUrlVariant_UsesSvelteRoute(string baseUrl, string expected)
     {
         // Arrange
-        var appUrls = new EmailAppUrlBuilder(baseUrl);
+        var appUrls = new AppUrlBuilder(baseUrl);
 
         // Act
         string url = appUrls.RateNotificationSettings("project-1");
@@ -104,11 +104,11 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
-    public void EmailAppUrlBuilder_ProductionBaseUrl_MatchesExistingTemplates()
+    public void AppUrlBuilder_ProductionBaseUrl_UsesRootSvelteRoutes()
     {
         // Arrange
         const string baseUrl = "https://be.exceptionless.io";
-        var appUrls = new EmailAppUrlBuilder(baseUrl);
+        var appUrls = new AppUrlBuilder(baseUrl);
 
         // Act
         (string Path, string Url)[] routes =
@@ -118,19 +118,19 @@ public sealed class MailerTests : TestWithServices
             ("stack/stack-1/mark-fixed", appUrls.MarkStackFixed("stack-1")),
             ("stack/stack-1/ignored", appUrls.IgnoreStack("stack-1")),
             ("stack/stack-1/discarded", appUrls.DiscardStack("stack-1")),
-            ("account/manage?projectId=project-1&tab=notifications", appUrls.ProjectNotifications("project-1")),
-            ("next/account/notifications?project=project-1", appUrls.RateNotificationSettings("project-1")),
+            ("account/notifications?project=project-1", appUrls.ProjectNotifications("project-1")),
+            ("account/notifications?project=project-1", appUrls.RateNotificationSettings("project-1")),
             ("organization/organization-1/dashboard", appUrls.OrganizationDashboard("organization-1")),
             ("signup?token=token-1", appUrls.Signup("token-1")),
             ("organization/organization-1/upgrade", appUrls.OrganizationUpgrade("organization-1")),
-            ("organization/organization-1/frequent", appUrls.OrganizationFrequent("organization-1")),
-            ("organization/organization-1/manage", appUrls.OrganizationManage("organization-1")),
-            ("organization/organization-1/manage?tab=billing", appUrls.OrganizationBilling("organization-1")),
-            ("project/project-1/error/timeline", appUrls.ProjectTimeline("project-1")),
+            ("organization/organization-1/dashboard?view=stacks", appUrls.OrganizationFrequent("organization-1")),
+            ("organization/organization-1/usage", appUrls.OrganizationManage("organization-1")),
+            ("organization/organization-1/billing", appUrls.OrganizationBilling("organization-1")),
+            ("project/project-1/dashboard?type=error", appUrls.ProjectTimeline("project-1")),
             ("project/project-1/configure", appUrls.ProjectConfigure("project-1")),
-            ("project/project-1/error/frequent", appUrls.ProjectMostFrequent("project-1")),
-            ("project/project-1/error/new", appUrls.ProjectNewest("project-1")),
-            ("account/manage?tab=notifications", appUrls.AccountNotifications()),
+            ("project/project-1/dashboard?type=error&view=stacks", appUrls.ProjectMostFrequent("project-1")),
+            ("project/project-1/dashboard?type=error&view=stacks", appUrls.ProjectNewest("project-1")),
+            ("account/notifications", appUrls.AccountNotifications()),
             ("account/verify?token=token-1", appUrls.VerifyEmail("token-1")),
             ("reset-password/token-1", appUrls.PasswordReset("token-1")),
             ("reset-password/token-1?cancel=true", appUrls.PasswordReset("token-1", cancel: true))
@@ -491,6 +491,12 @@ public sealed class MailerTests : TestWithServices
         await _mailer.SendEventNoticeAsync(user, ev, project, RandomData.GetBool(), RandomData.GetBool(), 1);
         var body = await RunMailJobAsync();
         Assert.Contains("View Event Details", body, StringComparison.Ordinal);
+        Assert.Contains("Mark event as fixed", body, StringComparison.Ordinal);
+        Assert.Contains("Stop sending notifications for this event", body, StringComparison.Ordinal);
+        Assert.Contains("Discard future event occurrences", body, StringComparison.Ordinal);
+        string baseUrl = _options.BaseURL.GetOrigin();
+        foreach (string action in new[] { "mark-fixed", "ignored", "discarded" })
+            Assert.Contains($"href=\"{baseUrl}/stack/{ev.StackId}/{action}\"", body, StringComparison.Ordinal);
         return body;
     }
 
@@ -743,7 +749,7 @@ public sealed class MailerTests : TestWithServices
         Assert.DoesNotContain("<script>alert(1)</script>", body, StringComparison.Ordinal);
         Assert.Contains("View Stack", body, StringComparison.Ordinal);
         Assert.Contains("Manage rate notification rules", body, StringComparison.Ordinal);
-        Assert.Contains($"/next/account/notifications?project={project.Id}", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
+        Assert.Contains($"/account/notifications?project={project.Id}", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
         Assert.Contains($"/stack/{stack.Id}", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
     }
 
@@ -775,8 +781,8 @@ public sealed class MailerTests : TestWithServices
         // Assert
         Assert.Contains("View Project Timeline", body, StringComparison.Ordinal);
         Assert.Contains("Manage rate notification rules", body, StringComparison.Ordinal);
-        Assert.Contains($"/project/{project.Id}/error/timeline", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
-        Assert.Contains($"/next/account/notifications?project={project.Id}", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
+        Assert.Contains($"/project/{project.Id}/dashboard?type=error", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
+        Assert.Contains($"/account/notifications?project={project.Id}", WebUtility.HtmlDecode(body), StringComparison.Ordinal);
         Assert.DoesNotContain("/stack/", body, StringComparison.Ordinal);
     }
 
@@ -911,13 +917,7 @@ public sealed class MailerTests : TestWithServices
     private static void AssertValidInternalUrl(Uri uri)
     {
         Assert.Empty(uri.Fragment);
-        Assert.Matches(@"^/(?:next/account/notifications|event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|error/(?:timeline|frequent|new))|account/(?:manage|verify)|organization/[^/]+/(?:dashboard|upgrade|frequent|manage)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
-
-        if (uri.AbsolutePath == "/next/account/notifications")
-        {
-            Assert.Matches(@"^\?project=[^?&#]+$", uri.Query);
-            return;
-        }
+        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|dashboard)|account/(?:notifications|verify)|organization/[^/]+/(?:dashboard|usage|billing|upgrade)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
 
         if (uri.AbsolutePath is "/account/verify" or "/signup")
         {
@@ -925,21 +925,27 @@ public sealed class MailerTests : TestWithServices
             return;
         }
 
-        if (uri.AbsolutePath == "/account/manage")
+        if (uri.AbsolutePath == "/account/notifications")
         {
-            Assert.Matches(@"^\?(?:tab=notifications|projectId=[^?&#]+&tab=notifications)$", uri.Query);
+            Assert.Matches(@"^(?:|\?project=[^?&#]+)$", uri.Query);
             return;
         }
 
-        if (Regex.IsMatch(uri.AbsolutePath, @"^/organization/[^/]+/manage$"))
+        if (Regex.IsMatch(uri.AbsolutePath, @"^/organization/[^/]+/billing$"))
         {
-            Assert.Matches(@"^(?:|\?tab=billing)$", uri.Query);
+            Assert.Matches(@"^(?:|\?changePlan=true)$", uri.Query);
             return;
         }
 
         if (Regex.IsMatch(uri.AbsolutePath, @"^/reset-password/[^/]+$"))
         {
             Assert.Matches(@"^(?:|\?cancel=true)$", uri.Query);
+            return;
+        }
+
+        if (Regex.IsMatch(uri.AbsolutePath, @"^/(?:project|organization)/[^/]+/dashboard$"))
+        {
+            Assert.Matches(@"^(?:|\?(?:type=error(?:&view=stacks)?|view=stacks))$", uri.Query);
             return;
         }
 

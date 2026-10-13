@@ -13,7 +13,7 @@ test('personal rate notification rule can be created and managed', async ({ e2eA
 
     await test.step('create a rule with actions visible at a standard laptop viewport', async () => {
         await page.setViewportSize({ height: 720, width: 1280 });
-        await page.goto(`/next/account/notifications?project=${e2eScenario.projectId}`);
+        await page.goto(`/account/notifications?project=${e2eScenario.projectId}`);
 
         await expect(page.getByRole('heading', { name: 'Rate Notifications' })).toBeVisible();
         await expect(page.getByText('before they consume your event quota')).toBeVisible();

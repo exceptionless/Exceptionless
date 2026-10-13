@@ -1,8 +1,6 @@
 @apiUrl = http://localhost:7110/api/v2
 @email = admin@exceptionless.test
 @password = tester
-@organizationId = 537650f3b77efe23a47914f3
-@projectId = 537650f3b77efe23a47914f4
 
 ### login to test account
 # @name login
@@ -18,34 +16,13 @@ Content-Type: application/json
 
 @token = {{login.response.body.$.token}}
 
-
-### All
+### Find open stacks
 # @name allStacks
-GET {{apiUrl}}/stacks?limit=1
+GET {{apiUrl}}/stacks?limit=10&filter=status:open
 Authorization: Bearer {{token}}
 
 ###
 @stackId = {{allStacks.response.body.$[0].id}}
-
-### Get By Organization Id
-GET {{apiUrl}}/stacks?organization={{organizationId}}
-Authorization: Bearer {{token}}
-
-### Get By Organization Id with Filter (e.g., discarded stacks)
-GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=status:discarded
-Authorization: Bearer {{token}}
-
-### Get By Organization Id with Filter (e.g., stacks with specific tag)
-GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=tag:production
-Authorization: Bearer {{token}}
-
-### Get By Project With Premium Filter (returns 426 for a free organization)
-GET {{apiUrl}}/projects/{{projectId}}/stacks?filter=title:timeout
-Authorization: Bearer {{token}}
-
-### Get By Organization Id with Filter (e.g., stacks with type and status)
-GET {{apiUrl}}/stacks?organization={{organizationId}}&filter=type:error%20status:open
-Authorization: Bearer {{token}}
 
 ### Get By Id
 GET {{apiUrl}}/stacks/{{stackId}}
@@ -56,58 +33,14 @@ POST {{apiUrl}}/stacks/{{stackId}}/change-status?status=open
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
-### Mark Fixed
-POST {{apiUrl}}/stacks/{{stackId}}/mark-fixed
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
 ### Mark Snoozed
 POST {{apiUrl}}/stacks/{{stackId}}/mark-snoozed?snoozeUntilUtc=2030-12-31T00:00:00Z
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
-### Mark Critical
-POST {{apiUrl}}/stacks/{{stackId}}/mark-critical
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### Mark Not Critical
-DELETE {{apiUrl}}/stacks/{{stackId}}/mark-critical
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### Promote
-POST {{apiUrl}}/stacks/{{stackId}}/promote
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### AddLink
+### Attach an issue or documentation link
 POST {{apiUrl}}/stacks/{{stackId}}/add-link
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
-{ "value": "https://localhost" }
-
-### Delete
-DELETE {{apiUrl}}/stacks/{{stackId}}
-Authorization: Bearer {{token}}
-
-### Bulk Change Status (multiple stack IDs)
-POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/change-status?status=open
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### Bulk Mark Fixed (multiple stack IDs)
-POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/mark-fixed
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### Bulk Mark Snoozed (multiple stack IDs)
-POST {{apiUrl}}/stacks/{{stackId}},{{stackId}}/mark-snoozed?snoozeUntilUtc=2030-12-31T00:00:00Z
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### Bulk Delete (multiple stack IDs)
-DELETE {{apiUrl}}/stacks/{{stackId}},{{stackId}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
+{ "value": "https://example.com/issues/123" }

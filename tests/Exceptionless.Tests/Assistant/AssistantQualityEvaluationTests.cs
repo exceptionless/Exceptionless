@@ -56,7 +56,7 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
 
         var currentPage = await SendAssistantTurnAsync(
             "What am I looking at, and what is the most useful thing to investigate next?",
-            $"/next/stack/{_currentStack.Id}/event/{_currentEvent.Id}",
+            $"/stack/{_currentStack.Id}/event/{_currentEvent.Id}",
             SampleDataService.TEST_PROJECT_ID);
         AssertSuccessfulAnswer(currentPage);
         Assert.Equal(1, currentPage.ToolCalls.Count(call => call == "get_event"));
@@ -66,21 +66,21 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
 
         var projectTopErrors = await SendAssistantTurnAsync(
             "What are the top errors in this project in the last 24 hours? Link each result.",
-            "/next/stack",
+            "/stack",
             SampleDataService.TEST_PROJECT_ID);
         AssertSuccessfulAnswer(projectTopErrors);
         Assert.Equal(1, projectTopErrors.ToolCalls.Count(call => call == "search_stacks"));
         Assert.DoesNotContain("list_projects", projectTopErrors.ToolCalls);
-        Assert.Contains("/next/stack/", projectTopErrors.Text, StringComparison.Ordinal);
+        Assert.Contains("/stack/", projectTopErrors.Text, StringComparison.Ordinal);
 
         var organizationTopErrors = await SendAssistantTurnAsync(
             "Across all projects in this organization, what are the top errors in the last 24 hours? Link each result.",
-            "/next/stack/all",
+            "/stack/all",
             projectId: null);
         AssertSuccessfulAnswer(organizationTopErrors);
         Assert.Equal(1, organizationTopErrors.ToolCalls.Count(call => call == "list_projects"));
         Assert.InRange(organizationTopErrors.ToolCalls.Count(call => call == "search_stacks"), 1, AssistantLimits.MaximumProjectsPerTurn);
-        Assert.Contains("/next/stack/", organizationTopErrors.Text, StringComparison.Ordinal);
+        Assert.Contains("/stack/", organizationTopErrors.Text, StringComparison.Ordinal);
 
         var clientSetup = await SendAssistantTurnAsync(
             "How do I configure this project to start sending events?",
