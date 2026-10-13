@@ -73,7 +73,7 @@
         return group === 'Settings' || group.endsWith(' Settings');
     }
 
-    let { footer, header, onSavedViewOrderChange, routes, ...props }: Props = $props();
+    let { footer, header, onSavedViewOrderChange, ref = $bindable(null), routes, ...props }: Props = $props();
     const dashboardRoutes = $derived(routes.filter((route) => route.group === 'Dashboards'));
 
     const settingsRoutes = $derived(routes.filter((route) => route.group === 'Settings'));
@@ -359,14 +359,14 @@
     });
 </script>
 
-<Sidebar.Root collapsible="icon" {...props}>
+<Sidebar.Root bind:ref collapsible="icon" data-tour="app-navigation" {...props}>
     <Sidebar.Header class={!sidebar.isMobile ? 'mt-16' : ''}>
         {#if header}
             {@render header()}
         {/if}
     </Sidebar.Header>
     <Sidebar.Content>
-        <Sidebar.Group class="pt-0">
+        <Sidebar.Group class="pt-0" data-tour="saved-view-navigation">
             <Sidebar.Menu>
                 {#each dashboardRoutes as route (route.href)}
                     {@const Icon = route.icon}
@@ -378,7 +378,7 @@
                                 <DropdownMenu.Trigger>
                                     {#snippet child({ props })}
                                         <Sidebar.MenuItem onmouseenter={() => openHoverMenu(menuId)} onmouseleave={() => closeHoverMenu(menuId)}>
-                                            <Sidebar.MenuButton tooltipContent={route.title} {...props}>
+                                            <Sidebar.MenuButton data-tour={`navigation-${route.title.toLowerCase()}`} tooltipContent={route.title} {...props}>
                                                 <Icon />
                                                 <span>{route.title}</span>
                                             </Sidebar.MenuButton>
@@ -411,7 +411,11 @@
                             </DropdownMenu.Root>
                         {:else}
                             <Sidebar.MenuItem>
-                                <Sidebar.MenuButton isActive={isRouteActive(route)} tooltipContent={route.title}>
+                                <Sidebar.MenuButton
+                                    data-tour={`navigation-${route.title.toLowerCase()}`}
+                                    isActive={isRouteActive(route)}
+                                    tooltipContent={route.title}
+                                >
                                     {#snippet child({ props })}
                                         <A variant="ghost" href={route.href} title={route.title} onclick={onMenuClick} {...props}>
                                             <Icon />
@@ -427,7 +431,11 @@
                                 <Sidebar.MenuItem {...collapsibleProps}>
                                     <Collapsible.Trigger>
                                         {#snippet child({ props: triggerProps })}
-                                            <Sidebar.MenuButton {...triggerProps} class="group-has-data-[sidebar=menu-action]/menu-item:pr-14">
+                                            <Sidebar.MenuButton
+                                                data-tour={`navigation-${route.title.toLowerCase()}`}
+                                                {...triggerProps}
+                                                class="group-has-data-[sidebar=menu-action]/menu-item:pr-14"
+                                            >
                                                 {#snippet child({ props: buttonProps })}
                                                     <button type="button" title={route.title} {...buttonProps}>
                                                         <Icon />
@@ -491,7 +499,7 @@
                         </Collapsible.Root>
                     {:else}
                         <Sidebar.MenuItem>
-                            <Sidebar.MenuButton isActive={isRouteActive(route)}>
+                            <Sidebar.MenuButton data-tour={`navigation-${route.title.toLowerCase()}`} isActive={isRouteActive(route)}>
                                 {#snippet child({ props })}
                                     <A variant="ghost" href={route.href} title={route.title} onclick={onMenuClick} {...props}>
                                         <Icon />

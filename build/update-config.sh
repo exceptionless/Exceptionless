@@ -1,65 +1,56 @@
 #!/bin/bash
+set -euo pipefail
 
-ApiUrl="${EX_ApiUrl:-}"
-Html5Mode="${EX_Html5Mode:-false}"
-EnableSsl="${EX_EnableSsl:-false}"
-EnableAccountCreation="${EX_EnableAccountCreation:-true}"
-
-OAuth="${EX_ConnectionStrings__OAuth:-}"
-IFS=';' read -a oauthParts <<< "$OAuth"
-for part in ${oauthParts[@]}
-do
-  key="$( cut -d '=' -f 1 <<< $part )"; echo "key: $key"
-  value="$( cut -d '=' -f 2- <<< $part )"; echo "value: $value"
-
-  if [ "$key" == "FacebookId" ]; then
-    FacebookAppId=$value
-  fi
-  if [ "$key" == "GitHubId" ]; then
-    GitHubAppId=$value
-  fi
-  if [ "$key" == "GoogleId" ]; then
-    GoogleAppId=$value
-  fi
-  if [ "$key" == "IntercomId" ]; then
-    IntercomAppId=$value
-  fi
-  if [ "$key" == "MicrosoftId" ]; then
-    MicrosoftAppId=$value
-  fi
-  if [ "$key" == "SlackId" ]; then
-    SlackAppId=$value
-  fi
+# Only publish client IDs. OAuth secrets must never enter env.js or startup logs.
+declare -A oauth_ids=()
+IFS=';' read -ra oauth_parts <<< "${EX_ConnectionStrings__OAuth:-}"
+for part in "${oauth_parts[@]}"; do
+    key="${part%%=*}"
+    key="${key//[[:space:]]/}"
+    value="${part#*=}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    case "$key" in
+        FacebookId|GitHubId|GoogleId|IntercomId|MicrosoftId|SlackId)
+            oauth_ids[$key]="$value" ;;
+    esac
 done
 
-config_header="(function () {
-  'use strict';
+js_string() {
+    local value="${1:-}"
+    value="${value//\\/\\\\}"
+    value="${value//\'/\\\'}"
+    value="${value//$'\r'/\\r}"
+    value="${value//$'\n'/\\n}"
+    printf "'%s'" "$value"
+}
 
-  angular.module('app.config', [])"
+write_setting() {
+    printf '    %s: ' "$1"
+    js_string "$2"
+    printf ',\n'
+}
 
-config="
-    .constant('BASE_URL', '$ApiUrl' || window.location.origin)
-    .constant('EXCEPTIONLESS_API_KEY', '$EX_ExceptionlessApiKey')
-    .constant('EXCEPTIONLESS_SERVER_URL', '$EX_ExceptionlessServerUrl')
-    .constant('FACEBOOK_APPID', '$FacebookAppId')
-    .constant('GITHUB_APPID', '$GitHubAppId')
-    .constant('GOOGLE_APPID', '$GoogleAppId')
-    .constant('INTERCOM_APPID', '$IntercomAppId')
-    .constant('LIVE_APPID', '$MicrosoftAppId')
-    .constant('SLACK_APPID', '$SlackAppId')
-    .constant('STRIPE_PUBLISHABLE_KEY', '$EX_StripePublishableApiKey')
-    .constant('SYSTEM_NOTIFICATION_MESSAGE', '$EX_NotificationMessage')
-    .constant('USE_HTML5_MODE', $Html5Mode)
-    .constant('USE_SSL', $EnableSsl)
-    .constant('ENABLE_ACCOUNT_CREATION', $EnableAccountCreation);"
-config_footer="
-}());"
+mkdir -p _app
+{
+    printf 'export const env={\n    PUBLIC_BASE_URL: '
+    js_string "${EX_ApiUrl:-}"
+    printf ' || window.location.origin,\n'
+    write_setting PUBLIC_ENABLE_ACCOUNT_CREATION "${EX_EnableAccountCreation:-true}"
+    write_setting PUBLIC_ENABLE_SSL "${EX_EnableSsl:-false}"
+    write_setting PUBLIC_SYSTEM_NOTIFICATION_MESSAGE "${EX_NotificationMessage:-}"
+    write_setting PUBLIC_EXCEPTIONLESS_API_KEY "${EX_ExceptionlessApiKey:-}"
+    write_setting PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL "${EX_ClientSetupShowServerUrl:-true}"
+    write_setting PUBLIC_EXCEPTIONLESS_SERVER_URL "${EX_ExceptionlessServerUrl:-}"
+    write_setting PUBLIC_STRIPE_PUBLISHABLE_KEY "${EX_StripePublishableApiKey:-}"
+    write_setting PUBLIC_FACEBOOK_APPID "${oauth_ids[FacebookId]:-}"
+    write_setting PUBLIC_GITHUB_APPID "${oauth_ids[GitHubId]:-}"
+    write_setting PUBLIC_GOOGLE_APPID "${oauth_ids[GoogleId]:-}"
+    write_setting PUBLIC_MICROSOFT_APPID "${oauth_ids[MicrosoftId]:-}"
+    write_setting PUBLIC_INTERCOM_APPID "${oauth_ids[IntercomId]:-}"
+    write_setting PUBLIC_SLACK_APPID "${oauth_ids[SlackId]:-}"
+    printf '};\n'
+} > _app/env.js
 
-echo "Exceptionless UI Config"
-echo "$config"
-
-checksum=`echo -n $config | md5sum | cut -c 1-32`
-echo "$config_header$config$config_footer" > "app.config.$checksum.js"
-
-CONTENT=$(cat index.html)
-echo "$CONTENT" | sed -E "s/app\.config\..+\.js/app.config.$checksum.js/" > index.html
+checksum=$(md5sum _app/env.js | cut -c 1-32)
+sed -E -i "s|/_app/env.js(\\?v=[a-f0-9]+)?|/_app/env.js?v=$checksum|g" index.html

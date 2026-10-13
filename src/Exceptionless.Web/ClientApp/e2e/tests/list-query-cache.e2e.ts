@@ -1,6 +1,7 @@
 import type { Page, Request } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
+import { installWebSocketTestHarness } from '../support/web-socket';
 
 interface RequestCounts {
     eventList: number;
@@ -11,6 +12,9 @@ interface RequestCounts {
 }
 
 test('stack and event queries reuse fresh parameterized data during in-app navigation', async ({ e2eApi, page }) => {
+    // Measure navigation cache reuse without lazy saved-view creation or other server
+    // broadcasts invalidating the data. Live update behavior has separate coverage.
+    await installWebSocketTestHarness(page, { ignoreServerMessages: true });
     const userToken = await e2eApi.login();
     const organizations = await e2eApi.getOrganizations(userToken);
     const organizationId = organizations[0]?.id;
@@ -37,7 +41,7 @@ test('stack and event queries reuse fresh parameterized data during in-app navig
             runtimeErrors.push(message.text());
         }
     });
-    page.on('pageerror', (error) => runtimeErrors.push(error.stack ?? error.message));
+    page.on('pageerror', (error) => runtimeErrors.push(error.stack || error.message));
     page.on('request', (request) => recordListRequest(requestCounts, request));
     page.on('requestfailed', (request) => {
         if (isApiRequest(request)) {
@@ -88,34 +92,31 @@ function isListRequest(request: Request): boolean {
 
 async function navigateToList(page: Page, name: 'Events' | 'Stacks'): Promise<void> {
     if (page.url() === 'about:blank') {
-        await page.goto(`/next/${name.toLowerCase().replace(/s$/, '')}/all`);
+        await page.goto(`/${name.toLowerCase().replace(/s$/, '')}/all`);
     } else {
-        const directLink = page.getByRole('link', { exact: true, name });
-        if ((await directLink.count()) > 0) {
-            await directLink.click();
-        } else {
-            const allLink = page.locator(`a[href="/next/${name.toLowerCase().replace(/s$/, '')}/all"]`);
-            if (!(await allLink.isVisible())) {
-                await page.getByRole('button', { exact: true, name }).click();
-            }
-
-            await allLink.click();
+        // Predefined views turn the temporary direct link into a group after loading.
+        // Wait for that group's All link instead of choosing a transient control.
+        const allLink = page.locator(`a[href="/${name.toLowerCase().replace(/s$/, '')}/all"]`);
+        if (!(await allLink.isVisible())) {
+            await page.getByRole('button', { exact: true, name }).click();
         }
+
+        await allLink.click();
     }
 
     const path = name.toLowerCase().replace(/s$/, '');
-    await expect(page).toHaveURL(new RegExp(`/next/${path}(?:/all)?(?:[?#]|$)`));
+    await expect(page).toHaveURL(new RegExp(`/${path}(?:/all)?(?:[?#]|$)`));
     await waitForListRefresh(page);
 }
 
 async function navigateToStackView(page: Page, name: string, slug: string): Promise<void> {
-    const link = page.locator(`a[href="/next/stack/${slug}"]`);
+    const link = page.locator(`a[href="/stack/${slug}"]`);
     if (!(await link.isVisible())) {
         await page.getByRole('button', { exact: true, name: 'Stacks' }).click();
     }
 
     await link.click();
-    await expect(page).toHaveURL(new RegExp(`/next/stack/${slug}(?:[?#]|$)`));
+    await expect(page).toHaveURL(new RegExp(`/stack/${slug}(?:[?#]|$)`));
     await expect(page.getByRole('heading', { exact: true, name })).toBeVisible();
     await waitForListRefresh(page);
 }

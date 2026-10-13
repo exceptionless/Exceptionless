@@ -182,6 +182,7 @@ public class Bootstrapper
         services.AddSingleton<ILockProvider>(s => s.GetRequiredService<CacheLockProvider>());
         services.AddTransient<StripeEventHandler>();
         services.AddSingleton<IStripeBillingClient, StripeBillingClient>();
+        services.AddSingleton<AuthService>();
         services.AddSingleton<BillingManager>();
         services.AddSingleton<BillingPlans>();
         services.AddSingleton<EventPostService>();
