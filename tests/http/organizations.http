@@ -1,7 +1,6 @@
 @apiUrl = http://localhost:7110/api/v2
 @email = admin@exceptionless.test
 @password = tester
-@organizationId = 537650f3b77efe23a47914f3
 
 ### login to test account
 # @name login
@@ -16,105 +15,37 @@ Content-Type: application/json
 ###
 
 @token = {{login.response.body.$.token}}
-@iconFile = ./icon.png
 
 ### All
 GET {{apiUrl}}/organizations
 Authorization: Bearer {{token}}
 
-### Filtered
-GET {{apiUrl}}/organizations?filter=Acme
-Authorization: Bearer {{token}}
-
-### By Id
-GET {{apiUrl}}/organizations/{{organizationId}}
-Authorization: Bearer {{token}}
-
-### Invoices
-# @name invoices
-GET {{apiUrl}}/organizations/{{organizationId}}/invoices
-Authorization: Bearer {{token}}
-
-### Invoice by Id
-@invoiceId = {{invoices.response.body.$[0].id}}
-GET {{apiUrl}}/organizations/invoice/{{invoiceId}}
-Authorization: Bearer {{token}}
-
-### Create
+### Create an organization
 # @name newOrganization
 POST {{apiUrl}}/organizations
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
-{ "name": "My new organization" }
+{ "name": "HTTP sample organization" }
 
 ###
 @organizationId = {{newOrganization.response.body.$.id}}
 
-### Change Plan (JSON body - preferred)
+### Invite a user
+POST {{apiUrl}}/organizations/{{organizationId}}/users/new-user@exceptionless.test
+Authorization: Bearer {{token}}
+
+### Remove User
+DELETE {{apiUrl}}/organizations/{{organizationId}}/users/new-user@exceptionless.test
+Authorization: Bearer {{token}}
+
+### Change the sample organization plan
 POST {{apiUrl}}/organizations/{{organizationId}}/change-plan
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "plan_id": "EX_FREE" }
 
-### Change Plan (query params - legacy)
-POST {{apiUrl}}/organizations/{{organizationId}}/change-plan?planId=EX_FREE
-Authorization: Bearer {{token}}
-
-### Add User
-POST {{apiUrl}}/organizations/{{organizationId}}/users/test2@localhost
-Authorization: Bearer {{token}}
-
-### Update
-PATCH {{apiUrl}}/organizations/{{organizationId}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ "name": "My updated organization" }
-
-### Upload Icon
-# Replace {{iconFile}} with a local PNG, JPEG, GIF, or WebP image.
-POST {{apiUrl}}/organizations/{{organizationId}}/icon
-Authorization: Bearer {{token}}
-Content-Type: multipart/form-data; boundary=icon-boundary
-
---icon-boundary
-Content-Disposition: form-data; name="file"; filename="icon.png"
-Content-Type: image/png
-
-< {{iconFile}}
---icon-boundary--
-
-### Remove Icon
-DELETE {{apiUrl}}/organizations/{{organizationId}}/icon
-Authorization: Bearer {{token}}
-
-### Delete
+### Delete the sample organization
 DELETE {{apiUrl}}/organizations/{{organizationId}}
 Authorization: Bearer {{token}}
-
-### Remove User
-DELETE {{apiUrl}}/organizations/{{organizationId}}/users/test2@localhost
-Authorization: Bearer {{token}}
-
-### Add Data
-POST {{apiUrl}}/organizations/{{organizationId}}/data/my-test-key
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ "value": "My updated organization" }
-
-### Remove Data
-DELETE {{apiUrl}}/organizations/{{organizationId}}/data/my-test-key
-Authorization: Bearer {{token}}
-
-### Suspend
-POST {{apiUrl}}/organizations/{{organizationId}}/suspend?code=1&notes=suspended-for-being-awesome
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### Unsuspend
-DELETE {{apiUrl}}/organizations/{{organizationId}}/suspend
-Authorization: Bearer {{token}}
-Content-Type: application/json

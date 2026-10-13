@@ -8,16 +8,16 @@ const resizeObservers: ResizeObserverMock[] = [];
 
 class ResizeObserverMock {
     private observedElements = new Set<Element>();
-    disconnect = vi.fn(() => {
+    public disconnect = vi.fn(() => {
         this.observedElements.clear();
     });
 
-    observe = vi.fn((element: Element) => {
+    public observe = vi.fn((element: Element) => {
         this.observedElements.add(element);
     });
 
-    takeRecords = vi.fn(() => []);
-    unobserve = vi.fn((element: Element) => {
+    public takeRecords = vi.fn(() => []);
+    public unobserve = vi.fn((element: Element) => {
         this.observedElements.delete(element);
     });
     private callback: ResizeObserverCallback;
@@ -26,7 +26,7 @@ class ResizeObserverMock {
         resizeObservers.push(this);
     }
 
-    trigger(element: Element) {
+    public trigger(element: Element) {
         if (this.observedElements.has(element)) {
             this.callback([{ target: element } as ResizeObserverEntry], this as unknown as ResizeObserver);
         }

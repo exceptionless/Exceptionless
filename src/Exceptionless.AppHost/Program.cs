@@ -13,10 +13,6 @@ IResourceBuilder<ParameterResource>? assistantApiKey = !String.IsNullOrWhiteSpac
 bool servicesOnly = HasArgument("--services-only");
 bool ciE2E = HasArgument("--ci-e2e");
 bool includeDevTools = !ciE2E;
-int oldAppHttpPort = worktreePorts?.OldAppHttp ?? 7120;
-int oldAppPort = worktreePorts?.OldAppHttps ?? 7121;
-int oldAppLiveReloadPort = worktreePorts?.OldAppLiveReload ?? 35729;
-string oldAppAspNetCoreUrls = String.Concat("http://localhost:", oldAppHttpPort);
 int appPort = worktreePorts?.AppHttps ?? 7131;
 string appOrigin = worktreePorts?.AppHttpsUrl ?? $"https://web-ex.dev.localhost:{appPort}";
 int docsPort = worktreePorts?.DocsHttp ?? 7141;
@@ -25,8 +21,20 @@ string exceptionlessServerUrl = worktreePorts?.ApiHttpsUrl ?? $"https://api-ex.d
 const string SharedEmailConnectionString = "smtp://localhost:1026";
 
 var elastic = builder.AddElasticsearch("Elasticsearch", port: 9200)
-    .WithDataVolume("exceptionless.data.v1")
+    // Increment the volume version for breaking data changes and preserve the previous volume.
+    .WithDataVolume("exceptionless.data.v2")
     .WithEndpointProxySupport(false);
+
+// Backend tests use in-memory queues/cache and scoped file storage. Starting the
+// other shared containers wastes CI resources and can replace a running app's
+// Azurite container when Aspire assigns different dynamic ports.
+if (HasArgument("--test-services"))
+{
+    elastic.WithLifetime(ContainerLifetime.Persistent)
+        .WithContainerName("Exceptionless-Elasticsearch");
+    await builder.Build().RunAsync();
+    return;
+}
 
 var storage = builder.AddAzureStorage("Storage")
     .RunAsEmulator(c =>
@@ -36,18 +44,21 @@ var storage = builder.AddAzureStorage("Storage")
         c.WithUrlForEndpoint("queue", u => { u.DisplayText = "Queues"; u.DisplayLocation = UrlDisplayLocation.DetailsOnly; });
         c.WithUrlForEndpoint("table", u => { u.DisplayText = "Tables"; u.DisplayLocation = UrlDisplayLocation.DetailsOnly; });
 
-        c.WithLifetime(ContainerLifetime.Persistent);
-        c.WithContainerName("Exceptionless-Storage");
-        c.WithDataVolume("exceptionless.storage.data.v1");
+        // Test runs must not replace another AppHost's emulator or share its queues.
+        if (!ciE2E)
+        {
+            c.WithLifetime(ContainerLifetime.Persistent);
+            c.WithContainerName("Exceptionless-Storage");
+            c.WithDataVolume("exceptionless.storage.data.v1");
+        }
     });
 
 var storageBlobs = storage.AddBlobs("StorageBlobs");
 var storageQueues = storage.AddQueues("StorageQueues");
 
 // Aspire reserves 6380 for Redis's secondary non-TLS endpoint when proxying is disabled.
-var cache = builder.AddRedis("Redis", port: 6381)
+var cache = builder.AddRedis("Redis", port: ciE2E ? null : 6381)
     .WithImageTag("8.6")
-    .WithDataVolume("exceptionless.redis.data.v1")
     .WithEndpointProxySupport(false)
     .WithClearCommand()
     .WithUrls(c =>
@@ -62,7 +73,7 @@ var mail = builder.AddContainer("Mail", "axllent/mailpit")
     .WithImageTag("v1.27.10")
     .WithEndpointProxySupport(false)
     .WithHttpEndpoint(port: 8026, targetPort: 8025, name: "http")
-    .WithUrlForEndpoint("http", u => { u.DisplayText = "Mail"; u.DisplayOrder = 100; })
+    .WithUrlForEndpoint("http", u => { u.DisplayText = "Mail"; })
     .WithHttpHealthCheck("/readyz")
     .WithEndpoint(targetPort: 1025, port: 1026)
     .WithUrlForEndpoint("tcp", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly);
@@ -82,9 +93,15 @@ if (!servicesOnly && includeDevTools)
 }
 
 var ownedCache = cache;
-cache = ownedCache
-    .WithLifetime(ContainerLifetime.Persistent)
-    .WithContainerName("Exceptionless-Redis");
+// Redis credentials and TLS configuration belong to one AppHost. CI sessions
+// use isolated containers and allocated ports, including in local worktrees.
+if (!ciE2E)
+{
+    cache = ownedCache
+        .WithDataVolume("exceptionless.redis.data.v1")
+        .WithLifetime(ContainerLifetime.Persistent)
+        .WithContainerName("Exceptionless-Redis");
+}
 
 if (!servicesOnly && includeDevTools)
 {
@@ -109,15 +126,19 @@ if (!servicesOnly)
         .WithReference(storageBlobs, "AzureStorage")
         .WithReference(storageQueues, "AzureQueues")
         .WithEnvironment("ConnectionStrings:Email", SharedEmailConnectionString)
+        .WithEnvironment("EX_BaseURL", appOrigin)
         .WithEnvironment("Mcp:AllowedOrigins:0", appOrigin)
         .WithEnvironment("RunJobsInProcess", "false")
         .WaitFor(elastic)
         .WaitFor(cache)
         .WaitFor(mail)
         .WithExternalHttpEndpoints()
-        .WithUrlForEndpoint("https", u => { u.DisplayText = "Open API"; u.DisplayOrder = 100; })
+        .WithUrlForEndpoint("https", u => { u.DisplayText = "Open API"; })
         .WithUrlForEndpoint("http", u => u.DisplayLocation = UrlDisplayLocation.DetailsOnly)
         .WithHttpHealthCheck("/health");
+
+    api.WithEnvironment("EX_ExceptionlessApiKey", builder.Configuration["ExceptionlessApiKey"])
+        .WithEnvironment("EX_ExceptionlessServerUrl", api.GetEndpoint("http"));
 
     if (assistantApiKey is not null)
     {
@@ -138,6 +159,10 @@ if (!servicesOnly)
         .WithReference(storageBlobs, "AzureStorage")
         .WithReference(storageQueues, "AzureQueues")
         .WithEnvironment("ConnectionStrings:Email", SharedEmailConnectionString)
+        .WithEnvironment("EX_BaseURL", appOrigin)
+        .WithEnvironment("EX_ExceptionlessApiKey", builder.Configuration["ExceptionlessApiKey"])
+        .WithEnvironment("EX_ExceptionlessServerUrl", api.GetEndpoint("http"))
+        .WaitFor(api)
         .WaitFor(elastic)
         .WaitFor(cache)
         .WaitFor(mail)
@@ -162,37 +187,12 @@ if (!servicesOnly)
     }
 
 #pragma warning disable ASPIREBROWSERLOGS001
-    var oldApp = builder.AddJavaScriptApp("OldApp", "../../src/Exceptionless.Web/ClientApp.angular", "serve")
-        .WithBrowserLogs()
-        .WithReference(api)
-        .WithEnvironment("ASPNETCORE_URLS", oldAppAspNetCoreUrls)
-        .WithEnvironment("USE_HTTPS", "true")
-        .WithEnvironment("LIVERELOAD_PORT", oldAppLiveReloadPort.ToString())
-        .WithHttpEndpoint(port: oldAppPort, targetPort: oldAppPort, name: "https", env: "PORT", isProxied: false)
-        .WithEndpoint("https", e =>
-        {
-            e.TargetHost = "angular-ex.dev.localhost";
-            e.UriScheme = "https";
-        })
-        .WithHttpsDeveloperCertificate()
-        .WithUrlForEndpoint("https", u =>
-        {
-            u.DisplayText = "Open App (Old)";
-            u.DisplayOrder = 100;
-        })
-        .WithParentRelationship(api);
-
-    if (worktreePorts is not null)
-    {
-        oldApp.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)
-            .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
-    }
-
     var app = builder.AddViteApp("App", "../Exceptionless.Web/ClientApp")
         .WithBrowserLogs()
         .WithReference(api)
-        .WithReference(oldApp)
+        .WithEnvironment("PUBLIC_EXCEPTIONLESS_API_KEY", builder.Configuration["PUBLIC_EXCEPTIONLESS_API_KEY"])
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_SERVER_URL", exceptionlessServerUrl)
+        .WithEnvironment("PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL", builder.Configuration["PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL"] ?? String.Empty)
         .WithEnvironment("PORT", appPort.ToString())
         .WithEndpoint("http", e =>
         {
@@ -203,25 +203,24 @@ if (!servicesOnly)
             e.IsProxied = false;
         })
         .WithHttpsDeveloperCertificate()
+        .WaitFor(api)
         .WithUrlForEndpoint("http", u =>
         {
             u.DisplayText = "Open App";
-            u.DisplayOrder = 100;
-            u.Url = $"{u.Url.TrimEnd('/')}/next/";
         })
         .WithParentRelationship(api);
 
     if (worktreePorts is not null)
     {
         app.WithEnvironment("API_HTTP", worktreePorts.ApiHttpUrl)
-            .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl)
-            .WithEnvironment("OLDAPP_HTTP", worktreePorts.OldAppHttpsUrl)
-            .WithEnvironment("OLDAPP_HTTPS", worktreePorts.OldAppHttpsUrl);
+            .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
     }
 
     if (includeDevTools)
     {
-        builder.AddDenoTask("Docs", "../../docs", "serve")
+#pragma warning disable ASPIREDENO001
+        builder.AddJavaScriptApp("Docs", "../../docs", "serve")
+            .WithDeno()
             .WithBrowserLogs()
             .WithHttpEndpoint(port: docsPort, targetPort: docsPort, name: "http", env: "PORT", isProxied: false)
             .WithEndpoint("http", e =>
@@ -232,9 +231,9 @@ if (!servicesOnly)
             .WithUrlForEndpoint("http", u =>
             {
                 u.DisplayText = "Open Docs";
-                u.DisplayOrder = 100;
             })
             .WithParentRelationship(api);
+#pragma warning restore ASPIREDENO001
     }
 #pragma warning restore ASPIREBROWSERLOGS001
 }
