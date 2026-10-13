@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using Microsoft.Extensions.Logging;
+using Exceptionless.Core.Services;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -24,17 +25,17 @@ internal static class LoggerExtensions
             new EventId(2, nameof(WebHookCancelledBackoff)),
             "Web hook cancelled due to {FailureCount} consecutive failed attempts. Will be allowed to try again at {NextAttempt}.");
 
-    private static readonly Action<ILogger, HttpStatusCode?, string, string, string, Exception?> _webHookTimeout =
-        LoggerMessage.Define<HttpStatusCode?, string, string, string>(
+    private static readonly Action<ILogger, HttpStatusCode?, string, string, string, string, Exception?> _webHookTimeout =
+        LoggerMessage.Define<HttpStatusCode?, string, string, string, string>(
             LogLevel.Error,
             new EventId(3, nameof(WebHookTimeout)),
-            "Timeout calling web hook: status={Status} org={organization} project={ProjectId} url={Url}");
+            "Timeout calling web hook: status={Status} organization={OrganizationId} project={ProjectId} destination={Destination} failure={ExceptionType}");
 
-    private static readonly Action<ILogger, HttpStatusCode?, string, string, string, Exception?> _webHookError =
-        LoggerMessage.Define<HttpStatusCode?, string, string, string>(
+    private static readonly Action<ILogger, HttpStatusCode?, string, string, string, string, Exception?> _webHookError =
+        LoggerMessage.Define<HttpStatusCode?, string, string, string, string>(
             LogLevel.Error,
             new EventId(4, nameof(WebHookError)),
-            "Error calling web hook: status={Status} org={organization} project={ProjectId} url={Url}");
+            "Error calling web hook: status={Status} organization={OrganizationId} project={ProjectId} destination={Destination} failure={ExceptionType}");
 
     private static readonly Action<ILogger, HttpStatusCode?, string, string, string, Exception?> _webHookComplete =
         LoggerMessage.Define<HttpStatusCode?, string, string, string>(
@@ -178,16 +179,16 @@ internal static class LoggerExtensions
         => _webHookDisabledTooManyErrors(logger, webHookId, null);
 
     public static void WebHookDisabledStatusCode(this ILogger logger, string webHookId, HttpStatusCode? statusCode, string organizationId, string projectId, string url)
-        => _webHookDisabledStatusCode(logger, webHookId, statusCode, organizationId, projectId, url, null);
+        => _webHookDisabledStatusCode(logger, webHookId, statusCode, organizationId, projectId, WebHookDestinationPolicy.GetLoggingDestination(url), null);
 
     public static void WebHookComplete(this ILogger logger, HttpStatusCode? statusCode, string organizationId, string projectId, string url)
-        => _webHookComplete(logger, statusCode, organizationId, projectId, url, null);
+        => _webHookComplete(logger, statusCode, organizationId, projectId, WebHookDestinationPolicy.GetLoggingDestination(url), null);
 
     public static void WebHookError(this ILogger logger, HttpStatusCode? statusCode, string organizationId, string projectId, string url, Exception exception)
-        => _webHookError(logger, statusCode, organizationId, projectId, url, exception);
+        => _webHookError(logger, statusCode, organizationId, projectId, WebHookDestinationPolicy.GetLoggingDestination(url), exception.GetType().Name, null);
 
     public static void WebHookTimeout(this ILogger logger, HttpStatusCode? statusCode, string organizationId, string projectId, string url, Exception exception)
-        => _webHookTimeout(logger, statusCode, organizationId, projectId, url, exception);
+        => _webHookTimeout(logger, statusCode, organizationId, projectId, WebHookDestinationPolicy.GetLoggingDestination(url), exception.GetType().Name, null);
 
     public static void WebHookCancelledBackoff(this ILogger logger, long consecutiveErrors, DateTime nextAttemptAllowedAt)
         => _webHookCancelledBackoff(logger, consecutiveErrors, nextAttemptAllowedAt, null);
@@ -196,5 +197,5 @@ internal static class LoggerExtensions
         => _webHookCancelled(logger, null);
 
     public static void RecordWebHook(this ILogger logger, string id, string projectId, string url)
-        => _recordWebHook(logger, id, projectId, url, null);
+        => _recordWebHook(logger, id, projectId, WebHookDestinationPolicy.GetLoggingDestination(url), null);
 }
