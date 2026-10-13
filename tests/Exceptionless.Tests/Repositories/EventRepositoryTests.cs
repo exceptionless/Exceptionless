@@ -220,10 +220,8 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         Assert.Equal(3, results.Total);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task RemoveAllByOrganizationAndClientIpAsync_WithDateRange_RemovesMatchingEvents(bool useLegacyOverload)
+    [Fact]
+    public async Task RemoveAllByOrganizationAndClientIpAsync_WithDateRange_RemovesMatchingEvents()
     {
         // Arrange
         const string _clientIpAddress = "123.123.12.255";
@@ -246,9 +244,7 @@ public sealed class EventRepositoryTests : IntegrationTestsBase
         var endUtc = TimeProvider.GetUtcNow().UtcDateTime.AddDays(2);
 
         // Act
-        await (useLegacyOverload
-            ? _repository.RemoveAllAsync(TestConstants.OrganizationId, _clientIpAddress, startUtc, endUtc, o => o.ImmediateConsistency())
-            : _repository.RemoveAllByOrganizationAndClientIpAsync(TestConstants.OrganizationId, _clientIpAddress, startUtc, endUtc, o => o.ImmediateConsistency()));
+        await _repository.RemoveAllByOrganizationAndClientIpAsync(TestConstants.OrganizationId, _clientIpAddress, startUtc, endUtc, o => o.ImmediateConsistency());
 
         // Assert
         events = (await _repository.GetByProjectIdAsync(TestConstants.ProjectId, o => o.PageLimit(NUMBER_OF_EVENTS_TO_CREATE))).Documents.ToList();
