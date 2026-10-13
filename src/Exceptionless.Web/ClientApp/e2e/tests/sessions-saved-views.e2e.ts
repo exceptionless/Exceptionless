@@ -29,7 +29,7 @@ test('Sessions saved views persist active state, display settings, filters, and 
         await e2eApi.submitEvent(e2eScenario.projectId, e2eScenario.projectToken, createSessionEvent({ identity, name, sessionId }));
         await e2eApi.pollForEventByReference(e2eScenario.userToken, e2eScenario.projectId, sessionId);
 
-        await page.goto('/next/sessions?time=all');
+        await page.goto('/sessions?time=all');
         await expect(page.getByRole('heading', { name: 'Sessions' })).toBeVisible();
         await expect(page.getByRole('button', { name: /^Type\b/ })).toHaveCount(0);
         await expect(getVisibleRow(page, name, identity)).toBeVisible({ timeout: 30_000 });
@@ -83,7 +83,7 @@ test('Sessions saved views persist active state, display settings, filters, and 
         await saveDialog.getByRole('button', { name: 'Save' }).click();
         await expect(saveDialog).toBeHidden({ timeout: 30_000 });
 
-        await expect(page).toHaveURL(new RegExp(`/next/sessions/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
+        await expect(page).toHaveURL(new RegExp(`/sessions/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
         await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
         await expect
             .poll(
@@ -207,7 +207,7 @@ test('Sessions legacy raw-filter views keep URL removals and session-scoped stat
     });
     expect(response.status(), await response.text()).toBe(201);
 
-    await page.goto(`/next/sessions/${viewSlug}`);
+    await page.goto(`/sessions/${viewSlug}`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     const rawFilterButton = page
         .getByRole('button', { name: new RegExp(`^Raw Filter\\s+${escapeRegExp(rawFilter)}`) })
@@ -259,7 +259,7 @@ test('Sessions ignore legacy structured Type filters and Type URL parameters', a
     });
     expect(response.status(), await response.text()).toBe(201);
 
-    await page.goto(`/next/sessions/${viewSlug}?type=log`);
+    await page.goto(`/sessions/${viewSlug}?type=log`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Type\b/ })).toHaveCount(0);
     await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);

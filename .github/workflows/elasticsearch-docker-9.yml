@@ -1,0 +1,40 @@
+name: Elasticsearch 9.x Docker Image CI
+
+on:
+  pull_request:
+    paths:
+      - "build/docker/elasticsearch/9.x/**"
+      - ".github/workflows/elasticsearch-docker-9.yml"
+  push:
+    branches: [main]
+    paths:
+      - "build/docker/elasticsearch/9.x/**"
+      - ".github/workflows/elasticsearch-docker-9.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build custom Elasticsearch 9.x docker image
+        working-directory: build/docker/elasticsearch/9.x
+        env:
+          PUBLISH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        run: |
+          VERSION=$(sed -n 's/.*elasticsearch:\([^ ]*\).*/\1/p' Dockerfile)
+          # Keep the existing latest tag on 8.x for self-hosted installations.
+          docker buildx build --platform linux/amd64,linux/arm64 --push="$PUBLISH" --file ./Dockerfile . --tag "exceptionless/elasticsearch:$VERSION"

@@ -38,20 +38,24 @@ export function getAssistantAccessQuery(request: GetAssistantAccessRequest) {
 }
 
 export function getAssistantConversationSharingQuery(request: { enabled: boolean }) {
-    return createQuery<AssistantConversationSharingSettings, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && request.enabled,
-        queryFn: async ({ signal }) => {
-            const response = await useFetchClient().getJSON<AssistantConversationSharingSettings>('assistant/conversation-sharing', {
-                signal
-            });
-            if (!response.ok) {
-                throw response.problem;
-            }
+    return createQuery<AssistantConversationSharingSettings, ProblemDetails>(() => {
+        const requestEnabled = request.enabled;
 
-            return response.data!;
-        },
-        queryKey: queryKeys.conversationSharing
-    }));
+        return {
+            enabled: () => !!accessToken.current && requestEnabled,
+            queryFn: async ({ signal }) => {
+                const response = await useFetchClient().getJSON<AssistantConversationSharingSettings>('assistant/conversation-sharing', {
+                    signal
+                });
+                if (!response.ok) {
+                    throw response.problem;
+                }
+
+                return response.data!;
+            },
+            queryKey: queryKeys.conversationSharing
+        };
+    });
 }
 
 export async function invalidateAssistantAccessQueries(queryClient: QueryClient): Promise<void> {

@@ -19,7 +19,7 @@ describe('Summary', () => {
 
         render(Summary, { showStatus: false, showType: false, summary });
 
-        expect(screen.getByRole('link', { name: 'Anonymous session' }).getAttribute('href')).toBe('/next/event/anonymous-session-event');
+        expect(screen.getByRole('link', { name: 'Anonymous session' }).getAttribute('href')).toBe('/event/anonymous-session-event');
     });
 
     it('links an event summary to that event details page', () => {
@@ -38,7 +38,7 @@ describe('Summary', () => {
 
         render(Summary, { showStatus: false, summary });
 
-        expect(screen.getByRole('link', { name: summary.data.Message }).getAttribute('href')).toBe('/next/event/event-id');
+        expect(screen.getByRole('link', { name: summary.data.Message }).getAttribute('href')).toBe('/event/event-id');
     });
 
     it('renders an event summary without an internal link when linking is disabled', () => {
@@ -83,6 +83,6 @@ describe('Summary', () => {
 
         render(Summary, { showStatus: false, summary });
 
-        expect(screen.getByRole('link', { name: summary.title }).getAttribute('href')).toBe('/next/stack/stack-id');
+        expect(screen.getByRole('link', { name: summary.title }).getAttribute('href')).toBe('/stack/stack-id');
     });
 });

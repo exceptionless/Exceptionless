@@ -106,7 +106,7 @@ export class ExceptionlessE2EJourney {
 
     public async createFirstProjectAndVerifyConfigureToken(): Promise<void> {
         if (this.projectId) {
-            await this.page.goto(`/next/project/${this.projectId}/configure`);
+            await this.page.goto(`/project/${this.projectId}/configure`);
         } else {
             await this.page.getByRole('link', { name: 'add a new project' }).click();
             await expect(this.page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
@@ -114,7 +114,7 @@ export class ExceptionlessE2EJourney {
             await this.page.getByLabel('Project Name', { exact: true }).fill(this.projectName);
             await this.page.getByRole('button', { name: 'Add Project' }).click();
 
-            await this.page.waitForURL(/\/next\/project\/[^/]+\/configure/, { timeout: 30_000 });
+            await this.page.waitForURL(/\/project\/[^/]+\/configure/, { timeout: 30_000 });
             this.projectId = getIdFromUrl(this.page, /\/project\/([^/]+)\/configure/);
         }
 
@@ -130,7 +130,7 @@ export class ExceptionlessE2EJourney {
     public async expectEventDetails(): Promise<void> {
         expect(this.eventId).toBeTruthy();
 
-        await this.page.goto(`/next/event/${this.eventId}`);
+        await this.page.goto(`/event/${this.eventId}`);
         await expect(getVisibleText(this.page, this.message)).toBeVisible({ timeout: 30_000 });
         await expect(this.page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Exception' })).toBeVisible();
@@ -164,15 +164,15 @@ export class ExceptionlessE2EJourney {
     }
 
     public async expectEventInPrimaryViews(): Promise<void> {
-        await this.page.goto('/next/event');
+        await this.page.goto('/event');
         await expect(this.page.getByRole('heading', { name: 'Events' })).toBeVisible();
         await expect(getVisibleText(this.page, this.message)).toBeVisible({ timeout: 30_000 });
 
-        await this.page.goto('/next/stack');
+        await this.page.goto('/stack');
         await expect(this.page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
         await expect(getVisibleText(this.page, this.message)).toBeVisible({ timeout: 30_000 });
 
-        await this.page.goto('/next/stream');
+        await this.page.goto('/stream');
         await expect(this.page.getByRole('heading', { name: 'Event Stream' })).toBeVisible();
         await expect(getVisibleText(this.page, this.message)).toBeVisible({ timeout: 30_000 });
     }
@@ -202,7 +202,7 @@ export class ExceptionlessE2EJourney {
     }
 
     public async signUpAndCreateOrganization(): Promise<void> {
-        await this.page.goto('/next/signup');
+        await this.page.goto('/signup');
 
         await this.page.getByLabel('Name', { exact: true }).fill(this.userName);
         await this.page.getByLabel('Email', { exact: true }).fill(this.email);
@@ -214,7 +214,7 @@ export class ExceptionlessE2EJourney {
         const setupHeading = this.page.getByText('Set Up Exceptionless');
 
         if (!(await setupHeading.isVisible())) {
-            await this.page.goto('/next/organization/add');
+            await this.page.goto('/organization/add');
         }
 
         await expect(setupHeading).toBeVisible({ timeout: 30_000 });
@@ -223,7 +223,7 @@ export class ExceptionlessE2EJourney {
         await this.page.getByLabel('Project Name', { exact: true }).fill(this.projectName);
         await this.page.getByRole('button', { name: 'Continue' }).click();
 
-        await this.page.waitForURL(/\/next\/project\/[^/]+\/configure/, { timeout: 30_000 });
+        await this.page.waitForURL(/\/project\/[^/]+\/configure/, { timeout: 30_000 });
         this.projectId = getIdFromUrl(this.page, /\/project\/([^/]+)\/configure/);
         this.organizationId = await this.getOrganizationIdByName();
         await expect(this.page.getByRole('button', { name: 'Please select a project type' })).toBeVisible();

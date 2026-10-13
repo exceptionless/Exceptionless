@@ -9,13 +9,13 @@ test('user can recover from a failed login, restore the session, and log out', a
 
     try {
         await test.step('show an actionable error for invalid credentials', async () => {
-            await page.goto('/next/login');
+            await page.goto('/login');
             await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
             await page.getByPlaceholder('Enter password').fill(`${E2E_TEST_PASSWORD}-invalid`);
             await page.getByRole('button', { exact: true, name: 'Login' }).click();
 
             await expect(page.getByText('Invalid email or password', { exact: true })).toBeVisible();
-            await expect(page).toHaveURL(/\/next\/login(?:[?#]|$)/);
+            await expect(page).toHaveURL(/\/login(?:[?#]|$)/);
         });
 
         await test.step('log in through the form', async () => {
@@ -23,14 +23,14 @@ test('user can recover from a failed login, restore the session, and log out', a
             await page.getByRole('button', { exact: true, name: 'Login' }).click();
 
             await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
-            await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
+            await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
         });
 
         await test.step('restore the authenticated application after a reload', async () => {
             await page.reload();
 
             await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
-            await expect(page).toHaveURL(/\/next\/stack\/all(?:[?#]|$)/);
+            await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
         });
 
         await test.step('log out through the user menu', async () => {
@@ -38,14 +38,14 @@ test('user can recover from a failed login, restore the session, and log out', a
             await page.getByRole('menuitem', { exact: true, name: 'Log Out' }).click();
 
             await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
-            await expect(page).toHaveURL(/\/next\/login(?:[?#]|$)/);
+            await expect(page).toHaveURL(/\/login(?:[?#]|$)/);
         });
 
         await test.step('redirect a signed-out user away from a protected route', async () => {
-            await page.goto('/next/stack');
+            await page.goto('/stack');
 
             await expect(page.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
-            await expect(page).toHaveURL(/\/next\/login(?:[?#]|$)/);
+            await expect(page).toHaveURL(/\/login(?:[?#]|$)/);
         });
     } finally {
         await authenticationContext.close();
@@ -55,7 +55,7 @@ test('user can recover from a failed login, restore the session, and log out', a
 test('login restores the full notification settings link and selected project', async ({ browser, e2eApi, e2eScenario, e2eSecondaryProject }) => {
     const context = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
     const page = await context.newPage();
-    const destination = `/next/account/notifications?project=${e2eSecondaryProject.projectId}&from=email%2Bnotification%26settings#project-notifications`;
+    const destination = `/account/notifications?project=${e2eSecondaryProject.projectId}&from=email%2Bnotification%26settings#project-notifications`;
 
     try {
         await test.step('preserve the complete destination when authentication is required', async () => {
@@ -95,7 +95,7 @@ test('login restores a shared stack event link after sign-in and session expiry'
     });
     const context = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
     const page = await context.newPage();
-    const destination = `/next/stack/${event.stack_id}/event/${event.id}?from=shared%2Bevent#event-details`;
+    const destination = `/stack/${event.stack_id}/event/${event.id}?from=shared%2Bevent#event-details`;
 
     try {
         await test.step('preserve the shared event destination when authentication is required', async () => {

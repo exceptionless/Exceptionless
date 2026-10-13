@@ -39,7 +39,7 @@ Start here:
 
 After startup:
 
-1. Open `https://localhost:7121/` if a browser does not open automatically.
+1. Open `https://web-ex.dev.localhost:7131/` if a browser does not open automatically. If Aspire assigns a dynamic port, use the App endpoint shown in its dashboard.
 2. In `Development` mode, a global administrator user `admin@exceptionless.test` with password `tester` is created automatically.
 
 Notes:
@@ -48,14 +48,11 @@ Notes:
 2. Backend tests bootstrap required infrastructure automatically.
 3. Use Aspire CLI 13.6.0 or newer (`aspire update --self` to update). The AppHost uses the CLI bundle for the dashboard and resource orchestrator; when no CLI is installed, the SDK downloads the matching version through DNX.
 
-![image](https://user-images.githubusercontent.com/282584/223168564-6518d509-d292-4078-a61f-ab493d2bb812.png)
-
 ## UI Development
 
-Frontend work currently spans two apps:
+The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is the only application frontend and serves at `/`. Aspire starts Svelte together with the API. Primary hash-route bookmarks resolve to the current pages, and existing signed-in sessions are retained.
 
-1. The legacy Angular UI in `src/Exceptionless.Web/ClientApp.angular` is still the main site UI. Most of that app lives in `app/`, `components/`, `less/`, `img/`, `lang/`, and `grunt/`.
-2. The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is still under development.
+See the [frontend README](src/Exceptionless.Web/ClientApp/README.md) for development, build, and test commands. Published app images contain the Svelte build at the web root; API-only images retain their API landing page.
 
 For a quick API walkthrough, start with [exceptionless.http](exceptionless.http). The [tests/http](tests/http) folder contains additional examples for manual use, such as querying events, uploading source maps, and obtaining OAuth tokens. These are curated examples, not an automated test suite or an exhaustive endpoint catalog. Set the local API URL and sample variables, then run the requests you need. In Visual Studio Code, use the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension.
 

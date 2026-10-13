@@ -12,7 +12,7 @@ test('new user can send an event and find it in primary views @signup', async ({
             const url = new URL(response.url());
             return url.pathname === `/api/v2/organizations/${e2eScenario.organizationId}/events` && url.searchParams.get('mode') === 'summary';
         });
-        await page.goto('/next/event');
+        await page.goto('/event');
         const response = await initialList;
         expect(response.ok()).toBe(true);
         expect(await response.json()).toEqual([]);

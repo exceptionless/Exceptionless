@@ -41,7 +41,7 @@ function props() {
         isSetupPage: false,
         openAssistant: vi.fn(async () => {}),
         organizationId: 'organization',
-        pathname: '/next/stack/all',
+        pathname: '/stack/all',
         setMobileNavigationOpen: vi.fn(),
         stateSettled: true
     };
@@ -133,7 +133,7 @@ describe('ProductTourHost', () => {
         // Arrange
         mocks.page.route.id = `/(app)/${list}/[slug=savedview]`;
         const active = productTourCheckpoint.start('app-overview', 'saved-views', 'user', 'organization');
-        const { component } = render(ProductTourHost, { ...props(), isAnyOverlayOpen: true, pathname: `/next/${list}/saved-view` });
+        const { component } = render(ProductTourHost, { ...props(), isAnyOverlayOpen: true, pathname: `/${list}/saved-view` });
 
         // Act
         await component.openCatalog();

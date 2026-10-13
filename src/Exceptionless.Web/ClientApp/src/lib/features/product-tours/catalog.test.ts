@@ -10,7 +10,7 @@ function context(overrides: Partial<ProductTourContext> = {}): ProductTourContex
         isProjectConfigurePage: false,
         isSetupPage: false,
         organizationId: 'organization-id',
-        pathname: '/next',
+        pathname: '',
         projects: [],
         ...overrides
     };
@@ -189,11 +189,11 @@ describe('product tour catalog', () => {
         const platform = definition.start(context({ projects: [{ id: 'project-id', is_configured: false }] }));
 
         // Assert
-        expect(organization).toEqual({ checkpointName: 'organization-name', route: '/next/organization/add' });
-        expect(project).toEqual({ checkpointName: 'project-name', route: '/next/project/add' });
+        expect(organization).toEqual({ checkpointName: 'organization-name', route: '/organization/add' });
+        expect(project).toEqual({ checkpointName: 'project-name', route: '/project/add' });
         expect(platform).toEqual({
             checkpointName: 'choose-platform',
-            route: '/next/project/project-id/configure?redirect=true'
+            route: '/project/project-id/configure?redirect=true'
         });
     });
 
@@ -202,7 +202,7 @@ describe('product tour catalog', () => {
         const definition = productTourCatalog.find((tour) => tour.name === 'project-configure')!;
         const currentContext = context({
             isProjectConfigurePage: true,
-            pathname: '/next/project/current-project/configure',
+            pathname: '/project/current-project/configure',
             projects: [
                 { id: 'other-project', is_configured: false },
                 { id: 'current-project', is_configured: true }
@@ -214,7 +214,7 @@ describe('product tour catalog', () => {
         const start = definition.start(currentContext);
 
         // Assert
-        expect(start).toEqual({ checkpointName: 'choose-platform', route: '/next/project/current-project/configure?type=dotnet-legacy-mvc&redirect=true' });
+        expect(start).toEqual({ checkpointName: 'choose-platform', route: '/project/current-project/configure?type=dotnet-legacy-mvc&redirect=true' });
     });
 
     it('does not carry another page SDK selection into project setup', () => {
@@ -225,7 +225,7 @@ describe('product tour catalog', () => {
         const start = definition.start(context({ projects: [{ id: 'project-id', is_configured: false }], search: '?type=error' }));
 
         // Assert
-        expect(start).toEqual({ checkpointName: 'choose-platform', route: '/next/project/project-id/configure?redirect=true' });
+        expect(start).toEqual({ checkpointName: 'choose-platform', route: '/project/project-id/configure?redirect=true' });
     });
 
     it('keeps Client Setup when the organization project list has not caught up', () => {
@@ -237,14 +237,14 @@ describe('product tour catalog', () => {
             context({
                 isProjectConfigurePage: true,
                 organizationId: undefined,
-                pathname: '/next/project/current-project/configure',
+                pathname: '/project/current-project/configure',
                 projects: [],
                 search: '?type=dotnet-legacy-mvc'
             })
         );
 
         // Assert
-        expect(start).toEqual({ checkpointName: 'choose-platform', route: '/next/project/current-project/configure?type=dotnet-legacy-mvc&redirect=true' });
+        expect(start).toEqual({ checkpointName: 'choose-platform', route: '/project/current-project/configure?type=dotnet-legacy-mvc&redirect=true' });
     });
 
     it('requires actual Exie access', () => {

@@ -2,6 +2,8 @@ import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClient, type FetchClientProvider, getCurrentProvider, ProblemDetails } from '@foundatiofx/fetchclient';
 import { SvelteDate } from 'svelte/reactivity';
 
+import { getApiUrl } from './urls';
+
 export { DEFAULT_LIMIT } from './constants';
 
 /**
@@ -31,7 +33,7 @@ export async function fetchApiJson<T>(path: string, init: RequestInit): Promise<
         headers.set('Authorization', `Bearer ${accessToken.current}`);
     }
 
-    const response = await fetch(`/api/v2/${path.replace(/^\/+/, '')}`, {
+    const response = await fetch(getApiUrl(path), {
         ...init,
         headers
     });

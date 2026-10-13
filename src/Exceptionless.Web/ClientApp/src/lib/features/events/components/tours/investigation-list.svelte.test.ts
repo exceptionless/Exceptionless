@@ -23,7 +23,7 @@ describe('InvestigationListTour', () => {
         );
         target = document.createElement('div');
         target.dataset.tour = 'event-list';
-        target.innerHTML = '<table><tbody><tr tabindex="0"><td><a href="/next/event/first-error">Error</a></td></tr></tbody></table>';
+        target.innerHTML = '<table><tbody><tr tabindex="0"><td><a href="/event/first-error">Error</a></td></tr></tbody></table>';
         target.querySelector('tr')!.scrollIntoView = vi.fn();
         filters = document.createElement('button');
         filters.dataset.tour = 'event-filters';
@@ -64,7 +64,7 @@ describe('InvestigationListTour', () => {
         expect(screen.queryByRole('button', { name: 'Open error' })).toBeNull();
 
         // Act
-        target.querySelector('a')!.setAttribute('href', '/next/event/loaded-error');
+        target.querySelector('a')!.setAttribute('href', '/event/loaded-error');
         await component.rerender({ firstErrorId: 'loaded-error', onOpenError });
         await fireEvent.click(await screen.findByRole('button', { name: 'Open error' }));
 
@@ -95,8 +95,8 @@ describe('InvestigationListTour', () => {
         // Arrange: the event list has a newer log before the selected error.
         const errorId = '507f1f77bcf86cd799439012';
         target.innerHTML = `<table><tbody>
-            <tr tabindex="0"><td><a href="/next/event/507f1f77bcf86cd799439011">Newer log</a></td></tr>
-            <tr tabindex="0"><td><a href="/next/event/${errorId}">Checkout error</a></td></tr>
+            <tr tabindex="0"><td><a href="/event/507f1f77bcf86cd799439011">Newer log</a></td></tr>
+            <tr tabindex="0"><td><a href="/event/${errorId}">Checkout error</a></td></tr>
         </tbody></table>`;
         const errorRow = target.querySelectorAll('tr')[1];
         const onOpenError = vi.fn();

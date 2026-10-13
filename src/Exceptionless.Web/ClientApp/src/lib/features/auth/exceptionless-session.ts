@@ -79,7 +79,6 @@ export async function setUserIdentity(userId: string, userName?: string): Promis
 
 /**
  * Submits a feature usage event for telemetry tracking.
- * Mirrors the legacy Angular $ExceptionlessClient.submitFeatureUsage pattern.
  */
 export async function submitFeatureUsage(feature: string, properties?: Record<string, unknown>): Promise<void> {
     const Exceptionless = await getExceptionless();
