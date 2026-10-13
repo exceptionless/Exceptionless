@@ -869,15 +869,15 @@ public record OAuthClientRegistrationResponse
 
 public record OAuthAuthorizationCode
 {
-    public string? AuthenticationVersion { get; init; }
     public required string ClientId { get; init; }
+    public required string RedirectUri { get; init; }
+    public required string UserId { get; init; }
     public required string CodeChallenge { get; init; }
+    public required string Resource { get; init; }
+    public string? AuthenticationVersion { get; init; }
+    public IReadOnlyCollection<string> Scopes { get; set; } = [];
     public DateTime CreatedUtc { get; init; }
     public IReadOnlyCollection<string> OrganizationIds { get; init; } = [];
-    public required string RedirectUri { get; init; }
-    public required string Resource { get; init; }
-    public IReadOnlyCollection<string> Scopes { get; set; } = [];
-    public required string UserId { get; init; }
 }
 
 

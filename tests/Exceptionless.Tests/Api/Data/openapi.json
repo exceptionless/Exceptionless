@@ -14090,80 +14090,31 @@
       },
       "User": {
         "required": [
-          "email_address",
           "full_name",
-          "created_utc",
-          "email_notifications_enabled",
+          "email_address",
           "id",
-          "is_active",
-          "is_email_address_verified",
-          "o_auth_accounts",
           "organization_ids",
-          "organization_preferences",
           "password_reset_token_expiration",
-          "product_tours",
-          "roles",
+          "o_auth_accounts",
+          "organization_preferences",
           "saved_view_orders",
-          "updated_utc",
-          "verify_email_address_token_expiration"
+          "product_tours",
+          "email_notifications_enabled",
+          "is_email_address_verified",
+          "verify_email_address_token_expiration",
+          "is_active",
+          "roles",
+          "created_utc",
+          "updated_utc"
         ],
         "type": "object",
         "properties": {
-          "assistant_conversation_sharing_enabled": {
-            "type": [
-              "null",
-              "boolean"
-            ]
-          },
-          "authentication_version": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "description": "Session revocation generation, rotated when a password changes or resets, or an external login is removed or transferred away.\nRemains null until rotation; active users with a null generation accept only matching legacy null token generations.\nThis value does not describe the password hashing format."
-          },
-          "avatar_file_name": {
-            "maxLength": 2000,
-            "minLength": 0,
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "created_utc": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "email_address": {
-            "type": "string",
-            "format": "email"
-          },
-          "email_notifications_enabled": {
-            "type": "boolean"
-          },
-          "full_name": {
-            "type": "string",
-            "description": "Gets or sets the users Full Name."
-          },
           "id": {
             "maxLength": 24,
             "minLength": 24,
             "pattern": "^[a-fA-F0-9]{24}$",
             "type": "string",
             "description": "Unique id that identifies an user."
-          },
-          "is_active": {
-            "type": "boolean",
-            "description": "Gets or sets the users active state."
-          },
-          "is_email_address_verified": {
-            "type": "boolean"
-          },
-          "o_auth_accounts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OAuthAccount"
-            }
           },
           "organization_ids": {
             "uniqueItems": true,
@@ -14173,13 +14124,20 @@
             },
             "description": "The organizations that the user has access to."
           },
-          "organization_preferences": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserOrganizationPreference"
-            }
+          "authentication_version": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Session revocation generation, rotated when a password changes or resets, or an external login is removed or transferred away.\nRemains null until rotation; active users with a null generation accept only matching legacy null token generations.\nThis value does not describe the password hashing format."
           },
           "password": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "salt": {
             "type": [
               "null",
               "string"
@@ -14195,21 +14153,17 @@
             "type": "string",
             "format": "date-time"
           },
-          "product_tours": {
-            "type": "object"
-          },
-          "roles": {
-            "uniqueItems": true,
+          "o_auth_accounts": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/OAuthAccount"
             }
           },
-          "salt": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "organization_preferences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserOrganizationPreference"
+            }
           },
           "saved_view_orders": {
             "type": "array",
@@ -14217,9 +14171,36 @@
               "$ref": "#/components/schemas/UserSavedViewOrderPreference"
             }
           },
-          "updated_utc": {
+          "product_tours": {
+            "type": "object"
+          },
+          "full_name": {
             "type": "string",
-            "format": "date-time"
+            "description": "Gets or sets the users Full Name."
+          },
+          "email_address": {
+            "type": "string",
+            "format": "email"
+          },
+          "avatar_file_name": {
+            "maxLength": 2000,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email_notifications_enabled": {
+            "type": "boolean"
+          },
+          "assistant_conversation_sharing_enabled": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "is_email_address_verified": {
+            "type": "boolean"
           },
           "verify_email_address_token": {
             "type": [
@@ -14228,6 +14209,25 @@
             ]
           },
           "verify_email_address_token_expiration": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "Gets or sets the users active state."
+          },
+          "roles": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_utc": {
             "type": "string",
             "format": "date-time"
           }
