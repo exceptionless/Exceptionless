@@ -120,8 +120,8 @@ describe('DateMath Library', () => {
 
         it('should support date without time component', () => {
             const result = parseDateMath('2025-01-01');
-            expect(result.success).toBe(false);
-            expect(result.error).toContain('Invalid date math expression');
+            expect(result.success).toBe(true);
+            expect(result.date).toEqual(new Date('2025-01-01T00:00:00'));
         });
 
         it('should support UTC datetime with Z suffix', () => {

@@ -1,0 +1,46 @@
+<script lang="ts">
+    import { Muted } from '$comp/typography';
+    import * as Alert from '$comp/ui/alert';
+    import { Button } from '$comp/ui/button';
+    import Sparkles from '@lucide/svelte/icons/sparkles';
+    import X from '@lucide/svelte/icons/x';
+
+    interface Props {
+        canUpgrade?: boolean;
+        hasAccess: boolean;
+        message?: string;
+        onDismiss: () => void;
+        onStart: () => void;
+        open?: boolean;
+    }
+
+    let { canUpgrade = false, hasAccess, message, onDismiss, onStart, open = true }: Props = $props();
+</script>
+
+{#if open}
+    <Alert.Root
+        class="product-tour-feature-announcement fixed right-4 bottom-4 z-40 w-[min(24rem,calc(100vw-2rem))] shadow-lg"
+        data-product-tour-announcement="exie"
+    >
+        <Sparkles aria-hidden="true" class="text-primary mt-0.5" />
+        <div data-slot="alert-description">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <Alert.Title>New: Meet Exie</Alert.Title>
+                    <Muted class="mt-1">
+                        {hasAccess
+                            ? 'See how Exie can help you understand errors and find patterns.'
+                            : (message ?? 'Exie is available with an eligible organization plan.')}
+                    </Muted>
+                </div>
+                <Button aria-label="Dismiss Exie announcement" class="-mt-1 -mr-1 size-11" onclick={onDismiss} size="icon" variant="ghost">
+                    <X aria-hidden="true" class="size-4" />
+                </Button>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <Button onclick={onStart} size="sm">{hasAccess ? 'See how it works' : canUpgrade ? 'Upgrade Plan' : 'Open Exie'}</Button>
+                <Button onclick={onDismiss} size="sm" variant="outline">Dismiss</Button>
+            </div>
+        </div>
+    </Alert.Root>
+{/if}

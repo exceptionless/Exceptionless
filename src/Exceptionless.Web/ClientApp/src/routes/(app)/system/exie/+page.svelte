@@ -10,6 +10,7 @@
     import { Input } from '$comp/ui/input';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
+    import * as Tooltip from '$comp/ui/tooltip';
     import { getAdminAssistantUsageQuery } from '$features/admin/api.svelte';
     import { getBlockedCount, getTotalTokens, getUsageRisk, getUtcMonthKey, type UsageRisk } from '$features/admin/assistant-usage';
     import Bot from '@lucide/svelte/icons/bot';
@@ -201,13 +202,40 @@
                                         {/if}
                                     </Table.Cell>
                                     <Table.Cell>
-                                        <span class="text-emerald-600 dark:text-emerald-400"><Number value={organization.completed} /></span>
-                                        <span class="text-muted-foreground"> / </span>
-                                        <span class={organization.failed > 0 ? 'text-destructive' : 'text-muted-foreground'}
-                                            ><Number value={organization.failed} /></span
-                                        >
-                                        <span class="text-muted-foreground"> / <Number value={organization.cancelled} /></span>
-                                        <span class="sr-only"> completed / failed / cancelled</span>
+                                        <Tooltip.Root>
+                                            <Tooltip.Trigger
+                                                class="focus-visible:ring-ring cursor-help rounded-sm text-emerald-600 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none dark:text-emerald-400"
+                                            >
+                                                <Number value={organization.completed} /><span class="sr-only"> completed turns</span>
+                                            </Tooltip.Trigger>
+                                            <Tooltip.Content class="max-w-xs">
+                                                Completed: Turns that finished without a reported error. This does not indicate whether the user found the
+                                                answer helpful.
+                                            </Tooltip.Content>
+                                        </Tooltip.Root>
+                                        <span class="text-muted-foreground" aria-hidden="true"> / </span>
+                                        <Tooltip.Root>
+                                            <Tooltip.Trigger
+                                                class={[
+                                                    'focus-visible:ring-ring cursor-help rounded-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                                                    organization.failed > 0 ? 'text-destructive' : 'text-muted-foreground'
+                                                ]}
+                                            >
+                                                <Number value={organization.failed} /><span class="sr-only"> failed turns</span>
+                                            </Tooltip.Trigger>
+                                            <Tooltip.Content class="max-w-xs">Failed: Turns that ended with an error or timed out.</Tooltip.Content>
+                                        </Tooltip.Root>
+                                        <span class="text-muted-foreground" aria-hidden="true"> / </span>
+                                        <Tooltip.Root>
+                                            <Tooltip.Trigger
+                                                class="text-muted-foreground focus-visible:ring-ring cursor-help rounded-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                                            >
+                                                <Number value={organization.cancelled} /><span class="sr-only"> cancelled turns</span>
+                                            </Tooltip.Trigger>
+                                            <Tooltip.Content class="max-w-xs">
+                                                Cancelled: Turns stopped by the user or interrupted by a browser disconnect.
+                                            </Tooltip.Content>
+                                        </Tooltip.Root>
                                     </Table.Cell>
                                     <Table.Cell class="pr-4 text-right">
                                         {#if blockedCount > 0}

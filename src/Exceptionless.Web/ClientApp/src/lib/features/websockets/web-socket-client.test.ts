@@ -3,6 +3,9 @@ import WS from 'vitest-websocket-mock';
 
 import { WebSocketClient, type WebSocketClientOptions } from './web-socket-client.svelte';
 
+const { env } = vi.hoisted(() => ({ env: { PUBLIC_BASE_URL: '' } }));
+vi.mock('$env/dynamic/public', () => ({ env }));
+
 // Mock the auth module
 vi.mock('../auth/index.svelte', () => ({
     accessToken: {
@@ -14,7 +17,7 @@ vi.mock('../auth/index.svelte', () => ({
 vi.mock('$shared/document-visibility.svelte', () => {
     return {
         DocumentVisibility: class {
-            visible = true;
+            public visible = true;
         }
     };
 });
@@ -27,6 +30,8 @@ beforeEach(() => {
 
 afterEach(() => {
     WS.clean();
+    env.PUBLIC_BASE_URL = '';
+    vi.unstubAllGlobals();
 });
 
 function createClient(path?: string, options?: WebSocketClientOptions): WebSocketClient {
@@ -38,6 +43,15 @@ function createClient(path?: string, options?: WebSocketClientOptions): WebSocke
 }
 
 describe('WebSocketClient', () => {
+    it.each([
+        ['https://localhost:8443/', 'wss://localhost:8443/api/v2/push'],
+        ['http://localhost:8080', 'ws://localhost:8080/api/v2/push']
+    ])('uses the configured API origin %s', (baseUrl, expected) => {
+        env.PUBLIC_BASE_URL = baseUrl;
+        vi.stubGlobal('window', { location: { origin: 'https://localhost:7131' } });
+        expect(new WebSocketClient().url).toBe(expected);
+    });
+
     describe('Connection Lifecycle', () => {
         it('should connect successfully', async () => {
             const client = createClient();

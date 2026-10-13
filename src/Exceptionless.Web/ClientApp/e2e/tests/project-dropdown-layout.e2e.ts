@@ -14,7 +14,7 @@ test('project dropdown layout preserves its search and footer while listing many
     );
 
     await page.setViewportSize({ height: 720, width: 1280 });
-    await page.goto('/next/stack?time=all');
+    await page.goto('/stack?time=all');
     await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
     await expect(page.getByText('No data was found with the current filter.', { exact: true })).toBeVisible();
 
@@ -104,7 +104,7 @@ test('project dropdown keeps its controls visible in mobile viewports and a 200%
     ]) {
         // Arrange
         await page.setViewportSize({ height: viewport.height, width: viewport.width });
-        await page.goto('/next/stack?time=all');
+        await page.goto('/stack?time=all');
         await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
         await expect(page.getByText('No data was found with the current filter.', { exact: true })).toBeVisible();
 

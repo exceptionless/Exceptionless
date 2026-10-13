@@ -1,3 +1,4 @@
+import { getServerUrl } from '$features/shared/api/urls';
 import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createQuery } from '@tanstack/svelte-query';
 
@@ -27,7 +28,7 @@ export function getHealthQuery() {
     return createQuery<string, ProblemDetails>(() => ({
         queryFn: async ({ signal }: { signal: AbortSignal }) => {
             const client = useFetchClient({
-                baseUrl: ''
+                baseUrl: getServerUrl('')
             });
             const response = await client.get('health', {
                 signal

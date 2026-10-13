@@ -2,6 +2,8 @@
 @email = admin@exceptionless.test
 @password = tester
 @projectId = 537650f3b77efe23a47914f4
+# Set this to your webhook receiver.
+@webhookUrl = https://example.com/exceptionless
 
 ### login to test account
 # @name login
@@ -21,7 +23,7 @@ Content-Type: application/json
 GET {{apiUrl}}/webhooks/test
 Authorization: Bearer {{token}}
 
-### Post
+### Create a webhook for new and regressed errors
 # @name newWebhook
 POST {{apiUrl}}/webhooks
 Authorization: Bearer {{token}}
@@ -29,8 +31,8 @@ Content-Type: application/json
 
 {
   "project_id": "{{projectId}}",
-  "url": "https://localhost",
-  "event_types": ["NewError", "CriticalError", "NewEvent", "CriticalEvent", "StackRegression", "StackPromoted"]
+  "url": "{{webhookUrl}}",
+  "event_types": ["NewError", "StackRegression"]
 }
 
 ###
@@ -41,24 +43,6 @@ Content-Type: application/json
 GET {{apiUrl}}/projects/{{projectId}}/webhooks
 Authorization: Bearer {{token}}
 
-### Get By Id
-GET {{apiUrl}}/webhooks/{{webhookId}}
-Authorization: Bearer {{token}}
-
 ### Delete
 DELETE {{apiUrl}}/webhooks/{{webhookId}}
 Authorization: Bearer {{token}}
-
-### Subscribe (Internal)
-POST {{apiUrl}}/webhooks/subscribe
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ "target_url": "https://hooks.zapier.com/localhost", "event": "NewError" }
-
-### Unsubscribe (Internal)
-POST {{apiUrl}}/webhooks/unsubscribe
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ "target_url": "https://hooks.zapier.com/localhost" }

@@ -11,7 +11,7 @@ test('invited user can accept an organization invitation @signup', async ({ brow
 
     try {
         await test.step('invite a user through organization settings', async () => {
-            await page.goto(`/next/organization/${e2eScenario.organizationId}/users`);
+            await page.goto(`/organization/${e2eScenario.organizationId}/users`);
             await page.getByTitle('Invite User').click();
 
             const dialog = page.getByRole('alertdialog', { name: 'Invite User' });
@@ -21,17 +21,19 @@ test('invited user can accept an organization invitation @signup', async ({ brow
             await expect(page.getByText('User invited successfully')).toBeVisible();
         });
 
-        const inviteToken = await test.step('read the invitation from local mail', async () => {
-            return await e2eApi.pollForMailToken(invitedEmail, 'signup');
+        const inviteLink = await test.step('read the invitation from local mail', async () => {
+            return await e2eApi.pollForMailLink(invitedEmail, 'signup');
         });
+
+        const inviteToken = new URL(inviteLink).searchParams.get('token')!;
 
         await test.step('sign up through the invitation route', async () => {
             const invitedContext = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
             const invitedPage = await invitedContext.newPage();
 
             try {
-                await invitedPage.goto(`/next/signup?token=${encodeURIComponent(inviteToken)}`);
-                await expect(invitedPage.getByRole('link', { name: 'Log In' })).toHaveAttribute('href', `/next/login?token=${encodeURIComponent(inviteToken)}`);
+                await invitedPage.goto(inviteLink);
+                await expect(invitedPage.getByRole('link', { name: 'Log In' })).toHaveAttribute('href', `/login?token=${encodeURIComponent(inviteToken)}`);
                 await invitedPage.getByLabel('Name', { exact: true }).fill(`Invited User ${e2eScenario.run}`);
                 await invitedPage.getByLabel('Email', { exact: true }).fill(invitedEmail);
                 await waitForEmailValidation(invitedPage);
@@ -47,7 +49,7 @@ test('invited user can accept an organization invitation @signup', async ({ brow
                 expect((await signupResponse).ok()).toBe(true);
 
                 invitedUserToken = await getUserToken(invitedPage);
-                await expect(invitedPage).toHaveURL(/\/next\/project\/add(?:[?#]|$)/, { timeout: 30_000 });
+                await expect(invitedPage).toHaveURL(/\/project\/add(?:[?#]|$)/, { timeout: 30_000 });
                 await e2eApi.waitForOrganizationListed(invitedUserToken, e2eScenario.organizationId, 60_000);
                 await invitedPage.reload();
                 await expect(invitedPage.getByRole('heading', { name: 'Add Project' })).toBeVisible();
@@ -105,11 +107,11 @@ test('existing invited user can accept an organization invitation when logging i
                 return response.request().method() === 'GET' && url.pathname.endsWith('/api/v2/auth/logout');
             });
 
-            await invitedPage.goto(`/next/login?token=${encodeURIComponent(inviteToken)}`);
+            await invitedPage.goto(`/login?token=${encodeURIComponent(inviteToken)}`);
             expect((await logoutResponse).ok()).toBe(true);
             await expect(invitedPage.getByRole('link', { name: 'Start a free trial' })).toHaveAttribute(
                 'href',
-                `/next/signup?token=${encodeURIComponent(inviteToken)}`
+                `/signup?token=${encodeURIComponent(inviteToken)}`
             );
             await invitedPage.getByLabel('Email', { exact: true }).fill(invitedEmail);
             await invitedPage.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);

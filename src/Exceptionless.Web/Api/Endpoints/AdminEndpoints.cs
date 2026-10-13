@@ -60,6 +60,18 @@ public static class AdminEndpoints
             .WithTags(nameof(AdminEndpoints))
             .WithSummary("Update Exie assistant availability");
 
+        endpoints.MapPut("api/v2/admin/assistant-settings/conversation-sharing", async (HttpContext httpContext, [FromBody] UpdateAssistantConversationSharingSettings request, AssistantModelSettingsService settingsService)
+            => HttpResults.Ok(await settingsService.SetConversationSharingDefaultEnabledAsync(request.Enabled, httpContext.Request.GetUser().Id)))
+            .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
+            .Accepts<UpdateAssistantConversationSharingSettings>("application/json", "application/*+json")
+            .Produces<AssistantModelSettings>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .WithTags(nameof(AdminEndpoints))
+            .WithSummary("Update Exie full conversation logging");
+
         endpoints.MapGet("api/v2/admin/event-submission-settings", GetEventSubmissionSettingsAsync)
             .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
             .Produces<EventSubmissionSettings>(StatusCodes.Status200OK)
