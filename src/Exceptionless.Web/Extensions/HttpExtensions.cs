@@ -139,6 +139,7 @@ public static class HttpExtensions
         ArgumentNullException.ThrowIfNull(request);
 
         var address = request.HttpContext.Connection.RemoteIpAddress;
+
         return address is { IsIPv4MappedToIPv6: true } ? address.MapToIPv4().ToString() : address?.ToString();
     }
 
