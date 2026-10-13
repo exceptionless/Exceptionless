@@ -3,6 +3,7 @@
     import Number from '$comp/formatters/number.svelte';
     import { A, P } from '$comp/typography';
     import * as AlertDialog from '$comp/ui/alert-dialog';
+    import { Button } from '$comp/ui/button';
     import * as Field from '$comp/ui/field';
     import { Input } from '$comp/ui/input';
     import { getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
@@ -17,9 +18,10 @@
         count?: number;
         open: boolean;
         save: (version?: string) => Promise<void>;
+        stackTitle?: string;
     }
 
-    let { count = 1, open = $bindable(), save }: Props = $props();
+    let { count = 1, open = $bindable(), save, stackTitle }: Props = $props();
 
     const form = createForm(() => ({
         defaultValues: {
@@ -93,6 +95,7 @@
                     {/if}
                 </AlertDialog.Title>
                 <AlertDialog.Description>
+                    {#if stackTitle}<strong>{stackTitle}</strong><br />{/if}
                     Marks
                     {#if count === 1}
                         the stack
@@ -142,18 +145,22 @@
                 {/snippet}
             </form.Field>
 
-            <AlertDialog.Footer>
-                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
-                <AlertDialog.Action type="submit">
-                    Mark
-                    {#if count === 1}
-                        Stack
-                    {:else}
-                        <Number value={count} /> Stacks
-                    {/if}
-                    Fixed
-                </AlertDialog.Action>
-            </AlertDialog.Footer>
+            <form.Subscribe selector={(state) => state.isSubmitting}>
+                {#snippet children(submitting)}
+                    <AlertDialog.Footer>
+                        <AlertDialog.Cancel type="button" disabled={submitting}>Cancel</AlertDialog.Cancel>
+                        <Button type="submit" disabled={submitting}>
+                            Mark
+                            {#if count === 1}
+                                Stack
+                            {:else}
+                                <Number value={count} /> Stacks
+                            {/if}
+                            Fixed
+                        </Button>
+                    </AlertDialog.Footer>
+                {/snippet}
+            </form.Subscribe>
         </form>
     </AlertDialog.Content>
 </AlertDialog.Root>

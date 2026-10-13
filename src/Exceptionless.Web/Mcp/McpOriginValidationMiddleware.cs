@@ -1,4 +1,5 @@
 using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Services;
 using Microsoft.Net.Http.Headers;
 
@@ -18,7 +19,8 @@ public sealed class McpOriginValidationMiddleware
             .Where(v => TryNormalizeOrigin(v, out _))
             .Select(v => NormalizeOrigin(v!))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        allowedOrigins.Add(new Uri(appOptions.BaseURL).GetLeftPart(UriPartial.Authority));
+        allowedOrigins.Add(appOptions.BaseURL.GetOrigin());
+        allowedOrigins.Add((String.IsNullOrWhiteSpace(appOptions.ApiUrl) ? appOptions.BaseURL : appOptions.ApiUrl).GetOrigin());
         _allowedOrigins = allowedOrigins;
     }
 
@@ -66,7 +68,7 @@ public sealed class McpOriginValidationMiddleware
             return false;
         }
 
-        normalizedOrigin = originUri.GetLeftPart(UriPartial.Authority);
+        normalizedOrigin = originUri.GetOrigin();
         return true;
     }
 }

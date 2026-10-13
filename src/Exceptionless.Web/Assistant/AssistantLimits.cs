@@ -4,7 +4,8 @@ internal static class AssistantLimits
 {
     public const int MaximumInputMessages = 20;
     public const int MaximumInputCharacters = 48_000;
-    public const int MaximumOutputTokens = 2048;
+    // The provider budget includes reasoning tokens as well as the visible answer.
+    public const int MaximumOutputTokens = 16_384;
     public const int MaximumMalformedResponseRetries = 1;
     public const int MaximumToolRounds = 3;
     public const int MaximumToolCallsPerTurn = 12;
@@ -18,6 +19,9 @@ internal static class AssistantLimits
     public const int MaximumProviderInputCharacters = 128_000;
     public const int MaximumTurnDurationSeconds = 120;
     public const int ConversationRetentionMinutes = 30;
-    public const decimal MaximumProviderPromptPricePerMillionTokens = 2m;
-    public const decimal MaximumProviderCompletionPricePerMillionTokens = 8m;
+
+    // Used only to estimate reservations until the provider reports actual usage.
+    // These are not routing limits: admins can select models at any price.
+    public const decimal EstimatedProviderPromptPricePerMillionTokens = 2m;
+    public const decimal EstimatedProviderCompletionPricePerMillionTokens = 8m;
 }

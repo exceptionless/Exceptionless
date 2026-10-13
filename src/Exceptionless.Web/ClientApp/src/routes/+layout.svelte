@@ -1,16 +1,18 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { goto } from '$app/navigation';
+    import { beforeNavigate, goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import * as Sidebar from '$comp/ui/sidebar';
     import { Toaster } from '$comp/ui/sonner';
     import { accessToken } from '$features/auth/index.svelte';
     import { handleUnexpectedUnauthorized } from '$features/auth/unauthorized';
+    import { canonicalAppUrl } from '$features/navigation/legacy-links';
     import { buildServiceStatusUrl, createServiceStatusRedirector } from '$features/status/service-status-redirect';
+    import { getApiUrl, getServerUrl } from '$shared/api/urls';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
-    import { error } from '@sveltejs/kit';
+    import { error, isHttpError } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
 
@@ -26,9 +28,27 @@
 
     let { children }: Props = $props();
 
-    setBaseUrl('api/v2');
+    beforeNavigate(({ cancel, to, type }) => {
+        if (!to || to.url.origin !== page.url.origin) {
+            return;
+        }
+        const canonical = canonicalAppUrl(to.url);
+        if (canonical.href !== to.url.href) {
+            cancel();
+            void goto(canonical, {
+                // A followed link needs its own history entry; Back/Forward must reuse the existing entry.
+                replaceState: type === 'popstate'
+            });
+        }
+    });
+
+    setBaseUrl(getApiUrl());
     setRequestOptions({
         errorCallback: (response) => {
+            // Empty error bodies still need their HTTP status for the query retry policy.
+            if (response.problem) {
+                response.problem.status ??= response.status;
+            }
             throw response.problem ?? response;
         },
         timeout: 5000
@@ -37,7 +57,7 @@
 
     const redirectToServiceStatus = createServiceStatusRedirector({
         checkHealth: async () => {
-            const response = await fetch('/health', {
+            const response = await fetch(getServerUrl('health'), {
                 cache: 'no-store',
                 signal: AbortSignal.timeout(5000)
             });
@@ -96,6 +116,11 @@
         defaultOptions: {
             queries: {
                 retry: (failureCount, error) => {
+                    // The response middleware also raises Svelte HTTP errors for missing resources.
+                    if (isHttpError(error, 404)) {
+                        return false;
+                    }
+
                     if (failureCount > 2) {
                         return false;
                     }

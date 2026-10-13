@@ -24,7 +24,7 @@ describe('AssistantMessage', () => {
                                 {
                                     id: 'stack-1',
                                     title: 'Timeout expired',
-                                    webUrl: '/next/stack/stack-1'
+                                    webUrl: '/stack/stack-1'
                                 }
                             ]
                         },
@@ -40,7 +40,7 @@ describe('AssistantMessage', () => {
         expect(screen.getByLabelText('Exie').textContent).toContain('Timeout expired is the best issue to investigate next.');
         expect(screen.getByText('Searched error stacks')).not.toBeNull();
         const stackLink = screen.getByRole('link', { name: 'Timeout expired' });
-        expect(stackLink.getAttribute('href')).toBe('/next/stack/stack-1');
+        expect(stackLink.getAttribute('href')).toBe('/stack/stack-1');
         const linkClasses = stackLink.className.split(/\s+/);
         expect(linkClasses).toContain('text-foreground');
         expect(linkClasses).not.toContain('text-primary');
