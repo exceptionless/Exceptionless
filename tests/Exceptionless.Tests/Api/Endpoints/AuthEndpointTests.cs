@@ -1043,13 +1043,12 @@ public class AuthEndpointTests : IntegrationTestsBase
     {
         // Arrange
         const string email = "inactive-token-user@exceptionless.test";
-        const string password = "Password1$";
         const string salt = "1234567890123456";
 
         var user = new User
         {
             EmailAddress = email,
-            Password = password.ToSaltedHash(salt),
+            Password = TestConstants.UserPassword.ToSaltedHash(salt),
             Salt = salt,
             FullName = "Inactive Token User",
             Roles = AuthorizationRoles.AllScopes
@@ -1060,7 +1059,7 @@ public class AuthEndpointTests : IntegrationTestsBase
         var login = await SendRequestAsAsync<TokenResult>(r => r
             .Post()
             .AppendPath("auth/login")
-            .Content(new Login { Email = email, Password = password })
+            .Content(new Login { Email = email, Password = TestConstants.UserPassword })
             .StatusCodeShouldBeOk());
         Assert.NotNull(login);
         Assert.False(String.IsNullOrEmpty(login.Token));

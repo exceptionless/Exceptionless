@@ -129,7 +129,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
         if (!String.IsNullOrEmpty(tokenRecord.UserId))
         {
-            var user = await _userRepository.GetByIdAsync(tokenRecord.UserId);
+            var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
             if (user is null)
             {
                 Logger.LogInformation("Could not find user {UserId} for token on {Path}", tokenRecord.UserId, Request.Path);
@@ -242,7 +242,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         if (!await _oauthService.IsAccessTokenClientValidAsync(tokenRecord.ClientId))
             return AuthenticateResult.Fail("OAuth client is not valid");
 
-        var user = await _userRepository.GetByIdAsync(tokenRecord.UserId);
+        var user = await _userRepository.GetByIdAsync(tokenRecord.UserId, o => o.Cache());
         if (user is null)
         {
             Logger.LogInformation("Could not find user {UserId} for OAuth token on {Path}", tokenRecord.UserId, Request.Path);

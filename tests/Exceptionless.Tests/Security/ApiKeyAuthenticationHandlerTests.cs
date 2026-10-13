@@ -10,6 +10,7 @@ using Exceptionless.Core.Services;
 using Exceptionless.Web.Security;
 using Foundatio.Caching;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Options;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -51,7 +52,14 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         };
         var token = new Token { Id = tokenId, UserId = user.Id, Type = TokenType.Authentication, AuthenticationVersion = tokenVersion };
         var users = new Mock<IUserRepository>(MockBehavior.Strict);
-        users.Setup(repository => repository.GetByIdAsync(user.Id, (ICommandOptions?)null)).ReturnsAsync(user);
+        users.Setup(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>()))
+            .Callback<Id, CommandOptionsDescriptor<User>>((_, configure) =>
+            {
+                var commandOptions = new CommandOptions<User>();
+                configure(commandOptions);
+                Assert.True(commandOptions.ShouldReadCache());
+            })
+            .ReturnsAsync(user);
         var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
         tokens.Setup(repository => repository.GetByIdAsync(tokenId, It.IsAny<CommandOptionsDescriptor<Token>>())).ReturnsAsync(token);
         var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
@@ -71,7 +79,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
 
         // Assert
         Assert.Equal(expectedSuccess, result.Succeeded);
-        users.Verify(repository => repository.GetByIdAsync(user.Id, (ICommandOptions?)null), Times.Once);
+        users.Verify(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>()), Times.Once);
         tokens.Verify(repository => repository.GetByIdAsync(tokenId, It.IsAny<CommandOptionsDescriptor<Token>>()), Times.Once);
         users.VerifyNoOtherCalls();
         tokens.VerifyNoOtherCalls();

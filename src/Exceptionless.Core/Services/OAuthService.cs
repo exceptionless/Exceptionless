@@ -385,6 +385,11 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     public async Task<string> CreateAuthorizationCodeAsync(OAuthAuthorizeRequest request, User user, IReadOnlyCollection<string> organizationIds)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(organizationIds);
+        ArgumentException.ThrowIfNullOrWhiteSpace(user.Id);
+
         await oauthApplicationRepository.AddOrganizationIdsAsync(request.ClientId, organizationIds, o => o.ImmediateConsistency().Notifications(false));
 
         string code = StringExtensions.GetNewToken();

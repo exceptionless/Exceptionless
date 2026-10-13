@@ -563,7 +563,7 @@ public class AuthHandler(
 
                     existingUser.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
                     await userRepository.SaveAsync(existingUser, o => o.Cache());
-                    await ResetUserTokensAsync(existingUser, "ExternalLoginTransfer", httpContext);
+                    await ResetUserTokensAsync(existingUser, "Link external account to another user", httpContext);
                 }
                 else
                 {
