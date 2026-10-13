@@ -13,6 +13,7 @@ public class OAuthToken : IIdentity, IHaveDates, IValidatableObject
     [Required]
     [ObjectId]
     public string UserId { get; set; } = null!;
+    public string? AuthenticationVersion { get; set; }
 
     [Required]
     [MaxLength(2048)]

@@ -311,7 +311,10 @@ public class AuthHandler(
         try
         {
             if (user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId.Value))
+            {
+                user.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
                 await userRepository.SaveAsync(user, o => o.Cache());
+            }
         }
         catch (Exception ex)
         {
@@ -654,6 +657,7 @@ public class AuthHandler(
             user.Salt = Core.Extensions.StringExtensions.GetNewToken();
 
         user.Password = password.ToSaltedHash(user.Salt);
+        user.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
         user.ResetPasswordResetToken();
 
         try
@@ -671,16 +675,26 @@ public class AuthHandler(
     private async Task ResetUserTokensAsync(User user, string tag, HttpContext httpContext)
     {
         using var _ = logger.BeginScope(new ExceptionlessState().Tag(tag).Identity(user.EmailAddress).SetHttpContext(httpContext));
+        long total = 0;
         try
         {
-            long total = await tokenRepository.RemoveAllByUserIdAsync(user.Id);
-            total += await oauthTokenRepository.RemoveAllByUserIdAsync(user.Id);
-            logger.RemovedUserTokens(total, user.EmailAddress);
+            total += await tokenRepository.RemoveAllByUserIdAsync(user.Id);
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Error removing user tokens for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
+            logger.LogError(ex, "Error removing user tokens for {UserId}: {Message}", user.Id, ex.Message);
         }
+
+        try
+        {
+            total += await oauthTokenRepository.RemoveAllByUserIdAsync(user.Id);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error removing OAuth tokens for {UserId}: {Message}", user.Id, ex.Message);
+        }
+
+        logger.RemovedUserTokens(total, user.EmailAddress);
     }
 
     private async Task<string> GetOrCreateAuthenticationTokenAsync(User user)
@@ -688,7 +702,9 @@ public class AuthHandler(
         var userTokens = await tokenRepository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id);
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
-        var validAccessToken = userTokens.Documents.FirstOrDefault(token => !token.ExpiresUtc.HasValue || token.ExpiresUtc > utcNow);
+        var validAccessToken = userTokens.Documents.FirstOrDefault(token => !token.IsDisabled && !token.IsSuspended
+            && String.Equals(token.AuthenticationVersion, user.AuthenticationVersion, StringComparison.Ordinal)
+            && (!token.ExpiresUtc.HasValue || token.ExpiresUtc > utcNow));
         if (validAccessToken is not null)
             return validAccessToken.Id;
 
@@ -696,6 +712,7 @@ public class AuthHandler(
         {
             Id = Core.Extensions.StringExtensions.GetNewToken(),
             UserId = user.Id,
+            AuthenticationVersion = user.AuthenticationVersion,
             CreatedUtc = utcNow,
             UpdatedUtc = utcNow,
             ExpiresUtc = utcNow.AddMonths(3),

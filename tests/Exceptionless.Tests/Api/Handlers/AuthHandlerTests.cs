@@ -1,7 +1,9 @@
+using System.Reflection;
 using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Handlers;
@@ -49,7 +51,33 @@ public sealed class AuthHandlerTests : TestWithServices
         new OperationCanceledException("Repository operation was canceled.")
     };
 
-    private AuthHandler CreateHandler(IUserRepository userRepository)
+    [Fact]
+    public async Task ResetUserTokensAsync_OneStoreThrows_StillAttemptsBothStores()
+    {
+        // Arrange
+        var tokens = new Mock<ITokenRepository>();
+        var oauthTokens = new Mock<IOAuthTokenRepository>();
+        tokens.Setup(repository => repository.RemoveAllByUserIdAsync("test-user", null))
+            .Throws(new InvalidOperationException("Token store unavailable."));
+        oauthTokens.Setup(repository => repository.RemoveAllByUserIdAsync("test-user", null))
+            .ReturnsAsync(0L);
+        var handler = CreateHandler(Mock.Of<IUserRepository>(), tokens.Object, oauthTokens.Object);
+        var method = typeof(AuthHandler).GetMethod("ResetUserTokensAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+
+        // Act
+        var task = Assert.IsAssignableFrom<Task>(method.Invoke(handler,
+            [new User { Id = "test-user", EmailAddress = "user@example.test", AuthenticationVersion = "current" }, "test", new DefaultHttpContext()]));
+        await task;
+
+        // Assert
+        tokens.Verify(repository => repository.RemoveAllByUserIdAsync("test-user", null), Times.Once);
+        oauthTokens.Verify(repository => repository.RemoveAllByUserIdAsync("test-user", null), Times.Once);
+        tokens.VerifyNoOtherCalls();
+        oauthTokens.VerifyNoOtherCalls();
+    }
+
+    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository? tokenRepository = null, IOAuthTokenRepository? oauthTokenRepository = null)
     {
         var appOptions = GetService<AppOptions>();
 
@@ -58,8 +86,8 @@ public sealed class AuthHandlerTests : TestWithServices
             appOptions.IntercomOptions,
             GetService<IOrganizationRepository>(),
             userRepository,
-            GetService<ITokenRepository>(),
-            GetService<IOAuthTokenRepository>(),
+            tokenRepository ?? GetService<ITokenRepository>(),
+            oauthTokenRepository ?? GetService<IOAuthTokenRepository>(),
             GetService<IOAuthProviderClient>(),
             GetService<ICacheClient>(),
             GetService<AuthService>(),

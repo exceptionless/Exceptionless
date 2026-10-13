@@ -14130,6 +14130,12 @@
               "string"
             ]
           },
+          "authentication_version": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "salt": {
             "type": [
               "null",

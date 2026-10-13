@@ -35,6 +35,7 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
     [ObjectId]
     public string? DefaultProjectId { get; set; }
     public string? Refresh { get; set; }
+    public string? AuthenticationVersion { get; set; }
     public TokenType Type { get; set; }
     public HashSet<string> Scopes { get; set; } = new();
     public DateTime? ExpiresUtc { get; set; }
