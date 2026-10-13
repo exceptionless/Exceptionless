@@ -1,6 +1,8 @@
 @rootUrl = http://localhost:7110
-# Obtain an OAuth access token with mcp:read from oauth.http.
+# In oauth.http, set resource to http://localhost:7110/mcp and scope to
+# mcp:read projects:read stacks:read events:read offline_access, then obtain an access token.
 @token = replace-with-oauth-access-token
+@projectId = 537650f3b77efe23a47914f4
 
 ### Discover native MCP v2 capabilities
 POST {{rootUrl}}/mcp
@@ -51,7 +53,7 @@ Accept: application/json, text/event-stream
 }
 
 ### Search stacks with cursor paging
-# Use the "after" cursor returned by this response with the same limit to fetch the next page.
+# For the next page, add "after": "<returned cursor>" to arguments and keep the same limit.
 POST {{rootUrl}}/mcp
 Authorization: Bearer {{token}}
 MCP-Protocol-Version: 2026-07-28
@@ -75,9 +77,8 @@ Accept: application/json, text/event-stream
     },
     "name": "search_stacks",
     "arguments": {
-      "projectId": "replace-with-project-id",
-      "limit": 10,
-      "after": "replace-with-after-cursor"
+      "projectId": "{{projectId}}",
+      "limit": 10
     }
   }
 }

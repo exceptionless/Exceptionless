@@ -16,6 +16,18 @@ spec:
         signoz.io/port: "9121"
         signoz.io/path: "/metrics"
       replicas: 2
+      # Prefer separate nodes while allowing placement when capacity is tight.
+      schedulingPolicy:
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  labelSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: ex-prod-kb
+                      apps.kubeblocks.io/component-name: redis
+                  topologyKey: kubernetes.io/hostname
       systemAccounts:
         - name: default
           secretRef:

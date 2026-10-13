@@ -15,7 +15,9 @@ Organize tests as **Arrange–Act–Assert**:
 - **Act:** perform the behavior under test, awaiting asynchronous work.
 - **Assert:** check the observable result and relevant side effects. Keep assertions separate from the action.
 
-Keep unit tests fast, isolated, repeatable, and self-checking. Use clear names and minimal setup; test behavior rather than implementation details. Avoid branching or recreating production logic to calculate expected results. Prefer separate cases or parameterized tests for different scenarios. Infrastructure-dependent checks belong in integration tests, using the fixtures below. Coverage percentages alone do not establish test quality.
+Keep unit tests fast, isolated, repeatable, and self-checking. Use clear names and minimal setup; test behavior rather than implementation details. Avoid branching or recreating production logic to calculate expected results. Before adding a test, identify the distinct regression it catches and inspect existing coverage. Extend an existing scenario or parameterize equivalent cases instead of duplicating setup. Combine assertions for the same behavior when they share expensive setup, while keeping independent behaviors separately diagnosable. Do not add trivial accessor, framework, or implementation-mirroring tests. Infrastructure-dependent checks belong in integration tests, using the fixtures below. Coverage percentages and test counts alone do not establish test quality.
+
+Use the smallest fixture that proves the behavior. For batching/pagination, cross the real boundary rather than generating arbitrary thousands of records. Keep benchmarks out of the correctness suite. Inspect CI timing reports for expensive tests and preserve automatic shard discovery when restructuring test classes.
 
 ## Fixtures and locations
 
