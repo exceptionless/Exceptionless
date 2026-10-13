@@ -59,9 +59,6 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return true;
     }
 
-    public Task<long> RemoveAllAsync(string organizationId, string? clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent>? options = null) =>
-        RemoveAllByOrganizationAndClientIpAsync(organizationId, clientIpAddress, utcStart, utcEnd, options);
-
     public Task<long> RemoveAllByOrganizationAndClientIpAsync(string organizationId, string? clientIpAddress, DateTime? startUtc, DateTime? endUtc, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(organizationId);
