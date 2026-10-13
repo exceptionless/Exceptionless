@@ -23,7 +23,9 @@ public sealed class EventTelemetryService(IEventRepository eventRepository)
 
         if (chart.Mode == "events")
         {
-            var events = await eventRepository.FindAsync(query, o => o.PageLimit(EventChartQueryExtensions.MaxPoints));
+            // Load only the fields used to name series and build points; events can carry large error and request data.
+            var events = await eventRepository.FindAsync(q => query(q).Include(e => e.Id, e => e.Date, e => e.Source, e => e.StackId,
+                e => e.Outcome!, e => e.Result!, e => e.Labels!, e => e.Measurements!), o => o.PageLimit(EventChartQueryExtensions.MaxPoints));
             var groups = events.Documents.GroupBy(ev => GetSeriesName(ev, chart.GroupBy)).ToList();
             return new EventChartResult
             {
