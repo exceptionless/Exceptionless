@@ -72,7 +72,6 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
     private const string RefreshTokenLockPrefix = "oauth:refresh:";
     private const string AccessTokenClientValidityCachePrefix = "oauth:client-valid:";
     private const int OAuthGrantFamilyPageLimit = 1000;
-    private static readonly TimeSpan AccessTokenClientValidityCacheLifetime = TimeSpan.FromSeconds(30);
     private const string ClientMetadataNotes = "Discovered from OAuth client metadata document.";
     private const string DynamicClientRegistrationNotes = "Registered through OAuth dynamic client registration.";
     private static readonly Regex CodeChallengeRegex = new("^[A-Za-z0-9_-]{43}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -175,15 +174,10 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return false;
 
         clientId = clientId.Trim();
-        string cacheKey = GetAccessTokenClientValidityCacheKey(clientId);
-        bool? cached = await cacheClient.GetAsync<bool?>(cacheKey, null);
-        if (cached.HasValue)
-            return cached.Value;
-
-        var application = await oauthApplicationRepository.GetByClientIdAsync(clientId);
-        bool isValid = application is { IsDisabled: false };
-        await cacheClient.SetAsync(cacheKey, isValid, AccessTokenClientValidityCacheLifetime);
-        return isValid;
+        // An older lookup can complete after the application was disabled and its
+        // cache entry removed. Current application state authorizes the request.
+        var application = await oauthApplicationRepository.GetByClientIdAsync(clientId, o => o.Cache(false));
+        return application is { IsDisabled: false };
     }
 
     public Task ClearAccessTokenClientValidityCacheAsync(string? clientId)
