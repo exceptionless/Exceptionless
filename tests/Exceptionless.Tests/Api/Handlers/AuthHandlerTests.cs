@@ -28,14 +28,15 @@ public sealed class AuthHandlerTests : TestWithServices
     public AuthHandlerTests(ITestOutputHelper output) : base(output) { }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Handle_ExternalLoginTransfer_RevokesDisplacedUserSessionsBeforeLinking(bool cleanupFails)
+    [InlineData(false, null)]
+    [InlineData(true, null)]
+    [InlineData(false, "previous-version")]
+    [InlineData(true, "previous-version")]
+    public async Task Handle_ExternalLoginTransfer_RevokesDisplacedUserSessionsBeforeLinking(bool cleanupFails, string? previousVersion)
     {
         // Arrange
         const string provider = "github";
         const string providerId = "provider-user";
-        const string previousVersion = "previous-version";
         var displaced = new User { Id = "displaced-user", EmailAddress = "displaced@example.test", AuthenticationVersion = previousVersion };
         displaced.AddOAuthAccount(provider, providerId, displaced.EmailAddress);
         displaced.AddOAuthAccount("google", "retained-provider", displaced.EmailAddress);
@@ -95,7 +96,7 @@ public sealed class AuthHandlerTests : TestWithServices
         var userRepository = new Mock<IUserRepository>();
         userRepository.Setup(repository => repository.GetByEmailAddressAsync("test@example.com"))
             .ThrowsAsync(exception);
-        var handler = CreateHandler(userRepository.Object);
+        var handler = CreateHandler(userRepository.Object, GetService<ITokenRepository>(), GetService<IOAuthTokenRepository>(), GetService<IOAuthProviderClient>());
         var message = new LoginMessage(
             new Login { Email = "test@example.com", Password = "password" },
             new DefaultHttpContext());
@@ -126,7 +127,7 @@ public sealed class AuthHandlerTests : TestWithServices
             .Throws(new InvalidOperationException("Token store unavailable."));
         oauthTokens.Setup(repository => repository.RemoveAllByUserIdAsync("test-user", null))
             .ReturnsAsync(0L);
-        var handler = CreateHandler(Mock.Of<IUserRepository>(), tokens.Object, oauthTokens.Object);
+        var handler = CreateHandler(Mock.Of<IUserRepository>(), tokens.Object, oauthTokens.Object, GetService<IOAuthProviderClient>());
         var method = typeof(AuthHandler).GetMethod("ResetUserTokensAsync", BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.NotNull(method);
 
@@ -142,7 +143,7 @@ public sealed class AuthHandlerTests : TestWithServices
         oauthTokens.VerifyNoOtherCalls();
     }
 
-    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository? tokenRepository = null, IOAuthTokenRepository? oauthTokenRepository = null, IOAuthProviderClient? providerClient = null)
+    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient providerClient)
     {
         var appOptions = GetService<AppOptions>();
 
@@ -151,9 +152,9 @@ public sealed class AuthHandlerTests : TestWithServices
             appOptions.IntercomOptions,
             GetService<IOrganizationRepository>(),
             userRepository,
-            tokenRepository ?? GetService<ITokenRepository>(),
-            oauthTokenRepository ?? GetService<IOAuthTokenRepository>(),
-            providerClient ?? GetService<IOAuthProviderClient>(),
+            tokenRepository,
+            oauthTokenRepository,
+            providerClient,
             GetService<ICacheClient>(),
             GetService<AuthService>(),
             GetService<IMailer>(),
