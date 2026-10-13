@@ -16,7 +16,7 @@ internal static class OutboundSocketCleanup
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Unable to dispose failed outbound socket connection {Message}", ex.Message);
+            logger.LogWarning(ex, "Unable to dispose failed outbound socket connection: {Message}", ex.Message);
         }
     }
 }
