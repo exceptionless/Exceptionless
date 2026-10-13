@@ -2,6 +2,8 @@
 @email = admin@exceptionless.test
 @password = tester
 
+# External sign-in returns 401 when the account is unavailable. Existing provider links identify their exact provider and subject.
+
 ### login to test account
 # @name login
 POST {{apiUrl}}/auth/login

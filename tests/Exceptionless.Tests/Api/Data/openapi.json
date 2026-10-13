@@ -1731,6 +1731,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Account Creation is currently disabled",
             "content": {
@@ -1782,6 +1792,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1841,6 +1861,16 @@
               }
             }
           },
+          "401": {
+            "description": "Sign-in failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Account Creation is currently disabled",
             "content": {
@@ -1892,6 +1922,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign-in failed",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
