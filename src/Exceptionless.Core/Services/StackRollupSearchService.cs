@@ -12,6 +12,8 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
+using Foundatio.Parsers.LuceneQueries;
+using Foundatio.Parsers.LuceneQueries.Nodes;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Queries.Builders;
 using Foundatio.Repositories.Models;
@@ -781,14 +783,59 @@ public sealed class StackRollupSearchService : IStackRollupSearchService
             .Where(column => column.Name is not null)
             .ToDictionary(column => column.Name!, column => column.Index, StringComparer.Ordinal);
 
-    private static bool IsDashboardAggregation(string aggregations)
+    internal static bool IsDashboardAggregation(string aggregations)
     {
-        string value = aggregations.Replace(" ", String.Empty, StringComparison.Ordinal).ToLowerInvariant();
-        return value.Contains("date:(date", StringComparison.Ordinal)
-            && value.Contains("cardinality:stack", StringComparison.Ordinal)
-            && value.Contains("sum:count~1", StringComparison.Ordinal)
-            && value.Contains("terms:(first@include:true)", StringComparison.Ordinal);
+        var parts = new List<IQueryNode>();
+        if (!TryGetAggregationParts(new LuceneQueryParser().Parse(aggregations), parts) || parts.Count != 4)
+            return false;
+
+        // The response contains exactly these operations, including their nested metrics and modifiers.
+        return parts.Count(node => IsAggregationTerm(node, "cardinality:stack")) == 1
+            && parts.Count(node => IsAggregationTerm(node, "sum:count~1")) == 1
+            && parts.Count(node => IsAggregationGroup(node, "date", "date", ["cardinality:stack", "sum:count~1"])) == 1
+            && parts.Count(node => IsAggregationGroup(node, "terms", "first", ["@include:true"])) == 1;
     }
+
+    private static bool IsAggregationTerm(IQueryNode node, string expected)
+        => node is TermNode && String.Equals(node.ToString(), expected, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsAggregationGroup(IQueryNode node, string operation, string field, string[] expected)
+    {
+        if (node is not GroupNode group || !IsUnmodifiedAggregationGroup(group)
+            || !String.Equals(group.Field, operation, StringComparison.OrdinalIgnoreCase)
+            || group.Left is null || !IsAggregationTerm(group.Left, field))
+            return false;
+
+        var parts = new List<IQueryNode>();
+        if (!TryGetAggregationParts(group.Right, parts) || parts.Count != expected.Length)
+            return false;
+
+        return parts.All(part => part is TermNode)
+            && parts.Select(part => part.ToString()).Order(StringComparer.OrdinalIgnoreCase)
+                .SequenceEqual(expected.Order(StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static bool TryGetAggregationParts(IQueryNode? node, List<IQueryNode> parts)
+    {
+        if (node is null)
+            return true;
+
+        if (node is GroupNode group && String.IsNullOrEmpty(group.Field))
+        {
+            if (!IsUnmodifiedAggregationGroup(group))
+                return false;
+
+            return TryGetAggregationParts(group.Left, parts) && TryGetAggregationParts(group.Right, parts);
+        }
+
+        parts.Add(node);
+
+        return true;
+    }
+
+    private static bool IsUnmodifiedAggregationGroup(GroupNode group)
+        => group.Operator == GroupOperator.Default && group.IsNegated != true
+            && group.Prefix is null && group.Boost is null && group.Proximity is null;
 
     private static bool IsTermsTagsAggregation(string aggregations)
         => String.Equals(aggregations.Replace(" ", String.Empty, StringComparison.Ordinal), "terms:tags", StringComparison.OrdinalIgnoreCase);
