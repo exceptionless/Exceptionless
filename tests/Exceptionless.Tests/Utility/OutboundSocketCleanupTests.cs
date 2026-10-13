@@ -27,6 +27,6 @@ public sealed class OutboundSocketCleanupTests(ITestOutputHelper output) : TestW
         socket.Protected().Verify("Dispose", Times.Once(), ItExpr.Is<bool>(disposing => disposing));
         var entry = Assert.Single(Log.LogEntries, entry => entry.LogLevel == LogLevel.Warning);
         Assert.Same(exception, entry.Exception);
-        Assert.Equal("Unable to dispose failed outbound socket connection Socket cleanup failed", entry.Message);
+        Assert.Equal("Unable to dispose failed outbound socket connection: Socket cleanup failed", entry.Message);
     }
 }
