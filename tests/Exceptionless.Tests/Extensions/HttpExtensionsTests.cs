@@ -34,6 +34,18 @@ public sealed class HttpExtensionsTests
     }
 
     [Theory]
+    [InlineData("192.0.2.1", "192.0.2.1")]
+    [InlineData("::ffff:192.0.2.1", "192.0.2.1")]
+    [InlineData("2001:db8::1", "2001:db8::1")]
+    [InlineData(null, null)]
+    public void GetClientIpAddress_Address_NormalizesMappedIpv4(string? value, string? expected)
+    {
+        var request = new DefaultHttpContext().Request;
+        request.HttpContext.Connection.RemoteIpAddress = value is null ? null : System.Net.IPAddress.Parse(value);
+        Assert.Equal(expected, request.GetClientIpAddress());
+    }
+
+    [Theory]
     [InlineData("Basic", "user@example.com", "password")]
     [InlineData("bAsIc", "user@example.com", "password")]
     [InlineData("Basic   ", "user@example.com", "password")]

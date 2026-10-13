@@ -138,7 +138,8 @@ public static class HttpExtensions
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        return request.HttpContext.Connection.RemoteIpAddress?.ToString();
+        var address = request.HttpContext.Connection.RemoteIpAddress;
+        return address is { IsIPv4MappedToIPv6: true } ? address.MapToIPv4().ToString() : address?.ToString();
     }
 
     public static string? GetClientKeyHash(this HttpRequest request)
