@@ -17,7 +17,7 @@ using Xunit;
 
 namespace Exceptionless.Tests.Security;
 
-public sealed class BasicPasswordAuthenticationTests(ITestOutputHelper output) : TestWithServices(output)
+public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) : TestWithServices(output)
 {
     private const string EmailAddress = "user@exceptionless.test";
     private const string Password = "Password:1$";
