@@ -12,6 +12,7 @@ using Exceptionless.Tests.Mail;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Xunit;
@@ -115,6 +116,84 @@ public sealed class UsageBudgetNotificationTests : TestWithServices
         }
     }
 
+    [Fact]
+    public async Task OrganizationHandler_LaterPageFailureRetry_SendsAllEligibleRecipientsOnce()
+    {
+        var (organization, _, expectedUserIds) = SetUpPagedRecipients();
+        organization.BudgetAlertSettings = new OrganizationBudgetAlertSettings { Enabled = true, Thresholds = [50] };
+        organization.GetCurrentUsage(TimeProvider).Total = 600_000;
+        var workItem = new OrganizationBudgetAlertWorkItem
+        {
+            OrganizationId = OrganizationId,
+            Threshold = 50,
+            ThresholdEventCount = 1,
+            CurrentEventCount = 1,
+            EventLimit = 1,
+            UsagePeriod = TimeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch()
+        };
+        Mailer.ThrowOnOrganizationBudgetAlertAttempt = 9;
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => HandleAsync(GetService<OrganizationBudgetAlertWorkItemHandler>(), workItem));
+
+        Assert.Equal(expectedUserIds.Take(8), Mailer.OrganizationBudgetAlertCalls.Select(call => call.UserId));
+
+        Mailer.ThrowOnOrganizationBudgetAlertAttempt = null;
+        await HandleAsync(GetService<OrganizationBudgetAlertWorkItemHandler>(), workItem);
+        await HandleAsync(GetService<OrganizationBudgetAlertWorkItemHandler>(), workItem);
+
+        Assert.Equal(expectedUserIds, Mailer.OrganizationBudgetAlertCalls.Select(call => call.UserId));
+    }
+
+    [Fact]
+    public async Task ProjectHandler_MultiplePagesAndDuplicateDelivery_SendsAllEligibleRecipientsOnce()
+    {
+        var (organization, project, expectedUserIds) = SetUpPagedRecipients();
+        await UsageService.IncrementTotalAsync(organization, project.Id, GetCurrentWindowSpike(organization.MaxEventsPerMonth));
+        Assert.True((await UsageService.GetEventIngestAllowanceAsync(organization, project)).SmartThrottle.IsThrottled);
+        var workItem = new ProjectSmartThrottleWorkItem
+        {
+            OrganizationId = OrganizationId,
+            ProjectId = ProjectId,
+            SampleRate = 0.99,
+            CurrentEventCount = 1,
+            EventLimit = 2,
+            UsagePeriod = TimeProvider.GetUtcNow().UtcDateTime.StartOfMonth().ToEpoch()
+        };
+
+        await HandleAsync(GetService<ProjectSmartThrottleWorkItemHandler>(), workItem);
+        await HandleAsync(GetService<ProjectSmartThrottleWorkItemHandler>(), workItem);
+
+        Assert.Equal(expectedUserIds, Mailer.ProjectThrottleCalls.Select(call => call.UserId));
+    }
+
+    private (Organization Organization, Project Project, string[] ExpectedUserIds) SetUpPagedRecipients()
+    {
+        TimeProvider.SetUtcNow(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        var organization = new Organization
+        {
+            Id = OrganizationId,
+            Name = "Budget Organization",
+            PlanId = "EX_XL",
+            MaxEventsPerMonth = 1_000_000
+        };
+        var project = new Project { Id = ProjectId, OrganizationId = OrganizationId, Name = "Noisy Project" };
+        OrganizationRepository.Organization = organization;
+        ProjectRepository.Project = project;
+        ProjectRepository.ProjectCount = 3;
+
+        var users = Enumerable.Range(0, 13).Select(index => new User
+        {
+            Id = $"664ec4c1f12e4f2b7a0d33{index:D2}",
+            OrganizationIds = new HashSet<string> { OrganizationId },
+            EmailAddress = $"recipient-{index:D2}@example.org",
+            IsEmailAddressVerified = index != 0,
+            EmailNotificationsEnabled = index != 1
+        }).ToArray();
+        UserRepository.PagedUsers = users;
+
+        return (organization, project, users.Skip(2).Select(user => user.Id).ToArray());
+    }
+
     private int GetCurrentWindowSpike(int maxEventsPerMonth)
     {
         var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
@@ -163,13 +242,37 @@ public sealed class UsageBudgetNotificationTests : TestWithServices
     private class UserRepositoryProxy : DispatchProxy
     {
         public FindResults<User> Users { get; set; } = new();
+        public User[]? PagedUsers { get; set; }
 
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
             if (targetMethod?.Name == "GetByOrganizationIdAsync")
+            {
+                if (PagedUsers is not null)
+                {
+                    string organizationId = (string)args![0]!;
+                    var commandOptions = (args[1] as CommandOptionsDescriptor<User>).Configure();
+                    var users = PagedUsers.Where(user => user.OrganizationIds.Contains(organizationId))
+                        .OrderBy(user => user.EmailAddress, StringComparer.Ordinal).ToArray();
+                    return Task.FromResult(GetPage(users, 1, commandOptions.GetLimit()));
+                }
+
                 return Task.FromResult(Users);
+            }
 
             throw new NotSupportedException(targetMethod?.Name);
+        }
+
+        private static FindResults<User> GetPage(User[] users, int page, int pageSize)
+        {
+            var hits = users.Skip((page - 1) * pageSize).Take(pageSize)
+                .Select(user => new FindHit<User>(user.Id, user, 0, null, null, null));
+            var results = new FindResults<User>(hits, users.Length,
+                getNextPageFunc: previous => Task.FromResult(GetPage(users, previous.Page + 1, pageSize)));
+            ((IFindResults<User>)results).Page = page;
+            ((IFindResults<User>)results).HasMore = page * pageSize < users.Length;
+
+            return results;
         }
     }
 }
