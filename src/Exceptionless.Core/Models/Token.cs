@@ -6,8 +6,32 @@ namespace Exceptionless.Core.Models;
 
 public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IValidatableObject
 {
+    /// <summary>
+    /// The user session generation captured when this token is issued.
+    /// A legacy null value matches only an active user whose generation is also null; it does not describe a password format.
+    /// </summary>
+    public string? AuthenticationVersion { get; set; }
+
+    public string CreatedBy { get; set; } = null!;
+
+    public DateTime CreatedUtc { get; set; }
+
+    /// <summary>
+    /// The user's preferred default project. Cannot be set when ProjectId is defined.
+    /// </summary>
+    [ObjectId]
+    public string? DefaultProjectId { get; set; }
+
+    public DateTime? ExpiresUtc { get; set; }
+
     [Required]
     public string Id { get; set; } = null!;
+
+    public bool IsDisabled { get; set; }
+
+    public bool IsSuspended { get; set; }
+
+    public string? Notes { get; set; }
 
     /// <summary>
     /// Null for user-scoped tokens (where UserId is set instead).
@@ -23,28 +47,19 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
     [ObjectId]
     public string ProjectId { get; set; } = null!;
 
+    public string? Refresh { get; set; }
+
+    public HashSet<string> Scopes { get; set; } = new();
+
+    public TokenType Type { get; set; }
+
+    public DateTime UpdatedUtc { get; set; }
+
     /// <summary>
     /// Set for user-scoped tokens. Cannot be set together with ProjectId.
     /// </summary>
     [ObjectId]
     public string? UserId { get; set; }
-
-    /// <summary>
-    /// The user's preferred default project. Cannot be set when ProjectId is defined.
-    /// </summary>
-    [ObjectId]
-    public string? DefaultProjectId { get; set; }
-    public string? Refresh { get; set; }
-    public string? AuthenticationVersion { get; set; }
-    public TokenType Type { get; set; }
-    public HashSet<string> Scopes { get; set; } = new();
-    public DateTime? ExpiresUtc { get; set; }
-    public string? Notes { get; set; }
-    public bool IsDisabled { get; set; }
-    public bool IsSuspended { get; set; }
-    public string CreatedBy { get; set; } = null!;
-    public DateTime CreatedUtc { get; set; }
-    public DateTime UpdatedUtc { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
