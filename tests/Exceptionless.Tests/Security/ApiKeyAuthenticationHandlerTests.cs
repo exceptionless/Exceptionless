@@ -21,7 +21,6 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
 {
     private const string EmailAddress = "user@exceptionless.test";
     private const string Password = "Password:1$";
-    private const string Salt = "1234567890123456";
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
 
     [Theory]
@@ -36,7 +35,8 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         var cache = GetService<ICacheClient>();
         var service = GetService<AuthService>();
         var repository = new Mock<IUserRepository>();
-        string passwordHash = Password.ToSaltedHash(Salt);
+        var credentials = new User();
+        credentials.SetPassword(Password);
         int requestCount = limit + 1;
         var releases = Enumerable.Range(0, requestCount)
             .Select(_ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
@@ -52,8 +52,8 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
                     EmailAddress = email,
                     FullName = "Admission Test User",
                     IsEmailAddressVerified = true,
-                    Password = passwordHash,
-                    Salt = Salt,
+                    Password = credentials.Password,
+                    Salt = credentials.Salt,
                     Roles = new HashSet<string> { AuthorizationRoles.User }
                 };
             });
@@ -135,7 +135,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         var options = new Mock<IOptionsMonitor<ApiKeyAuthenticationOptions>>();
         options.Setup(monitor => monitor.Get(It.IsAny<string>())).Returns(new ApiKeyAuthenticationOptions());
         var handler = new ApiKeyAuthenticationHandler(
-            GetService<ITokenRepository>(), GetService<IOAuthTokenRepository>(), cache, service, repository,
+            GetService<ITokenRepository>(), GetService<IOAuthTokenRepository>(), cache, service, new PasswordService(repository), repository,
             GetService<OAuthService>(), GetService<AppOptions>(), options.Object, clock, Log, UrlEncoder.Default);
         var context = new DefaultHttpContext
         {

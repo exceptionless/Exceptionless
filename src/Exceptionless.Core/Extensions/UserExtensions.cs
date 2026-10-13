@@ -1,5 +1,6 @@
 ﻿using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -7,11 +8,13 @@ public static class UserExtensions
 {
     public static bool IsCorrectPassword(this User user, string password)
     {
-        if (String.IsNullOrEmpty(user.Salt) || String.IsNullOrEmpty(user.Password))
-            return false;
+        return PasswordHasher.Verify(password, user.Salt, user.Password);
+    }
 
-        string encodedPassword = password.ToSaltedHash(user.Salt);
-        return String.Equals(encodedPassword, user.Password);
+    public static void SetPassword(this User user, string password)
+    {
+        user.Salt = PasswordHasher.CreateSalt();
+        user.Password = PasswordHasher.Hash(password, user.Salt);
     }
 
     public static void ResetVerifyEmailAddressTokenAndExpiration(this User user, TimeProvider timeProvider)
