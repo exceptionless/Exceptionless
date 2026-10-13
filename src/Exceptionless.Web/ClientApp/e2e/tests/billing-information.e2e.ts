@@ -71,7 +71,7 @@ for (const width of [1440, 390]) {
             }
         });
 
-        await page.goto(`/next/organization/${ORGANIZATION_ID}/billing`);
+        await page.goto(`/organization/${ORGANIZATION_ID}/billing`);
         const name = page.getByRole('textbox', { exact: true, name: 'Billing name' });
         await expect(name).toHaveValue('');
         await name.fill('  Acme, Inc.  ');
