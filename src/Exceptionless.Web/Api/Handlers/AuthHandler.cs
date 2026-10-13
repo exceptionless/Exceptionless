@@ -555,12 +555,14 @@ public class AuthHandler(
             var currentUser = httpContext.Request.GetUser();
             if (existingUser is not null)
             {
-                if (existingUser.Id != currentUser.Id)
+                if (!String.Equals(existingUser.Id, currentUser.Id, StringComparison.Ordinal))
                 {
                     if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
                         throw new Exception($"Unable to remove existing oauth account for existing user: {existingUser.EmailAddress}");
 
+                    existingUser.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
                     await userRepository.SaveAsync(existingUser, o => o.Cache());
+                    await ResetUserTokensAsync(existingUser, "ExternalLoginTransfer", httpContext);
                 }
                 else
                 {
