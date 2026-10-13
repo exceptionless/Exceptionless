@@ -1,10 +1,22 @@
-﻿using Exceptionless.Core.Models;
+﻿using System.Diagnostics.CodeAnalysis;
+using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Core.Extensions;
 
 public static class UserExtensions
 {
+    /// <summary>
+    /// Checks whether an active user's session generation matches the presented credential.
+    /// A missing generation matches only another missing generation for legacy credentials.
+    /// This method does not load or refresh the user.
+    /// </summary>
+    public static bool HasValidAuthenticationVersion([NotNullWhen(true)] this User? user, string? authenticationVersion)
+    {
+        return user is { IsActive: true }
+            && String.Equals(user.AuthenticationVersion, authenticationVersion, StringComparison.Ordinal);
+    }
+
     public static bool IsCorrectPassword(this User user, string password)
     {
         if (String.IsNullOrEmpty(user.Salt) || String.IsNullOrEmpty(user.Password))

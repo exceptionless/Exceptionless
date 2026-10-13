@@ -504,6 +504,7 @@ public class AuthHandler(
     private async Task<Result<TokenResult>> ExternalLoginAsync(ExternalAuthInfo authInfo, HttpContext httpContext, string? appId, string? appSecret, Func<ExternalAuthInfo, string, string, Task<UserInfo>> getUserInfoAsync)
     {
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").SetHttpContext(httpContext));
+
         if (String.IsNullOrEmpty(appId) || String.IsNullOrEmpty(appSecret))
             throw new ConfigurationErrorsException("Missing Configuration for OAuth provider");
 
@@ -626,6 +627,7 @@ public class AuthHandler(
             return;
 
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("Invite").Identity(user.EmailAddress).SetHttpContext(httpContext));
+
         var organization = await organizationRepository.GetByInviteTokenAsync(token);
         var invite = organization?.GetInvite(token);
         if (organization is null || invite is null)
@@ -655,6 +657,7 @@ public class AuthHandler(
     private async Task ChangePasswordAsync(User user, string password, string tag, HttpContext httpContext)
     {
         using var _ = logger.BeginScope(new ExceptionlessState().Tag(tag).Identity(user.EmailAddress).SetHttpContext(httpContext));
+
         if (String.IsNullOrEmpty(user.Salt))
             user.Salt = Core.Extensions.StringExtensions.GetNewToken();
 
@@ -677,6 +680,7 @@ public class AuthHandler(
     private async Task ResetUserTokensAsync(User user, string tag, HttpContext httpContext)
     {
         using var _ = logger.BeginScope(new ExceptionlessState().Tag(tag).Identity(user.EmailAddress).SetHttpContext(httpContext));
+
         long total = 0;
         try
         {
@@ -684,7 +688,7 @@ public class AuthHandler(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error removing user tokens for {UserId}: {Message}", user.Id, ex.Message);
+            logger.LogCritical(ex, "Error removing user tokens for {EmailAddress} ({UserId}): {Message}", user.EmailAddress, user.Id, ex.Message);
         }
 
         try
@@ -693,7 +697,7 @@ public class AuthHandler(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error removing OAuth tokens for {UserId}: {Message}", user.Id, ex.Message);
+            logger.LogCritical(ex, "Error removing OAuth tokens for {EmailAddress} ({UserId}): {Message}", user.EmailAddress, user.Id, ex.Message);
         }
 
         logger.RemovedUserTokens(total, user.EmailAddress);
@@ -705,7 +709,7 @@ public class AuthHandler(
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         var validAccessToken = userTokens.Documents.FirstOrDefault(token => !token.IsDisabled && !token.IsSuspended
-            && String.Equals(token.AuthenticationVersion, user.AuthenticationVersion, StringComparison.Ordinal)
+            && user.HasValidAuthenticationVersion(token.AuthenticationVersion)
             && (!token.ExpiresUtc.HasValue || token.ExpiresUtc > utcNow));
         if (validAccessToken is not null)
             return validAccessToken.Id;

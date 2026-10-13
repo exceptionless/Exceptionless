@@ -383,13 +383,6 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return OAuthValidationResult.Valid(client, requestedScopes);
     }
 
-    public async Task<string> CreateAuthorizationCodeAsync(OAuthAuthorizeRequest request, string userId, IReadOnlyCollection<string> organizationIds)
-    {
-        var user = await userRepository.GetByIdAsync(userId)
-            ?? throw new InvalidOperationException("The user does not exist.");
-        return await CreateAuthorizationCodeAsync(request, user, organizationIds);
-    }
-
     public async Task<string> CreateAuthorizationCodeAsync(OAuthAuthorizeRequest request, User user, IReadOnlyCollection<string> organizationIds)
     {
         await oauthApplicationRepository.AddOrganizationIdsAsync(request.ClientId, organizationIds, o => o.ImmediateConsistency().Notifications(false));
@@ -441,7 +434,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Invalid PKCE verifier.");
 
         var user = await userRepository.GetByIdAsync(code.UserId);
-        if (user is not { IsActive: true } || !String.Equals(user.AuthenticationVersion, code.AuthenticationVersion, StringComparison.Ordinal))
+        if (!user.HasValidAuthenticationVersion(code.AuthenticationVersion))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code is invalid or expired.");
 
         return OAuthTokenIssueResult.Success(await CreateTokenAsync(code.UserId, code.ClientId, code.Resource, code.Scopes, code.OrganizationIds, authenticationVersion: code.AuthenticationVersion));
@@ -486,7 +479,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         }
 
         var user = await userRepository.GetByIdAsync(token.UserId);
-        if (user is null || !user.IsActive || !String.Equals(user.AuthenticationVersion, token.AuthenticationVersion, StringComparison.Ordinal))
+        if (!user.HasValidAuthenticationVersion(token.AuthenticationVersion))
         {
             await RevokeOAuthGrantFamilyAsync(token);
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Refresh token is invalid.");
@@ -878,13 +871,13 @@ public record OAuthAuthorizationCode
 {
     public string? AuthenticationVersion { get; init; }
     public required string ClientId { get; init; }
-    public required string RedirectUri { get; init; }
-    public required string UserId { get; init; }
     public required string CodeChallenge { get; init; }
-    public required string Resource { get; init; }
-    public IReadOnlyCollection<string> Scopes { get; set; } = [];
     public DateTime CreatedUtc { get; init; }
     public IReadOnlyCollection<string> OrganizationIds { get; init; } = [];
+    public required string RedirectUri { get; init; }
+    public required string Resource { get; init; }
+    public IReadOnlyCollection<string> Scopes { get; set; } = [];
+    public required string UserId { get; init; }
 }
 
 

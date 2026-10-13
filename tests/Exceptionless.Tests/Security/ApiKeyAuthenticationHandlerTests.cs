@@ -9,6 +9,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Security;
 using Foundatio.Caching;
+using Foundatio.Repositories;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
@@ -23,6 +24,59 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
     private const string Password = "Password:1$";
     private const string Salt = "1234567890123456";
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
+
+    [Theory]
+    [InlineData("Bearer", true, null, null, true)]
+    [InlineData("Basic", true, null, null, true)]
+    [InlineData("Bearer", true, "current", null, false)]
+    [InlineData("Basic", true, "current", null, false)]
+    [InlineData("Bearer", true, "current", "CURRENT", false)]
+    [InlineData("Basic", true, "current", "CURRENT", false)]
+    [InlineData("Bearer", false, "current", "current", false)]
+    [InlineData("Basic", false, "current", "current", false)]
+    [InlineData("Bearer", true, "current", "current", true)]
+    [InlineData("Basic", true, "current", "current", true)]
+    public async Task AuthenticateAsync_AuthenticationVersion_RequiresActiveUserAndMatchingGeneration(string scheme, bool isActive, string? userVersion, string? tokenVersion, bool expectedSuccess)
+    {
+        // Arrange
+        const string tokenId = "legacy-user-token";
+        var user = new User
+        {
+            Id = "123456789012345678901234",
+            EmailAddress = EmailAddress,
+            FullName = "Token Test User",
+            IsActive = isActive,
+            AuthenticationVersion = userVersion,
+            Roles = new HashSet<string> { AuthorizationRoles.User }
+        };
+        var token = new Token { Id = tokenId, UserId = user.Id, Type = TokenType.Authentication, AuthenticationVersion = tokenVersion };
+        var users = new Mock<IUserRepository>(MockBehavior.Strict);
+        users.Setup(repository => repository.GetByIdAsync(user.Id, (ICommandOptions?)null)).ReturnsAsync(user);
+        var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
+        tokens.Setup(repository => repository.GetByIdAsync(tokenId, It.IsAny<CommandOptionsDescriptor<Token>>())).ReturnsAsync(token);
+        var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
+        var options = new Mock<IOptionsMonitor<ApiKeyAuthenticationOptions>>(MockBehavior.Strict);
+        options.Setup(monitor => monitor.Get(It.IsAny<string>())).Returns(new ApiKeyAuthenticationOptions());
+        var handler = new ApiKeyAuthenticationHandler(tokens.Object, oauthTokens.Object, GetService<ICacheClient>(), GetService<AuthService>(), users.Object,
+            GetService<OAuthService>(), GetService<AppOptions>(), options.Object, TimeProvider, Log, UrlEncoder.Default);
+        var context = new DefaultHttpContext { RequestServices = GetService<IServiceProvider>() };
+        context.Request.Path = "/api/v2/users/me";
+        string credentials = String.Equals(scheme, "Basic", StringComparison.Ordinal)
+            ? Convert.ToBase64String(Encoding.UTF8.GetBytes($"client:{tokenId}")) : tokenId;
+        context.Request.Headers.Authorization = $"{scheme} {credentials}";
+        await handler.InitializeAsync(new AuthenticationScheme(ApiKeyAuthenticationOptions.ApiKeySchema, null, typeof(ApiKeyAuthenticationHandler)), context);
+
+        // Act
+        var result = await handler.AuthenticateAsync();
+
+        // Assert
+        Assert.Equal(expectedSuccess, result.Succeeded);
+        users.Verify(repository => repository.GetByIdAsync(user.Id, (ICommandOptions?)null), Times.Once);
+        tokens.Verify(repository => repository.GetByIdAsync(tokenId, It.IsAny<CommandOptionsDescriptor<Token>>()), Times.Once);
+        users.VerifyNoOtherCalls();
+        tokens.VerifyNoOtherCalls();
+        oauthTokens.VerifyNoOtherCalls();
+    }
 
     [Theory]
     [InlineData(false, true, 5)]

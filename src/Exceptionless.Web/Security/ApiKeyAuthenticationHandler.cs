@@ -136,7 +136,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
                 return AuthenticateResult.Fail("Token is not valid");
             }
 
-            if (!user.IsActive || !String.Equals(user.AuthenticationVersion, tokenRecord.AuthenticationVersion, StringComparison.Ordinal))
+            if (!user.HasValidAuthenticationVersion(tokenRecord.AuthenticationVersion))
                 return AuthenticateResult.Fail("Token is not valid");
 
             return AuthenticateResult.Success(CreateUserAuthenticationTicket(user, tokenRecord));
@@ -249,7 +249,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return AuthenticateResult.Fail("Token is not valid");
         }
 
-        if (!user.IsActive || !String.Equals(user.AuthenticationVersion, tokenRecord.AuthenticationVersion, StringComparison.Ordinal))
+        if (!user.HasValidAuthenticationVersion(tokenRecord.AuthenticationVersion))
         {
             await DisableOAuthTokenAsync(tokenRecord);
             return AuthenticateResult.Fail("User is not valid");
