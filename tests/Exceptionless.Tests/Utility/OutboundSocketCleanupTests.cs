@@ -18,15 +18,14 @@ public sealed class OutboundSocketCleanupTests(ITestOutputHelper output) : TestW
         var socket = new Mock<Socket>(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { CallBase = true };
         using var handle = socket.Object.SafeHandle;
         socket.Protected().Setup("Dispose", ItExpr.Is<bool>(disposing => disposing)).Throws(exception);
-        var logger = Log.CreateLogger<OutboundSocketCleanupTests>();
 
         // Act
-        OutboundSocketCleanup.Dispose(socket.Object, logger);
+        OutboundSocketCleanup.Dispose(socket.Object, _logger);
 
         // Assert
         socket.Protected().Verify("Dispose", Times.Once(), ItExpr.Is<bool>(disposing => disposing));
         var entry = Assert.Single(Log.LogEntries, entry => entry.LogLevel == LogLevel.Warning);
         Assert.Same(exception, entry.Exception);
-        Assert.Equal("Unable to dispose failed outbound socket connection Socket cleanup failed", entry.Message);
+        Assert.Equal("Unable to dispose failed outbound socket connection: Socket cleanup failed", entry.Message);
     }
 }

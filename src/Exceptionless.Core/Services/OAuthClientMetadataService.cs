@@ -1,8 +1,10 @@
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Exceptionless.Core.Configuration;
+using Exceptionless.Core.Utility;
 using Foundatio.Caching;
 using Microsoft.Extensions.Logging;
 
@@ -147,6 +149,11 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         memoryStream.Position = 0;
         return memoryStream;
     }
+    /// <summary>
+    /// Preserves the public entry point for existing callers. New code uses <see cref="PublicAddressPolicy.IsPublic"/> directly.
+    /// </summary>
+    public static bool IsPublicAddress(IPAddress address) => PublicAddressPolicy.IsPublic(address);
+
     private static string GetCacheKey(string clientId)
     {
         return CachePrefix + GetCacheKeyHash(clientId);

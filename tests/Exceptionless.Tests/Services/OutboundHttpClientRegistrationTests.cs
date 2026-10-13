@@ -5,13 +5,13 @@ using Xunit;
 
 namespace Exceptionless.Tests.Services;
 
-public sealed class OutboundTransportTests(ITestOutputHelper output) : TestWithServices(output)
+public sealed class OutboundHttpClientRegistrationTests(ITestOutputHelper output) : TestWithServices(output)
 {
     [Theory]
     [InlineData(nameof(IOAuthClientMetadataService), DecompressionMethods.None)]
     [InlineData(SourceMapService.HttpClientName, DecompressionMethods.All)]
     [InlineData(SourceMapService.GeneratedFileHttpClientName, DecompressionMethods.None)]
-    public void CreateHandler_OutboundClientRegistrations_UsesRestrictedTransportSettings(string clientName, DecompressionMethods expectedDecompression)
+    public void CreateHandler_PublicDownloadClients_UsesRestrictedTransportSettings(string clientName, DecompressionMethods expectedDecompression)
     {
         // Arrange
         var factory = GetService<IHttpMessageHandlerFactory>();

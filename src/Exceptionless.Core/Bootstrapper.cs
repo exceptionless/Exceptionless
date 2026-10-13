@@ -202,14 +202,17 @@ public class Bootstrapper
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
         services.AddHttpClient<IOAuthClientMetadataService, OAuthClientMetadataService>()
-            .ConfigurePrimaryHttpMessageHandler(s => new SocketsHttpHandler
+            .ConfigurePrimaryHttpMessageHandler(s =>
             {
-                // Disable the cookie and proxy defaults: downloads are anonymous and proxies bypass destination address validation.
-                AllowAutoRedirect = false,
-                UseCookies = false,
-                UseProxy = false,
-                ConnectCallback = (context, cancellationToken) => ConnectToPublicAddressAsync(context, cancellationToken,
-                    s.GetRequiredService<ILogger<OAuthClientMetadataService>>())
+                var logger = s.GetRequiredService<ILogger<OAuthClientMetadataService>>();
+                return new SocketsHttpHandler
+                {
+                    // Disable the cookie and proxy defaults: downloads are anonymous and proxies bypass destination address validation.
+                    AllowAutoRedirect = false,
+                    UseCookies = false,
+                    UseProxy = false,
+                    ConnectCallback = (context, cancellationToken) => ConnectToPublicAddressAsync(context, cancellationToken, logger)
+                };
             });
         services.AddSingleton<SourceMapRequestThrottle>();
         services.AddHttpClient(SourceMapService.HttpClientName)
