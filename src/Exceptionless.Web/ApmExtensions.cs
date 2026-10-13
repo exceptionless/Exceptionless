@@ -73,7 +73,7 @@ public static partial class ApmExtensions
                 });
 
                 b.AddHttpClientInstrumentation(o => o.FilterHttpRequestMessage = request =>
-                    !request.Options.TryGetValue(WebHookDestinationPolicy.DeliveryRequest, out bool delivery) || !delivery);
+                    !request.Options.TryGetValue(WebHookDelivery.DeliveryRequest, out bool delivery) || !delivery);
                 b.AddSource("Exceptionless", "Exceptionless.Assistant", "Foundatio");
 
                 if (config.EnableRedis)

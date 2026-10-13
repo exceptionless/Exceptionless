@@ -5,7 +5,6 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -22,7 +21,6 @@ public class WebHookHandler(
     IWebHookRepository repository,
     IProjectRepository projectRepository,
     BillingManager billingManager,
-    WebHookDestinationPolicy destinationPolicy,
     ApiMapper mapper,
     LinkGenerator linkGenerator,
     IHttpContextAccessor httpContextAccessor,
@@ -207,9 +205,6 @@ public class WebHookHandler(
 
         if (!await billingManager.HasPremiumFeaturesAsync(project is not null ? project.OrganizationId : value.OrganizationId))
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add integrations."));
-
-        if (!destinationPolicy.IsValidDestination(value.Url))
-            return Result.BadRequest("Please specify an allowed HTTP or HTTPS destination.");
 
         return null;
     }
