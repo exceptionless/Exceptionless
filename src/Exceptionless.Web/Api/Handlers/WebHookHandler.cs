@@ -1,8 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -19,6 +22,7 @@ public class WebHookHandler(
     IWebHookRepository repository,
     IProjectRepository projectRepository,
     BillingManager billingManager,
+    WebHookDestinationPolicy destinationPolicy,
     ApiMapper mapper,
     LinkGenerator linkGenerator,
     IHttpContextAccessor httpContextAccessor,
@@ -86,8 +90,8 @@ public class WebHookHandler(
 
     public async Task<Result<Exceptionless.Core.Models.WebHook>> Handle(SubscribeWebHook message)
     {
-        string? eventType = message.Data.RootElement.TryGetProperty("event", out var eventProp) ? eventProp.GetString() : null;
-        string? url = message.Data.RootElement.TryGetProperty("target_url", out var urlProp) ? urlProp.GetString() : null;
+        string? eventType = GetStringProperty(message.Data.RootElement, "event");
+        string? url = GetStringProperty(message.Data.RootElement, "target_url");
         if (String.IsNullOrEmpty(eventType) || String.IsNullOrEmpty(url))
             return Result.BadRequest("Webhook subscription event and target_url are required.");
 
@@ -108,7 +112,7 @@ public class WebHookHandler(
             Version = new Version(message.ApiVersion >= 0 ? message.ApiVersion : 0, 0)
         };
 
-        if (!webHook.Url.StartsWith("https://hooks.zapier.com"))
+        if (!IsZapierTarget(webHook.Url))
             return Result.NotFound("Webhook target not found.");
 
         return await PostImplAsync(webHook);
@@ -116,8 +120,8 @@ public class WebHookHandler(
 
     public async Task<Result> Handle(UnsubscribeWebHook message)
     {
-        string? targetUrl = message.Data.RootElement.TryGetProperty("target_url", out var urlProp) ? urlProp.GetString() : null;
-        if (targetUrl is null || !targetUrl.StartsWith("https://hooks.zapier.com"))
+        string? targetUrl = GetStringProperty(message.Data.RootElement, "target_url");
+        if (!IsZapierTarget(targetUrl))
             return Result.NotFound("Webhook target not found.");
 
         var results = await repository.GetByUrlAsync(targetUrl);
@@ -127,11 +131,27 @@ public class WebHookHandler(
             if (results.Documents.Any(h => h.OrganizationId != organizationId))
                 throw new ArgumentException("All OrganizationIds must be the same.");
 
-            _logger.RemovingZapierUrls(results.Documents.Count, targetUrl);
+            _logger.RemovingZapierUrls(results.Documents.Count, organizationId);
             await repository.RemoveAsync(results.Documents);
         }
 
         return Result.Success();
+    }
+
+    private static string? GetStringProperty(JsonElement data, string name)
+        => data.ValueKind == JsonValueKind.Object && data.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    private static bool IsZapierTarget([NotNullWhen(true)] string? url)
+    {
+        return url is not null
+            && url.StartsWith("https://hooks.zapier.com", StringComparison.Ordinal)
+            && Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            && uri.Scheme == Uri.UriSchemeHttps
+            && uri.Host.Equals("hooks.zapier.com", StringComparison.Ordinal)
+            && uri.IsDefaultPort
+            && String.IsNullOrEmpty(uri.UserInfo);
     }
 
     public Result<object[]> Handle(TestWebHook message)
@@ -187,6 +207,9 @@ public class WebHookHandler(
 
         if (!await billingManager.HasPremiumFeaturesAsync(project is not null ? project.OrganizationId : value.OrganizationId))
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add integrations."));
+
+        if (!destinationPolicy.IsValidDestination(value.Url))
+            return Result.BadRequest("Please specify an allowed HTTP or HTTPS destination.");
 
         return null;
     }

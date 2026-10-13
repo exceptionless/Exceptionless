@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Exceptionless.Core.Services;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -71,7 +72,8 @@ public static partial class ApmExtensions
                     };
                 });
 
-                b.AddHttpClientInstrumentation();
+                b.AddHttpClientInstrumentation(o => o.FilterHttpRequestMessage = request =>
+                    !request.Options.TryGetValue(WebHookDestinationPolicy.DeliveryRequest, out bool delivery) || !delivery);
                 b.AddSource("Exceptionless", "Exceptionless.Assistant", "Foundatio");
 
                 if (config.EnableRedis)
