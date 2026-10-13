@@ -57,6 +57,12 @@ export default ts.config(
         }
     },
     {
+        files: ['**/*.svelte', '**/*.ts'],
+        rules: {
+            '@typescript-eslint/explicit-member-accessibility': ['error', { accessibility: 'explicit', overrides: { constructors: 'no-public' } }]
+        }
+    },
+    {
         rules: {
             'svelte/no-navigation-without-resolve': 'off'
         }

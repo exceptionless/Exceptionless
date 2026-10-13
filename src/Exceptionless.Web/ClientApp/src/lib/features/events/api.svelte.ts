@@ -423,6 +423,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
     const queryClient = useQueryClient();
 
     return createQuery<CountResult, ProblemDetails>(() => {
+        const requestEnabled = request.enabled?.() ?? true;
         const organizationId = request.route.organizationId;
         const params = request.params
             ? {
@@ -431,7 +432,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
             : undefined;
 
         return {
-            enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
+            enabled: () => !!accessToken.current && !!organizationId && requestEnabled,
             queryClient,
             queryFn: async () => {
                 const client = useFetchClient();
@@ -456,6 +457,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
 
 export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest) {
     return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => {
+        const requestEnabled = request.enabled?.() ?? true;
         const organizationId = request.route.organizationId;
         const params = request.params
             ? {
@@ -464,7 +466,7 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
             : undefined;
 
         return {
-            enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
+            enabled: () => !!accessToken.current && !!organizationId && requestEnabled,
             placeholderData: keepPreviousData,
             queryFn: async () => {
                 const client = useFetchClient();
@@ -485,27 +487,31 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
 export function getOrganizationSessionsCountQuery(request: GetOrganizationSessionsCountRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
-        queryClient,
-        queryFn: async () => {
-            const client = useFetchClient();
-            const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
-                params: {
-                    ...(DEFAULT_OFFSET
-                        ? {
-                              offset: DEFAULT_OFFSET
-                          }
-                        : {}),
-                    ...request.params
-                }
-            });
+    return createQuery<CountResult, ProblemDetails>(() => {
+        const requestEnabled = request.enabled?.() ?? true;
 
-            return response.data!;
-        },
-        queryKey: queryKeys.sessionsCount(request.route.organizationId, request.params),
-        staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
-    }));
+        return {
+            enabled: () => !!accessToken.current && !!request.route.organizationId && requestEnabled,
+            queryClient,
+            queryFn: async () => {
+                const client = useFetchClient();
+                const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
+                    params: {
+                        ...(DEFAULT_OFFSET
+                            ? {
+                                  offset: DEFAULT_OFFSET
+                              }
+                            : {}),
+                        ...request.params
+                    }
+                });
+
+                return response.data!;
+            },
+            queryKey: queryKeys.sessionsCount(request.route.organizationId, request.params),
+            staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
+        };
+    });
 }
 
 export function getOrganizationSessionsQuery(request: GetOrganizationSessionsRequest) {

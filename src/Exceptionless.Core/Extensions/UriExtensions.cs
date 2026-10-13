@@ -4,6 +4,10 @@ namespace Exceptionless.Core.Extensions;
 
 public static class UriExtensions
 {
+    public static string GetOrigin(this string url) => new Uri(url).GetOrigin();
+
+    public static string GetOrigin(this Uri uri) => uri.GetLeftPart(UriPartial.Authority);
+
     public static string ToQueryString(this NameValueCollection collection)
     {
         return collection.AsKeyValuePairs().ToQueryString();

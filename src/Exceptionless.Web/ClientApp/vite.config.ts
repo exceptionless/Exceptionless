@@ -12,9 +12,6 @@ import { defineConfig } from 'vitest/config';
 const apiTarget = process.env.API_HTTPS || process.env.API_HTTP;
 const apiProxy = { changeOrigin: true, target: apiTarget };
 
-const oldAppTarget = process.env.OLDAPP_HTTPS || process.env.OLDAPP_HTTP;
-const oldAppProxy = { changeOrigin: true, secure: false, target: oldAppTarget };
-
 const port = Number(process.env.PORT) || 7131;
 const codespaceName = process.env.CODESPACE_NAME;
 const codespaceDomain = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN;
@@ -143,11 +140,12 @@ export default defineConfig({
         hmr,
         port,
         proxy: {
+            '/.well-known': apiProxy,
             '/api': { ...apiProxy, ws: true },
             '/docs': apiProxy,
             '/health': apiProxy,
-            '/ready': apiProxy,
-            '^/(?!(next|api|docs|health|ready|_)).*': oldAppProxy
+            '/mcp': apiProxy,
+            '/ready': apiProxy
         },
         strictPort: true,
         warmup: {
