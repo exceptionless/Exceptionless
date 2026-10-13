@@ -52,5 +52,5 @@ mkdir -p _app
     printf '};\n'
 } > _app/env.js
 
-checksum=$(md5sum _app/env.js | cut -c 1-32)
-sed -E -i "s|/_app/env.js(\\?v=[a-f0-9]+)?|/_app/env.js?v=$checksum|g" index.html
+# Keep the build-hashed bootstrap immutable. ASP.NET serves env.js with no-store
+# so runtime configuration stays fresh without rewriting its import in index.html.

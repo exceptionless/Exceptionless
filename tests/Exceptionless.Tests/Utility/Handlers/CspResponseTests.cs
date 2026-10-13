@@ -28,6 +28,9 @@ public sealed class CspResponseTests(ITestOutputHelper output) : TestWithLogging
         try
         {
             await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), html, TestContext.Current.CancellationToken);
+            string envPath = Path.Combine(webRoot, "_app", "env.js");
+            Directory.CreateDirectory(Path.GetDirectoryName(envPath)!);
+            await File.WriteAllTextAsync(envPath, "export const env={version:1};", TestContext.Current.CancellationToken);
             using IHost host = await CreateMiddlewareHostAsync(webRoot);
             using HttpClient client = host.GetTestClient();
             await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), changedHtml, TestContext.Current.CancellationToken);
@@ -36,6 +39,11 @@ public sealed class CspResponseTests(ITestOutputHelper output) : TestWithLogging
             using HttpResponseMessage response = await client.GetAsync("/index.html", TestContext.Current.CancellationToken);
             string body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             string policy = response.Headers.GetValues("Content-Security-Policy").Single();
+            using HttpResponseMessage firstEnvironment = await client.GetAsync("/_app/env.js", TestContext.Current.CancellationToken);
+            string firstEnvironmentBody = await firstEnvironment.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(envPath, "export const env={version:2};", TestContext.Current.CancellationToken);
+            using HttpResponseMessage secondEnvironment = await client.GetAsync("/_app/env.js", TestContext.Current.CancellationToken);
+            string secondEnvironmentBody = await secondEnvironment.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -44,6 +52,13 @@ public sealed class CspResponseTests(ITestOutputHelper output) : TestWithLogging
             Assert.Contains($"'sha256-{hash}'", policy);
             Assert.DoesNotContain(injectedHash, policy);
             Assert.DoesNotContain("nonce=", body);
+            Assert.Equal(HttpStatusCode.OK, firstEnvironment.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, secondEnvironment.StatusCode);
+            Assert.Equal("no-store", firstEnvironment.Headers.CacheControl?.ToString());
+            Assert.Equal("no-store", secondEnvironment.Headers.CacheControl?.ToString());
+            Assert.Equal("export const env={version:1};", firstEnvironmentBody);
+            Assert.Equal("export const env={version:2};", secondEnvironmentBody);
+            Assert.Null(response.Headers.CacheControl);
         }
         finally
         {
@@ -133,7 +148,7 @@ public sealed class CspResponseTests(ITestOutputHelper output) : TestWithLogging
                         var environment = app.ApplicationServices.GetRequiredService<IWebHostEnvironment>();
                         app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, environment.WebRootFileProvider,
                             upgradeInsecureRequests: true, siteBaseUrl, apiUrl));
-                        app.UseStaticFiles();
+                        app.UseStaticFiles(new StaticFileOptions { OnPrepareResponse = Exceptionless.Web.Program.ConfigureStaticFileResponse });
                         app.UseRouting();
                         app.UseEndpoints(endpoints => endpoints.MapScalarApiReference("/docs", (options, context) =>
                         {

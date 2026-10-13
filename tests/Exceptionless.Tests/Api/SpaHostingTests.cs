@@ -72,13 +72,15 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Assert.NotEqual("text/html", response.Content.Headers.ContentType?.MediaType);
     }
 
-    [Fact]
-    public async Task GetAsync_ConfiguredApiOrigin_UsesRestrictedConnectionsAndStrictScripts()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GetAsync_ConfiguredApiOrigin_UsesRestrictedConnectionsAndStrictScripts(bool enableSsl)
     {
         // Arrange
         const string apiUrl = "https://localhost:9443/backend?ignored=true";
         await using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
-            config.AddInMemoryCollection(new Dictionary<string, string?> { ["ApiUrl"] = apiUrl })));
+            config.AddInMemoryCollection(new Dictionary<string, string?> { ["ApiUrl"] = apiUrl, ["EnableSsl"] = enableSsl.ToString() })));
         await factory.Server.WaitForReadyAsync();
         using var client = factory.CreateClient();
 
@@ -88,6 +90,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         string policy = Assert.Single(response.Headers.GetValues("Content-Security-Policy"));
+        Assert.Equal(enableSsl, policy.Split(';', StringSplitOptions.TrimEntries).Contains("upgrade-insecure-requests"));
         string connections = Assert.Single(policy.Split(';'), directive => directive.StartsWith("connect-src ", StringComparison.Ordinal));
         string[] sources = connections.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         Assert.DoesNotContain("*", sources);

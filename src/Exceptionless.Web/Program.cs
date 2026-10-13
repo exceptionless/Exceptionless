@@ -31,6 +31,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Net.Http.Headers;
 using ModelContextProtocol.AspNetCore;
 using OpenTelemetry;
@@ -268,7 +269,7 @@ public partial class Program
                 app.UseHttpsRedirection();
 
             app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, app.Environment.WebRootFileProvider,
-                options.AppMode != AppMode.Development, configuration.GetValue<string>("BaseURL"), configuration.GetValue<string>("ApiUrl")));
+                configuration.GetValue("EnableSsl", false), configuration.GetValue<string>("BaseURL"), configuration.GetValue<string>("ApiUrl")));
 
             app.UseSerilogRequestLogging(o =>
             {
@@ -293,7 +294,7 @@ public partial class Program
                 };
             });
 
-            app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions { OnPrepareResponse = ConfigureStaticFileResponse });
             app.UseDefaultFiles();
             app.UseFileServer();
             app.UseRouting();
@@ -372,6 +373,14 @@ public partial class Program
         return TypedResults
             .Problem(statusCode: statusCodeContext.HttpContext.Response.StatusCode)
             .ExecuteAsync(statusCodeContext.HttpContext);
+    }
+
+    internal static void ConfigureStaticFileResponse(StaticFileResponseContext context)
+    {
+        // Runtime configuration changes between starts; keep the CSP-hashed HTML immutable
+        // instead of adding a cache-busting query to its env.js import.
+        if (context.Context.Request.Path.Equals("/_app/env.js", StringComparison.OrdinalIgnoreCase))
+            context.Context.Response.Headers.CacheControl = "no-store";
     }
 
     internal static void ConfigureScalar(ScalarOptions options, HttpContext context)

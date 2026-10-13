@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -7,13 +8,25 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { runInNewContext } from 'node:vm';
 
-test('runtime configuration preserves the SSL setting, escaped values, and secret boundary', () => {
+test('the production static policy leaves HTTPS upgrades to runtime configuration', () => {
+    const configuration = new URL('../src/Exceptionless.Web/ClientApp/svelte.config.js', import.meta.url).href;
+    execFileSync(process.execPath, ['--input-type=module', '-e', `
+        import assert from 'node:assert/strict';
+        import config from ${JSON.stringify(configuration)};
+        assert.ok(!config.kit.csp.directives['upgrade-insecure-requests']);
+    `], { env: { ...process.env, NODE_ENV: 'production' } });
+});
+
+test('runtime configuration preserves the hashed bootstrap, SSL setting, escaped values, and secret boundary', () => {
     const script = fileURLToPath(new URL('./update-config.sh', import.meta.url));
     const message = "Quoted 'message' with \\ and a newline\n";
+    const bootstrap = 'import("/_app/env.js").then(({ env }) => { window.runtime = env; });';
+    const hash = createHash('sha256').update(bootstrap).digest('base64');
+    const html = `<meta http-equiv="Content-Security-Policy" content="script-src 'strict-dynamic' 'sha256-${hash}'"><script>${bootstrap}</script>`;
     for (const setting of [undefined, 'false', 'true']) {
         const directory = mkdtempSync(join(tmpdir(), 'exceptionless-runtime-config-'));
         try {
-            writeFileSync(join(directory, 'index.html'), '<script src="/_app/env.js"></script>');
+            writeFileSync(join(directory, 'index.html'), html);
             execFileSync('bash', [script], {
                 cwd: directory,
                 env: {
@@ -31,7 +44,7 @@ test('runtime configuration preserves the SSL setting, escaped values, and secre
             assert.equal(context.env.PUBLIC_SYSTEM_NOTIFICATION_MESSAGE, message);
             assert.equal(context.env.PUBLIC_GITHUB_APPID, 'public-client');
             assert.ok(!source.includes('private-marker'));
-            assert.match(readFileSync(join(directory, 'index.html'), 'utf8'), /\/_app\/env\.js\?v=[a-f0-9]{32}/);
+            assert.equal(readFileSync(join(directory, 'index.html'), 'utf8'), html);
         } finally {
             rmSync(directory, { recursive: true, force: true });
         }
