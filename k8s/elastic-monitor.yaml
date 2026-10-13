@@ -257,6 +257,8 @@ spec:
       - name: Fleet Server on ECK policy
         id: eck-fleet-server
         namespace: default
+        advanced_settings:
+          agent_logging_level: warning
         monitoring_enabled:
           - logs
           - metrics
@@ -269,6 +271,8 @@ spec:
       - name: Elastic Agent on ECK policy
         id: eck-agent
         namespace: default
+        advanced_settings:
+          agent_logging_level: warning
         monitoring_enabled:
           - logs
           - metrics

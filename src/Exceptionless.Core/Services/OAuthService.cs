@@ -361,7 +361,14 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         var allowedScopes = GetAllowedScopes(client);
         if (requestedScopes.Any(s => !allowedScopes.Contains(s, StringComparer.Ordinal)))
-            return OAuthValidationResult.Invalid("invalid_scope", "One or more scopes are not allowed for this client.");
+        {
+            // Only name server-supported scopes; do not reflect arbitrary request values.
+            var disallowedScopes = SupportedScopes.Where(s => requestedScopes.Contains(s, StringComparer.Ordinal) && !allowedScopes.Contains(s, StringComparer.Ordinal)).ToArray();
+            string description = disallowedScopes.Length > 0
+                ? $"Scopes not allowed for this application: {String.Join(", ", disallowedScopes)}."
+                : "One or more scopes are not allowed for this application.";
+            return OAuthValidationResult.Invalid("invalid_scope", $"{description} Restart authorization with scopes allowed for this application.");
+        }
 
         if (resourceDefinition.RequiredScopes.Any(s => !requestedScopes.Contains(s, StringComparer.Ordinal)))
             return OAuthValidationResult.Invalid("invalid_scope", "One or more required resource scopes are missing.");
@@ -415,7 +422,9 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!codeResult.HasValue)
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code is invalid or expired.");
 
-        await cacheClient.RemoveAsync(cacheKey);
+        if (!await cacheClient.RemoveAsync(cacheKey))
+            return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code is invalid or expired.");
+
         var code = codeResult.Value;
         if (!String.Equals(code.ClientId, request.ClientId, StringComparison.Ordinal) || !String.Equals(code.RedirectUri, request.RedirectUri, StringComparison.Ordinal) || !String.Equals(code.Resource, request.Resource, StringComparison.Ordinal))
             return OAuthTokenIssueResult.Invalid("invalid_grant", "Authorization code does not match the token request.");

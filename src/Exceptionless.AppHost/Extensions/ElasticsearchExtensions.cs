@@ -13,7 +13,7 @@ public static class ElasticsearchBuilderExtensions
     private const int KibanaPort = 5601;
 
     /// <summary>
-    /// Adds a Elasticsearch container to the application model. The default image is "docker.elastic.co/elasticsearch/elasticsearch". This version the package defaults to the 8.19.22 tag of the Elasticsearch container image
+    /// Adds an Elasticsearch container using exceptionless/elasticsearch:9.5.4, including the mapper-size plugin.
     /// </summary>
     /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
     /// <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
@@ -125,7 +125,7 @@ internal static class ElasticsearchContainerImageTags
     public const string Image = "exceptionless/elasticsearch";
     public const string KibanaRegistry = "docker.elastic.co";
     public const string KibanaImage = "kibana/kibana";
-    public const string Tag = "8.19.22";
+    public const string Tag = "9.5.4";
 }
 
 internal sealed class ElasticsearchConnectionHealthCheck(Func<string?> connectionStringFactory) : IHealthCheck
