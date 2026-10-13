@@ -39,6 +39,9 @@ const DATE_MATH_REGEX =
 /** Pre-compiled regex for operation parsing - more strict validation */
 const OPERATION_REGEX = /([+\-/])(\d*)([yMwdhHms])/gi;
 
+/** Calendar bounds supported by the API are resolved locally for display only. */
+const CALENDAR_DATE_REGEX = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/;
+
 /** Result of parsing a date math expression */
 export interface DateMathResult {
     /** The resolved date */
@@ -159,6 +162,35 @@ export function parseDateMath(expression: string, relativeBaseTime?: Date, isUpp
 
     const trimmed = expression.trim();
 
+    const calendarDate = CALENDAR_DATE_REGEX.exec(trimmed);
+    if (calendarDate) {
+        const year = Number(calendarDate[1]);
+        const month = Number(calendarDate[2] ?? 1);
+        const day = Number(calendarDate[3] ?? 1);
+        const date = new Date(0);
+        date.setFullYear(year, month - 1, day);
+        date.setHours(0, 0, 0, 0);
+
+        // Date setters silently roll invalid days/months forward; reject those inputs.
+        if (year < 1 || date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+            return { date: new Date(NaN), error: 'Enter a valid calendar date', expression, success: false };
+        }
+
+        if (isUpperLimit) {
+            if (!calendarDate[2]) {
+                date.setFullYear(year + 1);
+            } else if (!calendarDate[3]) {
+                date.setMonth(month);
+            } else {
+                date.setDate(day + 1);
+            }
+
+            date.setTime(date.getTime() - 1);
+        }
+
+        return { date, expression, success: true };
+    }
+
     // Check for invalid operations like "now+invalid" (specific validation)
     if (/^now\+\d*(?!h|H|m|M|s|d|w|y)[a-zA-Z]/.test(trimmed)) {
         return {
@@ -174,7 +206,6 @@ export function parseDateMath(expression: string, relativeBaseTime?: Date, isUpp
         trimmed === 'invalid' ||
         /^now\+$/.test(trimmed) || // "now+" without unit
         /^\|\|/.test(trimmed) || // Starts with || (missing anchor)
-        /^\d{4}-\d{2}-\d{2}$/.test(trimmed) || // Date only without time or ||
         /^\d{4}\.\d{2}\.\d{2}/.test(trimmed) // Dotted format
     ) {
         return {
@@ -273,8 +304,9 @@ export function parseDateMathRange(time?: null | string): DateRange {
     // This handles bracket notation like {start to end} and [start to end]
     const extracted = extractRangeExpressions(trimmedTime);
     if (extracted && extracted.start && extracted.end) {
-        const startResult = parseDateMath(extracted.start);
-        const endResult = parseDateMath(extracted.end);
+        const referenceTime = new Date();
+        const startResult = parseDateMath(extracted.start, referenceTime);
+        const endResult = parseDateMath(extracted.end, referenceTime, true);
 
         if (startResult.success && endResult.success) {
             return {

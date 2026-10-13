@@ -67,20 +67,38 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return true;
     }
 
-    public Task<long> RemoveAllAsync(string organizationId, string? clientIpAddress, DateTime? utcStart, DateTime? utcEnd, CommandOptionsDescriptor<PersistentEvent>? options = null)
+    public Task<long> RemoveAllByOrganizationAndClientIpAsync(string organizationId, string? clientIpAddress, DateTime? startUtc, DateTime? endUtc, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(organizationId);
 
         var query = new RepositoryQuery<PersistentEvent>().Organization(organizationId);
-        if (utcStart.HasValue && utcEnd.HasValue)
-            query = query.DateRange(utcStart, utcEnd, InferField(e => e.Date)).Index(utcStart, utcEnd);
-        else if (utcEnd.HasValue)
-            query = query.DateRange(null, utcEnd, (PersistentEvent e) => e.Date);
-        else if (utcStart.HasValue)
-            query = query.DateRange(utcStart, null, (PersistentEvent e) => e.Date);
+        if (startUtc.HasValue && endUtc.HasValue)
+            query = query.DateRange(startUtc, endUtc, InferField(e => e.Date)).Index(startUtc, endUtc);
+        else if (endUtc.HasValue)
+            query = query.DateRange(null, endUtc, (PersistentEvent e) => e.Date);
+        else if (startUtc.HasValue)
+            query = query.DateRange(startUtc, null, (PersistentEvent e) => e.Date);
 
         if (!String.IsNullOrEmpty(clientIpAddress))
             query = query.FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
+
+        return RemoveAllAsync(q => query, options);
+    }
+
+    public Task<long> RemoveAllByProjectAndClientIpAsync(string organizationId, string projectId, string clientIpAddress, DateTime? startUtc, DateTime? endUtc, CommandOptionsDescriptor<PersistentEvent>? options = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(organizationId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(projectId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientIpAddress);
+
+        var query = new RepositoryQuery<PersistentEvent>()
+            .Organization(organizationId)
+            .Project(projectId)
+            .FieldEquals(EventIndex.Alias.IpAddress, clientIpAddress);
+        if (startUtc.HasValue || endUtc.HasValue)
+            query = query.DateRange(startUtc, endUtc, InferField(e => e.Date));
+        if (startUtc.HasValue && endUtc.HasValue)
+            query = query.Index(startUtc, endUtc);
 
         return RemoveAllAsync(q => query, options);
     }
