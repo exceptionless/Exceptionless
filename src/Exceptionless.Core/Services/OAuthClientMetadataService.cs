@@ -65,7 +65,7 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         }
         catch (Exception ex) when (IsExpectedFetchError(ex))
         {
-            logger.LogWarning(ex, "Unable to fetch OAuth client metadata document for {ClientId} {Message}", clientId, ex.Message);
+            logger.LogWarning(ex, "Unable to fetch OAuth client metadata document for {ClientId}: {Message}", clientId, ex.Message);
             return await CacheFailureAsync(failureCacheKey);
         }
     }
