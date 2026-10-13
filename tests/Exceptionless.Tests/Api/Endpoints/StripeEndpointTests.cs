@@ -506,8 +506,10 @@ public class StripeEndpointTests : IntegrationTestsBase
         Assert.Equal(eventCreatedUtc, organization.StripeSubscriptionEventDate);
     }
 
-    [Fact]
-    public async Task PostAsync_WithNewerSubscriptionDeletedEvent_SuspendsOrganization()
+    [Theory]
+    [InlineData("2026-08-26.dahlia")]
+    [InlineData("2026-09-30.endive")]
+    public async Task PostAsync_WithNewerSubscriptionDeletedEvent_SuspendsOrganization(string apiVersion)
     {
         // Arrange
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
@@ -520,7 +522,7 @@ public class StripeEndpointTests : IntegrationTestsBase
         organization.RemoveSuspension();
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
 
-        string json = CreateSubscriptionEvent("evt_subscription_deleted", 1782155023, "customer.subscription.deleted", "sub_current", "canceled");
+        string json = CreateSubscriptionEvent("evt_subscription_deleted", 1782155023, "customer.subscription.deleted", "sub_current", "canceled", apiVersion);
 
         // Act
         await PostStripeEventAsync(json);
@@ -785,11 +787,12 @@ public class StripeEndpointTests : IntegrationTestsBase
         }
     }
 
-    private static string CreateSubscriptionEvent(string eventId, long created, string eventType, string subscriptionId, string status)
+    private static string CreateSubscriptionEvent(string eventId, long created, string eventType, string subscriptionId, string status, string apiVersion = "2026-09-30.endive")
         => $$"""
             {
               "id": "{{eventId}}",
               "object": "event",
+              "api_version": "{{apiVersion}}",
               "created": {{created}},
               "data": {
                 "object": {

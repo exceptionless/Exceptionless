@@ -2,7 +2,6 @@
 @email = admin@exceptionless.test
 @password = tester
 @organizationId = 537650f3b77efe23a47914f3
-@projectId = 537650f3b77efe23a47914f4
 
 ### login to test account
 # @name login
@@ -18,43 +17,27 @@ Content-Type: application/json
 
 @token = {{login.response.body.$.token}}
 
-### Get Current User
-# @name currentUser
-GET {{apiUrl}}/users/me
-Authorization: Bearer {{token}}
-
-###
-@userId = {{currentUser.response.body.$.id}}
-
 ### Get By Organization Id
-GET {{apiUrl}}/projects?organizationId={{organizationId}}
+GET {{apiUrl}}/organizations/{{organizationId}}/projects
 Authorization: Bearer {{token}}
 
-### Get By Id
-GET {{apiUrl}}/projects/{{projectId}}
-Authorization: Bearer {{token}}
-
-### Get Default Api Key
-GET {{apiUrl}}/projects/{{projectId}}/tokens/default
-Authorization: Bearer {{token}}
-
-### Check Name
-GET {{apiUrl}}/organizations/{{organizationId}}/projects/check-name?name=My%20New%20Project
-Authorization: Bearer {{token}}
-
-### Post
+### Create a project
 # @name newProject
 POST {{apiUrl}}/projects
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "OrganizationId": "{{organizationId}}",
-  "Name": "Exceptionless Is Amazing"
+  "organization_id": "{{organizationId}}",
+  "name": "HTTP sample project"
 }
 
 ###
 @projectId = {{newProject.response.body.$.id}}
+
+### Get Default Api Key
+GET {{apiUrl}}/projects/{{projectId}}/tokens/default
+Authorization: Bearer {{token}}
 
 ### Get Config
 GET {{apiUrl}}/projects/{{projectId}}/config
@@ -71,92 +54,14 @@ Content-Type: application/json
 DELETE {{apiUrl}}/projects/{{projectId}}/config?key=my-test-key
 Authorization: Bearer {{token}}
 
-### New Api Key
-# @name newApiKey
-POST {{apiUrl}}/projects/{{projectId}}/tokens
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-###
-@projectApiKey = {{newApiKey.response.body.$.id}}
-
-### Delete Api Key
-DELETE {{apiUrl}}/tokens/{{projectApiKey}}
-Authorization: Bearer {{token}}
-
 ### Generate Sample Data
 POST {{apiUrl}}/projects/{{projectId}}/sample-data
 Authorization: Bearer {{token}}
 
-### Reset Data
+### Remove all events and stacks from the sample project
 POST {{apiUrl}}/projects/{{projectId}}/reset-data
 Authorization: Bearer {{token}}
 
-### Reset Data Legacy GET
-GET {{apiUrl}}/projects/{{projectId}}/reset-data
-Authorization: Bearer {{token}}
-
-### Get Notification Settings
-GET {{apiUrl}}/projects/{{projectId}}/notifications
-Authorization: Bearer {{token}}
-
-### Set Notification Settings
-POST {{apiUrl}}/users/{{userId}}/projects/{{projectId}}/notifications
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "send_daily_summary": true,
-  "report_new_errors": false,
-  "report_critical_errors": true,
-  "report_event_regressions": true,
-  "report_new_events": false,
-  "report_critical_events": false
-}
-
-### Delete Notification Settings
-DELETE {{apiUrl}}/users/{{userId}}/projects/{{projectId}}/notifications
-Authorization: Bearer {{token}}
-
-### Promote Tab
-POST {{apiUrl}}/projects/{{projectId}}/promotedtabs?name=my-tab-name
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### DemoteTab
-DELETE {{apiUrl}}/projects/{{projectId}}/promotedtabs?name=my-tab-name
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-### Reorder Promoted Tabs
-PATCH {{apiUrl}}/projects/{{projectId}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ "promoted_tabs": ["second-tab", "first-tab"] }
-
-### Post Data
-POST {{apiUrl}}/projects/{{projectId}}/data?key=my-test-key
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ "value": "Super Secret Key" }
-
-### Delete Data
-DELETE {{apiUrl}}/projects/{{projectId}}/data?key=my-test-key
-Authorization: Bearer {{token}}
-
-### Patch
-PATCH {{apiUrl}}/projects/{{projectId}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{ "Name": "My Updated Project" }
-
-### Check Current Name
-GET {{apiUrl}}/organizations/{{organizationId}}/projects/check-name?name=My%20Updated%20Project&projectId={{projectId}}
-Authorization: Bearer {{token}}
-
-### Delete
+### Delete the sample project
 DELETE {{apiUrl}}/projects/{{projectId}}
 Authorization: Bearer {{token}}

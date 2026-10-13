@@ -1,11 +1,8 @@
 #!/bin/bash
+set -euo pipefail
 
-pushd /app/wwwroot
+cd /app/wwwroot
 update-config
-popd
+cd /app
 
-pushd /app/wwwroot/next
-update-config-next
-popd
-
-eval "dotnet Exceptionless.Web.dll $@"
+exec dotnet Exceptionless.Web.dll "$@"

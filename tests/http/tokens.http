@@ -18,28 +18,11 @@ Content-Type: application/json
 
 @token = {{login.response.body.$.token}}
 
-### Get By Organization Id
-# @name organizationClientTokens
-GET {{apiUrl}}/organizations/{{organizationId}}/tokens
-Authorization: Bearer {{token}}
-
-###
-@clientToken = {{organizationClientTokens.response.body.$[0].id}}
-
-
 ### Get By Project Id
-# @name projectClientTokens
 GET {{apiUrl}}/projects/{{projectId}}/tokens
 Authorization: Bearer {{token}}
 
-###
-@clientToken = {{projectClientTokens.response.body.$[0].id}}
-
-### Get By Id
-GET {{apiUrl}}/tokens/{{clientToken}}
-Authorization: Bearer {{token}}
-
-### Post
+### Create a project API key
 # @name newClientToken
 POST {{apiUrl}}/tokens
 Authorization: Bearer {{token}}
@@ -48,20 +31,19 @@ Content-Type: application/json
 {
     "organization_id": "{{organizationId}}",
     "project_id": "{{projectId}}",
-	"notes": "This is a sample api key"
+    "notes": "HTTP sample API key"
 }
 
 ###
 @clientToken = {{newClientToken.response.body.$.id}}
 
-### Patch
+### Update the key description
 PATCH {{apiUrl}}/tokens/{{clientToken}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "notes": "updated token" }
 
-### Delete
+### Revoke the sample API key
 DELETE {{apiUrl}}/tokens/{{clientToken}}
 Authorization: Bearer {{token}}
-

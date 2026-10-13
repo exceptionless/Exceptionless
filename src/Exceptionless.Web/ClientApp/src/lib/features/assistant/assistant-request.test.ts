@@ -21,12 +21,12 @@ describe('createAssistantChatRequest', () => {
                 isSuggestedAction: true,
                 role: 'user',
                 suggestedActionLabel: 'Follow up',
-                suggestedActionPath: '/next/stack/source-stack',
+                suggestedActionPath: '/stack/source-stack',
                 tools: []
             }
         ];
 
-        expect(createAssistantChatRequest(messages, 'conversation-id', 'organization-id', '/next/stack/stack-id', 'project-id')).toEqual({
+        expect(createAssistantChatRequest(messages, 'conversation-id', 'organization-id', '/stack/stack-id', 'project-id')).toEqual({
             conversation_id: 'conversation-id',
             messages: [
                 { content: 'First question', role: 'user' },
@@ -36,11 +36,11 @@ describe('createAssistantChatRequest', () => {
                     is_suggested_action: true,
                     role: 'user',
                     suggested_action_label: 'Follow up',
-                    suggested_action_path: '/next/stack/source-stack'
+                    suggested_action_path: '/stack/source-stack'
                 }
             ],
             organization_id: 'organization-id',
-            path: '/next/stack/stack-id',
+            path: '/stack/stack-id',
             project_id: 'project-id'
         });
     });
