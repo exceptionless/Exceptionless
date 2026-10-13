@@ -83,16 +83,13 @@ WORKDIR /app
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/app-docker-entrypoint.sh ./
 COPY ./build/update-config.sh /usr/local/bin/update-config
-COPY ./build/update-config-next.sh /usr/local/bin/update-config-next
 
 ENV EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_RunJobsInProcess=true \
-    ASPNETCORE_URLS=http://+:8080 \
-    EX_Html5Mode=true
+    ASPNETCORE_URLS=http://+:8080
 
 RUN chmod +x /app/app-docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/update-config
-RUN chmod +x /usr/local/bin/update-config-next
 
 EXPOSE 8080
 
@@ -100,14 +97,13 @@ ENTRYPOINT ["/app/app-docker-entrypoint.sh"]
 
 # completely self-contained
 
-FROM exceptionless/elasticsearch:8.19.21 AS exceptionless
+FROM exceptionless/elasticsearch:8.19.22 AS exceptionless
 
 WORKDIR /app
 COPY --from=job-publish /app/src/Exceptionless.Job/out ./
 COPY --from=app-publish /app/src/Exceptionless.Web/out ./
 COPY ./build/docker-entrypoint.sh ./
 COPY ./build/update-config.sh /usr/local/bin/update-config
-COPY ./build/update-config-next.sh /usr/local/bin/update-config-next
 COPY ./build/supervisord.conf /etc/
 
 USER root
@@ -137,12 +133,10 @@ ENV discovery.type=single-node \
     DOTNET_RUNNING_IN_CONTAINER=true \
     EX_ConnectionStrings__Storage=provider=folder;path=/app/storage \
     EX_ConnectionStrings__Elasticsearch=server=http://localhost:9200 \
-    EX_RunJobsInProcess=true \
-    EX_Html5Mode=true
+    EX_RunJobsInProcess=true
 
 RUN chmod +x /app/docker-entrypoint.sh && \
     chmod +x /usr/local/bin/update-config && \
-    chmod +x /usr/local/bin/update-config-next && \
     chown -R elasticsearch:elasticsearch /app && \
     mkdir -p /var/log/supervisor >/dev/null 2>&1 && \
     chown -R elasticsearch:elasticsearch /var/log/supervisor

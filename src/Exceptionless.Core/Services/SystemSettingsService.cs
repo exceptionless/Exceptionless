@@ -92,4 +92,10 @@ public sealed class SystemSettingsService
         var settings = await _getSettingsAsync();
         return settings?.EventSubmissionEnabled ?? !_appOptions.EventSubmissionDisabled;
     }
+
+    public async Task<bool> IsAssistantConversationSharingDefaultEnabledAsync()
+    {
+        var settings = await _getSettingsAsync();
+        return settings?.AssistantConversationSharingDefaultEnabled ?? false;
+    }
 }

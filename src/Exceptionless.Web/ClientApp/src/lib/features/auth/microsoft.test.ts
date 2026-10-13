@@ -9,7 +9,7 @@ const { accessToken, goto, postJSON, toastError } = vi.hoisted(() => ({
 }));
 
 vi.mock('$app/navigation', () => ({ goto }));
-vi.mock('$app/paths', () => ({ resolve: (path: string) => `/next${path}` }));
+vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 vi.mock('$app/state', () => ({ page: {} }));
 vi.mock('$env/dynamic/public', () => ({ env: { PUBLIC_MICROSOFT_APPID: 'microsoft-client-id' } }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({ ...(await importOriginal<object>()), useFetchClient: () => ({ postJSON }) }));
@@ -30,7 +30,7 @@ describe('microsoftLogin', () => {
         accessToken.current = null;
         popup.location = new URL('https://login.microsoftonline.com/');
         postJSON.mockResolvedValue({ data: { token: 'session-token' }, ok: true });
-        vi.stubGlobal('window', { location: new URL('http://localhost:7131/next/login'), open, outerHeight: 900, outerWidth: 1200, screenX: 0, screenY: 0 });
+        vi.stubGlobal('window', { location: new URL('http://localhost:7131/login'), open, outerHeight: 900, outerWidth: 1200, screenX: 0, screenY: 0 });
     });
 
     afterEach(() => {
@@ -42,7 +42,7 @@ describe('microsoftLogin', () => {
         const getRandomValues = vi.fn((bytes: Uint8Array) => bytes.fill(10));
         vi.stubGlobal('crypto', { getRandomValues, randomUUID: hasRandomUUID ? () => 'oauth-state' : undefined });
 
-        const login = microsoftLogin('/next/organization/invited', 'invitation-token');
+        const login = microsoftLogin('/organization/invited', 'invitation-token');
         const authorizationUrl = new URL(open.mock.calls[0]![0]);
         expect(authorizationUrl.origin + authorizationUrl.pathname).toBe('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
         expect(authorizationUrl.searchParams.get('client_id')).toBe('microsoft-client-id');
@@ -68,7 +68,7 @@ describe('microsoftLogin', () => {
             { expectedStatusCodes: [401, 403, 422] }
         );
         expect(accessToken.current).toBe('session-token');
-        expect(goto).toHaveBeenCalledExactlyOnceWith('/next/organization/invited');
+        expect(goto).toHaveBeenCalledExactlyOnceWith('/organization/invited');
         expect(popup.close).toHaveBeenCalledOnce();
     });
 

@@ -1,11 +1,13 @@
+import { getServerUrl } from '$shared/api/urls';
 import { DocumentVisibility } from '$shared/document-visibility.svelte';
+import { SvelteURL } from 'svelte/reactivity';
 
 import { accessToken } from '../auth/index.svelte';
 
 export interface WebSocketClientOptions {
     /**
      * Base URL for WebSocket connection (e.g., 'ws://localhost:1234')
-     * If not provided, constructs from window.location
+     * If not provided, uses the configured API origin or window.location
      */
     baseUrl?: string;
     /**
@@ -26,16 +28,16 @@ export class WebSocketClient {
 
     /**
      * Lazy getter for WebSocket URL.
-     * Constructed on first access. Uses baseUrl from options if provided, otherwise constructs from window.location.
+     * Constructed on first access. Uses baseUrl from options if provided, otherwise uses the configured API origin or window.location.
      */
     public get url(): string {
         if (this._url === null) {
             if (this._options.baseUrl) {
                 this._url = `${this._options.baseUrl}${this._path}`;
             } else {
-                const { host, protocol } = window.location;
-                const wsProtocol = protocol === 'https:' ? 'wss://' : 'ws://';
-                this._url = `${wsProtocol}${host}${this._path}`;
+                const url = new SvelteURL(getServerUrl(this._path), window.location.origin);
+                url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+                this._url = url.href;
             }
         }
 

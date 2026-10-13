@@ -107,9 +107,10 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrphanedEventsByStack_LargeVolume_PreservesAllValidEvents()
+    public async Task DeleteOrphanedEventsByStack_AcrossPartitions_PreservesAllValidEvents()
     {
-        // Arrange - Large volume across two tenants: 5000 valid + 10000 orphaned
+        // More than 1,000 unique stack IDs forces two 500-ID partitions in the job.
+        // Retain a few valid events while verifying that every orphan is removed.
         var organization = _organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId);
         await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
 
@@ -119,23 +120,23 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         var stack = _stackData.GenerateStack(id: TestConstants.StackId, organizationId: organization.Id, projectId: project.Id);
         await _stackRepository.AddAsync(stack, o => o.ImmediateConsistency());
 
-        // 5000 valid events for existing stack
-        await _eventRepository.AddAsync(_eventData.GenerateEvents(5000, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
+        // Valid events for an existing stack.
+        await _eventRepository.AddAsync(_eventData.GenerateEvents(3, organization.Id, project.Id, stack.Id), o => o.ImmediateConsistency());
 
-        // 10000 orphaned events with many different fake stack IDs
-        var orphanedEvents = _eventData.GenerateEvents(10000, organization.Id, project.Id).ToList();
+        // Each orphan has a distinct missing stack ID.
+        var orphanedEvents = _eventData.GenerateEvents(1001, organization.Id, project.Id).ToList();
         orphanedEvents.ForEach(e => e.StackId = ObjectId.GenerateNewId().ToString());
         await _eventRepository.AddAsync(orphanedEvents, o => o.ImmediateConsistency());
 
         var totalBefore = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
-        Assert.Equal(15000, totalBefore);
+        Assert.Equal(1004, totalBefore);
 
         // Act
         await _job.RunAsync(TestCancellationToken);
 
-        // Assert - Only the 5000 valid events remain
+        // Assert - Only the valid events remain after all partitions.
         var totalAfter = await _eventRepository.CountAsync(o => o.IncludeSoftDeletes().ImmediateConsistency());
-        Assert.Equal(5000, totalAfter);
+        Assert.Equal(3, totalAfter);
     }
 
     [Fact]

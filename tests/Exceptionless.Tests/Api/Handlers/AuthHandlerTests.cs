@@ -1,4 +1,3 @@
-using System.Reflection;
 using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Configuration;
@@ -6,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Handlers;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Models;
@@ -13,7 +13,7 @@ using Exceptionless.Web.Security;
 using Foundatio.Caching;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.Http;
-using OAuth2.Models;
+using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Handlers;
@@ -27,7 +27,10 @@ public sealed class AuthHandlerTests : TestWithServices
     public async Task Handle_LoginRepositoryException_ReturnsUnauthorizedResult(Exception exception)
     {
         // Arrange
-        var handler = CreateHandler(exception);
+        var userRepository = new Mock<IUserRepository>();
+        userRepository.Setup(repository => repository.GetByEmailAddressAsync("test@example.com"))
+            .ThrowsAsync(exception);
+        var handler = CreateHandler(userRepository.Object);
         var message = new LoginMessage(
             new Login { Email = "test@example.com", Password = "password" },
             new DefaultHttpContext());
@@ -38,6 +41,8 @@ public sealed class AuthHandlerTests : TestWithServices
         // Assert
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
         Assert.Equal("Login failed.", result.Message);
+        userRepository.Verify(repository => repository.GetByEmailAddressAsync("test@example.com"), Times.Once);
+        userRepository.VerifyNoOtherCalls();
     }
 
     public static TheoryData<Exception> LoginRepositoryExceptions => new()
@@ -51,47 +56,40 @@ public sealed class AuthHandlerTests : TestWithServices
     [InlineData("invitation-token")]
     public async Task Handle_MicrosoftEmailMatchesUnlinkedUser_DoesNotModifyAccount(string? inviteToken)
     {
-        // Arrange
-        var userRepository = DispatchProxy.Create<IUserRepository, EmailMatchUserRepositoryProxy>();
-        var repository = (EmailMatchUserRepositoryProxy)(object)userRepository;
-        repository.User = new User { Id = "existing-user", EmailAddress = "matching-user@exceptionless.test" };
-        repository.User.AddOAuthAccount("WindowsLive", "legacy-user", repository.User.EmailAddress);
-        var handler = CreateHandler(userRepository);
+        var user = new User { Id = "existing-user", EmailAddress = "matching-user@exceptionless.test" };
+        user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
+        var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
+        userRepository.Setup(repository => repository.GetUserByOAuthProviderAsync("Microsoft", "matching-user"))
+            .ReturnsAsync((User?)null);
+        userRepository.Setup(repository => repository.GetByEmailAddressAsync(user.EmailAddress)).ReturnsAsync(user);
+        var handler = CreateHandler(userRepository.Object);
 
-        // Act
         var result = await handler.Handle(new MicrosoftLogin(
             new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = "matching-user", RedirectUri = "http://localhost", InviteToken = inviteToken },
             new DefaultHttpContext()));
 
-        // Assert
         Assert.Equal(ResultStatus.Forbidden, result.Status);
         Assert.Contains("link", result.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("windowslive", Assert.Single(repository.User.OAuthAccounts).Provider);
-        Assert.False(repository.User.IsEmailAddressVerified);
+        Assert.Equal("windowslive", Assert.Single(user.OAuthAccounts).Provider);
+        Assert.False(user.IsEmailAddressVerified);
+        userRepository.VerifyAll();
+        userRepository.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task Handle_MicrosoftProviderFails_DoesNotAccessUserRepository()
     {
-        // Arrange
-        var userRepository = DispatchProxy.Create<IUserRepository, EmailMatchUserRepositoryProxy>();
-        var oauthProvider = DispatchProxy.Create<IOAuthProviderClient, FailingOAuthProviderProxy>();
-        var handler = CreateHandler(userRepository, oauthProvider);
+        var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
+        var oauthProvider = new Mock<IOAuthProviderClient>(MockBehavior.Strict);
+        oauthProvider.Setup(provider => provider.GetMicrosoftUserInfoAsync(It.IsAny<ExternalAuthInfo>(), "microsoft-client-id", "microsoft-client-secret"))
+            .ThrowsAsync(new InvalidOperationException("Microsoft provider failed."));
+        var handler = CreateHandler(userRepository.Object, oauthProvider.Object);
 
-        // Act
         await Assert.ThrowsAsync<InvalidOperationException>(() => handler.Handle(new MicrosoftLogin(
             new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = "provider-failure", RedirectUri = "http://localhost" },
             new DefaultHttpContext())));
 
-        // Assert
-        Assert.Equal(0, ((EmailMatchUserRepositoryProxy)(object)userRepository).CallCount);
-    }
-
-    private AuthHandler CreateHandler(Exception repositoryException)
-    {
-        var userRepository = DispatchProxy.Create<IUserRepository, ThrowingUserRepositoryProxy>();
-        ((ThrowingUserRepositoryProxy)(object)userRepository).Exception = repositoryException;
-        return CreateHandler(userRepository);
+        userRepository.VerifyNoOtherCalls();
     }
 
     private AuthHandler CreateHandler(IUserRepository userRepository, IOAuthProviderClient? oauthProvider = null)
@@ -109,50 +107,10 @@ public sealed class AuthHandlerTests : TestWithServices
             GetService<IOAuthTokenRepository>(),
             oauthProvider ?? GetService<IOAuthProviderClient>(),
             GetService<ICacheClient>(),
+            GetService<AuthService>(),
             GetService<IMailer>(),
             GetService<IDomainLoginProvider>(),
             TimeProvider,
             Log.CreateLogger<AuthHandler>());
-    }
-
-    private class EmailMatchUserRepositoryProxy : DispatchProxy
-    {
-        public User User { get; set; } = null!;
-        public int CallCount { get; private set; }
-
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
-        {
-            CallCount++;
-            return targetMethod?.Name switch
-            {
-                nameof(IUserRepository.GetUserByOAuthProviderAsync) => Task.FromResult<User?>(null),
-                nameof(IUserRepository.GetByEmailAddressAsync) => Task.FromResult<User?>(User),
-                _ => throw new NotSupportedException($"Unexpected repository call: {targetMethod?.Name}")
-            };
-        }
-    }
-
-    private class FailingOAuthProviderProxy : DispatchProxy
-    {
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
-        {
-            if (targetMethod?.Name == nameof(IOAuthProviderClient.GetMicrosoftUserInfoAsync))
-                return Task.FromException<UserInfo>(new InvalidOperationException("Microsoft provider failed."));
-
-            throw new NotSupportedException($"Unexpected provider call: {targetMethod?.Name}");
-        }
-    }
-
-    private class ThrowingUserRepositoryProxy : DispatchProxy
-    {
-        public Exception Exception { get; set; } = null!;
-
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
-        {
-            if (targetMethod?.Name == nameof(IUserRepository.GetByEmailAddressAsync))
-                return Task.FromException<User?>(Exception);
-
-            throw new NotSupportedException($"Unexpected repository call: {targetMethod?.Name}");
-        }
     }
 }

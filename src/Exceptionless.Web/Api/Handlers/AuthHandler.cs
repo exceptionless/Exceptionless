@@ -8,6 +8,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Extensions;
@@ -30,6 +31,7 @@ public class AuthHandler(
     IOAuthTokenRepository oauthTokenRepository,
     IOAuthProviderClient oauthProviderClient,
     ICacheClient cacheClient,
+    AuthService authService,
     IMailer mailer,
     IDomainLoginProvider domainLoginProvider,
     TimeProvider timeProvider,
@@ -50,21 +52,11 @@ public class AuthHandler(
         string email = model.Email.Trim().ToLowerInvariant();
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("Login").Identity(email).SetHttpContext(httpContext));
 
-        string userLoginAttemptsCacheKey = $"user:{email}:attempts";
-        long userLoginAttempts = await _cache.IncrementAsync(userLoginAttemptsCacheKey, 1, timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
-
-        string ipLoginAttemptsCacheKey = $"ip:{httpContext.Request.GetClientIpAddress()}:attempts";
-        long ipLoginAttempts = await _cache.IncrementAsync(ipLoginAttemptsCacheKey, 1, timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
-
-        if (userLoginAttempts > 5)
+        string? ipAddress = httpContext.Request.GetClientIpAddress();
+        await using var loginAttempt = await authService.TryBeginLoginAsync(email, ipAddress, httpContext.RequestAborted);
+        if (loginAttempt is null)
         {
-            logger.LogError("Login denied for {EmailAddress} for the {UserLoginAttempts} time", email, userLoginAttempts);
-            return Result.Unauthorized("Login denied.");
-        }
-
-        if (ipLoginAttempts > 15)
-        {
-            logger.LogError("Login denied for {EmailAddress} for the {IPLoginAttempts} time", httpContext.Request.GetClientIpAddress(), ipLoginAttempts);
+            logger.LogError("Login denied for {EmailAddress}", email);
             return Result.Unauthorized("Login denied.");
         }
 
@@ -81,12 +73,14 @@ public class AuthHandler(
 
         if (user is null)
         {
+            await authService.RecordLoginFailureAsync(loginAttempt);
             logger.LogError("Login failed for {EmailAddress}: User not found", email);
             return Result.Unauthorized("Login failed.");
         }
 
         if (!user.IsActive)
         {
+            await authService.RecordLoginFailureAsync(loginAttempt);
             logger.LogError("Login failed for {EmailAddress}: The user is inactive", user.EmailAddress);
             return Result.Unauthorized("Login failed.");
         }
@@ -95,18 +89,21 @@ public class AuthHandler(
         {
             if (String.IsNullOrEmpty(user.Salt))
             {
+                await authService.RecordLoginFailureAsync(loginAttempt);
                 logger.LogError("Login failed for {EmailAddress}: The user has no salt defined", user.EmailAddress);
                 return Result.Unauthorized("Login failed.");
             }
 
             if (!user.IsCorrectPassword(model.Password))
             {
+                await authService.RecordLoginFailureAsync(loginAttempt);
                 logger.LogError("Login failed for {EmailAddress}: Invalid Password", user.EmailAddress);
                 return Result.Unauthorized("Login failed.");
             }
         }
         else if (!IsValidActiveDirectoryLogin(email, model.Password))
         {
+            await authService.RecordLoginFailureAsync(loginAttempt);
             logger.LogError("Domain login failed for {EmailAddress}: Invalid Password or Account", user.EmailAddress);
             return Result.Unauthorized("Login failed.");
         }
@@ -114,8 +111,7 @@ public class AuthHandler(
         if (!String.IsNullOrEmpty(model.InviteToken))
             await AddInvitedUserToOrganizationAsync(model.InviteToken, user, httpContext);
 
-        await _cache.RemoveAsync(userLoginAttemptsCacheKey);
-        await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
+        await authService.RecordLoginSuccessAsync(loginAttempt);
 
         logger.UserLoggedIn(user.EmailAddress);
         return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
@@ -366,13 +362,7 @@ public class AuthHandler(
         await ChangePasswordAsync(user, model.Password!, nameof(ChangePasswordAsync), httpContext);
         await ResetUserTokensAsync(user, nameof(ChangePasswordAsync), httpContext);
 
-        string userLoginAttemptsCacheKey = $"user:{user.EmailAddress}:attempts";
-        await _cache.RemoveAsync(userLoginAttemptsCacheKey);
-
-        string ipLoginAttemptsCacheKey = $"ip:{httpContext.Request.GetClientIpAddress()}:attempts";
-        long attempts = await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
-        if (attempts <= 0)
-            await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
+        await authService.ClearUserLoginAttemptsAsync(user.EmailAddress);
 
         logger.UserChangedPassword(user.EmailAddress);
         return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
@@ -468,13 +458,7 @@ public class AuthHandler(
         await ChangePasswordAsync(user, model.Password!, "ResetPasswordAsync", httpContext);
         await ResetUserTokensAsync(user, "ResetPasswordAsync", httpContext);
 
-        string userLoginAttemptsCacheKey = $"user:{user.EmailAddress}:attempts";
-        await _cache.RemoveAsync(userLoginAttemptsCacheKey);
-
-        string ipLoginAttemptsCacheKey = $"ip:{httpContext.Request.GetClientIpAddress()}:attempts";
-        long attempts = await _cache.DecrementAsync(ipLoginAttemptsCacheKey, 1, timeProvider.GetUtcNow().UtcDateTime.Ceiling(TimeSpan.FromMinutes(15)));
-        if (attempts <= 0)
-            await _cache.RemoveAsync(ipLoginAttemptsCacheKey);
+        await authService.ClearUserLoginAttemptsAsync(user.EmailAddress);
 
         logger.UserResetPassword(user.EmailAddress);
         return Result.Success();

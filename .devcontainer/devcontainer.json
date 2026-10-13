@@ -29,7 +29,7 @@
             ]
         }
     },
-    "forwardPorts": [5601, 7101, 7111, 7121, 7131, 8026],
+    "forwardPorts": [5601, 7101, 7111, 7131, 8026],
     "otherPortsAttributes": {
         "onAutoForward": "ignore"
     },
@@ -43,10 +43,6 @@
         },
         "7111": {
             "label": "API",
-            "protocol": "https"
-        },
-        "7121": {
-            "label": "OldApp",
             "protocol": "https"
         },
         "7131": {

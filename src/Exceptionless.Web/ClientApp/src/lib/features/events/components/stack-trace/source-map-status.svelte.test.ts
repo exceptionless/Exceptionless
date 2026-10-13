@@ -33,7 +33,7 @@ describe('SourceMapStatus', () => {
 
         expect(screen.getByText('https://cdn.example.com/assets/app.min.js')).toBeTruthy();
         expect(screen.getByText(/downloaded source map is invalid or unsupported/i)).toBeTruthy();
-        expect(screen.getByRole('link', { name: 'Manage source maps' }).getAttribute('href')).toBe(`/next/project/${projectId}/source-maps`);
+        expect(screen.getByRole('link', { name: 'Manage source maps' }).getAttribute('href')).toBe(`/project/${projectId}/source-maps`);
     });
 
     it('does not render without failure metadata', () => {

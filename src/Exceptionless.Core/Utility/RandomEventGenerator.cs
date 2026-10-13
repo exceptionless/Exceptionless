@@ -601,7 +601,7 @@ public class RandomEventGenerator
     private static readonly List<string> PageNames =
     [
         "/dashboard", "/project/settings", "/account/manage", "/event/search",
-        "/stack/details", "/api/v2/events", "/api/v2/stacks", "/next/login"
+        "/stack/details", "/api/v2/events", "/api/v2/stacks", "/login"
     ];
 
     private static readonly List<string> EventTypes =
