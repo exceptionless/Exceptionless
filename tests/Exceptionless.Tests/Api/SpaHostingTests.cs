@@ -6,6 +6,7 @@ using Exceptionless.Tests.Extensions;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
 using Xunit;
 
 namespace Exceptionless.Tests.Api;
@@ -153,7 +154,10 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
             string envPath = Path.Combine(webRoot, "_app", "env.js");
             Directory.CreateDirectory(Path.GetDirectoryName(envPath)!);
             await File.WriteAllTextAsync(envPath, "export const env={version:1};", TestContext.Current.CancellationToken);
-            await using var factory = _factory.WithWebHostBuilder(builder => builder.UseWebRoot(webRoot));
+            using var files = new PhysicalFileProvider(webRoot);
+            // Use the published fixture directly, without the development asset manifest overlay.
+            await using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureServices((context, _) =>
+                context.HostingEnvironment.WebRootFileProvider = files));
             await factory.Server.WaitForReadyAsync();
             using var client = factory.CreateClient();
             await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), changedHtml, TestContext.Current.CancellationToken);
