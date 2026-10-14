@@ -12,7 +12,7 @@ public static class JsonExtensions
     /// Returns a string property, or null when the object, property, or value is not a string.
     /// </summary>
     public static string? GetStringProperty(this JsonElement data, string name)
-        => data.ValueKind == JsonValueKind.Object && data.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        => data.ValueKind is JsonValueKind.Object && data.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.String
             ? value.GetString()
             : null;
 
