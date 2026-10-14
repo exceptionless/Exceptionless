@@ -104,15 +104,19 @@ public sealed class WebHooksJobTests(ITestOutputHelper output) : TestWithService
         Assert.Contains(logs.Exceptions, exception => ReferenceEquals(exception, failure));
     }
 
-    [Fact]
-    public async Task ProcessQueueEntryAsync_ExistingPrivateHook_DeliversAndFollowsRedirectWithoutOverrides()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ProcessQueueEntryAsync_ExistingPrivateHook_DeliversWithSafeTelemetry(bool sampled)
     {
         // Arrange
         int delivered = 0;
         int redirected = 0;
         var cookies = new ConcurrentQueue<string>();
+        var propagationHeaders = new ConcurrentQueue<string>();
         var activities = new ConcurrentQueue<Activity>();
         using var tracing = Sdk.CreateTracerProviderBuilder()
+            .SetSampler(sampled ? new AlwaysOnSampler() : new AlwaysOffSampler())
             .AddHttpClientInstrumentation(options => options.EnrichWithHttpRequestMessage = WebHookDelivery.EnrichActivity)
             .AddProcessor(new CaptureActivityProcessor(activities))
             .Build();
@@ -124,12 +128,17 @@ public sealed class WebHooksJobTests(ITestOutputHelper output) : TestWithService
         {
             Interlocked.Increment(ref delivered);
             cookies.Enqueue(context.Request.Headers.Cookie.ToString());
+            propagationHeaders.Enqueue(String.Concat(context.Request.Headers["traceparent"], context.Request.Headers["tracestate"], context.Request.Headers["baggage"]));
             context.Response.Headers.SetCookie = "receiver-session=private; Path=/";
             context.Response.StatusCode = 302;
             context.Response.Headers.Location = "/redirected-capability";
             return Task.CompletedTask;
         });
-        server.Map("/redirected-capability", () => Interlocked.Increment(ref redirected));
+        server.Map("/redirected-capability", (HttpContext context) =>
+        {
+            propagationHeaders.Enqueue(String.Concat(context.Request.Headers["traceparent"], context.Request.Headers["tracestate"], context.Request.Headers["baggage"]));
+            return Interlocked.Increment(ref redirected);
+        });
         await server.StartAsync(TestCancellationToken);
         string address = server.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
         var options = GetService<AppOptions>();
@@ -154,10 +163,21 @@ public sealed class WebHooksJobTests(ITestOutputHelper output) : TestWithService
         };
         await queue.EnqueueAsync(notification);
 
-        // Act
-        var result = await job.RunAsync(TestCancellationToken);
-        await queue.EnqueueAsync(notification);
-        var secondResult = await job.RunAsync(TestCancellationToken);
+        JobResult result;
+        JobResult secondResult;
+        var previousBaggage = Baggage.Current;
+        Baggage.SetBaggage("webhook-test", "private-baggage");
+        try
+        {
+            // Act
+            result = await job.RunAsync(TestCancellationToken);
+            await queue.EnqueueAsync(notification);
+            secondResult = await job.RunAsync(TestCancellationToken);
+        }
+        finally
+        {
+            Baggage.Current = previousBaggage;
+        }
 
         // Assert
         Assert.True(result.IsSuccess, result.Error?.ToString());
@@ -165,10 +185,12 @@ public sealed class WebHooksJobTests(ITestOutputHelper output) : TestWithService
         Assert.Equal(2, delivered);
         Assert.Equal(2, redirected);
         Assert.All(cookies, cookie => Assert.Empty(cookie));
+        Assert.Equal(4, propagationHeaders.Count);
+        Assert.All(propagationHeaders, header => Assert.Empty(header));
         var deliveries = activities.Where(activity => Equals(activity.GetTagItem("server.port"), new Uri(address).Port)).ToList();
-        Assert.Equal(4, deliveries.Count);
-        Assert.Equal(2, deliveries.Count(activity => String.Equals(activity.GetTagItem("http.request.method") as string, "POST", StringComparison.Ordinal) && Equals(activity.GetTagItem("http.response.status_code"), 302)));
-        Assert.Equal(2, deliveries.Count(activity => String.Equals(activity.GetTagItem("http.request.method") as string, "GET", StringComparison.Ordinal) && Equals(activity.GetTagItem("http.response.status_code"), 200)));
+        Assert.Equal(sampled ? 4 : 0, deliveries.Count);
+        Assert.Equal(sampled ? 2 : 0, deliveries.Count(activity => String.Equals(activity.GetTagItem("http.request.method") as string, "POST", StringComparison.Ordinal) && Equals(activity.GetTagItem("http.response.status_code"), 302)));
+        Assert.Equal(sampled ? 2 : 0, deliveries.Count(activity => String.Equals(activity.GetTagItem("http.request.method") as string, "GET", StringComparison.Ordinal) && Equals(activity.GetTagItem("http.response.status_code"), 200)));
         Assert.All(deliveries, activity =>
         {
             Assert.Equal(address, activity.GetTagItem("url.full"));

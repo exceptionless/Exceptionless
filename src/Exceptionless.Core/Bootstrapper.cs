@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
@@ -231,7 +230,7 @@ public class Bootstrapper
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
                 UseCookies = false,
-                ActivityHeadersPropagator = DistributedContextPropagator.CreateNoOutputPropagator()
+                ActivityHeadersPropagator = WebHookDelivery.ContextPropagator
             });
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
