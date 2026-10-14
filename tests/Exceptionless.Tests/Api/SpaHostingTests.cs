@@ -1,4 +1,7 @@
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using Exceptionless.Tests.Extensions;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.Hosting;
@@ -78,11 +81,15 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
     public async Task GetAsync_ConfiguredApiOrigin_UsesRestrictedConnectionsAndStrictScripts(bool enableSsl)
     {
         // Arrange
+        const string siteUrl = "https://site.localhost:8111";
         const string apiUrl = "https://localhost:9443/backend?ignored=true";
         await using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
-            config.AddInMemoryCollection(new Dictionary<string, string?> { ["ApiUrl"] = apiUrl, ["EnableSsl"] = enableSsl.ToString() })));
+            config.AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = siteUrl, ["ApiUrl"] = apiUrl, ["EnableSsl"] = enableSsl.ToString() })));
         await factory.Server.WaitForReadyAsync();
         using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Host = "poisoned.localhost:4444";
+        client.DefaultRequestHeaders.Add("X-Forwarded-Host", "forwarded.localhost:5555");
+        client.DefaultRequestHeaders.Add("Forwarded", "host=forwarded.localhost:5555;proto=http");
 
         // Act
         using var response = await client.GetAsync("/login", TestContext.Current.CancellationToken);
@@ -96,9 +103,12 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Assert.DoesNotContain("*", sources);
         Assert.DoesNotContain("ws:", sources);
         Assert.DoesNotContain("wss:", sources);
-        Assert.Contains("https://localhost:9443", sources);
-        Assert.Contains("wss://localhost:9443", sources);
-        Assert.DoesNotContain(apiUrl, sources);
+        Assert.Equal([
+            "connect-src", "'self'", "https://*.exceptionless.io", "https://api.stripe.com",
+            "https://link.com", "https://*.link.com", "https://*.intercom.io", "wss://*.intercom.io",
+            "https://*.intercom-messenger.com", "wss://*.intercom-messenger.com",
+            siteUrl, "wss://site.localhost:8111", "https://localhost:9443", "wss://localhost:9443"
+        ], sources);
 
         // The published static shell relies on this response header for deny-by-default and
         // anti-framing protection; frame-ancestors cannot be enforced by its meta policy.
@@ -124,5 +134,94 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Assert.Contains("'strict-dynamic'", scriptSources);
         Assert.Contains("https://*.stripe.com", scriptSources);
         Assert.Contains("https://*.intercom.io", scriptSources);
+    }
+
+    [Fact]
+    public async Task GetAsync_PublishedSpa_TrustsStartupHashWithoutRewritingResponses()
+    {
+        // Arrange
+        string webRoot = Path.Combine(Path.GetTempPath(), $"exceptionless-csp-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(webRoot);
+        string hash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes("start()")));
+        string html = $"""<meta http-equiv="Content-Security-Policy" content="script-src 'strict-dynamic' 'sha256-{hash}'"><script>start()</script>""";
+        string injectedHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes("injected()")));
+        string changedHtml = html + "<script>injected()</script>";
+
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), html, TestContext.Current.CancellationToken);
+            string envPath = Path.Combine(webRoot, "_app", "env.js");
+            Directory.CreateDirectory(Path.GetDirectoryName(envPath)!);
+            await File.WriteAllTextAsync(envPath, "export const env={version:1};", TestContext.Current.CancellationToken);
+            await using var factory = _factory.WithWebHostBuilder(builder => builder.UseWebRoot(webRoot));
+            await factory.Server.WaitForReadyAsync();
+            using var client = factory.CreateClient();
+            await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), changedHtml, TestContext.Current.CancellationToken);
+
+            // Act
+            using HttpResponseMessage response = await client.GetAsync("/index.html", TestContext.Current.CancellationToken);
+            string body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            string policy = response.Headers.GetValues("Content-Security-Policy").Single();
+            using HttpResponseMessage firstEnvironment = await client.GetAsync("/_app/env.js", TestContext.Current.CancellationToken);
+            string firstEnvironmentBody = await firstEnvironment.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(envPath, "export const env={version:2};", TestContext.Current.CancellationToken);
+            using HttpResponseMessage secondEnvironment = await client.GetAsync("/_app/env.js", TestContext.Current.CancellationToken);
+            string secondEnvironmentBody = await secondEnvironment.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(changedHtml, body);
+            Assert.Contains("default-src 'none'", policy);
+            Assert.Contains($"'sha256-{hash}'", policy);
+            Assert.DoesNotContain(injectedHash, policy);
+            Assert.DoesNotContain("nonce=", body);
+            Assert.Equal(HttpStatusCode.OK, firstEnvironment.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, secondEnvironment.StatusCode);
+            Assert.Equal("no-store", firstEnvironment.Headers.CacheControl?.ToString());
+            Assert.Equal("no-store", secondEnvironment.Headers.CacheControl?.ToString());
+            Assert.Equal("export const env={version:1};", firstEnvironmentBody);
+            Assert.Equal("export const env={version:2};", secondEnvironmentBody);
+            Assert.Null(response.Headers.CacheControl);
+        }
+        finally
+        {
+            Directory.Delete(webRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task GetAsync_Scalar_UsesFreshMatchingNonces()
+    {
+        // Arrange
+        await _factory.Server.WaitForReadyAsync();
+        using var client = _factory.CreateClient();
+
+        // Act
+        using HttpResponseMessage firstResponse = await client.GetAsync("/docs/", TestContext.Current.CancellationToken);
+        using HttpResponseMessage secondResponse = await client.GetAsync("/docs/", TestContext.Current.CancellationToken);
+        string firstBody = await firstResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        string secondBody = await secondResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        MatchCollection firstNonces = Regex.Matches(firstBody, "<script\\b[^>]*\\bnonce=\"(?<nonce>[^\"]+)\"");
+        MatchCollection secondNonces = Regex.Matches(secondBody, "<script\\b[^>]*\\bnonce=\"(?<nonce>[^\"]+)\"");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
+        Assert.Equal(3, firstNonces.Count);
+        Assert.Equal(3, secondNonces.Count);
+        string firstNonce = WebUtility.HtmlDecode(firstNonces[0].Groups["nonce"].Value);
+        string secondNonce = WebUtility.HtmlDecode(secondNonces[0].Groups["nonce"].Value);
+        Assert.All(firstNonces, match => Assert.Equal(firstNonce, WebUtility.HtmlDecode(match.Groups["nonce"].Value)));
+        Assert.All(secondNonces, match => Assert.Equal(secondNonce, WebUtility.HtmlDecode(match.Groups["nonce"].Value)));
+        Assert.Equal(32, Convert.FromBase64String(firstNonce).Length);
+        Assert.Equal(32, Convert.FromBase64String(secondNonce).Length);
+        Assert.NotEqual(firstNonce, secondNonce);
+        Assert.Contains($"'nonce-{firstNonce}'", Assert.Single(firstResponse.Headers.GetValues("Content-Security-Policy")));
+        Assert.Contains($"'nonce-{secondNonce}'", Assert.Single(secondResponse.Headers.GetValues("Content-Security-Policy")));
+        Assert.Equal("no-store", firstResponse.Headers.CacheControl?.ToString());
+        Assert.Equal("no-store", secondResponse.Headers.CacheControl?.ToString());
+        Assert.Contains("\"withDefaultFonts\":false", firstBody);
+        Assert.Contains("\"agent\":{\"disabled\":true}", firstBody);
+        Assert.DoesNotContain("cdn.jsdelivr.net", firstBody);
     }
 }
