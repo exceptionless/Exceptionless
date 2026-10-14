@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
@@ -225,11 +226,12 @@ public class Bootstrapper
                 DecompressionMethods.None));
         services.AddSingleton<SourceMapService>();
         services.AddHttpClient(WebHookDelivery.HttpClientName)
+            // Job logs retain delivery diagnostics without logging credential-bearing URL paths.
             .RemoveAllLoggers()
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
                 UseCookies = false,
-                ActivityHeadersPropagator = null
+                ActivityHeadersPropagator = DistributedContextPropagator.CreateNoOutputPropagator()
             });
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();

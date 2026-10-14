@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
 using Exceptionless.Core;
@@ -18,11 +20,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Moq;
+using OpenTelemetry;
+using OpenTelemetry.Trace;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs;
 
-public sealed class WebHookDeliveryTests(ITestOutputHelper output) : TestWithServices(output)
+public sealed class WebHooksJobTests(ITestOutputHelper output) : TestWithServices(output)
 {
     [Theory]
     [InlineData(false)]
@@ -45,7 +49,7 @@ public sealed class WebHookDeliveryTests(ITestOutputHelper output) : TestWithSer
         using var queue = new InMemoryQueue<WebHookNotification>();
         using var cache = new InMemoryCacheClient();
         using var logs = new CaptureLoggerFactory { FailCompletion = failCompletion };
-        using var job = new WebHooksJob(queue, GetService<IProjectRepository>(), GetService<SlackService>(), repository.Object,
+        var job = new WebHooksJob(queue, GetService<IProjectRepository>(), GetService<SlackService>(), repository.Object,
             cache, GetService<ITextSerializer>(), GetService<JsonSerializerOptions>(), options, TimeProvider,
             GetService<IResiliencePolicyProvider>(), logs, new SingleClientFactory(client));
         await queue.EnqueueAsync(new WebHookNotification
@@ -83,7 +87,7 @@ public sealed class WebHookDeliveryTests(ITestOutputHelper output) : TestWithSer
         using var queue = new InMemoryQueue<WebHookNotification>();
         using var cache = new InMemoryCacheClient();
         using var logs = new CaptureLoggerFactory();
-        using var job = new WebHooksJob(queue, GetService<IProjectRepository>(), GetService<SlackService>(), repository.Object,
+        var job = new WebHooksJob(queue, GetService<IProjectRepository>(), GetService<SlackService>(), repository.Object,
             cache, GetService<ITextSerializer>(), GetService<JsonSerializerOptions>(), options, TimeProvider,
             GetService<IResiliencePolicyProvider>(), logs, new SingleClientFactory(client));
         await queue.EnqueueAsync(new WebHookNotification
@@ -96,7 +100,6 @@ public sealed class WebHookDeliveryTests(ITestOutputHelper output) : TestWithSer
         var result = await job.RunAsync(TestCancellationToken);
 
         // Assert
-
         Assert.Same(failure, result.Error);
         Assert.Contains(logs.Exceptions, exception => ReferenceEquals(exception, failure));
     }
@@ -107,6 +110,12 @@ public sealed class WebHookDeliveryTests(ITestOutputHelper output) : TestWithSer
         // Arrange
         int delivered = 0;
         int redirected = 0;
+        var cookies = new ConcurrentQueue<string>();
+        var activities = new ConcurrentQueue<Activity>();
+        using var tracing = Sdk.CreateTracerProviderBuilder()
+            .AddHttpClientInstrumentation(options => options.EnrichWithHttpRequestMessage = WebHookDelivery.EnrichActivity)
+            .AddProcessor(new CaptureActivityProcessor(activities))
+            .Build();
         var builder = WebApplication.CreateBuilder();
         builder.Logging.ClearProviders();
         builder.WebHost.UseKestrel().UseUrls("http://127.0.0.1:0");
@@ -114,6 +123,8 @@ public sealed class WebHookDeliveryTests(ITestOutputHelper output) : TestWithSer
         server.MapPost("/private-capability", context =>
         {
             Interlocked.Increment(ref delivered);
+            cookies.Enqueue(context.Request.Headers.Cookie.ToString());
+            context.Response.Headers.SetCookie = "receiver-session=private; Path=/";
             context.Response.StatusCode = 302;
             context.Response.Headers.Location = "/redirected-capability";
             return Task.CompletedTask;
@@ -133,51 +144,46 @@ public sealed class WebHookDeliveryTests(ITestOutputHelper output) : TestWithSer
         using var queue = new InMemoryQueue<WebHookNotification>();
         using var cache = new InMemoryCacheClient();
         using var logs = new CaptureLoggerFactory();
-        using var job = new WebHooksJob(queue, GetService<IProjectRepository>(), GetService<SlackService>(), repository.Object,
+        var job = new WebHooksJob(queue, GetService<IProjectRepository>(), GetService<SlackService>(), repository.Object,
             cache, GetService<ITextSerializer>(), GetService<JsonSerializerOptions>(), options, TimeProvider,
             GetService<IResiliencePolicyProvider>(), logs, GetService<IHttpClientFactory>());
-        await queue.EnqueueAsync(new WebHookNotification
+        var notification = new WebHookNotification
         {
             OrganizationId = hook.OrganizationId, ProjectId = hook.ProjectId, WebHookId = hook.Id,
             Type = WebHookType.General, Url = hook.Url, Data = new { synthetic = "delivery-test" }
-        });
+        };
+        await queue.EnqueueAsync(notification);
+
         // Act
         var result = await job.RunAsync(TestCancellationToken);
+        await queue.EnqueueAsync(notification);
+        var secondResult = await job.RunAsync(TestCancellationToken);
 
         // Assert
         Assert.True(result.IsSuccess, result.Error?.ToString());
-        Assert.Equal(1, delivered);
-        Assert.Equal(1, redirected);
+        Assert.True(secondResult.IsSuccess, secondResult.Error?.ToString());
+        Assert.Equal(2, delivered);
+        Assert.Equal(2, redirected);
+        Assert.All(cookies, cookie => Assert.Empty(cookie));
+        var deliveries = activities.Where(activity => Equals(activity.GetTagItem("server.port"), new Uri(address).Port)).ToList();
+        Assert.Equal(4, deliveries.Count);
+        Assert.Equal(2, deliveries.Count(activity => String.Equals(activity.GetTagItem("http.request.method") as string, "POST", StringComparison.Ordinal) && Equals(activity.GetTagItem("http.response.status_code"), 302)));
+        Assert.Equal(2, deliveries.Count(activity => String.Equals(activity.GetTagItem("http.request.method") as string, "GET", StringComparison.Ordinal) && Equals(activity.GetTagItem("http.response.status_code"), 200)));
+        Assert.All(deliveries, activity =>
+        {
+            Assert.Equal(address, activity.GetTagItem("url.full"));
+            Assert.True(activity.Duration > TimeSpan.Zero);
+            Assert.DoesNotContain(activity.TagObjects, tag => tag.Value?.ToString()?.Contains("capability", StringComparison.Ordinal) is true);
+            Assert.DoesNotContain(activity.TagObjects, tag => tag.Value?.ToString()?.Contains("secret-query", StringComparison.Ordinal) is true);
+        });
         Assert.True(hook.IsEnabled);
         Assert.DoesNotContain(logs.Messages, message => message.Contains("private-capability") || message.Contains("secret-query"));
         await server.StopAsync(TestCancellationToken);
     }
 
-    [Fact]
-    public void DeliveryLogging_RedactsDestinationAndPreservesException()
+    private sealed class CaptureActivityProcessor(ConcurrentQueue<Activity> activities) : BaseProcessor<Activity>
     {
-        // Arrange
-        using var capture = new CaptureLoggerFactory();
-        const string url = "https://user:password@example.com/private-capability?secret-query=value";
-        var exception = new HttpRequestException("Connection failed", new IOException("Socket closed"));
-        // Act
-        Exceptionless.Core.Extensions.LoggerExtensions.RecordWebHook(capture, "hook", "project", url);
-        Exceptionless.Core.Extensions.LoggerExtensions.WebHookComplete(capture, HttpStatusCode.OK, "organization", "project", url);
-        Exceptionless.Core.Extensions.LoggerExtensions.WebHookError(capture, HttpStatusCode.BadGateway, "organization", "project", url, exception);
-        Exceptionless.Core.Extensions.LoggerExtensions.WebHookTimeout(capture, null, "organization", "project", url, exception);
-        Exceptionless.Core.Extensions.LoggerExtensions.WebHookDisabledStatusCode(capture, "hook", HttpStatusCode.Gone, "organization", "project", url);
-
-        // Assert
-        Assert.Equal(5, capture.Messages.Count);
-        Assert.Equal(2, capture.Exceptions.Count);
-        Assert.All(capture.Exceptions, logged => Assert.Same(exception, logged));
-        Assert.Contains(capture.Messages, message => message.Contains("Connection failed"));
-        Assert.All(capture.Messages, message =>
-        {
-            Assert.DoesNotContain("private-capability", message);
-            Assert.DoesNotContain("secret-query", message);
-            Assert.DoesNotContain("password", message);
-        });
+        public override void OnEnd(Activity activity) => activities.Enqueue(activity);
     }
 
     private sealed class CaptureLoggerFactory : ILoggerFactory, ILogger
