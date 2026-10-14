@@ -2,7 +2,7 @@
 	import { browser } from "$app/env";
 	import { Popover as PopoverPrimitive } from "bits-ui";
 	import { onDestroy } from "svelte";
-	import { INTERACTIVE_OVERLAY_OPENED_EVENT, updateOpenInteractiveOverlay } from "../overlay-events.js";
+	import { INTERACTIVE_OVERLAY_OPENED_EVENT, updateOpenInteractiveOverlay } from "../overlay-events.ts";
 
 	let { open = $bindable(false), ...restProps }: PopoverPrimitive.RootProps = $props();
 	const overlayId = Symbol("popover");

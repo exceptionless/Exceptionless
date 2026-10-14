@@ -1,10 +1,11 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getSavedViewsQuery, isSavedViewDeleted } from '$features/saved-views/api.svelte';
-    import { getSavedViewDefaultHref, resolveSavedViewDefaults } from '$features/saved-views/defaults';
-    import { getMeQuery } from '$features/users/api.svelte';
+
+    import { getOrganizationQuery, getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { getSavedViewsQuery, isSavedViewDeleted } from '#features/saved-views/api.svelte.ts';
+    import { getSavedViewDefaultHref, resolveSavedViewDefaults } from '#features/saved-views/defaults.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
 
     const currentUserQuery = getMeQuery();
     const organizationsQuery = getOrganizationsQuery({});

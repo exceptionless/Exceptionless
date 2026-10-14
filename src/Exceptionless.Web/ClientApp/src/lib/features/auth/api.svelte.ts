@@ -1,8 +1,9 @@
 import { PUBLIC_INTERCOM_APPID } from '$app/env/public';
-import { getIntercomTokenSessionKey, intercomTokenRefreshIntervalMs } from '$features/intercom/config';
-import { organization } from '$features/organizations/context.svelte';
 import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createQuery, type QueryClient } from '@tanstack/svelte-query';
+
+import { getIntercomTokenSessionKey, intercomTokenRefreshIntervalMs } from '#features/intercom/config.ts';
+import { organization } from '#features/organizations/context.svelte.ts';
 
 import type { Login, TokenResult } from './models';
 

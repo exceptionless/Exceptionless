@@ -5,7 +5,7 @@
 <script generics="TData extends RowData" lang="ts">
     import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
 
-    import Number from '$comp/formatters/number.svelte';
+    import Number from '#comp/formatters/number.svelte';
 
     interface Props {
         table: Table<StockFeatures, TData>;

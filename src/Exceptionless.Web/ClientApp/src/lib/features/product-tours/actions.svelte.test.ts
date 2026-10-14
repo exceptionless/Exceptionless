@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
     success: vi.fn()
 }));
 vi.mock('./activity', () => ({ submitProductTourActivity: mocks.submitFeatureUsage }));
-vi.mock('$features/users/api.svelte', () => ({ putCurrentUserProductTour: () => ({ mutateAsync: mocks.mutateAsync }) }));
+vi.mock('#features/users/api.svelte.ts', () => ({ putCurrentUserProductTour: () => ({ mutateAsync: mocks.mutateAsync }) }));
 vi.mock('./controls.svelte', () => ({ tryUseProductTourControls: () => ({ openCatalog: mocks.openCatalog }) }));
 vi.mock('svelte-sonner', () => ({ toast: { error: mocks.error, success: mocks.success } }));
 

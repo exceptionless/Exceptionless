@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getApiUrl, getServerUrl } from './urls';
 
 const { env } = vi.hoisted(() => ({ env: { PUBLIC_BASE_URL: '' } }));
-vi.mock('$features/shared/environment', () => ({
+vi.mock('#features/shared/environment.ts', () => ({
     get PUBLIC_BASE_URL() {
         return env.PUBLIC_BASE_URL;
     }

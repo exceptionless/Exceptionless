@@ -1,4 +1,4 @@
-import { PUBLIC_BASE_URL } from '$features/shared/environment';
+import { PUBLIC_BASE_URL } from '#features/shared/environment.ts';
 
 export function getApiUrl(path = ''): string {
     return getServerUrl(`api/v2${path ? `/${path.replace(/^\/+/, '')}` : ''}`);

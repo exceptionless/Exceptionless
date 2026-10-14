@@ -15,12 +15,12 @@ vi.mock('$app/env', () => ({ browser: true }));
 vi.mock('$app/navigation', () => ({ goto: mocks.goto }));
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path.replace('/(auth)', '') }));
 vi.mock('$app/state', () => ({ page: mocks.page }));
-vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'test-token' } }));
-vi.mock('$features/auth/session.svelte', () => ({ clearAuthenticationSession: mocks.clearSession }));
-vi.mock('$features/organizations/api.svelte', () => ({
+vi.mock('#features/auth/index.svelte.ts', () => ({ accessToken: { current: 'test-token' } }));
+vi.mock('#features/auth/session.svelte.ts', () => ({ clearAuthenticationSession: mocks.clearSession }));
+vi.mock('#features/organizations/api.svelte.ts', () => ({
     getOrganizationsQuery: () => ({ data: { data: [{ id: 'organization-1', name: 'Test Organization' }] }, isError: false, isLoading: false })
 }));
-vi.mock('$features/users/api.svelte', () => ({
+vi.mock('#features/users/api.svelte.ts', () => ({
     getMeQuery: () => ({ data: { email_address: 'member@example.test', full_name: 'Member' }, isError: false, isLoading: false })
 }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({

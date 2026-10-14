@@ -1,5 +1,6 @@
-import { supportIssuesHref } from '$features/shared/help-links';
 import { describe, expect, it, vi } from 'vitest';
+
+import { supportIssuesHref } from '#features/shared/help-links.ts';
 
 import { openSupportChat } from './chat';
 

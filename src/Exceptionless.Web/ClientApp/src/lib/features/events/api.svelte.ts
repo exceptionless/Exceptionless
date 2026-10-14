@@ -1,12 +1,13 @@
-import type { WebSocketMessageValue } from '$features/websockets/models';
-import type { CountResult, WorkInProgressResult } from '$shared/models';
-
-import { accessToken } from '$features/auth/index.svelte';
-import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
-import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 import { SvelteSet } from 'svelte/reactivity';
+
+import type { WebSocketMessageValue } from '#features/websockets/models.ts';
+import type { CountResult, WorkInProgressResult } from '#shared/models/index.ts';
+
+import { accessToken } from '#features/auth/index.svelte.ts';
+import { queryKeys as stackQueryKeys } from '#features/stacks/api.svelte.ts';
+import { DEFAULT_OFFSET } from '#shared/api/api.svelte.ts';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';

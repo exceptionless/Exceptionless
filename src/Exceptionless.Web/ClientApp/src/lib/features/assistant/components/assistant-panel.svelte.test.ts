@@ -3,14 +3,14 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { env } = vi.hoisted(() => ({ env: { PUBLIC_BASE_URL: '' } }));
-vi.mock('$features/shared/environment', () => ({
+vi.mock('#features/shared/environment.ts', () => ({
     get PUBLIC_BASE_URL() {
         return env.PUBLIC_BASE_URL;
     }
 }));
 
-vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
-vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled: () => true }));
+vi.mock('#features/auth/index.svelte.ts', () => ({ accessToken: { current: 'access-token' } }));
+vi.mock('#features/billing/stripe.svelte.ts', () => ({ isStripeEnabled: () => true }));
 vi.mock('katex/dist/katex.min.css', () => ({}));
 const goto = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 const submitFeatureUsage = vi.hoisted(() => vi.fn<(feature: string, properties?: Record<string, unknown>) => Promise<void>>().mockResolvedValue(undefined));
@@ -18,7 +18,7 @@ const submitLog = vi.hoisted(() =>
     vi.fn<(source: string, message: string, properties?: Record<string, unknown>) => Promise<void>>().mockResolvedValue(undefined)
 );
 vi.mock('$app/navigation', () => ({ goto }));
-vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage, submitLog }));
+vi.mock('#features/auth/exceptionless-session.ts', () => ({ submitFeatureUsage, submitLog }));
 
 import AssistantPanel from './assistant-panel.svelte';
 

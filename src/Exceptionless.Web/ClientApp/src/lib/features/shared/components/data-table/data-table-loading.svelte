@@ -5,9 +5,10 @@
 <script generics="TData extends RowData" lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Table from '$comp/ui/table';
     import { type Column, type RowData, type StockFeatures, type Table as SvelteTable } from '@tanstack/svelte-table';
+
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
 
     interface Props {
         children?: Snippet;

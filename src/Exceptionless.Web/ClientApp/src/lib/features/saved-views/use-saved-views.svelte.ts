@@ -1,22 +1,24 @@
 import type { ReadonlyURL } from '$app/state';
-import type { IFilter } from '$comp/faceted-filter';
 import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 import { page } from '$app/state';
+import { tick, untrack } from 'svelte';
+import { SvelteSet, SvelteURL } from 'svelte/reactivity';
+
+import type { IFilter } from '#comp/faceted-filter/index.ts';
+
 import {
     applyTimeFilter,
     buildFilterCacheKey,
     deserializeFilters,
     getFiltersFromCache,
     serializeFilters
-} from '$features/events/components/filters/helpers.svelte';
-import { getVisibleUrl } from '$features/navigation/visible-url';
-import { organization } from '$features/organizations/context.svelte';
-import { updateShallowHistory } from '$features/shared/history-state';
-import { getMeQuery } from '$features/users/api.svelte';
-import { tick, untrack } from 'svelte';
-import { SvelteSet, SvelteURL } from 'svelte/reactivity';
+} from '#features/events/components/filters/helpers.svelte.ts';
+import { getVisibleUrl } from '#features/navigation/visible-url.ts';
+import { organization } from '#features/organizations/context.svelte.ts';
+import { updateShallowHistory } from '#features/shared/history-state.ts';
+import { getMeQuery } from '#features/users/api.svelte.ts';
 
 import type { AutoFillColumnSelection, WrappedColumnIds } from './column-settings';
 import type { SavedView } from './models';

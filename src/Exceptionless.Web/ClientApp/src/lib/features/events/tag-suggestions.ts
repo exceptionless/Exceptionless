@@ -1,6 +1,6 @@
-import type { CountResult } from '$shared/models';
+import type { CountResult } from '#shared/models/index.ts';
 
-import { terms } from '$shared/api/aggregations';
+import { terms } from '#shared/api/aggregations.ts';
 
 export const TAG_SUGGESTION_LIMIT = 250;
 export const TAG_SUGGESTION_STALE_TIME = 5 * 60 * 1000;

@@ -8,9 +8,10 @@ import {
 } from '$app/env/public';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
-import { gotoRedirect } from '$features/navigation/redirect';
-import { getVisibleUrl } from '$features/navigation/visible-url';
 import { useFetchClient } from '@foundatiofx/fetchclient';
+
+import { gotoRedirect } from '#features/navigation/redirect.ts';
+import { getVisibleUrl } from '#features/navigation/visible-url.ts';
 
 import type { TokenResult } from './models';
 

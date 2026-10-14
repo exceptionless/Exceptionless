@@ -1,12 +1,13 @@
 <script lang="ts">
     import { page } from '$app/state';
-    import Logo from '$comp/logo.svelte';
-    import { P } from '$comp/typography';
-    import * as Card from '$comp/ui/card';
-    import { Spinner } from '$comp/ui/spinner';
-    import { gotoRedirect } from '$features/navigation/redirect';
-    import { getSafeRedirectUrl } from '$features/shared/url';
-    import { getHealthQuery } from '$features/status/api.svelte';
+
+    import Logo from '#comp/logo.svelte';
+    import { P } from '#comp/typography/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { gotoRedirect } from '#features/navigation/redirect.ts';
+    import { getSafeRedirectUrl } from '#features/shared/url.ts';
+    import { getHealthQuery } from '#features/status/api.svelte.ts';
 
     const redirectParam = page.url.searchParams.get('redirect');
     const redirect = redirectParam ? getSafeRedirectUrl(redirectParam, null) : null;

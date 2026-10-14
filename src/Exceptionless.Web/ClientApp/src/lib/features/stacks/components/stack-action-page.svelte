@@ -1,12 +1,14 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getProblemMessage } from '$shared/validation';
+
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { getProblemMessage } from '#shared/validation.ts';
 
     import type { Stack } from '../models';
 

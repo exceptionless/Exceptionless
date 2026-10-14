@@ -2,8 +2,8 @@ import { afterEach, expect, it, vi } from 'vitest';
 
 import { fetchApiJson } from './api.svelte';
 
-vi.mock('$features/shared/environment', () => ({ PUBLIC_BASE_URL: 'https://localhost:8443/' }));
-vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'existing-session' } }));
+vi.mock('#features/shared/environment.ts', () => ({ PUBLIC_BASE_URL: 'https://localhost:8443/' }));
+vi.mock('#features/auth/index.svelte.ts', () => ({ accessToken: { current: 'existing-session' } }));
 
 afterEach(() => vi.unstubAllGlobals());
 

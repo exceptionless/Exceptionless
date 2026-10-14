@@ -1,36 +1,37 @@
 <script lang="ts">
-    import type { NotificationSettings } from '$features/projects/models';
-    import type { NewWebhook, Webhook } from '$features/webhooks/models';
-
     import { PUBLIC_SLACK_APPID } from '$app/env/public';
     import { page } from '$app/state';
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import SlackIcon from '$comp/icons/SlackIcon.svelte';
-    import { H4, Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { slackOAuthLogin } from '$features/auth/index.svelte';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
-    import { organization } from '$features/organizations/context.svelte';
+    import Plus from '@lucide/svelte/icons/plus';
+    import Zapier from '@lucide/svelte/icons/zap';
+    import { createTable } from '@tanstack/svelte-table';
+    import { toast } from 'svelte-sonner';
+
+    import type { NotificationSettings } from '#features/projects/models.ts';
+    import type { NewWebhook, Webhook } from '#features/webhooks/models.ts';
+
+    import DataTableViewOptions from '#comp/data-table/data-table-view-options.svelte';
+    import SlackIcon from '#comp/icons/SlackIcon.svelte';
+    import { H4, Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { slackOAuthLogin } from '#features/auth/index.svelte.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
     import {
         deleteSlack,
         getProjectIntegrationNotificationSettings,
         getProjectQuery,
         postSlack,
         putProjectIntegrationNotificationSettings
-    } from '$features/projects/api.svelte';
-    import RemoveSlackDialog from '$features/projects/components/dialogs/remove-slack-dialog.svelte';
-    import IntegrationNotificationSettingsForm from '$features/projects/components/integration-notification-settings-form.svelte';
-    import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-    import { type GetProjectWebhooksParams, postWebhook } from '$features/webhooks/api.svelte';
-    import { getProjectWebhooksQuery } from '$features/webhooks/api.svelte';
-    import AddWebhookDialog from '$features/webhooks/components/dialogs/add-webhook-dialog.svelte';
-    import { getTableOptions } from '$features/webhooks/components/table/options.svelte';
-    import WebhooksDataTable from '$features/webhooks/components/table/webhooks-data-table.svelte';
-    import { createQueryParameters } from '$shared/query-params';
-    import Plus from '@lucide/svelte/icons/plus';
-    import Zapier from '@lucide/svelte/icons/zap';
-    import { createTable } from '@tanstack/svelte-table';
-    import { toast } from 'svelte-sonner';
+    } from '#features/projects/api.svelte.ts';
+    import RemoveSlackDialog from '#features/projects/components/dialogs/remove-slack-dialog.svelte';
+    import IntegrationNotificationSettingsForm from '#features/projects/components/integration-notification-settings-form.svelte';
+    import { DEFAULT_LIMIT } from '#features/shared/api/api.svelte.ts';
+    import { type GetProjectWebhooksParams, postWebhook } from '#features/webhooks/api.svelte.ts';
+    import { getProjectWebhooksQuery } from '#features/webhooks/api.svelte.ts';
+    import AddWebhookDialog from '#features/webhooks/components/dialogs/add-webhook-dialog.svelte';
+    import { getTableOptions } from '#features/webhooks/components/table/options.svelte.ts';
+    import WebhooksDataTable from '#features/webhooks/components/table/webhooks-data-table.svelte';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     let toastId = $state<number | string>();
     let showAddWebhookDialog = $state(false);

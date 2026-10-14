@@ -1,18 +1,20 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
-    import { buildStackDetailsHref } from '$features/events/components/summary';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getStackQuery } from '$features/stacks/api.svelte';
-    import StackDetails from '$features/stacks/components/stack-details.svelte';
     import { toast } from 'svelte-sonner';
 
-    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../../../redirect-to-events.svelte.js';
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
+    import { buildStackDetailsHref } from '#features/events/components/summary/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { getStackQuery } from '#features/stacks/api.svelte.ts';
+    import StackDetails from '#features/stacks/components/stack-details.svelte';
+
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../../../redirect-to-events.svelte.ts';
 
     const projectId = $derived(page.params.projectId || '');
     const stackId = $derived(page.params.stackId || '');

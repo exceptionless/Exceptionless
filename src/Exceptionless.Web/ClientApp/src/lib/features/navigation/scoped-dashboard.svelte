@@ -2,10 +2,11 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getProjectQuery } from '$features/projects/api.svelte';
     import { SvelteURLSearchParams } from 'svelte/reactivity';
+
+    import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { getProjectQuery } from '#features/projects/api.svelte.ts';
 
     let { organizationId, projectId }: { organizationId?: string; projectId?: string } = $props();
     const projectQuery = getProjectQuery({

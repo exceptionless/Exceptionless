@@ -1,9 +1,10 @@
 <script lang="ts">
     import { page } from '$app/state';
-    import { A, H3, Muted } from '$comp/typography';
-    import { accessToken } from '$features/auth/index.svelte';
-    import { getMeQuery } from '$features/users/api.svelte';
-    import GlobalUser from '$features/users/components/global-user.svelte';
+
+    import { A, H3, Muted } from '#comp/typography/index.ts';
+    import { accessToken } from '#features/auth/index.svelte.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
+    import GlobalUser from '#features/users/components/global-user.svelte';
 
     import type { NavigationItemContext } from '../../routes.svelte';
 

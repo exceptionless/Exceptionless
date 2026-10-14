@@ -1,6 +1,7 @@
-import { DateFilter, KeywordFilter, ProjectFilter, StatusFilter } from '$features/events/components/filters';
-import { StackStatus } from '$features/stacks/models';
 import { describe, expect, it } from 'vitest';
+
+import { DateFilter, KeywordFilter, ProjectFilter, StatusFilter } from '#features/events/components/filters/index.ts';
+import { StackStatus } from '#features/stacks/models.ts';
 
 import type { SavedViewDraftIdentity } from './saved-view-drafts';
 

@@ -1,8 +1,9 @@
 <script lang="ts">
     import { afterNavigate } from '$app/navigation';
     import { page } from '$app/state';
-    import { endSession, setUserIdentity } from '$features/auth/exceptionless-session';
     import { Exceptionless } from '@exceptionless/browser';
+
+    import { endSession, setUserIdentity } from '#features/auth/exceptionless-session.ts';
 
     import { normalizePath, normalizeRouteId } from './route';
 

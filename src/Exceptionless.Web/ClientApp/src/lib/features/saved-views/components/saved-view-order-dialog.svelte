@@ -1,13 +1,14 @@
 <script lang="ts">
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import ChevronUp from '@lucide/svelte/icons/chevron-up';
     import GripVertical from '@lucide/svelte/icons/grip-vertical';
     import LoaderCircle from '@lucide/svelte/icons/loader-circle';
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
     import { toast } from 'svelte-sonner';
+
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
 
     import type { SavedView } from '../models';
 

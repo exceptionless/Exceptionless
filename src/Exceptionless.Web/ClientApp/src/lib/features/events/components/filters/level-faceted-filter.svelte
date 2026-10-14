@@ -1,8 +1,8 @@
 <script lang="ts">
-    import type { FacetedFilterProps } from '$comp/faceted-filter';
+    import type { FacetedFilterProps } from '#comp/faceted-filter/index.ts';
 
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import { logLevels } from '$features/events/options';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import { logLevels } from '#features/events/options.ts';
 
     import { LevelFilter } from './models.svelte';
 

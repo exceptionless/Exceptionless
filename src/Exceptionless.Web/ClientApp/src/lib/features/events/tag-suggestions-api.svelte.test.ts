@@ -1,8 +1,9 @@
-import type { CountResult } from '$shared/models';
-
-import { ChangeType } from '$features/websockets/models';
 import { QueryClient, QueryObserver, type QueryObserverOptions } from '@tanstack/svelte-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { CountResult } from '#shared/models/index.ts';
+
+import { ChangeType } from '#features/websockets/models.ts';
 
 import { getTagSuggestionsQuery, invalidatePersistentEventQueries } from './api.svelte';
 
@@ -11,7 +12,7 @@ const mocks = vi.hoisted(() => ({
     createQuery: vi.fn<(options: () => QueryObserverOptions<CountResult>) => void>(),
     getJSON: vi.fn()
 }));
-vi.mock('$features/auth/index.svelte', () => ({ accessToken: mocks.accessToken }));
+vi.mock('#features/auth/index.svelte.ts', () => ({ accessToken: mocks.accessToken }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@foundatiofx/fetchclient')>()),
     useFetchClient: () => ({ getJSON: mocks.getJSON })

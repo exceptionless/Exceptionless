@@ -6,11 +6,11 @@ import { page } from '$app/state';
 import { onDestroy, untrack } from 'svelte';
 import { SvelteURL } from 'svelte/reactivity';
 
-import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameterState, QueryParameterUpdateOptions } from './types.js';
+import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameterState, QueryParameterUpdateOptions } from './types.ts';
 
-import { hasDetailSheetHistoryEntry, updateShallowHistory, waitForShallowHistory, withoutDetailSheetHistoryEntry } from '../history-state.js';
-import { getHistoryTraversalCount } from '../history-traversal.js';
-import { createQueryParameterProxy } from './proxy.js';
+import { hasDetailSheetHistoryEntry, updateShallowHistory, waitForShallowHistory, withoutDetailSheetHistoryEntry } from '../history-state.ts';
+import { getHistoryTraversalCount } from '../history-traversal.ts';
+import { createQueryParameterProxy } from './proxy.ts';
 import {
     applyQueryParameterUpdates,
     createDebouncedFunction,
@@ -19,7 +19,7 @@ import {
     parseQueryParameters,
     queryParameterValuesEqual,
     searchParamsEqual
-} from './query-params.js';
+} from './query-params.ts';
 
 const queryHistoryEntryIdKey = '__exceptionlessQueryHistoryEntryId';
 const pendingReplacementStoragePrefix = 'exceptionless:query-history:';

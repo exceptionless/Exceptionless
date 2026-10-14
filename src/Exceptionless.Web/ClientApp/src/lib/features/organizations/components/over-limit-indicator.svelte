@@ -1,6 +1,6 @@
 <script lang="ts">
-    import Badge from '$comp/ui/badge/badge.svelte';
-    import * as Tooltip from '$comp/ui/tooltip';
+    import Badge from '#comp/ui/badge/badge.svelte';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
 
     interface Props {
         isOverLimit?: boolean;

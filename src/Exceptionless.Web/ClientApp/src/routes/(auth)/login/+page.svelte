@@ -2,19 +2,22 @@
     import { dev } from '$app/env';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
-    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
-    import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
-    import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
-    import Logo from '$comp/logo.svelte';
-    import { A, Muted, P } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Spinner } from '$comp/ui/spinner';
-    import { login } from '$features/auth/api.svelte';
+    import { createForm } from '@tanstack/svelte-form';
+    import { onMount } from 'svelte';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import FacebookIcon from '#comp/icons/FacebookIcon.svelte';
+    import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
+    import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
+    import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
+    import Logo from '#comp/logo.svelte';
+    import { A, Muted, P } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { login } from '#features/auth/api.svelte.ts';
     import {
         accessToken,
         enableAccountCreation,
@@ -28,13 +31,11 @@
         liveLogin,
         logout,
         microsoftClientId
-    } from '$features/auth/index.svelte';
-    import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
-    import { gotoRedirect } from '$features/navigation/redirect';
-    import { getSafeRedirectUrl } from '$features/shared/url';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
-    import { createForm } from '@tanstack/svelte-form';
-    import { onMount } from 'svelte';
+    } from '#features/auth/index.svelte.ts';
+    import { type LoginFormData, LoginSchema } from '#features/auth/schemas.ts';
+    import { gotoRedirect } from '#features/navigation/redirect.ts';
+    import { getSafeRedirectUrl } from '#features/shared/url.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
 
     const defaultRedirect = resolve('/(app)');
     const redirectUrl = getSafeRedirectUrl(page.url.searchParams.get('redirect'), defaultRedirect);

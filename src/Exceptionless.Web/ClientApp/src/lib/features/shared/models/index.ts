@@ -1,4 +1,4 @@
-export type { CountResult, IAggregate, StringValueFromBody, WorkInProgressResult } from '$generated/api';
+export type { CountResult, IAggregate, StringValueFromBody, WorkInProgressResult } from '#generated/api.ts';
 
 export * from './aggregations';
 

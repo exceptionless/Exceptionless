@@ -1,26 +1,6 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
-    import type { BillingPlan } from '$lib/generated/api';
     import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
-    import ErrorMessage from '$comp/error-message.svelte';
-    import Currency from '$comp/formatters/currency.svelte';
-    import NumberCompact from '$comp/formatters/number-compact.svelte';
-    import { Muted, Small } from '$comp/typography';
-    import * as Alert from '$comp/ui/alert';
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
-    import { Input } from '$comp/ui/input';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { Spinner } from '$comp/ui/spinner';
-    import * as Tabs from '$comp/ui/tabs';
-    import { submitFeatureUsage } from '$features/auth/exceptionless-session';
-    import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '$features/billing';
-    import { resolveInitialPlanTierId } from '$features/billing/plan-selection';
-    import { type ChangePlanFormData, ChangePlanSchema } from '$features/billing/schemas';
-    import { changePlanMutation, getPlansQuery } from '$features/organizations/api.svelte';
-    import { getFormErrorMessages, problemDetailsToFormErrors } from '$features/shared/validation';
     import { Exceptionless } from '@exceptionless/browser';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Check from '@lucide/svelte/icons/check';
@@ -30,6 +10,28 @@
     import { untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
     import { SvelteMap } from 'svelte/reactivity';
+
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+    import type { BillingPlan } from '#lib/generated/api.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import Currency from '#comp/formatters/currency.svelte';
+    import NumberCompact from '#comp/formatters/number-compact.svelte';
+    import { Muted, Small } from '#comp/typography/index.ts';
+    import * as Alert from '#comp/ui/alert/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import * as Tabs from '#comp/ui/tabs/index.ts';
+    import { submitFeatureUsage } from '#features/auth/exceptionless-session.ts';
+    import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '#features/billing/index.ts';
+    import { resolveInitialPlanTierId } from '#features/billing/plan-selection.ts';
+    import { type ChangePlanFormData, ChangePlanSchema } from '#features/billing/schemas.ts';
+    import { changePlanMutation, getPlansQuery } from '#features/organizations/api.svelte.ts';
+    import { getFormErrorMessages, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     interface Props {
         initialCouponCode?: string;

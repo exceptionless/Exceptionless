@@ -1,11 +1,12 @@
-import type { ViewCurrentUser } from '$features/users/models';
-
-import { putCurrentUserProductTour, queryKeys } from '$features/users/api.svelte';
 import { MutationObserver, type MutationObserverOptions, QueryClient } from '@tanstack/svelte-query';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { ViewCurrentUser } from '#features/users/models.ts';
+
+import { putCurrentUserProductTour, queryKeys } from '#features/users/api.svelte.ts';
+
 const mocks = vi.hoisted(() => ({ fetchApiJson: vi.fn(), useQueryClient: vi.fn() }));
-vi.mock('$features/shared/api/api.svelte', () => ({ fetchApiJson: mocks.fetchApiJson }));
+vi.mock('#features/shared/api/api.svelte.ts', () => ({ fetchApiJson: mocks.fetchApiJson }));
 vi.mock('@tanstack/svelte-query', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@tanstack/svelte-query')>()),
     createMutation: <TData, TError, TVariables, TContext>(options: () => MutationObserverOptions<TData, TError, TVariables, TContext>) => {

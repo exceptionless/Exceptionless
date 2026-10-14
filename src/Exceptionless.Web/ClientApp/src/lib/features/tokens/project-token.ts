@@ -1,4 +1,4 @@
-import type { NewToken } from '$features/tokens/models';
+import type { NewToken } from '#features/tokens/models.ts';
 
 export type ProjectTokenScope = 'client' | 'source-maps:write';
 

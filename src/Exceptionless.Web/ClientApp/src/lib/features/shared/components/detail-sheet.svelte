@@ -4,13 +4,14 @@
     import { browser } from '$app/env';
     import { beforeNavigate, goto } from '$app/navigation';
     import { page } from '$app/state';
-    import { Button } from '$comp/ui/button';
-    import * as Sheet from '$comp/ui/sheet';
-    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import Copy from '@lucide/svelte/icons/copy';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import { onMount, untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Sheet from '#comp/ui/sheet/index.ts';
+    import { UseClipboard } from '#lib/hooks/use-clipboard.svelte.ts';
 
     import {
         type DetailSheetHistoryEntry,

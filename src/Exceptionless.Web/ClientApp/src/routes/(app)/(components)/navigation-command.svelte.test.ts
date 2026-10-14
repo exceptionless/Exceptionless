@@ -20,15 +20,15 @@ const project = vi.hoisted(() => ({
 }));
 
 vi.mock('$app/navigation', () => ({ goto }));
-vi.mock('$features/auth/api.svelte', () => ({ logout }));
-vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
-vi.mock('$features/events/components/summary/index', () => ({ buildEventDetailsHref: vi.fn() }));
-vi.mock('$features/billing', () => ({ showBillingDialogOnUpgradeProblem: vi.fn(() => false) }));
-vi.mock('$features/organizations/api.svelte', () => ({
+vi.mock('#features/auth/api.svelte.ts', () => ({ logout }));
+vi.mock('#features/auth/index.svelte.ts', () => ({ accessToken: { current: 'access-token' } }));
+vi.mock('#features/events/components/summary/index.ts', () => ({ buildEventDetailsHref: vi.fn() }));
+vi.mock('#features/billing/index.ts', () => ({ showBillingDialogOnUpgradeProblem: vi.fn(() => false) }));
+vi.mock('#features/organizations/api.svelte.ts', () => ({
     addOrganizationUser: () => ({ isPending: false, mutateAsync: inviteUserMutateAsync })
 }));
-vi.mock('$features/organizations/context.svelte', () => ({ organization: organizationState }));
-vi.mock('$features/projects/api.svelte', () => ({
+vi.mock('#features/organizations/context.svelte.ts', () => ({ organization: organizationState }));
+vi.mock('#features/projects/api.svelte.ts', () => ({
     generateSampleData: () => ({ isPending: false, mutateAsync: generateSampleDataMutateAsync }),
     getOrganizationProjectsQuery: () => ({ data: { data: [project] }, isError: false, isLoading: false }),
     resetData: () => ({ isPending: false, mutateAsync: resetDataMutateAsync })

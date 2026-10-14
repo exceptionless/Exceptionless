@@ -2,18 +2,19 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import Logo from '$comp/logo.svelte';
-    import { A, H4 } from '$comp/typography';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Table from '$comp/ui/table';
-    import { accessToken } from '$features/auth/index.svelte';
-    import { getInvoiceStatusLabel } from '$features/billing/invoice';
-    import { getInvoiceQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import Currency from '$features/shared/components/formatters/currency.svelte';
     import Receipt from '@lucide/svelte/icons/receipt';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import DateTime from '#comp/formatters/date-time.svelte';
+    import Logo from '#comp/logo.svelte';
+    import { A, H4 } from '#comp/typography/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import { accessToken } from '#features/auth/index.svelte.ts';
+    import { getInvoiceStatusLabel } from '#features/billing/invoice.ts';
+    import { getInvoiceQuery } from '#features/organizations/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import Currency from '#features/shared/components/formatters/currency.svelte';
 
     const invoiceId = $derived(page.params.id || '');
 

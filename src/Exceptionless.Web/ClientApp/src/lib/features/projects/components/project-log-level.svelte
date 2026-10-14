@@ -1,15 +1,16 @@
 <script lang="ts">
-    import type { LogLevel } from '$features/events/models/event-data';
-
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { logLevels } from '$features/events/options';
-    import { getLogLevel, getLogLevelDisplayName } from '$features/events/utils';
-    import { deleteProjectConfig, getProjectConfig, postProjectConfig } from '$features/projects/api.svelte';
-    import { Button } from '$features/shared/components/ui/button';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import ListFilter from '@lucide/svelte/icons/list-filter';
     import { toast } from 'svelte-sonner';
+
+    import type { LogLevel } from '#features/events/models/event-data.ts';
+
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { logLevels } from '#features/events/options.ts';
+    import { getLogLevel, getLogLevelDisplayName } from '#features/events/utils/index.ts';
+    import { deleteProjectConfig, getProjectConfig, postProjectConfig } from '#features/projects/api.svelte.ts';
+    import { Button } from '#features/shared/components/ui/button/index.ts';
 
     interface Props {
         iconOnly?: boolean;

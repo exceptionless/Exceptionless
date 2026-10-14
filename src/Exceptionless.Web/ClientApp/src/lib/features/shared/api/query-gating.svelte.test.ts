@@ -1,8 +1,9 @@
-import { accessToken } from '$features/auth/state.svelte';
 import { QueryClient } from '@tanstack/svelte-query';
 import { cleanup, render } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+
+import { accessToken } from '#features/auth/state.svelte.ts';
 
 import QueryGateTestHarness from './query-gating.test-harness.svelte';
 

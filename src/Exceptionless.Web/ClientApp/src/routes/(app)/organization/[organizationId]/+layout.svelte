@@ -2,14 +2,15 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { A, H3 } from '$comp/typography';
-    import { accessToken } from '$features/auth/index.svelte';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import OrganizationAdminActionsDropdownMenu from '$features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getMeQuery } from '$features/users/api.svelte';
-    import GlobalUser from '$features/users/components/global-user.svelte';
     import { toast } from 'svelte-sonner';
+
+    import { A, H3 } from '#comp/typography/index.ts';
+    import { accessToken } from '#features/auth/index.svelte.ts';
+    import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import OrganizationAdminActionsDropdownMenu from '#features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
+    import GlobalUser from '#features/users/components/global-user.svelte';
 
     import type { NavigationItemContext } from '../../../routes.svelte';
 

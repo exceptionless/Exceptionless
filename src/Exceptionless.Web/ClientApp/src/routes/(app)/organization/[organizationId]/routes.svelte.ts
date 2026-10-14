@@ -1,11 +1,12 @@
 import { resolve } from '$app/paths';
 import { page } from '$app/state';
-import { organization } from '$features/organizations/context.svelte';
 import Usage from '@lucide/svelte/icons/bar-chart';
 import Billing from '@lucide/svelte/icons/credit-card';
 import Settings from '@lucide/svelte/icons/settings';
 import Users from '@lucide/svelte/icons/users';
 import Zap from '@lucide/svelte/icons/zap';
+
+import { organization } from '#features/organizations/context.svelte.ts';
 
 import type { NavigationItem } from '../../../routes.svelte';
 

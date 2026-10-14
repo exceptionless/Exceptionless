@@ -1,19 +1,21 @@
 <script lang="ts">
-    import type { PersistentEvent } from '$features/events/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import { assistantPageContext } from '$features/assistant/page-context.svelte';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
-    import EventsOverview from '$features/events/components/events-overview.svelte';
-    import { buildEventDetailsHref } from '$features/events/components/summary';
-    import { organization } from '$features/organizations/context.svelte';
     import { toast } from 'svelte-sonner';
 
-    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../redirect-to-events.svelte.js';
+    import type { PersistentEvent } from '#features/events/models/index.ts';
+
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import { assistantPageContext } from '#features/assistant/page-context.svelte.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
+    import EventsOverview from '#features/events/components/events-overview.svelte';
+    import { buildEventDetailsHref } from '#features/events/components/summary/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../redirect-to-events.svelte.ts';
 
     async function filterChanged(addedOrUpdated: FacetedFilter.IFilter) {
         await redirectToEventsWithFilter(organization.current, addedOrUpdated, getEventsNavigationOptionsForFilter(addedOrUpdated));

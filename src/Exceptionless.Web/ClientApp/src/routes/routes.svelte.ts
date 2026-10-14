@@ -1,7 +1,8 @@
 import type { ResolvedPathname } from '$app/types';
-import type { ShortcutKey } from '$features/shared/keyboard-shortcuts';
-import type { ViewCurrentUser } from '$features/users/models';
 import type { Component } from 'svelte';
+
+import type { ShortcutKey } from '#features/shared/keyboard-shortcuts.ts';
+import type { ViewCurrentUser } from '#features/users/models.ts';
 
 import { routes as appRoutes } from './(app)/routes.svelte';
 import { routes as authRoutes } from './(auth)/routes.svelte';

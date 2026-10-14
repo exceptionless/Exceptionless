@@ -1,10 +1,10 @@
 <script lang="ts">
-    import type { AssistantAccess } from '$features/assistant/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { onDestroy, onMount, tick, untrack } from 'svelte';
+
+    import type { AssistantAccess } from '#features/assistant/models.ts';
 
     import type { ProductTourCheckpoint, ProductTourCheckpointName } from '../models';
 

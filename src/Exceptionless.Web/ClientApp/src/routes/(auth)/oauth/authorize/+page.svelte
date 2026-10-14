@@ -3,21 +3,22 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import Logo from '$comp/logo.svelte';
-    import { Muted } from '$comp/typography';
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
-    import { Checkbox } from '$comp/ui/checkbox';
-    import { Spinner } from '$comp/ui/spinner';
-    import { accessToken } from '$features/auth/index.svelte';
-    import { clearAuthenticationSession } from '$features/auth/session.svelte';
-    import { getOrganizationsQuery } from '$features/organizations/api.svelte';
-    import { getMeQuery } from '$features/users/api.svelte';
-    import { getProblemMessage } from '$shared/validation';
     import { useFetchClient } from '@foundatiofx/fetchclient';
     import { SvelteSet } from 'svelte/reactivity';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import Logo from '#comp/logo.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Checkbox } from '#comp/ui/checkbox/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { accessToken } from '#features/auth/index.svelte.ts';
+    import { clearAuthenticationSession } from '#features/auth/session.svelte.ts';
+    import { getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
+    import { getProblemMessage } from '#shared/validation.ts';
 
     interface OAuthAuthorizeConsentResponse {
         client_id?: string;

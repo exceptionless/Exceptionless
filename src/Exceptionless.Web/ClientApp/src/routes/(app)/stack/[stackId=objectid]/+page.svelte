@@ -1,20 +1,22 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
-    import type { PersistentEvent } from '$features/events/models';
-    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { assistantPageContext } from '$features/assistant/page-context.svelte';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
-    import { buildEventDetailsHref } from '$features/events/components/summary';
-    import { organization } from '$features/organizations/context.svelte';
-    import StackDetails from '$features/stacks/components/stack-details.svelte';
     import { toast } from 'svelte-sonner';
 
-    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../redirect-to-events.svelte.js';
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+    import type { PersistentEvent } from '#features/events/models/index.ts';
+    import type { Stack } from '#features/stacks/models.ts';
+
+    import { assistantPageContext } from '#features/assistant/page-context.svelte.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
+    import { buildEventDetailsHref } from '#features/events/components/summary/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import StackDetails from '#features/stacks/components/stack-details.svelte';
+
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../redirect-to-events.svelte.ts';
 
     const stackId = $derived(page.params.stackId || '');
 

@@ -2,9 +2,10 @@
     import type { HTMLAttributes } from 'svelte/elements';
 
     import { page } from '$app/state';
-    import { Button } from '$comp/ui/button';
     import { cubicInOut } from 'svelte/easing';
     import { crossfade } from 'svelte/transition';
+
+    import { Button } from '#comp/ui/button/index.ts';
 
     type Props = HTMLAttributes<HTMLButtonElement> & {
         href: string;

@@ -1,6 +1,6 @@
 <script lang="ts">
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { buttonVariants } from '$comp/ui/button';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { buttonVariants } from '#comp/ui/button/index.ts';
 
     interface Props {
         leave: () => Promise<void>;

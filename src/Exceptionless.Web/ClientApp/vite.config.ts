@@ -141,13 +141,6 @@ export default defineConfig({
             adapter: adapter({
                 fallback: 'index.html'
             }),
-            alias: {
-                $comp: 'src/lib/features/shared/components',
-                $features: 'src/lib/features',
-                $generated: 'src/lib/generated',
-                $lib: 'src/lib',
-                $shared: 'src/lib/features/shared'
-            },
             compilerOptions: {
                 experimental: {
                     async: false

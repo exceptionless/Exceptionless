@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { deletePromotedTab } from '$features/projects/api.svelte';
     import { toast } from 'svelte-sonner';
+
+    import { deletePromotedTab } from '#features/projects/api.svelte.ts';
 
     import type { PersistentEvent } from '../../models/index';
 

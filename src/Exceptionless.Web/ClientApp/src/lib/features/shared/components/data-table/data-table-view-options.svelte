@@ -3,12 +3,14 @@
 </script>
 
 <script generics="TData extends RowData" lang="ts">
-    import type { ButtonSize } from '$comp/ui/button';
     import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
 
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import ViewColumn from '@lucide/svelte/icons/columns-3';
+
+    import type { ButtonSize } from '#comp/ui/button/index.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
 
     interface Props {
         size?: ButtonSize;

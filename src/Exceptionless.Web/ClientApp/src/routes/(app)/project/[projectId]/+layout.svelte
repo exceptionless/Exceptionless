@@ -2,13 +2,14 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { A, H3 } from '$comp/typography';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import OrganizationAdminActionsDropdownMenu from '$features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getProjectQuery } from '$features/projects/api.svelte';
-    import GlobalUser from '$features/users/components/global-user.svelte';
     import { toast } from 'svelte-sonner';
+
+    import { A, H3 } from '#comp/typography/index.ts';
+    import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import OrganizationAdminActionsDropdownMenu from '#features/organizations/components/organization-admin-actions-dropdown-menu.svelte';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { getProjectQuery } from '#features/projects/api.svelte.ts';
+    import GlobalUser from '#features/users/components/global-user.svelte';
 
     import { routes } from './routes.svelte';
 

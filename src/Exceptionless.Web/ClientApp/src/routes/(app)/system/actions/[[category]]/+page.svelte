@@ -1,19 +1,20 @@
 <script lang="ts">
-    import type { MaintenanceAction, MaintenanceActionCategory } from '$features/admin/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Input } from '$comp/ui/input';
-    import { runMaintenanceJobMutation } from '$features/admin/api.svelte';
-    import RunMaintenanceJobDialog from '$features/admin/components/dialogs/run-maintenance-job-dialog.svelte';
-    import { maintenanceActions } from '$features/admin/models';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Play from '@lucide/svelte/icons/play';
     import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
     import { toast } from 'svelte-sonner';
+
+    import type { MaintenanceAction, MaintenanceActionCategory } from '#features/admin/models.ts';
+
+    import { Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { runMaintenanceJobMutation } from '#features/admin/api.svelte.ts';
+    import RunMaintenanceJobDialog from '#features/admin/components/dialogs/run-maintenance-job-dialog.svelte';
+    import { maintenanceActions } from '#features/admin/models.ts';
 
     const categories: ('All' | MaintenanceActionCategory)[] = ['All', 'Billing', 'Configuration', 'Elasticsearch', 'Maintenance', 'Security', 'Users'];
 

@@ -10,7 +10,7 @@ const organizationQuery = vi.hoisted(() => ({
     refetch: vi.fn(() => Promise.resolve())
 }));
 
-vi.mock('$features/organizations/api.svelte', () => ({
+vi.mock('#features/organizations/api.svelte.ts', () => ({
     getOrganizationQuery: () => organizationQuery
 }));
 

@@ -1,7 +1,8 @@
 import type { RouteId } from '$app/types';
-import type { ProductTourState } from '$features/users/models';
 
 import { resolve } from '$app/paths';
+
+import type { ProductTourState } from '#features/users/models.ts';
 
 import type { ProductTourContext, ProductTourDefinition, ProductTourListItem, ProductTourName } from './models';
 

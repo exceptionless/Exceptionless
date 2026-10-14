@@ -1,6 +1,6 @@
-import type { QueryParameterInput, QueryParameterSchema, QueryParameterState, QueryParameterType, QueryParameterValue } from './types.js';
+import type { QueryParameterInput, QueryParameterSchema, QueryParameterState, QueryParameterType, QueryParameterValue } from './types.ts';
 
-import { coerceQueryParameter, getListItemType } from './coerce.js';
+import { coerceQueryParameter, getListItemType } from './coerce.ts';
 
 export interface DebouncedFunction {
     (): void;

@@ -1,4 +1,4 @@
-import type { QueryParameterScalarType, QueryParameterScalarValue, QueryParameterType, QueryParameterTypeOutput } from './types.js';
+import type { QueryParameterScalarType, QueryParameterScalarValue, QueryParameterType, QueryParameterTypeOutput } from './types.ts';
 
 const emptyList: readonly never[] = Object.freeze([]);
 

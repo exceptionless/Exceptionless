@@ -1,4 +1,4 @@
-import { getInitials } from '$shared/strings';
+import { getInitials } from '#shared/strings.ts';
 
 import { getMeQuery } from './api.svelte';
 

@@ -1,22 +1,23 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
-    import type { TableMemoryPagingParameters } from '$features/shared/table.svelte';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import { H3 } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Input } from '$comp/ui/input';
-    import { type GetOrganizationsParams, getOrganizationsQuery } from '$features/organizations/api.svelte';
-    import { getTableOptions } from '$features/organizations/components/table/options.svelte';
-    import OrganizationsDataTable from '$features/organizations/components/table/organizations-data-table.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
-    import { ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
-    import { createQueryParameters } from '$shared/query-params';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
+
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+    import type { TableMemoryPagingParameters } from '#features/shared/table.svelte.ts';
+
+    import DataTableViewOptions from '#comp/data-table/data-table-view-options.svelte';
+    import { H3 } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { type GetOrganizationsParams, getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
+    import { getTableOptions } from '#features/organizations/components/table/options.svelte.ts';
+    import OrganizationsDataTable from '#features/organizations/components/table/organizations-data-table.svelte';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { useHideOrganizationNotifications } from '#features/organizations/hooks/use-hide-organization-notifications.svelte.ts';
+    import { ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '#features/organizations/utils.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     const DEFAULT_PARAMS = {
         filter: ''

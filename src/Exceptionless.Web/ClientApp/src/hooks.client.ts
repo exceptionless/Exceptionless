@@ -3,15 +3,16 @@ import type { ClientInit, HandleClientError } from '@sveltejs/kit/hooks';
 import { dev } from '$app/env';
 import { PUBLIC_APP_VERSION, PUBLIC_ENABLE_SSL, PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL } from '$app/env/public';
 import { page } from '$app/state';
-import { configureSessions } from '$features/auth/exceptionless-session';
-import { getHttpsRedirectUrl } from '$features/navigation/https-redirect';
-import { canonicalAppUrl } from '$features/navigation/legacy-links';
-import { getEnvironmentOverride, PUBLIC_EXCEPTIONLESS_API_KEY, PUBLIC_EXCEPTIONLESS_SERVER_URL } from '$features/shared/environment';
-import { trackHistoryTraversals } from '$features/shared/history-traversal';
-import { normalizePath, normalizeRouteId } from '$lib/telemetry';
-import { installSvelteEffectDepthDiagnostics } from '$lib/telemetry/svelte-effect-depth-diagnostics';
 import { Exceptionless, guid, toError } from '@exceptionless/browser';
 import { useMiddleware } from '@foundatiofx/fetchclient';
+
+import { configureSessions } from '#features/auth/exceptionless-session.ts';
+import { getHttpsRedirectUrl } from '#features/navigation/https-redirect.ts';
+import { canonicalAppUrl } from '#features/navigation/legacy-links.ts';
+import { getEnvironmentOverride, PUBLIC_EXCEPTIONLESS_API_KEY, PUBLIC_EXCEPTIONLESS_SERVER_URL } from '#features/shared/environment.ts';
+import { trackHistoryTraversals } from '#features/shared/history-traversal.ts';
+import { normalizePath, normalizeRouteId } from '#lib/telemetry/index.ts';
+import { installSvelteEffectDepthDiagnostics } from '#lib/telemetry/svelte-effect-depth-diagnostics.ts';
 
 installSvelteEffectDepthDiagnostics();
 

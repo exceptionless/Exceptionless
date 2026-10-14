@@ -3,19 +3,20 @@
 
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { A } from '$comp/typography';
-    import * as Collapsible from '$comp/ui/collapsible';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import * as Sidebar from '$comp/ui/sidebar';
-    import { useSidebar } from '$comp/ui/sidebar';
-    import { getVisibleUrl } from '$features/navigation/visible-url';
-    import SavedViewOrderDialog from '$features/saved-views/components/saved-view-order-dialog.svelte';
     import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import Settings from '@lucide/svelte/icons/settings-2';
     import Wrench from '@lucide/svelte/icons/wrench';
     import { onDestroy } from 'svelte';
     import { toast } from 'svelte-sonner';
+
+    import { A } from '#comp/typography/index.ts';
+    import * as Collapsible from '#comp/ui/collapsible/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import * as Sidebar from '#comp/ui/sidebar/index.ts';
+    import { useSidebar } from '#comp/ui/sidebar/index.ts';
+    import { getVisibleUrl } from '#features/navigation/visible-url.ts';
+    import SavedViewOrderDialog from '#features/saved-views/components/saved-view-order-dialog.svelte';
 
     import type { NavigationChild, NavigationItem } from '../../../routes.svelte';
 

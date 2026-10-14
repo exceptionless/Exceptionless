@@ -12,7 +12,7 @@ Exceptionless's shared Svelte query-parameter state module. It is intentionally 
 - settlement of history-entry coalescing during navigation and component teardown.
 
 ```ts
-import { createQueryParameters } from '$shared/query-params';
+import { createQueryParameters } from '#shared/query-params/index.ts';
 
 const queryParams = createQueryParameters({
     defaults: { page: 1 },
