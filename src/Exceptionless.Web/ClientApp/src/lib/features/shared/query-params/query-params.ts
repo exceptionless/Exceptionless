@@ -1,6 +1,6 @@
 import type { QueryParameterInput, QueryParameterSchema, QueryParameterState, QueryParameterType, QueryParameterValue } from './types.js';
 
-import { coerceQueryParameter } from './coerce.js';
+import { coerceQueryParameter, getListItemType } from './coerce.js';
 
 export interface DebouncedFunction {
     (): void;
@@ -18,7 +18,8 @@ export function applyQueryParameterUpdates<T extends QueryParameterSchema>(
     currentState: QueryParameterState<T>,
     currentSearchParams: URLSearchParams,
     values: Partial<QueryParameterInput<T>>,
-    schema: T
+    schema: T,
+    defaults?: Partial<QueryParameterInput<T>>
 ): QueryParameterUpdate<T> {
     const searchParams = createSearchParams(currentSearchParams);
     const state = { ...currentState };
@@ -42,7 +43,7 @@ export function applyQueryParameterUpdates<T extends QueryParameterSchema>(
 
         stateValues[key] = coerced;
         stateChanged = true;
-        setSearchParameter(searchParams, key, stringifyQueryParameter(parameterType, coerced));
+        setSearchParameter(searchParams, key, stringifyQueryParameter(parameterType, coerced, hasDefaultItems(defaults, key)));
     }
 
     return {
@@ -85,6 +86,24 @@ export function createSearchParams(value?: string | URLSearchParams): URLSearchP
     return new URLSearchParams(value);
 }
 
+/**
+ * Applies the parameters an instance owns onto the live URL. Other instances and
+ * unrelated code may have written their own parameters since this instance last
+ * read the URL, so only the schema's keys are taken from `ownSearchParams`.
+ */
+export function mergeQueryParameters(
+    liveSearchParams: string | URLSearchParams,
+    ownSearchParams: URLSearchParams,
+    schema: QueryParameterSchema
+): URLSearchParams {
+    const searchParams = createSearchParams(liveSearchParams);
+    for (const key of Object.keys(schema)) {
+        setSearchParameter(searchParams, key, ownSearchParams.getAll(key));
+    }
+
+    return searchParams;
+}
+
 export function parseQueryParameters<T extends QueryParameterSchema>(
     searchParams: URLSearchParams,
     schema: T,
@@ -101,17 +120,31 @@ export function parseQueryParameters<T extends QueryParameterSchema>(
         }
 
         const fallback = coerceQueryParameter(parameterType, defaultValues?.[key]);
-        resultValues[key] = coerceQueryParameter(parameterType, searchParams.get(key), fallback);
+        const value = getListItemType(parameterType) ? (searchParams.has(key) ? searchParams.getAll(key) : undefined) : searchParams.get(key);
+        resultValues[key] = coerceQueryParameter(parameterType, value, fallback);
     }
 
     return result;
+}
+
+export function queryParameterValuesEqual(current: unknown, next: unknown): boolean {
+    if (Array.isArray(current) && Array.isArray(next)) {
+        return current.length === next.length && current.every((item, index) => queryParameterValueEqual(item, next[index]));
+    }
+
+    return queryParameterValueEqual(current, next);
 }
 
 export function searchParamsEqual(left: URLSearchParams, right: string | URLSearchParams): boolean {
     return left.toString() === createSearchParams(right).toString();
 }
 
-function queryParameterValuesEqual(current: unknown, next: unknown): boolean {
+function hasDefaultItems(defaults: Partial<QueryParameterInput<QueryParameterSchema>> | undefined, key: string): boolean {
+    const value = (defaults as Partial<Record<string, unknown>> | undefined)?.[key];
+    return Array.isArray(value) && value.length > 0;
+}
+
+function queryParameterValueEqual(current: unknown, next: unknown): boolean {
     if (current instanceof Date && next instanceof Date) {
         return current.getTime() === next.getTime();
     }
@@ -119,34 +152,50 @@ function queryParameterValuesEqual(current: unknown, next: unknown): boolean {
     return Object.is(current, next);
 }
 
-function setSearchParameter(searchParams: URLSearchParams, key: string, value: null | string): void {
-    if (value === null) {
-        searchParams.delete(key);
-    } else {
-        searchParams.set(key, value);
+/** Replaces every value of `key`, keeping the parameter at its existing position so unchanged URLs compare equal. */
+function setSearchParameter(searchParams: URLSearchParams, key: string, values: readonly string[]): void {
+    const entries = [...searchParams];
+    const position = entries.findIndex(([name]) => name === key);
+    const nextEntries = entries.filter(([name]) => name !== key);
+    nextEntries.splice(position < 0 ? nextEntries.length : position, 0, ...values.map((value): [string, string] => [key, value]));
+
+    for (const name of new Set(entries.map(([name]) => name))) {
+        searchParams.delete(name);
+    }
+
+    for (const [name, value] of nextEntries) {
+        searchParams.append(name, value);
     }
 }
 
-function stringifyQueryParameter(parameterType: QueryParameterType, value: QueryParameterValue): null | string {
+function stringifyQueryParameter(parameterType: QueryParameterType, value: QueryParameterValue, hasDefaultItems: boolean): string[] {
+    const itemType = getListItemType(parameterType);
+    if (itemType) {
+        const items = (value as readonly QueryParameterValue[]).flatMap((item) => stringifyQueryParameter(itemType, item, false));
+        // An absent list parameter falls back to its default on reload, so an
+        // explicitly emptied list with a non-empty default needs a marker.
+        return items.length === 0 && hasDefaultItems ? [''] : items;
+    }
+
     switch (parameterType) {
         case 'boolean': {
-            return value === null ? null : value ? 'true' : 'false';
+            return value === null ? [] : [value ? 'true' : 'false'];
         }
 
         case 'date': {
-            return value instanceof Date && !Number.isNaN(value.getTime()) ? value.toISOString() : null;
+            return value instanceof Date && !Number.isNaN(value.getTime()) ? [value.toISOString()] : [];
         }
 
         case 'number': {
-            return typeof value === 'number' && Number.isFinite(value) ? String(value) : null;
+            return typeof value === 'number' && Number.isFinite(value) ? [String(value)] : [];
         }
 
         case 'string': {
-            return typeof value === 'string' ? value : null;
+            return typeof value === 'string' ? [value] : [];
         }
 
         default: {
-            return typeof value === 'string' && value ? value : null;
+            return typeof value === 'string' && value ? [value] : [];
         }
     }
 }

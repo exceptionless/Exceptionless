@@ -8,7 +8,15 @@ import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameter
 
 import { hasDetailSheetHistoryEntry, withoutDetailSheetHistoryEntry } from '../history-state.js';
 import { createQueryParameterProxy } from './proxy.js';
-import { applyQueryParameterUpdates, createDebouncedFunction, createSearchParams, parseQueryParameters, searchParamsEqual } from './query-params.js';
+import {
+    applyQueryParameterUpdates,
+    createDebouncedFunction,
+    createSearchParams,
+    mergeQueryParameters,
+    parseQueryParameters,
+    queryParameterValuesEqual,
+    searchParamsEqual
+} from './query-params.js';
 
 const queryHistoryEntryIdKey = '__exceptionlessQueryHistoryEntryId';
 const pendingReplacementStoragePrefix = 'exceptionless:query-history:';
@@ -23,8 +31,9 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     history = 'replace',
     schema
 }: CreateQueryParametersOptions<T>) {
-    let searchParams = createSearchParams(building ? '' : page.url.search);
-    const current = $state<QueryParameterState<T>>(parseQueryParameters(searchParams, schema, defaults));
+    // `page.url` is not updated by shallow history writes, so it can be older than the visible URL.
+    let searchParams = createSearchParams(browser ? window.location.search : building ? '' : page.url.search);
+    const current = createQueryParameterState(parseQueryParameters(searchParams, schema, defaults));
     // Create the Back target synchronously, then replace it while rapid updates still
     // belong to the same user interaction. Deferring the first push leaves no target
     // for an immediate Back action and can navigate a newly opened tab to about:blank.
@@ -41,6 +50,17 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     };
 
     const getCurrentUrl = () => normalizeUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`);
+
+    // Other query-parameter instances and unrelated code can write the URL between this
+    // instance's updates, so writes apply this instance's keys onto the live URL.
+    const createLocationSearchParams = (ownSearchParams: URLSearchParams) => mergeQueryParameters(window.location.search, ownSearchParams, schema);
+
+    const createLocationUrl = (ownSearchParams: URLSearchParams) => {
+        const query = createLocationSearchParams(ownSearchParams).toString();
+        return `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+    };
+
+    const rebaseUrl = (url: string) => createLocationUrl(new SvelteURL(url, window.location.origin).searchParams);
 
     const getCurrentHistoryEntryId = () => (window.history.state as null | SvelteKitHistoryState)?.[svelteKitPageStateKey]?.[queryHistoryEntryIdKey];
 
@@ -84,9 +104,9 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         const retainedReplacementUrl = currentHistoryEntryId ? getStoredPendingReplacement(currentHistoryEntryId) : undefined;
         if (currentHistoryEntryId && retainedReplacementUrl) {
             removeStoredPendingReplacement(currentHistoryEntryId);
-            replaceState(retainedReplacementUrl, createHistoryState(currentHistoryEntryId));
+            replaceState(rebaseUrl(retainedReplacementUrl), createHistoryState(currentHistoryEntryId));
             searchParams = createSearchParams(window.location.search);
-            Object.assign(current, parseQueryParameters(searchParams, schema, defaults));
+            assignChangedValues(parseQueryParameters(searchParams, schema, defaults));
         }
     }
 
@@ -106,7 +126,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const flushPendingReplacement = () => {
         if (pendingReplacementUrl) {
-            replaceState(pendingReplacementUrl, createHistoryState(coalescingEntryId));
+            replaceState(rebaseUrl(pendingReplacementUrl), createHistoryState(coalescingEntryId));
             discardPendingReplacement();
         }
     };
@@ -121,7 +141,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     const schedulePushHistoryEntryFinalization = createDebouncedFunction(finalizePushHistoryEntry, debounceMilliseconds);
 
     const synchronizeURL = (updateHistory = history) => {
-        if (searchParamsEqual(searchParams, window.location.search)) {
+        if (searchParamsEqual(createLocationSearchParams(searchParams), window.location.search)) {
             discardPendingReplacement();
             return;
         }
@@ -139,8 +159,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             settlePushHistoryEntry();
         }
 
-        const query = searchParams.toString();
-        const url = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+        const url = createLocationUrl(searchParams);
         if (updateHistory === 'replace') {
             replaceState(url, page.state);
         } else if (!isCoalescingPushHistoryEntry) {
@@ -211,7 +230,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     const commit = (result: ReturnType<typeof applyQueryParameterUpdates<T>>, options?: QueryParameterUpdateOptions) => {
         searchParams = result.searchParams;
         if (result.stateChanged) {
-            Object.assign(current, result.state);
+            assignChangedValues(result.state);
         }
 
         if (result.urlChanged) {
@@ -220,7 +239,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     };
 
     const update = (values: Parameters<typeof applyQueryParameterUpdates<T>>[2], options?: QueryParameterUpdateOptions) => {
-        commit(applyQueryParameterUpdates(current, searchParams, values, schema), options);
+        commit(applyQueryParameterUpdates(current, searchParams, values, schema, defaults), options);
     };
 
     const synchronizeState = (search: string) => {
@@ -230,7 +249,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         }
 
         searchParams = nextSearchParams;
-        Object.assign(current, parseQueryParameters(searchParams, schema, defaults));
+        assignChangedValues(parseQueryParameters(searchParams, schema, defaults));
     };
 
     const synchronizeStateFromLocation = () => {
@@ -263,4 +282,32 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     return createQueryParameterProxy(current, schema, {
         update
     });
+
+    function assignChangedValues(next: QueryParameterState<T>) {
+        for (const key of Object.keys(schema) as (keyof T)[]) {
+            if (!queryParameterValuesEqual(current[key], next[key])) {
+                current[key] = next[key];
+            }
+        }
+    }
+}
+
+/**
+ * Backs each parameter with its own raw signal: readers stay fine-grained, and frozen
+ * list values are stored as-is instead of being wrapped in a deep state proxy.
+ */
+function createQueryParameterState<T extends QueryParameterSchema>(initial: QueryParameterState<T>): QueryParameterState<T> {
+    const state = {} as QueryParameterState<T>;
+    for (const key of Object.keys(initial) as (keyof T)[]) {
+        let value = $state.raw(initial[key]);
+        Object.defineProperty(state, key, {
+            enumerable: true,
+            get: () => value,
+            set: (next: QueryParameterState<T>[keyof T]) => {
+                value = next;
+            }
+        });
+    }
+
+    return state;
 }

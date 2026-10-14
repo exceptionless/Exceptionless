@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, within } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,6 +11,7 @@ const navigation = vi.hoisted(() => ({
     replaceState: vi.fn()
 }));
 const pageState = vi.hoisted(() => ({}));
+const pageUrl = vi.hoisted(() => ({ stale: undefined as undefined | URL }));
 const detailSheetHistoryStateKey = '__exceptionlessDetailSheet';
 const queryHistoryEntryIdKey = '__exceptionlessQueryHistoryEntryId';
 const svelteKitPageStateKey = 'sveltekit:states';
@@ -23,7 +24,7 @@ vi.mock('$app/state', () => ({
     page: {
         state: pageState,
         get url() {
-            return new URL(window.location.href);
+            return pageUrl.stale ?? new URL(window.location.href);
         }
     }
 }));
@@ -34,6 +35,7 @@ describe('createQueryParameters', () => {
         vi.clearAllMocks();
         delete (pageState as Record<string, unknown>)[detailSheetHistoryStateKey];
         delete (pageState as Record<string, unknown>)[queryHistoryEntryIdKey];
+        pageUrl.stale = undefined;
         sessionStorage.clear();
         window.history.replaceState(createSvelteKitHistoryState(pageState), '', '/');
         navigation.pushState.mockImplementation((url: string | URL, state: App.PageState) =>
@@ -442,6 +444,37 @@ describe('createQueryParameters', () => {
         expect(navigation.replaceState).not.toHaveBeenCalled();
         expect(window.location.search).toBe('?filter=first');
         expect(screen.getByText('first').textContent).toBe('first');
+    });
+
+    it('reads the visible URL when created after a shallow write left page.url stale', () => {
+        // Arrange
+        window.history.replaceState(createSvelteKitHistoryState(pageState), '', '/?filter=visible');
+        pageUrl.stale = new URL('/?filter=stale', window.location.origin);
+
+        // Act
+        render(QueryParametersTestHarness);
+
+        // Assert
+        expect(screen.getByText('visible').textContent).toBe('visible');
+    });
+
+    it('applies each instance update onto the live URL without overwriting other instances', async () => {
+        // Arrange
+        const filters = within(render(QueryParametersTestHarness).container);
+        const projects = within(render(QueryParametersTestHarness, { history: 'replace', parameter: 'project' }).container);
+        await fireEvent.click(filters.getByRole('button', { name: 'First' }));
+        await vi.advanceTimersByTimeAsync(200);
+
+        // Act
+        await fireEvent.click(projects.getByRole('button', { name: 'Alpha' }));
+        await fireEvent.click(filters.getByRole('button', { name: 'Second' }));
+        await fireEvent.click(projects.getByRole('button', { name: 'Clear' }));
+
+        // Assert
+        expect(navigation.pushState).toHaveBeenNthCalledWith(2, '/?filter=second&project=a', queryHistoryState());
+        expect(window.location.search).toBe('?filter=second');
+        expect(filters.getByRole('status').textContent).toBe('second');
+        expect(projects.getByRole('status').textContent).toBe('');
     });
 
     it('restores reactive state when shallow history is traversed', async () => {

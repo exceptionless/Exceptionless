@@ -2,9 +2,9 @@
 
 Exceptionless's shared Svelte query-parameter state module. It is intentionally tailored to the application's current needs:
 
-- top-level string, number, boolean, date, and enum parameters;
+- top-level string, number, boolean, date, and enum parameters, and lists of each;
 - typed property access and atomic multi-parameter updates;
-- preservation of unrelated URL parameters;
+- preservation of unrelated URL parameters, including those written by other instances on the same page;
 - immediate, reload-safe URL synchronization;
 - coalescing of rapid push-history updates into one Back-button entry;
 - synchronization with browser navigation;
@@ -25,6 +25,10 @@ const queryParams = createQueryParameters({
 
 queryParams.update({ filter: 'status:open', page: 1 });
 ```
+
+Append `[]` to a type for a list parameter, such as `'string[]'`, `'number[]'`, or `'<open,fixed>[]'`. Lists use repeated keys (`status=open&status=fixed`), drop invalid and duplicate items when parsed, and are never null. List values are frozen; assign a new array instead of mutating one, because only assignment updates the URL. An emptied list removes its key, unless the list has a non-empty default; then it writes an empty value (`status=`) so a reload keeps the list empty instead of restoring the default.
+
+Each instance owns only its schema's keys. Writes apply those keys onto the live URL, so several instances on one page do not overwrite each other's parameters.
 
 Updates may also assign a single schema property directly. Use `update()` when several parameters form one logical state change so they produce one reactive update and one URL synchronization.
 
