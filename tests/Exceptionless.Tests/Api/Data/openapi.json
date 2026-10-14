@@ -1754,7 +1754,7 @@
           "409": {
             "description": "The account changed while the request was being processed.",
             "content": {
-              "application/problem+json": {
+              "application/problem\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
                 }
@@ -1829,7 +1829,7 @@
           "409": {
             "description": "The account changed while the request was being processed.",
             "content": {
-              "application/problem+json": {
+              "application/problem\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
                 }
@@ -1904,7 +1904,7 @@
           "409": {
             "description": "The account changed while the request was being processed.",
             "content": {
-              "application/problem+json": {
+              "application/problem\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
                 }
@@ -1979,7 +1979,7 @@
           "409": {
             "description": "The account changed while the request was being processed.",
             "content": {
-              "application/problem+json": {
+              "application/problem\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
                 }

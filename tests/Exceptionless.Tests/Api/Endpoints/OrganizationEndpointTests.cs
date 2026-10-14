@@ -433,6 +433,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         await SendRequestAsync(r => r.AsTestOrganizationUser().Post().AppendPath("organizations")
             .Content(new NewOrganization { Name = organizationName })
             .ExpectedStatus(failMembership ? HttpStatusCode.Conflict : HttpStatusCode.Created));
+        await RefreshDataAsync();
 
         // Assert
         var persisted = await _userRepository.GetByIdAsync(user.Id);

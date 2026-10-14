@@ -863,7 +863,7 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         user.AuthenticationVersion = authenticationVersion;
         await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
         IPatchOperation patch = script
-            ? new ScriptPatch("ctx._source.full_name = 'Updated profile'")
+            ? new ScriptPatch("ctx._source.full_name = 'Updated profile';")
             : new PartialPatch(new { full_name = "Updated profile" });
 
         // Act
