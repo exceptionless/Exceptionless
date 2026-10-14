@@ -1056,6 +1056,32 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         Assert.NotNull(result);
     }
 
+    [Theory]
+    [InlineData("Microsoft", false)]
+    [InlineData("Google", true)]
+    public async Task UpdateEmailAddressAsync_LinkedProviderEmail_PreservesProviderTrust(string provider, bool isVerified)
+    {
+        const string email = "linked-provider@exceptionless.test";
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.AddOAuthAccount(provider, "provider-user", email);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+
+        var result = await SendRequestAsAsync<UpdateEmailAddressResult>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("users", user.Id, "email-address", email)
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(result);
+        Assert.Equal(isVerified, result.IsVerified);
+        var updatedUser = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(updatedUser);
+        Assert.Equal(email, updatedUser.EmailAddress);
+        Assert.Equal(isVerified, updatedUser.IsEmailAddressVerified);
+        Assert.Equal(!isVerified, !String.IsNullOrEmpty(updatedUser.VerifyEmailAddressToken));
+    }
+
     [Fact]
     public async Task VerifyAsync_ExpiredToken_ReturnsValidationProblem()
     {
