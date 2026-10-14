@@ -35,6 +35,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("no-cache", response.Headers.CacheControl?.ToString());
         Assert.Equal(shell, await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
     }
 
@@ -143,8 +144,9 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         // Arrange
         string webRoot = Path.Combine(Path.GetTempPath(), $"exceptionless-csp-{Guid.NewGuid():N}");
         Directory.CreateDirectory(webRoot);
-        string hash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes("start()")));
-        string html = $"""<meta http-equiv="Content-Security-Policy" content="script-src 'strict-dynamic' 'sha256-{hash}'"><script>start()</script>""";
+        const string bootstrap = "import(\"/_app/env.js?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\");start()";
+        string hash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(bootstrap)));
+        string html = $"""<meta http-equiv="Content-Security-Policy" content="script-src 'strict-dynamic' 'sha256-{hash}'"><script>{bootstrap}</script>""";
         string injectedHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes("injected()")));
         string changedHtml = html + "<script>injected()</script>";
 
@@ -166,10 +168,10 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
             using HttpResponseMessage response = await client.GetAsync("/index.html", TestContext.Current.CancellationToken);
             string body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             string policy = response.Headers.GetValues("Content-Security-Policy").Single();
-            using HttpResponseMessage firstEnvironment = await client.GetAsync("/_app/env.js", TestContext.Current.CancellationToken);
+            using HttpResponseMessage firstEnvironment = await client.GetAsync("/_app/env.js?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TestContext.Current.CancellationToken);
             string firstEnvironmentBody = await firstEnvironment.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             await File.WriteAllTextAsync(envPath, "export const env={version:2};", TestContext.Current.CancellationToken);
-            using HttpResponseMessage secondEnvironment = await client.GetAsync("/_app/env.js", TestContext.Current.CancellationToken);
+            using HttpResponseMessage secondEnvironment = await client.GetAsync("/_app/env.js?v=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", TestContext.Current.CancellationToken);
             string secondEnvironmentBody = await secondEnvironment.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
             // Assert
@@ -181,11 +183,11 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
             Assert.DoesNotContain("nonce=", body);
             Assert.Equal(HttpStatusCode.OK, firstEnvironment.StatusCode);
             Assert.Equal(HttpStatusCode.OK, secondEnvironment.StatusCode);
-            Assert.Equal("no-store", firstEnvironment.Headers.CacheControl?.ToString());
-            Assert.Equal("no-store", secondEnvironment.Headers.CacheControl?.ToString());
+            Assert.Null(firstEnvironment.Headers.CacheControl);
+            Assert.Null(secondEnvironment.Headers.CacheControl);
             Assert.Equal("export const env={version:1};", firstEnvironmentBody);
             Assert.Equal("export const env={version:2};", secondEnvironmentBody);
-            Assert.Null(response.Headers.CacheControl);
+            Assert.Equal("no-cache", response.Headers.CacheControl?.ToString());
         }
         finally
         {

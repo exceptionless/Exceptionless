@@ -294,9 +294,11 @@ public partial class Program
                 };
             });
 
-            app.UseStaticFiles(new StaticFileOptions { OnPrepareResponse = ConfigureStaticFileResponse });
+            var fileServerOptions = new FileServerOptions();
+            fileServerOptions.StaticFileOptions.OnPrepareResponse = ConfigureStaticFileResponse;
+            app.UseStaticFiles(fileServerOptions.StaticFileOptions);
             app.UseDefaultFiles();
-            app.UseFileServer();
+            app.UseFileServer(fileServerOptions);
             app.UseRouting();
             app.UseMiddleware<McpOriginValidationMiddleware>();
             app.UseCors("AllowAny");
@@ -377,10 +379,10 @@ public partial class Program
 
     internal static void ConfigureStaticFileResponse(StaticFileResponseContext context)
     {
-        // Runtime configuration changes between starts; keep the CSP-hashed HTML immutable
-        // instead of adding a cache-busting query to its env.js import.
-        if (context.Context.Request.Path.Equals("/_app/env.js", StringComparison.OrdinalIgnoreCase))
-            context.Context.Response.Headers.CacheControl = "no-store";
+        // Revalidate the shell so a changed runtime-config version reaches the browser.
+        // env.js and compiled assets retain their cache-busting URLs and normal caching.
+        if (context.File.Name.Equals("index.html", StringComparison.OrdinalIgnoreCase))
+            context.Context.Response.Headers.CacheControl = "no-cache";
     }
 
     internal static void ConfigureScalar(ScalarOptions options, HttpContext context)
@@ -415,7 +417,7 @@ public partial class Program
             return next(context);
         });
 
-        app.UseStaticFiles();
+        app.UseStaticFiles(new StaticFileOptions { OnPrepareResponse = ConfigureStaticFileResponse });
         return app.Build();
     }
 

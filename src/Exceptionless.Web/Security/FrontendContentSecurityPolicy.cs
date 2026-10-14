@@ -31,7 +31,8 @@ internal static partial class FrontendContentSecurityPolicy
 
         // Read once when UseCsp configures the pipeline at startup, never per request.
         // Trust only hashes from the published SPA, never request or response HTML.
-        // SvelteKit generates these for its bootstrap; static responses need no nonce rewriting.
+        // Startup synchronizes SvelteKit's bootstrap hash after versioning its env.js import.
+        // Static responses need no nonce rewriting.
         IFileInfo index = files.GetFileInfo("index.html");
         if (index.Exists)
         {
