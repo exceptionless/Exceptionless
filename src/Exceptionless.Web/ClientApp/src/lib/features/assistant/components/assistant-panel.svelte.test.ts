@@ -3,7 +3,11 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { env } = vi.hoisted(() => ({ env: { PUBLIC_BASE_URL: '' } }));
-vi.mock('$env/dynamic/public', () => ({ env }));
+vi.mock('$features/shared/environment', () => ({
+    get PUBLIC_BASE_URL() {
+        return env.PUBLIC_BASE_URL;
+    }
+}));
 
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
 vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled: () => true }));

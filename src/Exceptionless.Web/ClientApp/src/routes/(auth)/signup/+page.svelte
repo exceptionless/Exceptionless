@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
@@ -31,6 +30,7 @@
     } from '$features/auth/index.svelte';
     import { type SignupFormData, SignupSchema } from '$features/auth/schemas';
     import { validateEmailAvailability } from '$features/auth/validators';
+    import { gotoRedirect } from '$features/navigation/redirect';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
     import { onMount } from 'svelte';
@@ -60,7 +60,7 @@
             onSubmitAsync: async ({ value }) => {
                 const response = await signup(value.name, value.email, value.password, value.invite_token);
                 if (response.ok) {
-                    await goto(redirectUrl);
+                    await gotoRedirect(redirectUrl);
                     return null;
                 }
 

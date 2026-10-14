@@ -14,7 +14,12 @@
 
     let { authenticated, userId, userName }: Props = $props();
 
-    afterNavigate(async ({ to }) => {
+    afterNavigate(async ({ shallow, to, type }) => {
+        // Shallow routing (query parameters, detail sheets) stays on the same page.
+        if (shallow && type === 'goto') {
+            return;
+        }
+
         if (page.status === 404) {
             await Exceptionless.submitNotFound(normalizePath(page.url.pathname));
         } else {

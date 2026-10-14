@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { PUBLIC_STRIPE_PUBLISHABLE_KEY } from '$app/env/public';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
     import Number from '$comp/formatters/number.svelte';
@@ -7,7 +8,6 @@
     import { Button } from '$comp/ui/button';
     import * as Chart from '$comp/ui/chart/index';
     import { Skeleton } from '$comp/ui/skeleton';
-    import { env } from '$env/dynamic/public';
     import { ChangePlanDialog } from '$features/billing';
     import { getOrganizationQuery } from '$features/organizations/api.svelte';
     import { organization } from '$features/organizations/context.svelte';
@@ -31,7 +31,7 @@
     });
 
     const hasMonthlyUsage = $derived((organizationQuery.data?.max_events_per_month ?? 0) > 0);
-    const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
+    const canChangePlan = $derived(organizationQuery.isSuccess && !!PUBLIC_STRIPE_PUBLISHABLE_KEY);
     const remainingEventLimit = $derived(getRemainingEventLimit(organizationQuery.data));
     const nextBillingDate = $derived(getNextBillingDateUtc(organizationQuery.data));
 

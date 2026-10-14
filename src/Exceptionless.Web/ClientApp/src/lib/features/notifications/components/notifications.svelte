@@ -1,10 +1,10 @@
 <script lang="ts">
     import type { ReleaseNotification, SystemNotification } from '$features/websockets/models';
 
+    import { PUBLIC_SYSTEM_NOTIFICATION_MESSAGE } from '$app/env/public';
     // System notification messages are admin-authored HTML and sanitized before rendering.
     /* eslint svelte/no-at-html-tags: "off" */
     import { Button } from '$comp/ui/button';
-    import { env } from '$env/dynamic/public';
     import { getCurrentSystemNotificationQuery } from '$features/notifications/api.svelte';
     import { Notification, NotificationDescription } from '$features/shared/components/notification';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
@@ -15,7 +15,7 @@
     import { useEventListener } from 'runed';
 
     const currentNotificationQuery = getCurrentSystemNotificationQuery();
-    const fallbackMessage = env.PUBLIC_SYSTEM_NOTIFICATION_MESSAGE || null;
+    const fallbackMessage = PUBLIC_SYSTEM_NOTIFICATION_MESSAGE || null;
     const dismissedSystemNotificationStorageKey = 'exceptionless.system-notification.dismissed-key';
     const purify = DOMPurify(window);
 

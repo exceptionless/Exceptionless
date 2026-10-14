@@ -32,7 +32,7 @@
 
         if (stackQuery.isSuccess && stackQuery.data.project_id !== projectId) {
             void goto(buildStackDetailsHref(stackQuery.data.id), {
-                replaceState: true
+                replace: true
             });
         }
     });

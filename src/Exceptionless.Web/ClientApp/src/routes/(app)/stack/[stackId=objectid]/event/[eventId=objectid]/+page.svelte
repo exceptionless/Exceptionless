@@ -40,7 +40,7 @@
 
         if (event.id !== eventId || event.stack_id !== stackId) {
             await goto(buildEventDetailsHref(event.id, event.stack_id), {
-                replaceState: true
+                replace: true
             });
         }
     }

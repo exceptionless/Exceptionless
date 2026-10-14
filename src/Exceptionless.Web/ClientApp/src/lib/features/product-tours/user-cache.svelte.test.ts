@@ -5,7 +5,6 @@ import { MutationObserver, type MutationObserverOptions, QueryClient } from '@ta
 import { describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ fetchApiJson: vi.fn(), useQueryClient: vi.fn() }));
-vi.mock('$env/dynamic/public', () => ({ env: {} }));
 vi.mock('$features/shared/api/api.svelte', () => ({ fetchApiJson: mocks.fetchApiJson }));
 vi.mock('@tanstack/svelte-query', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@tanstack/svelte-query')>()),

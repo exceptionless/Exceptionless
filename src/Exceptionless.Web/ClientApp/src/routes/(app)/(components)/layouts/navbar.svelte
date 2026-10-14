@@ -29,7 +29,7 @@
             <div class="flex items-center justify-start">
                 <Sidebar.Trigger variant="outline" class="size-9" />
 
-                <A variant="ghost" class="mr-14 ml-2 flex md:min-w-62.5 lg:ml-3 dark:text-white" href={resolve('/')}>
+                <A variant="ghost" class="mr-14 ml-2 flex md:min-w-62.5 lg:ml-3 dark:text-white" href={resolve('/(app)')}>
                     {#if isMediumScreenQuery.current}
                         <Logo class="absolute top-1.5 mr-3 h-12" />
                     {:else}

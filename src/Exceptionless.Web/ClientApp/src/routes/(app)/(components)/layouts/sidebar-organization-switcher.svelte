@@ -66,7 +66,7 @@
 
     async function handleImpersonate(organization: ViewOrganization): Promise<void> {
         currentOrganizationId = organization.id;
-        await goto(resolve('/'));
+        await goto(resolve('/(app)'));
     }
 
     async function navigateTo(href: string): Promise<void> {
@@ -83,12 +83,12 @@
         }
 
         currentOrganizationId = organization.id;
-        await goto(resolve('/'));
+        await goto(resolve('/(app)'));
     }
 
     async function stopImpersonating(): Promise<void> {
         currentOrganizationId = organizations[0]?.id;
-        await goto(resolve('/'));
+        await goto(resolve('/(app)'));
     }
 </script>
 

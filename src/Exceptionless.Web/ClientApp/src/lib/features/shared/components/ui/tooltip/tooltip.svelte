@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser } from "$app/environment";
+	import { browser } from "$app/env";
 	import { Tooltip as TooltipPrimitive } from "bits-ui";
 	import { onDestroy } from "svelte";
 	import { hasOpenInteractiveOverlay, INTERACTIVE_OVERLAY_OPENED_EVENT } from "../overlay-events.js";

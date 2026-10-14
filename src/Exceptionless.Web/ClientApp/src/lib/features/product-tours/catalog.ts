@@ -141,7 +141,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         canResume: (checkpoint) => checkpoint === 'open-exie',
         description: 'Get help understanding errors and finding patterns.',
         name: 'exie-overview',
-        start: () => ({ checkpointName: 'open-exie', route: resolve('/') }),
+        start: () => ({ checkpointName: 'open-exie', route: resolve('/(app)') }),
         stateKey: 'exie_overview',
         title: 'Meet Exie'
     }

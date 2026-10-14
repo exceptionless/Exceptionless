@@ -1,5 +1,6 @@
 import type { Plugin } from 'vite';
 
+import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { svelteTesting } from '@testing-library/svelte/vite';
@@ -134,7 +135,28 @@ export default defineConfig({
     },
     clearScreen: false,
     logLevel: 'info',
-    plugins: [tailwindcss(), sveltekit(), svelteKitRuntimeDefines(), svelteEffectDepthDiagnostics()],
+    plugins: [
+        tailwindcss(),
+        sveltekit({
+            adapter: adapter({
+                fallback: 'index.html'
+            }),
+            alias: {
+                $comp: 'src/lib/features/shared/components',
+                $features: 'src/lib/features',
+                $generated: 'src/lib/generated',
+                $lib: 'src/lib',
+                $shared: 'src/lib/features/shared'
+            },
+            compilerOptions: {
+                experimental: {
+                    async: false
+                }
+            }
+        }),
+        svelteKitRuntimeDefines(),
+        svelteEffectDepthDiagnostics()
+    ],
     server: {
         allowedHosts,
         hmr,

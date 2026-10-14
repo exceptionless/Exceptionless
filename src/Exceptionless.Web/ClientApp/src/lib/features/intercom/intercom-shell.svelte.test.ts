@@ -9,8 +9,6 @@ import IntercomShellTestHarness from './intercom-shell.test-harness.svelte';
 const intercomShowMessages = vi.hoisted(() => vi.fn());
 const intercomUpdate = vi.hoisted(() => vi.fn());
 
-vi.mock('$env/dynamic/public', () => ({ env: {} }));
-
 vi.mock('$features/auth/index.svelte', () => ({
     accessToken: { current: 'token_123' }
 }));

@@ -47,7 +47,7 @@
         }
 
         void goto(getSavedViewDefaultHref(defaults, savedViews), {
-            replaceState: true
+            replace: true
         });
     });
 </script>

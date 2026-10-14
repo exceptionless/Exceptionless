@@ -9,6 +9,7 @@
     import { accessToken } from '$features/auth/index.svelte';
     import { handleUnexpectedUnauthorized } from '$features/auth/unauthorized';
     import { canonicalAppUrl } from '$features/navigation/legacy-links';
+    import { getVisibleUrl } from '$features/navigation/visible-url';
     import { buildServiceStatusUrl, createServiceStatusRedirector } from '$features/status/service-status-redirect';
     import { getApiUrl, getServerUrl } from '$shared/api/urls';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
@@ -28,7 +29,11 @@
 
     let { children }: Props = $props();
 
-    beforeNavigate(({ cancel, to, type }) => {
+    beforeNavigate(({ cancel, shallow, to, type }) => {
+        if (shallow && type === 'goto') {
+            return;
+        }
+
         if (!to || to.url.origin !== page.url.origin) {
             return;
         }
@@ -37,7 +42,7 @@
             cancel();
             void goto(canonical, {
                 // A followed link needs its own history entry; Back/Forward must reuse the existing entry.
-                replaceState: type === 'popstate'
+                replace: type === 'popstate'
             });
         }
     });
@@ -64,13 +69,13 @@
             return response.ok;
         },
         navigate: async () => {
-            const url = page.url;
+            const url = getVisibleUrl();
             if (url.pathname.startsWith(resolve('/status'))) {
                 return;
             }
 
             await goto(buildServiceStatusUrl(resolve('/status'), url), {
-                replaceState: true
+                replace: true
             });
         }
     });

@@ -3,11 +3,11 @@
     import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
+    import { PUBLIC_INTERCOM_APPID } from '$app/env/public';
     import { beforeNavigate, goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { useSidebar } from '$comp/ui/sidebar';
-    import { env } from '$env/dynamic/public';
     import { resolveAssistantAccessState } from '$features/assistant/access-state';
     import {
         getAssistantAccessQuery,
@@ -29,6 +29,7 @@
     import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
     import { shouldLoadIntercomOrganization } from '$features/intercom/config';
     import { getIntercomRouteKey } from '$features/intercom/updates';
+    import { getVisibleUrl } from '$features/navigation/visible-url';
     import Notifications from '$features/notifications/components/notifications.svelte';
     import {
         getOrganizationQuery,
@@ -82,7 +83,7 @@
     const assistantPageHref = resolve('/(app)/exie');
     let isAuthenticated = $derived(!!accessToken.current);
     let requiresPremium = $derived(
-        premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter'), getSearchResourceForPathname(page.url.pathname))
+        premiumPage.requiresPremium || filterUsesPremiumFeatures(getVisibleUrl().searchParams.get('filter'), getSearchResourceForPathname(page.url.pathname))
     );
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
@@ -92,10 +93,10 @@
     let isAssistantPage = $derived(page.url.pathname === assistantPageHref);
     let assistantResourceContext = $derived(isAssistantPage ? undefined : assistantPageContext.getContext(page.params.eventId, page.params.stackId));
     let assistantProjectId = $derived(
-        isAssistantPage ? (page.url.searchParams.get('project') ?? undefined) : (assistantResourceContext?.projectId ?? page.params.projectId)
+        isAssistantPage ? (getVisibleUrl().searchParams.get('project') ?? undefined) : (assistantResourceContext?.projectId ?? page.params.projectId)
     );
     let assistantPath = $derived(getAssistantPath(assistantResourceContext, getAssistantSourcePath()));
-    let assistantExpandHref = $derived(buildAssistantPageHref(`${page.url.pathname}${page.url.search}`, assistantPath, assistantProjectId));
+    let assistantExpandHref = $derived(buildAssistantPageHref(getVisibleHref(), assistantPath, assistantProjectId));
     let assistantReturnHref = $derived(getAssistantReturnHref());
     let commandResetKey = $state(0);
     let isKeyboardShortcutsOpen = $state(false);
@@ -111,7 +112,11 @@
     });
 
     // Auto-reset premium page state on navigation so pages don't need cleanup
-    beforeNavigate(() => {
+    beforeNavigate(({ shallow, type }) => {
+        if (shallow && type === 'goto') {
+            return;
+        }
+
         premiumPage.current = undefined;
     });
 
@@ -171,15 +176,21 @@
     }
 
     function getAssistantReturnHref(): string {
-        return normalizeAssistantHref(page.url.searchParams.get('from')) ?? resolve('/');
+        return normalizeAssistantHref(getVisibleUrl().searchParams.get('from')) ?? resolve('/(app)');
     }
 
     function getAssistantSourcePath(): string {
         if (!isAssistantPage) {
-            return `${page.url.pathname}${page.url.search}`;
+            return getVisibleHref();
         }
 
-        return normalizeAssistantHref(page.url.searchParams.get('context')) ?? normalizeAssistantHref(page.url.searchParams.get('from')) ?? assistantPageHref;
+        const searchParams = getVisibleUrl().searchParams;
+        return normalizeAssistantHref(searchParams.get('context')) ?? normalizeAssistantHref(searchParams.get('from')) ?? assistantPageHref;
+    }
+
+    function getVisibleHref(): string {
+        const url = getVisibleUrl();
+        return `${url.pathname}${url.search}`;
     }
 
     async function loadAssistantPanel(): Promise<void> {
@@ -192,7 +203,7 @@
         }
 
         const url = new URL(value, page.url.origin);
-        if (url.origin !== page.url.origin || url.pathname === assistantPageHref || !url.pathname.startsWith(resolve('/'))) {
+        if (url.origin !== page.url.origin || url.pathname === assistantPageHref || !url.pathname.startsWith(resolve(''))) {
             return undefined;
         }
 
@@ -261,7 +272,7 @@
     async function stopImpersonating(): Promise<void> {
         isCommandOpen = false;
         organization.current = organizations[0]?.id;
-        await goto(resolve('/'));
+        await goto(resolve('/(app)'));
     }
 
     async function toggleAssistantPanel(): Promise<void> {
@@ -555,7 +566,7 @@
     });
     const impersonatedOrganization = $derived(impersonatingOrganizationId ? impersonatedOrganizationQuery.data : undefined);
 
-    const intercomAppId = $derived(env.PUBLIC_INTERCOM_APPID ?? '');
+    const intercomAppId = $derived(PUBLIC_INTERCOM_APPID ?? '');
     const intercomTokenQuery = getIntercomTokenQuery();
     const shouldFetchIntercomOrganization = $derived(shouldLoadIntercomOrganization(intercomAppId, intercomTokenQuery.isSuccess));
 

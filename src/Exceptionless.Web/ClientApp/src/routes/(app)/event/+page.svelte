@@ -56,7 +56,7 @@
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
     import { fillDateSeries } from '$features/shared/utils/charts.js';
     import { toDateMathRange } from '$features/shared/utils/datemath';
-    import { parseDateMathRange } from '$features/shared/utils/datemath.js';
+    import { parseDateMathRange } from '$features/shared/utils/datemath';
     import { StackStatus } from '$features/stacks/models';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
     import { DEFAULT_OFFSET } from '$shared/api/api.svelte';

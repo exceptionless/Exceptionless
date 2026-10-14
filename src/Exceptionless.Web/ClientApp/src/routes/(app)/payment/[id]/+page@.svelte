@@ -27,7 +27,7 @@
 
     $effect(() => {
         if (!accessToken.current || invoiceQuery.isError) {
-            void goto(resolve('/'));
+            void goto(resolve('/(app)'));
             return;
         }
 

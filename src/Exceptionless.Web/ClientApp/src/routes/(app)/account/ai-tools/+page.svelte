@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { browser } from '$app/environment';
+    import { browser } from '$app/env';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
     import { CodeBlock, Muted, P } from '$comp/typography';
     import * as Card from '$comp/ui/card';

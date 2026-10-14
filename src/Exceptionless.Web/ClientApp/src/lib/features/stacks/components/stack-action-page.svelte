@@ -64,7 +64,7 @@
                     stackId
                 }),
                 {
-                    replaceState: true
+                    replace: true
                 }
             );
         }

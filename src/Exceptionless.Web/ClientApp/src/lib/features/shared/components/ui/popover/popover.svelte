@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser } from "$app/environment";
+	import { browser } from "$app/env";
 	import { Popover as PopoverPrimitive } from "bits-ui";
 	import { onDestroy } from "svelte";
 	import { INTERACTIVE_OVERLAY_OPENED_EVENT, updateOpenInteractiveOverlay } from "../overlay-events.js";

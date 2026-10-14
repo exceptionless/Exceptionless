@@ -8,6 +8,7 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import * as Sidebar from '$comp/ui/sidebar';
     import { useSidebar } from '$comp/ui/sidebar';
+    import { getVisibleUrl } from '$features/navigation/visible-url';
     import SavedViewOrderDialog from '$features/saved-views/components/saved-view-order-dialog.svelte';
     import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
@@ -59,7 +60,7 @@
 
     function isSavedItemActive(savedItem: { href: string }, routeHref: string): boolean {
         const savedId = new URL(savedItem.href, page.url.origin).searchParams.get('saved');
-        const activeSavedParam = page.url.searchParams.get('saved');
+        const activeSavedParam = getVisibleUrl().searchParams.get('saved');
         const isOnRoute = routeHref === page.url.pathname;
 
         return isOnRoute && activeSavedParam === savedId;

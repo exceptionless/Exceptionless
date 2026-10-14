@@ -1,34 +1,19 @@
-import type { ClientInit, HandleClientError } from '@sveltejs/kit';
+import type { ClientInit, HandleClientError } from '@sveltejs/kit/hooks';
 
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
+import { PUBLIC_APP_VERSION, PUBLIC_ENABLE_SSL, PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL } from '$app/env/public';
 import { page } from '$app/state';
-import { env } from '$env/dynamic/public';
 import { configureSessions } from '$features/auth/exceptionless-session';
 import { getHttpsRedirectUrl } from '$features/navigation/https-redirect';
 import { canonicalAppUrl } from '$features/navigation/legacy-links';
+import { getEnvironmentOverride, PUBLIC_EXCEPTIONLESS_API_KEY, PUBLIC_EXCEPTIONLESS_SERVER_URL } from '$features/shared/environment';
+import { trackHistoryTraversals } from '$features/shared/history-traversal';
 import { normalizePath, normalizeRouteId } from '$lib/telemetry';
 import { installSvelteEffectDepthDiagnostics } from '$lib/telemetry/svelte-effect-depth-diagnostics';
 import { Exceptionless, guid, toError } from '@exceptionless/browser';
 import { useMiddleware } from '@foundatiofx/fetchclient';
 
 installSvelteEffectDepthDiagnostics();
-
-// If any of these are set in local storage, use them instead of the build-time environment variables.
-// This allows you to target other environments from your browser without a rebuild.
-const PUBLIC_BASE_URL = localStorage?.getItem('PUBLIC_BASE_URL');
-if (PUBLIC_BASE_URL) {
-    env.PUBLIC_BASE_URL = PUBLIC_BASE_URL;
-}
-
-const PUBLIC_EXCEPTIONLESS_API_KEY = localStorage?.getItem('PUBLIC_EXCEPTIONLESS_API_KEY');
-if (PUBLIC_EXCEPTIONLESS_API_KEY) {
-    env.PUBLIC_EXCEPTIONLESS_API_KEY = PUBLIC_EXCEPTIONLESS_API_KEY;
-}
-
-const PUBLIC_EXCEPTIONLESS_SERVER_URL = localStorage?.getItem('PUBLIC_EXCEPTIONLESS_SERVER_URL');
-if (PUBLIC_EXCEPTIONLESS_SERVER_URL) {
-    env.PUBLIC_EXCEPTIONLESS_SERVER_URL = PUBLIC_EXCEPTIONLESS_SERVER_URL;
-}
 
 function normalizeCurrentAppUrl() {
     const canonical = canonicalAppUrl(new URL(window.location.href));
@@ -38,7 +23,7 @@ function normalizeCurrentAppUrl() {
 }
 
 export const init: ClientInit = async () => {
-    const httpsDestination = getHttpsRedirectUrl(new URL(window.location.href), env.PUBLIC_ENABLE_SSL);
+    const httpsDestination = getHttpsRedirectUrl(new URL(window.location.href), PUBLIC_ENABLE_SSL);
     if (httpsDestination) {
         window.location.replace(httpsDestination.href);
         // Keep the router, authentication, and telemetry from starting on the HTTP page.
@@ -49,19 +34,22 @@ export const init: ClientInit = async () => {
     normalizeCurrentAppUrl();
     // Normalize existing entries before the router reads them; cancelling popstate would undo Back/Forward.
     window.addEventListener('popstate', normalizeCurrentAppUrl, { capture: true });
+    trackHistoryTraversals();
 
-    if (!env.PUBLIC_EXCEPTIONLESS_API_KEY) {
+    if (!PUBLIC_EXCEPTIONLESS_API_KEY) {
         return;
     }
 
     await Exceptionless.startup((c) => {
-        c.apiKey = env.PUBLIC_EXCEPTIONLESS_API_KEY;
+        c.apiKey = PUBLIC_EXCEPTIONLESS_API_KEY;
         c.serverUrl =
-            PUBLIC_EXCEPTIONLESS_SERVER_URL || (env.PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL ?? env.PUBLIC_EXCEPTIONLESS_SERVER_URL) || window.location.origin;
+            getEnvironmentOverride('PUBLIC_EXCEPTIONLESS_SERVER_URL') ||
+            (PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL ?? PUBLIC_EXCEPTIONLESS_SERVER_URL) ||
+            window.location.origin;
         c.defaultTags.push('UI', 'Svelte');
 
-        if (env.PUBLIC_APP_VERSION) {
-            c.version = env.PUBLIC_APP_VERSION;
+        if (PUBLIC_APP_VERSION) {
+            c.version = PUBLIC_APP_VERSION;
         }
 
         if (dev) {
@@ -114,18 +102,23 @@ export const init: ClientInit = async () => {
     });
 };
 
-export const handleError: HandleClientError = async ({ error, event, message, status }) => {
+export const handleError: HandleClientError = async ({ error, event, kind }) => {
     if (dev) {
-        console.warn({ error, event, message, status });
+        console.warn({ error, event, kind });
+    }
+
+    // Errors created with error(...) are expected and already safe to show.
+    if (kind === 'app') {
+        return error;
     }
 
     let errorId: null | string = null;
     try {
-        if (status === 404) {
+        if (kind === 'framework' && error.status === 404) {
             await Exceptionless.submitNotFound(normalizePath(event.url.pathname));
         } else {
-            await Exceptionless.createException(toError(error ?? message))
-                .setProperty('status', String(status))
+            await Exceptionless.createException(toError(kind === 'framework' ? error.message : error))
+                .setProperty('status', String(kind === 'framework' ? error.status : 500))
                 .submit();
         }
 
@@ -134,5 +127,5 @@ export const handleError: HandleClientError = async ({ error, event, message, st
         // never throw
     }
 
-    return { errorId: errorId ?? guid(), message };
+    return { errorId: errorId ?? guid() };
 };

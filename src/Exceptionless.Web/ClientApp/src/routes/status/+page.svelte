@@ -1,10 +1,10 @@
 <script lang="ts">
-    import { goto } from '$app/navigation';
     import { page } from '$app/state';
     import Logo from '$comp/logo.svelte';
     import { P } from '$comp/typography';
     import * as Card from '$comp/ui/card';
     import { Spinner } from '$comp/ui/spinner';
+    import { gotoRedirect } from '$features/navigation/redirect';
     import { getSafeRedirectUrl } from '$features/shared/url';
     import { getHealthQuery } from '$features/status/api.svelte';
 
@@ -14,8 +14,8 @@
     const healthQuery = getHealthQuery();
     $effect(() => {
         if (healthQuery.isSuccess && redirect) {
-            goto(redirect, {
-                replaceState: true
+            void gotoRedirect(redirect, {
+                replace: true
             });
         }
     });

@@ -33,7 +33,7 @@
                 <A
                     variant="ghost"
                     href={route.href}
-                    data-sveltekit-noscroll
+                    data-sveltekit-reset={false}
                     class="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive
                         ? 'bg-background text-foreground shadow-xs'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"

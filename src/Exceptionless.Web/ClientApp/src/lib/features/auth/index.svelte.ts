@@ -1,7 +1,15 @@
+import {
+    PUBLIC_ENABLE_ACCOUNT_CREATION,
+    PUBLIC_FACEBOOK_APPID,
+    PUBLIC_GITHUB_APPID,
+    PUBLIC_GOOGLE_APPID,
+    PUBLIC_MICROSOFT_APPID,
+    PUBLIC_SLACK_APPID
+} from '$app/env/public';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
-import { page } from '$app/state';
-import { env } from '$env/dynamic/public';
+import { gotoRedirect } from '$features/navigation/redirect';
+import { getVisibleUrl } from '$features/navigation/visible-url';
 import { useFetchClient } from '@foundatiofx/fetchclient';
 
 import type { TokenResult } from './models';
@@ -47,12 +55,12 @@ export interface OAuthResponseData {
 
 export type SupportedOAuthProviders = 'facebook' | 'github' | 'google' | 'live' | 'slack';
 
-export const enableAccountCreation = env.PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
-export const facebookClientId = env.PUBLIC_FACEBOOK_APPID;
-export const gitHubClientId = env.PUBLIC_GITHUB_APPID;
-export const googleClientId = env.PUBLIC_GOOGLE_APPID;
-export const microsoftClientId = env.PUBLIC_MICROSOFT_APPID;
-export const slackClientId = env.PUBLIC_SLACK_APPID;
+export const enableAccountCreation = PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
+export const facebookClientId = PUBLIC_FACEBOOK_APPID;
+export const gitHubClientId = PUBLIC_GITHUB_APPID;
+export const googleClientId = PUBLIC_GOOGLE_APPID;
+export const microsoftClientId = PUBLIC_MICROSOFT_APPID;
+export const slackClientId = PUBLIC_SLACK_APPID;
 export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClientId || microsoftClientId;
 
 // OAuth login functions (interactive popup-based, not pure API calls)
@@ -114,13 +122,13 @@ export async function googleLogin(redirectUrl?: string, inviteToken?: null | str
 }
 
 export async function gotoLogin() {
-    const url = page.url;
+    const url = getVisibleUrl();
     const loginPath = resolve('/(auth)/login');
     const isAuthPath = url.pathname === loginPath || url.pathname === `${loginPath}/`;
     const returnUrl = `${url.pathname}${url.search}${url.hash}`;
-    const redirect = url.pathname === resolve('/') || isAuthPath ? loginPath : `${loginPath}?redirect=${encodeURIComponent(returnUrl)}`;
+    const redirect = url.pathname === resolve('/(app)') || isAuthPath ? loginPath : `${loginPath}?redirect=${encodeURIComponent(returnUrl)}`;
     await goto(redirect, {
-        replaceState: true
+        replace: true
     });
 }
 
@@ -180,7 +188,7 @@ async function oauthLogin(options: OAuthLoginOptions) {
 
     if (response.ok && response.data?.token) {
         accessToken.current = response.data.token;
-        await goto(options.redirectUrl || resolve('/'));
+        await gotoRedirect(options.redirectUrl || resolve('/(app)'));
     }
 }
 

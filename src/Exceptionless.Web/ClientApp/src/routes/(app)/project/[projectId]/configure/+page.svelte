@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL } from '$app/env/public';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
@@ -7,7 +8,6 @@
     import { Button } from '$comp/ui/button';
     import * as Select from '$comp/ui/select';
     import { Spinner } from '$comp/ui/spinner';
-    import { env } from '$env/dynamic/public';
     import { ProjectFilter } from '$features/events/components/filters';
     import { getIntercom } from '$features/intercom';
     import { openSupportChat } from '$features/intercom/chat';
@@ -16,6 +16,7 @@
     import { createProductTourActions } from '$features/product-tours/actions.svelte';
     import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
     import { productTourCheckpoint } from '$features/product-tours/state.svelte';
+    import { PUBLIC_EXCEPTIONLESS_SERVER_URL } from '$features/shared/environment';
     import { getProjectDefaultTokenQuery, patchToken } from '$features/tokens/api.svelte';
     import EnableTokenDialog from '$features/tokens/components/dialogs/enable-token-dialog.svelte';
     import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
@@ -43,8 +44,8 @@
     });
 
     const apiKey = $derived(defaultTokenQuery.data?.id || 'YOUR_API_KEY');
-    const serverUrl = (env.PUBLIC_EXCEPTIONLESS_SERVER_URL || '').trim();
-    const showServerUrl = env.PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL !== 'false';
+    const serverUrl = (PUBLIC_EXCEPTIONLESS_SERVER_URL || '').trim();
+    const showServerUrl = PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL !== 'false';
     const shouldShowServerUrl = showServerUrl && serverUrl.length > 0;
     const eventSubmissionUrl = serverUrl.length > 0 ? `${serverUrl}/api/v2/events` : 'YOUR_EXCEPTIONLESS_SERVER_URL/api/v2/events';
     const isTokenDisabled = $derived(defaultTokenQuery.data?.is_disabled ?? false);

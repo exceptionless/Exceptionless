@@ -30,7 +30,7 @@
         const query = searchQuery.trim();
         const currentQuery = page.url.searchParams.get('q') ?? '';
         if (query !== currentQuery) {
-            const url = new URL(page.url);
+            const url = new URL(page.url.href);
             if (query) {
                 url.searchParams.set('q', query);
             } else {
@@ -38,27 +38,27 @@
             }
 
             goto(url.pathname + url.search, {
-                keepFocus: true,
-                noScroll: true,
-                replaceState: true
+                replace: true,
+                reset: false
             });
         }
     });
 
     function selectCategory(category: 'All' | MaintenanceActionCategory) {
         const query = searchQuery.trim();
-        const actionsBase = resolve('/(app)/system/actions');
-        const base = category === 'All' ? actionsBase : `${actionsBase}/${category}`;
+        const base = resolve('/(app)/system/actions/[[category]]', {
+            category: category === 'All' ? undefined : category
+        });
 
         if (query) {
             goto(`${base}?q=${encodeURIComponent(query)}`, {
-                noScroll: true
+                reset: false
             });
             return;
         }
 
         goto(base, {
-            noScroll: true
+            reset: false
         });
     }
 

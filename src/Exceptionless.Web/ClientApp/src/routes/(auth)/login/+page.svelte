@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { dev } from '$app/environment';
-    import { goto } from '$app/navigation';
+    import { dev } from '$app/env';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
@@ -31,12 +30,13 @@
         microsoftClientId
     } from '$features/auth/index.svelte';
     import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
+    import { gotoRedirect } from '$features/navigation/redirect';
     import { getSafeRedirectUrl } from '$features/shared/url';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
     import { onMount } from 'svelte';
 
-    const defaultRedirect = resolve('/');
+    const defaultRedirect = resolve('/(app)');
     const redirectUrl = getSafeRedirectUrl(page.url.searchParams.get('redirect'), defaultRedirect);
     const inviteToken = page.url.searchParams.get('token');
     const canSignup = enableAccountCreation || !!inviteToken;
@@ -63,7 +63,7 @@
             onSubmitAsync: async ({ value }) => {
                 const response = await login(value.email, value.password, value.invite_token);
                 if (response.ok) {
-                    await goto(redirectUrl);
+                    await gotoRedirect(redirectUrl);
                     return null;
                 }
 

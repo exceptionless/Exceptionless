@@ -32,7 +32,7 @@
         organization.current = event.organization_id;
         assistantPageContext.setPageEvent(event);
         await goto(buildEventDetailsHref(event.id, event.stack_id), {
-            replaceState: true
+            replace: true
         });
     }
 

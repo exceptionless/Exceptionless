@@ -18,7 +18,7 @@
 
     async function stopImpersonating(): Promise<void> {
         organization.current = userOrganizations[0]?.id;
-        await goto(resolve('/'));
+        await goto(resolve('/(app)'));
     }
 </script>
 

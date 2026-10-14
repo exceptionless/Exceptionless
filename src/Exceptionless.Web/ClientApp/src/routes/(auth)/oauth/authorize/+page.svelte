@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { browser } from '$app/environment';
+    import { browser } from '$app/env';
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
@@ -100,7 +100,7 @@
         const returnUrl = `${page.url.pathname}${page.url.search}`;
         const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
         void goto(loginUrl, {
-            replaceState: true
+            replace: true
         });
     });
 
@@ -307,7 +307,7 @@
         const returnUrl = `${page.url.pathname}${page.url.search}`;
         const loginUrl = `${resolve('/(auth)/login')}?redirect=${encodeURIComponent(returnUrl)}`;
         await goto(loginUrl, {
-            replaceState: true
+            replace: true
         });
     }
 

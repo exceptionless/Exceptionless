@@ -9,7 +9,6 @@ const mocks = vi.hoisted(() => ({
     createQuery: vi.fn<(options: () => QueryObserverOptions<ViewProject>) => void>(),
     getJSON: vi.fn()
 }));
-vi.mock('$env/dynamic/public', () => ({ env: {} }));
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'test-token' } }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@foundatiofx/fetchclient')>()),

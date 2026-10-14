@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { PUBLIC_STRIPE_PUBLISHABLE_KEY } from '$app/env/public';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import ErrorMessage from '$comp/error-message.svelte';
@@ -9,7 +10,6 @@
     import * as DropdownMenu from '$comp/ui/dropdown-menu';
     import { Skeleton } from '$comp/ui/skeleton';
     import * as Table from '$comp/ui/table';
-    import { env } from '$env/dynamic/public';
     import { ChangePlanDialog } from '$features/billing';
     import { getInvoiceStatusLabel } from '$features/billing/invoice';
     import { getInvoicesQuery, getOrganizationQuery } from '$features/organizations/api.svelte';
@@ -35,7 +35,7 @@
         }
     });
 
-    const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
+    const canChangePlan = $derived(organizationQuery.isSuccess && !!PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
     const params = createQueryParameters({
         defaults: {

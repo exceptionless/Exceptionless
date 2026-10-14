@@ -2,12 +2,12 @@
     import type { NotificationSettings } from '$features/projects/models';
     import type { NewWebhook, Webhook } from '$features/webhooks/models';
 
+    import { PUBLIC_SLACK_APPID } from '$app/env/public';
     import { page } from '$app/state';
     import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
     import SlackIcon from '$comp/icons/SlackIcon.svelte';
     import { H4, Muted } from '$comp/typography';
     import { Button } from '$comp/ui/button';
-    import { env } from '$env/dynamic/public';
     import { slackOAuthLogin } from '$features/auth/index.svelte';
     import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import { organization } from '$features/organizations/context.svelte';
@@ -44,7 +44,7 @@
         }
     });
 
-    const isSlackEnabled = !!env.PUBLIC_SLACK_APPID;
+    const isSlackEnabled = !!PUBLIC_SLACK_APPID;
     const hasSlackIntegration = $derived(projectQuery.data?.has_slack_integration ?? false);
     const newWebhook = postWebhook();
 

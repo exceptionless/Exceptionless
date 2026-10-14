@@ -14,7 +14,6 @@ const mocks = vi.hoisted(() => ({
     client: undefined as QueryClientType | undefined,
     getJSON: vi.fn()
 }));
-vi.mock('$env/dynamic/public', () => ({ env: {} }));
 vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'test-session' } }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@foundatiofx/fetchclient')>()),

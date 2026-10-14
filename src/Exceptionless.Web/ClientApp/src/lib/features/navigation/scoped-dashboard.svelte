@@ -37,7 +37,7 @@
         }
         const destination = view === 'stacks' ? resolve('/(app)/stack') : resolve('/(app)/event');
         void goto(`${destination}?${query}${page.url.hash}`, {
-            replaceState: true
+            replace: true
         });
     });
 </script>

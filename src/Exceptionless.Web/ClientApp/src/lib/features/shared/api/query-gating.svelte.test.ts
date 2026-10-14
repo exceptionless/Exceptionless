@@ -7,7 +7,6 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import QueryGateTestHarness from './query-gating.test-harness.svelte';
 
 const mocks = vi.hoisted(() => ({ getJSON: vi.fn() }));
-vi.mock('$env/dynamic/public', () => ({ env: {} }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@foundatiofx/fetchclient')>()),
     useFetchClient: () => ({ getJSON: mocks.getJSON })

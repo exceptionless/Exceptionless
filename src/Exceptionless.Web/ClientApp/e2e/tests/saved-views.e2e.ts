@@ -2,7 +2,7 @@ import type { Locator, Page, Request } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
-import { getVisibleText } from '../support/page-helpers';
+import { getHistoryPageState, getVisibleText } from '../support/page-helpers';
 
 test('home navigation honors personal and organization saved views and survives deletion', async ({ e2eApi, e2eScenario, page, request }) => {
     // Arrange
@@ -857,12 +857,7 @@ test('stream switches to a session-local saved view draft without mixing in-flig
     await expect(getVisibleText(page, sourceMessage)).toBeHidden();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expect
-        .poll(() =>
-            page.evaluate(() => {
-                const state = window.history.state as { 'sveltekit:states'?: { __exceptionlessSavedViewDraftFilter?: unknown } };
-                return state['sveltekit:states']?.__exceptionlessSavedViewDraftFilter;
-            })
-        )
+        .poll(async () => (await getHistoryPageState(page))?.__exceptionlessSavedViewDraftFilter)
         .toEqual({ filter: new URL(page.url()).searchParams.get('filter'), viewId: savedView.id });
 
     const updatedFilterDefinitions = JSON.stringify([
@@ -892,12 +887,7 @@ test('stream switches to a session-local saved view draft without mixing in-flig
     streamRequestFilters.length = 0;
     await page.reload();
     await expect
-        .poll(() =>
-            page.evaluate(() => {
-                const state = window.history.state as { 'sveltekit:states'?: { __exceptionlessSavedViewDraftFilter?: unknown } };
-                return state['sveltekit:states']?.__exceptionlessSavedViewDraftFilter;
-            })
-        )
+        .poll(async () => (await getHistoryPageState(page))?.__exceptionlessSavedViewDraftFilter)
         .toEqual({ filter: new URL(page.url()).searchParams.get('filter'), viewId: savedView.id });
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect.poll(() => streamRequestFilters.join('\n')).toContain(remoteExpression);

@@ -144,7 +144,7 @@
             toastId = toast.success('Successfully queued your account for deletion.');
             await logout(queryClient, client);
             await goto(resolve('/(auth)/login'), {
-                replaceState: true
+                replace: true
             });
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';

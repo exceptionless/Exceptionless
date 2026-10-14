@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
     useFetchClient: vi.fn()
 }));
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 vi.mock('$app/navigation', () => ({ goto: mocks.goto }));
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path.replace('/(auth)', '') }));
 vi.mock('$app/state', () => ({ page: mocks.page }));
@@ -222,7 +222,7 @@ describe('OAuth authorization', () => {
         // Assert
         await waitFor(() => expect(mocks.clearSession).toHaveBeenCalledOnce());
         expect(mocks.goto).toHaveBeenCalledWith(`/login?redirect=${encodeURIComponent(mocks.page.url.pathname + mocks.page.url.search)}`, {
-            replaceState: true
+            replace: true
         });
     });
 });
