@@ -11,6 +11,7 @@ This file is root-scope agent guidance. When working in a subtree, read any nest
 - For Aspire resource state, logs, traces, dashboard, or browser telemetry investigations, use the `aspire-diagnostics` skill.
 - Check `git status --porcelain` before edits. Do not stash, switch branches, reset, or revert user work unless explicitly asked.
 - On PowerShell, quote paths with special characters and prefer `-LiteralPath`.
+- Leave a blank line before region directives and between Arrange, Act, and Assert sections.
 
 ## Common Commands
 

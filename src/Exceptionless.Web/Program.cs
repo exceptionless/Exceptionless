@@ -268,8 +268,8 @@ public partial class Program
             if (ssl)
                 app.UseHttpsRedirection();
 
-            app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, app.Environment.WebRootFileProvider,
-                configuration.GetValue("EnableSsl", false), configuration.GetValue<string>("BaseURL"), configuration.GetValue<string>("ApiUrl")));
+            var frontendOptions = app.Services.GetRequiredService<AppOptions>();
+            app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, app.Environment.WebRootFileProvider, frontendOptions));
 
             app.UseSerilogRequestLogging(o =>
             {

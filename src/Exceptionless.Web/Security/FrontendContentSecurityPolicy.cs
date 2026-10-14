@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Exceptionless.Core;
 using Joonasw.AspNetCore.SecurityHeaders.Csp.Builder;
 using Microsoft.Extensions.FileProviders;
 
@@ -14,7 +15,7 @@ internal static partial class FrontendContentSecurityPolicy
     // https://scalar.com/products/api-references/configuration#agent
     // https://docs.gravatar.com/sdk/images/
     // https://exceptionless.com/docs/clients/javascript/
-    public static void Configure(CspBuilder csp, IFileProvider files, bool upgradeInsecureRequests, string? siteBaseUrl = null, string? apiUrl = null)
+    public static void Configure(CspBuilder csp, IFileProvider files, AppOptions options)
     {
         // This header is the published SPA's security boundary. The static build's meta policy
         // permits runtime/Vite connection targets and cannot enforce frame-ancestors.
@@ -64,8 +65,8 @@ internal static partial class FrontendContentSecurityPolicy
         // Explicit configured WebSocket origins cover browsers where 'self' does not match WSS.
         // BaseURL/ApiUrl must match the externally served origins, including behind reverse proxies.
         // Invalid or missing origins add no sources; request/forwarded headers are never trusted.
-        ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, siteBaseUrl);
-        ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, apiUrl);
+        ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, options.BaseURL);
+        ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, options.ApiUrl);
 
         // Stripe Payment Element, 3DS and Link frames.
         csp.AllowFrames.From("https://*.stripe.com")
@@ -81,7 +82,7 @@ internal static partial class FrontendContentSecurityPolicy
         csp.AllowPlugins.FromNowhere();
         csp.AllowBaseUri.FromNowhere();
         csp.AllowFraming.FromNowhere();
-        if (upgradeInsecureRequests)
+        if (options.EnableSsl)
             csp.SetUpgradeInsecureRequests();
 
         csp.OnSendingHeader = context =>
