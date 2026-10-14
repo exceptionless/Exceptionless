@@ -563,15 +563,20 @@ public class AuthHandler(
         {
             var currentUser = httpContext.Request.GetUser();
             EnsureUserIsActive(currentUser);
+            OAuthAccount? removedAccount = null;
+            string? removedAccountVersion = null;
             if (existingUser is not null)
             {
                 if (!String.Equals(existingUser.Id, currentUser.Id, StringComparison.Ordinal))
                 {
+                    removedAccount = existingUser.OAuthAccounts.FirstOrDefault(account => String.Equals(account.Provider, userInfo.ProviderName, StringComparison.OrdinalIgnoreCase)
+                        && String.Equals(account.ProviderUserId, userInfo.Id, StringComparison.Ordinal));
                     if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
                         throw new Exception($"Unable to remove existing oauth account for existing user: {existingUser.EmailAddress}");
 
                     existingUser.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
-                    await userRepository.SaveAsync(existingUser, o => o.Cache());
+                    existingUser = await userRepository.SaveAsync(existingUser, o => o.Cache());
+                    removedAccountVersion = existingUser.Version;
                     await ResetUserTokensAsync(existingUser, "Link external account to another user", httpContext);
                 }
                 else
@@ -581,7 +586,17 @@ public class AuthHandler(
             }
 
             currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-            return await userRepository.SaveAsync(currentUser, o => o.Cache());
+            try
+            {
+                return await userRepository.SaveAsync(currentUser, o => o.Cache());
+            }
+            catch
+            {
+                if (existingUser is not null && removedAccount is not null)
+                    await RestoreTransferredExternalLoginAsync(existingUser, removedAccountVersion, removedAccount, currentUser.Id);
+
+                throw;
+            }
         }
 
         if (existingUser is not null)
@@ -635,6 +650,36 @@ public class AuthHandler(
 
         var organization = await organizationRepository.GetByInviteTokenAsync(token);
         return organization is not null;
+    }
+
+    private async Task RestoreTransferredExternalLoginAsync(User previousOwner, string? removedAccountVersion, OAuthAccount account, string destinationUserId)
+    {
+        try
+        {
+            // A failed save may have committed before a cache or transport error.
+            var destination = await userRepository.GetByIdAsync(destinationUserId);
+            if (destination is not null && destination.OAuthAccounts.Any(existing => String.Equals(existing.Provider, account.Provider, StringComparison.Ordinal)
+                && String.Equals(existing.ProviderUserId, account.ProviderUserId, StringComparison.Ordinal)))
+                return;
+
+            var currentOwner = await userRepository.GetByIdAsync(previousOwner.Id);
+            if (currentOwner is null || String.IsNullOrEmpty(removedAccountVersion)
+                || !String.Equals(currentOwner.Version, removedAccountVersion, StringComparison.Ordinal)
+                || !String.Equals(currentOwner.AuthenticationVersion, previousOwner.AuthenticationVersion, StringComparison.Ordinal)
+                || currentOwner.OAuthAccounts.Any(existing => String.Equals(existing.Provider, account.Provider, StringComparison.Ordinal)
+                    && String.Equals(existing.ProviderUserId, account.ProviderUserId, StringComparison.Ordinal)))
+            {
+                logger.LogWarning("External account restoration skipped for {EmailAddress} ({UserId}) because the previous owner changed", previousOwner.EmailAddress, previousOwner.Id);
+                return;
+            }
+
+            currentOwner.OAuthAccounts.Add(account);
+            await userRepository.SaveAsync(currentOwner, o => o.Cache());
+        }
+        catch (Exception ex)
+        {
+            logger.LogCritical(ex, "Error restoring external account for {EmailAddress} ({UserId}): {Message}", previousOwner.EmailAddress, previousOwner.Id, ex.Message);
+        }
     }
 
     private async Task AddInvitedUserToOrganizationAsync(string? token, User user, HttpContext httpContext)

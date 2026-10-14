@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using GetRequest = Elastic.Clients.Elasticsearch.GetRequest;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -17,6 +18,7 @@ using Exceptionless.Web.Models.OAuth;
 using Exceptionless.Web.Utility;
 using FluentRest;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Xunit;
@@ -423,6 +425,49 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         Assert.True(user.IsActive);
     }
 
+    [Theory]
+    [InlineData("id")]
+    [InlineData("ids")]
+    [InlineData("email")]
+    public async Task GetAsync_LegacyCachedUser_ReloadsVersionBeforeSave(string lookup)
+    {
+        // Arrange
+        var user = await GetTestOrganizationUserAsync();
+        var legacy = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(legacy);
+        legacy.Version = null!;
+        legacy.FullName = "Legacy cached profile";
+        var repository = Assert.IsType<PausingProfileUserRepository>(_userRepository);
+        await repository.CacheUserAsync(legacy);
+
+        // Act
+        var loaded = lookup switch
+        {
+            "ids" => Assert.Single(await _userRepository.GetByIdsAsync(new[] { user.Id }, o => o.Cache())),
+            "email" => await _userRepository.GetByEmailAddressAsync(user.EmailAddress),
+            _ => await _userRepository.GetByIdAsync(user.Id, o => o.Cache())
+        };
+        Assert.NotNull(loaded);
+        Assert.Equal(user.FullName, loaded.FullName);
+        loaded.FullName = "Updated profile";
+        await _userRepository.SaveAsync(loaded, o => o.ImmediateConsistency().Cache());
+        var persisted = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        int getRequests = repository.GetRequestCount;
+        var cached = await _userRepository.GetByIdAsync(user.Id, o => o.Cache());
+        var cachedAgain = await _userRepository.GetByIdAsync(user.Id, o => o.Cache());
+
+        // Assert
+        Assert.False(String.IsNullOrEmpty(loaded.Version));
+        Assert.NotNull(persisted);
+        Assert.Equal("Updated profile", persisted.FullName);
+        Assert.Equal(loaded.Version, persisted.Version);
+        Assert.NotNull(cached);
+        Assert.NotNull(cachedAgain);
+        Assert.Equal(loaded.Version, cached.Version);
+        Assert.Equal(loaded.Version, cachedAgain.Version);
+        Assert.Equal(getRequests, repository.GetRequestCount);
+    }
+
     [Fact]
     public async Task GetCurrentUserAsync_CachedUser_ReturnsCachedProfileUntilInvalidated()
     {
@@ -806,6 +851,70 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PatchAsync_FieldUpdate_PreservesAuthenticationVersion(bool script)
+    {
+        // Arrange
+        string authenticationVersion = StringExtensions.GetNewToken();
+        var profile = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(profile.Id, o => o.Cache(false));
+        Assert.NotNull(user);
+        user.AuthenticationVersion = authenticationVersion;
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+        IPatchOperation patch = script
+            ? new ScriptPatch("ctx._source.full_name = 'Updated profile'")
+            : new PartialPatch(new { full_name = "Updated profile" });
+
+        // Act
+        await _userRepository.PatchAsync(user.Id, patch, o => o.ImmediateConsistency());
+        var persisted = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+
+        // Assert
+        Assert.NotNull(persisted);
+        Assert.Equal(authenticationVersion, persisted.AuthenticationVersion);
+        Assert.Equal("Updated profile", persisted.FullName);
+        Assert.NotEqual(user.Version, persisted.Version);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PatchAllAsync_InterveningAuthenticationChange_PreservesNewGeneration(bool jsonPatch)
+    {
+        // Arrange
+        string authenticationVersion = StringExtensions.GetNewToken();
+        const string updatedName = "Patched profile";
+        var user = await GetTestOrganizationUserAsync();
+        var repository = Assert.IsType<PausingProfileUserRepository>(_userRepository);
+        bool intervened = false;
+        using var subscription = repository.AfterQuery.AddHandler(async (_, args) =>
+        {
+            if (intervened || args.Result is not FindResults<User> results || !results.Documents.Any(u => String.Equals(u.Id, user.Id, StringComparison.Ordinal)))
+                return;
+
+            intervened = true;
+            var current = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+            Assert.NotNull(current);
+            current.AuthenticationVersion = authenticationVersion;
+            await _userRepository.SaveAsync(current, o => o.ImmediateConsistency());
+        });
+        IPatchOperation patch = jsonPatch
+            ? new JsonPatch(new PatchDocument(new ReplaceOperation { Path = "full_name", Value = updatedName }))
+            : new ActionPatch<User>(u => u.FullName = updatedName);
+
+        // Act
+        await _userRepository.PatchAllAsync(q => q.Id(user.Id), patch, o => o.ImmediateConsistency());
+        var persisted = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+
+        // Assert
+        Assert.True(intervened);
+        Assert.NotNull(persisted);
+        Assert.Equal(authenticationVersion, persisted.AuthenticationVersion);
+        Assert.Equal(updatedName, persisted.FullName);
+    }
+
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public async Task PatchAsync_TourRecordedAfterProfileRead_PreservesProgressAndUnchangedFields(bool updateFullName)
@@ -1056,6 +1165,36 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         Assert.NotNull(result);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SaveAsync_StaleOrMissingVersion_PreservesNewAuthenticationVersion(bool missingVersion)
+    {
+        // Arrange
+        string authenticationVersion = StringExtensions.GetNewToken();
+        var user = await GetTestOrganizationUserAsync();
+        var stale = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        var current = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+        Assert.NotNull(stale);
+        Assert.NotNull(current);
+        Assert.False(String.IsNullOrEmpty(current.Version));
+        current.AuthenticationVersion = authenticationVersion;
+        await _userRepository.SaveAsync(current, o => o.ImmediateConsistency().Cache());
+        stale.FullName = "Stale profile";
+        if (missingVersion)
+            stale.Version = null!;
+
+        // Act
+        await Assert.ThrowsAsync<VersionConflictDocumentException>(() => _userRepository.SaveAsync(stale));
+        var persisted = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+
+        // Assert
+        Assert.NotNull(persisted);
+        Assert.Equal(authenticationVersion, persisted.AuthenticationVersion);
+        Assert.Equal(current.FullName, persisted.FullName);
+        Assert.Equal(current.Version, persisted.Version);
+    }
+
     [Fact]
     public async Task VerifyAsync_ExpiredToken_ReturnsValidationProblem()
     {
@@ -1215,6 +1354,14 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         : UserRepository(configuration, validator, options)
     {
         private ProfileReadPause? _pause;
+
+        public int GetRequestCount { get; private set; }
+
+        protected override void ConfigureGetRequest(GetRequest request, ICommandOptions options)
+        {
+            GetRequestCount++;
+            base.ConfigureGetRequest(request, options);
+        }
 
         public ProfileReadPause PauseNextRead(string userId) => _pause = new ProfileReadPause(userId);
 

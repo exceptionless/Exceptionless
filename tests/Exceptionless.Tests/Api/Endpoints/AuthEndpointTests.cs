@@ -22,6 +22,7 @@ using Exceptionless.Web.Security;
 using FluentRest;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Utility;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -1337,6 +1338,8 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.NotNull(login);
         var oldToken = await _tokenRepository.GetByIdAsync(login.Token, o => o.Cache(false));
         Assert.NotNull(oldToken);
+        var staleUser = await _userRepository.GetByIdAsync(oldToken.UserId!, o => o.Cache(false));
+        Assert.NotNull(staleUser);
         await SendRequestAsync(r => r.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeOk());
 
         // Act
@@ -1350,11 +1353,15 @@ public class AuthEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(changed);
         Assert.NotEqual(login.Token, changed.Token);
+        staleUser.FullName = "Stale profile update";
+        await Assert.ThrowsAsync<VersionConflictDocumentException>(() => _userRepository.SaveAsync(staleUser));
         await SendRequestAsync(r => r.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeUnauthorized());
         await SendRequestAsync(r => r.BearerToken(changed.Token).AppendPath("users/me").StatusCodeShouldBeOk());
         await SendRequestAsync(r => r.BasicAuthorization("client", login.Token).AppendPath("users/me").StatusCodeShouldBeUnauthorized());
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         Assert.NotNull(user);
+        Assert.True(user.IsCorrectPassword(newPassword));
+        Assert.False(user.IsCorrectPassword(SampleDataService.TEST_USER_PASSWORD));
         Assert.False(String.IsNullOrEmpty(user.AuthenticationVersion));
         Assert.Equal(user.AuthenticationVersion, (await _tokenRepository.GetByIdAsync(changed.Token))!.AuthenticationVersion);
     }
