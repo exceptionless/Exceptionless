@@ -97,6 +97,9 @@ test('home navigation honors personal and organization saved views and survives 
         await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
     });
 
+    // Assert: switching home views reuses in-flight requests instead of cancelling them.
+    expect(failedApiRequests).toEqual([]);
+
     await test.step('clear deleted defaults and return to the first Stacks saved view', async () => {
         // Act
         const deletion = await page.evaluate(
@@ -113,17 +116,16 @@ test('home navigation honors personal and organization saved views and survives 
             },
             { organizationId: e2eScenario.organizationId, token: e2eScenario.userToken, viewName }
         );
-        // Assert
+        // Assert: the open view no longer exists. The full-page error replaces the app shell,
+        // which cancels the shell's in-flight requests.
         expect(deletion).toBe(202);
+        await expect(page.getByRole('heading', { name: "We couldn't find that page" })).toBeVisible();
 
         // Act
         await page.goto('/');
         // Assert
         await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
     });
-
-    // Assert
-    expect(failedApiRequests).toEqual([]);
 });
 
 test('saved view navigation order is personal, persistent, and resettable', async ({ e2eScenario, page, request }) => {

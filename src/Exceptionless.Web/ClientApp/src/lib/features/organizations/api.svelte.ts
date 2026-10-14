@@ -436,7 +436,6 @@ export function getInvoicesQuery(request: GetInvoicesRequest) {
     }));
 }
 
-// Cacheable reads intentionally finish after their observer unmounts so navigation can reuse the result instead of aborting and restarting the request.
 export function getOrganizationQuery(request: GetOrganizationRequest) {
     const queryClient = useQueryClient();
 
@@ -454,9 +453,11 @@ export function getOrganizationQuery(request: GetOrganizationRequest) {
                 queryClient.setQueryData(queryKeys.id(id!, undefined), data);
             },
             queryClient,
-            queryFn: async () => {
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
                 const client = useFetchClient();
-                const response = await client.getJSON<ViewOrganization>(`organizations/${id}`);
+                const response = await client.getJSON<ViewOrganization>(`organizations/${id}`, {
+                    signal
+                });
 
                 return response.data!;
             },
