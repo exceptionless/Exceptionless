@@ -19,6 +19,8 @@ public static class WebHookDelivery
             ? uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.UriEscaped)
             : "invalid";
 
+    // External webhook receivers must not receive internal trace context or potentially sensitive baggage.
+    // https://opentelemetry.io/docs/concepts/signals/baggage/#baggage-security-considerations
     private sealed class WebHookContextPropagator : DistributedContextPropagator
     {
         private readonly DistributedContextPropagator _noOutput = CreateNoOutputPropagator();

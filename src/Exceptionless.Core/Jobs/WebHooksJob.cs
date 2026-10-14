@@ -101,6 +101,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>
                 {
                     Content = JsonContent.Create(body.Data, options: jsonOptions)
                 };
+                // Mark this request so shared HTTP instrumentation redacts webhook URLs only.
                 request.Options.Set(WebHookDelivery.DeliveryRequest, true);
                 using var client = _httpClientFactory.CreateClient(WebHookDelivery.HttpClientName);
                 response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, postCancellationTokenSource.Token);
@@ -123,14 +124,16 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>
             }
             finally
             {
-                using var responseToDispose = response;
+                var statusCode = response?.StatusCode;
+                response?.Dispose();
+
                 if (successful)
                 {
-                    _logger.WebHookComplete(response?.StatusCode, body.OrganizationId, body.ProjectId, body.Url);
+                    _logger.WebHookComplete(statusCode, body.OrganizationId, body.ProjectId, body.Url);
                 }
-                else if (response is not null && (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.Gone))
+                else if (statusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden or HttpStatusCode.Gone)
                 {
-                    _logger.WebHookDisabledStatusCode(body.Type == WebHookType.Slack ? "Slack" : body.WebHookId!, response.StatusCode, body.OrganizationId, body.ProjectId, body.Url);
+                    _logger.WebHookDisabledStatusCode(body.Type == WebHookType.Slack ? "Slack" : body.WebHookId!, statusCode, body.OrganizationId, body.ProjectId, body.Url);
                     await DisableIntegrationAsync(body);
                     await cache.RemoveAllAsync(_cacheKeys);
                 }
