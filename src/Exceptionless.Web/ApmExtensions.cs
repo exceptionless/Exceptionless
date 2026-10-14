@@ -72,6 +72,7 @@ public static partial class ApmExtensions
                     };
                 });
 
+                // Only marked webhook requests are changed; other HTTP spans keep their normal tags.
                 b.AddHttpClientInstrumentation(o => o.EnrichWithHttpRequestMessage = WebHookDelivery.EnrichActivity);
                 b.AddSource("Exceptionless", "Exceptionless.Assistant", "Foundatio");
 

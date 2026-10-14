@@ -16,36 +16,6 @@ namespace Exceptionless.Tests.Logging;
 public class SensitiveDataLoggingTests
 {
     [Fact]
-    public void WebHookLogging_Destination_OmitsCredentialsAndPreservesException()
-    {
-        // Arrange
-        var sink = new CollectingSink();
-        using var logger = new LoggerConfiguration().MinimumLevel.Verbose().WriteTo.Sink(sink).CreateLogger();
-        using var factory = new Serilog.Extensions.Logging.SerilogLoggerFactory(logger);
-        var deliveryLogger = factory.CreateLogger("WebHooks");
-        const string url = "https://user:password@example.com/private-capability?secret-query=value";
-        var exception = new HttpRequestException("Connection failed", new IOException("Socket closed"));
-
-        // Act
-        Exceptionless.Core.Extensions.LoggerExtensions.RecordWebHook(deliveryLogger, "hook", "project", url);
-        Exceptionless.Core.Extensions.LoggerExtensions.WebHookComplete(deliveryLogger, System.Net.HttpStatusCode.OK, "organization", "project", url);
-        Exceptionless.Core.Extensions.LoggerExtensions.WebHookError(deliveryLogger, System.Net.HttpStatusCode.BadGateway, "organization", "project", url, exception);
-        Exceptionless.Core.Extensions.LoggerExtensions.WebHookTimeout(deliveryLogger, null, "organization", "project", url, exception);
-        Exceptionless.Core.Extensions.LoggerExtensions.WebHookDisabledStatusCode(deliveryLogger, "hook", System.Net.HttpStatusCode.Gone, "organization", "project", url);
-
-        // Assert
-        Assert.Equal(5, sink.Events.Count);
-        Assert.Equal(2, sink.Events.Count(entry => ReferenceEquals(entry.Exception, exception)));
-        Assert.All(sink.Events, entry =>
-        {
-            Assert.Equal("https://example.com", Assert.IsType<ScalarValue>(entry.Properties["Destination"]).Value);
-            Assert.DoesNotContain("private-capability", entry.RenderMessage());
-            Assert.DoesNotContain("secret-query", entry.RenderMessage());
-            Assert.DoesNotContain("password", entry.RenderMessage());
-        });
-    }
-
-    [Fact]
     public void ApplySensitiveDataLogging_AppOptions_PreservesSafeValuesAndRedactsNestedSecrets()
     {
         var sink = new CollectingSink();

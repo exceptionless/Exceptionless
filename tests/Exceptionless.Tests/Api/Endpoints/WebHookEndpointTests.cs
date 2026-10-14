@@ -7,6 +7,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Repositories;
@@ -569,16 +570,28 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
     [InlineData("http://localhost/path")]
     [InlineData("http://169.254.169.254/path")]
     [InlineData("https://user:password@example.com/path")]
-    public Task PostAsync_UserSuppliedDestination_ReturnsCreated(string url)
-        => SendRequestAsync(r => r.Post().AsTestOrganizationUser().AppendPath("webhooks")
-            .Content(new NewWebHook { ProjectId = SampleDataService.TEST_PROJECT_ID, Url = url, EventTypes = [WebHook.KnownEventTypes.NewError] })
-            .StatusCodeShouldBeCreated());
+    public async Task PostAsync_UserSuppliedDestination_ReturnsCreated(string url)
+    {
+        // Arrange
+        var webHook = new NewWebHook
+        {
+            OrganizationId = TestConstants.OrganizationId,
+            ProjectId = TestConstants.ProjectId,
+            Url = url,
+            EventTypes = [WebHook.KnownEventTypes.NewError]
+        };
+
+        // Act
+        var response = await SendRequestAsync(request => request.Post().AsTestOrganizationUser().AppendPath("webhooks").Content(webHook));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
 
     [Fact]
     public async Task UnsubscribeAsync_ExistingZapierHook_RemovesWebHook()
     {
         // Arrange - create a zapier hook via subscribe
-        var logger = Assert.IsType<Foundatio.Xunit.TestLogger>(GetService<ILoggerFactory>());
         const string zapierUrl = "https://hooks.zapier.com/hooks/unsubtest";
         var webHook = await SendRequestAsAsync<WebHook>(r => r
             .Post()
@@ -608,12 +621,13 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
         await RefreshDataAsync();
         var results = await _webHookRepository.GetByUrlAsync(zapierUrl);
         Assert.Empty(results.Documents);
-        var unsubscribeLogs = logger.LogEntries.Where(entry => entry.EventId.Name == "RemovingZapierUrls").ToList();
+        var unsubscribeLogs = Log.LogEntries.Where(entry => String.Equals(entry.EventId.Name, nameof(Exceptionless.Web.Extensions.LoggerExtensions.RemovingZapierUrls), StringComparison.Ordinal)).ToList();
         Assert.NotEmpty(unsubscribeLogs);
         Assert.All(unsubscribeLogs, entry =>
         {
             Assert.DoesNotContain(zapierUrl, entry.Message);
-            Assert.DoesNotContain(entry.Properties.Values, value => String.Equals(value?.ToString(), zapierUrl, StringComparison.Ordinal));
+            var properties = Assert.IsAssignableFrom<IEnumerable<KeyValuePair<string, object?>>>(entry.State);
+            Assert.DoesNotContain(properties, property => String.Equals(property.Value?.ToString(), zapierUrl, StringComparison.Ordinal));
         });
     }
 
@@ -626,7 +640,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
     {
         // Act
         var response = await SendRequestAsync(request => request.Post().AsTestOrganizationClientUser()
-            .BaseUri(_server.BaseAddress).AppendPath(path).Content(json, "application/json").StatusCodeShouldBeBadRequest());
+            .BaseUri(_server.BaseAddress).AppendPath(path).Content(json, "application/json"));
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -640,7 +654,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
     {
         // Act
         var response = await SendRequestAsync(request => request.Post().BaseUri(_server.BaseAddress)
-            .AppendPath(path).Content(json, "application/json").StatusCodeShouldBeNotFound());
+            .AppendPath(path).Content(json, "application/json"));
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -657,7 +671,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
 
         // Act
         var response = await SendRequestAsync(request => request.Post().AsTestOrganizationClientUser()
-            .AppendPath("webhooks/subscribe").Content(subscription).StatusCodeShouldBeNotFound());
+            .AppendPath("webhooks/subscribe").Content(subscription));
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -672,7 +686,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
     {
         // Act
         var response = await SendRequestAsync(request => request.Post().AppendPath("webhooks/unsubscribe")
-            .Content(new { target_url = targetUrl }).StatusCodeShouldBeNotFound());
+            .Content(new { target_url = targetUrl }));
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
