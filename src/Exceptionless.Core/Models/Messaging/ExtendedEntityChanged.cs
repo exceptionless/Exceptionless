@@ -51,5 +51,6 @@ public class ExtendedEntityChanged : EntityChanged
         public const string StackId = nameof(StackId);
         public const string UserId = nameof(UserId);
         public const string IsAuthenticationToken = nameof(IsAuthenticationToken);
+        public const string IsTokenRevoked = nameof(IsTokenRevoked);
     }
 }
