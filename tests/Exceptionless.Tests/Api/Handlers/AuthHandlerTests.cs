@@ -7,6 +7,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Validation;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Api.Handlers;
 using Exceptionless.Web.Api.Messages;
@@ -28,19 +29,25 @@ public sealed class AuthHandlerTests : TestWithServices
     public AuthHandlerTests(ITestOutputHelper output) : base(output) { }
 
     [Theory]
-    [InlineData(false, null)]
-    [InlineData(true, null)]
-    [InlineData(false, "previous-version")]
-    [InlineData(true, "previous-version")]
-    public async Task Handle_LinkExternalAccountOwnedByAnotherUser_RevokesPreviousOwnerSessions(bool cleanupFails, string? previousVersion)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task Handle_LinkExternalAccountOwnedByAnotherUser_RevokesPreviousOwnerSessions(bool cleanupFails, bool hasPreviousVersion)
     {
         // Arrange
         const string provider = "github";
-        const string providerId = "provider-user";
-        var displaced = new User { Id = "displaced-user", EmailAddress = "displaced@example.test", AuthenticationVersion = previousVersion };
+        const string providerId = "123456789";
+        string? previousVersion = hasPreviousVersion ? StringExtensions.GetNewToken() : null;
+        string currentVersion = StringExtensions.GetNewToken();
+        var displaced = GetService<UserData>().GenerateUser(id: TestConstants.UserId, emailAddress: TestConstants.UserEmail) with { AuthenticationVersion = previousVersion };
         displaced.AddOAuthAccount(provider, providerId, displaced.EmailAddress);
-        displaced.AddOAuthAccount("google", "retained-provider", displaced.EmailAddress);
-        var current = new User { Id = "current-user", EmailAddress = "current@example.test", AuthenticationVersion = "current-version" };
+        displaced.AddOAuthAccount("google", "104567890123456789012", displaced.EmailAddress);
+        var current = GetService<UserData>().GenerateUser(id: TestConstants.UserId2, emailAddress: TestConstants.UserEmail2) with { AuthenticationVersion = currentVersion };
+        displaced.MarkEmailAddressVerified();
+        current.MarkEmailAddressVerified();
+        await GetService<MiniValidationValidator>().ValidateAndThrowAsync(displaced);
+        await GetService<MiniValidationValidator>().ValidateAndThrowAsync(current);
         var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(IdentityUtils.UserAuthenticationType)) };
         context.Request.SetUser(current);
         var calls = new List<string>();
@@ -48,7 +55,11 @@ public sealed class AuthHandlerTests : TestWithServices
         var users = new Mock<IUserRepository>(MockBehavior.Strict);
         users.Setup(repository => repository.GetUserByOAuthProviderAsync(provider, providerId)).ReturnsAsync(displaced);
         users.Setup(repository => repository.SaveAsync(displaced, It.IsAny<CommandOptionsDescriptor<User>>()))
-            .Callback(() => { persistedVersion = displaced.AuthenticationVersion; calls.Add("save-displaced"); }).ReturnsAsync(displaced);
+            .Callback(() =>
+            {
+                persistedVersion = displaced.AuthenticationVersion;
+                calls.Add("save-displaced");
+            }).ReturnsAsync(displaced);
         users.Setup(repository => repository.SaveAsync(current, It.IsAny<CommandOptionsDescriptor<User>>()))
             .Callback(() => calls.Add("save-current")).ReturnsAsync(current);
         var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
@@ -81,7 +92,7 @@ public sealed class AuthHandlerTests : TestWithServices
         Assert.Equal(["save-displaced", "remove-tokens", "remove-oauth-tokens", "save-current"], calls);
         Assert.DoesNotContain(displaced.OAuthAccounts, account => String.Equals(account.ProviderUserId, providerId, StringComparison.Ordinal));
         Assert.Contains(current.OAuthAccounts, account => String.Equals(account.ProviderUserId, providerId, StringComparison.Ordinal));
-        Assert.Equal("current-version", current.AuthenticationVersion);
+        Assert.Equal(currentVersion, current.AuthenticationVersion);
         users.VerifyAll();
         tokens.VerifyAll();
         oauthTokens.VerifyAll();
