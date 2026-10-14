@@ -230,6 +230,7 @@ public class UserSerializerTests : TestWithServices
         // Assert - Critical: organization_ids must be populated
         Assert.NotNull(user);
         Assert.Equal("user-from-cache", user.Id);
+        Assert.Null(user.AuthenticationVersion);
         Assert.Equal(2, user.OrganizationIds.Count);
         Assert.Contains("cached-org-1", user.OrganizationIds);
         Assert.Contains("cached-org-2", user.OrganizationIds);
@@ -419,9 +420,11 @@ public class UserSerializerTests : TestWithServices
     public void Deserialize_UserWithAllProperties_PreservesAllValues()
     {
         // Arrange
+        const string authenticationVersion = "current-version";
         var original = new User
         {
             Id = "full-user",
+            AuthenticationVersion = authenticationVersion,
             FullName = "Full Test User",
             EmailAddress = "full@example.com",
             Password = "hashedpassword",
@@ -444,6 +447,7 @@ public class UserSerializerTests : TestWithServices
         // Assert
         Assert.NotNull(deserialized);
         Assert.Equal("full-user", deserialized.Id);
+        Assert.Equal(authenticationVersion, deserialized.AuthenticationVersion);
         Assert.Equal("Full Test User", deserialized.FullName);
         Assert.Equal("full@example.com", deserialized.EmailAddress);
         Assert.Equal("hashedpassword", deserialized.Password);
