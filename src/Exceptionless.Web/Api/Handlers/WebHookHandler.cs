@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -88,8 +87,8 @@ public class WebHookHandler(
 
     public async Task<Result<Exceptionless.Core.Models.WebHook>> Handle(SubscribeWebHook message)
     {
-        string? eventType = GetStringProperty(message.Data.RootElement, "event");
-        string? url = GetStringProperty(message.Data.RootElement, "target_url");
+        string? eventType = message.Data.RootElement.GetStringProperty("event");
+        string? url = message.Data.RootElement.GetStringProperty("target_url");
         if (String.IsNullOrEmpty(eventType) || String.IsNullOrEmpty(url))
             return Result.BadRequest("Webhook subscription event and target_url are required.");
 
@@ -118,7 +117,7 @@ public class WebHookHandler(
 
     public async Task<Result> Handle(UnsubscribeWebHook message)
     {
-        string? targetUrl = GetStringProperty(message.Data.RootElement, "target_url");
+        string? targetUrl = message.Data.RootElement.GetStringProperty("target_url");
         if (!IsZapierTarget(targetUrl))
             return Result.NotFound("Webhook target not found.");
 
@@ -135,11 +134,6 @@ public class WebHookHandler(
 
         return Result.Success();
     }
-
-    private static string? GetStringProperty(JsonElement data, string name)
-        => data.ValueKind == JsonValueKind.Object && data.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
-            ? value.GetString()
-            : null;
 
     private static bool IsZapierTarget([NotNullWhen(true)] string? url)
     {
