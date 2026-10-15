@@ -352,9 +352,21 @@ public partial class EventEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task PostEvent_WithValidPayload_EnqueuesAndProcessesEventAsync()
     {
+        // Arrange
         var serializer = GetService<ITextSerializer>();
+        var webHookQueue = GetService<IQueue<WebHookNotification>>();
+        var webHook = await GetService<IWebHookRepository>().AddAsync(new WebHook
+        {
+            OrganizationId = TestConstants.OrganizationId,
+            ProjectId = TestConstants.ProjectId,
+            Url = "http://localhost/webhook",
+            Version = WebHook.KnownVersions.Version2,
+            EventTypes = [WebHook.KnownEventTypes.NewEvent]
+        }, o => o.ImmediateConsistency());
         /* language=json */
         const string json = """{"message":"test","reference_id":"TestReferenceId","@user":{"identity":"Test user","name":null}}""";
+
+        // Act
         await SendRequestAsync(r => r
             .Post()
             .AsTestOrganizationClientUser()
@@ -371,6 +383,7 @@ public partial class EventEndpointTests : IntegrationTestsBase
         await processEventsJob.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
 
+        // Assert
         stats = await _eventQueue.GetQueueStatsAsync();
         Assert.Equal(1, stats.Completed);
 
@@ -384,6 +397,18 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.Equal("Test user", identity.Identity);
         Assert.Null(identity.Name);
         Assert.Null(ev.GetUserDescription(serializer, _logger));
+
+        Assert.Equal(1, (await webHookQueue.GetQueueStatsAsync()).Enqueued);
+        var queuedWebHook = await webHookQueue.DequeueAsync(TestCancellationToken);
+        Assert.NotNull(queuedWebHook);
+        Assert.Equal(webHook.Id, queuedWebHook.Value.WebHookId);
+        Assert.Equal(ev.OrganizationId, queuedWebHook.Value.OrganizationId);
+        Assert.Equal(ev.ProjectId, queuedWebHook.Value.ProjectId);
+        Assert.Equal(webHook.Url, queuedWebHook.Value.Url);
+        var webHookEvent = Assert.IsType<WebHookEvent>(queuedWebHook.Value.Data);
+        Assert.Equal(ev.Id, webHookEvent.Id);
+        Assert.Equal(ev.Message, webHookEvent.Message);
+        await queuedWebHook.CompleteAsync();
 
         // post description
         await _eventUserDescriptionQueue.DeleteQueueAsync();
