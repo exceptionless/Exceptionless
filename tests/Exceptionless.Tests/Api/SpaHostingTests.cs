@@ -116,6 +116,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
             "connect-src", "'self'", "https://*.exceptionless.io", "https://api.stripe.com",
             "https://link.com", "https://*.link.com", "https://*.intercom.io", "wss://*.intercom.io",
             "https://*.intercom-messenger.com", "wss://*.intercom-messenger.com",
+            "https://uploads.intercomcdn.com", "https://uploads.intercomusercontent.com",
             siteUrl, "wss://site.localhost:8111", "https://localhost:9443", "wss://localhost:9443", "https://telemetry.localhost:9555"
         ], sources);
 
@@ -128,7 +129,9 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Assert.Equal("DENY", Assert.Single(response.Headers.GetValues("X-Frame-Options")));
 
         string frames = Assert.Single(policy.Split(';'), directive => directive.StartsWith("frame-src ", StringComparison.Ordinal));
-        Assert.DoesNotContain("'self'", frames.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        Assert.Equal([
+            "frame-src", "https://*.stripe.com", "https://link.com", "https://*.link.com", "https://intercom-sheets.com"
+        ], frames.Split(' ', StringSplitOptions.RemoveEmptyEntries));
         string media = Assert.Single(policy.Split(';'), directive => directive.StartsWith("media-src ", StringComparison.Ordinal));
         Assert.DoesNotContain("'self'", media.Split(' ', StringSplitOptions.RemoveEmptyEntries));
         string workers = Assert.Single(policy.Split(';'), directive => directive.StartsWith("worker-src ", StringComparison.Ordinal));

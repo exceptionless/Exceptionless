@@ -73,11 +73,13 @@ internal static partial class FrontendContentSecurityPolicy
             .To("https://api.stripe.com")
             .To("https://link.com")
             .To("https://*.link.com")
-            // Messenger API/ping and realtime connections; no upload or attachment hosts.
+            // Messenger API/ping, realtime connections and support attachment uploads.
             .To("https://*.intercom.io")
             .To("wss://*.intercom.io")
             .To("https://*.intercom-messenger.com")
-            .To("wss://*.intercom-messenger.com");
+            .To("wss://*.intercom-messenger.com")
+            .To("https://uploads.intercomcdn.com")
+            .To("https://uploads.intercomusercontent.com");
 
         // Explicit configured WebSocket origins cover browsers where 'self' does not match WSS.
         // BaseURL/ApiUrl must match the externally served origins, including behind reverse proxies.
@@ -91,11 +93,12 @@ internal static partial class FrontendContentSecurityPolicy
         if (telemetryOrigin is not null)
             csp.AllowConnections.To(telemetryOrigin);
 
-        // Stripe Payment Element, 3DS and Link frames.
+        // Stripe Payment Element, 3DS, Link and Intercom's embedded article viewer.
         csp.AllowFrames
             .From("https://*.stripe.com")
             .From("https://link.com")
-            .From("https://*.link.com");
+            .From("https://*.link.com")
+            .From("https://intercom-sheets.com");
 
         // Intercom's core messenger sounds; optional video/attachment sources are excluded.
         csp.AllowAudioAndVideo.From("https://js.intercomcdn.com");

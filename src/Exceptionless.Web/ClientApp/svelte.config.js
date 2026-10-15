@@ -31,7 +31,7 @@ const config = {
                 'default-src': ['none'],
                 'font-src': ['self', 'https://*.intercomcdn.com'],
                 'form-action': ['self'],
-                'frame-src': ['https://*.stripe.com', 'https://link.com', 'https://*.link.com'],
+                'frame-src': ['https://*.stripe.com', 'https://link.com', 'https://*.link.com', 'https://intercom-sheets.com'],
                 'img-src': [
                     'self',
                     'blob:',
