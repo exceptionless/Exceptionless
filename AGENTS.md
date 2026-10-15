@@ -11,6 +11,7 @@ This file is root-scope agent guidance. When working in a subtree, read any nest
 - For Aspire resource state, logs, traces, dashboard, or browser telemetry investigations, use the `aspire-diagnostics` skill.
 - Check `git status --porcelain` before edits. Do not stash, switch branches, reset, or revert user work unless explicitly asked.
 - On PowerShell, quote paths with special characters and prefer `-LiteralPath`.
+- Leave a blank line before region directives and between Arrange, Act, and Assert sections.
 
 ## Common Commands
 
@@ -48,6 +49,7 @@ tests/                         # C# tests and HTTP samples
 
 ## Testing and Safety
 
+- **C# test conventions:** Use explicit `// Arrange`, `// Act`, and `// Assert` sections; keep assertions out of the action. Inherit the appropriate existing test base (`TestWithLoggingBase` for isolated tests, `TestWithServices` for DI, or `IntegrationTestsBase` with `AppWebHostFactory` for application integration). Use the inherited `TestCancellationToken` and idiomatic `using var` declarations. Reuse repository fixtures and HTTP helpers rather than duplicating application startup or service registration. Read `.agents/skills/backend-testing/SKILL.md` before adding or changing backend tests.
 - **Test value and runtime:** Before adding a test, identify the distinct failure it catches and check existing coverage. Extend an existing test or use parameterized cases when the setup and behavior are the same. Combine related assertions in one scenario when they share expensive setup; keep independent behaviors separately diagnosable. Do not add tests for trivial accessors, framework behavior, implementation details, or duplicate coverage merely to increase test counts.
 - Use the cheapest reliable layer: pure logic in unit tests, service/API contracts in integration tests, and browser tests for user journeys or behavior that requires a real browser. Keep a representative browser integration case when moving a data matrix to unit/component tests.
 - Keep fixtures and generated data minimal, but cross the actual pagination/batch boundary when that is the behavior under test. Use controlled time and observable conditions instead of fixed sleeps. Keep benchmarks with no correctness assertions out of the normal test suite.

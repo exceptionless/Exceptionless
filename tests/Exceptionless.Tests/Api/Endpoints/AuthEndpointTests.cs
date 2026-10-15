@@ -1039,6 +1039,46 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AuthenticateAsync_InactiveUserToken_ReturnsUnauthorized()
+    {
+        // Arrange
+        const string email = "inactive-token-user@exceptionless.test";
+        const string salt = "1234567890123456";
+
+        var user = new User
+        {
+            EmailAddress = email,
+            Password = TestConstants.UserPassword.ToSaltedHash(salt),
+            Salt = salt,
+            FullName = "Inactive Token User",
+            Roles = AuthorizationRoles.AllScopes
+        };
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
+
+        var login = await SendRequestAsAsync<TokenResult>(r => r
+            .Post()
+            .AppendPath("auth/login")
+            .Content(new Login { Email = email, Password = TestConstants.UserPassword })
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(login);
+        Assert.False(String.IsNullOrEmpty(login.Token));
+
+        var storedUser = await _userRepository.GetByEmailAddressAsync(email);
+        Assert.NotNull(storedUser);
+        await _userRepository.SaveAsync(storedUser with { IsActive = false }, o => o.ImmediateConsistency());
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .BearerToken(login.Token)
+            .AppendPath("users/me")
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task BasicAuthentication_PasswordContainingColons_ReturnsCurrentUser()
     {
         // Arrange
@@ -1284,6 +1324,39 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.NotNull(throttledUser);
         Assert.True(throttledUser.IsActive);
         Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangePassword_StoredOldTokenSurvivesCleanup_CannotAuthenticate()
+    {
+        // Arrange
+        const string newPassword = "ChangedPassword2$";
+        var login = await SendRequestAsAsync<TokenResult>(r => r.Post().AppendPath("auth/login")
+            .Content(new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = SampleDataService.TEST_USER_PASSWORD })
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(login);
+        var oldToken = await _tokenRepository.GetByIdAsync(login.Token, o => o.Cache(false));
+        Assert.NotNull(oldToken);
+        await SendRequestAsync(r => r.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeOk());
+
+        // Act
+        var changed = await SendRequestAsAsync<TokenResult>(r => r.Post().AppendPath("auth/change-password")
+            .BearerToken(login.Token)
+            .Content(new ChangePasswordModel { CurrentPassword = SampleDataService.TEST_USER_PASSWORD, Password = newPassword })
+            .StatusCodeShouldBeOk());
+        // Retain a record as a failed cleanup would, after warming the authentication cache.
+        await _tokenRepository.AddAsync(oldToken, o => o.ImmediateConsistency());
+
+        // Assert
+        Assert.NotNull(changed);
+        Assert.NotEqual(login.Token, changed.Token);
+        await SendRequestAsync(r => r.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeUnauthorized());
+        await SendRequestAsync(r => r.BearerToken(changed.Token).AppendPath("users/me").StatusCodeShouldBeOk());
+        await SendRequestAsync(r => r.BasicAuthorization("client", login.Token).AppendPath("users/me").StatusCodeShouldBeUnauthorized());
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        Assert.False(String.IsNullOrEmpty(user.AuthenticationVersion));
+        Assert.Equal(user.AuthenticationVersion, (await _tokenRepository.GetByIdAsync(changed.Token))!.AuthenticationVersion);
     }
 
     [Fact]
