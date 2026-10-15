@@ -24,7 +24,10 @@ internal static partial class FrontendContentSecurityPolicy
 
         // Nonces/hashes authorize our bootstrap; strict-dynamic trusts scripts it loads.
         // Provider host wildcards consolidate Stripe.js and Intercom's script host families.
-        csp.AllowScripts.FromSelf().AddNonce().WithStrictDynamic()
+        csp.AllowScripts
+            .FromSelf()
+            .AddNonce()
+            .WithStrictDynamic()
             .From("https://*.stripe.com")
             .From("https://*.intercom.io")
             .From("https://js.intercomcdn.com");
@@ -33,7 +36,7 @@ internal static partial class FrontendContentSecurityPolicy
         // Trust only hashes from the published SPA, never request or response HTML.
         // Startup synchronizes SvelteKit's bootstrap hash after versioning its env.js import.
         // Static responses need no nonce rewriting.
-        IFileInfo index = files.GetFileInfo("index.html");
+        var index = files.GetFileInfo("index.html");
         if (index.Exists)
         {
             using var reader = new StreamReader(index.CreateReadStream());
@@ -42,32 +45,46 @@ internal static partial class FrontendContentSecurityPolicy
         }
 
         // UI style attributes and Scalar/Intercom's injected styles still need inline CSS.
-        csp.AllowStyles.FromSelf().AllowUnsafeInline();
+        csp.AllowStyles
+            .FromSelf()
+            .AllowUnsafeInline();
 
         // Local previews, Stripe Link assets, core Intercom assets and user Gravatar images.
-        csp.AllowImages.FromSelf().From("blob:").From("data:")
+        csp.AllowImages
+            .FromSelf()
+            .From("blob:")
+            .From("data:")
             .From("https://*.link.com")
             .From("https://js.intercomcdn.com")
             .From("https://static.intercomassets.com")
             .From("https://www.gravatar.com");
+
         // Bundled app fonts and Intercom's js/fonts CDN hosts.
-        csp.AllowFonts.FromSelf().From("https://*.intercomcdn.com");
+        csp.AllowFonts
+            .FromSelf()
+            .From("https://*.intercomcdn.com");
 
         // The backend serves a fixed policy; only Vite allows arbitrary environment connections.
-        csp.AllowConnections.ToSelf()
+        csp.AllowConnections
+            .ToSelf()
             // Browser telemetry to Exceptionless collectors (hooks.client.ts).
             .To("https://*.exceptionless.io")
             // Payment Element uses Stripe.js; Link is enabled by its default payment options.
             .To("https://api.stripe.com")
-            .To("https://link.com").To("https://*.link.com")
+            .To("https://link.com")
+            .To("https://*.link.com")
             // Messenger API/ping and realtime connections; no upload or attachment hosts.
-            .To("https://*.intercom.io").To("wss://*.intercom.io")
-            .To("https://*.intercom-messenger.com").To("wss://*.intercom-messenger.com");
+            .To("https://*.intercom.io")
+            .To("wss://*.intercom.io")
+            .To("https://*.intercom-messenger.com")
+            .To("wss://*.intercom-messenger.com");
+
         // Explicit configured WebSocket origins cover browsers where 'self' does not match WSS.
         // BaseURL/ApiUrl must match the externally served origins, including behind reverse proxies.
         // Invalid or missing origins add no sources; request/forwarded headers are never trusted.
         ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, options.BaseURL);
         ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, options.ApiUrl);
+
         // Browser telemetry can use a separate self-hosted HTTP endpoint (hooks.client.ts).
         // Reuse origin validation without adding an unused telemetry WebSocket destination.
         string? telemetryOrigin = ApiContentSecurityPolicy.GetConfiguredOrigins(options.ExceptionlessServerUrl).FirstOrDefault();
@@ -75,8 +92,10 @@ internal static partial class FrontendContentSecurityPolicy
             csp.AllowConnections.To(telemetryOrigin);
 
         // Stripe Payment Element, 3DS and Link frames.
-        csp.AllowFrames.From("https://*.stripe.com")
-            .From("https://link.com").From("https://*.link.com");
+        csp.AllowFrames
+            .From("https://*.stripe.com")
+            .From("https://link.com")
+            .From("https://*.link.com");
 
         // Intercom's core messenger sounds; optional video/attachment sources are excluded.
         csp.AllowAudioAndVideo.From("https://js.intercomcdn.com");

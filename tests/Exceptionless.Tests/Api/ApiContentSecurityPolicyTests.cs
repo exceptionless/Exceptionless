@@ -42,5 +42,4 @@ public sealed class ApiContentSecurityPolicyTests(ITestOutputHelper output) : Te
         // Assert
         Assert.Empty(origins);
     }
-
 }
