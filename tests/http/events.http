@@ -63,6 +63,14 @@ Content-Type: application/json
   }
 }
 
+### Find events by reference
+GET {{apiUrl}}/events/by-ref/{{referenceId}}
+Authorization: Bearer {{token}}
+
+### Find project events by reference
+GET {{apiUrl}}/projects/{{projectId}}/events/by-ref/{{referenceId}}
+Authorization: Bearer {{token}}
+
 ### Add user feedback to the submitted event
 POST {{apiUrl}}/events/by-ref/{{referenceId}}/user-description?access_token={{clientToken}}
 Content-Type: application/json
