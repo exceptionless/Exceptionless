@@ -15,7 +15,8 @@ public static class WebHookDelivery
     }
 
     public static string GetLoggingDestination(string? value)
-        => Uri.TryCreate(value, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+        => Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            && (String.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal) || String.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal))
             ? uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.UriEscaped)
             : "invalid";
 
@@ -33,6 +34,8 @@ public static class WebHookDelivery
                 return;
 
             // OTel may already have injected headers before the runtime calls this propagator.
+            // These are the runtime's default propagation fields. If B3, Jaeger, or another
+            // OTel propagator is added, its headers must also be removed here and covered by tests.
             foreach (string field in Fields)
                 request.Headers.Remove(field);
         }

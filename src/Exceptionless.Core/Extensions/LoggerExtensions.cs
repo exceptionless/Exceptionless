@@ -1,6 +1,6 @@
 ﻿using System.Net;
-using Microsoft.Extensions.Logging;
 using Exceptionless.Core.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -40,7 +40,7 @@ internal static class LoggerExtensions
     private static readonly Action<ILogger, HttpStatusCode?, string, string, string, Exception?> _webHookComplete =
         LoggerMessage.Define<HttpStatusCode?, string, string, string>(
             LogLevel.Information,
-            new EventId(5, nameof(WebHookError)),
+            new EventId(5, nameof(WebHookComplete)),
             "Web hook POST complete: status={Status} organization={OrganizationId} project={ProjectId} destination={Destination}");
 
     private static readonly Action<ILogger, string, HttpStatusCode?, string, string, string, Exception?> _webHookDisabledStatusCode =
@@ -134,6 +134,18 @@ internal static class LoggerExtensions
             new EventId(21, nameof(RetentionEnforcementEventComplete)),
             "Enforced event retention period for {OrganizationName} ({OrganizationId}), Removed {RemovedEvents} Events");
 
+    private static readonly Action<ILogger, HttpStatusCode, string, string, string, Exception?> _webHookUnsuccessfulResponse =
+        LoggerMessage.Define<HttpStatusCode, string, string, string>(
+            LogLevel.Warning,
+            new EventId(22, nameof(WebHookUnsuccessfulResponse)),
+            "Web hook returned an unsuccessful response: status={Status} organization={OrganizationId} project={ProjectId} destination={Destination}");
+
+    private static readonly Action<ILogger, string, string, string, Exception?> _webHookMissingId =
+        LoggerMessage.Define<string, string, string>(
+            LogLevel.Warning,
+            new EventId(23, nameof(WebHookMissingId)),
+            "WebHook notification is missing the web hook id. Organization: {OrganizationId}, Project: {ProjectId}, Destination: {Destination}");
+
     public static void RemoveStacksComplete(this ILogger logger, long removedStacks, long removedEvents)
         => _removeStacksComplete(logger, removedStacks, removedEvents, null);
 
@@ -183,6 +195,12 @@ internal static class LoggerExtensions
 
     public static void WebHookComplete(this ILogger logger, HttpStatusCode? statusCode, string organizationId, string projectId, string url)
         => _webHookComplete(logger, statusCode, organizationId, projectId, WebHookDelivery.GetLoggingDestination(url), null);
+
+    public static void WebHookUnsuccessfulResponse(this ILogger logger, HttpStatusCode statusCode, string organizationId, string projectId, string url)
+        => _webHookUnsuccessfulResponse(logger, statusCode, organizationId, projectId, WebHookDelivery.GetLoggingDestination(url), null);
+
+    public static void WebHookMissingId(this ILogger logger, string organizationId, string projectId, string url)
+        => _webHookMissingId(logger, organizationId, projectId, WebHookDelivery.GetLoggingDestination(url), null);
 
     public static void WebHookError(this ILogger logger, HttpStatusCode? statusCode, string organizationId, string projectId, string url, Exception exception)
         => _webHookError(logger, statusCode, organizationId, projectId, WebHookDelivery.GetLoggingDestination(url), exception.Message, exception);
