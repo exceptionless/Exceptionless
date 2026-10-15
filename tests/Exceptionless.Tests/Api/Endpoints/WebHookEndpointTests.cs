@@ -612,7 +612,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
 
         // The shared API host retains the first test instance's logger factory.
         var hostLog = Assert.IsType<TestLogger>(GetService<ILoggerFactory>());
-        int previousLogCount = hostLog.LogEntries.Count;
+        var previousLogs = hostLog.LogEntries;
 
         // Act
         await SendRequestAsync(r => r
@@ -626,7 +626,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
         await RefreshDataAsync();
         var results = await _webHookRepository.GetByUrlAsync(zapierUrl);
         Assert.Empty(results.Documents);
-        var unsubscribeLogs = hostLog.LogEntries.Skip(previousLogCount).Where(entry => String.Equals(entry.EventId.Name, nameof(Exceptionless.Web.Extensions.LoggerExtensions.RemovingZapierUrls), StringComparison.Ordinal)).ToList();
+        var unsubscribeLogs = hostLog.LogEntries.Except(previousLogs).Where(entry => String.Equals(entry.EventId.Name, nameof(Exceptionless.Web.Extensions.LoggerExtensions.RemovingZapierUrls), StringComparison.Ordinal)).ToList();
         Assert.NotEmpty(unsubscribeLogs);
         Assert.All(unsubscribeLogs, entry =>
         {
