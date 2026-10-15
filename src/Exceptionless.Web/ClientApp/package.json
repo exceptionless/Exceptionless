@@ -44,7 +44,7 @@
         "@storybook/sveltekit": "^10.6.1",
         "@stylistic/eslint-plugin": "^5.10.0",
         "@sveltejs/adapter-static": "^3.0.10",
-        "@sveltejs/kit": "^2.70.3",
+        "@sveltejs/kit": "^3.0.1",
         "@sveltejs/vite-plugin-svelte": "^7.3.1",
         "@tailwindcss/vite": "^4.3.3",
         "@tanstack/eslint-plugin-query": "^5.104.2",
