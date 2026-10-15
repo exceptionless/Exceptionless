@@ -109,7 +109,10 @@ export const init: ClientInit = async () => {
     });
 };
 
-export const handleError: HandleClientError = async ({ error, event, kind }) => {
+// SvelteKit 3 needs Svelte's async mode for an async hook, which this app leaves off. The hook
+// returns at once and submits in the background, so telemetry never delays the error page.
+export const handleError: HandleClientError = (input) => {
+    const { error, event, kind } = input;
     if (dev) {
         console.warn({ error, event, kind });
     }
@@ -119,20 +122,23 @@ export const handleError: HandleClientError = async ({ error, event, kind }) => 
         return error;
     }
 
-    let errorId: null | string = null;
-    try {
-        if (kind === 'framework' && error.status === 404) {
-            await Exceptionless.submitNotFound(normalizePath(event.url.pathname));
-        } else {
-            await Exceptionless.createException(toError(kind === 'framework' ? error.message : error))
-                .setProperty('status', String(kind === 'framework' ? error.status : 500))
-                .submit();
-        }
+    const errorId = guid();
+    void submitError(errorId, input);
+    return { errorId };
+};
 
-        errorId = Exceptionless.getLastReferenceId();
+async function submitError(errorId: string, { error, event, kind }: Parameters<HandleClientError>[0]): Promise<void> {
+    try {
+        const builder =
+            kind === 'framework' && error.status === 404
+                ? Exceptionless.createNotFound(normalizePath(event.url.pathname))
+                : Exceptionless.createException(toError(kind === 'framework' ? error.message : error)).setProperty(
+                      'status',
+                      String(kind === 'framework' ? error.status : 500)
+                  );
+
+        await builder.setReferenceId(errorId).submit();
     } catch {
         // never throw
     }
-
-    return { errorId: errorId ?? guid() };
-};
+}
