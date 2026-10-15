@@ -140,8 +140,8 @@ public class WebHookHandler(
         return url is not null
             && url.StartsWith("https://hooks.zapier.com", StringComparison.Ordinal)
             && Uri.TryCreate(url, UriKind.Absolute, out var uri)
-            && uri.Scheme == Uri.UriSchemeHttps
-            && uri.Host.Equals("hooks.zapier.com", StringComparison.Ordinal)
+            && String.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
+            && String.Equals(uri.Host, "hooks.zapier.com", StringComparison.Ordinal)
             && uri.IsDefaultPort
             && String.IsNullOrEmpty(uri.UserInfo);
     }
