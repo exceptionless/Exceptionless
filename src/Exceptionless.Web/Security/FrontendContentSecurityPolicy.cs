@@ -68,6 +68,11 @@ internal static partial class FrontendContentSecurityPolicy
         // Invalid or missing origins add no sources; request/forwarded headers are never trusted.
         ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, options.BaseURL);
         ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, options.ApiUrl);
+        // Browser telemetry can use a separate self-hosted HTTP endpoint (hooks.client.ts).
+        // Reuse origin validation without adding an unused telemetry WebSocket destination.
+        string? telemetryOrigin = ApiContentSecurityPolicy.GetConfiguredOrigins(options.ExceptionlessServerUrl).FirstOrDefault();
+        if (telemetryOrigin is not null)
+            csp.AllowConnections.To(telemetryOrigin);
 
         // Stripe Payment Element, 3DS and Link frames.
         csp.AllowFrames.From("https://*.stripe.com")

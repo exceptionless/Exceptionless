@@ -27,16 +27,16 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         // Arrange
         await _factory.Server.WaitForReadyAsync();
         using var client = _factory.CreateClient();
-        string shell = await client.GetStringAsync("/index.html", TestContext.Current.CancellationToken);
+        string shell = await client.GetStringAsync("/index.html", TestCancellationToken);
 
         // Act
-        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(path, TestCancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
         Assert.Equal("no-cache", response.Headers.CacheControl?.ToString());
-        Assert.Equal(shell, await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(shell, await response.Content.ReadAsStringAsync(TestCancellationToken));
     }
 
     [Theory]
@@ -55,7 +55,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         using var client = _factory.CreateClient();
 
         // Act
-        using var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync(path, TestCancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -70,7 +70,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         using var client = _factory.CreateClient();
 
         // Act
-        using var response = await client.PostAsync("/login", null, TestContext.Current.CancellationToken);
+        using var response = await client.PostAsync("/login", null, TestCancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -85,8 +85,15 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         // Arrange
         const string siteUrl = "https://site.localhost:8111";
         const string apiUrl = "https://localhost:9443/backend?ignored=true";
+        const string telemetryUrl = "https://telemetry.localhost:9555/collector?ignored=true";
         await using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureAppConfiguration((_, config) =>
-            config.AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = siteUrl, ["ApiUrl"] = apiUrl, ["EnableSsl"] = enableSsl.ToString() })));
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = siteUrl,
+                ["ApiUrl"] = apiUrl,
+                ["ExceptionlessServerUrl"] = telemetryUrl,
+                ["EnableSsl"] = enableSsl.ToString()
+            })));
         await factory.Server.WaitForReadyAsync();
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Host = "poisoned.localhost:4444";
@@ -94,7 +101,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         client.DefaultRequestHeaders.Add("Forwarded", "host=forwarded.localhost:5555;proto=http");
 
         // Act
-        using var response = await client.GetAsync("/login", TestContext.Current.CancellationToken);
+        using var response = await client.GetAsync("/login", TestCancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -109,7 +116,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
             "connect-src", "'self'", "https://*.exceptionless.io", "https://api.stripe.com",
             "https://link.com", "https://*.link.com", "https://*.intercom.io", "wss://*.intercom.io",
             "https://*.intercom-messenger.com", "wss://*.intercom-messenger.com",
-            siteUrl, "wss://site.localhost:8111", "https://localhost:9443", "wss://localhost:9443"
+            siteUrl, "wss://site.localhost:8111", "https://localhost:9443", "wss://localhost:9443", "https://telemetry.localhost:9555"
         ], sources);
 
         // The published static shell relies on this response header for deny-by-default and
@@ -152,27 +159,27 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
 
         try
         {
-            await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), html, TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), html, TestCancellationToken);
             string envPath = Path.Combine(webRoot, "_app", "env.js");
             Directory.CreateDirectory(Path.GetDirectoryName(envPath)!);
-            await File.WriteAllTextAsync(envPath, "export const env={version:1};", TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(envPath, "export const env={version:1};", TestCancellationToken);
             using var files = new PhysicalFileProvider(webRoot);
             // Use the published fixture directly, without the development asset manifest overlay.
             await using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureServices((context, _) =>
                 context.HostingEnvironment.WebRootFileProvider = files));
             await factory.Server.WaitForReadyAsync();
             using var client = factory.CreateClient();
-            await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), changedHtml, TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(Path.Combine(webRoot, "index.html"), changedHtml, TestCancellationToken);
 
             // Act
-            using HttpResponseMessage response = await client.GetAsync("/index.html", TestContext.Current.CancellationToken);
-            string body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            using var response = await client.GetAsync("/index.html", TestCancellationToken);
+            string body = await response.Content.ReadAsStringAsync(TestCancellationToken);
             string policy = response.Headers.GetValues("Content-Security-Policy").Single();
-            using HttpResponseMessage firstEnvironment = await client.GetAsync("/_app/env.js?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TestContext.Current.CancellationToken);
-            string firstEnvironmentBody = await firstEnvironment.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-            await File.WriteAllTextAsync(envPath, "export const env={version:2};", TestContext.Current.CancellationToken);
-            using HttpResponseMessage secondEnvironment = await client.GetAsync("/_app/env.js?v=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", TestContext.Current.CancellationToken);
-            string secondEnvironmentBody = await secondEnvironment.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+            using var firstEnvironment = await client.GetAsync("/_app/env.js?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", TestCancellationToken);
+            string firstEnvironmentBody = await firstEnvironment.Content.ReadAsStringAsync(TestCancellationToken);
+            await File.WriteAllTextAsync(envPath, "export const env={version:2};", TestCancellationToken);
+            using var secondEnvironment = await client.GetAsync("/_app/env.js?v=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", TestCancellationToken);
+            string secondEnvironmentBody = await secondEnvironment.Content.ReadAsStringAsync(TestCancellationToken);
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -203,10 +210,10 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         using var client = _factory.CreateClient();
 
         // Act
-        using HttpResponseMessage firstResponse = await client.GetAsync("/docs/", TestContext.Current.CancellationToken);
-        using HttpResponseMessage secondResponse = await client.GetAsync("/docs/", TestContext.Current.CancellationToken);
-        string firstBody = await firstResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        string secondBody = await secondResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        using var firstResponse = await client.GetAsync("/docs/", TestCancellationToken);
+        using var secondResponse = await client.GetAsync("/docs/", TestCancellationToken);
+        string firstBody = await firstResponse.Content.ReadAsStringAsync(TestCancellationToken);
+        string secondBody = await secondResponse.Content.ReadAsStringAsync(TestCancellationToken);
         MatchCollection firstNonces = Regex.Matches(firstBody, "<script\\b[^>]*\\bnonce=\"(?<nonce>[^\"]+)\"");
         MatchCollection secondNonces = Regex.Matches(secondBody, "<script\\b[^>]*\\bnonce=\"(?<nonce>[^\"]+)\"");
 

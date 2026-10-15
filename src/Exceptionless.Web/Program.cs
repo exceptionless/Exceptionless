@@ -381,7 +381,7 @@ public partial class Program
     {
         // Revalidate the shell so a changed runtime-config version reaches the browser.
         // env.js and compiled assets retain their cache-busting URLs and normal caching.
-        if (context.File.Name.Equals("index.html", StringComparison.OrdinalIgnoreCase))
+        if (String.Equals(context.File.Name, "index.html", StringComparison.OrdinalIgnoreCase))
             context.Context.Response.Headers.CacheControl = "no-cache";
     }
 
