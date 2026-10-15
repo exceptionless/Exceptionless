@@ -182,7 +182,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>
             case WebHookType.General:
                 if (body.WebHookId is null)
                 {
-                    _logger.LogWarning("WebHook notification is missing the web hook id. Organization: {OrganizationId}, Project: {ProjectId}, Destination: {Destination}", body.OrganizationId, body.ProjectId, WebHookDelivery.GetLoggingDestination(body.Url));
+                    _logger.WebHookMissingId(body.OrganizationId, body.ProjectId, body.Url);
                     return false;
                 }
 

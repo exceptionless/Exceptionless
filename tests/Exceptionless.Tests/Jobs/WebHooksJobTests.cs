@@ -107,7 +107,7 @@ public sealed class WebHooksJobTests : TestWithServices
         // Assert
         Assert.True(result.IsCancelled);
         Assert.Equal(0, handler.RequestCount);
-        var entry = Assert.Single(Log.LogEntries, entry => entry.LogLevel is LogLevel.Warning && entry.Message.StartsWith("WebHook notification is missing", StringComparison.Ordinal));
+        var entry = Assert.Single(Log.LogEntries, entry => entry.LogLevel is LogLevel.Warning && String.Equals(entry.EventId.Name, nameof(Exceptionless.Core.Extensions.LoggerExtensions.WebHookMissingId), StringComparison.Ordinal));
         Assert.Contains("https://example.com", entry.Message);
         Assert.DoesNotContain("password", entry.Message);
         Assert.DoesNotContain("private-capability", entry.Message);
