@@ -28,7 +28,7 @@ export function getGravatarFromCurrentUser(query?: ReturnType<typeof getMeQuery>
 
 export async function getGravatarSrc(emailAddress: string) {
     const hash = await getGravatarEmailHash(emailAddress.trim().toLowerCase());
-    return `//www.gravatar.com/avatar/${hash}?default=mm&size=100&d=mp&r=g`;
+    return `https://www.gravatar.com/avatar/${hash}?default=mm&size=100&d=mp&r=g`;
 }
 
 async function getGravatarEmailHash(emailAddress: string) {

@@ -10,6 +10,12 @@ import { normalizePath, normalizeRouteId } from '$lib/telemetry';
 import { installSvelteEffectDepthDiagnostics } from '$lib/telemetry/svelte-effect-depth-diagnostics';
 import { Exceptionless, guid, toError } from '@exceptionless/browser';
 import { useMiddleware } from '@foundatiofx/fetchclient';
+import { config } from 'zod';
+
+// Zod's object-validator JIT uses Function(), which strict CSP blocks without unsafe-eval.
+// Use its interpreted validator instead of weakening script-src (validation rules are unchanged).
+// https://github.com/colinhacks/zod/blob/main/packages/zod/src/v4/core/util.ts
+config({ jitless: true });
 
 installSvelteEffectDepthDiagnostics();
 
