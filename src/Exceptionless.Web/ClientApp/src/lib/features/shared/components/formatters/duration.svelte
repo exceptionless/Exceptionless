@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { getSetIntervalTime } from '$shared/dates';
     import prettyMilliseconds from 'pretty-ms';
+
+    import { getSetIntervalTime } from '#shared/dates.ts';
 
     interface Props {
         /** Limits the time units shown, such as `1 hour 32 minutes` instead of `1 hour 32 minutes 17 seconds`. */

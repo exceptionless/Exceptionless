@@ -1,9 +1,9 @@
 <script lang="ts">
-    import type { FacetedFilterProps } from '$comp/faceted-filter';
+    import type { FacetedFilterProps } from '#comp/faceted-filter/index.ts';
 
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import { StackStatus } from '$features/stacks/models';
-    import { stackStatuses } from '$features/stacks/options';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import { StackStatus } from '#features/stacks/models.ts';
+    import { stackStatuses } from '#features/stacks/options.ts';
 
     import { StatusFilter } from './models.svelte';
 

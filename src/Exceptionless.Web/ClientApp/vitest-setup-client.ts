@@ -45,3 +45,10 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // add more mocks here if you need them
+
+// SvelteKit's dev server provides public environment variables to the page; unit tests
+// start without one, so every declared variable is unset unless a test mocks it.
+vi.mock('$app/env/public', async () => {
+    const { variables } = await import('./src/env');
+    return Object.fromEntries(Object.keys(variables).map((name) => [name, undefined]));
+});

@@ -1,12 +1,12 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
 
-    import { organization } from '$features/organizations/context.svelte';
-    import StackActionPage from '$features/stacks/components/stack-action-page.svelte';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import StackActionPage from '#features/stacks/components/stack-action-page.svelte';
 
     import type { PageProps } from './$types';
 
-    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../../redirect-to-events.svelte.js';
+    import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../../redirect-to-events.svelte.ts';
 
     let { params }: PageProps = $props();
 

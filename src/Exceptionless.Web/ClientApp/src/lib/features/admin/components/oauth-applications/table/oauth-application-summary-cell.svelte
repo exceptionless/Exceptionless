@@ -1,10 +1,11 @@
 <script lang="ts">
-    import type { OAuthApplication } from '$features/admin/models';
-
     import { resolve } from '$app/paths';
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { A } from '$comp/typography';
-    import { Badge } from '$comp/ui/badge';
+
+    import type { OAuthApplication } from '#features/admin/models.ts';
+
+    import TimeAgo from '#comp/formatters/time-ago.svelte';
+    import { A } from '#comp/typography/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
 
     interface Props {
         application: OAuthApplication;

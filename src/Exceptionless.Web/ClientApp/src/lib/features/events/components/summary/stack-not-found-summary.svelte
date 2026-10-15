@@ -1,8 +1,8 @@
 <script lang="ts">
-    import type { StackStatus } from '$features/stacks/models';
+    import type { StackStatus } from '#features/stacks/models.ts';
 
-    import { A } from '$comp/typography';
-    import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
+    import { A } from '#comp/typography/index.ts';
+    import StackStatusBadge from '#features/stacks/components/stack-status-badge.svelte';
 
     import { buildStackDetailsHref, type StackSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
 

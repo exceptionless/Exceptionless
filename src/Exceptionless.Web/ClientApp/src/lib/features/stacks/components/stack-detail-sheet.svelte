@@ -1,14 +1,16 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
-    import type { PersistentEvent } from '$features/events/models';
-    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { resolve } from '$app/paths';
-    import DetailSheet from '$comp/detail-sheet.svelte';
-    import { assistantPageContext } from '$features/assistant/page-context.svelte';
-    import { buildEventDetailsHref } from '$features/events/components/summary';
     import { onDestroy } from 'svelte';
+
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+    import type { PersistentEvent } from '#features/events/models/index.ts';
+    import type { Stack } from '#features/stacks/models.ts';
+
+    import DetailSheet from '#comp/detail-sheet.svelte';
+    import { assistantPageContext } from '#features/assistant/page-context.svelte.ts';
+    import { buildEventDetailsHref } from '#features/events/components/summary/index.ts';
 
     import StackDetails from './stack-details.svelte';
 

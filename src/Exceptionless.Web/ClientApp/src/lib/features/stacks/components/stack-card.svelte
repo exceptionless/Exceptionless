@@ -1,38 +1,40 @@
 <script lang="ts">
-    import type { AssistantFixResource } from '$features/assistant/controls.svelte';
-    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
-    import { type IFilter } from '$comp/faceted-filter';
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import Number from '$comp/formatters/number.svelte';
-    import Percentage from '$comp/formatters/percentage.svelte';
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import Muted from '$comp/typography/muted.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as ButtonGroup from '$comp/ui/button-group';
-    import * as Card from '$comp/ui/card';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Table from '$comp/ui/table';
-    import * as Tooltip from '$comp/ui/tooltip';
-    import AssistantFixButton from '$features/assistant/components/assistant-fix-button.svelte';
-    import { assistantPageContext } from '$features/assistant/page-context.svelte';
-    import { getProjectCountQuery, getStackCountQuery } from '$features/events/api.svelte';
-    import EventsStackChart, { type EventsStackChartPoint } from '$features/events/components/events-stack-chart.svelte';
-    import * as EventsFacetedFilter from '$features/events/components/filters';
-    import { StringFilter } from '$features/events/components/filters';
-    import { getProjectQuery } from '$features/projects/api.svelte';
-    import * as agg from '$features/shared/api/aggregations';
-    import TagList from '$features/shared/components/tag-list.svelte';
-    import { fillDateSeries } from '$features/shared/utils/charts';
-    import { getStackQuery } from '$features/stacks/api.svelte';
-    import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
     import FirstOccurrence from '@lucide/svelte/icons/arrow-left-circle';
     import LastOccurrence from '@lucide/svelte/icons/arrow-right-circle';
     import Calendar from '@lucide/svelte/icons/calendar';
     import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import Info from '@lucide/svelte/icons/info';
     import Users from '@lucide/svelte/icons/users';
+
+    import type { AssistantFixResource } from '#features/assistant/controls.svelte.ts';
+    import type { Stack } from '#features/stacks/models.ts';
+
+    import { type IFilter } from '#comp/faceted-filter/index.ts';
+    import DateTime from '#comp/formatters/date-time.svelte';
+    import Number from '#comp/formatters/number.svelte';
+    import Percentage from '#comp/formatters/percentage.svelte';
+    import TimeAgo from '#comp/formatters/time-ago.svelte';
+    import Muted from '#comp/typography/muted.svelte';
+    import * as ButtonGroup from '#comp/ui/button-group/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
+    import AssistantFixButton from '#features/assistant/components/assistant-fix-button.svelte';
+    import { assistantPageContext } from '#features/assistant/page-context.svelte.ts';
+    import { getProjectCountQuery, getStackCountQuery } from '#features/events/api.svelte.ts';
+    import EventsStackChart, { type EventsStackChartPoint } from '#features/events/components/events-stack-chart.svelte';
+    import * as EventsFacetedFilter from '#features/events/components/filters/index.ts';
+    import { StringFilter } from '#features/events/components/filters/index.ts';
+    import { getProjectQuery } from '#features/projects/api.svelte.ts';
+    import * as agg from '#features/shared/api/aggregations.ts';
+    import TagList from '#features/shared/components/tag-list.svelte';
+    import { fillDateSeries } from '#features/shared/utils/charts.ts';
+    import { getStackQuery } from '#features/stacks/api.svelte.ts';
+    import { DEFAULT_OFFSET } from '#shared/api/api.svelte.ts';
 
     import StackLogLevel from './stack-log-level.svelte';
     import StackOptionsDropdownMenu from './stack-options-dropdown-menu.svelte';

@@ -1,7 +1,8 @@
-import type { SavedView } from '$features/saved-views/models';
-
 import { resolve } from '$app/paths';
-import { savedViewHref } from '$features/saved-views/slugs';
+
+import type { SavedView } from '#features/saved-views/models.ts';
+
+import { savedViewHref } from '#features/saved-views/slugs.ts';
 
 const RESET_FILTER_QUERY_PARAMS = ['bot', 'filter', 'first', 'level', 'project', 'reference', 'stack', 'status', 'tag', 'type', 'version'] as const;
 const EVENTS_ALL_PREDEFINED_KEY = 'events:all';

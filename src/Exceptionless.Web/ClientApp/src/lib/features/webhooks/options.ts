@@ -1,4 +1,4 @@
-import type { DropdownItem } from '$features/shared/options';
+import type { DropdownItem } from '#features/shared/options.ts';
 
 import type { WebhookKnownEventTypes } from './models';
 

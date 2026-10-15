@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { cn } from "$lib/utils.js";
-	import { Textarea } from "$comp/ui/textarea/index.js";
+	import { cn } from "#lib/utils.ts";
+	import { Textarea } from "#comp/ui/textarea/index.ts";
 	import type { ComponentProps } from "svelte";
 
 	let {

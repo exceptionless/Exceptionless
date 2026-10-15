@@ -1,7 +1,8 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { A, Muted } from '$comp/typography';
+
+    import { A, Muted } from '#comp/typography/index.ts';
 
     let { children } = $props();
 

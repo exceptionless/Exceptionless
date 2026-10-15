@@ -1,10 +1,11 @@
 <script module lang="ts">
-    import { A } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
     import Ban from '@lucide/svelte/icons/ban';
     import CheckCircle from '@lucide/svelte/icons/check-circle';
     import Eye from '@lucide/svelte/icons/eye';
     import { defineMeta } from '@storybook/addon-svelte-csf';
+
+    import { A } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
 
     import NotificationDescription from './notification-description.svelte';
     import NotificationTitle from './notification-title.svelte';

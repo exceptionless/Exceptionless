@@ -1,22 +1,23 @@
 <script lang="ts">
+    import { PUBLIC_STRIPE_PUBLISHABLE_KEY } from '$app/env/public';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import Number from '$comp/formatters/number.svelte';
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { Muted, Small } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Chart from '$comp/ui/chart/index';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { env } from '$env/dynamic/public';
-    import { ChangePlanDialog } from '$features/billing';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getNextBillingDateUtc, getRemainingEventLimit, ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
-    import { getProjectQuery } from '$features/projects/api.svelte';
-    import { formatDateLabel, formatLongDate } from '$shared/dates';
     import { scaleUtc } from 'd3-scale';
     import { curveMonotoneX } from 'd3-shape';
     import { AreaChart } from 'layerchart';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import Number from '#comp/formatters/number.svelte';
+    import TimeAgo from '#comp/formatters/time-ago.svelte';
+    import { Muted, Small } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Chart from '#comp/ui/chart/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { ChangePlanDialog } from '#features/billing/index.ts';
+    import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { getNextBillingDateUtc, getRemainingEventLimit, ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '#features/organizations/utils.ts';
+    import { getProjectQuery } from '#features/projects/api.svelte.ts';
+    import { formatDateLabel, formatLongDate } from '#shared/dates.ts';
 
     const organizationQuery = getOrganizationQuery({
         params: {
@@ -31,7 +32,7 @@
     });
 
     const hasMonthlyUsage = $derived((organizationQuery.data?.max_events_per_month ?? 0) > 0);
-    const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
+    const canChangePlan = $derived(organizationQuery.isSuccess && !!PUBLIC_STRIPE_PUBLISHABLE_KEY);
     const remainingEventLimit = $derived(getRemainingEventLimit(organizationQuery.data));
     const nextBillingDate = $derived(getNextBillingDateUtc(organizationQuery.data));
 

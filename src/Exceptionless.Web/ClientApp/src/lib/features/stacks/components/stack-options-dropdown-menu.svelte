@@ -1,15 +1,16 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import Button from '$comp/ui/button/button.svelte';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
     import Reference from '@lucide/svelte/icons/link-2';
     import ListTree from '@lucide/svelte/icons/list-tree';
     import Settings from '@lucide/svelte/icons/settings';
     import Delete from '@lucide/svelte/icons/trash';
     import PromoteToExternal from '@lucide/svelte/icons/trending-up';
     import { toast } from 'svelte-sonner';
+
+    import Button from '#comp/ui/button/button.svelte';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
 
     import type { Stack } from '../models';
 
