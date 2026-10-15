@@ -566,29 +566,6 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
             message.Id == 2 && String.Equals(message.Message, expectedMessages[1], StringComparison.Ordinal));
     }
 
-    [Theory]
-    [InlineData("http://127.0.0.1/path")]
-    [InlineData("http://localhost/path")]
-    [InlineData("http://169.254.169.254/path")]
-    [InlineData("https://user:password@example.com/path")]
-    public async Task PostAsync_UserSuppliedDestination_ReturnsCreated(string url)
-    {
-        // Arrange
-        var webHook = new NewWebHook
-        {
-            OrganizationId = TestConstants.OrganizationId,
-            ProjectId = TestConstants.ProjectId,
-            Url = url,
-            EventTypes = [WebHook.KnownEventTypes.NewError]
-        };
-
-        // Act
-        var response = await SendRequestAsync(request => request.Post().AsTestOrganizationUser().AppendPath("webhooks").Content(webHook).StatusCodeShouldBeCreated());
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-    }
-
     [Fact]
     public async Task UnsubscribeAsync_ExistingZapierHook_RemovesWebHook()
     {

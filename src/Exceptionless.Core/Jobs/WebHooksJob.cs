@@ -139,7 +139,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>
                 else
                 {
                     if (shouldLog && statusCode is { } failedStatus && (int)failedStatus >= 300)
-                        _logger.LogWarning("Web hook returned an unsuccessful response: status={Status} organization={OrganizationId} project={ProjectId} destination={Destination}", statusCode, body.OrganizationId, body.ProjectId, WebHookDelivery.GetLoggingDestination(body.Url));
+                        _logger.WebHookUnsuccessfulResponse(failedStatus, body.OrganizationId, body.ProjectId, body.Url);
 
                     var now = _timeProvider.GetUtcNow().UtcDateTime;
                     await cache.SetAsync(LastAttemptCacheKey, now, TimeSpan.FromDays(3));

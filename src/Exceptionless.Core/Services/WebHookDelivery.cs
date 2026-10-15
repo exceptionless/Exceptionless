@@ -34,6 +34,8 @@ public static class WebHookDelivery
                 return;
 
             // OTel may already have injected headers before the runtime calls this propagator.
+            // These are the runtime's default propagation fields. If B3, Jaeger, or another
+            // OTel propagator is added, its headers must also be removed here and covered by tests.
             foreach (string field in Fields)
                 request.Headers.Remove(field);
         }

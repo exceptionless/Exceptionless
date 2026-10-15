@@ -87,6 +87,7 @@ public sealed class WebHooksJobTests : TestWithServices
         Assert.Equal(!disabled, hook.IsEnabled);
         Assert.Equal(errors, await _cache.GetAsync<long>($"Project:{hook.ProjectId}:webhook:{hook.Id}:errors", 0));
         Assert.Equal(1, (await _queue.GetQueueStatsAsync()).Completed);
+        Assert.Equal(errors, Log.LogEntries.LongCount(entry => entry.LogLevel is LogLevel.Warning && String.Equals(entry.EventId.Name, nameof(Exceptionless.Core.Extensions.LoggerExtensions.WebHookUnsuccessfulResponse), StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -170,14 +171,16 @@ public sealed class WebHooksJobTests : TestWithServices
         // Act
         _logger.RecordWebHook(TestConstants.WebHookId, TestConstants.ProjectId, url);
         _logger.WebHookComplete(HttpStatusCode.OK, TestConstants.OrganizationId, TestConstants.ProjectId, url);
+        _logger.WebHookUnsuccessfulResponse(HttpStatusCode.BadGateway, TestConstants.OrganizationId, TestConstants.ProjectId, url);
         _logger.WebHookError(HttpStatusCode.BadGateway, TestConstants.OrganizationId, TestConstants.ProjectId, url, exception);
         _logger.WebHookTimeout(null, TestConstants.OrganizationId, TestConstants.ProjectId, url, exception);
         _logger.WebHookDisabledStatusCode(TestConstants.WebHookId, HttpStatusCode.Gone, TestConstants.OrganizationId, TestConstants.ProjectId, url);
 
         // Assert
         var entries = Log.LogEntries.Where(entry => String.Equals(entry.CategoryName, typeof(WebHooksJobTests).FullName, StringComparison.Ordinal)).ToList();
-        Assert.Equal(5, entries.Count);
+        Assert.Equal(6, entries.Count);
         Assert.Equal(2, entries.Count(entry => ReferenceEquals(entry.Exception, exception)));
+        Assert.All(entries.Where(entry => ReferenceEquals(entry.Exception, exception)), entry => Assert.Contains(exception.Message, entry.Message));
         Assert.All(entries, entry =>
         {
             var properties = Assert.IsAssignableFrom<IEnumerable<KeyValuePair<string, object?>>>(entry.State).ToDictionary(property => property.Key, property => property.Value);
@@ -191,7 +194,7 @@ public sealed class WebHooksJobTests : TestWithServices
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task ProcessQueueEntryAsync_ExistingPrivateHook_DeliversWithSafeTelemetry(bool sampled)
+    public async Task ProcessQueueEntryAsync_GeneralWebHook_DeliversWithSafeTelemetry(bool sampled)
     {
         // Arrange
         var requests = new ConcurrentQueue<(string Path, string Cookie, string TraceParent, string TraceState, string Baggage)>();

@@ -134,6 +134,12 @@ internal static class LoggerExtensions
             new EventId(21, nameof(RetentionEnforcementEventComplete)),
             "Enforced event retention period for {OrganizationName} ({OrganizationId}), Removed {RemovedEvents} Events");
 
+    private static readonly Action<ILogger, HttpStatusCode, string, string, string, Exception?> _webHookUnsuccessfulResponse =
+        LoggerMessage.Define<HttpStatusCode, string, string, string>(
+            LogLevel.Warning,
+            new EventId(22, nameof(WebHookUnsuccessfulResponse)),
+            "Web hook returned an unsuccessful response: status={Status} organization={OrganizationId} project={ProjectId} destination={Destination}");
+
     public static void RemoveStacksComplete(this ILogger logger, long removedStacks, long removedEvents)
         => _removeStacksComplete(logger, removedStacks, removedEvents, null);
 
@@ -183,6 +189,9 @@ internal static class LoggerExtensions
 
     public static void WebHookComplete(this ILogger logger, HttpStatusCode? statusCode, string organizationId, string projectId, string url)
         => _webHookComplete(logger, statusCode, organizationId, projectId, WebHookDelivery.GetLoggingDestination(url), null);
+
+    public static void WebHookUnsuccessfulResponse(this ILogger logger, HttpStatusCode statusCode, string organizationId, string projectId, string url)
+        => _webHookUnsuccessfulResponse(logger, statusCode, organizationId, projectId, WebHookDelivery.GetLoggingDestination(url), null);
 
     public static void WebHookError(this ILogger logger, HttpStatusCode? statusCode, string organizationId, string projectId, string url, Exception exception)
         => _webHookError(logger, statusCode, organizationId, projectId, WebHookDelivery.GetLoggingDestination(url), exception.Message, exception);
