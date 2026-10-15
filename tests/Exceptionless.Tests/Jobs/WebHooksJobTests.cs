@@ -17,9 +17,6 @@ using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Resilience;
 using Foundatio.Serializer;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Hosting.Server;
-using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Moq;
 using OpenTelemetry;
@@ -197,43 +194,35 @@ public sealed class WebHooksJobTests : TestWithServices
     public async Task ProcessQueueEntryAsync_ExistingPrivateHook_DeliversWithSafeTelemetry(bool sampled)
     {
         // Arrange
-        int delivered = 0;
-        int redirected = 0;
-        var cookies = new ConcurrentQueue<string>();
-        var propagationHeaders = new ConcurrentQueue<string>();
-        var internalHeaders = new ConcurrentQueue<(string TraceParent, string Baggage)>();
+        var requests = new ConcurrentQueue<(string Path, string Cookie, string TraceParent, string TraceState, string Baggage)>();
         var activities = new ConcurrentQueue<Activity>();
         using var tracing = Sdk.CreateTracerProviderBuilder()
             .SetSampler(sampled ? new AlwaysOnSampler() : new AlwaysOffSampler())
             .AddHttpClientInstrumentation(options => options.EnrichWithHttpRequestMessage = WebHookDelivery.EnrichActivity)
             .AddProcessor(new CaptureActivityProcessor(activities))
             .Build();
+        // Inspect outgoing diagnostics without including the receiver's request logs.
+        Log.SetLogLevel("Microsoft.AspNetCore", LogLevel.Warning);
         var builder = WebApplication.CreateBuilder();
-        builder.Logging.ClearProviders();
-        builder.WebHost.UseKestrel().UseUrls("http://127.0.0.1:0");
+        builder.Services.AddSingleton<ILoggerFactory>(Log);
         await using var server = builder.Build();
+        server.Urls.Add("http://127.0.0.1:0");
+        server.Use(async (context, next) =>
+        {
+            var headers = context.Request.Headers;
+            requests.Enqueue((context.Request.Path.ToString(), headers.Cookie.ToString(), headers["traceparent"].ToString(), headers["tracestate"].ToString(), headers["baggage"].ToString()));
+            await next(context);
+        });
         server.MapPost("/private-capability", context =>
         {
-            Interlocked.Increment(ref delivered);
-            cookies.Enqueue(context.Request.Headers.Cookie.ToString());
-            propagationHeaders.Enqueue(String.Concat(context.Request.Headers["traceparent"], context.Request.Headers["tracestate"], context.Request.Headers["baggage"]));
             context.Response.Headers.SetCookie = "receiver-session=private; Path=/";
-            context.Response.StatusCode = 302;
-            context.Response.Headers.Location = "/redirected-capability";
+            context.Response.Redirect("/redirected-capability");
             return Task.CompletedTask;
         });
-        server.Map("/redirected-capability", (HttpContext context) =>
-        {
-            propagationHeaders.Enqueue(String.Concat(context.Request.Headers["traceparent"], context.Request.Headers["tracestate"], context.Request.Headers["baggage"]));
-            return Interlocked.Increment(ref redirected);
-        });
-        server.MapGet("/internal-metadata", (HttpContext context) =>
-        {
-            internalHeaders.Enqueue((context.Request.Headers["traceparent"].ToString(), context.Request.Headers["baggage"].ToString()));
-            return Results.NoContent();
-        });
+        server.MapGet("/redirected-capability", () => Results.Ok());
+        server.MapGet("/internal-metadata", () => Results.NoContent());
         await server.StartAsync(TestCancellationToken);
-        string address = server.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
+        string address = server.Urls.Single();
         var hook = CreateWebHook(address + "/private-capability?secret-query=value");
         var factory = GetService<IHttpClientFactory>();
         var job = CreateJob(hook, _cache, factory);
@@ -262,11 +251,17 @@ public sealed class WebHooksJobTests : TestWithServices
         // Assert
         Assert.True(result.IsSuccess, result.Error?.ToString());
         Assert.True(secondResult.IsSuccess, secondResult.Error?.ToString());
-        Assert.Equal(2, delivered);
-        Assert.Equal(2, redirected);
-        Assert.All(cookies, cookie => Assert.Empty(cookie));
-        Assert.Equal(4, propagationHeaders.Count);
-        Assert.All(propagationHeaders, header => Assert.Empty(header));
+        var webHookRequests = requests.Where(request => !String.Equals(request.Path, "/internal-metadata", StringComparison.Ordinal)).ToList();
+        Assert.Equal(4, webHookRequests.Count);
+        Assert.Equal(2, webHookRequests.Count(request => String.Equals(request.Path, "/private-capability", StringComparison.Ordinal)));
+        Assert.Equal(2, webHookRequests.Count(request => String.Equals(request.Path, "/redirected-capability", StringComparison.Ordinal)));
+        Assert.All(webHookRequests, request =>
+        {
+            Assert.Empty(request.Cookie);
+            Assert.Empty(request.TraceParent);
+            Assert.Empty(request.TraceState);
+            Assert.Empty(request.Baggage);
+        });
         int port = new Uri(address).Port;
         var clientActivities = activities.Where(activity => Equals(activity.GetTagItem("server.port"), port)).ToList();
         Assert.Equal(sampled ? 5 : 0, clientActivities.Count);
@@ -281,7 +276,7 @@ public sealed class WebHooksJobTests : TestWithServices
             Assert.DoesNotContain(activity.TagObjects, tag => tag.Value?.ToString()?.Contains("secret-query", StringComparison.Ordinal) is true);
         });
         Assert.Equal(HttpStatusCode.NoContent, internalStatus);
-        var headers = Assert.Single(internalHeaders);
+        var headers = Assert.Single(requests, request => String.Equals(request.Path, "/internal-metadata", StringComparison.Ordinal));
         Assert.NotEmpty(headers.TraceParent);
         Assert.Contains("private-baggage", headers.Baggage);
         var internalActivities = clientActivities.Where(activity => activity.GetTagItem("url.full") is string url && url.StartsWith(address + "/internal-metadata", StringComparison.Ordinal)).ToList();
