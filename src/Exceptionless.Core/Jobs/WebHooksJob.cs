@@ -39,7 +39,6 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly JsonSerializerOptions _versionOneJsonOptions;
     private readonly AppOptions _appOptions;
-
     private readonly IHttpClientFactory _httpClientFactory;
 
     public WebHooksJob(IQueue<WebHookNotification> queue, IProjectRepository projectRepository, SlackService slackService, IWebHookRepository webHookRepository, ICacheClient cacheClient, ITextSerializer serializer, JsonSerializerOptions jsonOptions, AppOptions appOptions, TimeProvider timeProvider,
@@ -139,6 +138,9 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>
                 }
                 else
                 {
+                    if (shouldLog && statusCode is { } failedStatus && (int)failedStatus >= 300)
+                        _logger.LogWarning("Web hook returned an unsuccessful response: status={Status} organization={OrganizationId} project={ProjectId} destination={Destination}", statusCode, body.OrganizationId, body.ProjectId, WebHookDelivery.GetLoggingDestination(body.Url));
+
                     var now = _timeProvider.GetUtcNow().UtcDateTime;
                     await cache.SetAsync(LastAttemptCacheKey, now, TimeSpan.FromDays(3));
                     consecutiveErrors = await cache.IncrementAsync(ConsecutiveErrorsCacheKey, TimeSpan.FromDays(3));
@@ -180,7 +182,7 @@ public class WebHooksJob : QueueJobBase<WebHookNotification>
             case WebHookType.General:
                 if (body.WebHookId is null)
                 {
-                    _logger.LogWarning("WebHook notification is missing the web hook id. Organization: {OrganizationId}, Project: {ProjectId}", body.OrganizationId, body.ProjectId);
+                    _logger.LogWarning("WebHook notification is missing the web hook id. Organization: {OrganizationId}, Project: {ProjectId}, Destination: {Destination}", body.OrganizationId, body.ProjectId, WebHookDelivery.GetLoggingDestination(body.Url));
                     return false;
                 }
 

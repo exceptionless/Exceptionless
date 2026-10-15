@@ -6,6 +6,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
@@ -30,6 +31,93 @@ namespace Exceptionless.Tests.Jobs;
 public sealed class WebHooksJobTests(ITestOutputHelper output) : TestWithServices(output)
 {
     private const string DestinationUrl = "https://example.com/webhook";
+
+    [Theory]
+    [InlineData(HttpStatusCode.OK, false, 0, true)]
+    [InlineData(HttpStatusCode.OK, false, 0, false)]
+    [InlineData(HttpStatusCode.Unauthorized, true, 0, false)]
+    [InlineData(HttpStatusCode.Forbidden, true, 0, false)]
+    [InlineData(HttpStatusCode.Gone, true, 0, false)]
+    [InlineData(HttpStatusCode.TooManyRequests, false, 1, false)]
+    [InlineData(HttpStatusCode.InternalServerError, false, 1, false)]
+    public async Task ProcessQueueEntryAsync_HttpResponse_PreservesDeliveryAndFailureBookkeeping(HttpStatusCode status, bool disabled, long errors, bool legacyPayload)
+    {
+        // Arrange
+        var payloads = new ConcurrentQueue<(string? ContentType, string Body)>();
+        var builder = WebApplication.CreateBuilder();
+        builder.Logging.ClearProviders();
+        builder.WebHost.UseKestrel().UseUrls("http://127.0.0.1:0");
+        await using var server = builder.Build();
+        server.MapPost("/webhook", async context =>
+        {
+            using var reader = new StreamReader(context.Request.Body);
+            payloads.Enqueue((context.Request.ContentType, await reader.ReadToEndAsync(context.RequestAborted)));
+            context.Response.StatusCode = (int)status;
+        });
+        await server.StartAsync(TestCancellationToken);
+        string address = server.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.Single();
+        var hook = CreateWebHook(address + "/webhook");
+        using var queue = new InMemoryQueue<WebHookNotification>();
+        using var cache = new InMemoryCacheClient();
+        var job = CreateJob(queue, hook, cache, GetService<IHttpClientFactory>());
+        var notification = CreateNotification(hook);
+        notification.Data = legacyPayload
+            ? new VersionOnePlugin.VersionOneWebHookEvent(address)
+            {
+                Id = TestConstants.EventId, Message = "<event>", ProjectId = hook.ProjectId, ProjectName = "Test project",
+                OrganizationId = hook.OrganizationId, OrganizationName = "Test organization",
+                ErrorStackId = TestConstants.StackId, ErrorStackTitle = "Test stack", ErrorStackTags = []
+            }
+            : new WebHookEvent(address)
+            {
+                Id = TestConstants.EventId, Message = "<event>", ProjectId = hook.ProjectId, ProjectName = "Test project",
+                OrganizationId = hook.OrganizationId, OrganizationName = "Test organization",
+                StackId = TestConstants.StackId, StackTitle = "Test stack", StackTags = []
+            };
+        await queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await job.RunAsync(TestCancellationToken);
+
+        // Assert
+        Assert.True(result.IsSuccess, result.Error?.ToString());
+        var payload = Assert.Single(payloads);
+        Assert.Equal("application/json; charset=utf-8", payload.ContentType);
+        using var json = JsonDocument.Parse(payload.Body);
+        Assert.Equal(TestConstants.EventId, json.RootElement.GetProperty(legacyPayload ? "Id" : "id").GetString());
+        Assert.Equal("<event>", json.RootElement.GetProperty(legacyPayload ? "Message" : "message").GetString());
+        Assert.DoesNotContain("<event>", payload.Body);
+        Assert.Equal(!disabled, hook.IsEnabled);
+        Assert.Equal(errors, await cache.GetAsync<long>($"Project:{hook.ProjectId}:webhook:{hook.Id}:errors", 0));
+        Assert.Equal(1, (await queue.GetQueueStatsAsync()).Completed);
+        await server.StopAsync(TestCancellationToken);
+    }
+
+    [Fact]
+    public async Task ProcessQueueEntryAsync_MissingWebHookId_LogsSafeDestinationWithoutSending()
+    {
+        // Arrange
+        using var handler = new DelegateHandler((_, _) => throw new InvalidOperationException("Disabled notifications must not be sent"));
+        using var queue = new InMemoryQueue<WebHookNotification>();
+        using var cache = new InMemoryCacheClient();
+        var hook = CreateWebHook("https://user:password@example.com/private-capability?secret-query=value");
+        var notification = CreateNotification(hook);
+        notification.WebHookId = null;
+        var job = CreateJob(queue, hook, cache, CreateClientFactory(handler));
+        await queue.EnqueueAsync(notification);
+
+        // Act
+        var result = await job.RunAsync(TestCancellationToken);
+
+        // Assert
+        Assert.True(result.IsCancelled);
+        Assert.Equal(0, handler.RequestCount);
+        var entry = Assert.Single(Log.LogEntries, entry => entry.LogLevel is LogLevel.Warning && entry.Message.StartsWith("WebHook notification is missing", StringComparison.Ordinal));
+        Assert.Contains("https://example.com", entry.Message);
+        Assert.DoesNotContain("password", entry.Message);
+        Assert.DoesNotContain("private-capability", entry.Message);
+        Assert.DoesNotContain("secret-query", entry.Message);
+    }
 
     [Theory]
     [InlineData(false)]
@@ -57,6 +145,7 @@ public sealed class WebHooksJobTests(ITestOutputHelper output) : TestWithService
         Assert.False(content.WasSerialized);
         Assert.True(content.WasDisposed);
         Assert.Same(failBookkeeping ? failure : null, exception);
+        Assert.Equal(failBookkeeping ? 1 : 0, Log.LogEntries.Count(entry => entry.LogLevel is LogLevel.Warning && entry.Message.Contains("BadGateway", StringComparison.Ordinal) && entry.Message.Contains("https://example.com", StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -215,6 +304,7 @@ public sealed class WebHooksJobTests(ITestOutputHelper output) : TestWithService
     {
         var repository = new Mock<IWebHookRepository>(MockBehavior.Strict);
         repository.Setup(value => value.GetByIdAsync(hook.Id, It.IsAny<CommandOptionsDescriptor<WebHook>>())).ReturnsAsync(hook);
+        repository.Setup(value => value.MarkDisabledAsync(hook.Id)).Callback(() => hook.IsEnabled = false).Returns(Task.CompletedTask);
         return new WebHooksJob(queue, GetService<IProjectRepository>(), GetService<SlackService>(), repository.Object,
             cache, GetService<ITextSerializer>(), GetService<JsonSerializerOptions>(), GetService<AppOptions>(), TimeProvider,
             GetService<IResiliencePolicyProvider>(), Log, factory);

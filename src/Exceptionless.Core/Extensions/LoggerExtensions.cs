@@ -1,6 +1,6 @@
 ﻿using System.Net;
-using Microsoft.Extensions.Logging;
 using Exceptionless.Core.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Extensions;
 
@@ -40,7 +40,7 @@ internal static class LoggerExtensions
     private static readonly Action<ILogger, HttpStatusCode?, string, string, string, Exception?> _webHookComplete =
         LoggerMessage.Define<HttpStatusCode?, string, string, string>(
             LogLevel.Information,
-            new EventId(5, nameof(WebHookError)),
+            new EventId(5, nameof(WebHookComplete)),
             "Web hook POST complete: status={Status} organization={OrganizationId} project={ProjectId} destination={Destination}");
 
     private static readonly Action<ILogger, string, HttpStatusCode?, string, string, string, Exception?> _webHookDisabledStatusCode =

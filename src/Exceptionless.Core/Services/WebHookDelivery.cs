@@ -15,7 +15,8 @@ public static class WebHookDelivery
     }
 
     public static string GetLoggingDestination(string? value)
-        => Uri.TryCreate(value, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
+        => Uri.TryCreate(value, UriKind.Absolute, out var uri)
+            && (String.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal) || String.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal))
             ? uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.UriEscaped)
             : "invalid";
 
