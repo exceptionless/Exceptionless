@@ -194,7 +194,7 @@ public sealed class OAuthHandler(
         if (!organizationValidation.IsValid)
             return OAuthError("invalid_request", organizationValidation.ErrorDescription);
 
-        string code = await oauthService.CreateAuthorizationCodeAsync(request, HttpContext.Request.GetUser().Id, organizationValidation.OrganizationIds);
+        string code = await oauthService.CreateAuthorizationCodeAsync(request, HttpContext.Request.GetUser(), organizationValidation.OrganizationIds);
         string redirectUri = BuildRedirectUri(request.RedirectUri, code, request.State, GetOrigin());
         return HttpResults.Ok(new OAuthAuthorizeResponse { RedirectUri = redirectUri });
     }

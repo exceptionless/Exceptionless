@@ -14124,6 +14124,13 @@
             },
             "description": "The organizations that the user has access to."
           },
+          "authentication_version": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Session revocation generation, rotated when a password changes or resets, or an external login is removed or transferred away.\nRemains null until rotation; active users with a null generation accept only matching legacy null token generations.\nThis value does not describe the password hashing format."
+          },
           "password": {
             "type": [
               "null",

@@ -12,7 +12,7 @@ internal static class LoggerExtensions
         LoggerMessage.Define<int, string>(
             LogLevel.Information,
             new EventId(1, nameof(RemovingZapierUrls)),
-            "Removing {Count} zapier urls matching: {Url}");
+            "Removing {Count} Zapier webhooks for organization {OrganizationId}");
 
     private static readonly Action<ILogger, long, string, Exception?> _removedTokens =
         LoggerMessage.Define<long, string>(
@@ -113,8 +113,8 @@ internal static class LoggerExtensions
     public static void ProjectRouteDoesNotMatch(this ILogger logger, string? requestProjectId, string routeProjectId)
         => _projectRouteDoesNotMatch(logger, requestProjectId, routeProjectId, null);
 
-    public static void RemovingZapierUrls(this ILogger logger, int count, string targetUrl)
-        => _removingZapierUrls(logger, count, targetUrl, null);
+    public static void RemovingZapierUrls(this ILogger logger, int count, string organizationId)
+        => _removingZapierUrls(logger, count, organizationId, null);
 
     public static void RemovedTokens(this ILogger logger, long removedCount, string userId)
         => _removedTokens(logger, removedCount, userId, null);

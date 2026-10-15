@@ -10,6 +10,12 @@ public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, IVa
     public string Id { get; set; } = null!;
 
     /// <summary>
+    /// The user session generation captured when this token is issued.
+    /// A legacy null value matches only an active user whose generation is also null; it does not describe a password format.
+    /// </summary>
+    public string? AuthenticationVersion { get; set; }
+
+    /// <summary>
     /// Null for user-scoped tokens (where UserId is set instead).
     /// Required when ProjectId is set.
     /// </summary>
