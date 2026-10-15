@@ -1,29 +1,30 @@
 <script lang="ts">
-    import type { NewProject } from '$features/projects/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import Logo from '$comp/logo.svelte';
-    import { Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Spinner } from '$comp/ui/spinner';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
-    import { postOrganization } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
-    import { createProductTourActions } from '$features/product-tours/actions.svelte';
-    import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
-    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
-    import { postProject } from '$features/projects/api.svelte';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
     import { type infer as Infer, object, string } from 'zod';
+
+    import type { NewProject } from '#features/projects/models.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import Logo from '#comp/logo.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
+    import { postOrganization } from '#features/organizations/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { useHideOrganizationNotifications } from '#features/organizations/hooks/use-hide-organization-notifications.svelte.ts';
+    import { createProductTourActions } from '#features/product-tours/actions.svelte.ts';
+    import ProductTourSpotlight from '#features/product-tours/components/product-tour-spotlight.svelte';
+    import { productTourCheckpoint } from '#features/product-tours/state.svelte.ts';
+    import { postProject } from '#features/projects/api.svelte.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     const SetupSchema = object({
         organization_name: string().min(1, 'Organization name is required'),

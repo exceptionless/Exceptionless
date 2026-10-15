@@ -1,12 +1,13 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
-
-    import { H3 } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Table from '$comp/ui/table';
-    import * as EventsFacetedFilter from '$features/events/components/filters';
-    import { getRequestInfoPath, getRequestInfoUrl } from '$features/events/persistent-event';
     import ExternalLink from '@lucide/svelte/icons/external-link';
+
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+
+    import { H3 } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import * as EventsFacetedFilter from '#features/events/components/filters/index.ts';
+    import { getRequestInfoPath, getRequestInfoUrl } from '#features/events/persistent-event.ts';
 
     import type { PersistentEvent } from '../../models/index';
 

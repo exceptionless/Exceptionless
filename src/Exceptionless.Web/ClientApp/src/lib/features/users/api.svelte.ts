@@ -1,11 +1,12 @@
-import type { ProductTourKey } from '$features/product-tours/models';
-import type { WebSocketMessageValue } from '$features/websockets/models';
-import type { WorkInProgressResult } from '$shared/models';
-
-import { accessToken } from '$features/auth/index.svelte';
-import { fetchApiJson } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+
+import type { ProductTourKey } from '#features/product-tours/models.ts';
+import type { WebSocketMessageValue } from '#features/websockets/models.ts';
+import type { WorkInProgressResult } from '#shared/models/index.ts';
+
+import { accessToken } from '#features/auth/index.svelte.ts';
+import { fetchApiJson } from '#features/shared/api/api.svelte.ts';
 
 import type { OAuthGrant, RecordProductTourResult, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
 

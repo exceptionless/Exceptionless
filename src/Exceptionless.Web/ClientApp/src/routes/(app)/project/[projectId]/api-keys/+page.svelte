@@ -1,24 +1,25 @@
 <script lang="ts">
-    import type { ViewToken } from '$features/tokens/models';
-
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import { A, Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { organization } from '$features/organizations/context.svelte';
-    import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-    import { type GetProjectTokensParams, getProjectTokensQuery, postProjectToken } from '$features/tokens/api.svelte';
-    import { getTableOptions } from '$features/tokens/components/table/options.svelte';
-    import TokensDataTable from '$features/tokens/components/table/tokens-data-table.svelte';
-    import { createProjectToken, type ProjectTokenScope } from '$features/tokens/project-token';
-    import { createQueryParameters } from '$shared/query-params';
     import FileCode from '@lucide/svelte/icons/file-code-2';
     import KeyRound from '@lucide/svelte/icons/key-round';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
+
+    import type { ViewToken } from '#features/tokens/models.ts';
+
+    import DataTableViewOptions from '#comp/data-table/data-table-view-options.svelte';
+    import { A, Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { DEFAULT_LIMIT } from '#features/shared/api/api.svelte.ts';
+    import { type GetProjectTokensParams, getProjectTokensQuery, postProjectToken } from '#features/tokens/api.svelte.ts';
+    import { getTableOptions } from '#features/tokens/components/table/options.svelte.ts';
+    import TokensDataTable from '#features/tokens/components/table/tokens-data-table.svelte';
+    import { createProjectToken, type ProjectTokenScope } from '#features/tokens/project-token.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     const projectId = $derived(page.params.projectId || '');
 

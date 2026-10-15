@@ -1,8 +1,9 @@
-import { env } from '$env/dynamic/public';
-import { getIntercomTokenSessionKey, intercomTokenRefreshIntervalMs } from '$features/intercom/config';
-import { organization } from '$features/organizations/context.svelte';
+import { PUBLIC_INTERCOM_APPID } from '$app/env/public';
 import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createQuery, type QueryClient } from '@tanstack/svelte-query';
+
+import { getIntercomTokenSessionKey, intercomTokenRefreshIntervalMs } from '#features/intercom/config.ts';
+import { organization } from '#features/organizations/context.svelte.ts';
 
 import type { Login, TokenResult } from './models';
 
@@ -50,7 +51,7 @@ export async function forgotPassword(email: string) {
 
 export function getIntercomTokenQuery() {
     return createQuery<TokenResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!env.PUBLIC_INTERCOM_APPID,
+        enabled: () => !!accessToken.current && !!PUBLIC_INTERCOM_APPID,
         queryFn: async ({ signal }) => {
             const client = useFetchClient();
             const response = await client.getJSON<TokenResult>('auth/intercom', {

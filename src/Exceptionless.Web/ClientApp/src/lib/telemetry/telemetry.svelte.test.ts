@@ -11,7 +11,7 @@ const session = vi.hoisted(() => ({
 
 vi.mock('$app/navigation', () => ({ afterNavigate: vi.fn() }));
 vi.mock('$app/state', () => ({ page: {} }));
-vi.mock('$features/auth/exceptionless-session', () => session);
+vi.mock('#features/auth/exceptionless-session.ts', () => session);
 vi.mock('@exceptionless/browser', () => ({ Exceptionless: {} }));
 
 describe('Telemetry authentication', () => {

@@ -1,7 +1,4 @@
 import { resolve } from '$app/paths';
-import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
-import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
-import { appKeyboardShortcuts } from '$features/shared/keyboard-shortcuts';
 import Documentation from '@lucide/svelte/icons/book-open';
 import Exie from '@lucide/svelte/icons/bot';
 import ApiDocumentations from '@lucide/svelte/icons/braces';
@@ -9,6 +6,10 @@ import Events from '@lucide/svelte/icons/calendar-days';
 import Support from '@lucide/svelte/icons/circle-help';
 import Stacks from '@lucide/svelte/icons/layers';
 import Sessions from '@lucide/svelte/icons/timer';
+
+import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
+import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '#features/shared/help-links.ts';
+import { appKeyboardShortcuts } from '#features/shared/keyboard-shortcuts.ts';
 
 import type { NavigationItem } from '../routes.svelte';
 

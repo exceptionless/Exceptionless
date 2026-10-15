@@ -1,5 +1,6 @@
-import type { CustomDateRange } from '$features/shared/models';
 import type { Meta, StoryObj } from '@storybook/sveltekit';
+
+import type { CustomDateRange } from '#features/shared/models/index.ts';
 
 import CustomRangeForm from './custom-range-form.svelte';
 

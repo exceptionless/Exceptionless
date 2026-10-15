@@ -1,13 +1,14 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
-    import type { AssistantFixResource } from '$features/assistant/controls.svelte';
-    import type { PersistentEvent } from '$features/events/models';
-    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
-    import { Muted } from '$comp/typography';
-    import { getStackEventsQuery } from '$features/events/api.svelte';
-    import EventsOverview from '$features/events/components/events-overview.svelte';
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+    import type { AssistantFixResource } from '#features/assistant/controls.svelte.ts';
+    import type { PersistentEvent } from '#features/events/models/index.ts';
+    import type { Stack } from '#features/stacks/models.ts';
+
+    import { Muted } from '#comp/typography/index.ts';
+    import { getStackEventsQuery } from '#features/events/api.svelte.ts';
+    import EventsOverview from '#features/events/components/events-overview.svelte';
 
     import StackCard from './stack-card.svelte';
 

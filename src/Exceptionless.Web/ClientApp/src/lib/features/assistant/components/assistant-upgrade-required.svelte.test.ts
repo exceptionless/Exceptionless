@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 const showChangePlanDialog = vi.hoisted(() => vi.fn());
 const isStripeEnabled = vi.hoisted(() => vi.fn(() => true));
-vi.mock('$features/billing/change-plan.svelte', () => ({ showChangePlanDialog }));
-vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled }));
+vi.mock('#features/billing/change-plan.svelte.ts', () => ({ showChangePlanDialog }));
+vi.mock('#features/billing/stripe.svelte.ts', () => ({ isStripeEnabled }));
 
 import AssistantUpgradeRequired from './assistant-upgrade-required.svelte';
 

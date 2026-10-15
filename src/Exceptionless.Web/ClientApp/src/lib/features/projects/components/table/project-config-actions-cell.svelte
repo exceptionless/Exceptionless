@@ -1,13 +1,14 @@
 <script lang="ts">
-    import type { ClientConfigurationSetting } from '$features/projects/models';
-
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { deleteProjectConfig, postProjectConfig } from '$features/projects/api.svelte';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Edit from '@lucide/svelte/icons/pen';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
+
+    import type { ClientConfigurationSetting } from '#features/projects/models.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { deleteProjectConfig, postProjectConfig } from '#features/projects/api.svelte.ts';
 
     import RemoveProjectConfigDialog from '../dialogs/remove-project-config-dialog.svelte';
     import UpdateProjectConfigDialog from '../dialogs/update-project-config-dialog.svelte';
