@@ -27,6 +27,7 @@ describe('project read lifecycle', () => {
         delete_bot_data_enabled: false,
         event_count: 0,
         has_premium_features: false,
+        has_rate_notifications: false,
         has_slack_integration: false,
         id: 'project-id',
         name: 'Example',

@@ -22,6 +22,7 @@ export interface E2EOrganization {
 }
 
 export interface E2EProject {
+    has_rate_notifications?: boolean;
     id: string;
     is_configured?: boolean;
     name: string;
@@ -42,6 +43,19 @@ export class E2EApiClient {
         private readonly request: APIRequestContext,
         public readonly environment: E2EEnvironment
     ) {}
+
+    public async changeOrganizationPlan(token: string, organizationId: string, planId: string): Promise<void> {
+        const response = await this.request.post(this.url('admin/change-plan'), {
+            headers: this.authHeaders(token),
+            params: { organizationId, planId }
+        });
+
+        await expectStatus(response, [200], 'change organization plan');
+        const result = toRecord(await readJson(response), 'change organization plan response');
+        if (result.success !== true) {
+            throw new Error(`change organization plan failed: ${getOptionalString(result, 'message') ?? 'unknown error'}`);
+        }
+    }
 
     public async createOrganization(token: string, name: string): Promise<E2EOrganization> {
         const response = await this.request.post(this.url('organizations'), {
@@ -319,6 +333,14 @@ export class E2EApiClient {
         await expectStatus(response, [200], 'record product tour');
     }
 
+    public async setOrganizationFeature(token: string, organizationId: string, feature: string): Promise<void> {
+        const response = await this.request.post(this.url(`organizations/${organizationId}/features/${encodeURIComponent(feature)}`), {
+            headers: this.authHeaders(token)
+        });
+
+        await expectStatus(response, [200], 'set organization feature');
+    }
+
     public async signup(name: string, email: string, password: string, inviteToken?: string): Promise<string> {
         const response = await this.request.post(this.url('auth/signup'), {
             data: {
@@ -410,6 +432,14 @@ export class E2EApiClient {
         );
     }
 
+    public async waitForProjectRateNotificationsEnabled(token: string, projectId: string, timeoutMs = 30_000): Promise<void> {
+        await waitForCondition(
+            async () => (await this.getProject(token, projectId))?.has_rate_notifications === true,
+            timeoutMs,
+            `Timed out waiting for rate notifications to be enabled for E2E project ${projectId}`
+        );
+    }
+
     private authHeaders(token: string): Record<string, string> {
         return {
             Authorization: `Bearer ${token}`
@@ -443,6 +473,11 @@ function extractMailLink(content: string, path: 'reset-password' | 'signup'): st
             ? url.pathname === '/signup' && url.searchParams.has('token')
             : url.pathname.startsWith('/reset-password/') && !url.searchParams.has('cancel');
     });
+}
+
+function getOptionalBoolean(value: Record<string, unknown>, key: string): boolean | undefined {
+    const property = value[key];
+    return typeof property === 'boolean' ? property : undefined;
 }
 
 function getOptionalString(value: Record<string, unknown>, key: string): string | undefined {
@@ -525,6 +560,7 @@ function toProject(value: unknown): E2EProject {
     const record = toRecord(value, 'project response');
 
     return {
+        has_rate_notifications: getOptionalBoolean(record, 'has_rate_notifications'),
         id: getRequiredString(record, 'id', 'project response'),
         is_configured: typeof record.is_configured === 'boolean' ? record.is_configured : undefined,
         name: getRequiredString(record, 'name', 'project response'),

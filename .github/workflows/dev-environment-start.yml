@@ -61,6 +61,7 @@ jobs:
           kubectl scale deployment/ex-dev-jobs-event-posts --replicas=1 --namespace $NAMESPACE
           kubectl scale deployment/ex-dev-jobs-event-user-descriptions --replicas=1 --namespace $NAMESPACE
           kubectl scale deployment/ex-dev-jobs-mail-message --replicas=1 --namespace $NAMESPACE
+          kubectl scale deployment/ex-dev-jobs-rate-notifications --replicas=1 --namespace $NAMESPACE
           kubectl scale deployment/ex-dev-jobs-stack-event-count --replicas=1 --namespace $NAMESPACE
           kubectl scale deployment/ex-dev-jobs-web-hooks --replicas=1 --namespace $NAMESPACE
           kubectl scale deployment/ex-dev-jobs-work-item --replicas=1 --namespace $NAMESPACE
@@ -72,6 +73,7 @@ jobs:
           kubectl patch cronjob/ex-dev-jobs-download-geoip-database -p '{"spec":{"suspend": false}}' --namespace $NAMESPACE
           kubectl patch cronjob/ex-dev-jobs-maintain-indexes -p '{"spec":{"suspend": false}}' --namespace $NAMESPACE
           kubectl patch cronjob/ex-dev-jobs-migration -p '{"spec":{"suspend": false}}' --namespace $NAMESPACE
+          kubectl patch cronjob/ex-dev-jobs-rate-notification-evaluator -p '{"spec":{"suspend": false}}' --namespace $NAMESPACE
 
       - name: Wait for App Ready
         run: kubectl wait --for=condition=available --timeout=300s deployment/ex-dev-app --namespace $NAMESPACE

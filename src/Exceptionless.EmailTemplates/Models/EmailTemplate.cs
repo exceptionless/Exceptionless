@@ -78,6 +78,24 @@ public sealed record ProjectDailySummaryEmail(
 
 public sealed record StackSummary(string Title, string? TypeName, bool IsRegressed, string Url);
 
+public sealed record RateNotificationEmail(
+    string Subject,
+    string ProjectName,
+    string RuleName,
+    long ObservedCount,
+    string ObservedEventNoun,
+    int Threshold,
+    string Window,
+    string Signal,
+    string SubjectType,
+    string WindowStartUtc,
+    string WindowEndUtc,
+    string Cooldown,
+    EmailAction Action,
+    EmailLink? StackLink,
+    IReadOnlyCollection<EmailLink> OtherActions)
+    : EmailTemplate(Subject, Action);
+
 public sealed record UserEmailVerifyEmail(string Subject, string UserFullName, EmailAction Action)
     : EmailTemplate(Subject, Action);
 
