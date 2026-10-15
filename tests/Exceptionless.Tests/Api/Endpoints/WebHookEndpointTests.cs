@@ -583,7 +583,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
         };
 
         // Act
-        var response = await SendRequestAsync(request => request.Post().AsTestOrganizationUser().AppendPath("webhooks").Content(webHook));
+        var response = await SendRequestAsync(request => request.Post().AsTestOrganizationUser().AppendPath("webhooks").Content(webHook).StatusCodeShouldBeCreated());
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -645,7 +645,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
     {
         // Act
         var response = await SendRequestAsync(request => request.Post().AsTestOrganizationClientUser()
-            .BaseUri(_server.BaseAddress).AppendPath(path).Content(json, "application/json"));
+            .BaseUri(_server.BaseAddress).AppendPath(path).Content(json, "application/json").StatusCodeShouldBeBadRequest());
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -659,7 +659,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
     {
         // Act
         var response = await SendRequestAsync(request => request.Post().BaseUri(_server.BaseAddress)
-            .AppendPath(path).Content(json, "application/json"));
+            .AppendPath(path).Content(json, "application/json").StatusCodeShouldBeNotFound());
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -676,7 +676,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
 
         // Act
         var response = await SendRequestAsync(request => request.Post().AsTestOrganizationClientUser()
-            .AppendPath("webhooks/subscribe").Content(subscription));
+            .AppendPath("webhooks/subscribe").Content(subscription).StatusCodeShouldBeNotFound());
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -691,7 +691,7 @@ public sealed class WebHookEndpointTests : IntegrationTestsBase
     {
         // Act
         var response = await SendRequestAsync(request => request.Post().AppendPath("webhooks/unsubscribe")
-            .Content(new { target_url = targetUrl }));
+            .Content(new { target_url = targetUrl }).StatusCodeShouldBeNotFound());
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
