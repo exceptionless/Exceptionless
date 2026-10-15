@@ -224,6 +224,14 @@ public class Bootstrapper
                 s.GetRequiredService<SourceMapRequestThrottle>(),
                 DecompressionMethods.None));
         services.AddSingleton<SourceMapService>();
+        services.AddHttpClient(WebHookDelivery.HttpClientName)
+            // Job logs retain delivery diagnostics without logging credential-bearing URL paths.
+            .RemoveAllLoggers()
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                UseCookies = false,
+                ActivityHeadersPropagator = WebHookDelivery.ContextPropagator
+            });
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<IAssistantUsageRecorder>(provider => provider.GetRequiredService<UsageService>());

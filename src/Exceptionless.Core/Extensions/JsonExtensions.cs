@@ -1,4 +1,6 @@
-﻿namespace Exceptionless.Core.Extensions;
+﻿using System.Text.Json;
+
+namespace Exceptionless.Core.Extensions;
 
 /// <summary>
 /// Extension methods for JSON operations using System.Text.Json.
@@ -6,6 +8,14 @@
 /// </summary>
 public static class JsonExtensions
 {
+    /// <summary>
+    /// Returns a string property, or null when the object, property, or value is not a string.
+    /// </summary>
+    public static string? GetStringProperty(this JsonElement data, string name)
+        => data.ValueKind is JsonValueKind.Object && data.TryGetProperty(name, out var value) && value.ValueKind is JsonValueKind.String
+            ? value.GetString()
+            : null;
+
     /// <summary>
     /// Checks if a string contains JSON content (starts with { or [).
     /// </summary>
