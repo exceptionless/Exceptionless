@@ -25,7 +25,19 @@ The following section will cover how to configure exceptionless inside of a Kube
 
 All configuration options and settings can be found in the various option classes located [here](https://github.com/exceptionless/Exceptionless/tree/master/src/Exceptionless.Core/Configuration).
 
-_Please note that if you are specifying configuration via `docker-compose`, then you will need to drop the `EX_` and `EX_ConnectionStrings__` prefixes._
+The same `EX_` environment keys work in Docker Compose. Nested keys use double underscores.
+
+### Trusted ingress peers
+
+Before deploying behind ingress, configure [trusted forwarding peers](/docs/self-hosting/#reverse-proxies-and-https) through the Helm chart's existing `config` map. For example, after replacing the documentation address with a verified proxy source address:
+
+```yaml
+config:
+  EX_ForwardedHeaders__KnownProxies__0: "192.0.2.10"
+  EX_ForwardedHeaders__ForwardLimit: "1"
+```
+
+The repository's ingress templates use Azure Application Gateway for Containers, terminate TLS at ingress, and route `/` to the API Service on port 80 and container port 8080. The checked-in values do not identify its backend source addresses or association subnet. Verify those addresses and any intermediate proxies before setting trust; the ALB controller pod and Service address are not substitutes. No cluster-wide trust is inferred automatically. This configuration must ship with the application upgrade; the manifests alone do not prove live forwarding behavior.
 
 ## ConnectionStrings
 

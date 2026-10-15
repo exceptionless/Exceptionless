@@ -14,16 +14,32 @@ public static class ForwardedHeadersConfiguration
             throw new InvalidOperationException("ForwardedHeaders:ForwardLimit must be zero or positive.");
 
         // Retain the framework's loopback defaults and add explicitly trusted ingress peers.
-        foreach (string address in configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [])
-            options.KnownProxies.Add(IPAddress.Parse(address));
-
-        foreach (string value in configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [])
+        foreach (var entry in GetEntries(configuration, "KnownProxies"))
         {
-            var network = System.Net.IPNetwork.Parse(value);
+            if (!IPAddress.TryParse(entry.Value, out var address))
+                throw new InvalidOperationException($"{entry.Path} must be an IP address without a port.");
+
+            options.KnownProxies.Add(address);
+        }
+
+        foreach (var entry in GetEntries(configuration, "KnownNetworks"))
+        {
+            if (!System.Net.IPNetwork.TryParse(entry.Value, out var network))
+                throw new InvalidOperationException($"{entry.Path} must be a valid IPv4 or IPv6 CIDR.");
+
             if (network.PrefixLength is 0)
-                throw new InvalidOperationException("ForwardedHeaders:KnownNetworks must identify trusted ingress networks.");
+                throw new InvalidOperationException($"{entry.Path} must identify a trusted ingress network, not a /0 network.");
 
             options.KnownIPNetworks.Add(network);
         }
+    }
+
+    private static IEnumerable<IConfigurationSection> GetEntries(IConfiguration configuration, string name)
+    {
+        var section = configuration.GetSection($"ForwardedHeaders:{name}");
+        if (section.Value is not null)
+            throw new InvalidOperationException($"{section.Path} must be a list. Use numbered environment keys such as EX_ForwardedHeaders__{name}__0.");
+
+        return section.GetChildren();
     }
 }
