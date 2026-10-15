@@ -32,9 +32,9 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
             operation.RequestBody = new OpenApiRequestBody
             {
                 Required = true,
-                Content = new Dictionary<string, OpenApiMediaType>
+                Content = new Dictionary<string, IOpenApiMediaType>
                 {
-                    ["multipart/form-data"] = new()
+                    ["multipart/form-data"] = new OpenApiMediaType
                     {
                         Schema = CreateMultipartSchema(multipartFileUploadAttribute)
                     }
@@ -61,7 +61,7 @@ public class RequestBodyContentOperationTransformer : IOpenApiOperationTransform
         operation.RequestBody = new OpenApiRequestBody
         {
             Required = true,
-            Content = new Dictionary<string, OpenApiMediaType>()
+            Content = new Dictionary<string, IOpenApiMediaType>()
         };
 
         foreach (string contentType in contentTypes)

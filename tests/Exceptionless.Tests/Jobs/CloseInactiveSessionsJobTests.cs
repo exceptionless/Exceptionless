@@ -164,15 +164,17 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         Assert.Equal(2, events.Total);
 
         sessionStart = events.Documents.First(e => e.IsSessionStart());
-        decimal sessionStartDuration = (decimal)(sessionHeartbeatUpdatedAgoInSeconds.HasValue ? (utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value) - sessionStart.Date.UtcDateTime).TotalSeconds : 0);
+        // Event values are persisted as doubles, so compare at that precision.
+        double sessionStartDuration = sessionHeartbeatUpdatedAgoInSeconds.HasValue ? (utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value) - sessionStart.Date.UtcDateTime).TotalSeconds : 0;
+        double? sessionStartValue = (double?)sessionStart.Value;
         if (willCloseSession)
         {
-            Assert.Equal(sessionStartDuration, sessionStart.Value);
+            Assert.Equal(sessionStartDuration, sessionStartValue);
             Assert.True(sessionStart.HasSessionEndTime());
         }
         else
         {
-            Assert.Equal(sessionStartDuration, sessionStart.Value);
+            Assert.Equal(sessionStartDuration, sessionStartValue);
             Assert.False(sessionStart.HasSessionEndTime());
         }
     }

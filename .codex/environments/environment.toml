@@ -22,7 +22,7 @@ worktree_path="$PWD"
 echo "Setting up Exceptionless Aspire worktree: $worktree_path"
 
 if ! command -v dotnet >/dev/null 2>&1; then
-  echo "dotnet is not installed or not on PATH. Exceptionless requires .NET 10." >&2
+  echo "dotnet is not installed or not on PATH. Exceptionless requires .NET 11." >&2
   exit 1
 fi
 
