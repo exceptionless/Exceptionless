@@ -54,3 +54,23 @@ mkdir -p _app
 
 checksum=$(md5sum _app/env.js | cut -c 1-32)
 sed -E -i "s|/_app/env.js(\\?v=[a-f0-9]+)?|/_app/env.js?v=$checksum|g" index.html
+
+# Svelte hashes its inline bootstrap. Keep that hash in sync with the versioned import.
+spa_html=$(cat index.html)
+if [[ "$spa_html" == *"script-src "* ]]; then
+    bootstrap=${spa_html#*'<script>'}
+    if [[ "$bootstrap" == "$spa_html" || "$bootstrap" == *'<script>'* || "$bootstrap" != *'</script>'* ]]; then
+        printf 'Expected one Svelte bootstrap script\n' >&2
+        exit 1
+    fi
+    bootstrap=${bootstrap%%'</script>'*}
+    script_policy=${spa_html#*script-src }
+    script_policy=${script_policy%%;*}
+    old_hash=$(printf '%s' "$script_policy" | grep -oE "'sha256-[A-Za-z0-9+/]{43}='")
+    if [[ "$old_hash" == *$'\n'* ]]; then
+        printf 'Expected one Svelte bootstrap hash\n' >&2
+        exit 1
+    fi
+    hash=$(printf '%s' "$bootstrap" | openssl dgst -sha256 -binary | openssl base64 -A)
+    sed -i "s|$old_hash|'sha256-$hash'|g" index.html
+fi
