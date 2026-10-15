@@ -19,6 +19,7 @@ public static class PredefinedSavedViewConfiguration
         changed |= SetColumnsIfChanged(destination, source.Columns);
         changed |= SetIfChanged(destination, source.ShowStats, static (view, value) => view.ShowStats = value, static view => view.ShowStats);
         changed |= SetIfChanged(destination, source.ShowChart, static (view, value) => view.ShowChart = value, static view => view.ShowChart);
+        changed |= SetIfChanged(destination, source.Chart is null ? null : source.Chart with { }, static (view, value) => view.Chart = value, static view => view.Chart);
         changed |= SetIfChanged(destination, source.Version, static (view, value) => view.Version = value, static view => view.Version);
         changed |= SetIfChanged(destination, PredefinedSavedViewContentHasher.GetContentHash(destination), static (view, value) => view.PredefinedContentHash = value, static view => view.PredefinedContentHash);
 

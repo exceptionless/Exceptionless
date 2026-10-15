@@ -1,4 +1,5 @@
 import type { IFilter } from '$comp/faceted-filter';
+import type { EventChart } from '$generated/api';
 import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
 import { afterNavigate, goto, replaceState } from '$app/navigation';
@@ -10,6 +11,7 @@ import {
     getFiltersFromCache,
     serializeFilters
 } from '$features/events/components/filters/helpers.svelte';
+import { chartSignature } from '$features/events/event-chart';
 import { organization } from '$features/organizations/context.svelte';
 import { getMeQuery } from '$features/users/api.svelte';
 import { tick, untrack } from 'svelte';
@@ -73,6 +75,7 @@ export interface UseSavedViewsOptions {
     defaultTime?: null | string;
     filterCacheKey: (filter: null | string) => string;
     getAvailableColumnIds?: () => string[];
+    getChart?: () => EventChart | null;
     getColumnOrder?: () => ColumnOrderState;
     getColumnSizing?: () => ColumnSizingState;
     getColumnVisibility?: () => ColumnVisibilityState;
@@ -84,6 +87,7 @@ export interface UseSavedViewsOptions {
     getTime?: () => null | string | undefined;
     normalizeSavedView?: (view: SavedView) => SavedView;
     queryParams: SavedViewQueryParams;
+    setChart?: (chart: EventChart | null) => void;
     setColumnOrder?: (order: ColumnOrderState) => void;
     setColumnSizing?: (sizing: ColumnSizingState) => void;
     setColumnVisibility?: (visibility: ColumnVisibilityState) => void;
@@ -281,7 +285,7 @@ export function getSavedViewDraftIdentity(
 }
 
 export function getSavedViewStateSignature(
-    view: Pick<SavedView, 'columns' | 'filter' | 'filter_definitions' | 'show_chart' | 'show_stats' | 'sort' | 'time'>
+    view: Pick<SavedView, 'chart' | 'columns' | 'filter' | 'filter_definitions' | 'show_chart' | 'show_stats' | 'sort' | 'time'>
 ): string {
     const columns = Object.entries(view.columns ?? {})
         .sort(([left], [right]) => left.localeCompare(right))
@@ -295,6 +299,7 @@ export function getSavedViewStateSignature(
         ]);
 
     return JSON.stringify({
+        chart: chartSignature(view.chart),
         columns,
         filter: view.filter ?? null,
         filterDefinitions: view.filter_definitions ?? null,
@@ -513,9 +518,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         wrappedColumnIds = filterAvailableColumnIds(getSavedWrappedColumnIds(view), availableColumnIds);
     }
 
-    function applyDisplayState(view: Pick<SavedView, 'show_chart' | 'show_stats'> | undefined): void {
+    function applyDisplayState(view: Pick<SavedView, 'chart' | 'show_chart' | 'show_stats'> | undefined): void {
         options.setShowStats?.(view?.show_stats ?? true);
         options.setShowChart?.(view?.show_chart ?? true);
+        options.setChart?.(view?.chart ?? null);
     }
 
     function getDraftIdentity(view: SavedView): SavedViewDraftIdentity | undefined {
@@ -720,6 +726,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
 
         options.setShowStats?.(draft && 'showStats' in draft ? draft.showStats! : (view.show_stats ?? true));
         options.setShowChart?.(draft && 'showChart' in draft ? draft.showChart! : (view.show_chart ?? true));
+        options.setChart?.(view.chart ?? null);
 
         if (draft && 'sort' in draft && !page.url.searchParams.has('sort') && !preservePendingSort) {
             setSortQueryParam(options.queryParams, getDraftSortQueryParam(view.sort ?? null, draft.sort ?? null), 'replace');
@@ -1133,6 +1140,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         }
 
         if (options.getShowChart && options.getShowChart() !== (view.show_chart ?? true)) {
+            return true;
+        }
+
+        if (options.getChart && chartSignature(options.getChart()) !== chartSignature(view.chart)) {
             return true;
         }
 

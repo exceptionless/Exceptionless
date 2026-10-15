@@ -39,6 +39,7 @@ public class EventHandler(
     IProjectRepository projectRepository,
     IStackRepository stackRepository,
     EventPostService eventPostService,
+    EventTelemetryService eventTelemetryService,
     IQueue<EventUserDescription> eventUserDescriptionQueue,
     MiniValidationValidator miniValidationValidator,
     FormattingPluginManager formattingPluginManager,
@@ -685,6 +686,46 @@ public class EventHandler(
 
         results.Success.AddRange(list.Select(i => i.Id));
         return results;
+    }
+
+    public async Task<Result<EventChartResult>> Handle(GetEventChart message)
+    {
+        var organization = await GetOrganizationAsync(message.OrganizationId, message.Context);
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
+        if (organization.IsSuspended)
+            return PlanLimitResult<EventChartResult>("Unable to view events for the suspended organization.");
+
+        var request = message.Request;
+        var validation = await validator.ValidateQueryAsync(request.Filter);
+        if (!validation.IsValid)
+            return Result.BadRequest(validation.Message ?? "Invalid filter.");
+
+        var systemFilter = new AppFilter(organization) { UsesPremiumFeatures = true };
+        if (ApiFilterPolicy.IsPremiumFeatureQueryBlocked(systemFilter))
+            return PlanLimitResult<EventChartResult>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
+
+        var time = TimeRangeParser.GetTimeInfo(request.Time, request.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
+        return await eventTelemetryService.GetChartAsync(systemFilter, request.Chart, request.Filter, time.Range.UtcStart, time.Range.UtcEnd);
+    }
+
+    public async Task<Result<EventMeasurementCatalog>> Handle(GetEventMeasurements message)
+    {
+        var organization = await GetOrganizationAsync(message.OrganizationId, message.Context);
+        if (organization is null)
+            return Result.NotFound("Organization not found.");
+        if (organization.IsSuspended)
+            return PlanLimitResult<EventMeasurementCatalog>("Unable to view events for the suspended organization.");
+        var validation = await validator.ValidateQueryAsync(message.Filter);
+        if (!validation.IsValid)
+            return Result.BadRequest(validation.Message ?? "Invalid filter.");
+
+        var systemFilter = new AppFilter(organization) { UsesPremiumFeatures = true };
+        if (ApiFilterPolicy.IsPremiumFeatureQueryBlocked(systemFilter))
+            return PlanLimitResult<EventMeasurementCatalog>(ApiFilterPolicy.PremiumSearchUpgradeMessage);
+
+        var time = TimeRangeParser.GetTimeInfo(message.Time, message.Offset, timeProvider, _allowedDateFields, DefaultDateField, organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
+        return await eventTelemetryService.GetMeasurementsAsync(systemFilter, message.Filter, time.Range.UtcStart, time.Range.UtcEnd);
     }
 
     #region Private Helpers

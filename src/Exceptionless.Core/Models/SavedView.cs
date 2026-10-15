@@ -54,6 +54,8 @@ public partial record SavedView : IOwnedByOrganizationWithIdentity, IHaveDates
     /// <summary>Whether the dashboard chart is shown for this view. Null means use the default.</summary>
     public bool? ShowChart { get; set; }
 
+    public EventChart? Chart { get; set; }
+
     /// <summary>Stable identifier used to synchronize predefined saved views across organizations.</summary>
     [MaxLength(150)]
     public string? PredefinedKey { get; set; }

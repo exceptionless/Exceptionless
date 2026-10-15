@@ -27,6 +27,8 @@ public record ViewSavedView : IIdentity, IHaveDates
     public Dictionary<string, SavedViewColumnSettings>? Columns { get; set; }
     public bool? ShowStats { get; set; }
     public bool? ShowChart { get; set; }
+
+    public EventChart? Chart { get; set; }
     public string Name { get; set; } = null!;
     public string Slug { get; set; } = null!;
     public string? Time { get; set; }

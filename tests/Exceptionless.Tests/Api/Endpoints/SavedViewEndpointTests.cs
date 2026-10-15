@@ -18,6 +18,30 @@ namespace Exceptionless.Tests.Api.Endpoints;
 
 public sealed class SavedViewEndpointTests : IntegrationTestsBase
 {
+    [Fact]
+    public async Task Chart_CreatePatchAndExport_PreservesConfigurationAndExplicitReset()
+    {
+        var chart = new EventChart { Measurement = "duration", Unit = "ms", GroupBy = "source" };
+        var created = await SendRequestAsAsync<ViewSavedView>(r => r.Post().AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .Content(new NewSavedView { Name = "Measurements", ViewType = "events", Chart = chart }).StatusCodeShouldBeCreated());
+        Assert.Equal(chart, created!.Chart);
+
+        var patched = await SendRequestAsAsync<ViewSavedView>(r => r.Patch().AsTestOrganizationUser()
+            .AppendPaths("saved-views", created.Id).Content(new UpdateSavedView { Name = "Durations" }).StatusCodeShouldBeOk());
+        Assert.Equal(chart, patched!.Chart);
+        await RefreshDataAsync();
+
+        var exported = await SendRequestAsAsync<List<PredefinedSavedViewDefinition>>(r => r.AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "export").StatusCodeShouldBeOk());
+        Assert.Equal(chart, Assert.Single(exported!, view => view.Name == "Durations").Chart);
+
+        var reset = await SendRequestAsAsync<ViewSavedView>(r => r.Patch().AsTestOrganizationUser()
+            .AppendPaths("saved-views", created.Id).Content(new Dictionary<string, object?> { ["chart"] = null }).StatusCodeShouldBeOk());
+        Assert.Null(reset!.Chart);
+        Assert.Null((await _savedViewRepository.GetByIdAsync(created.Id, o => o.Cache(false)))!.Chart);
+    }
+
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ISavedViewRepository _savedViewRepository;
     private readonly IUserRepository _userRepository;
