@@ -5,6 +5,7 @@ import { PUBLIC_APP_VERSION, PUBLIC_ENABLE_SSL, PUBLIC_EXCEPTIONLESS_TELEMETRY_S
 import { page } from '$app/state';
 import { Exceptionless, guid, toError } from '@exceptionless/browser';
 import { useMiddleware } from '@foundatiofx/fetchclient';
+import { config } from 'zod';
 
 import { configureSessions } from '#features/auth/exceptionless-session.ts';
 import { getHttpsRedirectUrl } from '#features/navigation/https-redirect.ts';
@@ -13,6 +14,11 @@ import { getEnvironmentOverride, PUBLIC_EXCEPTIONLESS_API_KEY, PUBLIC_EXCEPTIONL
 import { trackHistoryTraversals } from '#features/shared/history-traversal.ts';
 import { normalizePath, normalizeRouteId } from '#lib/telemetry/index.ts';
 import { installSvelteEffectDepthDiagnostics } from '#lib/telemetry/svelte-effect-depth-diagnostics.ts';
+
+// Zod's object-validator JIT uses Function(), which strict CSP blocks without unsafe-eval.
+// Use its interpreted validator instead of weakening script-src (validation rules are unchanged).
+// https://github.com/colinhacks/zod/blob/main/packages/zod/src/v4/core/util.ts
+config({ jitless: true });
 
 installSvelteEffectDepthDiagnostics();
 
