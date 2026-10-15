@@ -1,7 +1,7 @@
 using System.Net;
 using Microsoft.AspNetCore.HttpOverrides;
 
-namespace Exceptionless.Web.Extensions;
+namespace Exceptionless.Web.Security;
 
 public static class ForwardedHeadersConfiguration
 {

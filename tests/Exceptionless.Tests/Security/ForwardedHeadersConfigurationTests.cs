@@ -2,6 +2,7 @@ using System.Collections;
 using System.Net;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Web.Extensions;
+using Exceptionless.Web.Security;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -10,7 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-namespace Exceptionless.Tests.Extensions;
+namespace Exceptionless.Tests.Security;
 
 public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {

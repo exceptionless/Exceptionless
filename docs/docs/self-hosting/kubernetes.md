@@ -37,7 +37,24 @@ config:
   EX_ForwardedHeaders__ForwardLimit: "1"
 ```
 
-The repository's ingress templates use Azure Application Gateway for Containers, terminate TLS at ingress, and route `/` to the API Service on port 80 and container port 8080. The checked-in values do not identify its backend source addresses or association subnet. Verify those addresses and any intermediate proxies before setting trust; the ALB controller pod and Service address are not substitutes. No cluster-wide trust is inferred automatically. This configuration must ship with the application upgrade; the manifests alone do not prove live forwarding behavior.
+The repository's ingress templates use Azure Application Gateway for Containers, terminate TLS at ingress, and route `/` to the API Service on port 80 and container port 8080. The hosted development and production deployment workflow discovers the gateway's association subnet before each Helm upgrade, so subnet addresses do not need to be duplicated in environment values files.
+
+The shared `k8s/scripts/discover-forwarded-headers.mjs` script renders the environment's API ingress locally, reads the selected `ApplicationLoadBalancer` through Kubernetes, and resolves its association subnet IDs through Azure. It requires the existing deployment identity to have Kubernetes read access to that resource and Azure `Microsoft.Network/virtualNetworks/subnets/read` access to its subnets. Missing associations, failed reads, missing `Microsoft.ServiceNetworking/trafficControllers` delegation, invalid prefixes, and unrestricted `/0` prefixes stop deployment.
+
+Discovery writes a `forwardedHeaders.knownNetworks` Helm list. The chart converts it into indexed `EX_ForwardedHeaders__KnownNetworks__*` keys and a forward limit of one for both application hosts. Replacing the list removes obsolete subnet entries even with `--reuse-values`. Combining discovery with manual `ForwardedHeaders` entries in `config` is rejected; remove those old entries from saved release values before using discovery.
+
+For manual upgrades, run discovery from the repository root after selecting the intended Kubernetes context and Azure subscription, then pass the generated file **last** to Helm. For example, the development commands are:
+
+```sh
+node k8s/scripts/discover-forwarded-headers.mjs ex-dev k8s/ex-dev-values.yaml /tmp/ex-dev-forwarded-headers.json
+# Run only if discovery succeeded:
+helm upgrade ex-dev k8s/exceptionless --namespace ex-dev --reuse-values \
+  --values k8s/ex-dev-values.yaml --values /tmp/ex-dev-forwarded-headers.json
+```
+
+For production, use `ex-prod`, `k8s/ex-prod-values.yaml`, and a separate output file. The script only reads infrastructure and replaces the local values file; Helm performs the upgrade. It removes any previous output before discovery so a failed refresh cannot leave stale trust available for reuse. Automated workflows stop on discovery failure; manual operators must also stop.
+
+This assumes the gateway connects directly to the application. Verify the API-visible peer and any intermediate proxies before the first rollout; discovering Azure configuration does not prove the live traffic path. The ALB controller pod and Service address are not substitutes for the association subnet. Other ingress topologies should use explicit trusted peers in `config` as shown above. See Microsoft's [association subnet documentation](https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/application-gateway-for-containers-components).
 
 ## ConnectionStrings
 
