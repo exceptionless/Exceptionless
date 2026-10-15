@@ -53,7 +53,7 @@ export function summarize(results) {
 }
 
 function run(args) {
-    const assembly = resolve(args.assembly ?? join(root, 'tests/Exceptionless.Tests/bin/Release/net10.0/Exceptionless.Tests.dll'));
+    const assembly = resolve(args.assembly ?? join(root, 'tests/Exceptionless.Tests/bin/Release/net11.0/Exceptionless.Tests.dll'));
     const discovered = JSON.parse(
         execFileSync('dotnet', [assembly, '--list-tests', 'json', '--no-ansi'], {
             encoding: 'utf8',

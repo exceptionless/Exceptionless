@@ -15,10 +15,8 @@
     <PackageReference Include="Exceptionless.AspNetCore" Version="6.2.0" />
     <PackageReference Include="Joonasw.AspNetCore.SecurityHeaders" Version="6.0.0" />
     <PackageReference Include="Foundatio.Mediator" Version="1.3.3" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
-    <!-- Microsoft.AspNetCore.OpenApi 10.x is built against the Microsoft.OpenApi 2.x API surface.
-         Keep this direct reference on the latest 2.x release until ASP.NET Core supports 3.x. -->
-    <PackageReference Include="Microsoft.OpenApi" Version="2.12.2" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0-rc.2.26504.105" />
+    <PackageReference Include="Microsoft.OpenApi" Version="3.10.2" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Riok.Mapperly" Version="4.3.1" />
     <PackageReference Include="MiniValidation" Version="0.10.0" />
