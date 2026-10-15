@@ -29,7 +29,8 @@ const config = {
                 // ws: also permits wss:; * alone covers HTTP(S), not WebSockets.
                 'connect-src': ['*', 'ws:'],
                 'default-src': ['none'],
-                'font-src': ['self', 'https://*.intercomcdn.com'],
+                // Vite inlines small KaTeX fonts used by Exie's math renderer.
+                'font-src': ['self', 'data:', 'https://*.intercomcdn.com'],
                 'form-action': ['self'],
                 'frame-src': ['https://*.stripe.com', 'https://link.com', 'https://*.link.com', 'https://intercom-sheets.com'],
                 'img-src': [
