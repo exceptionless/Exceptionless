@@ -9,8 +9,10 @@ import { trackHistoryTraversals } from './history-traversal';
 /**
  * A stand-in for SvelteKit 3 shallow routing in unit tests. A shallow `goto` runs the
  * navigation hooks with `shallow: true`, writes the history entry, and then updates
- * `page.state`. Back and Forward restore the URL first and apply the entry's page state in a
- * popstate listener, as SvelteKit does.
+ * `page.state`. Back and Forward restore the URL first. As in SvelteKit, an entry with the
+ * rendered page's URL gets its page state in a popstate listener. An entry with another URL,
+ * such as a query parameter update, gets it during a `popstate` navigation that runs the
+ * navigation hooks with `shallow: true`.
  *
  * Mock `$app/navigation` and `$app/state` with the exports of `shallowRouting`.
  */
@@ -49,7 +51,13 @@ trackHistoryTraversals();
 // registered before any component's. Browsers run a microtask checkpoint after each listener,
 // so effects that track `page.state` run before later listeners do; `flushSync` models that.
 window.addEventListener('popstate', (event) => {
-    page.state = getHistoryEntryState(event.state);
+    const state = getHistoryEntryState(event.state);
+    if (window.location.href !== page.url.href) {
+        void navigateToShallowEntry(state);
+        return;
+    }
+
+    page.state = state;
     setShallowUrl();
     flushSync();
 });
@@ -79,6 +87,25 @@ function createNavigation(type: NavigationType, to: URL, shallow: boolean, willU
         type,
         willUnload
     };
+}
+
+/** SvelteKit resolves the route first, so the hooks run after the other popstate listeners. */
+async function navigateToShallowEntry(state: App.PageState): Promise<void> {
+    await Promise.resolve();
+    const navigation = createNavigation('popstate', new SvelteURL(window.location.href), true);
+    for (const callback of beforeNavigateCallbacks) {
+        callback({
+            ...navigation,
+            cancel: () => undefined
+        } as BeforeNavigate);
+    }
+
+    page.state = state;
+    setShallowUrl();
+    flushSync();
+    for (const callback of afterNavigateCallbacks) {
+        callback(navigation as AfterNavigate);
+    }
 }
 
 function register<T>(callbacks: Set<T>, callback: T): void {

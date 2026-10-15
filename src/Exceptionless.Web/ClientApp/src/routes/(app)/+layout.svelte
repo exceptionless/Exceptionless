@@ -37,6 +37,7 @@
     import { shouldLoadIntercomOrganization } from '#features/intercom/config.ts';
     import { buildIntercomBootOptions, IntercomShell } from '#features/intercom/index.ts';
     import { getIntercomRouteKey } from '#features/intercom/updates.ts';
+    import { isShallowNavigationWithinPage } from '#features/navigation/shallow-navigation.ts';
     import { getVisibleUrl } from '#features/navigation/visible-url.ts';
     import Notifications from '#features/notifications/components/notifications.svelte';
     import {
@@ -113,9 +114,10 @@
         openCatalog: () => openGuidedTours()
     });
 
-    // Auto-reset premium page state on navigation so pages don't need cleanup
-    beforeNavigate(({ shallow, type }) => {
-        if (shallow && type === 'goto') {
+    // Auto-reset premium page state on navigation so pages don't need cleanup. Shallow history
+    // changes keep the page mounted, so it would not set the state again.
+    beforeNavigate((navigation) => {
+        if (isShallowNavigationWithinPage(navigation)) {
             return;
         }
 
