@@ -61,6 +61,7 @@ public sealed class EventEnvironmentTests : TestWithServices
     }
 
     [Theory]
+    [InlineData("null")]
     [InlineData("42")]
     [InlineData("true")]
     [InlineData("{\"region\":\"west\"}")]

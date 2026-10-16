@@ -13,6 +13,7 @@ namespace Exceptionless.Tests.Api.Endpoints;
 public partial class EventEndpointTests
 {
     [Theory]
+    [InlineData("null", null, "environment")]
     [InlineData("{\"region\":\"west\"}", null, "environment")]
     [InlineData("{\"region\":\"west\"}", null, "Environment")]
     [InlineData("\"west\"", "west", "environment")]

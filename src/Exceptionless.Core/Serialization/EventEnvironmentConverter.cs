@@ -12,6 +12,9 @@ namespace Exceptionless.Core.Serialization;
 /// </summary>
 public sealed class EventEnvironmentConverter : JsonConverter<object>
 {
+    // Read null values too, so an explicit null is retained as custom data like other invalid values.
+    public override bool HandleNull => true;
+
     public static void ConfigureProperty(JsonTypeInfo typeInfo)
     {
         if (typeInfo.Kind != JsonTypeInfoKind.Object || !typeof(Event).IsAssignableFrom(typeInfo.Type))
