@@ -963,12 +963,15 @@ public class EventHandler(
         if (totals.Count == projectIds.Count)
             return totals;
 
-        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).FilterExpression(filter).EnforceEventStackFilter().DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
+        var systemFilter = new RepositoryQuery<PersistentEvent>().AppFilter(sf).EnforceEventStackFilter().DateRange(utcStart, utcEnd, (PersistentEvent e) => e.Date).Index(utcStart, utcEnd);
         var projects = cachedTotals
             .Where(kvp => !kvp.Value.HasValue && stacks.Contains(s => s.ProjectId == kvp.Key))
             .Select(kvp => new Project { Id = kvp.Key, OrganizationId = stacks.First(s => s.ProjectId == kvp.Key).OrganizationId })
             .ToList();
-        var countResult = await eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(projects.BuildFilter()).EnforceEventStackFilter().AggregationsExpression("terms:(project_id cardinality:user)"));
+        // A filter expression on the system filter replaces this one, so both constraints are combined here.
+        string projectFilter = projects.BuildFilter();
+        string countFilter = filter is null ? projectFilter : $"({projectFilter}) AND ({filter})";
+        var countResult = await eventRepository.CountAsync(q => q.SystemFilter(systemFilter).FilterExpression(countFilter).EnforceEventStackFilter().AggregationsExpression("terms:(project_id cardinality:user)"));
 
         var projectTerms = countResult.Aggregations.Terms<string>("terms_project_id")?.Buckets ?? [];
         var aggregations = projectTerms.ToDictionary(t => t.Key, t => t.Aggregations.Cardinality("cardinality_user")?.Value.GetValueOrDefault() ?? 0);

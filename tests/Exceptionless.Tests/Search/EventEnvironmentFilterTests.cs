@@ -17,6 +17,8 @@ public sealed class EventEnvironmentFilterTests
     [InlineData("type:error _exists_:environment", "_exists_:environment")]
     [InlineData("type:error NOT environment:staging", "NOT environment:staging")]
     [InlineData("NOT (environment:staging OR type:error)", "NOT (environment:staging)")]
+    [InlineData("-(environment:staging OR type:error)", "NOT (environment:staging)")]
+    [InlineData("!(environment:staging OR type:error)", "NOT (environment:staging)")]
     [InlineData("NOT (environment:staging AND type:error)", null)]
     public async Task GetAsync_EnvironmentScope_PreservesUsersOutsideTheEventType(string? filter, string? expected)
     {

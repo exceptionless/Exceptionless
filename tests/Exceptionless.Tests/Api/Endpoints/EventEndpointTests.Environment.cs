@@ -2,6 +2,7 @@ using System.Text.Json;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
@@ -120,6 +121,34 @@ public partial class EventEndpointTests
             Assert.Equal(expected, stack.Users);
             Assert.Equal(totalUsers, stack.TotalUsers);
         }
+    }
+
+    [Fact]
+    public async Task GetStacks_EnvironmentFilter_CountsUsersOnlyForTheStackProjects()
+    {
+        await CreateDataAsync(data =>
+        {
+            data.Event().FreeProject().Type(Event.KnownTypes.Error).Mutate(ev => { ev.Environment = "production"; ev.SetUserIdentity("stack-user"); });
+            // More busy projects than the project terms aggregation returns by default.
+            for (int project = 0; project < 11; project++)
+            {
+                string projectId = $"{project:D24}";
+                for (int user = 0; user < 3; user++)
+                {
+                    string identity = $"other-{project}-{user}";
+                    data.Event().Organization(SampleDataService.FREE_ORG_ID).Project(projectId).Type(Event.KnownTypes.Log)
+                        .Mutate(ev => { ev.Environment = "production"; ev.SetUserIdentity(identity); });
+                }
+            }
+        });
+
+        var stacks = await SendRequestAsAsync<List<StackSummaryModel>>(request => request
+            .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "stack_frequent")
+            .QueryString("filter", "type:error environment:production").StatusCodeShouldBeOk());
+
+        var stack = Assert.Single(Assert.IsType<List<StackSummaryModel>>(stacks));
+        Assert.Equal(1, stack.Users);
+        Assert.Equal(1, stack.TotalUsers);
     }
 
     [Theory]

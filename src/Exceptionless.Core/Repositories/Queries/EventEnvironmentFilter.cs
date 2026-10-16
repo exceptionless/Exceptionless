@@ -1,4 +1,5 @@
 using Foundatio.Parsers.LuceneQueries;
+using Foundatio.Parsers.LuceneQueries.Extensions;
 using Foundatio.Parsers.LuceneQueries.Nodes;
 
 namespace Exceptionless.Core.Repositories.Queries;
@@ -35,7 +36,7 @@ public static class EventEnvironmentFilter
             return null;
         }
 
-        negate ^= group.IsNegated == true || group.Prefix == "-";
+        negate ^= group.IsExcluded();
         if (group.Left is null)
         {
             return GetConstraint(group.Right, negate);

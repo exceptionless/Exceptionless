@@ -61,9 +61,8 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
             {
                 var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
 
-                bool closeDuplicate = heartbeatResult?.CacheKey is not null && existingSessionHeartbeatIds.Contains(heartbeatResult.CacheKey);
-                if (heartbeatResult?.CacheKey is not null && !closeDuplicate)
-                    existingSessionHeartbeatIds.Add(heartbeatResult.CacheKey);
+                // Heartbeats are not scoped to an environment, so one user's sessions in different environments are not duplicates.
+                bool closeDuplicate = heartbeatResult?.CacheKey is not null && !existingSessionHeartbeatIds.Add($"{heartbeatResult.CacheKey}:{sessionStart.Environment}");
 
                 if (heartbeatResult is not null && (closeDuplicate || heartbeatResult.Close || heartbeatResult.ActivityUtc > lastActivityUtc))
                     sessionStart.UpdateSessionStart(heartbeatResult.ActivityUtc, isSessionEnd: closeDuplicate || heartbeatResult.Close || heartbeatResult.ActivityUtc <= inactivePeriodUtc);

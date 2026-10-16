@@ -46,7 +46,7 @@ Names are trimmed, with a maximum of 64 characters. Events preserve the supplied
 
 Choose **Manage filters → Environment** on Events, Stacks, Sessions, or Stream. Select one or more names, or **Unspecified** for events without an environment. Clear the selection to include all environments. The picker discovers names for the selected projects and time range; you can also enter a name that has no current events.
 
-Environment selections persist in URLs and saved views. Events, sessions, and stream tables have an optional Environment column. Event details show Environment in the overview; **Machine & runtime** contains the existing `data.@environment` diagnostics.
+Environment selections persist in URLs and saved views. Events, sessions, and stream tables have an optional Environment column. Event details show Environment in the overview when the event has one; **Machine & runtime** contains the existing `data.@environment` diagnostics.
 
 Environment searches and aggregations are available on every plan:
 
@@ -58,7 +58,9 @@ Environment searches and aggregations are available on every plan:
 | `_exists_:environment` | Events with an environment |
 | `environment:"qa west"` | A custom name containing spaces |
 
-Stack dashboard counts and charts use events matching the filter. Stack status remains shared, so changing status while viewing production also changes the same stack seen in staging. Automatic session detection separates the same user's activity by environment.
+Stack dashboard counts and charts use events matching the filter. Stack status remains shared, so changing status while viewing production also changes the same stack seen in staging. Automatic session detection separates the same user's activity by environment. Session heartbeats do not include an environment, so a heartbeat keeps the user's open sessions active in every environment.
+
+Notifications and the **New** view are not environment-aware yet. A stack is new once, when its first event arrives from any environment. An error first seen in development triggers the new error notification then, and is not reported as new again when it reaches production; the **New** view also dates it from that first occurrence. Critical error and regression notifications are sent for events from every environment.
 
 ## Fixing stacks across deployments
 
@@ -66,6 +68,6 @@ Use [fixed in version](/docs/versioning/) when environments run different releas
 
 ## Rollout
 
-Deploy the server before adopting SDK versions that expose the new setting. The server adds mappings to existing event indices without rewriting historical events. Clients that do not send an environment continue to work. `data.@environment` and custom `data.environment` values retain their existing meanings.
+Deploy the server before adopting SDK versions that expose the new setting. The server adds mappings to existing event indices without rewriting historical events. Self-hosted installs should let the migration job finish before the new API and job instances process events: events written to an existing index before the mapping is added keep their environment but cannot be filtered or aggregated by it. Clients that do not send an environment continue to work. `data.@environment` and custom `data.environment` values retain their existing meanings.
 
 Before this release, the server stored an unrecognized root `environment` property as custom data in `data.environment`. A valid root `environment` string is now stored only as the event's environment, trimmed, so read it from `environment` instead of `data.environment`. Any other root value, such as null, an object, a number, a blank string, or an oversized name, is still stored as `data.environment`. If `data.environment` already exists, that value uses the next available key (`environment1`, `environment2`, and so on).

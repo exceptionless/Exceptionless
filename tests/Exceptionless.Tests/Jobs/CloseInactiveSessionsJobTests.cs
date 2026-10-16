@@ -89,6 +89,39 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task WillNotCloseIdentitySessionsInDifferentEnvironmentsAsDuplicates()
+    {
+        const string userId = "blake@exceptionless.io";
+        var event1 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+        event1.Environment = "Production";
+        var event2 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+        event2.Environment = "staging";
+        var event3 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+        event3.Environment = "production";
+
+        var contexts = await _pipeline.RunAsync(new[] { event1, event2, event3 }, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+        Assert.True(contexts.All(c => !c.HasError));
+        Assert.True(contexts.All(c => !c.IsCancelled));
+        Assert.True(contexts.All(c => c.IsProcessed));
+
+        await RefreshDataAsync();
+        var events = await _eventRepository.GetAllAsync();
+        var sessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
+        Assert.Equal(2, sessionStarts.Count);
+        Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
+
+        await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", DateTime.UtcNow.SubtractMinutes(1));
+
+        _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+        Assert.Equal(JobResult.Success, await _job.RunAsync(TestCancellationToken));
+        await RefreshDataAsync();
+
+        sessionStarts = (await _eventRepository.GetAllAsync()).Documents.Where(e => e.IsSessionStart()).ToList();
+        Assert.Equal(2, sessionStarts.Count);
+        Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
+    }
+
+    [Fact]
     public async Task WillNotCloseDuplicateIdentitySessionsWithSessionIdHeartbeat()
     {
         const string userId = "blake@exceptionless.io";
