@@ -3,7 +3,6 @@ using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
-using Exceptionless.Core.Queues.Models;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -62,12 +61,14 @@ public sealed class EventEnvironmentTests : TestWithServices
     }
 
     [Theory]
-    [InlineData("null")]
     [InlineData("42")]
     [InlineData("true")]
     [InlineData("{\"region\":\"west\"}")]
     [InlineData("[\"production\",\"staging\"]")]
-    public void Deserialize_LegacyRootEnvironment_PreservesCustomDataRegardlessOfPropertyOrder(string environment)
+    [InlineData("\"   \"")]
+    [InlineData("\"bad\\nenvironment\"")]
+    [InlineData("\"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm\"")]
+    public void Deserialize_InvalidRootEnvironment_PreservesCustomDataRegardlessOfPropertyOrder(string environment)
     {
         var serializer = GetService<ITextSerializer>();
         using var expected = JsonDocument.Parse(environment);
@@ -85,7 +86,8 @@ public sealed class EventEnvironmentTests : TestWithServices
 
             Assert.NotNull(ev);
             Assert.Null(ev.Environment);
-            using var result = JsonDocument.Parse(serializer.SerializeToString(ev)!);
+            string serialized = serializer.SerializeToString(ev)!;
+            using var result = JsonDocument.Parse(serialized);
             var data = result.RootElement.GetProperty("data");
             Assert.True(data.GetProperty("kept").GetBoolean());
             Assert.True(JsonElement.DeepEquals(expected.RootElement, data.GetProperty(duplicateKey ? "environment1" : "environment")));
@@ -94,6 +96,7 @@ public sealed class EventEnvironmentTests : TestWithServices
                 Assert.Equal("nested", data.GetProperty("environment").GetString());
             }
             Assert.False(result.RootElement.TryGetProperty("environment", out _));
+            Assert.Equal(serialized, serializer.SerializeToString(serializer.Deserialize<Event>(serialized)));
         }
     }
 
@@ -106,91 +109,24 @@ public sealed class EventEnvironmentTests : TestWithServices
     }
 
     [Theory]
-    [InlineData("Environment")]
-    [InlineData("ENVIRONMENT")]
-    [InlineData("environment")]
-    public void ParseEvents_LegacyEnvironmentKey_PreservesSubmittedCasing(string propertyName)
+    [InlineData("environment", "west", "west")]
+    [InlineData("Environment", "west", "west")]
+    [InlineData("ENVIRONMENT", " Production ", "Production")]
+    public void ParseEvents_ValidEnvironment_StoresDeploymentNameOnlyAndRoundTrips(string propertyName, string environment, string expected)
     {
         var parser = GetService<JsonEventParserPlugin>();
         var serializer = GetService<ITextSerializer>();
 
-        var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(parser.ParseEvents($$"""{"{{propertyName}}":"west"}""", 2, null)));
+        var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(parser.ParseEvents($$$"""{"{{{propertyName}}}":{{{JsonSerializer.Serialize(environment)}}},"data":{"kept":true}}""", 2, null)));
 
-        Assert.Equal("west", ev.Environment);
-        using var serialized = JsonDocument.Parse(serializer.SerializeToString(ev)!);
-        var property = Assert.Single(serialized.RootElement.GetProperty("data").EnumerateObject());
-        Assert.Equal(propertyName, property.Name);
-        Assert.Equal("west", property.Value.GetString());
-    }
-
-    [Fact]
-    public void ParseEvents_CaseDistinctEnvironmentKeys_PreservesAllLegacyValues()
-    {
-        var parser = GetService<JsonEventParserPlugin>();
-        var serializer = GetService<ITextSerializer>();
-        const string json = """{"Environment":"west","environment":"east","ENVIRONMENT":{"region":"north"},"data":{"environment":"nested"}}""";
-
-        var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(parser.ParseEvents(json, 2, null)));
-
-        Assert.Null(ev.Environment);
-        using var serialized = JsonDocument.Parse(serializer.SerializeToString(ev)!);
-        var data = serialized.RootElement.GetProperty("data");
-        Assert.Equal(4, data.EnumerateObject().Count());
-        Assert.Equal("nested", data.GetProperty("environment").GetString());
-        Assert.Equal("west", data.GetProperty("Environment1").GetString());
-        Assert.Equal("east", data.GetProperty("environment2").GetString());
-        Assert.Equal("north", data.GetProperty("ENVIRONMENT3").GetProperty("region").GetString());
-    }
-
-    [Fact]
-    public void EventPostMetadata_NormalizedFlag_DefaultsToLegacyIngestionAndRoundTrips()
-    {
-        var serializer = GetService<ITextSerializer>();
-        const string legacyJson = """{"organization_id":"organization","project_id":"project","api_version":2}""";
-        var legacy = serializer.Deserialize<EventPostInfo>(legacyJson);
-
-        Assert.NotNull(legacy);
-        Assert.False(legacy.IsNormalized);
-        Assert.DoesNotContain("is_normalized", serializer.SerializeToString(legacy)!);
-        var normalized = legacy with { IsNormalized = true };
-        Assert.True(serializer.Deserialize<EventPostInfo>(serializer.SerializeToString(normalized)!)!.IsNormalized);
-    }
-
-    [Theory]
-    [InlineData("west", "west")]
-    [InlineData(" Production ", "Production")]
-    [InlineData("   ", null)]
-    [InlineData("bad\nenvironment", null)]
-    [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm", null)]
-    public void ParseEvents_LegacyStringEnvironment_PreservesOriginalDataAcrossRoundTrips(string environment, string? expected)
-    {
-        var parser = GetService<JsonEventParserPlugin>();
-        var serializer = GetService<ITextSerializer>();
-
-        foreach (var (environmentFirst, duplicateKey) in new[] { (true, false), (false, false), (true, true), (false, true) })
+        Assert.Equal(expected, ev.Environment);
+        Assert.NotNull(ev.Data);
+        Assert.False(ev.Data.ContainsKey("environment"));
+        string serialized = serializer.SerializeToString(ev)!;
+        for (int i = 0; i < 3; i++)
         {
-            string environmentProperty = $"\"environment\":{JsonSerializer.Serialize(environment)}";
-            string dataProperty = duplicateKey
-                ? "\"data\":{\"environment\":\"nested\",\"kept\":true}"
-                : "\"data\":{\"kept\":true}";
-            string json = environmentFirst
-                ? $"{{{environmentProperty},{dataProperty}}}"
-                : $"{{{dataProperty},{environmentProperty}}}";
-
-            var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(parser.ParseEvents(json, 2, null)));
-            Assert.Equal(expected, ev.Environment);
-            Assert.Equal(environment, ev.Data![duplicateKey ? "environment1" : "environment"]);
-            if (duplicateKey)
-                Assert.Equal("nested", ev.Data["environment"]);
-
-            string serialized = serializer.SerializeToString(ev)!;
-            for (int i = 0; i < 3; i++)
-            {
-                ev = serializer.Deserialize<PersistentEvent>(serialized)!;
-                string roundTrip = serializer.SerializeToString(ev)!;
-                Assert.Equal(serialized, roundTrip);
-                Assert.Equal(expected, ev.Environment);
-            }
+            var roundTrip = Assert.Single(Assert.IsType<List<PersistentEvent>>(parser.ParseEvents(serialized, 2, null)));
+            Assert.Equal(serialized, serializer.SerializeToString(roundTrip));
         }
     }
 }

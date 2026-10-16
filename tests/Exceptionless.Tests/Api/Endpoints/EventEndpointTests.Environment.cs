@@ -20,7 +20,7 @@ public partial class EventEndpointTests
     [InlineData("\" Production \"", "Production", "ENVIRONMENT")]
     [InlineData("\"   \"", null, "environment")]
     [InlineData("\"bad\\nenvironment\"", null, "environment")]
-    public async Task PostEvent_LegacyRootEnvironment_PreservesCustomDataThroughStorageAndApi(string environment, string? expected, string propertyName)
+    public async Task PostEvent_RootEnvironment_StoresValidNamesAndPreservesOtherValuesAsCustomData(string environment, string? expected, string propertyName)
     {
         await SendRequestAsync(request => request.Post()
             .AsTestOrganizationClientUser().AppendPath("events")
@@ -41,8 +41,14 @@ public partial class EventEndpointTests
         var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(events));
         Assert.Equal(expected, ev.Environment);
         Assert.NotNull(ev.Data);
-        Assert.Contains(propertyName, ev.Data.Keys, StringComparer.Ordinal);
-        Assert.True(JsonElement.DeepEquals(JsonSerializer.Deserialize<JsonElement>(environment), JsonSerializer.SerializeToElement(ev.Data["environment"])));
+        if (expected is not null)
+        {
+            Assert.False(ev.Data.ContainsKey("environment"));
+        }
+        else
+        {
+            Assert.True(JsonElement.DeepEquals(JsonSerializer.Deserialize<JsonElement>(environment), JsonSerializer.SerializeToElement(ev.Data["environment"])));
+        }
         Assert.False(ev.Data.ContainsKey("environment1"));
     }
 
@@ -53,7 +59,7 @@ public partial class EventEndpointTests
     [InlineData("   ", null, "environment")]
     [InlineData("bad\nenvironment", null, "environment")]
     [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm", null, "environment")]
-    public async Task GetSubmitEvent_EnvironmentParameter_TrimsAndPreservesCasing(string environment, string? expected, string propertyName)
+    public async Task GetSubmitEvent_EnvironmentParameter_StoresValidNamesAndPreservesOtherValuesAsCustomData(string environment, string? expected, string propertyName)
     {
         await SendRequestAsync(request => request
             .AsTestOrganizationClientUser().AppendPaths("events", "submit")
@@ -68,8 +74,14 @@ public partial class EventEndpointTests
             item => item.ReferenceId == "get-environment-reference");
         Assert.Equal(expected, ev.Environment);
         Assert.NotNull(ev.Data);
-        Assert.Contains(propertyName, ev.Data.Keys, StringComparer.Ordinal);
-        Assert.Equal(environment, ev.Data["environment"]);
+        if (expected is not null)
+        {
+            Assert.False(ev.Data.ContainsKey(propertyName));
+        }
+        else
+        {
+            Assert.Equal(environment, ev.Data[propertyName]);
+        }
         Assert.False(ev.Data.ContainsKey("environment1"));
     }
 
@@ -112,7 +124,7 @@ public partial class EventEndpointTests
     [Theory]
     [InlineData("environment")]
     [InlineData("Environment")]
-    public async Task GetSubmitEvent_RepeatedEnvironments_PreservesCollectionWithoutDuplicateData(string propertyName)
+    public async Task GetSubmitEvent_RepeatedEnvironments_PreservesCollectionAsCustomData(string propertyName)
     {
         await SendRequestAsync(request => request
             .AsTestOrganizationClientUser().AppendPaths("events", "submit")
@@ -125,7 +137,7 @@ public partial class EventEndpointTests
 
         var ev = Assert.Single((await _eventRepository.GetAllAsync()).Documents,
             item => item.ReferenceId == "repeated-environment-reference");
-        Assert.Equal("Production", ev.Environment);
+        Assert.Null(ev.Environment);
         Assert.NotNull(ev.Data);
         Assert.Contains(propertyName, ev.Data.Keys, StringComparer.Ordinal);
         Assert.Equal(new[] { " Production ", "staging" }, JsonSerializer.SerializeToElement(ev.Data[propertyName]).EnumerateArray().Select(value => value.GetString()));

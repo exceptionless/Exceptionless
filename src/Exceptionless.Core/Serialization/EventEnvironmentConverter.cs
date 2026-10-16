@@ -7,23 +7,12 @@ using Exceptionless.Core.Models;
 namespace Exceptionless.Core.Serialization;
 
 /// <summary>
-/// Reads deployment names while preserving legacy root values as custom event data.
+/// Reads valid deployment names into <see cref="Event.Environment"/>. Any other root value keeps
+/// its legacy behavior and is stored as custom event data.
 /// </summary>
 public sealed class EventEnvironmentConverter : JsonConverter<object>
 {
-    public override bool HandleNull => true;
-
     public static void ConfigureProperty(JsonTypeInfo typeInfo)
-    {
-        ConfigureProperty(typeInfo, ingestion: false);
-    }
-
-    public static void ConfigureIngestionProperty(JsonTypeInfo typeInfo)
-    {
-        ConfigureProperty(typeInfo, ingestion: true);
-    }
-
-    private static void ConfigureProperty(JsonTypeInfo typeInfo, bool ingestion)
     {
         if (typeInfo.Kind != JsonTypeInfoKind.Object || !typeof(Event).IsAssignableFrom(typeInfo.Type))
         {
@@ -38,14 +27,6 @@ public sealed class EventEnvironmentConverter : JsonConverter<object>
                 continue;
             }
 
-            if (ingestion)
-            {
-                // Let extension data retain the exact submitted names and case-distinct keys.
-                // Event.OnDeserialized promotes the deployment name before merging the legacy data.
-                typeInfo.Properties.RemoveAt(i);
-                return;
-            }
-
             var environment = typeInfo.CreateJsonPropertyInfo(typeof(object), property.Name);
             environment.AttributeProvider = property.AttributeProvider;
             environment.CustomConverter = new EventEnvironmentConverter();
@@ -54,9 +35,9 @@ public sealed class EventEnvironmentConverter : JsonConverter<object>
             {
                 if (value is JsonElement legacyValue)
                 {
+                    // Merged into data by Event.OnDeserialized after all properties have been read,
+                    // so a later "data" property cannot overwrite it.
                     var ev = (Event)instance;
-                    ev.Environment = null;
-                    // Merge after all properties have been read so a later "data" property cannot overwrite it.
                     ev.ExtensionData ??= [];
                     ev.ExtensionData[property.Name] = legacyValue;
                 }
@@ -72,7 +53,7 @@ public sealed class EventEnvironmentConverter : JsonConverter<object>
 
     public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        if (reader.TokenType == JsonTokenType.String)
+        if (reader.TokenType == JsonTokenType.String && Event.NormalizeEnvironment(reader.GetString()) is not null)
         {
             return reader.GetString();
         }

@@ -472,12 +472,8 @@ public class EventHandler(
                 case "source":
                     ev.Source = kvp.Value.FirstOrDefault();
                     break;
-                case "environment":
-                    if (kvp.Key.AnyWildcardMatches(exclusions, true))
-                        continue;
-
-                    ev.Environment = kvp.Value.FirstOrDefault();
-                    ev.Data![kvp.Key] = kvp.Value.Count > 1 ? kvp.Value : kvp.Value.FirstOrDefault();
+                case "environment" when kvp.Value.Count == 1 && Event.NormalizeEnvironment(kvp.Value[0]) is not null:
+                    ev.Environment = kvp.Value[0];
                     break;
                 case "message":
                     ev.Message = kvp.Value.FirstOrDefault();
@@ -537,7 +533,6 @@ public class EventHandler(
             using var stream = new MemoryStream(ev.GetBytes(serializer));
             await eventPostService.EnqueueAsync(new EventPost(appOptions.EnableArchive)
             {
-                IsNormalized = true,
                 ApiVersion = message.ApiVersion,
                 CharSet = charSet,
                 ContentEncoding = contentEncoding,

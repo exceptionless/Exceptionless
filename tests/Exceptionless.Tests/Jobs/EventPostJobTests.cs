@@ -153,7 +153,7 @@ public class EventPostJobTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RunAsync_RetryingParsedBatch_PreservesEnvironmentDataWithoutDuplicates()
+    public async Task RunAsync_RetryingParsedBatch_PreservesEnvironmentWithoutCustomData()
     {
         var production = GenerateEvent(type: Event.KnownTypes.Log);
         production.Environment = "Production";
@@ -172,13 +172,8 @@ public class EventPostJobTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         var events = (await _eventRepository.GetAllAsync()).Documents;
-        Assert.Equal(2, events.Count);
-        Assert.All(events, ev =>
-        {
-            Assert.NotNull(ev.Data);
-            Assert.Equal(ev.Environment, ev.Data["environment"]);
-            Assert.False(ev.Data.ContainsKey("environment1"));
-        });
+        Assert.Equal(new[] { "Production", "Staging" }, events.Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
+        Assert.All(events, ev => Assert.False(ev.Data?.ContainsKey("environment") ?? false));
     }
 
     private sealed class FailingPipeline(IServiceProvider services, AppOptions options, ILoggerFactory loggerFactory)

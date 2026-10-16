@@ -267,9 +267,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 AppDiagnostics.PostsParsingTime.Time(() =>
                 {
                     string input = encoding.GetString(uncompressedData);
-                    events = ep.IsNormalized
-                        ? _eventParserPluginManager.ParseNormalizedEvents(input)
-                        : _eventParserPluginManager.ParseEvents(input, ep.ApiVersion, ep.UserAgent);
+                    events = _eventParserPluginManager.ParseEvents(input, ep.ApiVersion, ep.UserAgent);
                     foreach (var ev in events)
                     {
                         ev.CreatedUtc = createdUtc;
@@ -312,7 +310,6 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 // Put this single event back into the queue so we can retry it separately.
                 await _eventPostService.EnqueueAsync(new EventPost(false)
                 {
-                    IsNormalized = true,
                     ApiVersion = ep.ApiVersion,
                     CharSet = ep.CharSet,
                     ClientKeyHash = ep.ClientKeyHash,

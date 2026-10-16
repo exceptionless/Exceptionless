@@ -1,5 +1,4 @@
 ﻿using Exceptionless.Core.Models;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Plugins.EventParser;
@@ -31,7 +30,15 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
                 if (events is null)
                     continue;
 
-                SetRequiredProperties(events);
+                // Set required event properties
+                events.ForEach(e =>
+                {
+                    if (e.Date == DateTimeOffset.MinValue)
+                        e.Date = _timeProvider.GetLocalNow();
+
+                    if (String.IsNullOrWhiteSpace(e.Type))
+                        e.Type = e.HasError() || e.HasSimpleError() ? Event.KnownTypes.Error : Event.KnownTypes.Log;
+                });
 
                 return events;
             }
@@ -42,27 +49,5 @@ public class EventParserPluginManager : PluginManagerBase<IEventParserPlugin>
         }
 
         return new List<PersistentEvent>();
-    }
-
-    public List<PersistentEvent> ParseNormalizedEvents(string input)
-    {
-        var parser = _serviceProvider.GetRequiredService<JsonEventParserPlugin>();
-        List<PersistentEvent>? events = null;
-        AppDiagnostics.Time(() => events = parser.ParseNormalizedEvents(input), String.Concat("events.parse.", parser.Name.ToLower()));
-        events ??= [];
-        SetRequiredProperties(events);
-        return events;
-    }
-
-    private void SetRequiredProperties(List<PersistentEvent> events)
-    {
-        foreach (var ev in events)
-        {
-            if (ev.Date == DateTimeOffset.MinValue)
-                ev.Date = _timeProvider.GetLocalNow();
-
-            if (String.IsNullOrWhiteSpace(ev.Type))
-                ev.Type = ev.HasError() || ev.HasSimpleError() ? Event.KnownTypes.Error : Event.KnownTypes.Log;
-        }
     }
 }
