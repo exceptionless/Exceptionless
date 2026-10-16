@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { P } from '$comp/typography';
+    import { P } from '#comp/typography/index.ts';
     let { description }: { description: Snippet | string } = $props();
 </script>
 

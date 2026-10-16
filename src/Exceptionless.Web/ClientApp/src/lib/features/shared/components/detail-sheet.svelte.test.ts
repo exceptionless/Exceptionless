@@ -1,49 +1,45 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { shallowRouting } from '../shallow-routing.test-fake.svelte';
 import DetailSheetTestHarness from './detail-sheet.test-harness.svelte';
 
-const navigation = vi.hoisted(() => ({
-    beforeNavigate: vi.fn(),
-    goto: vi.fn(),
-    pushState: vi.fn(),
-    replaceState: vi.fn()
-}));
-const pageState = vi.hoisted(() => ({}));
 const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 
 vi.mock('svelte-sonner', () => ({ toast }));
+vi.mock('$app/env', () => ({ browser: true }));
+vi.mock('$app/navigation', async () => {
+    const { shallowRouting } = await import('../shallow-routing.test-fake.svelte');
+    return { beforeNavigate: shallowRouting.beforeNavigate, goto: shallowRouting.goto };
+});
+vi.mock('$app/state', async () => {
+    const { shallowRouting } = await import('../shallow-routing.test-fake.svelte');
+    return { navigating: shallowRouting.navigating, page: shallowRouting.page };
+});
 
-function createSvelteKitHistoryState(state: App.PageState): Record<string, App.PageState> {
-    return { 'sveltekit:states': state };
+const { goto } = shallowRouting;
+const detailSheetHistoryStateKey = '__exceptionlessDetailSheet';
+const listUrl = '/events?filter=open';
+
+function getWrittenUrl(call: number): string {
+    const url = new URL(goto.mock.calls[call - 1]![0], window.location.origin);
+    return `${url.pathname}${url.search}`;
 }
 
-vi.mock('$app/environment', () => ({ browser: true }));
-vi.mock('$app/navigation', () => navigation);
-vi.mock('$app/state', () => ({
-    page: {
-        state: pageState,
-        get url() {
-            return new URL(window.location.href);
-        }
-    }
-}));
+async function openDetails(): Promise<void> {
+    await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
+    await shallowRouting.flush();
+}
 
 describe('DetailSheet history', () => {
     const writeText = vi.fn(() => Promise.resolve());
 
     beforeEach(() => {
-        vi.clearAllMocks();
+        toast.error.mockClear();
+        toast.success.mockClear();
+        writeText.mockClear();
         Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
-        window.history.replaceState(createSvelteKitHistoryState(pageState), '', '/events?filter=open');
-        navigation.goto.mockResolvedValue(undefined);
-        navigation.pushState.mockImplementation((url: string | URL, state: App.PageState) =>
-            window.history.pushState(createSvelteKitHistoryState(state), '', url)
-        );
-        navigation.replaceState.mockImplementation((url: string | URL, state: App.PageState) =>
-            window.history.replaceState(createSvelteKitHistoryState(state), '', url)
-        );
+        shallowRouting.reset(listUrl);
     });
 
     afterEach(() => {
@@ -53,12 +49,15 @@ describe('DetailSheet history', () => {
     it('adds a same-page history entry when details open', async () => {
         render(DetailSheetTestHarness);
 
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
+        await openDetails();
 
-        expect(navigation.pushState).toHaveBeenCalledOnce();
-        expect(navigation.pushState).toHaveBeenCalledWith('/events?filter=open', {
-            __exceptionlessDetailSheet: { key: 'event', value: 'abc123' }
+        expect(goto).toHaveBeenCalledOnce();
+        expect(getWrittenUrl(1)).toBe(listUrl);
+        expect(goto.mock.calls[0]![1]).toEqual({
+            persistState: true,
+            replace: false,
+            shallow: true,
+            state: { [detailSheetHistoryStateKey]: { key: 'event', value: 'abc123' } }
         });
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('open:abc123');
         expect(document.querySelector('[data-slot="sheet-content"]')?.classList.contains('w-[calc(100%-1rem)]!')).toBe(true);
@@ -66,7 +65,7 @@ describe('DetailSheet history', () => {
 
     it('copies the absolute full-page details link', async () => {
         render(DetailSheetTestHarness);
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
+        await openDetails();
 
         await fireEvent.click(screen.getByRole('button', { name: 'Copy event link' }));
 
@@ -77,13 +76,9 @@ describe('DetailSheet history', () => {
     it('closes details during Back navigation without traversing twice', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
         render(DetailSheetTestHarness);
-        const originalState = window.history.state;
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
+        await openDetails();
 
-        window.history.replaceState(originalState, '', '/events?filter=open');
-        window.dispatchEvent(new PopStateEvent('popstate', { state: originalState }));
-        await tick();
+        await shallowRouting.traverse(listUrl);
 
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
         expect(historyBack).not.toHaveBeenCalled();
@@ -91,113 +86,96 @@ describe('DetailSheet history', () => {
 
     it('restores the same details during Forward navigation without pushing another entry', async () => {
         render(DetailSheetTestHarness);
-        const originalState = window.history.state;
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
-        const detailState = window.history.state;
+        await openDetails();
+        const detailState = shallowRouting.page.state;
 
-        window.history.replaceState(originalState, '', '/events?filter=open');
-        window.dispatchEvent(new PopStateEvent('popstate', { state: originalState }));
-        await tick();
+        await shallowRouting.traverse(listUrl);
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
 
-        window.history.replaceState(detailState, '', '/events?filter=open');
-        window.dispatchEvent(new PopStateEvent('popstate', { state: detailState }));
-        await tick();
+        await shallowRouting.traverse(listUrl, detailState);
 
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('open:abc123');
-        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(goto).toHaveBeenCalledOnce();
     });
 
     it('restores details when returning to a sheet history entry after the component remounts', async () => {
         const firstRender = render(DetailSheetTestHarness);
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
-        const detailState = window.history.state;
+        await openDetails();
+        const detailState = shallowRouting.page.state;
         firstRender.unmount();
 
-        window.history.replaceState(detailState, '', '/events?filter=open');
+        shallowRouting.visit(listUrl, detailState);
         render(DetailSheetTestHarness);
-        await tick();
+        await shallowRouting.flush();
 
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('open:abc123');
-        expect(navigation.pushState).toHaveBeenCalledOnce();
+        expect(goto).toHaveBeenCalledOnce();
+    });
+
+    it('lets shallow history writes from other components through while it owns an entry', async () => {
+        const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
+        render(DetailSheetTestHarness);
+        await openDetails();
+
+        await goto('/events?filter=regressed', { replace: true, shallow: true, state: shallowRouting.page.state });
+        await shallowRouting.flush();
+
+        expect(historyBack).not.toHaveBeenCalled();
+        expect(window.location.search).toBe('?filter=regressed');
+        expect(screen.getByTestId('detail-sheet-state').textContent).toBe('open:abc123');
     });
 
     it('consumes the sheet entry before continuing normal navigation', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
-        const cancel = vi.fn();
         render(DetailSheetTestHarness);
-        const originalState = window.history.state;
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
-        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as
-            ((navigation: { cancel: () => void; to: { url: URL }; type: string }) => void) | undefined;
+        await openDetails();
 
-        const destination = new URL('/event/abc123', window.location.origin);
-        beforeNavigation?.({ cancel, to: { url: destination }, type: 'link' });
+        const cancel = shallowRouting.beforeLeaving('link', '/event/abc123');
 
         expect(cancel).toHaveBeenCalledOnce();
         expect(historyBack).toHaveBeenCalledOnce();
 
-        window.history.replaceState(originalState, '', '/events?filter=open');
-        window.dispatchEvent(new PopStateEvent('popstate', { state: originalState }));
-        await tick();
+        await shallowRouting.traverse(listUrl);
 
-        await waitFor(() => expect(navigation.goto).toHaveBeenCalledWith(destination));
+        await waitFor(() => expect(goto).toHaveBeenLastCalledWith(new URL('/event/abc123', window.location.origin)));
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
     });
 
     it('consumes the sheet entry when a parent close immediately starts navigation', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
-        const cancel = vi.fn();
         render(DetailSheetTestHarness);
-        const originalState = window.history.state;
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
-        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as
-            ((navigation: { cancel: () => void; to: { url: URL }; type: string }) => void) | undefined;
+        await openDetails();
 
         await fireEvent.click(screen.getByRole('button', { name: 'Close details externally' }));
-        await tick();
-        const destination = new URL('/events?stack=def456', window.location.origin);
-        beforeNavigation?.({ cancel, to: { url: destination }, type: 'goto' });
+        const cancel = shallowRouting.beforeLeaving('goto', '/events?stack=def456');
 
         expect(cancel).toHaveBeenCalledOnce();
         expect(historyBack).toHaveBeenCalledOnce();
 
-        window.history.replaceState(originalState, '', '/events?filter=open');
-        window.dispatchEvent(new PopStateEvent('popstate', { state: originalState }));
+        await shallowRouting.traverse(listUrl);
 
-        await waitFor(() => expect(navigation.goto).toHaveBeenCalledWith(destination));
+        await waitFor(() => expect(goto).toHaveBeenLastCalledWith(new URL('/events?stack=def456', window.location.origin)));
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
     });
 
     it('preserves SvelteKit navigation options without replaying link click handlers', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
-        const cancel = vi.fn();
         render(DetailSheetTestHarness);
-        const originalState = window.history.state;
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
+        await openDetails();
         const link = screen.getByRole('link', { name: 'Navigate with link options' }) as HTMLAnchorElement;
         const preventNavigation = (event: MouseEvent) => event.preventDefault();
         link.addEventListener('click', preventNavigation);
         link.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
         const linkClick = vi.spyOn(link, 'click');
-        const beforeNavigation = navigation.beforeNavigate.mock.calls[0]?.[0] as
-            ((navigation: { cancel: () => void; to: { url: URL }; type: string }) => void) | undefined;
 
-        const destination = new URL(link.href);
-        beforeNavigation?.({ cancel, to: { url: destination }, type: 'link' });
+        const cancel = shallowRouting.beforeLeaving('link', link.href);
         expect(cancel).toHaveBeenCalledOnce();
         expect(historyBack).toHaveBeenCalledOnce();
 
-        window.history.replaceState(originalState, '', '/events?filter=open');
-        window.dispatchEvent(new PopStateEvent('popstate', { state: originalState }));
+        await shallowRouting.traverse(listUrl);
 
-        await waitFor(() => expect(navigation.goto).toHaveBeenCalledWith(destination, { keepFocus: undefined, noScroll: true, replaceState: undefined }));
-        expect(link.dataset.sveltekitNoscroll).toBe('');
+        await waitFor(() => expect(goto).toHaveBeenLastCalledWith(new URL(link.href), { replace: undefined, reset: false }));
+        expect(link.dataset.sveltekitReset).toBe('false');
         expect(linkClick).not.toHaveBeenCalled();
         link.removeEventListener('click', preventNavigation);
     });
@@ -205,11 +183,10 @@ describe('DetailSheet history', () => {
     it('consumes its same-page history entry when the sheet requests close', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
         render(DetailSheetTestHarness);
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
+        await openDetails();
 
         await fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-        await tick();
+        await shallowRouting.flush();
 
         expect(historyBack).toHaveBeenCalledOnce();
         expect(screen.getByTestId('detail-sheet-state').textContent).toBe('closed');
@@ -218,55 +195,51 @@ describe('DetailSheet history', () => {
     it('consumes a same-page history entry when details close externally', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
         render(DetailSheetTestHarness);
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
+        await openDetails();
 
         await fireEvent.click(screen.getByRole('button', { name: 'Close details externally' }));
-        await tick();
 
         await waitFor(() => expect(historyBack).toHaveBeenCalledOnce());
-        expect(navigation.replaceState).not.toHaveBeenCalled();
+        expect(goto).toHaveBeenCalledOnce();
     });
 
     it('preserves a newer URL when details close externally after a query update', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
         render(DetailSheetTestHarness);
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
+        await openDetails();
         window.history.replaceState(window.history.state, '', '/events?filter=updated');
 
         await fireEvent.click(screen.getByRole('button', { name: 'Close details externally' }));
-        await tick();
 
-        await waitFor(() => expect(navigation.replaceState).toHaveBeenCalledOnce());
+        await waitFor(() => expect(goto).toHaveBeenCalledTimes(2));
+        expect(goto.mock.calls[1]![1]).toEqual({ persistState: true, replace: true, shallow: true, state: {} });
         expect(historyBack).not.toHaveBeenCalled();
         expect(window.location.pathname + window.location.search).toBe('/events?filter=updated');
-        expect(window.history.state['sveltekit:states'].__exceptionlessDetailSheet).toBeUndefined();
+        expect(shallowRouting.historyEntryState()).not.toHaveProperty(detailSheetHistoryStateKey);
     });
 
     it('updates the sheet history entry when navigating within details', async () => {
         render(DetailSheetTestHarness);
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
+        await openDetails();
 
         await fireEvent.click(screen.getByRole('button', { name: 'Navigate within details' }));
-        await tick();
+        await shallowRouting.flush();
 
-        expect(navigation.replaceState).toHaveBeenCalledOnce();
-        expect(window.history.state['sveltekit:states'].__exceptionlessDetailSheet).toEqual({ key: 'event', value: 'def456' });
+        expect(goto).toHaveBeenCalledTimes(2);
+        expect(goto.mock.calls[1]![1]).toMatchObject({ replace: true, shallow: true });
+        expect(shallowRouting.historyEntryState()).toEqual({ [detailSheetHistoryStateKey]: { key: 'event', value: 'def456' } });
     });
 
     it('preserves a newer query history entry when the sheet requests close after the URL changes', async () => {
         const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);
         render(DetailSheetTestHarness);
-        await fireEvent.click(screen.getByRole('button', { name: 'Open details' }));
-        await tick();
+        await openDetails();
         window.history.pushState({}, '', '/events?filter=regressed');
 
         await fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-        await tick();
+        await shallowRouting.flush();
 
         expect(historyBack).not.toHaveBeenCalled();
-        expect(navigation.replaceState).not.toHaveBeenCalled();
+        expect(goto).toHaveBeenCalledOnce();
     });
 });

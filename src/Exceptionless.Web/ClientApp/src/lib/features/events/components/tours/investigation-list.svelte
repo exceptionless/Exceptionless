@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { buildEventDetailsHref } from '$features/events/components/summary';
-    import { createProductTourActions } from '$features/product-tours/actions.svelte';
-    import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
-    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
+    import { buildEventDetailsHref } from '#features/events/components/summary/index.ts';
+    import { createProductTourActions } from '#features/product-tours/actions.svelte.ts';
+    import ProductTourSpotlight from '#features/product-tours/components/product-tour-spotlight.svelte';
+    import { productTourCheckpoint } from '#features/product-tours/state.svelte.ts';
 
     interface Props {
         firstErrorId?: string;

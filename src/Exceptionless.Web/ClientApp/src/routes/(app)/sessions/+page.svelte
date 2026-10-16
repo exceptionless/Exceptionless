@@ -1,17 +1,34 @@
 <script lang="ts">
-    import type { GetEventsParams } from '$features/events/api.svelte';
-
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import * as DataTable from '$comp/data-table';
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import RefreshButton from '$comp/refresh-button.svelte';
-    import { H3 } from '$comp/typography';
-    import { Label } from '$comp/ui/label';
-    import { Switch } from '$comp/ui/switch';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { getOrganizationSessionsCountQuery, getOrganizationSessionsQuery, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
-    import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
+    import { error } from '@sveltejs/kit';
+    import { createTable } from '@tanstack/svelte-table';
+    import { useEventListener, watch } from 'runed';
+    import { onDestroy, untrack } from 'svelte';
+    import { debounce } from 'throttle-debounce';
+
+    import type { GetEventsParams } from '#features/events/api.svelte.ts';
+
+    import * as DataTable from '#comp/data-table/index.ts';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import RefreshButton from '#comp/refresh-button.svelte';
+    import { H3 } from '#comp/typography/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/upgrade-required.svelte.ts';
+    import { getOrganizationSessionsCountQuery, getOrganizationSessionsQuery, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '#features/events/api.svelte.ts';
+    import EventDetailSheet from '#features/events/components/event-detail-sheet.svelte';
+    import {
+        applyTimeFilter,
+        buildFilterCacheKey,
+        deserializeFilters,
+        filterChanged,
+        filterRemoved,
+        getFiltersFromCache,
+        serializeFilters,
+        toFilter,
+        updateFilterCache
+    } from '#features/events/components/filters/helpers.svelte.ts';
     import {
         BooleanFilter,
         DateFilter,
@@ -23,42 +40,26 @@
         StringFilter,
         TagFilter,
         VersionFilter
-    } from '$features/events/components/filters';
-    import {
-        applyTimeFilter,
-        buildFilterCacheKey,
-        deserializeFilters,
-        filterChanged,
-        filterRemoved,
-        getFiltersFromCache,
-        serializeFilters,
-        toFilter,
-        updateFilterCache
-    } from '$features/events/components/filters/helpers.svelte';
-    import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
-    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
-    import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { premiumPage } from '$features/organizations/premium-page.svelte';
-    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
-    import { defaultSessionColumnVisibility, getSessionColumns } from '$features/sessions/components/session-table-columns';
-    import SessionsDashboardChart from '$features/sessions/components/sessions-dashboard-chart.svelte';
-    import SessionsStatsDashboard from '$features/sessions/components/sessions-stats-dashboard.svelte';
-    import { getSessionQueryFilter, getSessionViewFilters, normalizeSessionSavedView } from '$features/sessions/saved-view-invariants';
-    import * as agg from '$features/shared/api/aggregations';
-    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
-    import { fillDateSeries } from '$features/shared/utils/charts.js';
-    import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
-    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
-    import { error } from '@sveltejs/kit';
-    import { createTable } from '@tanstack/svelte-table';
-    import { useEventListener, watch } from 'runed';
-    import { onDestroy, untrack } from 'svelte';
-    import { debounce } from 'throttle-debounce';
+    } from '#features/events/components/filters/index.ts';
+    import OrganizationDefaultsFacetedFilterBuilder from '#features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
+    import EventsDataTable from '#features/events/components/table/events-data-table.svelte';
+    import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { premiumPage } from '#features/organizations/premium-page.svelte.ts';
+    import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '#features/saved-views/use-saved-views.svelte.ts';
+    import { defaultSessionColumnVisibility, getSessionColumns } from '#features/sessions/components/session-table-columns.ts';
+    import SessionsDashboardChart from '#features/sessions/components/sessions-dashboard-chart.svelte';
+    import SessionsStatsDashboard from '#features/sessions/components/sessions-stats-dashboard.svelte';
+    import { getSessionQueryFilter, getSessionViewFilters, normalizeSessionSavedView } from '#features/sessions/saved-view-invariants.ts';
+    import * as agg from '#features/shared/api/aggregations.ts';
+    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '#features/shared/table.svelte.ts';
+    import { fillDateSeries } from '#features/shared/utils/charts.ts';
+    import { parseDateMathRange, toDateMathRange } from '#features/shared/utils/datemath.ts';
+    import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
+    import { DEFAULT_OFFSET } from '#shared/api/api.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     import {
         ALL_TIME_QUERY_VALUE,

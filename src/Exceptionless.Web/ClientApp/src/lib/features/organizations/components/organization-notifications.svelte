@@ -1,5 +1,5 @@
 <script module lang="ts">
-    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
+    import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
 
     export function recordConfiguredProjectId(
         message: WebSocketMessageValue<'PersistentEventChanged'>,
@@ -21,15 +21,16 @@
 </script>
 
 <script lang="ts">
-    import type { NotificationProps } from '$comp/notification';
-
-    import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
-    import { organization as currentOrganizationId } from '$features/organizations/context.svelte';
-    import { SuspensionCode } from '$features/organizations/models';
-    import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
-    import { getMeQuery } from '$features/users/api.svelte';
     import { useEventListener } from 'runed';
     import { SvelteSet } from 'svelte/reactivity';
+
+    import type { NotificationProps } from '#comp/notification/index.ts';
+
+    import { getOrganizationQuery, getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
+    import { organization as currentOrganizationId } from '#features/organizations/context.svelte.ts';
+    import { SuspensionCode } from '#features/organizations/models.ts';
+    import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
 
     import FreePlanNotification from './notifications/free-plan-notification.svelte';
     import HourlyOverageNotification from './notifications/hourly-overage-notification.svelte';

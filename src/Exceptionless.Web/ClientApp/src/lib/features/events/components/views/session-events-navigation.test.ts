@@ -1,6 +1,6 @@
-import type { SavedView } from '$features/saved-views/models';
-
 import { describe, expect, it } from 'vitest';
+
+import type { SavedView } from '#features/saved-views/models.ts';
 
 import { getSessionEventsHref, getSessionEventsPath } from './session-events-navigation';
 

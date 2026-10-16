@@ -43,7 +43,7 @@ export function routes(): NavigationItem[] {
         },
         {
             group: 'System',
-            href: resolve('/(app)/system/actions'),
+            href: resolve('/(app)/system/actions/[[category]]', {}),
             icon: Play,
             show: (context) => context.user?.roles?.includes('global') ?? false,
             title: 'Actions'

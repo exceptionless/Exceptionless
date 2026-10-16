@@ -1,8 +1,9 @@
-import { DateFilter, ProjectFilter, StringFilter } from '$features/events/components/filters';
-import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
-import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { serializeFilters } from '#features/events/components/filters/helpers.svelte.ts';
+import { DateFilter, ProjectFilter, StringFilter } from '#features/events/components/filters/index.ts';
+import { ChangeType } from '#features/websockets/models.ts';
 
 import type { SavedView } from './models';
 
@@ -39,7 +40,7 @@ import {
     trackChangedFilterKeys
 } from './use-saved-views.svelte';
 
-vi.mock('$features/auth/index.svelte', () => ({
+vi.mock('#features/auth/index.svelte.ts', () => ({
     accessToken: { current: 'token_123' }
 }));
 

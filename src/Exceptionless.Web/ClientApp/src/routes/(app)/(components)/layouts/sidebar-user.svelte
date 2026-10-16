@@ -1,20 +1,6 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
-    import type { Gravatar } from '$features/users/gravatar.svelte';
-    import type { ViewCurrentUser } from '$features/users/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
-    import * as Avatar from '$comp/ui/avatar/index';
-    import { Badge } from '$comp/ui/badge';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
-    import * as Sidebar from '$comp/ui/sidebar/index';
-    import { useSidebar } from '$comp/ui/sidebar/index';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { logout } from '$features/auth/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '$features/shared/help-links';
     import { useFetchClient } from '@foundatiofx/fetchclient';
     import BadgeCheck from '@lucide/svelte/icons/badge-check';
     import Bell from '@lucide/svelte/icons/bell';
@@ -29,6 +15,21 @@
     import Route from '@lucide/svelte/icons/route';
     import Settings from '@lucide/svelte/icons/settings';
     import { useQueryClient } from '@tanstack/svelte-query';
+
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+    import type { Gravatar } from '#features/users/gravatar.svelte.ts';
+    import type { ViewCurrentUser } from '#features/users/models.ts';
+
+    import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
+    import * as Avatar from '#comp/ui/avatar/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import * as Sidebar from '#comp/ui/sidebar/index.ts';
+    import { useSidebar } from '#comp/ui/sidebar/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { logout } from '#features/auth/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '#features/shared/help-links.ts';
 
     interface Props {
         gravatar: Gravatar;

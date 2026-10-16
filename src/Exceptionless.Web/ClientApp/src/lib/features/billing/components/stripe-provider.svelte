@@ -1,9 +1,10 @@
 <script lang="ts">
     import type { Stripe, StripeElements, StripeElementsOptions, StripePaymentElement } from '@stripe/stripe-js';
 
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { loadStripeOnce, setStripeContext } from '$features/billing/stripe.svelte';
     import { onMount, setContext } from 'svelte';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { loadStripeOnce, setStripeContext } from '#features/billing/stripe.svelte.ts';
 
     type Props = {
         appearance?: StripeElementsOptions['appearance'];

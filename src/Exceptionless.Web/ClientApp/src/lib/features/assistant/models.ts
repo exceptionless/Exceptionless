@@ -1,4 +1,4 @@
-export type { AssistantConversationSharingSettings } from '$generated/api';
+export type { AssistantConversationSharingSettings } from '#generated/api.ts';
 
 export interface AssistantAccess {
     enabled: boolean;

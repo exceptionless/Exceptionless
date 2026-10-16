@@ -1,10 +1,11 @@
 <script lang="ts">
-    import type { NotificationProps } from '$comp/notification';
-    import type { ViewProject } from '$features/projects/models';
-
     import { resolve } from '$app/paths';
-    import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
-    import { A } from '$comp/typography';
+
+    import type { NotificationProps } from '#comp/notification/index.ts';
+    import type { ViewProject } from '#features/projects/models.ts';
+
+    import { Notification, NotificationDescription, NotificationTitle } from '#comp/notification/index.ts';
+    import { A } from '#comp/typography/index.ts';
 
     interface Props extends NotificationProps {
         projects: ViewProject[];

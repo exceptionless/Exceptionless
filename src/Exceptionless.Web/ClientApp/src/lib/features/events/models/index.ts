@@ -1,4 +1,4 @@
-import type { PersistentEvent as PersistentEventBase, UserDescription } from '$generated/api';
+import type { PersistentEvent as PersistentEventBase, UserDescription } from '#generated/api.ts';
 
 import type { EnvironmentInfo, ErrorInfo, LogLevel, ManualStackingInfo, RequestInfo, SimpleErrorInfo, UserInfo } from './event-data';
 

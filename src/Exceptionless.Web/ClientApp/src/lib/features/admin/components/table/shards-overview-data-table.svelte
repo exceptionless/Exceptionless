@@ -1,9 +1,10 @@
 <script lang="ts">
-    import type { ShardMetric } from '$features/admin/models';
-
-    import * as DataTable from '$comp/data-table';
-    import DelayedRender from '$comp/delayed-render.svelte';
     import { type StockFeatures, type Table } from '@tanstack/svelte-table';
+
+    import type { ShardMetric } from '#features/admin/models.ts';
+
+    import * as DataTable from '#comp/data-table/index.ts';
+    import DelayedRender from '#comp/delayed-render.svelte';
 
     interface Props {
         isLoading: boolean;

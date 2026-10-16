@@ -1,4 +1,4 @@
-import type { UserSavedViewOrderPreference } from '$generated/api';
+import type { UserSavedViewOrderPreference } from '#generated/api.ts';
 
 import type { SavedView } from './models';
 

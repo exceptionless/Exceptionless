@@ -1,6 +1,6 @@
-import type { IFilter } from '$comp/faceted-filter';
+import type { IFilter } from '#comp/faceted-filter/index.ts';
 
-import { deserializeFilters, serializeFilters } from '$features/events/components/filters/helpers.svelte';
+import { deserializeFilters, serializeFilters } from '#features/events/components/filters/helpers.svelte.ts';
 
 import type { AutoFillColumnSelection } from './column-settings';
 

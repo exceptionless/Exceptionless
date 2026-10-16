@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { A, Small } from '$comp/typography';
-    import Button from '$comp/ui/button/button.svelte';
-    import * as Table from '$comp/ui/table';
     import ExternalLink from '@lucide/svelte/icons/external-link';
     import Delete from '@lucide/svelte/icons/trash';
+
+    import { A, Small } from '#comp/typography/index.ts';
+    import Button from '#comp/ui/button/button.svelte';
+    import * as Table from '#comp/ui/table/index.ts';
 
     import type { Stack } from '../models';
 

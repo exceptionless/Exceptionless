@@ -1,6 +1,7 @@
-import type { ViewOrganization } from '$features/organizations/models';
-import type { BillingPlan } from '$lib/generated/api';
 import type { Meta, StoryObj } from '@storybook/sveltekit';
+
+import type { ViewOrganization } from '#features/organizations/models.ts';
+import type { BillingPlan } from '#lib/generated/api.ts';
 
 import Harness from './change-plan-dialog-harness.svelte';
 

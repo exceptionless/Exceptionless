@@ -1,24 +1,25 @@
 <script lang="ts">
-    import type { OAuthApplication, OAuthApplicationRequest } from '$features/admin/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
-    import { Checkbox } from '$comp/ui/checkbox';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Label } from '$comp/ui/label';
-    import { Spinner } from '$comp/ui/spinner';
-    import { Textarea } from '$comp/ui/textarea';
-    import { postOAuthApplicationMutation, putOAuthApplicationMutation } from '$features/admin/api.svelte';
-    import { type OAuthApplicationFormData, OAuthApplicationSchema } from '$features/admin/schemas';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Save from '@lucide/svelte/icons/save';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
+
+    import type { OAuthApplication, OAuthApplicationRequest } from '#features/admin/models.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Checkbox } from '#comp/ui/checkbox/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { Textarea } from '#comp/ui/textarea/index.ts';
+    import { postOAuthApplicationMutation, putOAuthApplicationMutation } from '#features/admin/api.svelte.ts';
+    import { type OAuthApplicationFormData, OAuthApplicationSchema } from '#features/admin/schemas.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     interface Props {
         application?: null | OAuthApplication;

@@ -1,14 +1,15 @@
-import { productTourCheckpoint } from '$features/product-tours/state.svelte';
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { productTourCheckpoint } from '#features/product-tours/state.svelte.ts';
 
 import type { PersistentEvent } from '../../models';
 
 import InvestigationDetailTour from './investigation-detail.svelte';
 
 const actions = vi.hoisted(() => ({ complete: vi.fn(), dismiss: vi.fn() }));
-vi.mock('$features/product-tours/actions.svelte', () => ({ createProductTourActions: () => actions }));
-vi.mock('$features/product-tours/activity', () => ({ submitProductTourActivity: vi.fn() }));
+vi.mock('#features/product-tours/actions.svelte.ts', () => ({ createProductTourActions: () => actions }));
+vi.mock('#features/product-tours/activity.ts', () => ({ submitProductTourActivity: vi.fn() }));
 
 const event: PersistentEvent = {
     created_utc: '2026-09-01T00:00:00Z',

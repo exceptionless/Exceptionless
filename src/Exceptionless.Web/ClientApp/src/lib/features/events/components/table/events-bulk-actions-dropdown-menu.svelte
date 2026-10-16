@@ -3,12 +3,13 @@
 </script>
 
 <script generics="TData extends RowData" lang="ts">
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { deleteEvent } from '$features/events/api.svelte';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { type RowData, type StockFeatures, type Table } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { deleteEvent } from '#features/events/api.svelte.ts';
 
     import RemoveEventDialog from '../dialogs/remove-event-dialog.svelte';
 
