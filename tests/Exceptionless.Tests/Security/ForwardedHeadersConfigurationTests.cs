@@ -31,8 +31,9 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
             ["ForwardedHeaders:KnownProxies:0"] = trustedPeer,
             ["ForwardedHeaders:ForwardLimit"] = limit
         }).Build();
+        var settings = TrustedForwardedHeadersOptions.ReadFromConfiguration(configuration);
         var options = new ForwardedHeadersOptions();
-        ForwardedHeadersConfiguration.Configure(options, configuration);
+        ForwardedHeadersConfiguration.Configure(options, settings);
         var context = new DefaultHttpContext();
         context.Connection.RemoteIpAddress = IPAddress.Parse(remoteAddress);
         context.Request.Scheme = "http";
@@ -61,8 +62,9 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
             ["ForwardedHeaders:KnownNetworks:0"] = "192.0.2.0/24",
             ["ForwardedHeaders:ForwardLimit"] = limit
         }).Build();
+        var settings = TrustedForwardedHeadersOptions.ReadFromConfiguration(configuration);
         var options = new ForwardedHeadersOptions();
-        ForwardedHeadersConfiguration.Configure(options, configuration);
+        ForwardedHeadersConfiguration.Configure(options, settings);
         var context = new DefaultHttpContext();
         context.Connection.RemoteIpAddress = IPAddress.Parse(remoteAddress);
         context.Request.Headers["X-Forwarded-For"] = "198.51.100.1, 203.0.113.40, 192.0.2.11";
@@ -83,8 +85,9 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
     public async Task Invoke_DirectRequest_PreservesConnectionAddressAndScheme(string scheme)
     {
         // Arrange
+        var settings = TrustedForwardedHeadersOptions.ReadFromConfiguration(new ConfigurationBuilder().Build());
         var options = new ForwardedHeadersOptions();
-        ForwardedHeadersConfiguration.Configure(options, new ConfigurationBuilder().Build());
+        ForwardedHeadersConfiguration.Configure(options, settings);
         var context = new DefaultHttpContext();
         context.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.40");
         context.Request.Scheme = scheme;
@@ -101,7 +104,7 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
     [Theory]
     [InlineData("ForwardedHeaders:ForwardLimit", "-1")]
     [InlineData("ForwardedHeaders_Enabled", "true")]
-    public void Configure_UnsafeScalarConfiguration_ThrowsWithKey(string key, string value)
+    public void ReadFromConfiguration_UnsafeScalarConfiguration_ThrowsWithKey(string key, string value)
     {
         // Arrange
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
@@ -110,7 +113,7 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
         }).Build();
 
         // Act
-        var exception = Record.Exception(() => ForwardedHeadersConfiguration.Configure(new ForwardedHeadersOptions(), configuration));
+        var exception = Record.Exception(() => TrustedForwardedHeadersOptions.ReadFromConfiguration(configuration));
 
         // Assert
         Assert.IsType<InvalidOperationException>(exception);
@@ -127,7 +130,7 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
     [InlineData("KnownProxies:0", "")]
     [InlineData("KnownProxies", "192.0.2.10,192.0.2.11")]
     [InlineData("KnownNetworks", "192.0.2.0/24")]
-    public void Configure_InvalidPeerConfiguration_ThrowsWithKey(string key, string value)
+    public void ReadFromConfiguration_InvalidPeerConfiguration_ThrowsWithKey(string key, string value)
     {
         // Arrange
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
@@ -136,7 +139,7 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
         }).Build();
 
         // Act
-        var exception = Record.Exception(() => ForwardedHeadersConfiguration.Configure(new ForwardedHeadersOptions(), configuration));
+        var exception = Record.Exception(() => TrustedForwardedHeadersOptions.ReadFromConfiguration(configuration));
 
         // Assert
         Assert.IsType<InvalidOperationException>(exception);
@@ -150,8 +153,9 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
     public async Task Invoke_Defaults_TrustsLoopbackAndProcessesOneHop(string remoteAddress)
     {
         // Arrange
+        var settings = TrustedForwardedHeadersOptions.ReadFromConfiguration(new ConfigurationBuilder().Build());
         var options = new ForwardedHeadersOptions();
-        ForwardedHeadersConfiguration.Configure(options, new ConfigurationBuilder().Build());
+        ForwardedHeadersConfiguration.Configure(options, settings);
         var context = new DefaultHttpContext();
         context.Connection.RemoteIpAddress = IPAddress.Parse(remoteAddress);
         context.Request.Headers["X-Forwarded-For"] = "198.51.100.1, 203.0.113.40";
@@ -167,9 +171,9 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
     }
 
     [Theory]
-    [InlineData("true", ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto)]
-    [InlineData("false", ForwardedHeaders.None)]
-    public void Configure_PrefixedEnvironmentLists_ReadsNestedSettings(string enabled, ForwardedHeaders expectedHeaders)
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    public void ReadFromConfiguration_PrefixedEnvironmentLists_ReadsNestedSettings(string enabled, bool expectedEnabled)
     {
         // Arrange
         var provider = new CustomEnvironmentVariablesConfigurationProvider();
@@ -181,15 +185,14 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
             ["EX_ForwardedHeaders__KnownNetworks__0"] = "2001:db8::/64",
             ["EX_ForwardedHeaders__ForwardLimit"] = "2"
         });
-        var options = new ForwardedHeadersOptions();
 
         // Act
-        ForwardedHeadersConfiguration.Configure(options, configuration);
+        var options = TrustedForwardedHeadersOptions.ReadFromConfiguration(configuration);
 
         // Assert
         Assert.Contains(IPAddress.Parse("192.0.2.10"), options.KnownProxies);
-        Assert.Contains(System.Net.IPNetwork.Parse("2001:db8::/64"), options.KnownIPNetworks);
+        Assert.Contains(System.Net.IPNetwork.Parse("2001:db8::/64"), options.KnownNetworks);
         Assert.Equal(2, options.ForwardLimit);
-        Assert.Equal(expectedHeaders, options.ForwardedHeaders);
+        Assert.Equal(expectedEnabled, options.Enabled);
     }
 }

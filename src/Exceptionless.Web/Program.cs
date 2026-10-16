@@ -123,6 +123,7 @@ public partial class Program
             builder.Services.AddSingleton(configuration);
             builder.Services.AddSingleton(apmConfig);
             builder.Services.AddAppOptions(options);
+            builder.Services.AddSingleton(TrustedForwardedHeadersOptions.ReadFromConfiguration(configuration));
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddCsp(nonceByteAmount: 32);
 
@@ -134,10 +135,8 @@ public partial class Program
                 .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
                 .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
-            builder.Services.Configure<ForwardedHeadersOptions>(o =>
-            {
-                ForwardedHeadersConfiguration.Configure(o, builder.Configuration);
-            });
+            builder.Services.AddOptions<ForwardedHeadersOptions>()
+                .Configure<TrustedForwardedHeadersOptions>(ForwardedHeadersConfiguration.Configure);
 
             builder.Services.ConfigureHttpJsonOptions(o =>
             {
