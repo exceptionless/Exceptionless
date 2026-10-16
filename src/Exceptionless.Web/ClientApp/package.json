@@ -5,19 +5,19 @@
     "scripts": {
         "dev": "cross-env NODE_OPTIONS=--trace-warnings vite dev",
         "dev:api": "cross-env API_HTTP=https://dev-collector.exceptionless.io vite dev",
-        "urls": "node scripts/resolve-url.mjs",
+        "urls": "node scripts/resolve-url.js",
         "build": "vite build",
         "preview": "vite preview",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
         "lint": "npm run lint:prettier && npm run lint:eslint",
-        "lint:eslint": "eslint .",
+        "lint:eslint": "eslint . && npm run lint:scripts",
         "lint:prettier": "prettier --check .",
         "format": "npm run format:prettier && npm run format:eslint",
-        "format:eslint": "eslint . --fix",
+        "format:eslint": "eslint . --fix && npm run lint:scripts -- --fix",
         "format:prettier": "prettier --write .",
         "validate": "npm run format && npm run check && npm run lint",
-        "generate-models": "node scripts/generate-api.mjs",
+        "generate-models": "node scripts/generate-api.js",
         "generate-templates": "swagger-typescript-api generate-templates -o api-templates",
         "test:e2e": "playwright test",
         "test:e2e:ci": "playwright test --project=chromium",
@@ -30,7 +30,8 @@
         "build-storybook": "storybook build",
         "update": "ncu -i",
         "update:shadcn": "npx shadcn-svelte@latest update",
-        "update:skills": "npx skills update"
+        "update:skills": "npx skills update",
+        "lint:scripts": "cd ../../.. && node src/Exceptionless.Web/ClientApp/node_modules/eslint/bin/eslint.js --config src/Exceptionless.Web/ClientApp/eslint.config.js --no-error-on-unmatched-pattern \"tests/ci/**/*.js\" \"k8s/scripts/**/*.js\""
     },
     "devDependencies": {
         "@chromatic-com/storybook": "^5.4.0",
