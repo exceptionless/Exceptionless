@@ -5,13 +5,17 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Validation;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Microsoft.Extensions.DependencyInjection;
 using Stripe;
@@ -42,6 +46,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     {
         base.RegisterServices(services);
         services.ReplaceSingleton<IStripeBillingClient, FakeStripeBillingClient>();
+        services.ReplaceSingleton<IUserRepository, MembershipUserRepository>();
     }
 
     private async Task WithBillingEnabledAsync(Func<Task> action)
@@ -401,6 +406,44 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var organization = await _organizationRepository.GetByIdAsync(organizationView.Id);
         Assert.NotNull(organization);
         Assert.Equal("Test Organization", organization.Name);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PostAsync_MembershipConflicts_PreservesPasswordChangeAndCompensatesFailure(bool failMembership)
+    {
+        // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        string generation = StringExtensions.GetNewToken();
+        const string organizationName = "Membership concurrency";
+        var users = Assert.IsType<MembershipUserRepository>(_userRepository);
+        users.BeforeNextPatch = async () =>
+        {
+            var current = await _userRepository.GetByIdAsync(user.Id);
+            Assert.NotNull(current);
+            current.AuthenticationVersion = generation;
+            await _userRepository.SaveAsync(current);
+            if (failMembership)
+                throw new VersionConflictDocumentException("Concurrent membership update.");
+        };
+
+        // Act
+        await SendRequestAsync(r => r.AsTestOrganizationUser().Post().AppendPath("organizations")
+            .Content(new NewOrganization { Name = organizationName })
+            .ExpectedStatus(failMembership ? HttpStatusCode.Conflict : HttpStatusCode.Created));
+        await RefreshDataAsync();
+
+        // Assert
+        var persisted = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(persisted);
+        Assert.Equal(generation, persisted.AuthenticationVersion);
+        var organizations = await _organizationRepository.FindAsync(q => q.FieldEquals(organization => organization.Name, organizationName));
+        if (failMembership)
+            Assert.Empty(organizations.Documents);
+        else
+            Assert.Contains(Assert.Single(organizations.Documents).Id, persisted.OrganizationIds);
     }
 
     [Fact]
@@ -1177,6 +1220,45 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "users", "new.member@localhost")
             .StatusCodeShouldBeUpgradeRequired()
         );
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RemoveUserAsync_MembershipConflicts_DoesNotCleanUpBeforePersistence(bool failMembership)
+    {
+        // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        var project = await _projectRepository.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        project.NotificationSettings[user.Id] = new NotificationSettings { SendDailySummary = true };
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency());
+        string generation = StringExtensions.GetNewToken();
+        var users = Assert.IsType<MembershipUserRepository>(_userRepository);
+        users.BeforeNextPatch = async () =>
+        {
+            var current = await _userRepository.GetByIdAsync(user.Id);
+            Assert.NotNull(current);
+            current.AuthenticationVersion = generation;
+            await _userRepository.SaveAsync(current);
+            if (failMembership)
+                throw new VersionConflictDocumentException("Concurrent membership update.");
+        };
+
+        // Act
+        await SendRequestAsync(r => r.AsGlobalAdminUser().Delete()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", SampleDataService.TEST_ORG_USER_EMAIL)
+            .ExpectedStatus(failMembership ? HttpStatusCode.Conflict : HttpStatusCode.OK));
+
+        // Assert
+        user = await _userRepository.GetByIdAsync(user.Id);
+        project = await _projectRepository.GetByIdAsync(project.Id);
+        Assert.NotNull(user);
+        Assert.NotNull(project);
+        Assert.Equal(generation, user.AuthenticationVersion);
+        Assert.Equal(failMembership, user.OrganizationIds.Contains(SampleDataService.TEST_ORG_ID));
+        Assert.Equal(failMembership, project.NotificationSettings.ContainsKey(user.Id));
     }
 
     [Fact]
@@ -2780,6 +2862,22 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.NotNull(updated);
         Assert.Equal(originalOrganization.Name, updated.Name);
         Assert.Equal(originalOrganization.UpdatedUtc, updated.UpdatedUtc);
+    }
+
+    private sealed class MembershipUserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
+        : UserRepository(configuration, validator, options)
+    {
+        public Func<Task>? BeforeNextPatch { get; set; }
+
+        public override async Task<bool> PatchAsync(Id id, IPatchOperation operation, ICommandOptions? options = null)
+        {
+            var beforePatch = BeforeNextPatch;
+            BeforeNextPatch = null;
+            if (beforePatch is not null)
+                await beforePatch();
+
+            return await base.PatchAsync(id, operation, options);
+        }
     }
 
     private static MultipartFormDataContent CreateProfileImageContent()

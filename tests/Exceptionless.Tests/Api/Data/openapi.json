@@ -1751,6 +1751,16 @@
               }
             }
           },
+          "409": {
+            "description": "The account changed while the request was being processed.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation error",
             "content": {
@@ -1808,6 +1818,16 @@
           },
           "403": {
             "description": "Account Creation is currently disabled",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The account changed while the request was being processed.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1881,6 +1901,16 @@
               }
             }
           },
+          "409": {
+            "description": "The account changed while the request was being processed.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation error",
             "content": {
@@ -1938,6 +1968,16 @@
           },
           "403": {
             "description": "Account Creation is currently disabled",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The account changed while the request was being processed.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2013,6 +2053,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "The account changed while the request was being processed.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -2058,6 +2108,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "The account changed while the request was being processed.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -2086,6 +2146,16 @@
           },
           "400": {
             "description": "Invalid email address.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The account changed while the request was being processed.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2131,6 +2201,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "The account changed while the request was being processed.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -2159,6 +2239,16 @@
           },
           "400": {
             "description": "Invalid password reset token.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The account changed while the request was being processed.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

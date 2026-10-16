@@ -641,8 +641,8 @@ public class OrganizationHandler(
         {
             if (!user.OrganizationIds.Contains(organization.Id))
             {
+                await userRepository.PatchAsync(user.Id, new ActionPatch<User>(current => current.OrganizationIds.Add(organization.Id)), o => o.Cache());
                 user.OrganizationIds.Add(organization.Id);
-                await userRepository.SaveAsync(user, o => o.Cache());
                 await messagePublisher.PublishAsync(new UserMembershipChanged
                 {
                     ChangeType = ChangeType.Added,
@@ -683,6 +683,20 @@ public class OrganizationHandler(
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
         if (user is null || !user.OrganizationIds.Contains(message.Id))
         {
+            // Retrying a completed removal must also retry revocation and cleanup.
+            if (user is not null)
+            {
+                await messagePublisher.PublishAsync(new UserMembershipChanged
+                {
+                    ChangeType = ChangeType.Removed,
+                    UserId = user.Id,
+                    OrganizationId = organization.Id
+                });
+
+                await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
+                await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
+            }
+
             var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, message.Email, StringComparison.OrdinalIgnoreCase));
             if (invite is null)
                 return Result.Success();
@@ -699,21 +713,26 @@ public class OrganizationHandler(
             if (organizationUsers.Total is 1)
                 return Result.BadRequest("An organization must contain at least one user.");
 
-            await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
-            await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
+            await userRepository.PatchAsync(user.Id, new ActionPatch<User>(current =>
+            {
+                current.OrganizationIds.Remove(organization.Id);
 
-            user.OrganizationIds.Remove(organization.Id);
-            foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
-                user.OrganizationPreferences.Remove(preference);
-            foreach (var preference in user.SavedViewOrders.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
-                user.SavedViewOrders.Remove(preference);
-            await userRepository.SaveAsync(user, o => o.Cache());
+                foreach (var preference in current.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
+                    current.OrganizationPreferences.Remove(preference);
+
+                foreach (var preference in current.SavedViewOrders.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
+                    current.SavedViewOrders.Remove(preference);
+            }), o => o.Cache());
+
             await messagePublisher.PublishAsync(new UserMembershipChanged
             {
                 ChangeType = ChangeType.Removed,
                 UserId = user.Id,
                 OrganizationId = organization.Id
             });
+
+            await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
+            await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
         }
 
         return Result.Success();
@@ -838,8 +857,28 @@ public class OrganizationHandler(
 
         var organization = await repository.AddAsync(value, o => o.Cache());
 
+        try
+        {
+            await userRepository.PatchAsync(user.Id, new ActionPatch<User>(current => current.OrganizationIds.Add(organization.Id)), o => o.Cache());
+        }
+        catch
+        {
+            try
+            {
+                // A cache/notification failure may follow a committed membership write.
+                var current = await userRepository.GetByIdAsync(user.Id);
+                if (current is null || !current.OrganizationIds.Contains(organization.Id))
+                    await repository.RemoveAsync(organization);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Unable to clean up organization {OrganizationId} after adding user {EmailAddress} failed: {Message}", organization.Id, user.EmailAddress, ex.Message);
+            }
+
+            throw;
+        }
+
         user.OrganizationIds.Add(organization.Id);
-        await userRepository.SaveAsync(user, o => o.Cache());
         await messagePublisher.PublishAsync(new UserMembershipChanged
         {
             UserId = user.Id,

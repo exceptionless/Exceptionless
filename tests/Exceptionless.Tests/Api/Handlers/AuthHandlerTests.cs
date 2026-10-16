@@ -17,6 +17,8 @@ using Exceptionless.Web.Security;
 using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.Http;
 using Moq;
@@ -27,6 +29,105 @@ namespace Exceptionless.Tests.Api.Handlers;
 public sealed class AuthHandlerTests : TestWithServices
 {
     public AuthHandlerTests(ITestOutputHelper output) : base(output) { }
+
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task Handle_ExternalAccountDestinationSaveFails_RestoresOnlyUnchangedPreviousOwner(bool sourceChanged, bool destinationCommitted, bool recoveryReadFails)
+    {
+        // Arrange
+        const string provider = "github";
+        const string providerId = "123456789";
+        string previousGeneration = StringExtensions.GetNewToken();
+        var displaced = GetService<UserData>().GenerateUser(id: TestConstants.UserId, emailAddress: TestConstants.UserEmail)
+            with { AuthenticationVersion = previousGeneration, Version = new ElasticDocumentVersion(1, 1) };
+        displaced.AddOAuthAccount(provider, providerId, displaced.EmailAddress);
+        var destination = GetService<UserData>().GenerateUser(id: TestConstants.UserId2, emailAddress: TestConstants.UserEmail2)
+            with { Version = new ElasticDocumentVersion(1, 1) };
+        displaced.MarkEmailAddressVerified();
+        destination.MarkEmailAddressVerified();
+        await GetService<MiniValidationValidator>().ValidateAndThrowAsync(displaced);
+        await GetService<MiniValidationValidator>().ValidateAndThrowAsync(destination);
+        var storedDestination = destination with { OAuthAccounts = [] };
+        if (destinationCommitted)
+            storedDestination.AddOAuthAccount(provider, providerId, displaced.EmailAddress);
+
+        var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(IdentityUtils.UserAuthenticationType)) };
+        context.Request.SetUser(destination);
+        Exception failure = destinationCommitted
+            ? new IOException("Destination save failed.")
+            : new VersionConflictDocumentException("Destination user changed.");
+        var recoveryFailure = new IOException("Recovery read failed.");
+        string? rotatedGeneration = null;
+        User? currentOwner = null;
+        var users = new Mock<IUserRepository>(MockBehavior.Strict);
+        users.Setup(repository => repository.GetUserByOAuthProviderAsync(provider, providerId)).ReturnsAsync(displaced);
+        users.Setup(repository => repository.SaveAsync(It.Is<User>(user => ReferenceEquals(user, displaced)), It.IsAny<CommandOptionsDescriptor<User>>()))
+            .Returns((User user, CommandOptionsDescriptor<User> _) =>
+            {
+                user.Version = new ElasticDocumentVersion(1, 2);
+                rotatedGeneration = user.AuthenticationVersion;
+                currentOwner = user with
+                {
+                    OAuthAccounts = [],
+                    Version = new ElasticDocumentVersion(1, sourceChanged ? 3 : 2),
+                    FullName = sourceChanged ? "Updated Name" : user.FullName
+                };
+                return Task.FromResult(user);
+            });
+        users.Setup(repository => repository.SaveAsync(It.Is<User>(user => ReferenceEquals(user, destination)), It.IsAny<CommandOptionsDescriptor<User>>()))
+            .ThrowsAsync(failure);
+        var recoveryRead = users.Setup(repository => repository.GetByIdAsync(destination.Id, (ICommandOptions?)null));
+        if (recoveryReadFails)
+            recoveryRead.ThrowsAsync(recoveryFailure);
+        else
+            recoveryRead.ReturnsAsync(storedDestination);
+
+        if (!destinationCommitted && !recoveryReadFails)
+            users.Setup(repository => repository.GetByIdAsync(displaced.Id, (ICommandOptions?)null)).ReturnsAsync(() => currentOwner);
+
+        if (!sourceChanged && !destinationCommitted && !recoveryReadFails)
+            users.Setup(repository => repository.SaveAsync(It.Is<User>(user => ReferenceEquals(user, currentOwner)), It.IsAny<CommandOptionsDescriptor<User>>()))
+                .ReturnsAsync((User user, CommandOptionsDescriptor<User> _) => user);
+
+        var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
+        tokens.Setup(repository => repository.RemoveAllByUserIdAsync(displaced.Id, null)).ReturnsAsync(1L);
+        var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
+        oauthTokens.Setup(repository => repository.RemoveAllByUserIdAsync(displaced.Id, null)).ReturnsAsync(1L);
+        var providerClient = new Mock<IOAuthProviderClient>(MockBehavior.Strict);
+        providerClient.Setup(client => client.GetGitHubUserInfoAsync(It.IsAny<ExternalAuthInfo>(), "test-client", "test-secret"))
+            .ReturnsAsync(new OAuth2.Models.UserInfo { ProviderName = provider, Id = providerId, Email = displaced.EmailAddress });
+        var options = GetService<AppOptions>().AuthOptions;
+        options.GitHubId = "test-client";
+        options.GitHubSecret = "test-secret";
+        var handler = CreateHandler(users.Object, tokens.Object, oauthTokens.Object, providerClient.Object);
+
+        // Act
+        var actual = await Assert.ThrowsAnyAsync<Exception>(() => handler.Handle(new GitHubLogin(new ExternalAuthInfo(), context)));
+
+        // Assert
+        Assert.Same(failure, actual);
+        Assert.NotNull(currentOwner);
+        Assert.False(String.IsNullOrEmpty(rotatedGeneration));
+        Assert.NotEqual(previousGeneration, rotatedGeneration);
+        Assert.Equal(rotatedGeneration, currentOwner.AuthenticationVersion);
+        Assert.Equal(!sourceChanged && !destinationCommitted && !recoveryReadFails, currentOwner.OAuthAccounts.Any(account => String.Equals(account.Provider, provider, StringComparison.Ordinal)
+            && String.Equals(account.ProviderUserId, providerId, StringComparison.Ordinal)));
+        Assert.Equal(sourceChanged ? "Updated Name" : displaced.FullName, currentOwner.FullName);
+        if (recoveryReadFails)
+        {
+            var entry = Assert.Single(Log.LogEntries, entry => ReferenceEquals(entry.Exception, recoveryFailure));
+            Assert.Equal(LogLevel.Critical, entry.LogLevel);
+            Assert.Equal($"Error restoring external account for {displaced.EmailAddress} ({displaced.Id}): {recoveryFailure.Message}", entry.Message);
+        }
+
+        users.VerifyAll();
+        tokens.VerifyAll();
+        oauthTokens.VerifyAll();
+        providerClient.VerifyAll();
+    }
 
     [Theory]
     [InlineData(false, false)]
@@ -40,10 +141,10 @@ public sealed class AuthHandlerTests : TestWithServices
         const string providerId = "123456789";
         string? previousVersion = hasPreviousVersion ? StringExtensions.GetNewToken() : null;
         string currentVersion = StringExtensions.GetNewToken();
-        var displaced = GetService<UserData>().GenerateUser(id: TestConstants.UserId, emailAddress: TestConstants.UserEmail) with { AuthenticationVersion = previousVersion };
+        var displaced = GetService<UserData>().GenerateUser(id: TestConstants.UserId, emailAddress: TestConstants.UserEmail) with { AuthenticationVersion = previousVersion, Version = new ElasticDocumentVersion(1, 1) };
         displaced.AddOAuthAccount(provider, providerId, displaced.EmailAddress);
         displaced.AddOAuthAccount("google", "104567890123456789012", displaced.EmailAddress);
-        var current = GetService<UserData>().GenerateUser(id: TestConstants.UserId2, emailAddress: TestConstants.UserEmail2) with { AuthenticationVersion = currentVersion };
+        var current = GetService<UserData>().GenerateUser(id: TestConstants.UserId2, emailAddress: TestConstants.UserEmail2) with { AuthenticationVersion = currentVersion, Version = new ElasticDocumentVersion(1, 1) };
         displaced.MarkEmailAddressVerified();
         current.MarkEmailAddressVerified();
         await GetService<MiniValidationValidator>().ValidateAndThrowAsync(displaced);
@@ -58,6 +159,7 @@ public sealed class AuthHandlerTests : TestWithServices
             .Callback(() =>
             {
                 persistedVersion = displaced.AuthenticationVersion;
+                displaced.Version = new ElasticDocumentVersion(1, 2);
                 calls.Add("save-displaced");
             }).ReturnsAsync(displaced);
         users.Setup(repository => repository.SaveAsync(current, It.IsAny<CommandOptionsDescriptor<User>>()))

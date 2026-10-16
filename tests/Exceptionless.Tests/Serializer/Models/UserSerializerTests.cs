@@ -1,5 +1,8 @@
 using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Serialization;
+using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -231,6 +234,7 @@ public class UserSerializerTests : TestWithServices
         Assert.NotNull(user);
         Assert.Equal("user-from-cache", user.Id);
         Assert.Null(user.AuthenticationVersion);
+        Assert.Null(user.Version);
         Assert.Equal(2, user.OrganizationIds.Count);
         Assert.Contains("cached-org-1", user.OrganizationIds);
         Assert.Contains("cached-org-2", user.OrganizationIds);
@@ -420,11 +424,13 @@ public class UserSerializerTests : TestWithServices
     public void Deserialize_UserWithAllProperties_PreservesAllValues()
     {
         // Arrange
-        const string authenticationVersion = "current-version";
+        string authenticationVersion = StringExtensions.GetNewToken();
+        string documentVersion = new ElasticDocumentVersion(primaryTerm: 1, sequenceNumber: 42);
         var original = new User
         {
             Id = "full-user",
             AuthenticationVersion = authenticationVersion,
+            Version = documentVersion,
             FullName = "Full Test User",
             EmailAddress = "full@example.com",
             Password = "hashedpassword",
@@ -441,13 +447,25 @@ public class UserSerializerTests : TestWithServices
         original.Roles.Add("user");
 
         // Act
-        string? json = _serializer.SerializeToString(original);
+        string json = _serializer.SerializeToString(original)!;
         var deserialized = _serializer.Deserialize<User>(json);
+        var apiOptions = new JsonSerializerOptions().ConfigureExceptionlessApiDefaults();
+        using var apiJson = JsonDocument.Parse(JsonSerializer.Serialize(original, apiOptions));
+        var apiUser = JsonSerializer.Deserialize<User>(json, apiOptions);
+        var nestedApiJson = JsonSerializer.SerializeToElement(new { user = (object)original, users = new[] { original } }, apiOptions);
 
         // Assert
         Assert.NotNull(deserialized);
         Assert.Equal("full-user", deserialized.Id);
         Assert.Equal(authenticationVersion, deserialized.AuthenticationVersion);
+        Assert.Equal(documentVersion, deserialized.Version);
+        Assert.False(apiJson.RootElement.TryGetProperty("version", out _));
+        Assert.NotNull(apiUser);
+        Assert.Null(apiUser.Version);
+        Assert.Equal(original.FullName, apiUser.FullName);
+        Assert.False(nestedApiJson.GetProperty("user").TryGetProperty("version", out _));
+        Assert.False(nestedApiJson.GetProperty("users")[0].TryGetProperty("version", out _));
+        Assert.Equal(authenticationVersion, apiJson.RootElement.GetProperty("authentication_version").GetString());
         Assert.Equal("Full Test User", deserialized.FullName);
         Assert.Equal("full@example.com", deserialized.EmailAddress);
         Assert.Equal("hashedpassword", deserialized.Password);

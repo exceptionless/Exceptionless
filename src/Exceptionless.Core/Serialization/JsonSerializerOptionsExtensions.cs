@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Text.Unicode;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Serialization;
 
@@ -35,6 +36,16 @@ public static class JsonSerializerOptionsExtensions
     public static JsonSerializerOptions ConfigureExceptionlessApiDefaults(this JsonSerializerOptions options)
     {
         ConfigureExceptionlessDefaults(options, skipEmptyCollections: false);
+        options.TypeInfoResolver = options.TypeInfoResolver!.WithAddedModifier(typeInfo =>
+        {
+            if (typeInfo.Type != typeof(User))
+                return;
+
+            var version = typeInfo.Properties.FirstOrDefault(property => String.Equals(property.Name, "version", StringComparison.Ordinal));
+            if (version is not null)
+                typeInfo.Properties.Remove(version);
+        });
+
         return options;
     }
 
