@@ -5,13 +5,14 @@
 <script generics="TData extends RowData" lang="ts">
     import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
 
-    import Number from '$comp/formatters/number.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as ButtonGroup from '$comp/ui/button-group';
-    import { cn } from '$lib/utils';
     import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
     import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
     import ChevronsLeftIcon from '@lucide/svelte/icons/chevrons-left';
+
+    import Number from '#comp/formatters/number.svelte';
+    import * as ButtonGroup from '#comp/ui/button-group/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { cn } from '#lib/utils.ts';
 
     import DataTablePageSize from './data-table-page-size.svelte';
     import { scrollTableToFirstRow } from './data-table-scroll';

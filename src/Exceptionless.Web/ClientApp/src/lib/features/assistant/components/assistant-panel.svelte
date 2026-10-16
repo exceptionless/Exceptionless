@@ -1,12 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { page } from '$app/state';
-    import { H3, Muted } from '$comp/typography';
-    import * as Alert from '$comp/ui/alert';
-    import { Button } from '$comp/ui/button';
-    import * as Sheet from '$comp/ui/sheet';
-    import { accessToken } from '$features/auth/index.svelte';
-    import { getApiUrl } from '$shared/api/urls';
     import ArrowDown from '@lucide/svelte/icons/arrow-down';
     import Bot from '@lucide/svelte/icons/bot';
     import CircleAlert from '@lucide/svelte/icons/circle-alert';
@@ -14,6 +8,13 @@
     import Maximize2 from '@lucide/svelte/icons/maximize-2';
     import Minimize2 from '@lucide/svelte/icons/minimize-2';
     import { onDestroy, tick, untrack } from 'svelte';
+
+    import { H3, Muted } from '#comp/typography/index.ts';
+    import * as Alert from '#comp/ui/alert/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Sheet from '#comp/ui/sheet/index.ts';
+    import { accessToken } from '#features/auth/index.svelte.ts';
+    import { getApiUrl } from '#shared/api/urls.ts';
 
     import type {
         AssistantAccessState,

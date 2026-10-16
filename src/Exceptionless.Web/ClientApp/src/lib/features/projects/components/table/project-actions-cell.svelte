@@ -1,11 +1,6 @@
 <script lang="ts">
-    import type { ViewProject } from '$features/projects/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { deleteProject } from '$features/projects/api.svelte';
     import Configure from '@lucide/svelte/icons/cloud';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Organization from '@lucide/svelte/icons/group';
@@ -13,6 +8,12 @@
     import Edit from '@lucide/svelte/icons/pen';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
+
+    import type { ViewProject } from '#features/projects/models.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { deleteProject } from '#features/projects/api.svelte.ts';
 
     import RemoveProjectDialog from '../dialogs/remove-project-dialog.svelte';
 

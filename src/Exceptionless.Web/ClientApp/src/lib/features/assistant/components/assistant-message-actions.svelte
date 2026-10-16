@@ -1,13 +1,14 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
-    import * as Tooltip from '$comp/ui/tooltip';
-    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import Check from '@lucide/svelte/icons/check';
     import Clipboard from '@lucide/svelte/icons/clipboard';
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
     import ThumbsDown from '@lucide/svelte/icons/thumbs-down';
     import ThumbsUp from '@lucide/svelte/icons/thumbs-up';
     import { toast } from 'svelte-sonner';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
+    import { UseClipboard } from '#lib/hooks/use-clipboard.svelte.ts';
 
     import type { AssistantFeedback } from '../models';
 

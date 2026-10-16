@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Muted } from '$comp/typography';
+    import { Muted } from '#comp/typography/index.ts';
 
     interface Props {
         value: null | string | undefined;

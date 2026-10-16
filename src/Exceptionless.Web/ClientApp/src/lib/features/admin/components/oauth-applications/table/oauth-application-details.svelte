@@ -1,10 +1,11 @@
 <script lang="ts">
-    import type { OAuthApplication } from '$features/admin/models';
-
     import { resolve } from '$app/paths';
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
+
+    import type { OAuthApplication } from '#features/admin/models.ts';
+
+    import DateTime from '#comp/formatters/date-time.svelte';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
 
     let { application }: { application: OAuthApplication } = $props();
 </script>

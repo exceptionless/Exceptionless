@@ -1,21 +1,22 @@
 <script lang="ts">
-    import type { PersistentEvent } from '$features/events/models';
-
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { A } from '$comp/typography';
-    import * as Alert from '$comp/ui/alert';
-    import { Button } from '$comp/ui/button';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Table from '$comp/ui/table';
-    import { getSessionEventsQuery } from '$features/events/api.svelte';
-    import { buildEventDetailsHref } from '$features/events/components/summary';
-    import Summary from '$features/events/components/summary/summary.svelte';
-    import EventsUserIdentitySummaryCell from '$features/events/components/table/events-user-identity-summary-cell.svelte';
-    import { getSessionId } from '$features/events/utils/index';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getSavedViewsQuery, isSavedViewDeleted } from '$features/saved-views/api.svelte';
     import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import InfoIcon from '@lucide/svelte/icons/info';
+
+    import type { PersistentEvent } from '#features/events/models/index.ts';
+
+    import TimeAgo from '#comp/formatters/time-ago.svelte';
+    import { A } from '#comp/typography/index.ts';
+    import * as Alert from '#comp/ui/alert/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import { getSessionEventsQuery } from '#features/events/api.svelte.ts';
+    import { buildEventDetailsHref } from '#features/events/components/summary/index.ts';
+    import Summary from '#features/events/components/summary/summary.svelte';
+    import EventsUserIdentitySummaryCell from '#features/events/components/table/events-user-identity-summary-cell.svelte';
+    import { getSessionId } from '#features/events/utils/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { getSavedViewsQuery, isSavedViewDeleted } from '#features/saved-views/api.svelte.ts';
 
     import SessionEventDuration from '../session-event-duration.svelte';
     import { getSessionEventsHref, getSessionEventsPath } from './session-events-navigation';

@@ -1,11 +1,12 @@
 <script lang="ts">
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { extractRangeExpressions, parseDateMath } from '$features/shared/utils/datemath';
     import Check from '@lucide/svelte/icons/check';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
+
+    import DateTime from '#comp/formatters/date-time.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { extractRangeExpressions, parseDateMath } from '#features/shared/utils/datemath.ts';
 
     type Props = {
         cancel?: () => void;

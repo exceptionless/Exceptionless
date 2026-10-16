@@ -1,8 +1,8 @@
 // TODO: Remove this reference.
-import type { ViewProject } from '$features/projects/models';
+import type { ViewProject } from '#features/projects/models.ts';
 
-import { isJSONString, isObject } from '$shared/typing';
-import { buildUrl } from '$shared/url';
+import { isJSONString, isObject } from '#shared/typing.ts';
+import { buildUrl } from '#shared/url.ts';
 
 import type { PersistentEvent } from './models';
 import type { ErrorInfo, ParameterInfo, SimpleErrorInfo, StackFrameInfo } from './models/event-data';

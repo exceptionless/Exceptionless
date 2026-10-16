@@ -1,5 +1,5 @@
 <script lang="ts">
-    import * as AlertDialog from '$comp/ui/alert-dialog';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
 
     import type { SavedView } from '../models';
 

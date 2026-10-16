@@ -1,6 +1,6 @@
-import type { ViewCurrentUser, ViewOrganization } from '$lib/generated/api';
-
 import { getContext } from 'svelte';
+
+import type { ViewCurrentUser, ViewOrganization } from '#lib/generated/api.ts';
 
 import type { IntercomContext } from './intercom-initializer.svelte';
 

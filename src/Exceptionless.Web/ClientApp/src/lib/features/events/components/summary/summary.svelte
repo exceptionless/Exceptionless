@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { StackStatus } from '$features/stacks/models';
+    import { StackStatus } from '#features/stacks/models.ts';
 
     import type { SummaryModel, SummaryTemplateKeys } from './index';
 

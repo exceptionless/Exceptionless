@@ -1,1 +1,1 @@
-export { type NewWebHookFormData, NewWebHookSchema, type WebHookFormData, WebHookSchema } from '$generated/schemas';
+export { type NewWebHookFormData, NewWebHookSchema, type WebHookFormData, WebHookSchema } from '#generated/schemas.ts';

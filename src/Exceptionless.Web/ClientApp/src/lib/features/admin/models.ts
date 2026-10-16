@@ -6,7 +6,7 @@ import type {
     UpdateAssistantEnabledSettings,
     UpdateAssistantSettings,
     UpdateEventSubmissionSettings
-} from '$generated/api';
+} from '#generated/api.ts';
 
 export enum MigrationType {
     Versioned = 0,

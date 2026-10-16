@@ -1,13 +1,14 @@
 <script lang="ts">
-    import type { OAuthGrant } from '$features/users/models';
-
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { Button, buttonVariants } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { deleteOAuthGrantMutation } from '$features/users/api.svelte';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Trash2 from '@lucide/svelte/icons/trash-2';
     import { toast } from 'svelte-sonner';
+
+    import type { OAuthGrant } from '#features/users/models.ts';
+
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { Button, buttonVariants } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { deleteOAuthGrantMutation } from '#features/users/api.svelte.ts';
 
     interface Props {
         grant: OAuthGrant;

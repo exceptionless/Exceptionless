@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { cn } from '$lib/utils';
     // Add plugins as needed
     // pnpm add @streamdown-svelte/code @streamdown-svelte/mermaid @streamdown-svelte/math @streamdown-svelte/cjk
     // import { code } from '@streamdown-svelte/code';
@@ -11,6 +10,8 @@
     import githubLightDefault from '@shikijs/themes/github-light-default';
     import { mode } from 'mode-watcher';
     import { Streamdown, type StreamdownProps } from 'streamdown-svelte';
+
+    import { cn } from '#lib/utils.ts';
     type Props = StreamdownProps;
 
     let { class: className, components, content, ...restProps }: Props = $props();
