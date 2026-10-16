@@ -723,7 +723,8 @@ jobs:
         if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
         run: |
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace $DEV_NAMESPACE ./k8s/exceptionless
+          node k8s/scripts/discover-forwarded-headers.js ex-dev k8s/ex-dev-values.yaml "$RUNNER_TEMP/forwarded-headers.json"
+          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml --values "$RUNNER_TEMP/forwarded-headers.json" ex-dev --namespace $DEV_NAMESPACE ./k8s/exceptionless
 
       - name: Run Development Migrations
         if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
@@ -842,7 +843,8 @@ jobs:
         if: ${{ needs.version.outputs.is_prod_deploy == 'true' }}
         run: |
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
+          node k8s/scripts/discover-forwarded-headers.js ex-prod k8s/ex-prod-values.yaml "$RUNNER_TEMP/forwarded-headers.json"
+          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml --values "$RUNNER_TEMP/forwarded-headers.json" ex-prod --namespace ex-prod ./k8s/exceptionless
 
       - name: Summary
         if: ${{ always() }}
