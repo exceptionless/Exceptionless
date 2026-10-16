@@ -2,8 +2,9 @@
     import type { Snippet } from 'svelte';
     import type { HTMLAttributes } from 'svelte/elements';
 
-    import { type WithElementRef } from '$lib/utils';
     import { tv, type VariantProps } from 'tailwind-variants';
+
+    import { type WithElementRef } from '#lib/utils.ts';
 
     export const notificationVariants = tv({
         base: 'relative flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-sm',

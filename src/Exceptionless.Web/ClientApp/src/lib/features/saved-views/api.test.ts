@@ -6,9 +6,9 @@ const fetchClientMocks = vi.hoisted(() => ({ putJSON: vi.fn() }));
 const queryClient = vi.hoisted(() => ({}));
 const setCurrentUserSavedViewOrder = vi.hoisted(() => vi.fn());
 
-vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'access-token' } }));
-vi.mock('$features/organizations/api.svelte', () => ({ setOrganizationDefaultSavedView: vi.fn() }));
-vi.mock('$features/users/api.svelte', () => ({
+vi.mock('#features/auth/index.svelte.ts', () => ({ accessToken: { current: 'access-token' } }));
+vi.mock('#features/organizations/api.svelte.ts', () => ({ setOrganizationDefaultSavedView: vi.fn() }));
+vi.mock('#features/users/api.svelte.ts', () => ({
     setCurrentUserSavedViewDefault: vi.fn(),
     setCurrentUserSavedViewOrder
 }));

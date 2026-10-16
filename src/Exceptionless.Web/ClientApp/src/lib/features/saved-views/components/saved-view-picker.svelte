@@ -5,19 +5,9 @@
 </script>
 
 <script generics="TData extends RowData" lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
     import type { StockFeatures, Table } from '@tanstack/svelte-table';
 
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { toFilter } from '$features/events/components/filters/helpers.svelte';
-    import { serializeFilters } from '$features/events/components/filters/helpers.svelte';
-    import { getOrganizationQuery, getOrganizationsQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import SavedViewCreateTour from '$features/product-tours/components/saved-view-create-tour.svelte';
-    import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
-    import { getMeQuery } from '$features/users/api.svelte';
     import Building2 from '@lucide/svelte/icons/building-2';
     import Columns3 from '@lucide/svelte/icons/columns-3';
     import House from '@lucide/svelte/icons/house';
@@ -29,6 +19,18 @@
     import Undo2 from '@lucide/svelte/icons/undo-2';
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
+
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { toFilter } from '#features/events/components/filters/helpers.svelte.ts';
+    import { serializeFilters } from '#features/events/components/filters/helpers.svelte.ts';
+    import { getOrganizationQuery, getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import SavedViewCreateTour from '#features/product-tours/components/saved-view-create-tour.svelte';
+    import { supportsColumnWrapping } from '#features/shared/components/data-table/column-meta.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
 
     import type { AutoFillColumnSelection, WrappedColumnIds } from '../column-settings';
     import type { NewSavedView, SavedView, UpdateSavedView } from '../models';

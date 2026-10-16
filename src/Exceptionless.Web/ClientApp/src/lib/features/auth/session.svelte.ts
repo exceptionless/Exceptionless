@@ -1,4 +1,4 @@
-import { shutdownIntercomSession } from '$features/intercom/session';
+import { shutdownIntercomSession } from '#features/intercom/session.ts';
 
 import { accessToken } from './state.svelte';
 

@@ -1,9 +1,10 @@
 <script lang="ts">
-    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
-    import XIcon from '$comp/icons/XIcon.svelte';
-    import { A } from '$comp/typography';
-    import { getAboutQuery } from '$features/status/api.svelte';
     import Web from '@lucide/svelte/icons/globe';
+
+    import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
+    import XIcon from '#comp/icons/XIcon.svelte';
+    import { A } from '#comp/typography/index.ts';
+    import { getAboutQuery } from '#features/status/api.svelte.ts';
 
     const currentYear = new Date().getFullYear();
 

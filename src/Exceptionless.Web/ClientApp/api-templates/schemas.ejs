@@ -58,7 +58,7 @@ const typeToZod = (rawType, isRequired, nullable, field) => {
     const fieldName = field && field.name;
 
     // Handle nullable unions: swagger-typescript-api outputs "null | X" for most nullable fields,
-    // but outputs "X | null" for nullable arrays fixed via generate-api.mjs workaround.
+    // but outputs "X | null" for nullable arrays fixed via generate-api.js workaround.
     if (type.startsWith('null | ')) {
         let innerType = type.replace('null | ', '');
         if (innerType.startsWith('(') && innerType.endsWith(')') && !innerType.endsWith('[]')) {

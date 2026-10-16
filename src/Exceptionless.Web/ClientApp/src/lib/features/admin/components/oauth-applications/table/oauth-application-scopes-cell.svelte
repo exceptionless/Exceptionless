@@ -1,8 +1,8 @@
 <script lang="ts">
-    import type { OAuthApplication } from '$features/admin/models';
+    import type { OAuthApplication } from '#features/admin/models.ts';
 
-    import { Badge } from '$comp/ui/badge';
-    import * as Tooltip from '$comp/ui/tooltip';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
 
     interface Props {
         application: OAuthApplication;

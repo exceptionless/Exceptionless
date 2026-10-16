@@ -207,7 +207,7 @@ function main() {
     if (positionals[0] === 'run' && positionals.length === 1) return run(values);
     if (positionals[0] !== 'report' || positionals.length !== 2) {
         throw new Error(
-            'Usage: backend-shards.mjs run --index N --count N --output DIR [--coverage] | report DIR [--count N] [--coverage] [--write-timings FILE]'
+            'Usage: backend-shards.js run --index N --count N --output DIR [--coverage] | report DIR [--count N] [--coverage] [--write-timings FILE]'
         );
     }
     const result = report({ directory: positionals[1], count: values.count === undefined ? undefined : Number(values.count), coverage: values.coverage });

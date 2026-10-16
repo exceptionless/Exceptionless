@@ -1,4 +1,4 @@
-export type { ClientConfiguration, NewProject, NotificationSettings, UpdateProject, ViewProject } from '$generated/api';
+export type { ClientConfiguration, NewProject, NotificationSettings, UpdateProject, ViewProject } from '#generated/api.ts';
 
 export interface ClientConfigurationSetting {
     key: string;

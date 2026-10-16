@@ -1,8 +1,9 @@
-import { queryKeys as eventQueryKeys } from '$features/events/api.svelte';
-import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
-import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { describe, expect, it, vi } from 'vitest';
+
+import { queryKeys as eventQueryKeys } from '#features/events/api.svelte.ts';
+import { queryKeys as stackQueryKeys } from '#features/stacks/api.svelte.ts';
+import { ChangeType } from '#features/websockets/models.ts';
 
 import { invalidateProjectQueries, queryKeys } from './api.svelte';
 

@@ -1,12 +1,13 @@
 <script lang="ts">
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import { Button } from '$comp/ui/button';
-    import * as Command from '$comp/ui/command';
-    import * as Popover from '$comp/ui/popover';
-    import Separator from '$comp/ui/separator/separator.svelte';
-    import { Spinner } from '$comp/ui/spinner';
-    import { cn } from '$lib/utils';
     import Check from '@lucide/svelte/icons/check';
+
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Command from '#comp/ui/command/index.ts';
+    import * as Popover from '#comp/ui/popover/index.ts';
+    import Separator from '#comp/ui/separator/separator.svelte';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { cn } from '#lib/utils.ts';
 
     type Option = {
         label: string;

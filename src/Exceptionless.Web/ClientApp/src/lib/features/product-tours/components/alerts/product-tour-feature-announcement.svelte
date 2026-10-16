@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { Muted } from '$comp/typography';
-    import * as Alert from '$comp/ui/alert';
-    import { Button } from '$comp/ui/button';
     import Sparkles from '@lucide/svelte/icons/sparkles';
     import X from '@lucide/svelte/icons/x';
+
+    import { Muted } from '#comp/typography/index.ts';
+    import * as Alert from '#comp/ui/alert/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
 
     interface Props {
         canUpgrade?: boolean;

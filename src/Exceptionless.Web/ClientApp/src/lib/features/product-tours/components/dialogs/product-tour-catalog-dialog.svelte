@@ -1,14 +1,15 @@
 <script lang="ts">
-    import { H3, Muted } from '$comp/typography';
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
     import Bookmark from '@lucide/svelte/icons/bookmark';
     import Bot from '@lucide/svelte/icons/bot';
     import CircleCheck from '@lucide/svelte/icons/circle-check';
     import Folder from '@lucide/svelte/icons/folder';
     import Layers from '@lucide/svelte/icons/layers';
     import PanelLeft from '@lucide/svelte/icons/panel-left';
+
+    import { H3, Muted } from '#comp/typography/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
 
     import type { ProductTourListItem, ProductTourName } from '../../models';
 

@@ -1,8 +1,8 @@
 <script lang="ts">
-    import type { ErrorInfo } from '$features/events/models/event-data';
+    import type { ErrorInfo } from '#features/events/models/event-data.ts';
 
-    import { Code } from '$comp/typography';
-    import { getErrors } from '$features/events/persistent-event';
+    import { Code } from '#comp/typography/index.ts';
+    import { getErrors } from '#features/events/persistent-event.ts';
 
     import StackTraceFrames from './stack-trace-frames.svelte';
     import StackTraceHeader from './stack-trace-header.svelte';

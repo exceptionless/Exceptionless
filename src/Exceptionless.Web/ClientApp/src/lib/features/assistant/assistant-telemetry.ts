@@ -1,4 +1,4 @@
-import { submitFeatureUsage, submitLog } from '$features/auth/exceptionless-session';
+import { submitFeatureUsage, submitLog } from '#features/auth/exceptionless-session.ts';
 
 import type { AssistantStreamEvent } from './assistant-stream';
 

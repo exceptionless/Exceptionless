@@ -11,7 +11,7 @@ vi.mock('$app/state', () => ({
     page: { params: { projectId: 'project-id' } }
 }));
 
-vi.mock('$features/projects/api.svelte', () => ({
+vi.mock('#features/projects/api.svelte.ts', () => ({
     deleteSourceMapMutation: () => ({ isPending: false, mutateAsync: vi.fn() }),
     getSourceMapsQuery: () => ({ data: [], isError: false, isLoading: false }),
     postSourceMapMutation: () => ({ mutateAsync: vi.fn() })

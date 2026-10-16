@@ -1,14 +1,15 @@
 <script lang="ts">
-    import { H4, Small } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Collapsible from '$comp/ui/collapsible';
-    import * as Tooltip from '$comp/ui/tooltip';
-    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import Check from '@lucide/svelte/icons/check';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import CircleAlert from '@lucide/svelte/icons/circle-alert';
     import Clipboard from '@lucide/svelte/icons/clipboard';
     import Wrench from '@lucide/svelte/icons/wrench';
+
+    import { H4, Small } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Collapsible from '#comp/ui/collapsible/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
+    import { UseClipboard } from '#lib/hooks/use-clipboard.svelte.ts';
 
     import type { AssistantToolActivity } from '../models';
 

@@ -1,1 +1,1 @@
-export { type UpdateTokenFormData, UpdateTokenSchema } from '$generated/schemas';
+export { type UpdateTokenFormData, UpdateTokenSchema } from '#generated/schemas.ts';

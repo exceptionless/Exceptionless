@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { Badge } from '$comp/ui/badge';
-    import { type LogLevel } from '$features/events/models/event-data';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { type LogLevel } from '#features/events/models/event-data.ts';
 
     import { getLogLevel } from '../utils';
 
