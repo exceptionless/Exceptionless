@@ -1,18 +1,8 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
     import type { HTMLAttributes } from 'svelte/elements';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import DelayedRender from '$comp/delayed-render.svelte';
-    import * as Avatar from '$comp/ui/avatar/index';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu/index';
-    import * as Sidebar from '$comp/ui/sidebar/index';
-    import { useSidebar } from '$comp/ui/sidebar/index';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import ImpersonateOrganizationDialog from '$features/organizations/components/dialogs/impersonate-organization-dialog.svelte';
-    import GlobalUser from '$features/users/components/global-user.svelte';
-    import { getInitials } from '$shared/strings';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
@@ -21,6 +11,18 @@
     import Settings from '@lucide/svelte/icons/settings';
     import UserRoundSearch from '@lucide/svelte/icons/user-round-search';
     import { tick } from 'svelte';
+
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+
+    import DelayedRender from '#comp/delayed-render.svelte';
+    import * as Avatar from '#comp/ui/avatar/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import * as Sidebar from '#comp/ui/sidebar/index.ts';
+    import { useSidebar } from '#comp/ui/sidebar/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import ImpersonateOrganizationDialog from '#features/organizations/components/dialogs/impersonate-organization-dialog.svelte';
+    import GlobalUser from '#features/users/components/global-user.svelte';
+    import { getInitials } from '#shared/strings.ts';
 
     type Props = HTMLAttributes<HTMLUListElement> & {
         currentOrganizationId: string | undefined;
@@ -66,7 +68,7 @@
 
     async function handleImpersonate(organization: ViewOrganization): Promise<void> {
         currentOrganizationId = organization.id;
-        await goto(resolve('/'));
+        await goto(resolve('/(app)'));
     }
 
     async function navigateTo(href: string): Promise<void> {
@@ -83,12 +85,12 @@
         }
 
         currentOrganizationId = organization.id;
-        await goto(resolve('/'));
+        await goto(resolve('/(app)'));
     }
 
     async function stopImpersonating(): Promise<void> {
         currentOrganizationId = organizations[0]?.id;
-        await goto(resolve('/'));
+        await goto(resolve('/(app)'));
     }
 </script>
 

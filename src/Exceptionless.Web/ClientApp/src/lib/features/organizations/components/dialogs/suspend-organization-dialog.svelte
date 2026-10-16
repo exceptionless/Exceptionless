@@ -1,19 +1,20 @@
 <script lang="ts">
-    import type { PostSuspendOrganizationParams } from '$features/organizations/api.svelte';
-    import type { ViewOrganization } from '$features/organizations/models';
-
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { P } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { buttonVariants } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import * as Select from '$comp/ui/select';
-    import { Textarea } from '$comp/ui/textarea';
-    import { SuspensionCode } from '$features/organizations/models';
-    import { suspensionCodeOptions } from '$features/organizations/options';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
+
+    import type { PostSuspendOrganizationParams } from '#features/organizations/api.svelte.ts';
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { P } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { buttonVariants } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import * as Select from '#comp/ui/select/index.ts';
+    import { Textarea } from '#comp/ui/textarea/index.ts';
+    import { SuspensionCode } from '#features/organizations/models.ts';
+    import { suspensionCodeOptions } from '#features/organizations/options.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     import { type SuspendOrganizationFormData, SuspendOrganizationSchema } from '../../schemas';
 

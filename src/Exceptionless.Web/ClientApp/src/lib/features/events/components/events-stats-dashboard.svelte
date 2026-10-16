@@ -1,13 +1,14 @@
 <script lang="ts">
-    import Number from '$comp/formatters/number.svelte';
-    import * as Card from '$comp/ui/card';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Tooltip from '$comp/ui/tooltip';
     import CalendarDays from '@lucide/svelte/icons/calendar-days';
     import Info from '@lucide/svelte/icons/info';
     import Layers from '@lucide/svelte/icons/layers';
     import Sparkles from '@lucide/svelte/icons/sparkles';
     import TrendingUp from '@lucide/svelte/icons/trending-up';
+
+    import Number from '#comp/formatters/number.svelte';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
 
     interface Props {
         eventsPerHour?: number;

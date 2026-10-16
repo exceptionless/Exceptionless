@@ -1,10 +1,12 @@
 <script lang="ts">
-    import type { OAuthApplication } from '$features/admin/models';
     import type { Row, StockFeatures } from '@tanstack/svelte-table';
 
-    import { Button } from '$comp/ui/button';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
+
+    import type { OAuthApplication } from '#features/admin/models.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
 
     let { row }: { row: Row<StockFeatures, OAuthApplication> } = $props();
 </script>

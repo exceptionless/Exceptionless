@@ -1,6 +1,6 @@
-import type { ViewProject } from '$features/projects/models';
-
 import { describe, expect, it } from 'vitest';
+
+import type { ViewProject } from '#features/projects/models.ts';
 
 import type { IPersistentEventData, PersistentEvent } from './models';
 

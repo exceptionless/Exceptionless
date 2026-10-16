@@ -1,22 +1,23 @@
 <script lang="ts">
-    import type { ViewProject } from '$features/projects/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import { H3 } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Input } from '$comp/ui/input';
-    import { organization } from '$features/organizations/context.svelte';
-    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
-    import { ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '$features/organizations/utils';
-    import { type GetProjectsParams, getProjectsQuery } from '$features/projects/api.svelte';
-    import { getTableOptions } from '$features/projects/components/table/options.svelte';
-    import ProjectsDataTable from '$features/projects/components/table/projects-data-table.svelte';
-    import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
+
+    import type { ViewProject } from '#features/projects/models.ts';
+
+    import DataTableViewOptions from '#comp/data-table/data-table-view-options.svelte';
+    import { H3 } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { useHideOrganizationNotifications } from '#features/organizations/hooks/use-hide-organization-notifications.svelte.ts';
+    import { ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '#features/organizations/utils.ts';
+    import { type GetProjectsParams, getProjectsQuery } from '#features/projects/api.svelte.ts';
+    import { getTableOptions } from '#features/projects/components/table/options.svelte.ts';
+    import ProjectsDataTable from '#features/projects/components/table/projects-data-table.svelte';
+    import { DEFAULT_LIMIT } from '#shared/api/api.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     const DEFAULT_PARAMS = {
         filter: '',

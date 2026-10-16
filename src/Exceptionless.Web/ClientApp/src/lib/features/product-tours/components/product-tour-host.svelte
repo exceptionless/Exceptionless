@@ -1,18 +1,19 @@
 <script lang="ts">
-    import type { AssistantAccess } from '$features/assistant/models';
-    import type { ViewCurrentUser } from '$features/users/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
-    import { showChangePlanDialog } from '$features/billing/change-plan.svelte';
-    import { isStripeEnabled } from '$features/billing/stripe.svelte';
-    import { getOrganizationEventsQuery } from '$features/events/api.svelte';
-    import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
-    import { putCurrentUserProductTour } from '$features/users/api.svelte';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { toast } from 'svelte-sonner';
+
+    import type { AssistantAccess } from '#features/assistant/models.ts';
+    import type { ViewCurrentUser } from '#features/users/models.ts';
+
+    import { invalidateAssistantAccessQueries } from '#features/assistant/api.svelte.ts';
+    import { showChangePlanDialog } from '#features/billing/change-plan.svelte.ts';
+    import { isStripeEnabled } from '#features/billing/stripe.svelte.ts';
+    import { getOrganizationEventsQuery } from '#features/events/api.svelte.ts';
+    import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
+    import { putCurrentUserProductTour } from '#features/users/api.svelte.ts';
 
     import type { ProductTourContext, ProductTourListItem, ProductTourName } from '../models';
 

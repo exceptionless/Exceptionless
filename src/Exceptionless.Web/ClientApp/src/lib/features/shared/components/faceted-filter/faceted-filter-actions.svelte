@@ -1,11 +1,12 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
-    import * as Tooltip from '$comp/ui/tooltip';
     import Eraser from '@lucide/svelte/icons/eraser';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
     import HelpCircle from '@lucide/svelte/icons/help-circle';
     import Trash2 from '@lucide/svelte/icons/trash-2';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
 
     interface Props {
         clear: () => void;

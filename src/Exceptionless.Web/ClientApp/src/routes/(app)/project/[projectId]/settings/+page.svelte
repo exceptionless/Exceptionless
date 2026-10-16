@@ -1,17 +1,18 @@
 <script lang="ts">
-    import type { UpdateProject } from '$features/projects/models';
-
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { A, H4, Large, Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Input } from '$comp/ui/input';
-    import { Label } from '$comp/ui/label';
-    import { Switch } from '$comp/ui/switch';
-    import { deleteProjectConfig, getProjectConfig, getProjectQuery, postProjectConfig, updateProject } from '$features/projects/api.svelte';
-    import ProjectLogLevel from '$features/projects/components/project-log-level.svelte';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
+
+    import type { UpdateProject } from '#features/projects/models.ts';
+
+    import { A, H4, Large, Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { deleteProjectConfig, getProjectConfig, getProjectQuery, postProjectConfig, updateProject } from '#features/projects/api.svelte.ts';
+    import ProjectLogLevel from '#features/projects/components/project-log-level.svelte';
 
     let toastId = $state<number | string>();
     const projectId = $derived(page.params.projectId || '');

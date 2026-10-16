@@ -1,30 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { A, Small } from '$comp/typography';
-    import * as Avatar from '$comp/ui/avatar';
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import * as InputGroup from '$comp/ui/input-group';
-    import { Spinner } from '$comp/ui/spinner';
-    import { logout } from '$features/auth/api.svelte';
-    import { validateEmailAvailability } from '$features/auth/validators';
-    import { getProfileImageFileError } from '$features/shared/profile-images';
-    import {
-        deleteCurrentUser,
-        deleteUserAvatar,
-        getMeQuery,
-        patchUser,
-        postEmailAddress,
-        resendVerificationEmail,
-        uploadUserAvatar
-    } from '$features/users/api.svelte';
-    import DeleteCurrentUserDialog from '$features/users/components/dialogs/delete-current-user-dialog.svelte';
-    import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
-    import { type UpdateUserEmailAddressFormData, UpdateUserEmailAddressSchema, type UpdateUserFormData, UpdateUserSchema } from '$features/users/schemas';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import Camera from '@lucide/svelte/icons/camera';
     import Trash from '@lucide/svelte/icons/trash-2';
@@ -33,6 +9,31 @@
     import { useQueryClient } from '@tanstack/svelte-query';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { A, Small } from '#comp/typography/index.ts';
+    import * as Avatar from '#comp/ui/avatar/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import * as InputGroup from '#comp/ui/input-group/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { logout } from '#features/auth/api.svelte.ts';
+    import { validateEmailAvailability } from '#features/auth/validators.ts';
+    import { getProfileImageFileError } from '#features/shared/profile-images.ts';
+    import {
+        deleteCurrentUser,
+        deleteUserAvatar,
+        getMeQuery,
+        patchUser,
+        postEmailAddress,
+        resendVerificationEmail,
+        uploadUserAvatar
+    } from '#features/users/api.svelte.ts';
+    import DeleteCurrentUserDialog from '#features/users/components/dialogs/delete-current-user-dialog.svelte';
+    import { getGravatarFromCurrentUser } from '#features/users/gravatar.svelte.ts';
+    import { type UpdateUserEmailAddressFormData, UpdateUserEmailAddressSchema, type UpdateUserFormData, UpdateUserSchema } from '#features/users/schemas.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
 
     let toastId = $state<number | string>();
     let showDeleteAccountDialog = $state(false);
@@ -144,7 +145,7 @@
             toastId = toast.success('Successfully queued your account for deletion.');
             await logout(queryClient, client);
             await goto(resolve('/(auth)/login'), {
-                replaceState: true
+                replace: true
             });
         } catch (error: unknown) {
             const message = error instanceof ProblemDetails ? error.title : 'Please try again.';

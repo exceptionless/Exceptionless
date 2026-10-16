@@ -1,10 +1,11 @@
 <script lang="ts">
-    import { browser } from '$app/environment';
-    import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import { CodeBlock, Muted, P } from '$comp/typography';
-    import * as Card from '$comp/ui/card';
-    import * as Select from '$comp/ui/select';
-    import { getServerUrl } from '$shared/api/urls';
+    import { browser } from '$app/env';
+
+    import CopyToClipboardButton from '#comp/copy-to-clipboard-button.svelte';
+    import { CodeBlock, Muted, P } from '#comp/typography/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import * as Select from '#comp/ui/select/index.ts';
+    import { getServerUrl } from '#shared/api/urls.ts';
 
     type AiTool = {
         description: string;

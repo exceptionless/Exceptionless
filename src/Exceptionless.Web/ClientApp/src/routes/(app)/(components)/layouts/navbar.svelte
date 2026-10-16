@@ -1,15 +1,16 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
-    import DarkModeButton from '$comp/dark-mode-button.svelte';
-    import Logo from '$comp/logo.svelte';
-    import { A } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Kbd from '$comp/ui/kbd';
-    import * as Sidebar from '$comp/ui/sidebar';
-    import logoSmall from '$lib/assets/exceptionless-48.png';
     import Bot from '@lucide/svelte/icons/bot';
     import Search from '@lucide/svelte/icons/search';
     import { MediaQuery } from 'svelte/reactivity';
+
+    import DarkModeButton from '#comp/dark-mode-button.svelte';
+    import Logo from '#comp/logo.svelte';
+    import { A } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Kbd from '#comp/ui/kbd/index.ts';
+    import * as Sidebar from '#comp/ui/sidebar/index.ts';
+    import logoSmall from '#lib/assets/exceptionless-48.png';
 
     interface Props {
         assistantEnabled: boolean;
@@ -29,7 +30,7 @@
             <div class="flex items-center justify-start">
                 <Sidebar.Trigger variant="outline" class="size-9" />
 
-                <A variant="ghost" class="mr-14 ml-2 flex md:min-w-62.5 lg:ml-3 dark:text-white" href={resolve('/')}>
+                <A variant="ghost" class="mr-14 ml-2 flex md:min-w-62.5 lg:ml-3 dark:text-white" href={resolve('/(app)')}>
                     {#if isMediumScreenQuery.current}
                         <Logo class="absolute top-1.5 mr-3 h-12" />
                     {:else}

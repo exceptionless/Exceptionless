@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import * as Table from '$comp/ui/table';
+    import * as Table from '#comp/ui/table/index.ts';
 
     import ObjectDump from './object-dump.svelte';
     import List from './typography/list.svelte';

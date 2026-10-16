@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
-    import { Input } from '$comp/ui/input';
-    import { Label } from '$comp/ui/label';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
 
     import type { SavedView } from '../models';
 

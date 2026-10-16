@@ -1,8 +1,8 @@
 <script lang="ts">
-    import type { FacetedFilterProps } from '$comp/faceted-filter';
+    import type { FacetedFilterProps } from '#comp/faceted-filter/index.ts';
 
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import { eventTypes } from '$features/events/options';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import { eventTypes } from '#features/events/options.ts';
 
     import { TypeFilter } from './models.svelte';
 

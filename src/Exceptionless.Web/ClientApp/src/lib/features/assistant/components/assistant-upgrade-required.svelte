@@ -1,10 +1,11 @@
 <script lang="ts">
-    import { H3, Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Spinner } from '$comp/ui/spinner';
-    import { showChangePlanDialog } from '$features/billing/change-plan.svelte';
-    import { isStripeEnabled } from '$features/billing/stripe.svelte';
     import Bot from '@lucide/svelte/icons/bot';
+
+    import { H3, Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { showChangePlanDialog } from '#features/billing/change-plan.svelte.ts';
+    import { isStripeEnabled } from '#features/billing/stripe.svelte.ts';
 
     import type { AssistantAccessState } from '../models';
 

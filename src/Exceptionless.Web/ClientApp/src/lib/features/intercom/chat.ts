@@ -1,4 +1,4 @@
-import { supportIssuesHref } from '$features/shared/help-links';
+import { supportIssuesHref } from '#features/shared/help-links.ts';
 
 export interface IntercomMessenger {
     showMessages: () => void;

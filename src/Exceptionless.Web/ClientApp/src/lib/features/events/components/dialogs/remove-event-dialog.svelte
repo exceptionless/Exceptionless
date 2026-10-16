@@ -1,7 +1,7 @@
 <script lang="ts">
-    import Number from '$comp/formatters/number.svelte';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { buttonVariants } from '$comp/ui/button';
+    import Number from '#comp/formatters/number.svelte';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { buttonVariants } from '#comp/ui/button/index.ts';
 
     interface Props {
         count?: number;

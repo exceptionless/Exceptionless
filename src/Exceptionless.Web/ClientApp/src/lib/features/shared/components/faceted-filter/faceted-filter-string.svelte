@@ -1,10 +1,11 @@
 <script lang="ts">
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import { Button } from '$comp/ui/button';
-    import { Input } from '$comp/ui/input';
-    import * as Popover from '$comp/ui/popover';
-    import Separator from '$comp/ui/separator/separator.svelte';
     import { onDestroy } from 'svelte';
+
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import * as Popover from '#comp/ui/popover/index.ts';
+    import Separator from '#comp/ui/separator/separator.svelte';
 
     interface Props {
         changed: (value?: string) => void;

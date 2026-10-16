@@ -1,10 +1,12 @@
-import type { ClientConfiguration, ClientConfigurationSetting } from '$features/projects/models';
 import type { ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
-import ProjectConfigActionsCell from '$features/projects/components/table/project-config-actions-cell.svelte';
-import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { ClientConfiguration, ClientConfigurationSetting } from '#features/projects/models.ts';
+
+import ProjectConfigActionsCell from '#features/projects/components/table/project-config-actions-cell.svelte';
+import { getSharedTableOptions, type TableMemoryPagingParameters } from '#features/shared/table.svelte.ts';
 
 export type ConfigurationSettingsColumnParameters = {
     projectId: string;
