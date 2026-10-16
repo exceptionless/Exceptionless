@@ -4,7 +4,9 @@ The normal build targets a roughly **10-minute critical path**. Track elapsed wo
 
 ## Execution
 
-- `.NET`: four isolated runners build the suite and discover tests through Microsoft Testing Platform's JSON discovery. `backend-shards.mjs` groups whole classes, then distributes the longest classes first using `backend-durations.json`. New classes are included automatically; stale timing entries cannot select or exclude tests. Each runner retains the existing six collection workers and coverage collection.
+- Run `npm run lint:scripts` from `src/Exceptionless.Web/ClientApp` after installing its dependencies. This reuses the ClientApp ESLint configuration and runs as part of its existing lint command.
+
+- `.NET`: four isolated runners build the suite and discover tests through Microsoft Testing Platform's JSON discovery. `backend-shards.js` groups whole classes, then distributes the longest classes first using `backend-durations.json`. New classes are included automatically; stale timing entries cannot select or exclude tests. Each runner retains the existing six collection workers and coverage collection.
 - CI tooling uses the project's Node.js runtime (Node 24 in CI), built-in modules, and `node:test`, with no additional packages. Backend summaries read xUnit's native CTRF JSON output; TRX reports remain available as artifacts.
 - Frontend CI runs `build/update-config.test.mjs` against the real configuration writer and container entrypoints. Process stubs check configuration failures, argument preservation, and app process replacement without starting containers. CSP input cases use fast unit tests, with a representative HTTP response-header test covering integration.
 - Browser: six isolated Aspire applications run Playwright's native `--shard=N/6` with `fullyParallel` enabled for sharding. Each runner uses **one worker** because scenarios can change the shared administrator's preferences. This splits large spec files without introducing concurrent mutations of that user. Shard IDs are included in generated data names.
@@ -43,15 +45,15 @@ Example local commands from the repository root (PowerShell):
 
 ```powershell
 dotnet build Exceptionless.slnx --configuration Release
-node tests/ci/backend-shards.mjs run --index 1 --count 4 --output "$env:TEMP/api-shard-1" --coverage
-node --test tests/ci/shards.test.mjs
+node tests/ci/backend-shards.js run --index 1 --count 4 --output "$env:TEMP/api-shard-1" --coverage
+node --test tests/ci/shards.test.js
 ```
 
 Run local .NET shards **sequentially**: separate test processes on one host reuse test index scopes. Hosted shards are isolated machines. To validate or rebalance from downloaded artifacts:
 
 ```powershell
 gh run download <run-id> --pattern 'api-results-*' --dir "$env:TEMP/api-results"
-node tests/ci/backend-shards.mjs report "$env:TEMP/api-results" --count 4 --coverage --write-timings tests/ci/backend-durations.json
+node tests/ci/backend-shards.js report "$env:TEMP/api-results" --count 4 --coverage --write-timings tests/ci/backend-durations.json
 ```
 
 For a browser shard, start Aspire, discover and health-check its current local App URL, then from `src/Exceptionless.Web/ClientApp`:
