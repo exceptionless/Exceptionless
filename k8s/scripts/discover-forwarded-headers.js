@@ -3,62 +3,188 @@ import { rmSync, writeFileSync } from 'node:fs';
 import { isIP } from 'node:net';
 import { pathToFileURL } from 'node:url';
 
-const run = (command, args) => execFileSync(command, args, { encoding: 'utf8', timeout: 60_000 });
+const APPLICATION_LOAD_BALANCER_RESOURCE = 'applicationloadbalancers.alb.networking.azure.io';
+const ASSOCIATION_SUBNET_ID =
+    /^\/subscriptions\/[^/]+\/resourceGroups\/[^/]+\/providers\/Microsoft\.Network\/virtualNetworks\/[^/]+\/subnets\/[^/]+$/i;
+const TRAFFIC_CONTROLLER_DELEGATION = 'Microsoft.ServiceNetworking/trafficControllers';
+const USAGE =
+    'Usage: node k8s/scripts/discover-forwarded-headers.js <release> <values-file> <output-json> (from repository root)';
+
+function run(command, arguments_) {
+    return execFileSync(command, arguments_, {
+        encoding: 'utf8',
+        timeout: 60_000
+    });
+}
+
+function runJson(command, arguments_, description) {
+    const output = run(command, arguments_);
+
+    try {
+        return JSON.parse(output);
+    } catch (error) {
+        throw new Error(`${description} returned invalid JSON`, { cause: error });
+    }
+}
 
 // Read the chart's rendered annotations so gateway selection cannot drift from ingress.
-function annotation(manifest, name) {
-    const values = [...manifest.matchAll(new RegExp(`^\\s+alb\\.networking\\.azure\\.io/${name}:\\s*([a-z0-9.-]+)\\s*$`, 'gm'))]
-        .map(match => match[1]);
-    if (!values.length || new Set(values).size !== 1)
-        throw new Error(`Expected one consistent ingress annotation: ${name}`);
+function readIngressAnnotation(manifest, annotationName) {
+    const annotationPattern = new RegExp(
+        `^\\s+alb\\.networking\\.azure\\.io/${annotationName}:\\s*([a-z0-9.-]+)\\s*$`,
+        'gm'
+    );
+    const values = [...new Set([...manifest.matchAll(annotationPattern)].map(match => match[1]))];
+
+    if (values.length === 0) {
+        throw new Error(`Rendered API ingress is missing the ${annotationName} annotation`);
+    }
+
+    if (values.length > 1) {
+        throw new Error(`Rendered API ingresses use conflicting ${annotationName} annotations: ${values.join(', ')}`);
+    }
+
     return values[0];
 }
 
-export function discoverForwardedHeaders(release, valuesFile, execute = run) {
-    const manifest = execute('helm', ['template', release, 'k8s/exceptionless', '--values', valuesFile, '--show-only', 'templates/api.yaml']);
-    const name = annotation(manifest, 'alb-name');
-    const namespace = annotation(manifest, 'alb-namespace');
-    const gateway = JSON.parse(execute('kubectl', ['get', 'applicationloadbalancers.alb.networking.azure.io', name, '--namespace', namespace, '--output', 'json']));
+function readAssociationSubnetIds(gatewayName, gatewayNamespace) {
+    const gateway = runJson(
+        'kubectl',
+        ['get', APPLICATION_LOAD_BALANCER_RESOURCE, gatewayName, '--namespace', gatewayNamespace, '--output', 'json'],
+        `ApplicationLoadBalancer ${gatewayNamespace}/${gatewayName}`
+    );
+
+    if (!gateway || typeof gateway !== 'object' || Array.isArray(gateway)) {
+        throw new Error(`ApplicationLoadBalancer ${gatewayNamespace}/${gatewayName} returned an invalid object`);
+    }
+
     const associations = gateway.spec?.associations;
-    if (!Array.isArray(associations) || !associations.length)
+
+    if (!Array.isArray(associations) || associations.length === 0) {
         throw new Error('Gateway has no association subnet IDs; refusing to infer proxy trust');
+    }
 
-    const networks = [];
-    for (const id of new Set(associations)) {
-        if (typeof id !== 'string' || !/^\/subscriptions\/[^/]+\/resourceGroups\/[^/]+\/providers\/Microsoft\.Network\/virtualNetworks\/[^/]+\/subnets\/[^/]+$/i.test(id))
-            throw new Error('Gateway association is not an Azure subnet resource ID');
-        const subnet = JSON.parse(execute('az', ['network', 'vnet', 'subnet', 'show', '--ids', id, '--output', 'json', '--only-show-errors']));
-        if (subnet.id?.toLowerCase() !== id.toLowerCase() ||
-            !subnet.delegations?.some(item => item.serviceName === 'Microsoft.ServiceNetworking/trafficControllers'))
-            throw new Error('Association subnet identity or Application Gateway for Containers delegation is missing');
+    const hasInvalidAssociation = associations.some(
+        association => typeof association !== 'string' || !ASSOCIATION_SUBNET_ID.test(association)
+    );
 
-        const prefixes = [subnet.addressPrefix, ...(subnet.addressPrefixes ?? [])].filter(value => value != null);
-        if (!prefixes.length)
-            throw new Error('Association subnet has no address prefixes');
-        for (const prefix of prefixes) {
-            const [address, length, extra] = typeof prefix === 'string' ? prefix.split('/') : [];
-            const family = isIP(address ?? '');
-            if (!family || extra !== undefined || !/^[1-9][0-9]*$/.test(length ?? '') || Number(length) > (family === 4 ? 32 : 128))
-                throw new Error(`Invalid or unrestricted association subnet prefix: ${prefix}`);
-            networks.push(prefix);
+    if (hasInvalidAssociation) {
+        throw new Error('Gateway contains an invalid Azure association subnet resource ID');
+    }
+
+    return [...new Set(associations)];
+}
+
+function readSubnetPrefixes(subnetId) {
+    const subnet = runJson(
+        'az',
+        [
+            'network',
+            'vnet',
+            'subnet',
+            'show',
+            '--ids',
+            subnetId,
+            '--query',
+            '{id:id,addressPrefix:addressPrefix,addressPrefixes:addressPrefixes,delegations:delegations[].serviceName}',
+            '--output',
+            'json',
+            '--only-show-errors'
+        ],
+        `Azure subnet ${subnetId}`
+    );
+
+    if (!subnet || typeof subnet !== 'object' || Array.isArray(subnet)) {
+        throw new Error(`Azure subnet ${subnetId} returned an invalid object`);
+    }
+
+    if (typeof subnet.id !== 'string' || subnet.id.toLowerCase() !== subnetId.toLowerCase()) {
+        throw new Error(`Azure returned a different subnet for association ${subnetId}`);
+    }
+
+    if (!Array.isArray(subnet.delegations) || !subnet.delegations.includes(TRAFFIC_CONTROLLER_DELEGATION)) {
+        throw new Error(`Association subnet ${subnetId} is not delegated to ${TRAFFIC_CONTROLLER_DELEGATION}`);
+    }
+
+    const hasInvalidAddressPrefix =
+        subnet.addressPrefix !== null && subnet.addressPrefix !== undefined && typeof subnet.addressPrefix !== 'string';
+
+    if (hasInvalidAddressPrefix) {
+        throw new Error(`Association subnet ${subnetId} returned an invalid addressPrefix`);
+    }
+
+    const hasInvalidAddressPrefixes =
+        subnet.addressPrefixes !== null &&
+        subnet.addressPrefixes !== undefined &&
+        (!Array.isArray(subnet.addressPrefixes) ||
+            !subnet.addressPrefixes.every(prefix => typeof prefix === 'string'));
+
+    if (hasInvalidAddressPrefixes) {
+        throw new Error(`Association subnet ${subnetId} returned invalid addressPrefixes`);
+    }
+
+    const addressPrefixes = subnet.addressPrefixes ?? [];
+    const prefixes = [subnet.addressPrefix, ...addressPrefixes].filter(prefix => prefix !== null && prefix !== undefined);
+
+    if (prefixes.length === 0) {
+        throw new Error(`Association subnet ${subnetId} has no address prefixes`);
+    }
+
+    for (const prefix of prefixes) {
+        const [address, prefixLength, extra] = typeof prefix === 'string' ? prefix.split('/') : [];
+        const addressFamily = isIP(address ?? '');
+        const maximumPrefixLength = addressFamily === 4 ? 32 : 128;
+        const hasValidPrefixLength =
+            /^[1-9][0-9]*$/.test(prefixLength ?? '') && Number(prefixLength) <= maximumPrefixLength;
+
+        if (!addressFamily || extra !== undefined || !hasValidPrefixLength) {
+            throw new Error(`Association subnet ${subnetId} has an invalid or unrestricted prefix: ${prefix}`);
         }
     }
 
-    // A list replaces the previous list on Helm upgrades, including --reuse-values.
-    // Individual config-map keys would retain stale higher-numbered entries.
-    return { forwardedHeaders: { knownNetworks: [...new Set(networks)].sort() } };
+    return prefixes;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+function discoverKnownNetworks(release, valuesFile) {
+    const manifest = run('helm', [
+        'template',
+        release,
+        'k8s/exceptionless',
+        '--values',
+        valuesFile,
+        '--show-only',
+        'templates/api.yaml'
+    ]);
+    const gatewayName = readIngressAnnotation(manifest, 'alb-name');
+    const gatewayNamespace = readIngressAnnotation(manifest, 'alb-namespace');
+    const subnetIds = readAssociationSubnetIds(gatewayName, gatewayNamespace);
+    const networks = subnetIds.flatMap(subnetId => readSubnetPrefixes(subnetId));
+
+    // A list replaces the previous list on Helm upgrades, including --reuse-values.
+    // Individual config-map keys would retain stale higher-numbered entries.
+    return [...new Set(networks)].sort();
+}
+
+function main() {
+    const [release, valuesFile, outputFile, ...extra] = process.argv.slice(2);
+
+    if (!release || !valuesFile || !outputFile || extra.length > 0) {
+        throw new Error(USAGE);
+    }
+
+    // A failed refresh must not leave an earlier trust file available for upgrade.
+    rmSync(outputFile, { force: true });
+
+    const knownNetworks = discoverKnownNetworks(release, valuesFile);
+    const values = { forwardedHeaders: { knownNetworks } };
+    writeFileSync(outputFile, `${JSON.stringify(values, null, 2)}\n`, { mode: 0o600 });
+    console.log(`Discovered ${knownNetworks.length} gateway subnet prefix(es)`);
+}
+
+const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isMainModule) {
     try {
-        const [release, valuesFile, outputFile, ...extra] = process.argv.slice(2);
-        if (!release || !valuesFile || !outputFile || extra.length)
-            throw new Error('Usage: node k8s/scripts/discover-forwarded-headers.js <release> <values-file> <output-json> (from repository root)');
-        // A failed refresh must not leave an earlier trust file available for upgrade.
-        rmSync(outputFile, { force: true });
-        const values = discoverForwardedHeaders(release, valuesFile);
-        writeFileSync(outputFile, `${JSON.stringify(values, null, 2)}\n`, { mode: 0o600 });
-        console.log(`Discovered ${values.forwardedHeaders.knownNetworks.length} gateway subnet prefix(es)`);
+        main();
     } catch (error) {
         console.error(`Forwarded-header discovery failed: ${error.message}`);
         process.exitCode = 1;
