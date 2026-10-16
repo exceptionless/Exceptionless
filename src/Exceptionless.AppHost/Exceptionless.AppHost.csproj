@@ -14,6 +14,8 @@
     <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.6.1" />
     <PackageReference Include="Aspire.Hosting.Redis" Version="13.6.1" />
     <PackageReference Include="AspNetCore.HealthChecks.Elasticsearch" Version="9.0.0" />
+    <!-- Override Aspire's transitive dependency with a patched MessagePack 2.5 release. -->
+    <PackageReference Include="MessagePack" Version="2.5.307" />
   </ItemGroup>
 
   <ItemGroup>
