@@ -1,7 +1,0 @@
-{
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "lint:scripts": "node src/Exceptionless.Web/ClientApp/node_modules/eslint/bin/eslint.js --config src/Exceptionless.Web/ClientApp/eslint.config.js --no-error-on-unmatched-pattern \"tests/ci/**/*.js\" \"k8s/scripts/**/*.js\""
-    }
-}

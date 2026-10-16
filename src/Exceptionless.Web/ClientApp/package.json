@@ -31,7 +31,7 @@
         "update": "ncu -i",
         "update:shadcn": "npx shadcn-svelte@latest update",
         "update:skills": "npx skills update",
-        "lint:scripts": "npm --prefix ../../.. run lint:scripts --"
+        "lint:scripts": "cd ../../.. && node src/Exceptionless.Web/ClientApp/node_modules/eslint/bin/eslint.js --config src/Exceptionless.Web/ClientApp/eslint.config.js --no-error-on-unmatched-pattern \"tests/ci/**/*.js\" \"k8s/scripts/**/*.js\""
     },
     "devDependencies": {
         "@chromatic-com/storybook": "^5.4.0",
