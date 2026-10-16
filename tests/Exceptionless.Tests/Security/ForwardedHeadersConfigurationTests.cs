@@ -96,13 +96,15 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
         Assert.Equal(scheme, context.Request.Scheme);
     }
 
-    [Fact]
-    public void Configure_NegativeForwardLimit_Throws()
+    [Theory]
+    [InlineData("ForwardedHeaders:ForwardLimit", "-1")]
+    [InlineData("ForwardedHeaders_Enabled", "true")]
+    public void Configure_UnsafeScalarConfiguration_ThrowsWithKey(string key, string value)
     {
         // Arrange
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["ForwardedHeaders:ForwardLimit"] = "-1"
+            [key] = value
         }).Build();
 
         // Act
@@ -110,7 +112,7 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
 
         // Assert
         Assert.IsType<InvalidOperationException>(exception);
-        Assert.Contains("ForwardedHeaders:ForwardLimit", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(key, exception.Message, StringComparison.Ordinal);
     }
 
     [Theory]

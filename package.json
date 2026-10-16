@@ -1,4 +1,7 @@
 {
     "private": true,
-    "type": "module"
+    "type": "module",
+    "scripts": {
+        "lint:scripts": "node src/Exceptionless.Web/ClientApp/node_modules/eslint/bin/eslint.js tests/ci k8s/scripts"
+    }
 }

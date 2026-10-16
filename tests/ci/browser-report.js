@@ -12,9 +12,11 @@ export function cases(report) {
                     yield [JSON.stringify([spec.id, test.projectName]), spec, test];
                 }
             }
+
             yield* walk(suite.suites ?? []);
         }
     }
+
     return [...walk(report.suites)];
 }
 
@@ -24,7 +26,11 @@ export function validate(expected, actual) {
     if (!planned.size || executed.length !== new Set(executed).size || !isDeepStrictEqual(new Set(executed), planned)) {
         throw new Error('Merged browser results omitted or duplicated discovered tests');
     }
-    if (actual.errors?.length) throw new Error('Playwright reported errors outside individual tests');
+
+    if (actual.errors?.length) {
+        throw new Error('Playwright reported errors outside individual tests');
+    }
+
     for (const [, spec, test] of cases(actual)) {
         if (!test.results?.length || test.status !== 'expected') {
             throw new Error(`Browser test did not pass: ${spec.title} (${test.status})`);
@@ -34,7 +40,10 @@ export function validate(expected, actual) {
 
 function main() {
     const { positionals } = parseArgs({ allowPositionals: true });
-    if (positionals.length !== 2) throw new Error('Usage: browser-report.js DISCOVERY_JSON RESULTS_JSON');
+    if (positionals.length !== 2) {
+        throw new Error('Usage: browser-report.js DISCOVERY_JSON RESULTS_JSON');
+    }
+
     const [expected, actual] = positionals.map((path) => JSON.parse(readFileSync(path, 'utf8')));
     const tests = cases(actual);
     const duration = (test) => test.results.reduce((total, result) => total + result.duration, 0);
@@ -52,9 +61,13 @@ function main() {
         const name = `${spec.file}: ${spec.title}`.replaceAll('|', '\\|').replaceAll('\n', ' ');
         lines.push(`| ${name} | ${(duration(test) / 1000).toFixed(2)} | ${test.results.length} |`);
     }
+
     const summary = lines.join('\n') + '\n';
     console.log(summary);
-    if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+    if (process.env.GITHUB_STEP_SUMMARY) {
+        appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+    }
+
     validate(expected, actual);
 }
 
