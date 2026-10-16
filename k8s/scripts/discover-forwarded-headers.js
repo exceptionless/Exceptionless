@@ -1,11 +1,15 @@
 import { execFileSync } from 'node:child_process';
-import { rmSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { isIP } from 'node:net';
+import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const APPLICATION_LOAD_BALANCER_RESOURCE = 'applicationloadbalancers.alb.networking.azure.io';
 const ASSOCIATION_SUBNET_ID =
     /^\/subscriptions\/[^/]+\/resourceGroups\/[^/]+\/providers\/Microsoft\.Network\/virtualNetworks\/[^/]+\/subnets\/[^/]+$/i;
+const HELM_RELEASE_NAME = /^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9](?:[-a-z0-9]*[a-z0-9])?)*$/;
+const MAX_HELM_RELEASE_NAME_LENGTH = 53;
 const TRAFFIC_CONTROLLER_DELEGATION = 'Microsoft.ServiceNetworking/trafficControllers';
 const USAGE =
     'Usage: node k8s/scripts/discover-forwarded-headers.js <release> <values-file> <output-json> (from repository root)';
@@ -164,6 +168,37 @@ function discoverKnownNetworks(release, valuesFile) {
     return [...new Set(networks)].sort();
 }
 
+function writeValuesFile(outputFile, values) {
+    const temporaryFile = `${outputFile}.${randomUUID()}.tmp`;
+
+    try {
+        writeFileSync(temporaryFile, `${JSON.stringify(values, null, 2)}\n`, {
+            encoding: 'utf8',
+            flag: 'wx',
+            mode: 0o600
+        });
+        renameSync(temporaryFile, outputFile);
+    } finally {
+        rmSync(temporaryFile, { force: true });
+    }
+}
+
+function pathsReferToSameFile(firstPath, secondPath) {
+    if (resolve(firstPath) === resolve(secondPath)) {
+        return true;
+    }
+
+    try {
+        return realpathSync(firstPath) === realpathSync(secondPath);
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            return false;
+        }
+
+        throw error;
+    }
+}
+
 function main() {
     const [release, valuesFile, outputFile, ...extra] = process.argv.slice(2);
 
@@ -171,12 +206,20 @@ function main() {
         throw new Error(USAGE);
     }
 
+    if (release.length > MAX_HELM_RELEASE_NAME_LENGTH || !HELM_RELEASE_NAME.test(release)) {
+        throw new Error('The Helm release name is invalid');
+    }
+
+    if (pathsReferToSameFile(valuesFile, outputFile)) {
+        throw new Error('The output file must be different from the input values file');
+    }
+
     // A failed refresh must not leave an earlier trust file available for upgrade.
     rmSync(outputFile, { force: true });
 
     const knownNetworks = discoverKnownNetworks(release, valuesFile);
     const values = { forwardedHeaders: { knownNetworks } };
-    writeFileSync(outputFile, `${JSON.stringify(values, null, 2)}\n`, { mode: 0o600 });
+    writeValuesFile(outputFile, values);
     console.log(`Discovered ${knownNetworks.length} gateway subnet prefix(es)`);
 }
 
