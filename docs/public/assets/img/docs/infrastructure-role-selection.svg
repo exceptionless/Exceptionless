@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 470" role="img" aria-labelledby="title desc">
+  <title id="title">Automatic infrastructure role selection priorities</title>
+  <desc id="desc">Cache selects Redis then local. MessageBus selects RabbitMQ, Redis, then local. Queue selects AzureQueues, SQS, Redis, then local. Storage selects AzureStorage, S3, Aliyun, Folder, then local. Redis is never selected for Storage.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+    </marker>
+    <style>
+      .heading { font: 700 25px system-ui, sans-serif; fill: #0f172a; }
+      .role { font: 700 18px system-ui, sans-serif; fill: #ffffff; }
+      .tech { font: 650 16px system-ui, sans-serif; fill: #0f172a; }
+      .small { font: 14px system-ui, sans-serif; fill: #475569; }
+      .row { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 12; }
+      .pill { fill: #eff6ff; stroke: #60a5fa; stroke-width: 1.5; rx: 9; }
+      .fallback { fill: #f1f5f9; stroke: #94a3b8; stroke-width: 1.5; rx: 9; }
+      .arrow { stroke: #64748b; stroke-width: 2; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1200" height="470" fill="#f8fafc" rx="16"/>
+  <text x="40" y="45" class="heading">Automatic role selection uses a fixed, compatible priority</text>
+  <text x="40" y="70" class="small">The first configured technology in each row wins. An explicit nonblank role value bypasses this table.</text>
+
+  <rect x="40" y="95" width="1120" height="65" class="row"/>
+  <rect x="40" y="95" width="180" height="65" fill="#2563eb" rx="12"/>
+  <text x="130" y="135" text-anchor="middle" class="role">Cache</text>
+  <rect x="285" y="108" width="180" height="39" class="pill"/>
+  <text x="375" y="133" text-anchor="middle" class="tech">Redis</text>
+  <line x1="480" y1="127.5" x2="575" y2="127.5" class="arrow"/>
+  <rect x="590" y="108" width="180" height="39" class="fallback"/>
+  <text x="680" y="133" text-anchor="middle" class="tech">local</text>
+
+  <rect x="40" y="175" width="1120" height="65" class="row"/>
+  <rect x="40" y="175" width="180" height="65" fill="#2563eb" rx="12"/>
+  <text x="130" y="215" text-anchor="middle" class="role">MessageBus</text>
+  <rect x="260" y="188" width="180" height="39" class="pill"/>
+  <text x="350" y="213" text-anchor="middle" class="tech">RabbitMQ</text>
+  <line x1="450" y1="207.5" x2="505" y2="207.5" class="arrow"/>
+  <rect x="520" y="188" width="180" height="39" class="pill"/>
+  <text x="610" y="213" text-anchor="middle" class="tech">Redis</text>
+  <line x1="710" y1="207.5" x2="765" y2="207.5" class="arrow"/>
+  <rect x="780" y="188" width="180" height="39" class="fallback"/>
+  <text x="870" y="213" text-anchor="middle" class="tech">local</text>
+
+  <rect x="40" y="255" width="1120" height="65" class="row"/>
+  <rect x="40" y="255" width="180" height="65" fill="#2563eb" rx="12"/>
+  <text x="130" y="295" text-anchor="middle" class="role">Queue</text>
+  <rect x="245" y="268" width="170" height="39" class="pill"/>
+  <text x="330" y="293" text-anchor="middle" class="tech">AzureQueues</text>
+  <line x1="425" y1="287.5" x2="455" y2="287.5" class="arrow"/>
+  <rect x="470" y="268" width="130" height="39" class="pill"/>
+  <text x="535" y="293" text-anchor="middle" class="tech">SQS</text>
+  <line x1="610" y1="287.5" x2="640" y2="287.5" class="arrow"/>
+  <rect x="655" y="268" width="140" height="39" class="pill"/>
+  <text x="725" y="293" text-anchor="middle" class="tech">Redis</text>
+  <line x1="805" y1="287.5" x2="835" y2="287.5" class="arrow"/>
+  <rect x="850" y="268" width="140" height="39" class="fallback"/>
+  <text x="920" y="293" text-anchor="middle" class="tech">local</text>
+
+  <rect x="40" y="335" width="1120" height="65" class="row"/>
+  <rect x="40" y="335" width="180" height="65" fill="#2563eb" rx="12"/>
+  <text x="130" y="375" text-anchor="middle" class="role">Storage</text>
+  <rect x="235" y="348" width="175" height="39" class="pill"/>
+  <text x="322.5" y="373" text-anchor="middle" class="tech">AzureStorage</text>
+  <text x="430" y="373" class="tech">→</text>
+  <rect x="450" y="348" width="115" height="39" class="pill"/>
+  <text x="507.5" y="373" text-anchor="middle" class="tech">S3</text>
+  <text x="585" y="373" class="tech">→</text>
+  <rect x="605" y="348" width="125" height="39" class="pill"/>
+  <text x="667.5" y="373" text-anchor="middle" class="tech">Aliyun</text>
+  <text x="750" y="373" class="tech">→</text>
+  <rect x="770" y="348" width="125" height="39" class="pill"/>
+  <text x="832.5" y="373" text-anchor="middle" class="tech">Folder</text>
+  <text x="915" y="373" class="tech">→</text>
+  <rect x="935" y="348" width="125" height="39" class="fallback"/>
+  <text x="997.5" y="373" text-anchor="middle" class="tech">local</text>
+
+  <rect x="350" y="420" width="500" height="34" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" rx="8"/>
+  <text x="600" y="442" text-anchor="middle" style="font: 700 15px system-ui, sans-serif; fill: #991b1b;">Redis never supplies Storage</text>
+</svg>
