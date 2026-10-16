@@ -83,6 +83,8 @@ public sealed class OrganizationHandlerTests : TestWithServices
         }
 
         organizations.VerifyAll();
+        organizations.Verify(repository => repository.RemoveAsync(It.IsAny<Organization>(), It.IsAny<ICommandOptions>()),
+            membershipCommitted || cleanupReadFails ? Times.Never() : Times.Once());
         users.VerifyAll();
     }
 
