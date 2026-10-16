@@ -16,16 +16,18 @@ namespace Exceptionless.Tests.Security;
 public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
     [Theory]
-    [InlineData("192.0.2.10", "198.51.100.20", "1", "198.51.100.20", "http")]
-    [InlineData("198.51.100.20", "198.51.100.20", "1", "203.0.113.40", "https")]
-    [InlineData("198.51.100.20", "198.51.100.20", "0", "198.51.100.20", "http")]
-    [InlineData("198.51.100.20", "::ffff:198.51.100.20", "1", "203.0.113.40", "https")]
-    [InlineData("2001:db8::20", "2001:db8::20", "1", "203.0.113.40", "https")]
-    public async Task Invoke_ForwardedAddress_RespectsConfiguredPeerAndLimit(string trustedPeer, string remoteAddress, string limit, string expectedAddress, string expectedScheme)
+    [InlineData("192.0.2.10", "198.51.100.20", "1", null, "198.51.100.20", "http")]
+    [InlineData("198.51.100.20", "198.51.100.20", "1", null, "203.0.113.40", "https")]
+    [InlineData("198.51.100.20", "198.51.100.20", "0", null, "198.51.100.20", "http")]
+    [InlineData("198.51.100.20", "::ffff:198.51.100.20", "1", null, "203.0.113.40", "https")]
+    [InlineData("2001:db8::20", "2001:db8::20", "1", null, "203.0.113.40", "https")]
+    [InlineData("198.51.100.20", "198.51.100.20", "1", "false", "198.51.100.20", "http")]
+    public async Task Invoke_ForwardedAddress_RespectsConfiguredPeerAndLimit(string trustedPeer, string remoteAddress, string limit, string? enabled, string expectedAddress, string expectedScheme)
     {
         // Arrange
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
+            ["ForwardedHeaders:Enabled"] = enabled,
             ["ForwardedHeaders:KnownProxies:0"] = trustedPeer,
             ["ForwardedHeaders:ForwardLimit"] = limit
         }).Build();
@@ -164,14 +166,17 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
         Assert.Equal("https", context.Request.Scheme);
     }
 
-    [Fact]
-    public void Configure_PrefixedEnvironmentLists_ReadsNestedPeersAndLimit()
+    [Theory]
+    [InlineData("true", ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto)]
+    [InlineData("false", ForwardedHeaders.None)]
+    public void Configure_PrefixedEnvironmentLists_ReadsNestedSettings(string enabled, ForwardedHeaders expectedHeaders)
     {
         // Arrange
         var provider = new CustomEnvironmentVariablesConfigurationProvider();
         using var configuration = new ConfigurationRoot([provider]);
         provider.Load(new Hashtable
         {
+            ["EX_ForwardedHeaders__Enabled"] = enabled,
             ["EX_ForwardedHeaders__KnownProxies__0"] = "192.0.2.10",
             ["EX_ForwardedHeaders__KnownNetworks__0"] = "2001:db8::/64",
             ["EX_ForwardedHeaders__ForwardLimit"] = "2"
@@ -185,5 +190,6 @@ public sealed class ForwardedHeadersConfigurationTests(ITestOutputHelper output)
         Assert.Contains(IPAddress.Parse("192.0.2.10"), options.KnownProxies);
         Assert.Contains(System.Net.IPNetwork.Parse("2001:db8::/64"), options.KnownIPNetworks);
         Assert.Equal(2, options.ForwardLimit);
+        Assert.Equal(expectedHeaders, options.ForwardedHeaders);
     }
 }

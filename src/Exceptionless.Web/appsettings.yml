@@ -36,6 +36,7 @@ ApiUrl:
 # Reverse proxy trust: see docs/docs/self-hosting/index.md#reverse-proxies-and-https.
 # Configure only verified API-visible peers; loopback is trusted by default.
 ForwardedHeaders:
+  Enabled: true
   ForwardLimit: 1
   KnownProxies: []
   KnownNetworks: []

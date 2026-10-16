@@ -24,6 +24,7 @@ data:
     {{- fail "Do not combine discovered forwardedHeaders.knownNetworks with ForwardedHeaders config overrides; remove the old overrides" }}
     {{- end }}
     {{- end }}
+    EX_ForwardedHeaders__Enabled: "true"
     EX_ForwardedHeaders__ForwardLimit: "1"
     {{- range $index, $network := $knownNetworks }}
     EX_ForwardedHeaders__KnownNetworks__{{ $index }}: {{ $network | quote }}

@@ -34,6 +34,7 @@ Before deploying behind ingress, configure [trusted forwarding peers](/docs/self
 ```yaml
 config:
   EX_ForwardedHeaders__KnownProxies__0: "192.0.2.10"
+  EX_ForwardedHeaders__Enabled: "true"
   EX_ForwardedHeaders__ForwardLimit: "1"
 ```
 
@@ -41,7 +42,7 @@ The repository's ingress templates use Azure Application Gateway for Containers,
 
 The shared `k8s/scripts/discover-forwarded-headers.js` script renders the environment's API ingress locally, reads the selected `ApplicationLoadBalancer` through Kubernetes, and resolves its association subnet IDs through Azure. It requires the existing deployment identity to have Kubernetes read access to that resource and Azure `Microsoft.Network/virtualNetworks/subnets/read` access to its subnets. Missing associations, failed reads, missing `Microsoft.ServiceNetworking/trafficControllers` delegation, invalid prefixes, and unrestricted `/0` prefixes stop deployment.
 
-Discovery writes a `forwardedHeaders.knownNetworks` Helm list. The chart converts it into indexed `EX_ForwardedHeaders__KnownNetworks__*` keys and a forward limit of one for both application hosts. Replacing the list removes obsolete subnet entries even with `--reuse-values`. Combining discovery with manual `ForwardedHeaders` entries in `config` is rejected; remove those old entries from saved release values before using discovery.
+Discovery writes a `forwardedHeaders.knownNetworks` Helm list. The chart converts it into indexed `EX_ForwardedHeaders__KnownNetworks__*` keys, enables forwarding, and sets a forward limit of one for both application hosts. Replacing the list removes obsolete subnet entries even with `--reuse-values`. Combining discovery with manual `ForwardedHeaders` entries in `config` is rejected; remove those old entries from saved release values before using discovery.
 
 For manual upgrades, run discovery from the repository root after selecting the intended Kubernetes context and Azure subscription, then pass the generated file **last** to Helm. For example, the development commands are:
 
