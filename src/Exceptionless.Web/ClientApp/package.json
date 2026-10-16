@@ -12,7 +12,6 @@
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
         "lint": "npm run lint:prettier && npm run lint:eslint",
         "lint:eslint": "eslint . && npm run lint:scripts",
-        "lint:scripts": "npm --prefix ../../.. run lint:scripts --",
         "lint:prettier": "prettier --check .",
         "format": "npm run format:prettier && npm run format:eslint",
         "format:eslint": "eslint . --fix && npm run lint:scripts -- --fix",
@@ -31,7 +30,8 @@
         "build-storybook": "storybook build",
         "update": "ncu -i",
         "update:shadcn": "npx shadcn-svelte@latest update",
-        "update:skills": "npx skills update"
+        "update:skills": "npx skills update",
+        "lint:scripts": "npm --prefix ../../.. run lint:scripts --"
     },
     "devDependencies": {
         "@chromatic-com/storybook": "^5.4.0",

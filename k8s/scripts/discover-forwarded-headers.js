@@ -14,40 +14,64 @@ const TRAFFIC_CONTROLLER_DELEGATION = 'Microsoft.ServiceNetworking/trafficContro
 const USAGE =
     'Usage: node k8s/scripts/discover-forwarded-headers.js <release> <values-file> <output-json> (from repository root)';
 
-function run(command, arguments_) {
-    return execFileSync(command, arguments_, {
-        encoding: 'utf8',
-        timeout: 60_000
-    });
+function discoverKnownNetworks(release, valuesFile) {
+    const manifest = run('helm', [
+        'template',
+        release,
+        'k8s/exceptionless',
+        '--values',
+        valuesFile,
+        '--show-only',
+        'templates/api.yaml'
+    ]);
+    const gatewayName = readIngressAnnotation(manifest, 'alb-name');
+    const gatewayNamespace = readIngressAnnotation(manifest, 'alb-namespace');
+    const subnetIds = readAssociationSubnetIds(gatewayName, gatewayNamespace);
+    const networks = subnetIds.flatMap(subnetId => readSubnetPrefixes(subnetId));
+
+    // A list replaces the previous list on Helm upgrades, including --reuse-values.
+    // Individual config-map keys would retain stale higher-numbered entries.
+    return [...new Set(networks)].sort();
 }
 
-function runJson(command, arguments_, description) {
-    const output = run(command, arguments_);
+function main() {
+    const [release, valuesFile, outputFile, ...extra] = process.argv.slice(2);
+
+    if (!release || !valuesFile || !outputFile || extra.length > 0) {
+        throw new Error(USAGE);
+    }
+
+    if (release.length > MAX_HELM_RELEASE_NAME_LENGTH || !HELM_RELEASE_NAME.test(release)) {
+        throw new Error('The Helm release name is invalid');
+    }
+
+    if (pathsReferToSameFile(valuesFile, outputFile)) {
+        throw new Error('The output file must be different from the input values file');
+    }
+
+    // A failed refresh must not leave an earlier trust file available for upgrade.
+    rmSync(outputFile, { force: true });
+
+    const knownNetworks = discoverKnownNetworks(release, valuesFile);
+    const values = { forwardedHeaders: { knownNetworks } };
+    writeValuesFile(outputFile, values);
+    console.log(`Discovered ${knownNetworks.length} gateway subnet prefix(es)`);
+}
+
+function pathsReferToSameFile(firstPath, secondPath) {
+    if (resolve(firstPath) === resolve(secondPath)) {
+        return true;
+    }
 
     try {
-        return JSON.parse(output);
+        return realpathSync(firstPath) === realpathSync(secondPath);
     } catch (error) {
-        throw new Error(`${description} returned invalid JSON`, { cause: error });
+        if (error.code === 'ENOENT') {
+            return false;
+        }
+
+        throw error;
     }
-}
-
-// Read the chart's rendered annotations so gateway selection cannot drift from ingress.
-function readIngressAnnotation(manifest, annotationName) {
-    const annotationPattern = new RegExp(
-        `^\\s+alb\\.networking\\.azure\\.io/${annotationName}:\\s*([a-z0-9.-]+)\\s*$`,
-        'gm'
-    );
-    const values = [...new Set([...manifest.matchAll(annotationPattern)].map(match => match[1]))];
-
-    if (values.length === 0) {
-        throw new Error(`Rendered API ingress is missing the ${annotationName} annotation`);
-    }
-
-    if (values.length > 1) {
-        throw new Error(`Rendered API ingresses use conflicting ${annotationName} annotations: ${values.join(', ')}`);
-    }
-
-    return values[0];
 }
 
 function readAssociationSubnetIds(gatewayName, gatewayNamespace) {
@@ -76,6 +100,25 @@ function readAssociationSubnetIds(gatewayName, gatewayNamespace) {
     }
 
     return [...new Set(associations)];
+}
+
+// Read the chart's rendered annotations so gateway selection cannot drift from ingress.
+function readIngressAnnotation(manifest, annotationName) {
+    const annotationPattern = new RegExp(
+        `^\\s+alb\\.networking\\.azure\\.io/${annotationName}:\\s*([a-z0-9.-]+)\\s*$`,
+        'gm'
+    );
+    const values = [...new Set([...manifest.matchAll(annotationPattern)].map(match => match[1]))];
+
+    if (values.length === 0) {
+        throw new Error(`Rendered API ingress is missing the ${annotationName} annotation`);
+    }
+
+    if (values.length > 1) {
+        throw new Error(`Rendered API ingresses use conflicting ${annotationName} annotations: ${values.join(', ')}`);
+    }
+
+    return values[0];
 }
 
 function readSubnetPrefixes(subnetId) {
@@ -148,24 +191,21 @@ function readSubnetPrefixes(subnetId) {
     return prefixes;
 }
 
-function discoverKnownNetworks(release, valuesFile) {
-    const manifest = run('helm', [
-        'template',
-        release,
-        'k8s/exceptionless',
-        '--values',
-        valuesFile,
-        '--show-only',
-        'templates/api.yaml'
-    ]);
-    const gatewayName = readIngressAnnotation(manifest, 'alb-name');
-    const gatewayNamespace = readIngressAnnotation(manifest, 'alb-namespace');
-    const subnetIds = readAssociationSubnetIds(gatewayName, gatewayNamespace);
-    const networks = subnetIds.flatMap(subnetId => readSubnetPrefixes(subnetId));
+function run(command, arguments_) {
+    return execFileSync(command, arguments_, {
+        encoding: 'utf8',
+        timeout: 60_000
+    });
+}
 
-    // A list replaces the previous list on Helm upgrades, including --reuse-values.
-    // Individual config-map keys would retain stale higher-numbered entries.
-    return [...new Set(networks)].sort();
+function runJson(command, arguments_, description) {
+    const output = run(command, arguments_);
+
+    try {
+        return JSON.parse(output);
+    } catch (error) {
+        throw new Error(`${description} returned invalid JSON`, { cause: error });
+    }
 }
 
 function writeValuesFile(outputFile, values) {
@@ -181,46 +221,6 @@ function writeValuesFile(outputFile, values) {
     } finally {
         rmSync(temporaryFile, { force: true });
     }
-}
-
-function pathsReferToSameFile(firstPath, secondPath) {
-    if (resolve(firstPath) === resolve(secondPath)) {
-        return true;
-    }
-
-    try {
-        return realpathSync(firstPath) === realpathSync(secondPath);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            return false;
-        }
-
-        throw error;
-    }
-}
-
-function main() {
-    const [release, valuesFile, outputFile, ...extra] = process.argv.slice(2);
-
-    if (!release || !valuesFile || !outputFile || extra.length > 0) {
-        throw new Error(USAGE);
-    }
-
-    if (release.length > MAX_HELM_RELEASE_NAME_LENGTH || !HELM_RELEASE_NAME.test(release)) {
-        throw new Error('The Helm release name is invalid');
-    }
-
-    if (pathsReferToSameFile(valuesFile, outputFile)) {
-        throw new Error('The output file must be different from the input values file');
-    }
-
-    // A failed refresh must not leave an earlier trust file available for upgrade.
-    rmSync(outputFile, { force: true });
-
-    const knownNetworks = discoverKnownNetworks(release, valuesFile);
-    const values = { forwardedHeaders: { knownNetworks } };
-    writeValuesFile(outputFile, values);
-    console.log(`Discovered ${knownNetworks.length} gateway subnet prefix(es)`);
 }
 
 const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

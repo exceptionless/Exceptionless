@@ -4,7 +4,7 @@ The normal build targets a roughly **10-minute critical path**. Track elapsed wo
 
 ## Execution
 
-- Run `npm run lint:scripts` from the repository root after installing ClientApp dependencies. The existing ClientApp lint command also checks `tests/ci` and `k8s/scripts` for required braces, multiline blocks, and a blank line after blocks.
+- Run `npm run lint:scripts` from the repository root after installing ClientApp dependencies. This reuses the ClientApp ESLint configuration and runs as part of its existing lint command.
 - `.NET`: four isolated runners build the suite and discover tests through Microsoft Testing Platform's JSON discovery. `backend-shards.js` groups whole classes, then distributes the longest classes first using `backend-durations.json`. New classes are included automatically; stale timing entries cannot select or exclude tests. Each runner retains the existing six collection workers and coverage collection.
 - CI tooling uses the project's Node.js runtime (Node 24 in CI) and built-in modules, with no additional packages. Backend summaries read xUnit's native CTRF JSON output; TRX reports remain available as artifacts.
 - Browser: six isolated Aspire applications run Playwright's native `--shard=N/6` with `fullyParallel` enabled for sharding. Each runner uses **one worker** because scenarios can change the shared administrator's preferences. This splits large spec files without introducing concurrent mutations of that user. Shard IDs are included in generated data names.

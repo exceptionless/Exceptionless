@@ -1,7 +1,7 @@
 // Run complete xUnit classes on balanced shards, using discovery as the source of truth.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual, parseArgs } from 'node:util';
@@ -45,105 +45,11 @@ export function readResults(path) {
             throw new Error(`Invalid xUnit CTRF test result in ${path}`);
         }
 
-        return { class: test.extra.type, name: test.name, seconds: test.duration / 1000, outcome: test.status };
+        return { class: test.extra.type, name: test.name, outcome: test.status, seconds: test.duration / 1000 };
     });
 }
 
-export function summarize(results) {
-    const durations = new Map();
-    for (const result of results) {
-        durations.set(result.class, (durations.get(result.class) ?? 0) + result.seconds);
-    }
-
-    return Object.fromEntries([...durations.keys()].sort().map((name) => [name, Number(durations.get(name).toFixed(3))]));
-}
-
-function run(args) {
-    const assembly = resolve(args.assembly ?? join(root, 'tests/Exceptionless.Tests/bin/Release/net10.0/Exceptionless.Tests.dll'));
-    const discovered = JSON.parse(
-        execFileSync('dotnet', [assembly, '--list-tests', 'json', '--no-ansi'], {
-            encoding: 'utf8',
-            maxBuffer: 64 * 1024 * 1024
-        })
-    );
-    if (discovered.schemaVersion !== 1) {
-        throw new Error('Unsupported Microsoft Testing Platform discovery schema');
-    }
-
-    const classes = [...new Set(discovered.tests.map((test) => `${test.type.namespace}.${test.type.typeName}`))].sort();
-    const count = Number(args.count);
-    const index = Number(args.index);
-    const shards = partition(classes, readJson(timingsPath), count);
-    if (!Number.isInteger(index) || index < 1 || index > count) {
-        throw new Error('Shard index must be between 1 and shard count');
-    }
-
-    if (!args.output) {
-        throw new Error('The run command requires --output');
-    }
-
-    const selected = shards[index - 1];
-    const output = resolve(args.output);
-    mkdirSync(output, { recursive: true });
-    const manifest = {
-        index,
-        count,
-        discovery_hash: createHash('sha256').update(classes.join('\n')).digest('hex'),
-        discovered_count: classes.length,
-        classes: selected
-    };
-    writeFileSync(join(output, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-    console.log(`Shard ${index}/${count}: ${selected.length} of ${classes.length} classes`);
-    const command = [
-        assembly,
-        '--results-directory',
-        output,
-        '--report-xunit-trx',
-        '--report-xunit-trx-filename',
-        'test-results.trx',
-        '--report-xunit-ctrf',
-        '--report-xunit-ctrf-filename',
-        'test-results.json',
-        '--minimum-expected-tests',
-        '1',
-        '--filter-class',
-        ...selected
-    ];
-    if (args.coverage) {
-        command.push(
-            '--coverage',
-            '--coverage-settings',
-            join(root, 'tests/CodeCoverage.config'),
-            '--coverage-output',
-            'coverage.cobertura.xml',
-            '--coverage-output-format',
-            'cobertura'
-        );
-    }
-
-    if (process.env.GITHUB_ACTIONS) {
-        command.push('--report-github');
-    }
-
-    const result = spawnSync('dotnet', command, {
-        stdio: 'inherit',
-        env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development' }
-    });
-    if (result.error) {
-        throw result.error;
-    }
-
-    return result.status ?? 1;
-}
-
-function findFiles(directory, name) {
-    return readdirSync(directory, { recursive: true, withFileTypes: true })
-        .filter((entry) => entry.isFile() && entry.name === name)
-        .map((entry) => join(entry.parentPath, entry.name))
-        .sort();
-}
-
-export function report({ directory, count, coverage }) {
+export function report({ count, coverage, directory }) {
     const reports = findFiles(directory, 'test-results.json').map((path) => ({ path, results: readResults(path) }));
     if (count !== undefined) {
         const manifests = findFiles(directory, 'manifest.json').map(readJson);
@@ -212,20 +118,36 @@ export function report({ directory, count, coverage }) {
 
     return {
         durations,
-        summary: lines.join('\n') + '\n',
-        exitCode: Number(results.some((result) => !['passed', 'skipped'].includes(result.outcome)))
+        exitCode: Number(results.some((result) => !['passed', 'skipped'].includes(result.outcome))),
+        summary: lines.join('\n') + '\n'
     };
 }
 
+export function summarize(results) {
+    const durations = new Map();
+    for (const result of results) {
+        durations.set(result.class, (durations.get(result.class) ?? 0) + result.seconds);
+    }
+
+    return Object.fromEntries([...durations.keys()].sort().map((name) => [name, Number(durations.get(name).toFixed(3))]));
+}
+
+function findFiles(directory, name) {
+    return readdirSync(directory, { recursive: true, withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name === name)
+        .map((entry) => join(entry.parentPath, entry.name))
+        .sort();
+}
+
 function main() {
-    const { values, positionals } = parseArgs({
+    const { positionals, values } = parseArgs({
         allowPositionals: true,
         options: {
             assembly: { type: 'string' },
-            index: { type: 'string' },
             count: { type: 'string' },
-            output: { type: 'string' },
             coverage: { type: 'boolean' },
+            index: { type: 'string' },
+            output: { type: 'string' },
             'write-timings': { type: 'string' }
         }
     });
@@ -239,7 +161,7 @@ function main() {
         );
     }
 
-    const result = report({ directory: positionals[1], count: values.count === undefined ? undefined : Number(values.count), coverage: values.coverage });
+    const result = report({ count: values.count === undefined ? undefined : Number(values.count), coverage: values.coverage, directory: positionals[1] });
     if (values['write-timings']) {
         writeFileSync(values['write-timings'], JSON.stringify(result.durations, null, 2) + '\n');
     }
@@ -250,6 +172,84 @@ function main() {
     }
 
     return result.exitCode;
+}
+
+function run(args) {
+    const assembly = resolve(args.assembly ?? join(root, 'tests/Exceptionless.Tests/bin/Release/net10.0/Exceptionless.Tests.dll'));
+    const discovered = JSON.parse(
+        execFileSync('dotnet', [assembly, '--list-tests', 'json', '--no-ansi'], {
+            encoding: 'utf8',
+            maxBuffer: 64 * 1024 * 1024
+        })
+    );
+    if (discovered.schemaVersion !== 1) {
+        throw new Error('Unsupported Microsoft Testing Platform discovery schema');
+    }
+
+    const classes = [...new Set(discovered.tests.map((test) => `${test.type.namespace}.${test.type.typeName}`))].sort();
+    const count = Number(args.count);
+    const index = Number(args.index);
+    const shards = partition(classes, readJson(timingsPath), count);
+    if (!Number.isInteger(index) || index < 1 || index > count) {
+        throw new Error('Shard index must be between 1 and shard count');
+    }
+
+    if (!args.output) {
+        throw new Error('The run command requires --output');
+    }
+
+    const selected = shards[index - 1];
+    const output = resolve(args.output);
+    mkdirSync(output, { recursive: true });
+    const manifest = {
+        classes: selected,
+        count,
+        discovered_count: classes.length,
+        discovery_hash: createHash('sha256').update(classes.join('\n')).digest('hex'),
+        index
+    };
+    writeFileSync(join(output, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+    console.log(`Shard ${index}/${count}: ${selected.length} of ${classes.length} classes`);
+    const command = [
+        assembly,
+        '--results-directory',
+        output,
+        '--report-xunit-trx',
+        '--report-xunit-trx-filename',
+        'test-results.trx',
+        '--report-xunit-ctrf',
+        '--report-xunit-ctrf-filename',
+        'test-results.json',
+        '--minimum-expected-tests',
+        '1',
+        '--filter-class',
+        ...selected
+    ];
+    if (args.coverage) {
+        command.push(
+            '--coverage',
+            '--coverage-settings',
+            join(root, 'tests/CodeCoverage.config'),
+            '--coverage-output',
+            'coverage.cobertura.xml',
+            '--coverage-output-format',
+            'cobertura'
+        );
+    }
+
+    if (process.env.GITHUB_ACTIONS) {
+        command.push('--report-github');
+    }
+
+    const result = spawnSync('dotnet', command, {
+        env: { ...process.env, ASPNETCORE_ENVIRONMENT: 'Development' },
+        stdio: 'inherit'
+    });
+    if (result.error) {
+        throw result.error;
+    }
+
+    return result.status ?? 1;
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
