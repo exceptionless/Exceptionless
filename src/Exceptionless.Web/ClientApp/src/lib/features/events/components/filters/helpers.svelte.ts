@@ -1,10 +1,11 @@
-import type { IFilter } from '$comp/faceted-filter';
-import type { PersistentEventKnownTypes } from '$features/events/models';
-import type { LogLevel } from '$features/events/models/event-data';
-import type { StackStatus } from '$features/stacks/models';
-
-import { organization } from '$features/organizations/context.svelte';
 import { SvelteMap } from 'svelte/reactivity';
+
+import type { IFilter } from '#comp/faceted-filter/index.ts';
+import type { LogLevel } from '#features/events/models/event-data.ts';
+import type { PersistentEventKnownTypes } from '#features/events/models/index.ts';
+import type { StackStatus } from '#features/stacks/models.ts';
+
+import { organization } from '#features/organizations/context.svelte.ts';
 
 import {
     BooleanFilter,

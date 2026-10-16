@@ -1,12 +1,13 @@
-import type { WebSocketMessageValue } from '$features/websockets/models';
-import type { CountResult, WorkInProgressResult } from '$shared/models';
-
-import { accessToken } from '$features/auth/index.svelte';
-import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
-import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 import { SvelteSet } from 'svelte/reactivity';
+
+import type { WebSocketMessageValue } from '#features/websockets/models.ts';
+import type { CountResult, WorkInProgressResult } from '#shared/models/index.ts';
+
+import { accessToken } from '#features/auth/index.svelte.ts';
+import { queryKeys as stackQueryKeys } from '#features/stacks/api.svelte.ts';
+import { DEFAULT_OFFSET } from '#shared/api/api.svelte.ts';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
 import type { PersistentEvent } from './models';
@@ -423,6 +424,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
     const queryClient = useQueryClient();
 
     return createQuery<CountResult, ProblemDetails>(() => {
+        const requestEnabled = request.enabled?.() ?? true;
         const organizationId = request.route.organizationId;
         const params = request.params
             ? {
@@ -431,7 +433,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
             : undefined;
 
         return {
-            enabled: () => !!accessToken.current && !!organizationId && (request.enabled?.() ?? true),
+            enabled: () => !!accessToken.current && !!organizationId && requestEnabled,
             queryClient,
             queryFn: async () => {
                 const client = useFetchClient();
@@ -486,27 +488,31 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
 export function getOrganizationSessionsCountQuery(request: GetOrganizationSessionsCountRequest) {
     const queryClient = useQueryClient();
 
-    return createQuery<CountResult, ProblemDetails>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.organizationId && (request.enabled?.() ?? true),
-        queryClient,
-        queryFn: async () => {
-            const client = useFetchClient();
-            const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
-                params: {
-                    ...(DEFAULT_OFFSET
-                        ? {
-                              offset: DEFAULT_OFFSET
-                          }
-                        : {}),
-                    ...request.params
-                }
-            });
+    return createQuery<CountResult, ProblemDetails>(() => {
+        const requestEnabled = request.enabled?.() ?? true;
 
-            return response.data!;
-        },
-        queryKey: queryKeys.sessionsCount(request.route.organizationId, request.params),
-        staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
-    }));
+        return {
+            enabled: () => !!accessToken.current && !!request.route.organizationId && requestEnabled,
+            queryClient,
+            queryFn: async () => {
+                const client = useFetchClient();
+                const response = await client.getJSON<CountResult>(`/organizations/${request.route.organizationId}/events/count`, {
+                    params: {
+                        ...(DEFAULT_OFFSET
+                            ? {
+                                  offset: DEFAULT_OFFSET
+                              }
+                            : {}),
+                        ...request.params
+                    }
+                });
+
+                return response.data!;
+            },
+            queryKey: queryKeys.sessionsCount(request.route.organizationId, request.params),
+            staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
+        };
+    });
 }
 
 export function getOrganizationSessionsQuery(request: GetOrganizationSessionsRequest) {

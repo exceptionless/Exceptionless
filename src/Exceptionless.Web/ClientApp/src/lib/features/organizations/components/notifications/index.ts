@@ -7,7 +7,7 @@ import RequestLimitNotification from './request-limit-notification.svelte';
 import SetupFirstProjectNotification from './setup-first-project-notification.svelte';
 import SuspendedOrganizationNotification from './suspended-organization-notification.svelte';
 
-export type { NotificationProps } from '$comp/notification';
+export type { NotificationProps } from '#comp/notification/index.ts';
 
 export {
     FreePlanNotification,

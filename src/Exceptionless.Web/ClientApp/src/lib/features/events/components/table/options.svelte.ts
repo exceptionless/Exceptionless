@@ -1,10 +1,11 @@
-import type { StackStatus } from '$features/stacks/models';
-
-import NumberFormatter from '$comp/formatters/number.svelte';
-import TimeAgo from '$comp/formatters/time-ago.svelte';
-import { Checkbox } from '$comp/ui/checkbox';
-import { nameof } from '$lib/utils';
 import { type ColumnDef, type ColumnVisibilityState, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { StackStatus } from '#features/stacks/models.ts';
+
+import NumberFormatter from '#comp/formatters/number.svelte';
+import TimeAgo from '#comp/formatters/time-ago.svelte';
+import { Checkbox } from '#comp/ui/checkbox/index.ts';
+import { nameof } from '#lib/utils.ts';
 
 import type { GetEventsMode } from '../../api.svelte';
 import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '../summary/index';

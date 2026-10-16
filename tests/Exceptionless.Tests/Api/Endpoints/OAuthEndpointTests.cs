@@ -15,6 +15,7 @@ using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models.Admin;
 using Exceptionless.Web.Models.OAuth;
 using FluentRest;
+using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
 using Microsoft.AspNetCore.Hosting;
@@ -1790,6 +1791,83 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
             .AppendPath("projects")
             .StatusCodeShouldBeUnauthorized()
         );
+    }
+
+    [Fact]
+    public async Task TokenAsync_AuthorizationCodeCache_KeepsExistingKeyFormat()
+    {
+        // Arrange
+        string code = await CreateAuthorizationCodeAsync(PkceVerifier);
+        string cacheKey = $"oauth:code:{code}";
+        var cache = GetService<ICacheClient>();
+        Assert.True((await cache.GetAsync<OAuthAuthorizationCode>(cacheKey)).HasValue);
+        using var client = CreateHttpClient();
+        using var exchangeContent = CreateTokenExchangeContent(code, PkceVerifier);
+
+        // Act
+        using var response = await client.PostAsync("oauth/token", exchangeContent, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.False((await cache.GetAsync<OAuthAuthorizationCode>(cacheKey)).HasValue);
+    }
+
+    [Fact]
+    public async Task TokenAsync_ConcurrentAuthorizationCodeUse_OnlyOneSucceeds()
+    {
+        // Arrange
+        string code = await CreateAuthorizationCodeAsync(PkceVerifier);
+        using var client = CreateHttpClient();
+        using var firstExchangeContent = CreateTokenExchangeContent(code, PkceVerifier);
+        using var secondExchangeContent = CreateTokenExchangeContent(code, PkceVerifier);
+
+        // Act
+        var responses = await Task.WhenAll(
+            client.PostAsync("oauth/token", firstExchangeContent, TestCancellationToken),
+            client.PostAsync("oauth/token", secondExchangeContent, TestCancellationToken));
+
+        // Assert
+        Assert.Equal(1, responses.Count(r => r.StatusCode == HttpStatusCode.OK));
+        Assert.Equal(1, responses.Count(r => r.StatusCode == HttpStatusCode.BadRequest));
+        var failedResponse = responses.Single(r => r.StatusCode == HttpStatusCode.BadRequest);
+        var error = await failedResponse.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_grant", error.Error);
+    }
+
+    [Fact]
+    public async Task TokenAsync_AccountGenerationChanged_RejectsExistingCodesAndRefreshTokens()
+    {
+        // Arrange
+        var issued = await IssueTokenAsync(resource: RestApiResource, scope: $"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}");
+        string code = await CreateAuthorizationCodeAsync(PkceVerifier);
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.AuthenticationVersion = StringExtensions.GetNewToken();
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+        using var client = CreateHttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "projects");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", issued.AccessToken);
+        using var exchange = CreateTokenExchangeContent(code, PkceVerifier);
+        using var refresh = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = OAuthGrantTypes.RefreshToken,
+            ["client_id"] = ClientId,
+            ["refresh_token"] = issued.RefreshToken!
+        });
+
+        // Act
+        using var accessResponse = await client.SendAsync(request, TestCancellationToken);
+        using var codeResponse = await client.PostAsync("oauth/token", exchange, TestCancellationToken);
+        using var refreshResponse = await client.PostAsync("oauth/token", refresh, TestCancellationToken);
+        var stored = await GetStoredOAuthTokenAsync(issued.AccessToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, accessResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, codeResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, refreshResponse.StatusCode);
+        Assert.NotNull(stored);
+        Assert.True(stored.IsDisabled);
     }
 
     private async Task RemoveTestUserFromOrganizationAsync(string organizationId)

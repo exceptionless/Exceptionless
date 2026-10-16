@@ -1,12 +1,13 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
-    import type { BillingPlan } from '$lib/generated/api';
-
-    import { Button } from '$comp/ui/button';
-    import { accessToken } from '$features/auth/index.svelte';
-    import { queryKeys } from '$features/organizations/api.svelte';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { untrack } from 'svelte';
+
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+    import type { BillingPlan } from '#lib/generated/api.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import { accessToken } from '#features/auth/index.svelte.ts';
+    import { queryKeys } from '#features/organizations/api.svelte.ts';
 
     import ChangePlanDialog from './change-plan-dialog.svelte';
 

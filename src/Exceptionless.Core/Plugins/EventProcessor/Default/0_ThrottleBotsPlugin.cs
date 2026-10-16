@@ -33,19 +33,25 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
         if (_options.AppMode == AppMode.Development)
             return;
 
-        var firstContext = contexts.First();
-        if (!firstContext.Project.DeleteBotDataEnabled || !firstContext.IncludePrivateInformation)
-            return;
-
-        // Throttle errors by client ip address to no more than X every 5 minutes.
-        var clientIpAddressGroups = contexts.GroupBy(c => c.Event.GetRequestInfo(_serializer, _logger)?.ClientIpAddress);
+        // Keep each project's client IP counters and cleanup tasks isolated.
+        var clientIpAddressGroups = contexts
+            .Where(c => c.Project.DeleteBotDataEnabled && c.IncludePrivateInformation)
+            .GroupBy(c => new
+            {
+                c.Event.OrganizationId,
+                c.Event.ProjectId,
+                ClientIpAddress = c.Event.GetRequestInfo(_serializer, _logger)?.ClientIpAddress
+            });
         foreach (var clientIpAddressGroup in clientIpAddressGroups)
         {
-            if (String.IsNullOrEmpty(clientIpAddressGroup.Key) || clientIpAddressGroup.Key.IsPrivateNetwork())
+            var scope = clientIpAddressGroup.Key;
+            if (String.IsNullOrEmpty(scope.ClientIpAddress) || scope.ClientIpAddress.IsPrivateNetwork())
+            {
                 continue;
+            }
 
             var clientIpContexts = clientIpAddressGroup.ToList();
-            string throttleCacheKey = String.Concat("bot:", clientIpAddressGroup.Key, ":", _timeProvider.GetUtcNow().UtcDateTime.Floor(_throttlingPeriod).Ticks);
+            string throttleCacheKey = CacheKey(scope.OrganizationId, scope.ProjectId, scope.ClientIpAddress, _timeProvider.GetUtcNow().UtcDateTime.Floor(_throttlingPeriod).Ticks);
             int? requestCount = await _cache.GetAsync<int?>(throttleCacheKey, null);
             if (requestCount.HasValue)
             {
@@ -61,17 +67,17 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
             if (requestCount < _options.BotThrottleLimit)
                 continue;
 
-            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-            _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Project: {ProjectId}", clientIpAddressGroup.Key, utcNow.Floor(_throttlingPeriod), firstContext.Event.ProjectId);
+            var nowUtc = _timeProvider.GetUtcNow().UtcDateTime;
+            _logger.LogInformation("Bot throttle triggered. IP: {IP} Time: {ThrottlingPeriod} Organization: {OrganizationId} Project: {ProjectId}", scope.ClientIpAddress, nowUtc.Floor(_throttlingPeriod), scope.OrganizationId, scope.ProjectId);
 
             // The throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
             await _workItemQueue.EnqueueAsync(new RemoveBotEventsWorkItem
             {
-                OrganizationId = firstContext.Event.OrganizationId,
-                ProjectId = firstContext.Event.ProjectId,
-                ClientIpAddress = clientIpAddressGroup.Key,
-                UtcStartDate = utcNow.Floor(_throttlingPeriod),
-                UtcEndDate = utcNow.Ceiling(_throttlingPeriod)
+                OrganizationId = scope.OrganizationId,
+                ProjectId = scope.ProjectId,
+                ClientIpAddress = scope.ClientIpAddress,
+                UtcStartDate = nowUtc.Floor(_throttlingPeriod),
+                UtcEndDate = nowUtc.Ceiling(_throttlingPeriod)
             });
 
             clientIpContexts.ForEach(c =>
@@ -81,4 +87,7 @@ public sealed class ThrottleBotsPlugin : EventProcessorPluginBase
             });
         }
     }
+
+    private static string CacheKey(string organizationId, string projectId, string clientIpAddress, long period) =>
+        String.Concat("Organization:", organizationId, ":Project:", projectId, ":bot:", period, ":", clientIpAddress);
 }

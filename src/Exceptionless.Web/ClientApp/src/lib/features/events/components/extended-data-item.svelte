@@ -1,16 +1,17 @@
 <script lang="ts">
-    import ObjectDump from '$comp/object-dump.svelte';
-    import { Code, CodeBlock, H4 } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { isJSONString, isObject, isString, isXmlString } from '$features/shared/typing';
-    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import ArrowDown from '@lucide/svelte/icons/arrow-down';
     import ArrowUp from '@lucide/svelte/icons/arrow-up';
     import Copy from '@lucide/svelte/icons/copy';
     import MoreVertical from '@lucide/svelte/icons/more-vertical';
     import ToggleLeft from '@lucide/svelte/icons/toggle-left';
     import { toast } from 'svelte-sonner';
+
+    import ObjectDump from '#comp/object-dump.svelte';
+    import { Code, CodeBlock, H4 } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { isJSONString, isObject, isString, isXmlString } from '#features/shared/typing.ts';
+    import { UseClipboard } from '#lib/hooks/use-clipboard.svelte.ts';
 
     interface Props {
         canPromote?: boolean;

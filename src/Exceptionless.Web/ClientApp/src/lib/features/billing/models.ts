@@ -2,7 +2,7 @@
  * Billing models - re-exports from generated types plus billing-specific types.
  */
 
-export type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '$lib/generated/api';
+export type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '#lib/generated/api.ts';
 
 /**
  * Card mode for the payment form.

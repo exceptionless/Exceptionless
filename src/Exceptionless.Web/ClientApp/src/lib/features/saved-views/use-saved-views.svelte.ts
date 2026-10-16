@@ -1,19 +1,24 @@
-import type { IFilter } from '$comp/faceted-filter';
+import type { ReadonlyURL } from '$app/state';
 import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from '@tanstack/svelte-table';
 
-import { afterNavigate, goto, replaceState } from '$app/navigation';
+import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 import { page } from '$app/state';
+import { tick, untrack } from 'svelte';
+import { SvelteSet, SvelteURL } from 'svelte/reactivity';
+
+import type { IFilter } from '#comp/faceted-filter/index.ts';
+
 import {
     applyTimeFilter,
     buildFilterCacheKey,
     deserializeFilters,
     getFiltersFromCache,
     serializeFilters
-} from '$features/events/components/filters/helpers.svelte';
-import { organization } from '$features/organizations/context.svelte';
-import { getMeQuery } from '$features/users/api.svelte';
-import { tick, untrack } from 'svelte';
-import { SvelteSet, SvelteURL } from 'svelte/reactivity';
+} from '#features/events/components/filters/helpers.svelte.ts';
+import { getVisibleUrl } from '#features/navigation/visible-url.ts';
+import { organization } from '#features/organizations/context.svelte.ts';
+import { updateShallowHistory } from '#features/shared/history-state.ts';
+import { getMeQuery } from '#features/users/api.svelte.ts';
 
 import type { AutoFillColumnSelection, WrappedColumnIds } from './column-settings';
 import type { SavedView } from './models';
@@ -144,11 +149,6 @@ type SavedViewDraftFilterPageState = App.PageState & {
     [savedViewDraftFilterHistoryStateKey]?: SavedViewDraftFilterHistoryEntry;
 };
 
-type SvelteKitSavedViewDraftFilterHistoryState = {
-    'sveltekit:history'?: number;
-    'sveltekit:states'?: SavedViewDraftFilterPageState;
-};
-
 const SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS: readonly string[] = [
     'boolean-bot',
     'boolean-first',
@@ -163,7 +163,6 @@ const SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS: readonly string[] = [
     'version-version'
 ];
 const savedViewDraftFilterHistoryStateKey = '__exceptionlessSavedViewDraftFilter';
-const savedViewDraftFilterStoragePrefix = 'exceptionless:saved-view-filter-history:';
 
 export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
     queryParams.filter = null;
@@ -332,7 +331,7 @@ const SAVED_VIEW_OVERRIDE_QUERY_PARAMETERS = [
     'version'
 ] as const;
 
-export function getSavedViewOverrideSignature(url: URL): string {
+export function getSavedViewOverrideSignature(url: ReadonlyURL): string {
     return JSON.stringify(SAVED_VIEW_OVERRIDE_QUERY_PARAMETERS.map((parameter) => [parameter, url.searchParams.getAll(parameter)]));
 }
 
@@ -522,53 +521,10 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         return getSavedViewDraftIdentity(view, currentUserQuery.data?.id);
     }
 
-    function getCurrentPageState(): SavedViewDraftFilterPageState {
-        const historyState = window.history.state as null | SvelteKitSavedViewDraftFilterHistoryState;
-        return historyState?.['sveltekit:states'] ?? (page.state as SavedViewDraftFilterPageState);
-    }
-
-    function getCurrentHistoryEntryId(): number | undefined {
-        return (window.history.state as null | SvelteKitSavedViewDraftFilterHistoryState)?.['sveltekit:history'];
-    }
-
-    function getStoredDraftFilterHistoryEntry(): SavedViewDraftFilterHistoryEntry | undefined {
-        const historyEntryId = getCurrentHistoryEntryId();
-        if (historyEntryId === undefined) {
-            return undefined;
-        }
-
-        try {
-            return JSON.parse(sessionStorage.getItem(`${savedViewDraftFilterStoragePrefix}${historyEntryId}`) ?? 'null') as
-                SavedViewDraftFilterHistoryEntry | undefined;
-        } catch {
-            return undefined;
-        }
-    }
-
-    function storeDraftFilterHistoryEntry(entry: SavedViewDraftFilterHistoryEntry | undefined): void {
-        const historyEntryId = getCurrentHistoryEntryId();
-        if (historyEntryId === undefined) {
-            return;
-        }
-
-        try {
-            const key = `${savedViewDraftFilterStoragePrefix}${historyEntryId}`;
-            if (entry) {
-                sessionStorage.setItem(key, JSON.stringify(entry));
-            } else {
-                sessionStorage.removeItem(key);
-            }
-        } catch {
-            // Storage can be unavailable by browser policy; page-state provenance still works until reload.
-        }
-    }
-
-    function isDraftGeneratedFilter(viewId: string, url: URL = page.url, state: App.PageState = getCurrentPageState()): boolean {
+    function isDraftGeneratedFilter(viewId: string, url: ReadonlyURL = page.url, state: App.PageState = page.state): boolean {
+        // Shallow history writes persist page state, so the marker survives a reload with its entry.
         const entry = (state as SavedViewDraftFilterPageState)[savedViewDraftFilterHistoryStateKey];
-        const filter = url.searchParams.get('filter');
-        return (
-            isSavedViewDraftFilterHistoryEntry(entry, viewId, filter) || isSavedViewDraftFilterHistoryEntry(getStoredDraftFilterHistoryEntry(), viewId, filter)
-        );
+        return isSavedViewDraftFilterHistoryEntry(entry, viewId, url.searchParams.get('filter'));
     }
 
     async function updateDraftFilterHistoryState(viewId: string, isDraftGenerated: boolean, generation: number): Promise<void> {
@@ -580,20 +536,23 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             return;
         }
 
-        const state = {
-            ...getCurrentPageState()
-        };
-        const filter = new SvelteURL(window.location.href).searchParams.get('filter');
-        const entry = createSavedViewDraftFilterHistoryEntry(viewId, filter, isDraftGenerated);
-        if (entry) {
-            state[savedViewDraftFilterHistoryStateKey] = entry;
-            storeDraftFilterHistoryEntry(entry);
-        } else {
-            delete state[savedViewDraftFilterHistoryStateKey];
-            storeDraftFilterHistoryEntry(undefined);
-        }
+        await updateShallowHistory({
+            replace: true,
+            state: (currentState) => {
+                const state = {
+                    ...currentState
+                } as SavedViewDraftFilterPageState;
+                const filter = new SvelteURL(window.location.href).searchParams.get('filter');
+                const entry = createSavedViewDraftFilterHistoryEntry(viewId, filter, isDraftGenerated);
+                if (entry) {
+                    state[savedViewDraftFilterHistoryStateKey] = entry;
+                } else {
+                    delete state[savedViewDraftFilterHistoryStateKey];
+                }
 
-        replaceState('', state);
+                return state;
+            }
+        });
     }
 
     function getServerFilters(view: SavedView): IFilter[] {
@@ -610,7 +569,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         serverFilters: IFilter[],
         currentFilters: IFilter[],
         draft: SavedViewDraft | undefined,
-        url: URL = page.url,
+        url: ReadonlyURL = page.url,
         draftGeneratedFilter = false
     ): string[] {
         const keys: string[] = [];
@@ -838,7 +797,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
             draftGeneratedFilter: isDraftGeneratedFilter(viewId),
             filterDefinitions: options.getFilterDefinitions?.() ?? '[]',
             sort: options.getSort?.() ?? options.queryParams.sort ?? null,
-            url: new SvelteURL(page.url),
+            url: new SvelteURL(page.url.href),
             viewId
         };
     }
@@ -1020,7 +979,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         const pendingOverrideKeys = draftGeneratedFilter ? [] : getChangedFilterKeys(initialFilters, currentFilters);
         const overrideKeys = [...new SvelteSet([...initialOverrideKeys, ...pendingOverrideKeys])];
         activeFilterOverrideBaselines = buildFilterOverrideBaselines(initialFilters, initialOverrideKeys);
-        activeSortOverride = (matchingInitialState?.url ?? page.url).searchParams.has('sort')
+        activeSortOverride = initialUrl.searchParams.has('sort')
             ? {
                   value: matchingInitialState?.sort ?? options.getSort?.() ?? options.queryParams.sort ?? null
               }
@@ -1233,16 +1192,33 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         draftHydrationGeneration++;
     }
 
-    afterNavigate(({ from, to }) => {
-        if (!from?.url || !to?.url || from.url.pathname !== to.url.pathname) {
+    // SvelteKit reports the rendered page's URL as `from`, but shallow writes such as applied
+    // draft overrides may have changed the URL the user saw, so compare against that instead.
+    let visibleUrlBeforeNavigation: ReadonlyURL | undefined;
+    beforeNavigate(({ shallow, type }) => {
+        if (shallow && type === 'goto') {
             return;
         }
 
-        if (supportsSaved && from.url.searchParams.get('saved') !== to.url.searchParams.get('saved')) {
+        visibleUrlBeforeNavigation = getVisibleUrl();
+    });
+
+    afterNavigate(({ from, shallow, to, type }) => {
+        if (shallow && type === 'goto') {
             return;
         }
 
-        if (getSavedViewOverrideSignature(from.url) !== getSavedViewOverrideSignature(to.url)) {
+        const fromUrl = visibleUrlBeforeNavigation ?? from?.url;
+        visibleUrlBeforeNavigation = undefined;
+        if (!fromUrl || !to?.url || fromUrl.pathname !== to.url.pathname) {
+            return;
+        }
+
+        if (supportsSaved && fromUrl.searchParams.get('saved') !== to.url.searchParams.get('saved')) {
+            return;
+        }
+
+        if (getSavedViewOverrideSignature(fromUrl) !== getSavedViewOverrideSignature(to.url)) {
             rehydrateQueryOverrides();
         }
     });

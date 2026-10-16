@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
+    import { Button } from '#comp/ui/button/index.ts';
 
     interface Props {
         changed?: (environment: string) => Promise<void> | void;

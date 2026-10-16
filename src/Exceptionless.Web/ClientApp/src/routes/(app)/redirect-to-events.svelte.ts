@@ -1,9 +1,10 @@
-import type { IFilter } from '$comp/faceted-filter';
-
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
-import { toFilter } from '$features/events/components/filters/helpers.svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
+
+import type { IFilter } from '#comp/faceted-filter/index.ts';
+
+import { toFilter } from '#features/events/components/filters/helpers.svelte.ts';
 
 interface ListNavigationOptions {
     time?: null | string;

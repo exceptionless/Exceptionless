@@ -1,7 +1,7 @@
-import type { PersistentEvent } from '$features/events/models';
-import type { Stack } from '$features/stacks/models';
-
 import { describe, expect, it } from 'vitest';
+
+import type { PersistentEvent } from '#features/events/models/index.ts';
+import type { Stack } from '#features/stacks/models.ts';
 
 import { assistantPageContext } from './page-context.svelte';
 

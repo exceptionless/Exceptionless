@@ -1,12 +1,13 @@
 <script lang="ts">
-    import type { FacetedFilterProps } from '$comp/faceted-filter';
-
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import { type FilterScope, filterScopeKey } from '$comp/faceted-filter/filter-scope';
-    import { getOrganizationCountQuery } from '$features/events/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { terms } from '$features/shared/api/aggregations';
     import { getContext } from 'svelte';
+
+    import type { FacetedFilterProps } from '#comp/faceted-filter/index.ts';
+
+    import { type FilterScope, filterScopeKey } from '#comp/faceted-filter/filter-scope.ts';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import { getOrganizationCountQuery } from '#features/events/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { terms } from '#features/shared/api/aggregations.ts';
 
     import { toFilter } from './helpers.svelte';
     import { EnvironmentFilter } from './models.svelte';

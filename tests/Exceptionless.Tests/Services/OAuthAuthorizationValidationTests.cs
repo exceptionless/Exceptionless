@@ -5,14 +5,13 @@ using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
-using Exceptionless.Core.Validation;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Utility;
+using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Services;
@@ -28,6 +27,60 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
     {
         base.RegisterServices(services, options);
         services.AddSingleton(new OAuthServerOptions());
+    }
+
+    [Theory]
+    [InlineData(true, null, null, true)]
+    [InlineData(true, null, "current", false)]
+    [InlineData(true, "CURRENT", "current", false)]
+    [InlineData(false, "current", "current", false)]
+    [InlineData(true, "current", "current", true)]
+    public async Task ExchangeAuthorizationCodeAsync_AccountGeneration_RequiresActiveUserAndMatchingGeneration(bool isActive, string? issuedVersion, string? currentVersion, bool expectedSuccess)
+    {
+        // Arrange
+        string verifier = new('a', 43);
+        var issuedUser = new User { Id = TestConstants.UserId, AuthenticationVersion = issuedVersion };
+        var currentUser = issuedUser with { IsActive = isActive, AuthenticationVersion = currentVersion };
+        var users = new Mock<IUserRepository>(MockBehavior.Strict);
+        users.Setup(repository => repository.GetByIdAsync(issuedUser.Id, (ICommandOptions?)null)).ReturnsAsync(currentUser);
+        var applications = new Mock<IOAuthApplicationRepository>(MockBehavior.Strict);
+        applications.Setup(repository => repository.GetByClientIdAsync("test-client", null))
+            .ReturnsAsync(new OAuthApplication { ClientId = "test-client", RedirectUris = [RedirectUri], Scopes = [AuthorizationRoles.McpRead] });
+        applications.Setup(repository => repository.AddOrganizationIdsAsync("test-client", It.IsAny<IReadOnlyCollection<string>>(), It.IsAny<CommandOptionsDescriptor<OAuthApplication>>()))
+            .ReturnsAsync(1L);
+        OAuthToken? storedToken = null;
+        var tokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
+        tokens.Setup(repository => repository.AddAsync(It.IsAny<OAuthToken>(), It.IsAny<CommandOptionsDescriptor<OAuthToken>>()))
+            .Callback((OAuthToken token, CommandOptionsDescriptor<OAuthToken> _) => storedToken = token)
+            .ReturnsAsync((OAuthToken token, CommandOptionsDescriptor<OAuthToken> _) => token);
+        var service = new OAuthService(GetService<OAuthServerOptions>(), GetService<ICacheClient>(), GetService<ILockProvider>(),
+            applications.Object, GetService<IOAuthClientMetadataService>(), tokens.Object, users.Object, TimeProvider);
+        string code = await service.CreateAuthorizationCodeAsync(CreateRequest(AuthorizationRoles.McpRead) with
+        {
+            CodeChallenge = OAuthService.CreateCodeChallenge(verifier)
+        }, issuedUser, [TestConstants.OrganizationId]);
+        var request = new OAuthTokenRequest
+        {
+            GrantType = OAuthGrantTypes.AuthorizationCode,
+            ClientId = "test-client",
+            Code = code,
+            CodeVerifier = verifier,
+            RedirectUri = RedirectUri,
+            Resource = Resource
+        };
+
+        // Act
+        var result = await service.ExchangeAuthorizationCodeAsync(request);
+
+        // Assert
+        Assert.Equal(expectedSuccess, result.IsSuccess);
+        Assert.Equal(expectedSuccess ? null : "invalid_grant", result.Error);
+        Assert.Equal(expectedSuccess, storedToken is not null);
+        Assert.Equal(expectedSuccess ? issuedVersion : null, storedToken?.AuthenticationVersion);
+        tokens.Verify(repository => repository.AddAsync(It.IsAny<OAuthToken>(), It.IsAny<CommandOptionsDescriptor<OAuthToken>>()), Times.Exactly(expectedSuccess ? 1 : 0));
+        users.Verify(repository => repository.GetByIdAsync(issuedUser.Id, (ICommandOptions?)null), Times.Once);
+        tokens.VerifyNoOtherCalls();
+        users.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -87,9 +140,7 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
     public async Task ValidateAuthorizationRequestAsync_ClientScopeCombinations_EnforcesAllowedScopes(string? clientScopes, string requestScopes, string? deniedScopes)
     {
         // Arrange
-        using var repository = CreateRepository(clientScopes);
-        var service = CreateService(repository);
-        var application = repository.Application;
+        var (service, application) = CreateService(clientScopes);
         string[] originalScopes = application.Scopes.ToArray();
 
         // Act
@@ -114,8 +165,7 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
     public async Task ValidateAuthorizationRequestAsync_InvalidScopes_DeniesWithoutReflectingUnknownScopes(string scopes)
     {
         // Arrange
-        using var repository = CreateRepository(AllScopes);
-        var service = CreateService(repository);
+        var (service, _) = CreateService(AllScopes);
 
         // Act
         var result = await service.ValidateAuthorizationRequestAsync(CreateRequest(scopes), Resource, OAuthService.McpResource);
@@ -136,9 +186,7 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
     public async Task ValidateAuthorizationRequestAsync_InvalidSecurityParameters_DoesNotDiscloseClientScopeDetails(string scenario, string error, string description)
     {
         // Arrange
-        using var repository = CreateRepository(FourReadScopes);
-        var service = CreateService(repository);
-        var application = repository.Application;
+        var (service, application) = CreateService(FourReadScopes);
         application.IsDisabled = scenario == "disabled";
         var request = CreateRequest(AllScopes) with
         {
@@ -169,7 +217,7 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
         Scope = scopes
     };
 
-    private TestOAuthApplicationRepository CreateRepository(string? scopes)
+    private (OAuthService Service, OAuthApplication Application) CreateService(string? scopes)
     {
         var application = new OAuthApplication
         {
@@ -179,27 +227,20 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
             RedirectUris = [RedirectUri],
             Scopes = scopes?.Split(' ') ?? OAuthService.DefaultScopes.ToArray()
         };
-        return new TestOAuthApplicationRepository(
-            GetService<ExceptionlessElasticConfiguration>(), GetService<MiniValidationValidator>(), GetService<AppOptions>(), application);
-    }
-
-    private OAuthService CreateService(IOAuthApplicationRepository repository) => new(
-        GetService<OAuthServerOptions>(),
-        GetService<ICacheClient>(),
-        GetService<ILockProvider>(),
-        repository,
-        GetService<IOAuthClientMetadataService>(),
-        GetService<IOAuthTokenRepository>(),
-        GetService<IUserRepository>(),
-        TimeProvider);
-
-    private sealed class TestOAuthApplicationRepository(
-        ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options, OAuthApplication application)
-        : OAuthApplicationRepository(configuration, validator, options), IOAuthApplicationRepository
-    {
-        public OAuthApplication Application { get; } = application;
-
-        Task<OAuthApplication?> IOAuthApplicationRepository.GetByClientIdAsync(string clientId, CommandOptionsDescriptor<OAuthApplication>? options)
-            => Task.FromResult(clientId == Application.ClientId ? Application : null);
+        var repository = new Mock<IOAuthApplicationRepository>();
+        repository.Setup(repository => repository.GetByClientIdAsync(application.ClientId, null))
+            .ReturnsAsync(application);
+        repository.Setup(repository => repository.GetByClientIdAsync(It.Is<string>(clientId => clientId != application.ClientId), null))
+            .ReturnsAsync((OAuthApplication?)null);
+        var service = new OAuthService(
+            GetService<OAuthServerOptions>(),
+            GetService<ICacheClient>(),
+            GetService<ILockProvider>(),
+            repository.Object,
+            GetService<IOAuthClientMetadataService>(),
+            GetService<IOAuthTokenRepository>(),
+            GetService<IUserRepository>(),
+            TimeProvider);
+        return (service, application);
     }
 }

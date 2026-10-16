@@ -1,5 +1,6 @@
-import { putCurrentUserProductTour } from '$features/users/api.svelte';
 import { toast } from 'svelte-sonner';
+
+import { putCurrentUserProductTour } from '#features/users/api.svelte.ts';
 
 import type { ProductTourCheckpoint } from './models';
 

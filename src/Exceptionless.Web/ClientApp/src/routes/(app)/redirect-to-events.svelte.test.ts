@@ -1,5 +1,6 @@
-import { DateFilter, EnvironmentFilter, ProjectFilter, StatusFilter, StringFilter } from '$features/events/components/filters/models.svelte';
 import { describe, expect, it, vi } from 'vitest';
+
+import { DateFilter, EnvironmentFilter, ProjectFilter, StatusFilter, StringFilter } from '#features/events/components/filters/models.svelte.ts';
 
 vi.mock('$app/navigation', () => ({
     goto: vi.fn()

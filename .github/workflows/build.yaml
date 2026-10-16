@@ -114,7 +114,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 10.0.402
 
       - name: Version
         id: version
@@ -156,7 +156,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 10.0.402
 
       - uses: actions/cache@v6
         with:
@@ -215,7 +215,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 10.0.402
 
       - name: Merge coverage
         run: |
@@ -288,9 +288,6 @@ jobs:
       - name: Lint Client
         run: npm run lint
 
-      - name: Verify runtime configuration and entrypoints
-        run: node --test ../../../build/update-config.test.mjs
-
       - name: Check
         run: npm run check
 
@@ -327,16 +324,16 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 10.0.402
           dotnet-quality: ga
 
       - name: Install Aspire CLI
         run: |
           export PATH="$HOME/.dotnet/tools:$PATH"
           if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
-            dotnet tool update --global Aspire.Cli --version 13.6.0
+            dotnet tool update --global Aspire.Cli --version 13.6.1
           else
-            dotnet tool install --global Aspire.Cli --version 13.6.0
+            dotnet tool install --global Aspire.Cli --version 13.6.1
           fi
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           aspire --version

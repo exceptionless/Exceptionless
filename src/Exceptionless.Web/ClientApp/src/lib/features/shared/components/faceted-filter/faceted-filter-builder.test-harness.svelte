@@ -1,7 +1,7 @@
 <script lang="ts">
-    import * as Tooltip from '$comp/ui/tooltip';
-    import DateFacetedFilterBuilder from '$features/events/components/filters/date-faceted-filter-builder.svelte';
-    import KeywordFacetedFilterBuilder from '$features/events/components/filters/keyword-faceted-filter-builder.svelte';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
+    import DateFacetedFilterBuilder from '#features/events/components/filters/date-faceted-filter-builder.svelte';
+    import KeywordFacetedFilterBuilder from '#features/events/components/filters/keyword-faceted-filter-builder.svelte';
 
     import type { IFilter } from './models';
 

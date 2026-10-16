@@ -1,11 +1,12 @@
-import { productTourCheckpoint } from '$features/product-tours/state.svelte';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import InvestigationListTour from './investigation-list.svelte';
-vi.mock('$features/product-tours/activity', () => ({ submitProductTourActivity: vi.fn() }));
+import { productTourCheckpoint } from '#features/product-tours/state.svelte.ts';
 
-vi.mock('$features/product-tours/actions.svelte', () => ({
+import InvestigationListTour from './investigation-list.svelte';
+vi.mock('#features/product-tours/activity.ts', () => ({ submitProductTourActivity: vi.fn() }));
+
+vi.mock('#features/product-tours/actions.svelte.ts', () => ({
     createProductTourActions: () => ({ dismiss: vi.fn() })
 }));
 

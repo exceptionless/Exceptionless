@@ -31,14 +31,14 @@ Use focused verification while iterating. Do not run broad Svelte validation aft
 - Organize code by feature under `src/lib/features`; match the nearest existing feature before adding files.
 - Use generated API types and feature-local `api.svelte.ts`, `models.ts`, `schemas.ts`, and `validators.ts` patterns.
 - Use TanStack Query for server state and TanStack Form with Zod for forms.
-- Use `createQueryParameters` from `$shared/query-params` for route query parameters instead of ad-hoc URL parsing.
-- Prefer shared components and formatters from `$comp`, `$shared`, and `$lib` before creating new primitives.
-- Use installed shadcn-svelte components from `$comp/ui/*`; check `components.json` and the `src/lib/features/shared/components/ui` directory before importing a component.
+- Use `createQueryParameters` from `#shared/query-params/index.ts` for route query parameters instead of ad-hoc URL parsing.
+- Prefer shared components and formatters from `#comp`, `#shared`, and `#lib` before creating new primitives. These are `package.json` subpath imports, so specifiers name the file on disk, such as `#lib/utils.ts`, `#comp/ui/button/index.ts`, or `#comp/logo.svelte`.
+- Use installed shadcn-svelte components from `#comp/ui/*`; check `components.json` and the `src/lib/features/shared/components/ui` directory before importing a component.
 
 ## Applying Installed Skills
 
 - Repository conventions govern application changes when an upstream skill uses generic examples. Keep the existing operational UI, theme, and typography; an ordinary component change does not require a redesign.
-- Run component CLI commands from this directory with `npx shadcn-svelte@latest`. Resolve imports through `components.json`; this app uses `$comp/ui/*`. Use `@lucide/svelte` unless the app's configured icon library changes.
+- Run component CLI commands from this directory with `npx shadcn-svelte@latest`. Resolve imports through `components.json`; this app uses `#comp/ui/*`. The CLI writes `.js` specifiers, so rename them to the `.ts` files they import after adding a component. Use `@lucide/svelte` unless the app's configured icon library changes.
 - Import only installed components. Use existing `RadioGroup` or `Select` for options and `Card`, `Alert`, or other installed primitives for empty states; add `ToggleGroup`, `Empty`, or other registry components only when the requested design needs them.
 
 ## Local URLs

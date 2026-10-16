@@ -1,11 +1,12 @@
 import type { CreateQueryOptions, QueryClient as QueryClientType } from '@tanstack/svelte-query';
 
-import * as Tooltip from '$comp/ui/tooltip';
-import { organization } from '$features/organizations/context.svelte';
 import { QueryClient } from '@tanstack/svelte-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import * as Tooltip from '#comp/ui/tooltip/index.ts';
+import { organization } from '#features/organizations/context.svelte.ts';
 
 import { TagFilter } from './models.svelte';
 import TagFacetedFilter from './tag-faceted-filter.svelte';
@@ -14,8 +15,7 @@ const mocks = vi.hoisted(() => ({
     client: undefined as QueryClientType | undefined,
     getJSON: vi.fn()
 }));
-vi.mock('$env/dynamic/public', () => ({ env: {} }));
-vi.mock('$features/auth/index.svelte', () => ({ accessToken: { current: 'test-session' } }));
+vi.mock('#features/auth/index.svelte.ts', () => ({ accessToken: { current: 'test-session' } }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@foundatiofx/fetchclient')>()),
     useFetchClient: () => ({ getJSON: mocks.getJSON })

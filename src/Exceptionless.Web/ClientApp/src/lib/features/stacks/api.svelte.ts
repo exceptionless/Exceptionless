@@ -1,10 +1,11 @@
-import type { WebSocketMessageValue } from '$features/websockets/models';
-import type { WorkInProgressResult } from '$shared/models';
-
-import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 import { SvelteSet } from 'svelte/reactivity';
+
+import type { WebSocketMessageValue } from '#features/websockets/models.ts';
+import type { WorkInProgressResult } from '#shared/models/index.ts';
+
+import { accessToken } from '#features/auth/index.svelte.ts';
 
 import type { Stack, StackStatus } from './models';
 

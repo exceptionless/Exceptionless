@@ -1,18 +1,20 @@
 <script lang="ts">
-    import type { KeywordFilter } from '$features/events/components/filters';
     import type { Snippet } from 'svelte';
 
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import * as Command from '$comp/ui/command';
-    import * as Popover from '$comp/ui/popover';
-    import * as Tooltip from '$comp/ui/tooltip';
     import Circle from '@lucide/svelte/icons/circle-plus';
     import Eraser from '@lucide/svelte/icons/eraser';
     import Eye from '@lucide/svelte/icons/eye';
     import EyeOff from '@lucide/svelte/icons/eye-off';
     import { computeCommandScore } from 'bits-ui';
     import { setContext } from 'svelte';
+
+    import type { KeywordFilter } from '#features/events/components/filters/index.ts';
+
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Command from '#comp/ui/command/index.ts';
+    import * as Popover from '#comp/ui/popover/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
 
     import type { FacetedFilter, IFilter } from './models';
 
