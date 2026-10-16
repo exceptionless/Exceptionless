@@ -516,12 +516,14 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithMetadata(new ObsoleteAttribute("Use GET /api/v2/events/submit"))
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.SubmitGetAdditionalParameters,
             ResponseDescriptions = new() {
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -533,12 +535,14 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithMetadata(new ObsoleteAttribute("Use GET /api/v2/events/submit"))
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.SubmitGetAdditionalParameters,
             ResponseDescriptions = new() {
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -550,12 +554,14 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithMetadata(new ObsoleteAttribute("Use GET /api/v2/events/submit"))
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.SubmitGetAdditionalParameters,
             ResponseDescriptions = new() {
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -567,12 +573,14 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithMetadata(new ObsoleteAttribute("Use GET /api/v2/events/submit"))
         .WithMetadata(new EndpointDocumentation {
             AdditionalParameters = EventEndpointHelpers.SubmitGetAdditionalParameters,
             ResponseDescriptions = new() {
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -584,6 +592,7 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithSummary("Submit event by GET")
         .WithDescription("""
             You can submit an event using an HTTP GET and query string parameters. Any unknown query string parameters will be added to the extended data of the event.
@@ -614,6 +623,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -624,6 +634,7 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithSummary("Submit event type by GET")
         .WithDescription("""
             You can submit an event using an HTTP GET and query string parameters.
@@ -654,6 +665,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -664,6 +676,7 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithSummary("Submit event type by GET for a specific project")
         .WithDescription("You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10```\n\nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true```")
         .WithMetadata(new EndpointDocumentation {
@@ -686,6 +699,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -696,6 +710,7 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithSummary("Submit event type by GET for a specific project")
         .WithDescription("You can submit an event using an HTTP GET and query string parameters.\n\nFeature usage named build with a duration of 10:\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=usage&source=build&value=10```\n\nLog with message, geo and extended data\n```/projects/{projectId}/events/submit?access_token=YOUR_API_KEY&type=log&message=Hello World&source=server01&geo=32.85,-96.9613&randomproperty=true```")
         .WithMetadata(new EndpointDocumentation {
@@ -719,6 +734,7 @@ public static class EventEndpoints
             ResponseDescriptions = new() {
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -732,6 +748,7 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"))
         .WithMetadata(new RequestBodyContentAttribute("application/json", "text/plain"))
         .WithMetadata(new EndpointDocumentation {
@@ -740,6 +757,7 @@ public static class EventEndpoints
                 ["202"] = "Accepted",
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -752,6 +770,7 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status413RequestEntityTooLarge)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"))
         .WithMetadata(new RequestBodyContentAttribute("application/json", "text/plain"))
         .WithMetadata(new EndpointDocumentation {
@@ -760,6 +779,7 @@ public static class EventEndpoints
                 ["202"] = "Accepted",
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -772,6 +792,7 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status413RequestEntityTooLarge)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithMetadata(new ObsoleteAttribute("Use POST /api/v2/events"))
         .WithMetadata(new RequestBodyContentAttribute("application/json", "text/plain"))
         .WithMetadata(new EndpointDocumentation {
@@ -780,6 +801,7 @@ public static class EventEndpoints
                 ["202"] = "Accepted",
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -792,6 +814,7 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status413RequestEntityTooLarge)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithSummary("Submit event by POST")
         .WithDescription("""
             You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON object into the events data collection.
@@ -821,6 +844,7 @@ public static class EventEndpoints
                 ["202"] = "Accepted",
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -832,6 +856,7 @@ public static class EventEndpoints
         .Produces(StatusCodes.Status413RequestEntityTooLarge)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .WithSummary("Submit event by POST for a specific project")
         .WithDescription("""
             You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON object into the events data collection.
@@ -862,6 +887,7 @@ public static class EventEndpoints
                 ["202"] = "Accepted",
                 ["400"] = "No project id specified and no default project was found.",
                 ["404"] = "No project was found.",
+                ["503"] = "The events could not be queued. Resend them after the Retry-After delay.",
             }
         });
 
@@ -872,6 +898,7 @@ public static class EventEndpoints
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .WithSummary("Remove")
         .WithMetadata(new EndpointDocumentation {
