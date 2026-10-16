@@ -85,6 +85,38 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         return CreateAutoSessionInternalAsync(DateTimeOffset.Now);
     }
 
+    [Fact]
+    public async Task RunAsync_SameUserInDifferentEnvironments_SharesStackAndSeparatesAutomaticSessions()
+    {
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var project = _projectData.GenerateSampleProject();
+        var production = GenerateEvent(DateTimeOffset.Now.AddMinutes(-3), "same-user");
+        production.Environment = " Production ";
+        var staging = GenerateEvent(DateTimeOffset.Now.AddMinutes(-2), "same-user");
+        staging.Data![Event.KnownDataKeys.Error] = production.Data![Event.KnownDataKeys.Error];
+        staging.Environment = "staging";
+        var laterProduction = GenerateEvent(DateTimeOffset.Now.AddMinutes(-1), "same-user");
+        laterProduction.Data![Event.KnownDataKeys.Error] = production.Data[Event.KnownDataKeys.Error];
+        laterProduction.Environment = "PRODUCTION";
+
+        foreach (var ev in new[] { production, staging, laterProduction })
+        {
+            var context = await _pipeline.RunAsync(ev, organization, project);
+            Assert.False(context.HasError, context.ErrorMessage);
+            Assert.True(context.IsProcessed);
+        }
+
+        Assert.Equal(production.StackId, staging.StackId);
+        Assert.Equal(production.GetSessionId(), laterProduction.GetSessionId());
+        Assert.NotEqual(production.GetSessionId(), staging.GetSessionId());
+        Assert.Equal("Production", production.Environment);
+        Assert.Equal("PRODUCTION", laterProduction.Environment);
+        await RefreshDataAsync();
+        var sessions = await _eventRepository.FindAsync(query => query.FilterExpression("type:session"));
+        Assert.Equal(2, sessions.Total);
+        Assert.Equal(new[] { "Production", "staging" }, sessions.Documents.Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
+    }
+
     private async Task CreateAutoSessionInternalAsync(DateTimeOffset date)
     {
         var ev = GenerateEvent(date, "blake@exceptionless.io");
@@ -1043,6 +1075,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.NotNull(project);
 
         var ev = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: DateTimeOffset.Now);
+        ev.Environment = "staging";
         var context = await _pipeline.RunAsync(ev, organization, project);
 
         var stack = context.Stack;
@@ -1061,6 +1094,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         await RefreshDataAsync();
         ev = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, source: "test", occurrenceDate: DateTimeOffset.Now, semver: eventSemanticVersion);
+        ev.Environment = "production";
         context = await _pipeline.RunAsync(ev, organization, project);
 
         stack = context.Stack;

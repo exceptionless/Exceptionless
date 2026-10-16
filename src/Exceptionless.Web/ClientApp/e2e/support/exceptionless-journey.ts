@@ -135,7 +135,7 @@ export class ExceptionlessE2EJourney {
         await expect(this.page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Exception' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Request' })).toBeVisible();
-        await expect(this.page.getByRole('tab', { name: 'Environment' })).toBeVisible();
+        await expect(this.page.getByRole('tab', { name: 'Machine & runtime' })).toBeVisible();
         await expect(this.page.getByRole('tab', { name: 'Extended Data' })).toBeVisible();
 
         await expect(getVisibleRow(this.page, new RegExp(`^Reference\\s+${escapeRegExp(this.referenceId)}$`))).toBeVisible();
@@ -152,7 +152,7 @@ export class ExceptionlessE2EJourney {
         await expect(getVisibleRow(this.page, 'URL', '/e2e/onboarding')).toBeVisible();
         await expect(getVisibleRow(this.page, 'User Agent', 'Exceptionless Playwright E2E')).toBeVisible();
 
-        await this.page.getByRole('tab', { name: 'Environment' }).click();
+        await this.page.getByRole('tab', { name: 'Machine & runtime' }).click();
         await expect(getVisibleRow(this.page, 'Machine Name', 'playwright-runner')).toBeVisible();
         await expect(getVisibleRow(this.page, 'Process Name', 'e2e-tests')).toBeVisible();
 

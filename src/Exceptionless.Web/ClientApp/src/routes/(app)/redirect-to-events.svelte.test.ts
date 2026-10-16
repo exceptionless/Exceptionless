@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { DateFilter, ProjectFilter, StatusFilter, StringFilter } from '#features/events/components/filters/models.svelte.ts';
+import { DateFilter, EnvironmentFilter, ProjectFilter, StatusFilter, StringFilter } from '#features/events/components/filters/models.svelte.ts';
 
 vi.mock('$app/navigation', () => ({
     goto: vi.fn()
@@ -11,6 +11,14 @@ vi.mock('$app/paths', () => ({
 }));
 
 describe('redirect-to-events', () => {
+    it('preserves environment values including commas and unspecified through navigation', async () => {
+        const { buildListPageHref, deserializeEnvironmentQueryParam } = await import('./redirect-to-events.svelte');
+        const names = ['production', '', 'qa,east'];
+        const url = new URL(buildListPageHref('events', 'organization-1', [new EnvironmentFilter(names)]), 'http://localhost');
+        expect(deserializeEnvironmentQueryParam(url.searchParams.get('environment')!)).toEqual(names);
+        expect(url.searchParams.has('filter')).toBe(false);
+        expect(deserializeEnvironmentQueryParam('staging')).toEqual(['staging']);
+    });
     it('snapshots list filter query parameters from shared reactive state', async () => {
         // Arrange
         const { getListFilterQueryParams } = await import('./redirect-to-events.svelte');
@@ -56,6 +64,7 @@ describe('redirect-to-events', () => {
         // Assert
         expect(queryParams).toEqual({
             bot: null,
+            environment: null,
             filter: null,
             first: null,
             level: null,
