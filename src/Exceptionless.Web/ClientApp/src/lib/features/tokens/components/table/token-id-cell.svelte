@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { ViewToken } from '$features/tokens/models';
+    import type { ViewToken } from '#features/tokens/models.ts';
 
     interface Props {
         token: ViewToken;

@@ -1,23 +1,24 @@
 <script lang="ts">
+    import { PUBLIC_STRIPE_PUBLISHABLE_KEY } from '$app/env/public';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import Currency from '$comp/formatters/currency.svelte';
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import { A } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Table from '$comp/ui/table';
-    import { env } from '$env/dynamic/public';
-    import { ChangePlanDialog } from '$features/billing';
-    import { getInvoiceStatusLabel } from '$features/billing/invoice';
-    import { getInvoicesQuery, getOrganizationQuery } from '$features/organizations/api.svelte';
-    import GlobalUser from '$features/users/components/global-user.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import File from '@lucide/svelte/icons/file';
     import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import Currency from '#comp/formatters/currency.svelte';
+    import DateTime from '#comp/formatters/date-time.svelte';
+    import { A } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import { ChangePlanDialog } from '#features/billing/index.ts';
+    import { getInvoiceStatusLabel } from '#features/billing/invoice.ts';
+    import { getInvoicesQuery, getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import GlobalUser from '#features/users/components/global-user.svelte';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     const organizationQuery = getOrganizationQuery({
         route: {
@@ -35,7 +36,7 @@
         }
     });
 
-    const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
+    const canChangePlan = $derived(organizationQuery.isSuccess && !!PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
     const params = createQueryParameters({
         defaults: {

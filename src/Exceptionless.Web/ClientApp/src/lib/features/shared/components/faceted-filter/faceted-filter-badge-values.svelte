@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import Badge from '$comp/ui/badge/badge.svelte';
+    import Badge from '#comp/ui/badge/badge.svelte';
 
     interface Props {
         displayValue: Snippet<[unknown]>;

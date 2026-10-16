@@ -1,12 +1,13 @@
 <script lang="ts">
-    import type { Webhook } from '$features/webhooks/models';
-
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { deleteWebhook } from '$features/webhooks/api.svelte';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
+
+    import type { Webhook } from '#features/webhooks/models.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { deleteWebhook } from '#features/webhooks/api.svelte.ts';
 
     import RemoveWebhookDialog from '../dialogs/remove-webhook-dialog.svelte';
 

@@ -1,10 +1,11 @@
-import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
-
-import TimeAgo from '$comp/formatters/time-ago.svelte';
-import { Checkbox } from '$comp/ui/checkbox';
-import Summary from '$features/events/components/summary/summary.svelte';
-import EventsUserIdentitySummaryCell from '$features/events/components/table/events-user-identity-summary-cell.svelte';
 import { type ColumnDef, type ColumnVisibilityState, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { EventSummaryModel, SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
+
+import TimeAgo from '#comp/formatters/time-ago.svelte';
+import { Checkbox } from '#comp/ui/checkbox/index.ts';
+import Summary from '#features/events/components/summary/summary.svelte';
+import EventsUserIdentitySummaryCell from '#features/events/components/table/events-user-identity-summary-cell.svelte';
 
 import SessionDurationCell from './session-duration-cell.svelte';
 

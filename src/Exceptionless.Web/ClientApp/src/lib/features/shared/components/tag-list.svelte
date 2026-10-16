@@ -1,10 +1,11 @@
 <script lang="ts">
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import { Kbd } from '$comp/ui/kbd';
-    import * as Tooltip from '$comp/ui/tooltip';
     import { toast } from 'svelte-sonner';
     import { SvelteSet } from 'svelte/reactivity';
+
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Kbd } from '#comp/ui/kbd/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
 
     interface Props {
         class?: string;

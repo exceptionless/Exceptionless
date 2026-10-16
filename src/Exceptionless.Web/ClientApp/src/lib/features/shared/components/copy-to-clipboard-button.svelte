@@ -2,10 +2,11 @@
     import type { Snippet } from 'svelte';
     import type { VariantProps } from 'tailwind-variants';
 
-    import { Button, type ButtonProps, type buttonVariants } from '$comp/ui/button';
-    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import ClipboardCopy from '@lucide/svelte/icons/clipboard-copy';
     import { toast } from 'svelte-sonner';
+
+    import { Button, type ButtonProps, type buttonVariants } from '#comp/ui/button/index.ts';
+    import { UseClipboard } from '#lib/hooks/use-clipboard.svelte.ts';
 
     type Props = ButtonProps & {
         children?: Snippet;

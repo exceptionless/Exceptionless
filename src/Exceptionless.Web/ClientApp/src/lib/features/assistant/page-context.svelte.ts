@@ -1,5 +1,5 @@
-import type { PersistentEvent } from '$features/events/models';
-import type { Stack } from '$features/stacks/models';
+import type { PersistentEvent } from '#features/events/models/index.ts';
+import type { Stack } from '#features/stacks/models.ts';
 
 export interface AssistantResourceContext {
     eventId?: string;

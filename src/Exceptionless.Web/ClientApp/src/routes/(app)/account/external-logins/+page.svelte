@@ -1,13 +1,16 @@
 <script lang="ts">
-    import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
-    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
-    import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
-    import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
-    import { H4, Muted, P } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Separator } from '$comp/ui/separator';
-    import * as Table from '$comp/ui/table';
-    import { unlinkOAuthAccount } from '$features/auth/api.svelte';
+    import X from '@lucide/svelte/icons/x';
+    import { toast } from 'svelte-sonner';
+
+    import FacebookIcon from '#comp/icons/FacebookIcon.svelte';
+    import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
+    import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
+    import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
+    import { H4, Muted, P } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Separator } from '#comp/ui/separator/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import { unlinkOAuthAccount } from '#features/auth/api.svelte.ts';
     import {
         enableOAuthLogin,
         facebookClientId,
@@ -18,10 +21,8 @@
         googleLogin,
         liveLogin,
         microsoftClientId
-    } from '$features/auth/index.svelte';
-    import { getMeQuery } from '$features/users/api.svelte';
-    import X from '@lucide/svelte/icons/x';
-    import { toast } from 'svelte-sonner';
+    } from '#features/auth/index.svelte.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
 
     let toastId = $state<number | string>();
     const meQuery = getMeQuery();

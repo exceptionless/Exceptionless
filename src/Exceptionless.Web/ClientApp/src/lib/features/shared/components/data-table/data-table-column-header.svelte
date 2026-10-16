@@ -6,13 +6,14 @@
     import type { Column, RowData, StockFeatures } from '@tanstack/svelte-table';
     import type { HTMLAttributes } from 'svelte/elements';
 
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { cn } from '$lib/utils';
     import ArrowDown from '@lucide/svelte/icons/arrow-down';
     import ArrowUp from '@lucide/svelte/icons/arrow-up';
     import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
     import EyeOff from '@lucide/svelte/icons/eye-off';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { cn } from '#lib/utils.ts';
 
     type Props = HTMLAttributes<HTMLDivElement> & {
         column: Column<StockFeatures, TData, unknown>;

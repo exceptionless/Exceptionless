@@ -7,9 +7,8 @@ const { goto, page, paths } = vi.hoisted(() => ({
 }));
 
 vi.mock('$app/navigation', () => ({ goto }));
-vi.mock('$app/paths', () => ({ resolve: (path: string) => `${paths.base}${path.replace('/(auth)', '')}` }));
+vi.mock('$app/paths', () => ({ resolve: (path: string) => `${paths.base}${path.replace(/\/\([^)]+\)/g, '') || '/'}` }));
 vi.mock('$app/state', () => ({ page }));
-vi.mock('$env/dynamic/public', () => ({ env: {} }));
 vi.mock('./api.svelte', () => ({}));
 vi.mock('./state.svelte', () => ({ accessToken: { current: null } }));
 vi.mock('./validators', () => ({ validateEmailAvailability: vi.fn() }));
@@ -33,7 +32,7 @@ describe('gotoLogin', () => {
 
         await gotoLogin();
 
-        expect(goto).toHaveBeenCalledExactlyOnceWith(`/login?redirect=${encodeURIComponent(destination)}`, { replaceState: true });
+        expect(goto).toHaveBeenCalledExactlyOnceWith(`/login?redirect=${encodeURIComponent(destination)}`, { replace: true });
         const loginUrl = new URL(goto.mock.calls[0]![0], page.url.origin);
         expect(loginUrl.searchParams.get('redirect')).toBe(destination);
         expect([...loginUrl.searchParams.keys()]).toEqual(['redirect']);
@@ -45,7 +44,7 @@ describe('gotoLogin', () => {
 
         await gotoLogin();
 
-        expect(goto).toHaveBeenCalledExactlyOnceWith('/login', { replaceState: true });
+        expect(goto).toHaveBeenCalledExactlyOnceWith('/login', { replace: true });
     });
 
     it('uses a configured login route under an explicit base', async () => {
@@ -54,6 +53,6 @@ describe('gotoLogin', () => {
 
         await gotoLogin();
 
-        expect(goto).toHaveBeenCalledExactlyOnceWith('/custom/login', { replaceState: true });
+        expect(goto).toHaveBeenCalledExactlyOnceWith('/custom/login', { replace: true });
     });
 });

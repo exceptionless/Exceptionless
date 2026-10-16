@@ -1,8 +1,9 @@
 import type { QueryClient } from '@tanstack/svelte-query';
 
-import { accessToken } from '$features/auth/index.svelte';
 import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+
+import { accessToken } from '#features/auth/index.svelte.ts';
 
 import type { AssistantAccess, AssistantConversationSharingSettings } from './models';
 

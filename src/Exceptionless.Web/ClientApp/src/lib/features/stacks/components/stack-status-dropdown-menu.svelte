@@ -1,12 +1,13 @@
 <script lang="ts">
-    import type { DropdownItem } from '$features/shared/options';
-
-    import Button from '$comp/ui/button/button.svelte';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { getProblemMessage } from '$shared/validation';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { toast } from 'svelte-sonner';
     import { SvelteDate } from 'svelte/reactivity';
+
+    import type { DropdownItem } from '#features/shared/options.ts';
+
+    import Button from '#comp/ui/button/button.svelte';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { getProblemMessage } from '#shared/validation.ts';
 
     import type { Stack } from '../models';
 

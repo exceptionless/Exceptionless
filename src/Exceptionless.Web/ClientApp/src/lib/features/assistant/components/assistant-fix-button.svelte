@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
     import Bot from '@lucide/svelte/icons/bot';
+
+    import { Button } from '#comp/ui/button/index.ts';
 
     import { type AssistantFixResource, tryUseAssistantControls } from '../controls.svelte';
 

@@ -62,6 +62,8 @@ internal static partial class FrontendContentSecurityPolicy
         // Bundled app fonts and Intercom's js/fonts CDN hosts.
         csp.AllowFonts
             .FromSelf()
+            // Vite inlines small KaTeX fonts used by Exie's math renderer.
+            .From("data:")
             .From("https://*.intercomcdn.com");
 
         // The backend serves a fixed policy; only Vite allows arbitrary environment connections.

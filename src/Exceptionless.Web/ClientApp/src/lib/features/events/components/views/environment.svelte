@@ -1,10 +1,10 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
 
-    import Bytes from '$comp/formatters/bytes.svelte';
-    import Number from '$comp/formatters/number.svelte';
-    import * as Table from '$comp/ui/table';
-    import * as EventsFacetedFilter from '$features/events/components/filters';
+    import Bytes from '#comp/formatters/bytes.svelte';
+    import Number from '#comp/formatters/number.svelte';
+    import * as Table from '#comp/ui/table/index.ts';
+    import * as EventsFacetedFilter from '#features/events/components/filters/index.ts';
 
     import type { PersistentEvent } from '../../models/index';
 
