@@ -1995,6 +1995,151 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.False(token.IsSuspended);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExternalLogin_InactiveUser_IsRejectedWithoutChangingAccountOrInvite(bool hasExistingLink)
+    {
+        // Arrange
+        const string code = "github-inactive-user";
+        string email = TestOAuthProviderClient.GetEmailAddress(code);
+        var user = new User
+        {
+            EmailAddress = email,
+            FullName = "Inactive User",
+            IsActive = false,
+            Roles = new HashSet<string>([AuthorizationRoles.Client, AuthorizationRoles.User])
+        };
+        user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        if (hasExistingLink)
+            user.AddOAuthAccount("github", code, email);
+        await _userRepository.AddAsync(user, options => options.ImmediateConsistency());
+        var organization = (await _organizationRepository.GetAllAsync()).Documents.First();
+        var invite = new Invite
+        {
+            Token = StringExtensions.GetNewToken(),
+            EmailAddress = email,
+            DateAdded = TimeProvider.GetUtcNow().UtcDateTime
+        };
+        organization.Invites.Add(invite);
+        await _organizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
+
+        // Act
+        await SendRequestAsync(request => request
+            .Post()
+            .AppendPaths("auth", "github")
+            .Content(new ExternalAuthInfo
+            {
+                ClientId = "client-id",
+                Code = code,
+                InviteToken = invite.Token,
+                RedirectUri = "http://localhost/callback"
+            })
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        var storedUser = await _userRepository.GetByIdAsync(user.Id, options => options.ImmediateConsistency());
+        Assert.NotNull(storedUser);
+        Assert.False(storedUser.IsActive);
+        Assert.False(storedUser.IsEmailAddressVerified);
+        Assert.Equal(user.VerifyEmailAddressToken, storedUser.VerifyEmailAddressToken);
+        Assert.Equal(user.VerifyEmailAddressTokenExpiration, storedUser.VerifyEmailAddressTokenExpiration);
+        Assert.Equal(user.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)),
+            storedUser.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)));
+        Assert.Empty(storedUser.OrganizationIds);
+        var tokens = await _tokenRepository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id, options => options.ImmediateConsistency());
+        Assert.Empty(tokens.Documents);
+        var storedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.ImmediateConsistency());
+        Assert.NotNull(storedOrganization);
+        Assert.Contains(storedOrganization.Invites, candidate => candidate.Token == invite.Token);
+    }
+
+    [Fact]
+    public async Task ExternalLogin_InactiveProviderOwner_DoesNotTransferAccount()
+    {
+        // Arrange
+        const string code = "github-inactive-provider-owner";
+        var owner = new User
+        {
+            EmailAddress = TestOAuthProviderClient.GetEmailAddress(code),
+            FullName = "Inactive Owner",
+            IsActive = false
+        };
+        owner.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        owner.AddOAuthAccount("github", code, owner.EmailAddress);
+        await _userRepository.AddAsync(owner, options => options.ImmediateConsistency());
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(currentUser);
+        var originalAccounts = currentUser.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)).ToArray();
+        long originalTokenCount = (await _tokenRepository.CountAsync()).Total;
+
+        // Act
+        await SendRequestAsync(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("auth", "github")
+            .Content(new ExternalAuthInfo
+            {
+                ClientId = "client-id",
+                Code = code,
+                RedirectUri = "http://localhost/callback"
+            })
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        var storedOwner = await _userRepository.GetByIdAsync(owner.Id, options => options.ImmediateConsistency());
+        Assert.NotNull(storedOwner);
+        Assert.False(storedOwner.IsEmailAddressVerified);
+        Assert.Equal(owner.VerifyEmailAddressToken, storedOwner.VerifyEmailAddressToken);
+        Assert.Equal(code, Assert.Single(storedOwner.OAuthAccounts).ProviderUserId);
+        var storedCurrentUser = await _userRepository.GetByIdAsync(currentUser.Id, options => options.ImmediateConsistency());
+        Assert.NotNull(storedCurrentUser);
+        Assert.Equal(originalAccounts, storedCurrentUser.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)));
+        Assert.Equal(originalTokenCount, (await _tokenRepository.CountAsync()).Total);
+    }
+
+    [Fact]
+    public async Task GetUserByOAuthProviderAsync_DifferentAccountEntries_DoNotMatch()
+    {
+        // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.AddOAuthAccount("google", "shared-subject", user.EmailAddress);
+        user.AddOAuthAccount("github", "other-subject", user.EmailAddress);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+
+        // Act
+        var githubUser = await _userRepository.GetUserByOAuthProviderAsync("github", "shared-subject");
+        var googleUser = await _userRepository.GetUserByOAuthProviderAsync("google", "shared-subject");
+
+        // Assert
+        Assert.Null(githubUser);
+        Assert.NotNull(googleUser);
+        Assert.Equal(user.Id, googleUser.Id);
+    }
+
+    [Fact]
+    public async Task GetUserByOAuthProviderAsync_DuplicateIdentity_RejectsAmbiguousOwner()
+    {
+        // Arrange
+        foreach (string email in new[] { SampleDataService.TEST_USER_EMAIL, SampleDataService.TEST_ORG_USER_EMAIL })
+        {
+            var user = await _userRepository.GetByEmailAddressAsync(email);
+            Assert.NotNull(user);
+            user.AddOAuthAccount("github", "duplicate-subject", user.EmailAddress);
+            await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+        }
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await _userRepository.GetUserByOAuthProviderAsync("github", "duplicate-subject");
+        });
+
+        // Assert
+        Assert.IsType<UnauthorizedAccessException>(exception);
+    }
+
     private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId)
     {
         Assert.NotNull(result);

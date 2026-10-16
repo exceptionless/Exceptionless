@@ -129,8 +129,23 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             return null;
 
         provider = provider.ToLowerInvariant();
-        var results = (await FindAsync(q => q.FieldEquals(u => u.OAuthAccounts.First().ProviderUserId, providerUserId))).Documents;
-        return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
+        var results = await FindAsync(q => q.FieldEquals(u => u.OAuthAccounts.First().ProviderUserId, providerUserId),
+            o => o.SearchAfterPaging().PageLimit(100));
+        User? matchingUser = null;
+        do
+        {
+            foreach (var user in results.Documents.Where(u => u.OAuthAccounts.Any(account =>
+                String.Equals(account.Provider, provider, StringComparison.Ordinal) &&
+                String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal))))
+            {
+                if (matchingUser is not null)
+                    throw new UnauthorizedAccessException("The external account is linked to multiple users.");
+
+                matchingUser = user;
+            }
+        } while (await results.NextPageAsync());
+
+        return matchingUser;
     }
 
     public async Task<User?> GetByVerifyEmailAddressTokenAsync(string token)
