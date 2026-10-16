@@ -104,6 +104,41 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePasswordAsync_LateEmailCacheWrite_RejectsOldPasswordForBothAuthenticationPaths()
+    {
+        // Arrange
+        const string changedPassword = "ChangedPassword:2$";
+        var repository = Assert.IsType<PausingProfileUserRepository>(_userRepository);
+        var stale = await repository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(stale);
+        await SendRequestAsync(r => r.Post().AsGlobalAdminUser().AppendPath("auth/change-password")
+            .Content(new ChangePasswordModel { CurrentPassword = SampleDataService.TEST_USER_PASSWORD, Password = changedPassword })
+            .StatusCodeShouldBeOk());
+
+        // Act: reproduce a delayed read repopulating its snapshot after the password write.
+        await repository.CacheUserAsync(stale);
+        var cached = await repository.GetByEmailAddressAsync(stale.EmailAddress);
+
+        // Assert: the cache has the old password, but neither caller authenticates it.
+        Assert.NotNull(cached);
+        Assert.True(cached.IsCorrectPassword(SampleDataService.TEST_USER_PASSWORD));
+        await SendRequestAsync(r => r.Post().AppendPath("auth/login")
+            .Content(new Login { Email = stale.EmailAddress, Password = SampleDataService.TEST_USER_PASSWORD })
+            .StatusCodeShouldBeUnauthorized());
+        await SendRequestAsync(r => r.BasicAuthorization(stale.EmailAddress, SampleDataService.TEST_USER_PASSWORD)
+            .AppendPath("users/me").StatusCodeShouldBeUnauthorized());
+        await SendRequestAsync(r => r.Post().AppendPath("auth/login")
+            .Content(new Login { Email = stale.EmailAddress, Password = changedPassword })
+            .StatusCodeShouldBeOk());
+        await SendRequestAsync(r => r.BasicAuthorization(stale.EmailAddress, changedPassword)
+            .AppendPath("users/me").StatusCodeShouldBeOk());
+        var stored = await repository.GetByIdAsync(stale.Id);
+        Assert.NotNull(stored);
+        Assert.Equal(stale.Salt, stored.Salt);
+        Assert.True(stored.IsCorrectPassword(changedPassword));
+    }
+
+    [Fact]
     public async Task DeleteAdminRoleAsync_AsGlobalAdmin_RemovesRole()
     {
         // Arrange

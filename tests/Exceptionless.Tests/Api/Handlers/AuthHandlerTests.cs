@@ -101,12 +101,23 @@ public sealed class AuthHandlerTests : TestWithServices
 
     [Theory]
     [MemberData(nameof(LoginRepositoryExceptions))]
-    public async Task Handle_LoginRepositoryException_ReturnsUnauthorizedResult(Exception exception)
+    public async Task Handle_LoginRepositoryException_ReturnsUnauthorizedResult(Exception exception, bool currentRead)
     {
         // Arrange
         var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
-        userRepository.Setup(repository => repository.GetByEmailAddressAsync("test@example.com"))
-            .ThrowsAsync(exception);
+        if (currentRead)
+        {
+            userRepository.Setup(repository => repository.GetByEmailAddressAsync("test@example.com"))
+                .ReturnsAsync(new User { Id = TestConstants.UserId, EmailAddress = "test@example.com", Salt = "salt" });
+            userRepository.Setup(repository => repository.GetByIdAsync(TestConstants.UserId, It.IsAny<ICommandOptions>()))
+                .ThrowsAsync(exception);
+        }
+        else
+        {
+            userRepository.Setup(repository => repository.GetByEmailAddressAsync("test@example.com"))
+                .ThrowsAsync(exception);
+        }
+
         var handler = CreateHandler(userRepository.Object, GetService<ITokenRepository>(), GetService<IOAuthTokenRepository>(), GetService<IOAuthProviderClient>());
         var message = new LoginMessage(
             new Login { Email = "test@example.com", Password = TestConstants.UserPassword },
@@ -119,13 +130,16 @@ public sealed class AuthHandlerTests : TestWithServices
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
         Assert.Equal("Login failed.", result.Message);
         userRepository.Verify(repository => repository.GetByEmailAddressAsync("test@example.com"), Times.Once);
+        userRepository.Verify(repository => repository.GetByIdAsync(TestConstants.UserId, It.IsAny<ICommandOptions>()), Times.Exactly(currentRead ? 1 : 0));
         userRepository.VerifyNoOtherCalls();
     }
 
-    public static TheoryData<Exception> LoginRepositoryExceptions => new()
+    public static TheoryData<Exception, bool> LoginRepositoryExceptions => new()
     {
-        new Exception("Repository failed."),
-        new OperationCanceledException("Repository operation was canceled.")
+        { new Exception("Repository failed."), false },
+        { new OperationCanceledException("Repository operation was canceled."), false },
+        { new Exception("Repository failed."), true },
+        { new OperationCanceledException("Repository operation was canceled."), true }
     };
 
     private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient providerClient)
@@ -141,7 +155,7 @@ public sealed class AuthHandlerTests : TestWithServices
             oauthTokenRepository,
             providerClient,
             GetService<ICacheClient>(),
-            GetService<AuthService>(),
+            new AuthService(userRepository, GetService<ICacheClient>(), TimeProvider, Log),
             GetService<IMailer>(),
             GetService<IDomainLoginProvider>(),
             TimeProvider,
