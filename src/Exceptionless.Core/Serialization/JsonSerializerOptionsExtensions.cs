@@ -35,6 +35,10 @@ public static class JsonSerializerOptionsExtensions
     public static JsonSerializerOptions ConfigureExceptionlessApiDefaults(this JsonSerializerOptions options)
     {
         ConfigureExceptionlessDefaults(options, skipEmptyCollections: false);
+
+        if (options.TypeInfoResolver is DefaultJsonTypeInfoResolver resolver)
+            resolver.Modifiers.Add(RemoveInternalProperties);
+
         return options;
     }
 
@@ -72,5 +76,14 @@ public static class JsonSerializerOptionsExtensions
 
         options.TypeInfoResolver = resolver;
         return options;
+    }
+
+    private static void RemoveInternalProperties(JsonTypeInfo typeInfo)
+    {
+        for (int i = typeInfo.Properties.Count - 1; i >= 0; i--)
+        {
+            if (typeInfo.Properties[i].AttributeProvider?.IsDefined(typeof(JsonIgnoreForExternalSerializationAttribute), inherit: true) == true)
+                typeInfo.Properties.RemoveAt(i);
+        }
     }
 }
