@@ -45,6 +45,7 @@ public static class JsonSerializerOptionsExtensions
             if (version is not null)
                 typeInfo.Properties.Remove(version);
         });
+
         return options;
     }
 

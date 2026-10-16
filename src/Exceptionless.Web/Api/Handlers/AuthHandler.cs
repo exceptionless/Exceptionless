@@ -565,12 +565,14 @@ public class AuthHandler(
             EnsureUserIsActive(currentUser);
             OAuthAccount? removedAccount = null;
             string? removedAccountVersion = null;
+
             if (existingUser is not null)
             {
                 if (!String.Equals(existingUser.Id, currentUser.Id, StringComparison.Ordinal))
                 {
                     removedAccount = existingUser.OAuthAccounts.FirstOrDefault(account => String.Equals(account.Provider, userInfo.ProviderName, StringComparison.OrdinalIgnoreCase)
                         && String.Equals(account.ProviderUserId, userInfo.Id, StringComparison.Ordinal));
+
                     if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
                         throw new Exception($"Unable to remove existing oauth account for existing user: {existingUser.EmailAddress}");
 
@@ -586,6 +588,7 @@ public class AuthHandler(
             }
 
             currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+
             try
             {
                 return await userRepository.SaveAsync(currentUser, o => o.Cache());

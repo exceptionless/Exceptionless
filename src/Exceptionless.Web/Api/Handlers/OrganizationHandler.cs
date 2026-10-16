@@ -683,9 +683,16 @@ public class OrganizationHandler(
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
         if (user is null || !user.OrganizationIds.Contains(message.Id))
         {
-            // Retrying a completed membership removal must also retry its cleanup.
+            // Retrying a completed removal must also retry revocation and cleanup.
             if (user is not null)
             {
+                await messagePublisher.PublishAsync(new UserMembershipChanged
+                {
+                    ChangeType = ChangeType.Removed,
+                    UserId = user.Id,
+                    OrganizationId = organization.Id
+                });
+
                 await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
                 await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
             }
@@ -709,20 +716,23 @@ public class OrganizationHandler(
             await userRepository.PatchAsync(user.Id, new ActionPatch<User>(current =>
             {
                 current.OrganizationIds.Remove(organization.Id);
+
                 foreach (var preference in current.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
                     current.OrganizationPreferences.Remove(preference);
+
                 foreach (var preference in current.SavedViewOrders.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
                     current.SavedViewOrders.Remove(preference);
             }), o => o.Cache());
 
-            await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
-            await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
             await messagePublisher.PublishAsync(new UserMembershipChanged
             {
                 ChangeType = ChangeType.Removed,
                 UserId = user.Id,
                 OrganizationId = organization.Id
             });
+
+            await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
+            await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
         }
 
         return Result.Success();

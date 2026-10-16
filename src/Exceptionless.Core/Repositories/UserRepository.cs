@@ -27,6 +27,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         var users = documents.ToArray();
         if (users.Any(user => user is null))
             throw new ArgumentException("Users cannot contain null values.", nameof(documents));
+
         if (users.Any(user => String.IsNullOrWhiteSpace(user.Version)))
             throw new VersionConflictDocumentException("Read the current user record before saving changes.");
 

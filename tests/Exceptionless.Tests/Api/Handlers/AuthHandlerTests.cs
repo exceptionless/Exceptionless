@@ -31,10 +31,11 @@ public sealed class AuthHandlerTests : TestWithServices
     public AuthHandlerTests(ITestOutputHelper output) : base(output) { }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    public async Task Handle_ExternalAccountDestinationSaveFails_RestoresOnlyUnchangedPreviousOwner(bool sourceChanged, bool destinationCommitted)
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task Handle_ExternalAccountDestinationSaveFails_RestoresOnlyUnchangedPreviousOwner(bool sourceChanged, bool destinationCommitted, bool recoveryReadFails)
     {
         // Arrange
         const string provider = "github";
@@ -58,6 +59,7 @@ public sealed class AuthHandlerTests : TestWithServices
         Exception failure = destinationCommitted
             ? new IOException("Destination save failed.")
             : new VersionConflictDocumentException("Destination user changed.");
+        var recoveryFailure = new IOException("Recovery read failed.");
         string? rotatedGeneration = null;
         User? currentOwner = null;
         var users = new Mock<IUserRepository>(MockBehavior.Strict);
@@ -77,10 +79,16 @@ public sealed class AuthHandlerTests : TestWithServices
             });
         users.Setup(repository => repository.SaveAsync(It.Is<User>(user => ReferenceEquals(user, destination)), It.IsAny<CommandOptionsDescriptor<User>>()))
             .ThrowsAsync(failure);
-        users.Setup(repository => repository.GetByIdAsync(destination.Id, (ICommandOptions?)null)).ReturnsAsync(storedDestination);
-        if (!destinationCommitted)
+        var recoveryRead = users.Setup(repository => repository.GetByIdAsync(destination.Id, (ICommandOptions?)null));
+        if (recoveryReadFails)
+            recoveryRead.ThrowsAsync(recoveryFailure);
+        else
+            recoveryRead.ReturnsAsync(storedDestination);
+
+        if (!destinationCommitted && !recoveryReadFails)
             users.Setup(repository => repository.GetByIdAsync(displaced.Id, (ICommandOptions?)null)).ReturnsAsync(() => currentOwner);
-        if (!sourceChanged && !destinationCommitted)
+
+        if (!sourceChanged && !destinationCommitted && !recoveryReadFails)
             users.Setup(repository => repository.SaveAsync(It.Is<User>(user => ReferenceEquals(user, currentOwner)), It.IsAny<CommandOptionsDescriptor<User>>()))
                 .ReturnsAsync((User user, CommandOptionsDescriptor<User> _) => user);
 
@@ -105,9 +113,16 @@ public sealed class AuthHandlerTests : TestWithServices
         Assert.False(String.IsNullOrEmpty(rotatedGeneration));
         Assert.NotEqual(previousGeneration, rotatedGeneration);
         Assert.Equal(rotatedGeneration, currentOwner.AuthenticationVersion);
-        Assert.Equal(!sourceChanged && !destinationCommitted, currentOwner.OAuthAccounts.Any(account => String.Equals(account.Provider, provider, StringComparison.Ordinal)
+        Assert.Equal(!sourceChanged && !destinationCommitted && !recoveryReadFails, currentOwner.OAuthAccounts.Any(account => String.Equals(account.Provider, provider, StringComparison.Ordinal)
             && String.Equals(account.ProviderUserId, providerId, StringComparison.Ordinal)));
         Assert.Equal(sourceChanged ? "Updated Name" : displaced.FullName, currentOwner.FullName);
+        if (recoveryReadFails)
+        {
+            var entry = Assert.Single(Log.LogEntries, entry => ReferenceEquals(entry.Exception, recoveryFailure));
+            Assert.Equal(LogLevel.Critical, entry.LogLevel);
+            Assert.Equal($"Error restoring external account for {displaced.EmailAddress} ({displaced.Id}): {recoveryFailure.Message}", entry.Message);
+        }
+
         users.VerifyAll();
         tokens.VerifyAll();
         oauthTokens.VerifyAll();

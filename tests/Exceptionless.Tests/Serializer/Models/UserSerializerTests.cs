@@ -447,9 +447,12 @@ public class UserSerializerTests : TestWithServices
         original.Roles.Add("user");
 
         // Act
-        string? json = _serializer.SerializeToString(original);
+        string json = _serializer.SerializeToString(original)!;
         var deserialized = _serializer.Deserialize<User>(json);
-        using var apiJson = JsonDocument.Parse(JsonSerializer.Serialize(original, new JsonSerializerOptions().ConfigureExceptionlessApiDefaults()));
+        var apiOptions = new JsonSerializerOptions().ConfigureExceptionlessApiDefaults();
+        using var apiJson = JsonDocument.Parse(JsonSerializer.Serialize(original, apiOptions));
+        var apiUser = JsonSerializer.Deserialize<User>(json, apiOptions);
+        var nestedApiJson = JsonSerializer.SerializeToElement(new { user = (object)original, users = new[] { original } }, apiOptions);
 
         // Assert
         Assert.NotNull(deserialized);
@@ -457,6 +460,11 @@ public class UserSerializerTests : TestWithServices
         Assert.Equal(authenticationVersion, deserialized.AuthenticationVersion);
         Assert.Equal(documentVersion, deserialized.Version);
         Assert.False(apiJson.RootElement.TryGetProperty("version", out _));
+        Assert.NotNull(apiUser);
+        Assert.Null(apiUser.Version);
+        Assert.Equal(original.FullName, apiUser.FullName);
+        Assert.False(nestedApiJson.GetProperty("user").TryGetProperty("version", out _));
+        Assert.False(nestedApiJson.GetProperty("users")[0].TryGetProperty("version", out _));
         Assert.Equal(authenticationVersion, apiJson.RootElement.GetProperty("authentication_version").GetString());
         Assert.Equal("Full Test User", deserialized.FullName);
         Assert.Equal("full@example.com", deserialized.EmailAddress);
