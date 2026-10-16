@@ -171,6 +171,9 @@ jobs:
       - name: Build
         run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
 
+      - name: Verify CI test tooling
+        run: node --test tests/ci/shards.test.js
+
       - name: Run .NET shard with coverage
         run: node tests/ci/backend-shards.js run --index ${{ matrix.shard }} --count 4 --output coverage --coverage
 
