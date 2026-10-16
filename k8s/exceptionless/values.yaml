@@ -22,7 +22,7 @@ jobs:
 config: {}
 #  key: value
 
-# Populated by k8s/scripts/discover-forwarded-headers.mjs for hosted deployments.
+# Populated by k8s/scripts/discover-forwarded-headers.js for hosted deployments.
 # A replacement list prevents stale subnet entries surviving --reuse-values.
 forwardedHeaders:
   knownNetworks: []

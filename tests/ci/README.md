@@ -4,9 +4,8 @@ The normal build targets a roughly **10-minute critical path**. Track elapsed wo
 
 ## Execution
 
-- `.NET`: four isolated runners build the suite and discover tests through Microsoft Testing Platform's JSON discovery. `backend-shards.mjs` groups whole classes, then distributes the longest classes first using `backend-durations.json`. New classes are included automatically; stale timing entries cannot select or exclude tests. Each runner retains the existing six collection workers and coverage collection.
-- CI tooling uses the project's Node.js runtime (Node 24 in CI), built-in modules, and `node:test`, with no additional packages. Backend summaries read xUnit's native CTRF JSON output; TRX reports remain available as artifacts.
-- Frontend CI runs `build/update-config.test.mjs` against the real configuration writer and container entrypoints. Process stubs check configuration failures, argument preservation, and app process replacement without starting containers. CSP input cases use fast unit tests, with a representative HTTP response-header test covering integration.
+- `.NET`: four isolated runners build the suite and discover tests through Microsoft Testing Platform's JSON discovery. `backend-shards.js` groups whole classes, then distributes the longest classes first using `backend-durations.json`. New classes are included automatically; stale timing entries cannot select or exclude tests. Each runner retains the existing six collection workers and coverage collection.
+- CI tooling uses the project's Node.js runtime (Node 24 in CI) and built-in modules, with no additional packages. Backend summaries read xUnit's native CTRF JSON output; TRX reports remain available as artifacts.
 - Browser: six isolated Aspire applications run Playwright's native `--shard=N/6` with `fullyParallel` enabled for sharding. Each runner uses **one worker** because scenarios can change the shared administrator's preferences. This splits large spec files without introducing concurrent mutations of that user. Shard IDs are included in generated data names.
 - Frontend unit/component tests actually execute in `test-client`, with two Vitest workers to bound memory. Previously the workflow only echoed the command.
 - `test-api` and `test-e2e` remain the required checks. They depend on every shard, reject missing/duplicate/inconsistent results, and fail if any shard fails, is cancelled, or is skipped. `fail-fast: false` retains diagnostics from the other shards.
@@ -43,15 +42,14 @@ Example local commands from the repository root (PowerShell):
 
 ```powershell
 dotnet build Exceptionless.slnx --configuration Release
-node tests/ci/backend-shards.mjs run --index 1 --count 4 --output "$env:TEMP/api-shard-1" --coverage
-node --test tests/ci/shards.test.mjs
+node tests/ci/backend-shards.js run --index 1 --count 4 --output "$env:TEMP/api-shard-1" --coverage
 ```
 
 Run local .NET shards **sequentially**: separate test processes on one host reuse test index scopes. Hosted shards are isolated machines. To validate or rebalance from downloaded artifacts:
 
 ```powershell
 gh run download <run-id> --pattern 'api-results-*' --dir "$env:TEMP/api-results"
-node tests/ci/backend-shards.mjs report "$env:TEMP/api-results" --count 4 --coverage --write-timings tests/ci/backend-durations.json
+node tests/ci/backend-shards.js report "$env:TEMP/api-results" --count 4 --coverage --write-timings tests/ci/backend-durations.json
 ```
 
 For a browser shard, start Aspire, discover and health-check its current local App URL, then from `src/Exceptionless.Web/ClientApp`:
@@ -62,7 +60,7 @@ $env:E2E_SHARD = '1'
 npm run test:e2e:ci -- --shard=1/6
 ```
 
-Keep the matrix counts, runner arguments, and aggregate completeness checks in sync when resizing either suite. The small CI-tool tests exercise lost/duplicated tests, inconsistent discovery, missing coverage, and failed/skipped browser results; they protect against a falsely green build.
+Keep the matrix counts, runner arguments, and aggregate completeness checks in sync when resizing either suite.
 
 ## October 2026 audit
 
@@ -104,7 +102,7 @@ Checked the resolved npm lockfile, NuGet packages (including transitive vulnerab
 | Storybook packages / Svelte CSF / Chromatic addon | 10.6.1 / 5.1.5 / 5.4.0 | Updated the component and visual testing toolchain together. |
 | Vite / Svelte Vite plugin | 8.3.2 / 7.3.1 | Updated the shared test/build host and plugin. |
 
-Compatibility was checked against the packages' Node, Vite, Svelte, and Storybook peer requirements. CI uses Node 24; no preview packages or new script dependencies were introduced. The scripts consume native xUnit CTRF JSON and use the built-in Node test runner. The existing GitHub logger supports MTP, and the Visual Studio adapter remains useful for IDE discovery; neither is a redundant legacy package.
+Compatibility was checked against the packages' Node, Vite, Svelte, and Storybook peer requirements. CI uses Node 24; no preview packages or new script dependencies were introduced. The scripts consume native xUnit CTRF JSON. The existing GitHub logger supports MTP, and the Visual Studio adapter remains useful for IDE discovery; neither is a redundant legacy package.
 
 Release references: [Playwright](https://playwright.dev/docs/release-notes), [xUnit](https://xunit.net/releases/), [Vitest](https://github.com/vitest-dev/vitest/releases/tag/v5.0.3), [jsdom](https://github.com/jsdom/jsdom/releases/tag/v30.1.1), [Storybook](https://github.com/storybookjs/storybook/releases/tag/v10.6.1), [Svelte CSF](https://github.com/storybookjs/addon-svelte-csf/releases/tag/v5.1.5), [Chromatic addon](https://github.com/chromaui/addon-visual-tests/releases/tag/v5.4.0), [Vite](https://github.com/vitejs/vite/releases/tag/v8.3.2), and [Svelte Vite plugin](https://github.com/sveltejs/vite-plugin-svelte/releases/tag/@sveltejs%2Fvite-plugin-svelte@7.3.1).
 

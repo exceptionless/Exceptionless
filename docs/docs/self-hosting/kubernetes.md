@@ -39,14 +39,14 @@ config:
 
 The repository's ingress templates use Azure Application Gateway for Containers, terminate TLS at ingress, and route `/` to the API Service on port 80 and container port 8080. The hosted development and production deployment workflow discovers the gateway's association subnet before each Helm upgrade, so subnet addresses do not need to be duplicated in environment values files.
 
-The shared `k8s/scripts/discover-forwarded-headers.mjs` script renders the environment's API ingress locally, reads the selected `ApplicationLoadBalancer` through Kubernetes, and resolves its association subnet IDs through Azure. It requires the existing deployment identity to have Kubernetes read access to that resource and Azure `Microsoft.Network/virtualNetworks/subnets/read` access to its subnets. Missing associations, failed reads, missing `Microsoft.ServiceNetworking/trafficControllers` delegation, invalid prefixes, and unrestricted `/0` prefixes stop deployment.
+The shared `k8s/scripts/discover-forwarded-headers.js` script renders the environment's API ingress locally, reads the selected `ApplicationLoadBalancer` through Kubernetes, and resolves its association subnet IDs through Azure. It requires the existing deployment identity to have Kubernetes read access to that resource and Azure `Microsoft.Network/virtualNetworks/subnets/read` access to its subnets. Missing associations, failed reads, missing `Microsoft.ServiceNetworking/trafficControllers` delegation, invalid prefixes, and unrestricted `/0` prefixes stop deployment.
 
 Discovery writes a `forwardedHeaders.knownNetworks` Helm list. The chart converts it into indexed `EX_ForwardedHeaders__KnownNetworks__*` keys and a forward limit of one for both application hosts. Replacing the list removes obsolete subnet entries even with `--reuse-values`. Combining discovery with manual `ForwardedHeaders` entries in `config` is rejected; remove those old entries from saved release values before using discovery.
 
 For manual upgrades, run discovery from the repository root after selecting the intended Kubernetes context and Azure subscription, then pass the generated file **last** to Helm. For example, the development commands are:
 
 ```sh
-node k8s/scripts/discover-forwarded-headers.mjs ex-dev k8s/ex-dev-values.yaml /tmp/ex-dev-forwarded-headers.json
+node k8s/scripts/discover-forwarded-headers.js ex-dev k8s/ex-dev-values.yaml /tmp/ex-dev-forwarded-headers.json
 # Run only if discovery succeeded:
 helm upgrade ex-dev k8s/exceptionless --namespace ex-dev --reuse-values \
   --values k8s/ex-dev-values.yaml --values /tmp/ex-dev-forwarded-headers.json

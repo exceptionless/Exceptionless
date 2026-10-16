@@ -53,7 +53,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     try {
         const [release, valuesFile, outputFile, ...extra] = process.argv.slice(2);
         if (!release || !valuesFile || !outputFile || extra.length)
-            throw new Error('Usage: node k8s/scripts/discover-forwarded-headers.mjs <release> <values-file> <output-json> (from repository root)');
+            throw new Error('Usage: node k8s/scripts/discover-forwarded-headers.js <release> <values-file> <output-json> (from repository root)');
         // A failed refresh must not leave an earlier trust file available for upgrade.
         rmSync(outputFile, { force: true });
         const values = discoverForwardedHeaders(release, valuesFile);

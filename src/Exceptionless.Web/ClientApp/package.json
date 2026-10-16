@@ -5,7 +5,7 @@
     "scripts": {
         "dev": "cross-env NODE_OPTIONS=--trace-warnings vite dev",
         "dev:api": "cross-env API_HTTP=https://dev-collector.exceptionless.io vite dev",
-        "urls": "node scripts/resolve-url.mjs",
+        "urls": "node scripts/resolve-url.js",
         "build": "vite build",
         "preview": "vite preview",
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -17,7 +17,7 @@
         "format:eslint": "eslint . --fix",
         "format:prettier": "prettier --write .",
         "validate": "npm run format && npm run check && npm run lint",
-        "generate-models": "node scripts/generate-api.mjs",
+        "generate-models": "node scripts/generate-api.js",
         "generate-templates": "swagger-typescript-api generate-templates -o api-templates",
         "test:e2e": "playwright test",
         "test:e2e:ci": "playwright test --project=chromium",

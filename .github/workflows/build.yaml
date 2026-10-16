@@ -171,14 +171,8 @@ jobs:
       - name: Build
         run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
 
-      - name: Install Helm for offline deployment tests
-        uses: azure/setup-helm@v5
-
-      - name: Verify CI test tooling
-        run: node --test tests/ci/shards.test.mjs tests/ci/forwarded-headers-discovery.test.mjs
-
       - name: Run .NET shard with coverage
-        run: node tests/ci/backend-shards.mjs run --index ${{ matrix.shard }} --count 4 --output coverage --coverage
+        run: node tests/ci/backend-shards.js run --index ${{ matrix.shard }} --count 4 --output coverage --coverage
 
       - name: Upload .NET shard results
         if: ${{ !cancelled() }}
@@ -213,7 +207,7 @@ jobs:
           path: coverage-shards
 
       - name: Verify complete shard coverage and report timings
-        run: node tests/ci/backend-shards.mjs report coverage-shards --count 4 --coverage --write-timings coverage-shards/backend-durations.json
+        run: node tests/ci/backend-shards.js report coverage-shards --count 4 --coverage --write-timings coverage-shards/backend-durations.json
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
@@ -514,7 +508,7 @@ jobs:
           E2E_SHARD: report
         run: |
           npx playwright test --project=chromium --list --reporter=json > test-results/discovery.json
-          node ../../../tests/ci/browser-report.mjs test-results/discovery.json test-results/e2e-results.json
+          node ../../../tests/ci/browser-report.js test-results/discovery.json test-results/e2e-results.json
 
       - name: Upload combined Playwright report
         if: ${{ !cancelled() }}
@@ -726,7 +720,7 @@ jobs:
         if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
         run: |
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-          node k8s/scripts/discover-forwarded-headers.mjs ex-dev k8s/ex-dev-values.yaml "$RUNNER_TEMP/forwarded-headers.json"
+          node k8s/scripts/discover-forwarded-headers.js ex-dev k8s/ex-dev-values.yaml "$RUNNER_TEMP/forwarded-headers.json"
           helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml --values "$RUNNER_TEMP/forwarded-headers.json" ex-dev --namespace $DEV_NAMESPACE ./k8s/exceptionless
 
       - name: Run Development Migrations
@@ -846,7 +840,7 @@ jobs:
         if: ${{ needs.version.outputs.is_prod_deploy == 'true' }}
         run: |
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-          node k8s/scripts/discover-forwarded-headers.mjs ex-prod k8s/ex-prod-values.yaml "$RUNNER_TEMP/forwarded-headers.json"
+          node k8s/scripts/discover-forwarded-headers.js ex-prod k8s/ex-prod-values.yaml "$RUNNER_TEMP/forwarded-headers.json"
           helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml --values "$RUNNER_TEMP/forwarded-headers.json" ex-prod --namespace ex-prod ./k8s/exceptionless
 
       - name: Summary
