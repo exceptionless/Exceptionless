@@ -1,6 +1,7 @@
-import { accessToken } from '$features/auth/index.svelte';
 import { type FetchClient, type FetchClientProvider, getCurrentProvider, ProblemDetails } from '@foundatiofx/fetchclient';
 import { SvelteDate } from 'svelte/reactivity';
+
+import { accessToken } from '#features/auth/index.svelte.ts';
 
 import { getApiUrl } from './urls';
 

@@ -1,8 +1,9 @@
 <script lang="ts">
-    import type { ButtonSize } from '$comp/ui/button';
-
-    import { Button } from '$comp/ui/button';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+
+    import type { ButtonSize } from '#comp/ui/button/index.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
 
     interface Props {
         isRefreshing?: boolean;

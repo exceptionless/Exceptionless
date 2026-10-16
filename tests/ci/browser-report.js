@@ -34,7 +34,7 @@ export function validate(expected, actual) {
 
 function main() {
     const { positionals } = parseArgs({ allowPositionals: true });
-    if (positionals.length !== 2) throw new Error('Usage: browser-report.mjs DISCOVERY_JSON RESULTS_JSON');
+    if (positionals.length !== 2) throw new Error('Usage: browser-report.js DISCOVERY_JSON RESULTS_JSON');
     const [expected, actual] = positionals.map((path) => JSON.parse(readFileSync(path, 'utf8')));
     const tests = cases(actual);
     const duration = (test) => test.results.reduce((total, result) => total + result.duration, 0);

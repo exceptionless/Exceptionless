@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { getMeQuery } from '$features/users/api.svelte';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
 
     let {
         children,

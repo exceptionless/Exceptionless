@@ -1,6 +1,6 @@
 import type { Configuration } from '@exceptionless/browser';
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 let _activeUserId: null | string = null;
 let _identityGeneration = 0;

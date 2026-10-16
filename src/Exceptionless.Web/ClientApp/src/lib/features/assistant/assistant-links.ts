@@ -36,7 +36,7 @@ export function normalizeAssistantUrl(url: string, key: string): string {
     try {
         const parsedUrl = new URL(url);
         // At the root, the pathname alone cannot distinguish app links from external links.
-        if (isAssistantPath(parsedUrl.pathname) && (resolve('/') !== '/' || parsedUrl.origin === page.url.origin)) {
+        if (isAssistantPath(parsedUrl.pathname) && (resolve('') !== '/' || parsedUrl.origin === page.url.origin)) {
             return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
         }
     } catch {
@@ -231,7 +231,7 @@ function getAssistantResourceLinks(tools: AssistantToolActivity[]): AssistantRes
 }
 
 function isAssistantPath(value: string): boolean {
-    const root = resolve('/');
+    const root = resolve('');
     return !value.startsWith('//') && !/[\\\s]/.test(value) && (value === root.slice(0, -1) || value.startsWith(root));
 }
 
@@ -247,7 +247,7 @@ function readNonEmptyString(record: Record<string, unknown>, key: string): strin
 function replaceOutsideProtectedMarkdown(content: string, replace: (text: string) => string): string {
     const protectedMarkdown =
         /(^(?:(?: {0,3}>[\t ]?)*(?: {4}|\t)[^\r\n]*(?:\r?\n|$))+|!?\[[^\]\n]*\]\s*\[[^\]\n]*\]|!?\[[^\]\n]*\]|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*|(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}|https?:\/\/[^\s<]+)/gm;
-    const root = resolve('/');
+    const root = resolve('');
     const appPathPattern = root === '/' ? /\/[^\s<]*/g : new RegExp(`${escapeRegularExpression(root.slice(0, -1))}(?:/[^\\s<]*)?`, 'g');
     const protectedRanges = [...content.matchAll(protectedMarkdown), ...content.matchAll(appPathPattern)].map((match) => ({
         end: match.index + match[0].length,

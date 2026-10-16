@@ -1,7 +1,7 @@
-import type { EventSummaryModel } from '$features/events/components/summary';
-
 import { render, screen } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
+
+import type { EventSummaryModel } from '#features/events/components/summary/index.ts';
 
 import SessionDurationCell from './session-duration-cell.svelte';
 

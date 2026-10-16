@@ -1,9 +1,10 @@
 <script lang="ts">
-    import * as Command from '$comp/ui/command';
-    import * as InputGroup from '$comp/ui/input-group';
     import CircleStop from '@lucide/svelte/icons/circle-stop';
     import Send from '@lucide/svelte/icons/send';
     import Wrench from '@lucide/svelte/icons/wrench';
+
+    import * as Command from '#comp/ui/command/index.ts';
+    import * as InputGroup from '#comp/ui/input-group/index.ts';
 
     interface Props {
         isStreaming?: boolean;

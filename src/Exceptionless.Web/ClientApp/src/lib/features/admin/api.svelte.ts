@@ -1,8 +1,9 @@
-import type { WorkInProgressResult } from '$generated/api';
-
-import { invalidateAssistantAccessQueries } from '$features/assistant/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+
+import type { WorkInProgressResult } from '#generated/api.ts';
+
+import { invalidateAssistantAccessQueries } from '#features/assistant/api.svelte.ts';
 
 import type {
     AdminAssistantSettings,

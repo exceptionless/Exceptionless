@@ -1,9 +1,9 @@
 <script lang="ts">
-    import type { EventSessionSummaryData, EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
+    import type { EventSessionSummaryData, EventSummaryModel, SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
 
-    import Duration from '$comp/formatters/duration.svelte';
-    import Live from '$comp/live.svelte';
-    import { getSessionSummaryDuration } from '$features/events/utils';
+    import Duration from '#comp/formatters/duration.svelte';
+    import Live from '#comp/live.svelte';
+    import { getSessionSummaryDuration } from '#features/events/utils/index.ts';
 
     interface Props {
         summary: EventSummaryModel<SummaryTemplateKeys>;

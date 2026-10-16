@@ -1,7 +1,7 @@
 <script lang="ts">
-    import type { Stack } from '$lib/generated/api';
+    import type { Stack } from '#lib/generated/api.ts';
 
-    import ProjectLogLevel from '$features/projects/components/project-log-level.svelte';
+    import ProjectLogLevel from '#features/projects/components/project-log-level.svelte';
 
     interface Props {
         stack: Stack;

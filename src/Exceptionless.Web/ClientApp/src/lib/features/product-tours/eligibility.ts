@@ -1,5 +1,6 @@
 import type { RouteId } from '$app/types';
-import type { ProductTourState } from '$features/users/models';
+
+import type { ProductTourState } from '#features/users/models.ts';
 
 const SETUP_ROUTE_IDS = new Set<RouteId>(['/(app)/organization/add', '/(app)/project/[projectId]/configure', '/(app)/project/add']);
 const LEGACY_STATE_KEYS: Record<string, readonly string[]> = {

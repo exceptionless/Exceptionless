@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('$features/events/components/filters', () => ({ StringTrigger: null }));
+vi.mock('#features/events/components/filters/index.ts', () => ({ StringTrigger: null }));
 
 import type { PersistentEvent } from '../../models';
 

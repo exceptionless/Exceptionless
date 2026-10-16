@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { Muted } from '$comp/typography';
-    import * as Dialog from '$comp/ui/dialog';
-    import * as Kbd from '$comp/ui/kbd';
-    import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '$features/shared/keyboard-shortcuts';
+    import { Muted } from '#comp/typography/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
+    import * as Kbd from '#comp/ui/kbd/index.ts';
+    import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '#features/shared/keyboard-shortcuts.ts';
 
     type Props = {
         open: boolean;

@@ -1,11 +1,13 @@
-import type { ViewUser } from '$features/users/models';
 import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
-import BooleanFormatter from '$features/shared/components/formatters/boolean.svelte';
-import { getSharedTableOptions } from '$features/shared/table.svelte';
-import UserActionsCell from '$features/users/components/table/user-actions-cell.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { ViewUser } from '#features/users/models.ts';
+
+import BooleanFormatter from '#features/shared/components/formatters/boolean.svelte';
+import { getSharedTableOptions } from '#features/shared/table.svelte.ts';
+import UserActionsCell from '#features/users/components/table/user-actions-cell.svelte';
 
 import type { GetOrganizationUsersParams } from '../../api.svelte';
 

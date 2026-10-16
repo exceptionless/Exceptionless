@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const paths = vi.hoisted(() => ({ base: '' }));
 
-vi.mock('$app/paths', () => ({ resolve: (path: string) => `${paths.base}${path}` }));
+// Route IDs drop their groups; other paths have no leading slash, so '' is the app root.
+vi.mock('$app/paths', () => ({ resolve: (path: string) => `${paths.base}${path.startsWith('/') ? path.replace(/\/\([^)]+\)/g, '') || '/' : `/${path}`}` }));
 vi.mock('$app/state', () => ({ page: { url: new URL('https://exceptionless.local/') } }));
 
 import type { AssistantToolActivity } from './models';

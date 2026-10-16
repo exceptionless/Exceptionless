@@ -1,16 +1,17 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { P } from '$comp/typography';
-    import Muted from '$comp/typography/muted.svelte';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { Checkbox } from '$comp/ui/checkbox';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { webhookEventTypes } from '$features/webhooks/options';
-    import { type NewWebHookFormData, NewWebHookSchema } from '$features/webhooks/schemas';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { P } from '#comp/typography/index.ts';
+    import Muted from '#comp/typography/muted.svelte';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { Checkbox } from '#comp/ui/checkbox/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
+    import { webhookEventTypes } from '#features/webhooks/options.ts';
+    import { type NewWebHookFormData, NewWebHookSchema } from '#features/webhooks/schemas.ts';
 
     import type { NewWebhook, WebhookKnownEventTypes } from '../../models';
 

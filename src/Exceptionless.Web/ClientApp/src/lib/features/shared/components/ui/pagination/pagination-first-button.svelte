@@ -2,7 +2,7 @@
 	import { Pagination as PaginationPrimitive } from "bits-ui";
 	import ChevronsLeftIcon from "@lucide/svelte/icons/chevrons-left";
 
-	import { buttonVariants } from "$comp/ui/button/index.js";
+	import { buttonVariants } from "#comp/ui/button/index.ts";
 
 	type Props = Omit<PaginationPrimitive.PageProps, "page"> &
 		Partial<Pick<PaginationPrimitive.PageProps, "page">> & {

@@ -1,10 +1,11 @@
 <script lang="ts">
-    import { Response } from '$comp/ai-elements/response';
-    import { Button } from '$comp/ui/button';
-    import { Spinner } from '$comp/ui/spinner';
     import Bot from '@lucide/svelte/icons/bot';
     import MessageCircle from '@lucide/svelte/icons/message-circle';
     import Sparkles from '@lucide/svelte/icons/sparkles';
+
+    import { Response } from '#comp/ai-elements/response/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
 
     import type { AssistantChatMessage, AssistantFeedback, AssistantSuggestedAction } from '../models';
 
