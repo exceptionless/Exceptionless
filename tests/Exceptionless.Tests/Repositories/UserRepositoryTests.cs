@@ -22,6 +22,7 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         var user = new User { FullName = "Linked User", EmailAddress = "linked@localhost.test" };
         user.MarkEmailAddressVerified();
         user.AddOAuthAccount("google", "shared-subject", user.EmailAddress);
+        user.AddOAuthAccount("GOOGLE", "shared-subject", user.EmailAddress);
         user.AddOAuthAccount("github", "other-subject", user.EmailAddress);
         await _repository.AddAsync(user, options => options.ImmediateConsistency());
 
@@ -34,6 +35,7 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         Assert.Null(githubUser);
         Assert.NotNull(googleUser);
         Assert.Equal(user.Id, googleUser.Id);
+        Assert.Equal(2, googleUser.OAuthAccounts.Count);
         Assert.Null(differentCaseUser);
     }
 

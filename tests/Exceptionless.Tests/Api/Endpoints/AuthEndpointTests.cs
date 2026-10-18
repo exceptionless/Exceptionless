@@ -798,6 +798,32 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RemoveExternalLoginAsync_DuplicateEntriesForOnlySignInMethod_PreservesAccount()
+    {
+        // Arrange
+        const string code = "github-only-duplicate-login";
+        var login = await SendExternalLoginAsync("github", code);
+        Assert.NotNull(login);
+        var user = await _userRepository.GetByEmailAddressAsync(TestOAuthProviderClient.GetEmailAddress(code));
+        Assert.NotNull(user);
+        Assert.Null(user.Password);
+        user.OAuthAccounts.Add(Assert.Single(user.OAuthAccounts));
+        await _userRepository.SaveAsync(user, options => options.ImmediateConsistency());
+
+        // Act
+        await SendRequestAsync(request => request.Post().BearerToken(login.Token)
+            .AppendPaths("auth", "unlink", "github")
+            .Content(new ValueFromBody<string>(code)).StatusCodeShouldBeBadRequest());
+
+        // Assert
+        var storedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
+        Assert.NotNull(storedUser);
+        Assert.Equal(2, storedUser.OAuthAccounts.Count);
+        Assert.Equal(user.AuthenticationVersion, storedUser.AuthenticationVersion);
+        await SendRequestAsync(request => request.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeOk());
+    }
+
+    [Fact]
     public async Task LoginInvalidPasswordAsync()
     {
         _authOptions.EnableActiveDirectoryAuth = false;
@@ -2098,8 +2124,10 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.Equal(originalTokenCount, (await _tokenRepository.CountAsync()).Total);
     }
 
-    [Fact]
-    public async Task ExternalLogin_ActiveProviderOwner_TransfersAccountAndRevokesPreviousSession()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExternalLogin_ActiveProviderOwner_TransfersAccountAndRevokesPreviousSession(bool hasDuplicateEntries)
     {
         // Arrange
         const string code = "github-transfer-account";
@@ -2108,6 +2136,8 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.NotNull(owner);
         Assert.NotNull(currentUser);
         owner.AddOAuthAccount("github", code, owner.EmailAddress);
+        if (hasDuplicateEntries)
+            owner.OAuthAccounts.Add(owner.OAuthAccounts.Single(account => account.Provider == "github" && account.ProviderUserId == code));
         await _userRepository.SaveAsync(owner, options => options.ImmediateConsistency());
         var login = await SendRequestAsAsync<TokenResult>(request => request.Post().AppendPath("auth/login")
             .Content(new Login { Email = owner.EmailAddress, Password = SampleDataService.TEST_USER_PASSWORD })

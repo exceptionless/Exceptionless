@@ -15,6 +15,7 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Security;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
@@ -54,6 +55,8 @@ public sealed class AuthHandlerTests : TestWithServices
         string? persistedVersion = null;
         var users = new Mock<IUserRepository>(MockBehavior.Strict);
         users.Setup(repository => repository.GetUserByOAuthProviderAsync(provider, providerId)).ReturnsAsync(displaced);
+        users.Setup(repository => repository.GetByIdAsync(displaced.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(displaced);
+        users.Setup(repository => repository.GetByIdAsync(current.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(current);
         users.Setup(repository => repository.SaveAsync(displaced, It.IsAny<CommandOptionsDescriptor<User>>()))
             .Callback(() =>
             {
@@ -141,6 +144,7 @@ public sealed class AuthHandlerTests : TestWithServices
             oauthTokenRepository,
             providerClient,
             GetService<ICacheClient>(),
+            GetService<ILockProvider>(),
             GetService<AuthService>(),
             GetService<IMailer>(),
             GetService<IDomainLoginProvider>(),

@@ -64,9 +64,14 @@ public static class UserExtensions
 
     public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary? data = null)
     {
+        providerName = providerName.ToLowerInvariant();
+        if (user.OAuthAccounts.Any(account => String.Equals(account.Provider, providerName, StringComparison.Ordinal)
+            && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal)))
+            return;
+
         var account = new OAuthAccount
         {
-            Provider = providerName.ToLowerInvariant(),
+            Provider = providerName,
             ProviderUserId = providerUserId,
             Username = username
         };
@@ -82,10 +87,17 @@ public static class UserExtensions
         if (user.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(user.Password))
             return false;
 
-        var account = user.OAuthAccounts.FirstOrDefault(o => o.Provider == providerName.ToLowerInvariant() && o.ProviderUserId == providerUserId);
-        if (account is null)
+        var accounts = user.OAuthAccounts.Where(account => String.Equals(account.Provider, providerName.ToLowerInvariant(), StringComparison.Ordinal)
+            && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal)).ToArray();
+        if (accounts.Length == 0)
             return true;
 
-        return user.OAuthAccounts.Remove(account);
+        if (accounts.Length == user.OAuthAccounts.Count && String.IsNullOrEmpty(user.Password))
+            return false;
+
+        foreach (var account in accounts)
+            user.OAuthAccounts.Remove(account);
+
+        return true;
     }
 }
