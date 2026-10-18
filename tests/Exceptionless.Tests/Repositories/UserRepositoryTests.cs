@@ -2,6 +2,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Xunit;
 
 namespace Exceptionless.Tests.Repositories;
@@ -27,9 +28,9 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         await _repository.AddAsync(user, options => options.ImmediateConsistency());
 
         // Act
-        var githubUser = await _repository.GetUserByOAuthProviderAsync("github", "shared-subject");
-        var googleUser = await _repository.GetUserByOAuthProviderAsync("GOOGLE", "shared-subject");
-        var differentCaseUser = await _repository.GetUserByOAuthProviderAsync("google", "SHARED-SUBJECT");
+        var githubUser = await _repository.GetUserByOAuthProviderAsync("github", "shared-subject", TestCancellationToken);
+        var googleUser = await _repository.GetUserByOAuthProviderAsync("GOOGLE", "shared-subject", TestCancellationToken);
+        var differentCaseUser = await _repository.GetUserByOAuthProviderAsync("google", "SHARED-SUBJECT", TestCancellationToken);
 
         // Assert
         Assert.Null(githubUser);
@@ -40,9 +41,10 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task GetUserByOAuthProviderAsync_MatchingIdentityOnSecondPage_ValidatesAllCandidates(bool hasDuplicateOwner)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task GetUserByOAuthProviderAsync_PagedCandidates_ValidatesIdentityAndCancellation(bool hasDuplicateOwner, bool cancelAfterFirstPage)
     {
         // Arrange
         var users = Enumerable.Range(1, 101).Select(index =>
@@ -63,15 +65,33 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
             users[0].AddOAuthAccount("github", "shared-subject", users[0].EmailAddress);
         await _repository.AddAsync(users, options => options.ImmediateConsistency());
         User? matchingUser = null;
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        int queryCount = 0;
+        using var queryHandler = _repository.AfterQuery.AddHandler((_, args) =>
+        {
+            if (args.Result is FindResults<User>)
+            {
+                queryCount++;
+                if (cancelAfterFirstPage)
+                    cancellation.Cancel();
+            }
+            return Task.CompletedTask;
+        });
 
         // Act
         var exception = await Record.ExceptionAsync(async () =>
         {
-            matchingUser = await _repository.GetUserByOAuthProviderAsync("github", "shared-subject");
+            matchingUser = await _repository.GetUserByOAuthProviderAsync("github", "shared-subject", cancellation.Token);
         });
 
         // Assert
-        if (hasDuplicateOwner)
+        if (cancelAfterFirstPage)
+        {
+            Assert.IsAssignableFrom<OperationCanceledException>(exception);
+            Assert.Null(matchingUser);
+            Assert.Equal(1, queryCount);
+        }
+        else if (hasDuplicateOwner)
         {
             Assert.IsType<UnauthorizedAccessException>(exception);
             Assert.Null(matchingUser);

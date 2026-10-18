@@ -2162,7 +2162,7 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.NotNull(storedOwner);
         Assert.DoesNotContain(storedOwner.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
         Assert.NotEqual(owner.AuthenticationVersion, storedOwner.AuthenticationVersion);
-        var matchingUser = await _userRepository.GetUserByOAuthProviderAsync("github", code);
+        var matchingUser = await _userRepository.GetUserByOAuthProviderAsync("github", code, TestCancellationToken);
         Assert.NotNull(matchingUser);
         Assert.Equal(currentUser.Id, matchingUser.Id);
         await SendRequestAsync(request => request.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeUnauthorized());

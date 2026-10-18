@@ -532,21 +532,21 @@ public class AuthHandler(
             throw;
         }
 
+        using var lockTimeout = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
+        lockTimeout.CancelAfter(TimeSpan.FromSeconds(15));
         try
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
             ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
             ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
 
-            using var lockTimeout = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
-            lockTimeout.CancelAfter(TimeSpan.FromSeconds(15));
             // Lock the identity and normalized email before resolving or creating its owner.
             string[] accountKeys = [
                 $"external-account:identity:{userInfo.ProviderName.ToLowerInvariant()}:{OAuthService.CreateTokenHash(userInfo.Id)}",
                 $"external-account:email:{OAuthService.CreateTokenHash(userInfo.Email.Trim().ToLowerInvariant())}"
             ];
             await using var accountLock = await lockProvider.AcquireAsync(accountKeys, cancellationToken: lockTimeout.Token);
-            var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
+            var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id, lockTimeout.Token);
             var emailUser = existingUser is null ? await userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
             string? currentUserId = String.IsNullOrWhiteSpace(authInfo.InviteToken) && httpContext.User.IsUserAuthType()
                 ? httpContext.Request.GetUser().Id : null;
@@ -554,6 +554,7 @@ public class AuthHandler(
                 .OfType<string>().Select(GetExternalAccountUserLockKey);
             // Ordered user locks also protect transfers and different identities on the same user.
             await using var userLock = await lockProvider.AcquireAsync(userKeys, cancellationToken: lockTimeout.Token);
+            lockTimeout.Token.ThrowIfCancellationRequested();
             var user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext, existingUser, emailUser);
 
             if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
@@ -562,7 +563,8 @@ public class AuthHandler(
             logger.UserLoggedIn(user.EmailAddress);
             return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
         }
-        catch (Exception ex) when (ex is UnauthorizedAccessException or LockAcquisitionTimeoutException)
+        catch (Exception ex) when (ex is UnauthorizedAccessException or LockAcquisitionTimeoutException
+            || ex is OperationCanceledException && lockTimeout.IsCancellationRequested)
         {
             logger.LogWarning(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
             return Result.Unauthorized("Login failed.");

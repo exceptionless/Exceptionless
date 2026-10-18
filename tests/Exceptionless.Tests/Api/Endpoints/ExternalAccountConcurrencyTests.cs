@@ -99,6 +99,43 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ExternalLogin_CanceledOwnershipLookup_ReleasesLocksForNextRequest()
+    {
+        // Arrange
+        const string code = "canceled-external-account";
+        using var client = _server.CreateClient();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        _race.Start();
+        var pendingRequest = client.PostAsJsonAsync("api/v2/auth/github", new ExternalAuthInfo
+        {
+            ClientId = "client-id", Code = code, RedirectUri = "http://localhost/callback"
+        }, cancellation.Token);
+        await _race.FirstSnapshotRead.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellationToken);
+        Exception? exception;
+        TokenResult? nextResult;
+
+        // Act
+        try
+        {
+            cancellation.Cancel();
+            exception = await Record.ExceptionAsync(async () =>
+            {
+                using var response = await pendingRequest;
+            });
+            nextResult = await SendExternalLoginAsync(client, code);
+        }
+        finally
+        {
+            _race.ResumeFirstRequest.TrySetResult();
+        }
+
+        // Assert
+        Assert.IsAssignableFrom<OperationCanceledException>(exception);
+        Assert.NotNull(nextResult);
+        Assert.NotNull(await _tokens.GetByIdAsync(nextResult.Token));
+    }
+
+    [Fact]
     public async Task ExternalLogin_AccountLockUnavailable_IsRejectedWithoutWrites()
     {
         // Arrange
@@ -120,7 +157,7 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
         Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.Equal(originalUserCount, (await _users.CountAsync()).Total);
         Assert.Equal(originalTokenCount, (await _tokens.CountAsync()).Total);
-        Assert.Null(await _users.GetUserByOAuthProviderAsync("github", code));
+        Assert.Null(await _users.GetUserByOAuthProviderAsync("github", code, TestCancellationToken));
     }
 
     [Fact]
@@ -184,10 +221,10 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
     private sealed class PausingUserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, Exceptionless.Core.AppOptions options, ExternalAccountRace race)
         : UserRepository(configuration, validator, options), IUserRepository
     {
-        public new async Task<User?> GetUserByOAuthProviderAsync(string provider, string providerUserId)
+        public new async Task<User?> GetUserByOAuthProviderAsync(string provider, string providerUserId, CancellationToken cancellationToken = default)
         {
-            var user = await base.GetUserByOAuthProviderAsync(provider, providerUserId);
-            await race.AfterSnapshotReadAsync();
+            var user = await base.GetUserByOAuthProviderAsync(provider, providerUserId, cancellationToken);
+            await race.AfterSnapshotReadAsync(cancellationToken);
             return user;
         }
     }
@@ -216,7 +253,7 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
             RejectLocks = false;
         }
 
-        public async Task AfterSnapshotReadAsync()
+        public async Task AfterSnapshotReadAsync(CancellationToken cancellationToken)
         {
             if (!Enabled)
                 return;
@@ -224,7 +261,7 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
             if (Interlocked.Increment(ref _reads) == 1)
             {
                 FirstSnapshotRead.TrySetResult();
-                await ResumeFirstRequest.Task;
+                await ResumeFirstRequest.Task.WaitAsync(cancellationToken);
             }
             else
             {
