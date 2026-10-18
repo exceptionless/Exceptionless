@@ -597,6 +597,10 @@ public class AuthHandler(
             existingUser = await userRepository.GetByIdAsync(existingUser.Id, options => options.Cache(false)).WaitAsync(cancellationToken)
                 ?? throw new UnauthorizedAccessException("The user no longer exists.");
             EnsureUserIsActive(existingUser);
+            if (!existingUser.OAuthAccounts.Any(account =>
+                String.Equals(account.Provider, userInfo.ProviderName, StringComparison.OrdinalIgnoreCase) &&
+                String.Equals(account.ProviderUserId, userInfo.Id, StringComparison.Ordinal)))
+                throw new UnauthorizedAccessException("The external account is no longer linked to this user.");
         }
 
         if (String.IsNullOrWhiteSpace(inviteToken) && httpContext.User.IsUserAuthType())

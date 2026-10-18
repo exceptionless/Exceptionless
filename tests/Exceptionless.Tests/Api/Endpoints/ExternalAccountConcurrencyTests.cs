@@ -195,6 +195,46 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ExternalLogin_IdentityUnlinkedAfterLookup_RejectsStaleOwner()
+    {
+        // Arrange
+        const string code = "external-account-unlinked-during-login";
+        var user = await _users.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.AddOAuthAccount("github", code, user.EmailAddress);
+        await _users.SaveAsync(user, options => options.ImmediateConsistency());
+        using var loginClient = _server.CreateClient();
+        using var unlinkClient = _server.CreateClient();
+        SetAuthorization(unlinkClient, SampleDataService.TEST_ORG_USER_EMAIL, SampleDataService.TEST_ORG_USER_PASSWORD);
+        _race.Start(LookupStage.Identity, TestCancellationToken);
+        var pendingLogin = loginClient.PostAsJsonAsync("api/v2/auth/github", new ExternalAuthInfo
+        {
+            ClientId = "client-id", Code = code, RedirectUri = "http://localhost/callback"
+        }, TestCancellationToken);
+        await _race.FirstSnapshotRead.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellationToken);
+
+        // Act
+        HttpResponseMessage unlinkResponse;
+        try
+        {
+            unlinkResponse = await unlinkClient.PostAsJsonAsync("api/v2/auth/unlink/github", new ValueFromBody<string>(code), TestCancellationToken);
+        }
+        finally
+        {
+            _race.ResumeFirstRequest.TrySetResult();
+        }
+        using var completedUnlinkResponse = unlinkResponse;
+        using var loginResponse = await pendingLogin;
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.OK, unlinkResponse.StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, loginResponse.StatusCode);
+        var storedUser = await _users.GetByIdAsync(user.Id, options => options.Cache(false));
+        Assert.NotNull(storedUser);
+        Assert.DoesNotContain(storedUser.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
+    }
+
+    [Fact]
     public async Task ExternalLogin_ConcurrentDifferentIdentitiesForSameUser_PreservesBothLinks()
     {
         // Arrange
