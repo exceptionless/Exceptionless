@@ -2099,45 +2099,88 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetUserByOAuthProviderAsync_DifferentAccountEntries_DoNotMatch()
+    public async Task ExternalLogin_ActiveProviderOwner_TransfersAccountAndRevokesPreviousSession()
     {
         // Arrange
-        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
-        Assert.NotNull(user);
-        user.AddOAuthAccount("google", "shared-subject", user.EmailAddress);
-        user.AddOAuthAccount("github", "other-subject", user.EmailAddress);
-        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+        const string code = "github-transfer-account";
+        var owner = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var currentUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(owner);
+        Assert.NotNull(currentUser);
+        owner.AddOAuthAccount("github", code, owner.EmailAddress);
+        await _userRepository.SaveAsync(owner, options => options.ImmediateConsistency());
+        var login = await SendRequestAsAsync<TokenResult>(request => request.Post().AppendPath("auth/login")
+            .Content(new Login { Email = owner.EmailAddress, Password = SampleDataService.TEST_USER_PASSWORD })
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(login);
+        await SendRequestAsync(request => request.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeOk());
 
         // Act
-        var githubUser = await _userRepository.GetUserByOAuthProviderAsync("github", "shared-subject");
-        var googleUser = await _userRepository.GetUserByOAuthProviderAsync("google", "shared-subject");
+        var result = await SendRequestAsAsync<TokenResult>(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("auth", "github")
+            .Content(new ExternalAuthInfo { ClientId = "client-id", Code = code, RedirectUri = "http://localhost/callback" })
+            .StatusCodeShouldBeOk());
 
         // Assert
-        Assert.Null(githubUser);
-        Assert.NotNull(googleUser);
-        Assert.Equal(user.Id, googleUser.Id);
+        Assert.NotNull(result);
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
+        Assert.NotNull(token);
+        Assert.Equal(currentUser.Id, token.UserId);
+        var storedOwner = await _userRepository.GetByIdAsync(owner.Id, options => options.ImmediateConsistency());
+        Assert.NotNull(storedOwner);
+        Assert.DoesNotContain(storedOwner.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
+        Assert.NotEqual(owner.AuthenticationVersion, storedOwner.AuthenticationVersion);
+        var matchingUser = await _userRepository.GetUserByOAuthProviderAsync("github", code);
+        Assert.NotNull(matchingUser);
+        Assert.Equal(currentUser.Id, matchingUser.Id);
+        await SendRequestAsync(request => request.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeUnauthorized());
     }
 
-    [Fact]
-    public async Task GetUserByOAuthProviderAsync_DuplicateIdentity_RejectsAmbiguousOwner()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExternalLogin_DuplicateProviderOwners_IsRejectedWithoutChangingAccountsOrTokens(bool isAuthenticated)
     {
         // Arrange
+        const string code = "github-duplicate-owners";
+        var owners = new List<User>();
         foreach (string email in new[] { SampleDataService.TEST_USER_EMAIL, SampleDataService.TEST_ORG_USER_EMAIL })
         {
-            var user = await _userRepository.GetByEmailAddressAsync(email);
-            Assert.NotNull(user);
-            user.AddOAuthAccount("github", "duplicate-subject", user.EmailAddress);
-            await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+            var owner = await _userRepository.GetByEmailAddressAsync(email);
+            Assert.NotNull(owner);
+            owner.AddOAuthAccount("github", code, owner.EmailAddress);
+            owners.Add(owner);
         }
+        await _userRepository.SaveAsync(owners, options => options.ImmediateConsistency());
+        long originalTokenCount = (await _tokenRepository.CountAsync()).Total;
 
         // Act
-        var exception = await Record.ExceptionAsync(async () =>
+        var problem = await SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(request =>
         {
-            _ = await _userRepository.GetUserByOAuthProviderAsync("github", "duplicate-subject");
+            if (isAuthenticated)
+                request.AsTestOrganizationUser();
+
+            request.Post().AppendPaths("auth", "github")
+                .Content(new ExternalAuthInfo { ClientId = "client-id", Code = code, RedirectUri = "http://localhost/callback" })
+                .StatusCodeShouldBeUnauthorized();
         });
 
         // Assert
-        Assert.IsType<UnauthorizedAccessException>(exception);
+        Assert.NotNull(problem);
+        Assert.Equal("Login failed.", problem.Title);
+        Assert.Equal(originalTokenCount, (await _tokenRepository.CountAsync()).Total);
+        Assert.Null(await _userRepository.GetByEmailAddressAsync(TestOAuthProviderClient.GetEmailAddress(code)));
+        foreach (var owner in owners)
+        {
+            var storedOwner = await _userRepository.GetByIdAsync(owner.Id, options => options.ImmediateConsistency());
+            Assert.NotNull(storedOwner);
+            Assert.Equal(owner.AuthenticationVersion, storedOwner.AuthenticationVersion);
+            Assert.Equal(owner.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)),
+                storedOwner.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)));
+            Assert.Equal(owner.IsEmailAddressVerified, storedOwner.IsEmailAddressVerified);
+        }
     }
 
     private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId)

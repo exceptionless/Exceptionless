@@ -526,7 +526,7 @@ public class AuthHandler(
         }
         catch (UnauthorizedAccessException ex)
         {
-            logger.LogWarning(ex, "External login failed for {EmailAddress}: Account unavailable", userInfo.Email);
+            logger.LogWarning(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
             return Result.Unauthorized("Login failed.");
         }
         catch (ApplicationException ex)

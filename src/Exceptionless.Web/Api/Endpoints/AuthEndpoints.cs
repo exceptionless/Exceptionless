@@ -111,7 +111,7 @@ public static class AuthEndpoints
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
-                ["401"] = "Sign-in failed",
+                ["401"] = "Unauthorized",
                 ["403"] = "Account Creation is currently disabled",
                 ["422"] = "Validation error",
             }
@@ -131,7 +131,7 @@ public static class AuthEndpoints
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
-                ["401"] = "Sign-in failed",
+                ["401"] = "Unauthorized",
                 ["403"] = "Account Creation is currently disabled",
                 ["422"] = "Validation error",
             }
@@ -151,7 +151,7 @@ public static class AuthEndpoints
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
-                ["401"] = "Sign-in failed",
+                ["401"] = "Unauthorized",
                 ["403"] = "Account Creation is currently disabled",
                 ["422"] = "Validation error",
             }
@@ -171,7 +171,7 @@ public static class AuthEndpoints
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
-                ["401"] = "Sign-in failed",
+                ["401"] = "Unauthorized",
                 ["403"] = "Account Creation is currently disabled",
                 ["422"] = "Validation error",
             }

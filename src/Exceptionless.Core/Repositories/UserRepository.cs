@@ -129,7 +129,8 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
             return null;
 
         provider = provider.ToLowerInvariant();
-        var results = await FindAsync(q => q.FieldEquals(u => u.OAuthAccounts.First().ProviderUserId, providerUserId),
+        // OAuth accounts are mapped as objects, so indexed fields cannot enforce matching within one account.
+        var results = await FindAsync(q => q.FieldEquals(u => u.OAuthAccounts.First().ProviderUserId, providerUserId).SortAscending(u => u.Id),
             o => o.SearchAfterPaging().PageLimit(100));
         User? matchingUser = null;
         do
