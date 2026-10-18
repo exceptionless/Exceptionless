@@ -171,6 +171,30 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RemoveExternalLogin_AccountLockUnavailable_PreservesIdentityAndAuthenticationVersion()
+    {
+        // Arrange
+        const string code = "external-unlink-lock-unavailable";
+        using var client = _server.CreateClient();
+        SetAuthorization(client, SampleDataService.TEST_ORG_USER_EMAIL, SampleDataService.TEST_ORG_USER_PASSWORD);
+        var user = await _users.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.AddOAuthAccount("github", code, user.EmailAddress);
+        await _users.SaveAsync(user, options => options.ImmediateConsistency());
+        _race.RejectLocks = true;
+
+        // Act
+        using var response = await client.PostAsJsonAsync("api/v2/auth/unlink/github", new ValueFromBody<string>(code), TestCancellationToken);
+
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
+        var storedUser = await _users.GetByIdAsync(user.Id, options => options.Cache(false));
+        Assert.NotNull(storedUser);
+        Assert.Equal(user.AuthenticationVersion, storedUser.AuthenticationVersion);
+        Assert.Single(storedUser.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
+    }
+
+    [Fact]
     public async Task ExternalLogin_ConcurrentDifferentIdentitiesForSameUser_PreservesBothLinks()
     {
         // Arrange

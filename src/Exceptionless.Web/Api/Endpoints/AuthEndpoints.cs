@@ -182,6 +182,7 @@ public static class AuthEndpoints
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
         .WithSummary("Removes an external login provider from the account")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The provider user id.",
@@ -191,6 +192,7 @@ public static class AuthEndpoints
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
                 ["400"] = "Invalid provider name.",
+                ["401"] = "Unauthorized",
             }
         });
 

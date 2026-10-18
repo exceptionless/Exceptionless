@@ -52,6 +52,8 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(loginPost.TryGetProperty("requestBody", out _));
         AssertResponseCodes(loginPost, "200", "401", "422");
 
+        AssertPathResponseCodes(paths, "/api/v2/auth/unlink/{providerName}", "post", "200", "400", "401");
+
         Assert.True(paths.TryGetProperty("/api/v2/auth/logout", out var logoutPath));
         Assert.True(logoutPath.TryGetProperty("get", out var logoutGet));
         AssertResponseCodes(logoutGet, "200", "401", "403");
