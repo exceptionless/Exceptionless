@@ -10,6 +10,7 @@ using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
@@ -98,14 +99,23 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
         Assert.Equal(owner.Id, secondToken.UserId);
     }
 
-    [Fact]
-    public async Task ExternalLogin_CanceledOwnershipLookup_ReleasesLocksForNextRequest()
+    [Theory]
+    [InlineData(LookupStage.Identity)]
+    [InlineData(LookupStage.Email)]
+    [InlineData(LookupStage.User)]
+    public async Task ExternalLogin_CanceledLookup_ReleasesLocksForNextRequest(LookupStage stage)
     {
         // Arrange
         const string code = "canceled-external-account";
         using var client = _server.CreateClient();
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        _race.Start();
+        if (stage == LookupStage.User)
+        {
+            var user = new User { FullName = "Canceled lookup user", EmailAddress = TestOAuthProviderClient.GetEmailAddress(code) };
+            user.MarkEmailAddressVerified();
+            await _users.AddAsync(user, options => options.ImmediateConsistency());
+        }
+        _race.Start(stage, TestCancellationToken);
         var pendingRequest = client.PostAsJsonAsync("api/v2/auth/github", new ExternalAuthInfo
         {
             ClientId = "client-id", Code = code, RedirectUri = "http://localhost/callback"
@@ -121,7 +131,7 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
             exception = await Record.ExceptionAsync(async () =>
             {
                 using var response = await pendingRequest;
-            });
+            }).AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestCancellationToken);
             nextResult = await SendExternalLoginAsync(client, code);
         }
         finally
@@ -184,7 +194,7 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
 
     private async Task<TokenResult?[]> RunConcurrentRequestsAsync(HttpClient firstClient, string firstCode, HttpClient secondClient, string secondCode)
     {
-        _race.Start();
+        _race.Start(LookupStage.Identity, TestCancellationToken);
         var firstRequest = SendExternalLoginAsync(firstClient, firstCode);
         Task<TokenResult?>? secondRequest = null;
         try
@@ -224,23 +234,43 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
         public new async Task<User?> GetUserByOAuthProviderAsync(string provider, string providerUserId, CancellationToken cancellationToken = default)
         {
             var user = await base.GetUserByOAuthProviderAsync(provider, providerUserId, cancellationToken);
-            await race.AfterSnapshotReadAsync(cancellationToken);
+            await race.AfterSnapshotReadAsync(LookupStage.Identity, cancellationToken);
+            return user;
+        }
+
+        public new async Task<User?> GetByEmailAddressAsync(string emailAddress)
+        {
+            var user = await base.GetByEmailAddressAsync(emailAddress);
+            await race.AfterSnapshotReadAsync(LookupStage.Email, race.TestCancellationToken);
+            return user;
+        }
+
+        public override async Task<User?> GetByIdAsync(Id id, ICommandOptions? options = null)
+        {
+            var user = await base.GetByIdAsync(id, options);
+            await race.AfterSnapshotReadAsync(LookupStage.User, race.TestCancellationToken);
             return user;
         }
     }
+
+    public enum LookupStage { Identity, Email, User }
 
     private sealed class ExternalAccountRace
     {
         private int _reads;
         private bool Enabled { get; set; }
+        private LookupStage Stage { get; set; }
+        public CancellationToken TestCancellationToken { get; private set; }
         public bool RejectLocks { get; set; }
         public TaskCompletionSource FirstSnapshotRead { get; private set; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource SecondRequestObserved { get; private set; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource ResumeFirstRequest { get; private set; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public void Start()
+        public void Start(LookupStage stage, CancellationToken testCancellationToken)
         {
             _reads = 0;
+            Stage = stage;
+            TestCancellationToken = testCancellationToken;
             FirstSnapshotRead = new(TaskCreationOptions.RunContinuationsAsynchronously);
             SecondRequestObserved = new(TaskCreationOptions.RunContinuationsAsynchronously);
             ResumeFirstRequest = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -253,9 +283,9 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
             RejectLocks = false;
         }
 
-        public async Task AfterSnapshotReadAsync(CancellationToken cancellationToken)
+        public async Task AfterSnapshotReadAsync(LookupStage stage, CancellationToken cancellationToken)
         {
-            if (!Enabled)
+            if (!Enabled || Stage != stage)
                 return;
 
             if (Interlocked.Increment(ref _reads) == 1)

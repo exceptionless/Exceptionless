@@ -311,7 +311,7 @@ public class AuthHandler(
             return Result.Unauthorized("Login failed.");
 
         var authenticatedUser = user;
-        user = await userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
+        user = await userRepository.GetByIdAsync(user.Id, options => options.Cache(false)).WaitAsync(lockTimeout.Token);
         if (user is null || !user.IsActive)
             return Result.Unauthorized("Login failed.");
 
@@ -320,6 +320,7 @@ public class AuthHandler(
 
         try
         {
+            lockTimeout.Token.ThrowIfCancellationRequested();
             if (!user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId.Value))
             {
                 logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login", user.EmailAddress);
@@ -338,7 +339,7 @@ public class AuthHandler(
         await ResetUserTokensAsync(user, "RemoveExternalLoginAsync", httpContext);
 
         logger.UserRemovedExternalLogin(user.EmailAddress, message.ProviderName);
-        return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
+        return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user, lockTimeout.Token) };
     }
 
     public async Task<Result<TokenResult>> Handle(ChangePassword message)
@@ -502,12 +503,12 @@ public class AuthHandler(
         return Result.Success();
     }
 
-    private async Task AddGlobalAdminRoleIfFirstUserAsync(User user)
+    private async Task AddGlobalAdminRoleIfFirstUserAsync(User user, CancellationToken cancellationToken = default)
     {
         if (_isFirstUserChecked)
             return;
 
-        bool isFirstUser = await userRepository.CountAsync() == 0;
+        bool isFirstUser = await userRepository.CountAsync().WaitAsync(cancellationToken) == 0;
         if (isFirstUser)
             user.Roles.Add(AuthorizationRoles.GlobalAdmin);
 
@@ -547,7 +548,7 @@ public class AuthHandler(
             ];
             await using var accountLock = await lockProvider.AcquireAsync(accountKeys, cancellationToken: lockTimeout.Token);
             var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id, lockTimeout.Token);
-            var emailUser = existingUser is null ? await userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
+            var emailUser = existingUser is null ? await userRepository.GetByEmailAddressAsync(userInfo.Email).WaitAsync(lockTimeout.Token) : null;
             string? currentUserId = String.IsNullOrWhiteSpace(authInfo.InviteToken) && httpContext.User.IsUserAuthType()
                 ? httpContext.Request.GetUser().Id : null;
             var userKeys = new[] { existingUser?.Id, emailUser?.Id, currentUserId }
@@ -555,13 +556,13 @@ public class AuthHandler(
             // Ordered user locks also protect transfers and different identities on the same user.
             await using var userLock = await lockProvider.AcquireAsync(userKeys, cancellationToken: lockTimeout.Token);
             lockTimeout.Token.ThrowIfCancellationRequested();
-            var user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext, existingUser, emailUser);
+            var user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext, existingUser, emailUser, lockTimeout.Token);
 
             if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
-                await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext);
+                await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext, lockTimeout.Token);
 
             logger.UserLoggedIn(user.EmailAddress);
-            return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
+            return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user, lockTimeout.Token) };
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or LockAcquisitionTimeoutException
             || ex is OperationCanceledException && lockTimeout.IsCancellationRequested)
@@ -583,7 +584,7 @@ public class AuthHandler(
 
     private static string GetExternalAccountUserLockKey(string userId) => $"external-account:user:{userId}";
 
-    private async Task<User> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext, User? existingUser, User? emailUser)
+    private async Task<User> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext, User? existingUser, User? emailUser, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
@@ -593,7 +594,7 @@ public class AuthHandler(
 
         if (existingUser is not null)
         {
-            existingUser = await userRepository.GetByIdAsync(existingUser.Id, options => options.Cache(false))
+            existingUser = await userRepository.GetByIdAsync(existingUser.Id, options => options.Cache(false)).WaitAsync(cancellationToken)
                 ?? throw new UnauthorizedAccessException("The user no longer exists.");
             EnsureUserIsActive(existingUser);
         }
@@ -601,11 +602,12 @@ public class AuthHandler(
         if (String.IsNullOrWhiteSpace(inviteToken) && httpContext.User.IsUserAuthType())
         {
             var authenticatedUser = httpContext.Request.GetUser();
-            var currentUser = await userRepository.GetByIdAsync(authenticatedUser.Id, options => options.Cache(false))
+            var currentUser = await userRepository.GetByIdAsync(authenticatedUser.Id, options => options.Cache(false)).WaitAsync(cancellationToken)
                 ?? throw new UnauthorizedAccessException("The user no longer exists.");
             EnsureUserIsActive(currentUser);
             if (!String.Equals(authenticatedUser.AuthenticationVersion, currentUser.AuthenticationVersion, StringComparison.Ordinal))
                 throw new UnauthorizedAccessException("The user session has been revoked.");
+            cancellationToken.ThrowIfCancellationRequested();
             if (existingUser is not null)
             {
                 if (!String.Equals(existingUser.Id, currentUser.Id, StringComparison.Ordinal))
@@ -629,6 +631,7 @@ public class AuthHandler(
 
         if (existingUser is not null)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!existingUser.IsEmailAddressVerified)
             {
                 existingUser.MarkEmailAddressVerified();
@@ -638,19 +641,20 @@ public class AuthHandler(
             return existingUser;
         }
 
-        var user = emailUser is not null ? await userRepository.GetByIdAsync(emailUser.Id, options => options.Cache(false)) : null;
+        var user = emailUser is not null ? await userRepository.GetByIdAsync(emailUser.Id, options => options.Cache(false)).WaitAsync(cancellationToken) : null;
         if (user is null)
         {
-            if (!await IsAccountCreationEnabledAsync(inviteToken))
+            if (!await IsAccountCreationEnabledAsync(inviteToken, cancellationToken))
                 throw new ApplicationException("Account Creation is currently disabled.");
 
             user = new User { FullName = userInfo.GetFullName()!, EmailAddress = userInfo.Email };
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
-            await AddGlobalAdminRoleIfFirstUserAsync(user);
+            await AddGlobalAdminRoleIfFirstUserAsync(user, cancellationToken);
         }
 
         EnsureUserIsActive(user);
+        cancellationToken.ThrowIfCancellationRequested();
         user.MarkEmailAddressVerified();
         user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
 
@@ -668,7 +672,7 @@ public class AuthHandler(
             throw new UnauthorizedAccessException("The user is inactive.");
     }
 
-    private async Task<bool> IsAccountCreationEnabledAsync(string? token)
+    private async Task<bool> IsAccountCreationEnabledAsync(string? token, CancellationToken cancellationToken = default)
     {
         if (authOptions.EnableAccountCreation)
             return true;
@@ -676,18 +680,18 @@ public class AuthHandler(
         if (String.IsNullOrEmpty(token))
             return false;
 
-        var organization = await organizationRepository.GetByInviteTokenAsync(token);
+        var organization = await organizationRepository.GetByInviteTokenAsync(token).WaitAsync(cancellationToken);
         return organization is not null;
     }
 
-    private async Task AddInvitedUserToOrganizationAsync(string? token, User user, HttpContext httpContext)
+    private async Task AddInvitedUserToOrganizationAsync(string? token, User user, HttpContext httpContext, CancellationToken cancellationToken = default)
     {
         if (String.IsNullOrWhiteSpace(token))
             return;
 
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("Invite").Identity(user.EmailAddress).SetHttpContext(httpContext));
 
-        var organization = await organizationRepository.GetByInviteTokenAsync(token);
+        var organization = await organizationRepository.GetByInviteTokenAsync(token).WaitAsync(cancellationToken);
         var invite = organization?.GetInvite(token);
         if (organization is null || invite is null)
         {
@@ -695,6 +699,7 @@ public class AuthHandler(
             return;
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase))
         {
             logger.MarkedInvitedUserAsVerified(user.EmailAddress);
@@ -762,9 +767,10 @@ public class AuthHandler(
         logger.RemovedUserTokens(total, user.EmailAddress);
     }
 
-    private async Task<string> GetOrCreateAuthenticationTokenAsync(User user)
+    private async Task<string> GetOrCreateAuthenticationTokenAsync(User user, CancellationToken cancellationToken = default)
     {
-        var userTokens = await tokenRepository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id);
+        var userTokens = await tokenRepository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id).WaitAsync(cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
         var validAccessToken = userTokens.Documents.FirstOrDefault(token => !token.IsDisabled && !token.IsSuspended
