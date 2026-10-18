@@ -34,6 +34,30 @@ function discoverKnownNetworks(release, valuesFile) {
     return [...new Set(networks)].sort();
 }
 
+function ensureGatewayReady(gateway) {
+    if (gateway.metadata?.deletionTimestamp) {
+        throw new Error('Gateway is being deleted; refusing to infer proxy trust');
+    }
+
+    const generation = gateway.metadata?.generation;
+    const conditions = gateway.status?.conditions;
+
+    if (!Number.isSafeInteger(generation) || generation < 1 || !Array.isArray(conditions)) {
+        throw new Error('Gateway has no current readiness status; wait for the ALB controller and retry deployment');
+    }
+
+    // Both conditions must describe this spec, not the previous association subnet.
+    for (const type of ['Accepted', 'Deployment']) {
+        const condition = conditions.find(condition => condition?.type === type);
+
+        if (condition?.status !== 'True' || condition.observedGeneration !== generation) {
+            throw new Error(
+                `Gateway ${type} is not ready for generation ${generation}; wait for the ALB controller and retry deployment`
+            );
+        }
+    }
+}
+
 function main() {
     const [release, valuesFile, outputFile, ...extra] = process.argv.slice(2);
 
@@ -84,6 +108,8 @@ function readAssociationSubnetIds(gatewayName, gatewayNamespace) {
     if (!gateway || typeof gateway !== 'object' || Array.isArray(gateway)) {
         throw new Error(`ApplicationLoadBalancer ${gatewayNamespace}/${gatewayName} returned an invalid object`);
     }
+
+    ensureGatewayReady(gateway);
 
     const associations = gateway.spec?.associations;
 

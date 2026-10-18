@@ -700,6 +700,11 @@ jobs:
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
       - name: Install Helm
         uses: azure/setup-helm@v5
 
@@ -844,7 +849,7 @@ jobs:
         run: |
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
           node k8s/scripts/discover-forwarded-headers.js ex-prod k8s/ex-prod-values.yaml "$RUNNER_TEMP/forwarded-headers.json"
-          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml --values "$RUNNER_TEMP/forwarded-headers.json" ex-prod --namespace ex-prod ./k8s/exceptionless
+          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml --values "$RUNNER_TEMP/forwarded-headers.json" --wait --timeout 5m ex-prod --namespace ex-prod ./k8s/exceptionless
 
       - name: Summary
         if: ${{ always() }}

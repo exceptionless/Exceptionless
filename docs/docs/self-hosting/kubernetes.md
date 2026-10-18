@@ -40,7 +40,9 @@ config:
 
 The repository's ingress templates use Azure Application Gateway for Containers, terminate TLS at ingress, and route `/` to the API Service on port 80 and container port 8080. The hosted development and production deployment workflow discovers the gateway's association subnet before each Helm upgrade, so subnet addresses do not need to be duplicated in environment values files.
 
-The shared `k8s/scripts/discover-forwarded-headers.js` script renders the environment's API ingress locally, reads the selected `ApplicationLoadBalancer` through Kubernetes, and resolves its association subnet IDs through Azure. It requires the existing deployment identity to have Kubernetes read access to that resource and Azure `Microsoft.Network/virtualNetworks/subnets/read` access to its subnets. Missing associations, failed reads, missing `Microsoft.ServiceNetworking/trafficControllers` delegation, invalid prefixes, and unrestricted `/0` prefixes stop deployment.
+The shared `k8s/scripts/discover-forwarded-headers.js` script requires Node 24 LTS or later. It renders the environment's API ingress locally, reads the selected `ApplicationLoadBalancer` through Kubernetes, and resolves its association subnet IDs through Azure. It requires the existing deployment identity to have Kubernetes read access to that resource and Azure `Microsoft.Network/virtualNetworks/subnets/read` access to its subnets. Missing associations, failed reads, missing `Microsoft.ServiceNetworking/trafficControllers` delegation, invalid prefixes, and unrestricted `/0` prefixes stop deployment.
+
+Discovery also requires the gateway's `Accepted` and `Deployment` conditions to be `True`, with each `observedGeneration` equal to `metadata.generation`. A missing, stale, or deleting gateway stops discovery before Helm changes the application. Wait for the ALB controller to finish and rerun deployment. See Microsoft's [successful gateway provisioning example](https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/quickstart-create-application-gateway-for-containers-managed-by-alb-controller#validate-creation-of-the-application-gateway-for-containers-resources).
 
 Discovery writes a `forwardedHeaders.knownNetworks` Helm list. The chart converts it into indexed `EX_ForwardedHeaders__KnownNetworks__*` keys, enables forwarding, and sets a forward limit of one for both application hosts. Replacing the list removes obsolete subnet entries even with `--reuse-values`. Combining discovery with manual `ForwardedHeaders` entries in `config` is rejected; remove those old entries from saved release values before using discovery.
 
@@ -56,6 +58,19 @@ helm upgrade ex-dev k8s/exceptionless --namespace ex-dev --reuse-values \
 For production, use `ex-prod`, `k8s/ex-prod-values.yaml`, and a separate output file. The script only reads infrastructure and replaces the local values file; Helm performs the upgrade. It removes any previous output before discovery so a failed refresh cannot leave stale trust available for reuse. Automated workflows stop on discovery failure; manual operators must also stop.
 
 This assumes the gateway connects directly to the application. Verify the API-visible peer and any intermediate proxies before the first rollout; discovering Azure configuration does not prove the live traffic path. The ALB controller pod and Service address are not substitutes for the association subnet. Other ingress topologies should use explicit trusted peers in `config` as shown above. See Microsoft's [association subnet documentation](https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/application-gateway-for-containers-components).
+
+### Rollout checks and configuration failures
+
+For hosted deployments, check the deployment identity's read permissions and the actual proxy path once per environment before the first rollout. Remove conflicting saved forwarding overrides if present. Repeat these checks when the deployment identity or network topology changes. Each subsequent deployment discovers the current subnet automatically; no copied subnet values are required.
+
+| Failure | Result and recovery |
+| --- | --- |
+| Discovery cannot read a ready gateway or a valid subnet | The workflow stops before the application Helm upgrade. Fix permissions or wait for reconciliation, then rerun. Earlier development infrastructure steps may already have run. |
+| Invalid application settings, such as a malformed IP, boolean, or `/0` network | New application processes fail at startup. Correct the configuration and redeploy. Production Helm waits up to five minutes for readiness and reports failure; it does not automatically roll back. |
+| A valid CIDR does not contain the actual proxy, or forwarding is disabled | The app can remain ready while it ignores forwarded headers. Users can share the proxy's IP limits, and the request scheme reflects the backend connection. Readiness checks do not detect this. |
+| The trusted range includes other callers | Those callers can supply forged client IPs or schemes. Use only the dedicated gateway subnet or verified proxy IPs. |
+
+After the first authorized development rollout, verify client IPs, HTTPS detection, and rejection of spoofed forwarding headers before a production release. The existing version and readiness checks do not prove those behaviors.
 
 ## ConnectionStrings
 

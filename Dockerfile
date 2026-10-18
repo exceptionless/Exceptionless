@@ -21,7 +21,7 @@ RUN dotnet build ./src/Exceptionless.Web/Exceptionless.Web.csproj -c Release --n
 FROM build AS build-node
 RUN apt-get update -yq \
     && apt-get install -yq curl ca-certificates \
-    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -yq nodejs \
     && rm -rf /var/lib/apt/lists/*
 
