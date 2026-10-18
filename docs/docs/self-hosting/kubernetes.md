@@ -72,6 +72,37 @@ For hosted deployments, check the deployment identity's read permissions and the
 
 After the first authorized development rollout, verify client IPs, HTTPS detection, and rejection of spoofed forwarding headers before a production release. The existing version and readiness checks do not prove those behaviors.
 
+Use the existing global-admin-only `GET /api/v2/admin/echo` endpoint for these checks. Its `ip_address` and `scheme` fields report the values the application sees after forwarded-header processing. Do not share the full echo response: its `headers` field can contain credentials and cookies.
+
+| Step | Check | Pass condition |
+| --- | --- | --- |
+| Before merge | Required CI and deployment identity permissions | CI passes; the deployment identity can read the selected gateway and its association subnets. Merging main starts the dev deployment. |
+| Discovery | Gateway conditions and generated `forwardedHeaders.knownNetworks` | Current-generation `Accepted` and `Deployment` conditions are true. Generated CIDRs match the dedicated gateway subnets. Discovery enforces readiness, identity, delegation, and prefix validation. |
+| Configuration | Saved Helm values, rendered ConfigMap, and new app/API pod environment | `EX_ForwardedHeaders__Enabled=true`, `EX_ForwardedHeaders__ForwardLimit=1`, and indexed `EX_ForwardedHeaders__KnownNetworks__*` match discovery. No conflicting forwarding overrides remain. Inspect only these keys, not unrelated secrets. |
+| Rollout | Pod readiness, startup logs, dev migrations, and `/api/v2/about` | New app/API pods are ready, no configuration errors occur, migrations finish, and the expected version is served. |
+| Baseline request | Call admin echo through HTTPS ingress with no forwarding or `X-Original-*` headers supplied by the client | `ip_address` equals the caller's known public egress IP and `scheme` is `https`. The baseline `X-Original-For` identifies a gateway peer within the discovered subnet. Repeat on both app and API ingress. |
+| Spoofed request | Repeat through the same ingress with `X-Forwarded-For: 203.0.113.123` and `X-Forwarded-Proto: http` | `ip_address` stays equal to the caller's actual egress IP and `scheme` stays `https`. Fail if either supplied value controls the result. |
+| Direct untrusted request | In an authorized dev check, request the backend directly from a source outside trusted networks with the same fake headers | Forwarded values are ignored; `ip_address` is the direct peer and `scheme` is the backend transport scheme. Loopback or port-forwarding cannot prove this because loopback is trusted. |
+| Production release | After dev passes, use the normal release-tag workflow and repeat baseline/spoof checks | Production serves the expected version with correct IP and scheme on both hosts. Stop promotion on any failed check; readiness alone is insufficient. |
+
+For each request, retain only the observed IP, scheme, host, and pass/fail result. A global administrator can make the requests with their normal authenticated client. An unauthenticated request must still return `401`, and a non-admin request must return `403`.
+
+For an authorized rollout, the following commands prompt for the administrator's password and print only the diagnostic fields. Set `BASE_URL` to the HTTPS ingress being checked and `ADMIN_EMAIL` to the administrator's email. Run the baseline first, then the spoof check; both must report the same real client IP and `scheme: "https"`.
+
+```sh
+# Baseline: do not supply forwarding or X-Original-* headers.
+curl --fail --silent --show-error --user "$ADMIN_EMAIL" \
+  "$BASE_URL/api/v2/admin/echo" \
+  | jq '{ip_address, scheme, gateway_peer: .headers["X-Original-For"]}'
+
+# Spoof check: these supplied values must not become the effective IP or scheme.
+curl --fail --silent --show-error --user "$ADMIN_EMAIL" \
+  --header 'X-Forwarded-For: 203.0.113.123' \
+  --header 'X-Forwarded-Proto: http' \
+  "$BASE_URL/api/v2/admin/echo" \
+  | jq '{ip_address, scheme}'
+```
+
 ## ConnectionStrings
 
 ```yaml
