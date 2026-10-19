@@ -842,7 +842,7 @@ jobs:
         if: ${{ needs.version.outputs.is_prod_deploy == 'true' }}
         run: |
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
+          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml --wait --timeout 5m ex-prod --namespace ex-prod ./k8s/exceptionless
 
       - name: Summary
         if: ${{ always() }}

@@ -123,6 +123,7 @@ public partial class Program
             builder.Services.AddSingleton(configuration);
             builder.Services.AddSingleton(apmConfig);
             builder.Services.AddAppOptions(options);
+            builder.Services.AddSingleton(TrustedForwardedHeadersOptions.ReadFromConfiguration(configuration));
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddCsp(nonceByteAmount: 32);
 
@@ -134,13 +135,8 @@ public partial class Program
                 .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
                 .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
-            builder.Services.Configure<ForwardedHeadersOptions>(o =>
-            {
-                o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-                o.RequireHeaderSymmetry = false;
-                o.KnownIPNetworks.Clear();
-                o.KnownProxies.Clear();
-            });
+            builder.Services.AddOptions<ForwardedHeadersOptions>()
+                .Configure<TrustedForwardedHeadersOptions>(ForwardedHeadersConfiguration.Configure);
 
             builder.Services.ConfigureHttpJsonOptions(o =>
             {
@@ -233,6 +229,7 @@ public partial class Program
                 }
             });
             app.UseStatusCodePages(WriteProblemDetailsStatusCodeResponseAsync);
+            app.UseForwardedHeaders();
 
             app.UseHealthChecks("/health", new HealthCheckOptions
             {
@@ -303,7 +300,6 @@ public partial class Program
             app.UseMiddleware<McpOriginValidationMiddleware>();
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
-            app.UseForwardedHeaders();
 
             app.UseAuthentication();
             app.UseAuthorization();
