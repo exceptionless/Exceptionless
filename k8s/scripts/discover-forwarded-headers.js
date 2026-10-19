@@ -5,7 +5,7 @@ import { isIP } from 'node:net';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const APPLICATION_LOAD_BALANCER_RESOURCE = 'applicationloadbalancers.alb.networking.azure.io';
+const APPLICATION_LOAD_BALANCER_RESOURCE = 'applicationloadbalancer.alb.networking.azure.io';
 const ASSOCIATION_SUBNET_ID =
     /^\/subscriptions\/[^/]+\/resourceGroups\/[^/]+\/providers\/Microsoft\.Network\/virtualNetworks\/[^/]+\/subnets\/[^/]+$/i;
 const HELM_RELEASE_NAME = /^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9](?:[-a-z0-9]*[a-z0-9])?)*$/;
@@ -218,10 +218,28 @@ function readSubnetPrefixes(subnetId) {
 }
 
 function run(command, arguments_) {
-    return execFileSync(command, arguments_, {
+    const options = {
         encoding: 'utf8',
-        timeout: 60_000
-    });
+        timeout: 60_000,
+        windowsHide: true
+    };
+
+    // Azure CLI uses az.cmd on Windows, which requires the command interpreter.
+    // Reject shell syntax before quoting arguments, including the discovered subnet ID.
+    if (process.platform === 'win32' && command === 'az') {
+        // eslint-disable-next-line no-control-regex -- Control characters are unsafe in a command line.
+        if (arguments_.some(argument => /[\x00-\x1f"<>|&^%!\\]/.test(argument))) {
+            throw new Error('Azure CLI arguments contain unsupported Windows command-shell characters');
+        }
+
+        const commandLine = `"az.cmd ${arguments_.map(argument => `"${argument}"`).join(' ')}"`;
+        return execFileSync(process.env.ComSpec ?? 'cmd.exe', ['/d', '/v:off', '/s', '/c', commandLine], {
+            ...options,
+            windowsVerbatimArguments: true
+        });
+    }
+
+    return execFileSync(command, arguments_, options);
 }
 
 function runJson(command, arguments_, description) {
