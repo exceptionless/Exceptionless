@@ -14,7 +14,6 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
-using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Xunit;
 
@@ -2170,7 +2169,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task SoftDeleteOrganization_UserVersionConflict_CleanupJobCompletesDeletionAndPreservesRequester()
+    public async Task DeleteOrganization_UserVersionConflict_ReturnsConflictAndCleanupJobPreservesRequester()
     {
         // Arrange
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
@@ -2199,14 +2198,15 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         });
 
         // Act
-        var exception = await Record.ExceptionAsync(() => _organizationService.SoftDeleteOrganizationAsync(organization, user.Id));
+        using var response = await SendRequestAsync(request => request.Delete().AsGlobalAdminUser()
+            .AppendPaths("organizations", organization.Id).ExpectedStatus(HttpStatusCode.Conflict));
         var retained = await _savedViewRepository.GetByIdAsync(view.Id, options => options.Cache(false));
         var storedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache(false).IncludeSoftDeletes());
         var storedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
 
         // Assert
         Assert.True(changed);
-        Assert.IsType<VersionConflictDocumentException>(exception);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.NotNull(retained);
         Assert.NotNull(storedOrganization);
         Assert.True(storedOrganization.IsDeleted);
