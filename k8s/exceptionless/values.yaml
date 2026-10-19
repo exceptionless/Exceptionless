@@ -22,7 +22,7 @@ jobs:
 config: {}
 #  key: value
 
-# Populated by k8s/scripts/discover-forwarded-headers.js for hosted deployments.
+# Verified, dedicated ingress subnets; configure them in environment values.
 # A replacement list prevents stale subnet entries surviving --reuse-values.
 forwardedHeaders:
   knownNetworks: []

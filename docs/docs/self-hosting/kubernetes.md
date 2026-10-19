@@ -38,34 +38,26 @@ config:
   EX_ForwardedHeaders__ForwardLimit: "1"
 ```
 
-The repository's ingress templates use Azure Application Gateway for Containers, terminate TLS at ingress, and route `/` to the API Service on port 80 and container port 8080. The hosted development and production deployment workflow discovers the gateway's association subnet before each Helm upgrade, so subnet addresses do not need to be duplicated in environment values files.
+For a dedicated ingress subnet with a single proxy hop, configure the chart's `forwardedHeaders.knownNetworks` list instead. Replace this example with your verified proxy subnet:
 
-The shared `k8s/scripts/discover-forwarded-headers.js` script requires Node 24 LTS or later. It renders the environment's API ingress locally, reads the selected `ApplicationLoadBalancer` through Kubernetes, and resolves its association subnet IDs through Azure. It requires the existing deployment identity to have Kubernetes read access to that resource and Azure `Microsoft.Network/virtualNetworks/subnets/read` access to its subnets. Missing associations, failed reads, missing `Microsoft.ServiceNetworking/trafficControllers` delegation, invalid prefixes, and unrestricted `/0` prefixes stop deployment.
-
-Discovery also requires the gateway's `Accepted` and `Deployment` conditions to be `True`, with each `observedGeneration` equal to `metadata.generation`. A missing, stale, or deleting gateway stops discovery before Helm changes the application. Wait for the ALB controller to finish and rerun deployment. See Microsoft's [successful gateway provisioning example](https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/quickstart-create-application-gateway-for-containers-managed-by-alb-controller#validate-creation-of-the-application-gateway-for-containers-resources).
-
-Discovery writes a `forwardedHeaders.knownNetworks` Helm list. The chart converts it into indexed `EX_ForwardedHeaders__KnownNetworks__*` keys, enables forwarding, and sets a forward limit of one for both application hosts. Replacing the list removes obsolete subnet entries even with `--reuse-values`. Combining discovery with manual `ForwardedHeaders` entries in `config` is rejected; remove those old entries from saved release values before using discovery.
-
-For manual upgrades, run discovery from the repository root after selecting the intended Kubernetes context and Azure subscription, then pass the generated file **last** to Helm. For example, the development commands are:
-
-```sh
-node k8s/scripts/discover-forwarded-headers.js ex-dev k8s/ex-dev-values.yaml /tmp/ex-dev-forwarded-headers.json
-# Run only if discovery succeeded:
-helm upgrade ex-dev k8s/exceptionless --namespace ex-dev --reuse-values \
-  --values k8s/ex-dev-values.yaml --values /tmp/ex-dev-forwarded-headers.json
+```yaml
+forwardedHeaders:
+  knownNetworks:
+    - 192.0.2.0/24
 ```
 
-For production, use `ex-prod`, `k8s/ex-prod-values.yaml`, and a separate output file. The script only reads infrastructure and replaces the local values file; Helm performs the upgrade. It removes any previous output before discovery so a failed refresh cannot leave stale trust available for reuse. Automated workflows stop on discovery failure; manual operators must also stop.
+The chart converts this list into indexed `EX_ForwardedHeaders__KnownNetworks__*` keys, enables forwarding, and sets a forward limit of one for both application hosts. Replacing the list removes obsolete subnet entries even with `--reuse-values`. Combining a nonempty list with manual `ForwardedHeaders` entries in `config` is rejected; remove conflicting entries from saved release values. The reusable chart's list is empty by default. For multiple proxy hops or other forwarding options, use explicit settings in `config` instead.
 
-This assumes the gateway connects directly to the application. Verify the API-visible peer and any intermediate proxies before the first rollout; discovering Azure configuration does not prove the live traffic path. The ALB controller pod and Service address are not substitutes for the association subnet. Other ingress topologies should use explicit trusted peers in `config` as shown above. See Microsoft's [association subnet documentation](https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/application-gateway-for-containers-components).
+The hosted development and production values files explicitly trust `10.60.64.0/24`, the dedicated `ex-net-v6/ex-agc` association subnet for `kube-system/public-alb`. Update both files with any gateway subnet change. Deployments use these reviewed values without querying Azure for proxy trust. Self-hosted installations must configure their own proxy addresses.
+
+The repository's Azure Application Gateway for Containers ingress terminates TLS and routes directly to application Services on port 80 and pods on port 8080. Verify the API-visible peer and any intermediate proxies before the first rollout and whenever the network changes. The ALB controller pod and Service address are not substitutes for the gateway's [association subnet](https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/application-gateway-for-containers-components).
 
 ### Rollout checks and configuration failures
 
-For hosted deployments, check the deployment identity's read permissions and the actual proxy path once per environment before the first rollout. Remove conflicting saved forwarding overrides if present. Repeat these checks when the deployment identity or network topology changes. Each subsequent deployment discovers the current subnet automatically; no copied subnet values are required.
+Before the first hosted rollout, verify the configured subnet against the gateway's association subnet and actual proxy path, and remove conflicting saved forwarding overrides. Repeat these checks when the network configuration changes. The separate framework `ForwardedHeaders_Enabled` shortcut must be absent or false.
 
 | Failure | Result and recovery |
 | --- | --- |
-| Discovery cannot read a ready gateway or a valid subnet | The workflow stops before the application Helm upgrade. Fix permissions or wait for reconciliation, then rerun. Earlier development infrastructure steps may already have run. |
 | Invalid application settings, such as a malformed IP, boolean, or `/0` network | New application processes fail at startup. Correct the configuration and redeploy. Production Helm waits up to five minutes for readiness and reports failure; it does not automatically roll back. |
 | A valid CIDR does not contain the actual proxy, or forwarding is disabled | The app can remain ready while it ignores forwarded headers. Users can share the proxy's IP limits, and the request scheme reflects the backend connection. Readiness checks do not detect this. |
 | The trusted range includes other callers | Those callers can supply forged client IPs or schemes. Use only the dedicated gateway subnet or verified proxy IPs. |
@@ -76,11 +68,10 @@ Use the existing global-admin-only `GET /api/v2/admin/echo` endpoint for these c
 
 | Step | Check | Pass condition |
 | --- | --- | --- |
-| Before merge | Required CI and deployment identity permissions | CI passes; the deployment identity can read the selected gateway and its association subnets. Merging main starts the dev deployment. |
-| Discovery | Gateway conditions and generated `forwardedHeaders.knownNetworks` | Current-generation `Accepted` and `Deployment` conditions are true. Generated CIDRs match the dedicated gateway subnets. Discovery enforces readiness, identity, delegation, and prefix validation. |
-| Configuration | Saved Helm values, rendered ConfigMap, and new app/API pod environment | `EX_ForwardedHeaders__Enabled=true`, `EX_ForwardedHeaders__ForwardLimit=1`, and indexed `EX_ForwardedHeaders__KnownNetworks__*` match discovery. No conflicting forwarding overrides remain. Inspect only these keys, not unrelated secrets. |
+| Before merge | Required CI and configured gateway trust | CI passes; environment values match the verified dedicated gateway subnet and proxy path. Merging main starts the dev deployment. |
+| Configuration | Saved Helm values, rendered ConfigMap, and new app/API pod environment | `EX_ForwardedHeaders__Enabled=true`, `EX_ForwardedHeaders__ForwardLimit=1`, and indexed `EX_ForwardedHeaders__KnownNetworks__*` match environment values. No conflicting forwarding overrides remain. Inspect only these keys, not unrelated secrets. |
 | Rollout | Pod readiness, startup logs, dev migrations, and `/api/v2/about` | New app/API pods are ready, no configuration errors occur, migrations finish, and the expected version is served. |
-| Baseline request | Call admin echo through HTTPS ingress with no forwarding or `X-Original-*` headers supplied by the client | `ip_address` equals the caller's known public egress IP and `scheme` is `https`. The baseline `X-Original-For` identifies a gateway peer within the discovered subnet. Repeat on both app and API ingress. |
+| Baseline request | Call admin echo through HTTPS ingress with no forwarding or `X-Original-*` headers supplied by the client | `ip_address` equals the caller's known public egress IP and `scheme` is `https`. The baseline `X-Original-For` identifies a gateway peer within the configured subnet. Repeat on both app and API ingress. |
 | Spoofed request | Repeat through the same ingress with `X-Forwarded-For: 203.0.113.123` and `X-Forwarded-Proto: http` | `ip_address` stays equal to the caller's actual egress IP and `scheme` stays `https`. Fail if either supplied value controls the result. |
 | Direct untrusted request | In an authorized dev check, request the backend directly from a source outside trusted networks with the same fake headers | Forwarded values are ignored; `ip_address` is the direct peer and `scheme` is the backend transport scheme. Loopback or port-forwarding cannot prove this because loopback is trusted. |
 | Production release | After dev passes, use the normal release-tag workflow and repeat baseline/spoof checks | Production serves the expected version with correct IP and scheme on both hosts. Stop promotion on any failed check; readiness alone is insufficient. |

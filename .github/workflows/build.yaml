@@ -172,7 +172,7 @@ jobs:
         run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
 
       - name: Verify CI test tooling
-        run: node --test tests/ci/*.test.js
+        run: node --test tests/ci/shards.test.js
 
       - name: Run .NET shard with coverage
         run: node tests/ci/backend-shards.js run --index ${{ matrix.shard }} --count 4 --output coverage --coverage
@@ -700,11 +700,6 @@ jobs:
         with:
           ref: ${{ (github.event_name == 'repository_dispatch' && github.event.client_payload.head_sha) || github.event.pull_request.head.sha || github.sha }}
 
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-
       - name: Install Helm
         uses: azure/setup-helm@v5
 
@@ -728,8 +723,7 @@ jobs:
         if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
         run: |
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-          node k8s/scripts/discover-forwarded-headers.js ex-dev k8s/ex-dev-values.yaml "$RUNNER_TEMP/forwarded-headers.json"
-          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml --values "$RUNNER_TEMP/forwarded-headers.json" ex-dev --namespace $DEV_NAMESPACE ./k8s/exceptionless
+          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-dev-values.yaml ex-dev --namespace $DEV_NAMESPACE ./k8s/exceptionless
 
       - name: Run Development Migrations
         if: ${{ needs.version.outputs.is_dev_deploy == 'true' }}
@@ -848,8 +842,7 @@ jobs:
         if: ${{ needs.version.outputs.is_prod_deploy == 'true' }}
         run: |
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-          node k8s/scripts/discover-forwarded-headers.js ex-prod k8s/ex-prod-values.yaml "$RUNNER_TEMP/forwarded-headers.json"
-          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml --values "$RUNNER_TEMP/forwarded-headers.json" --wait --timeout 5m ex-prod --namespace ex-prod ./k8s/exceptionless
+          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml --wait --timeout 5m ex-prod --namespace ex-prod ./k8s/exceptionless
 
       - name: Summary
         if: ${{ always() }}

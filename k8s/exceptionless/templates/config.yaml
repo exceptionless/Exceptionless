@@ -21,7 +21,7 @@ data:
     {{- if $knownNetworks }}
     {{- range $key, $value := .Values.config }}
     {{- if hasPrefix "forwardedheaders:" (lower (replace "__" ":" (trimPrefix "EX_" $key))) }}
-    {{- fail "Do not combine discovered forwardedHeaders.knownNetworks with ForwardedHeaders config overrides; remove the old overrides" }}
+    {{- fail "Do not combine forwardedHeaders.knownNetworks with ForwardedHeaders config overrides; remove the old overrides" }}
     {{- end }}
     {{- end }}
     EX_ForwardedHeaders__Enabled: "true"
