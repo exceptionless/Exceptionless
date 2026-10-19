@@ -15,6 +15,7 @@ using FluentRest;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
+using Foundatio.Repositories.Models;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -2006,8 +2007,10 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
 
 
 
-    [Fact]
-    public async Task RemoveUser_PreviouslyCommittedRemoval_CompletesNotificationAndPrivateViewCleanup()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RemoveUser_PreviouslyCommittedRemoval_CleansOnlyOrphanedResources(bool restoreMembership)
     {
         // Arrange
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
@@ -2024,6 +2027,26 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         }, options => options.ImmediateConsistency());
         user.OrganizationIds.Remove(SampleDataService.TEST_ORG_ID);
         await _userRepository.SaveAsync(user);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        if (restoreMembership)
+        {
+            organization.Invites.Add(new Invite
+            {
+                EmailAddress = user.EmailAddress, Token = Guid.NewGuid().ToString("N"), DateAdded = TimeProvider.GetUtcNow().UtcDateTime
+            });
+            await _organizationRepository.SaveAsync(organization);
+        }
+
+        bool restored = false;
+        using var subscription = _organizationRepository.DocumentsSaved.AddHandler(async (_, args) =>
+        {
+            if (!restoreMembership || restored || !args.Documents.Any(document => document.Value.Id == organization.Id))
+                return;
+
+            restored = await _userRepository.PatchAsync(user.Id,
+                new ActionPatch<User>(current => current.OrganizationIds.Add(organization.Id)), options => options.Cache());
+        });
 
         // Act
         await SendRequestAsync(request => request.Delete().AsGlobalAdminUser()
@@ -2031,10 +2054,15 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         var remainingView = await _savedViewRepository.GetByIdAsync(view.Id, options => options.Cache(false));
         var updatedProject = await projects.GetByIdAsync(project.Id, options => options.Cache(false));
 
+        var currentUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache());
+
         // Assert
-        Assert.Null(remainingView);
+        Assert.Equal(restoreMembership, restored);
+        Assert.Equal(restoreMembership, remainingView is not null);
         Assert.NotNull(updatedProject);
-        Assert.False(updatedProject.NotificationSettings.ContainsKey(user.Id));
+        Assert.Equal(restoreMembership, updatedProject.NotificationSettings.ContainsKey(user.Id));
+        Assert.NotNull(currentUser);
+        Assert.Equal(restoreMembership, currentUser.OrganizationIds.Contains(organization.Id));
     }
 
     [Theory]
