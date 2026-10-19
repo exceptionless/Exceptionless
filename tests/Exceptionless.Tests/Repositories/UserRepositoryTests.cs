@@ -172,7 +172,7 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         await _repository.AddAsync(user, options => options.ImmediateConsistency());
         var stale = user with { FullName = "Stale profile" };
         user.AuthenticationVersion = "rotated-generation";
-        string originalVersion = user.Version;
+        string originalVersion = Assert.IsType<string>(user.Version);
         var saved = await _repository.SaveAsync(user, options => options.ImmediateConsistency());
         if (missingVersion)
             stale.Version = null!;
