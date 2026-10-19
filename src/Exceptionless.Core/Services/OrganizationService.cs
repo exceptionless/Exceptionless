@@ -202,15 +202,16 @@ public class OrganizationService : IStartupAction
         if (organization.IsDeleted)
             return;
 
+        organization.IsDeleted = true;
+        organization.DeletedByUserId = currentUserId;
+        await _organizationRepository.SaveAsync(organization, options => options.Cache());
+
         await RemoveUsersAsync(organization, currentUserId);
         await RemoveTokensAsync(organization);
         await RemoveWebHooksAsync(organization);
         await RemoveSavedViewsAsync(organization);
         await CancelSubscriptionsAsync(organization);
         await CleanupProjectNotificationSettingsAsync(organization, []);
-
-        organization.IsDeleted = true;
-        await _organizationRepository.SaveAsync(organization);
     }
 
     private async Task<HashSet<string>> GetValidNotificationUserIdsAsync(string organizationId, IReadOnlyCollection<string> userIds, CancellationToken cancellationToken)

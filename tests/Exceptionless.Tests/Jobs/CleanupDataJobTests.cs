@@ -464,6 +464,9 @@ public class CleanupDataJobTests : IntegrationTestsBase
         user.OrganizationIds.Clear();
         user.OrganizationIds.UnionWith([organization1.Id, organization2.Id]);
         await _userRepository.AddAsync(user);
+        var legacyUser = _userData.GenerateUser(generateId: true, organizationId: organization1.Id);
+        legacyUser.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(legacyUser);
         project1.NotificationSettings[user.Id] = new NotificationSettings { ReportNewErrors = true };
         project2.NotificationSettings[user.Id] = new NotificationSettings { ReportNewErrors = true };
         await _projectRepository.SaveAsync([project1, project2]);
@@ -515,6 +518,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _eventRepository.GetByIdAsync(event1.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await savedViews.GetByIdAsync(deletedView.Id));
         Assert.NotNull(await savedViews.GetByIdAsync(retainedView.Id));
+        Assert.Null(await _userRepository.GetByIdAsync(legacyUser.Id));
         var retainedUser = await _userRepository.GetByIdAsync(user.Id);
         Assert.NotNull(retainedUser);
         Assert.DoesNotContain(organization1.Id, retainedUser.OrganizationIds);

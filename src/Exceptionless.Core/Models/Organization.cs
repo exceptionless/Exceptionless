@@ -201,6 +201,12 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     public DateTime UpdatedUtc { get; set; }
     public bool IsDeleted { get; set; }
 
+    /// <summary>
+    /// User whose account must be preserved when organization deletion resumes.
+    /// </summary>
+    [ObjectId]
+    public string? DeletedByUserId { get; set; }
+
     string IOwnedByOrganization.OrganizationId { get { return Id; } set { Id = value; } }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

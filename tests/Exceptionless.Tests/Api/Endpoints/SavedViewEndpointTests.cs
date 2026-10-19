@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Seed;
@@ -2141,13 +2142,16 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task SoftDeleteOrganization_UserVersionConflict_PreservesOrganizationResources()
+    public async Task SoftDeleteOrganization_UserVersionConflict_CleanupJobCompletesDeletionAndPreservesRequester()
     {
         // Arrange
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(user);
         Assert.NotNull(organization);
+        user.OrganizationIds.Clear();
+        user.OrganizationIds.Add(organization.Id);
+        await _userRepository.SaveAsync(user);
         var view = await _savedViewRepository.AddAsync(new SavedView
         {
             OrganizationId = organization.Id, CreatedByUserId = user.Id,
@@ -2169,7 +2173,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Act
         var exception = await Record.ExceptionAsync(() => _organizationService.SoftDeleteOrganizationAsync(organization, user.Id));
         var retained = await _savedViewRepository.GetByIdAsync(view.Id, options => options.Cache(false));
-        var storedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache(false));
+        var storedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache(false).IncludeSoftDeletes());
         var storedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
 
         // Assert
@@ -2177,9 +2181,23 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.IsType<VersionConflictDocumentException>(exception);
         Assert.NotNull(retained);
         Assert.NotNull(storedOrganization);
-        Assert.False(storedOrganization.IsDeleted);
+        Assert.True(storedOrganization.IsDeleted);
         Assert.NotNull(storedUser);
         Assert.Equal("Concurrent profile update", storedUser.FullName);
+
+        // Act - the existing cleanup job resumes the persisted deletion.
+        await RefreshDataAsync();
+        var result = await GetService<CleanupDataJob>().RunAsync(TestCancellationToken);
+        var requester = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
+        var deletedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache(false).IncludeSoftDeletes());
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Null(deletedOrganization);
+        Assert.Null(await _savedViewRepository.GetByIdAsync(view.Id, options => options.Cache(false)));
+        Assert.NotNull(requester);
+        Assert.Equal("Concurrent profile update", requester.FullName);
+        Assert.DoesNotContain(organization.Id, requester.OrganizationIds);
     }
 
     [Fact]
