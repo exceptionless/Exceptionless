@@ -697,29 +697,28 @@
         }
     });
 
-    const table = createTable(
-        getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
-            columnPersistenceKey: 'stacks-column-visibility',
-            get columns() {
-                return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
-                    onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
-                    showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
-                });
-            },
-            defaultColumnVisibility: defaultStackColumnVisibility,
-            enableColumnResizing: true,
-            paginationStrategy: 'offset',
-            get queryData() {
-                return eventsQuery.data?.data ?? [];
-            },
-            get queryMeta() {
-                return eventsQuery.data?.meta;
-            },
-            get queryParameters() {
-                return eventsQueryParameters;
-            }
-        })
-    );
+    const tableOptions = getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
+        columnPersistenceKey: 'stacks-column-visibility',
+        get columns() {
+            return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
+                showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
+            });
+        },
+        defaultColumnVisibility: defaultStackColumnVisibility,
+        enableColumnResizing: true,
+        paginationStrategy: 'offset',
+        get queryData() {
+            return eventsQuery.data?.data ?? [];
+        },
+        get queryMeta() {
+            return eventsQuery.data?.meta;
+        },
+        get queryParameters() {
+            return eventsQueryParameters;
+        }
+    });
+    const table = createTable(tableOptions);
 
     async function handleRefresh() {
         table.resetRowSelection();
@@ -748,7 +747,7 @@
 
             removeTableSelection(table, message.id);
 
-            removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
+            removeTableData(tableOptions, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
         }
     }
 

@@ -11,6 +11,7 @@
     import { tick } from 'svelte';
     import { SvelteURLSearchParams } from 'svelte/reactivity';
     import { fade } from 'svelte/transition';
+    import { debounce } from 'throttle-debounce';
 
     import type { AssistantPromptRequest } from '#features/assistant/models.ts';
     import type { SavedView } from '#features/saved-views/models.ts';
@@ -31,6 +32,7 @@
     import {
         createOrganizationEventNotificationRefresher,
         invalidatePersistentEventQueries,
+        ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS,
         type OrganizationEventNotificationRefresher
     } from '#features/events/api.svelte.ts';
     import { filterUsesPremiumFeatures, getSearchResourceForPathname } from '#features/events/premium-filter.ts';
@@ -511,17 +513,23 @@
 
         const organizationEventRefresher = createOrganizationEventNotificationRefresher(queryClient);
         const projectStackRefresher = createProjectStackNotificationRefresher(queryClient);
+        const refreshAfterReconnect = () => {
+            void queryClient.invalidateQueries();
+            document.dispatchEvent(
+                new CustomEvent('refresh', {
+                    bubbles: true,
+                    detail: 'WebSocket Connected'
+                })
+            );
+        };
+        // A reconnect can precede search-index visibility for a deletion whose notification was missed.
+        const reconcileAfterReconnect = debounce(ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS, refreshAfterReconnect);
         const ws = new WebSocketClient();
         ws.onMessage = (message) => void onMessage(message, organizationEventRefresher, projectStackRefresher);
         ws.onOpen = (_, isReconnect) => {
             if (isReconnect) {
-                queryClient.invalidateQueries();
-                document.dispatchEvent(
-                    new CustomEvent('refresh', {
-                        bubbles: true,
-                        detail: 'WebSocket Connected'
-                    })
-                );
+                refreshAfterReconnect();
+                reconcileAfterReconnect();
             }
         };
 
@@ -531,6 +539,7 @@
             });
             organizationEventRefresher.cancel();
             projectStackRefresher.cancel();
+            reconcileAfterReconnect.cancel();
             ws?.close();
         };
     });

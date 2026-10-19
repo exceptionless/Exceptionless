@@ -6,6 +6,23 @@ import TableSelectionTestHarness from './table-selection.test-harness.svelte';
 afterEach(cleanup);
 
 describe('shared table selection scope', () => {
+    it.each(['cursor', 'offset'] as const)(
+        'keeps removed rows absent when controlled selection synchronizes with %s pagination',
+        async (paginationStrategy) => {
+            render(TableSelectionTestHarness, { props: { paginationStrategy } });
+
+            await fireEvent.click(screen.getByRole('button', { name: 'Select row' }));
+            await fireEvent.click(screen.getByRole('button', { name: 'Remove first row' }));
+
+            expect(screen.queryByText('First row')).toBeNull();
+            expect(screen.getByText('Second row')).toBeTruthy();
+            expect(screen.getByLabelText('Selected rows').textContent).toBe('0');
+
+            await fireEvent.click(screen.getByRole('button', { name: 'Select row' }));
+            expect(screen.queryByText('First row')).toBeNull();
+        }
+    );
+
     it('clears selection when moving to another page', async () => {
         render(TableSelectionTestHarness);
 

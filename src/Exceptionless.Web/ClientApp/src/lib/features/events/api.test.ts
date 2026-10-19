@@ -159,6 +159,62 @@ describe('createEventWithNavigationQueryOptions', () => {
 });
 
 describe('invalidatePersistentEventQueries', () => {
+    it('removes confirmed deletions from cached event pages without changing other organizations or stack summaries', async () => {
+        const queryClient = new QueryClient();
+        const firstPage = queryKeys.organizationsEvents('organization-id', { mode: 'summary' });
+        const nextPage = queryKeys.organizationsEvents('organization-id', { after: 'cursor', mode: 'summary' });
+        const otherOrganization = queryKeys.organizationsEvents('other-organization', { mode: 'summary' });
+        const stacks = queryKeys.organizationsEvents('organization-id', { mode: 'stack_frequent' });
+        const data = { data: [{ id: 'deleted-event' }, { id: 'retained-event' }], meta: { links: {}, total: 2 } };
+        for (const key of [firstPage, nextPage, otherOrganization, stacks]) {
+            queryClient.setQueryData(key, data);
+        }
+
+        await invalidatePersistentEventQueries(queryClient, {
+            change_type: ChangeType.Removed,
+            data: {},
+            id: 'deleted-event',
+            organization_id: 'organization-id',
+            type: 'PersistentEvent'
+        });
+
+        for (const key of [firstPage, nextPage]) {
+            expect(queryClient.getQueryData(key)).toEqual({ ...data, data: [{ id: 'retained-event' }] });
+        }
+        expect(queryClient.getQueryData(otherOrganization)).toBe(data);
+        expect(queryClient.getQueryData(stacks)).toBe(data);
+    });
+
+    it('does not let an older response or overlapping removals restore deleted events', async () => {
+        const queryClient = new QueryClient();
+        const queryKey = queryKeys.organizationsEvents('organization-id', { mode: 'summary' });
+        const response = { data: [{ id: 'deleted-event' }, { id: 'other-deleted-event' }, { id: 'retained-event' }], meta: { links: {} } };
+        queryClient.setQueryData(queryKey, response);
+        let finishRead: (value: typeof response) => void = () => {};
+        const read = queryClient
+            .fetchQuery({
+                queryFn: () => new Promise<typeof response>((resolve) => (finishRead = resolve)),
+                queryKey
+            })
+            .catch(() => undefined);
+
+        await Promise.all(
+            ['deleted-event', 'other-deleted-event'].map((id) =>
+                invalidatePersistentEventQueries(queryClient, {
+                    change_type: ChangeType.Removed,
+                    data: {},
+                    id,
+                    organization_id: 'organization-id',
+                    type: 'PersistentEvent'
+                })
+            )
+        );
+        finishRead(response);
+        await read;
+
+        expect(queryClient.getQueryData(queryKey)).toEqual({ ...response, data: [{ id: 'retained-event' }] });
+    });
+
     it('invalidates matching event details without invalidating organization dashboards', async () => {
         // Arrange
         const queryClient = new QueryClient();
