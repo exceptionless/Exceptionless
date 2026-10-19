@@ -30,11 +30,12 @@ public sealed class AuthHandlerTests : TestWithServices
     public AuthHandlerTests(ITestOutputHelper output) : base(output) { }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public async Task Handle_LinkExternalAccountOwnedByAnotherUser_RevokesPreviousOwnerSessions(bool cleanupFails, bool hasPreviousVersion)
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(true, true, false)]
+    [InlineData(false, true, true)]
+    public async Task Handle_LinkExternalAccountOwnedByAnotherUser_RevokesPreviousOwnerSessions(bool cleanupFails, bool hasPreviousVersion, bool cancelAfterSave)
     {
         // Arrange
         const string provider = "github";
@@ -49,7 +50,8 @@ public sealed class AuthHandlerTests : TestWithServices
         current.MarkEmailAddressVerified();
         await GetService<MiniValidationValidator>().ValidateAndThrowAsync(displaced);
         await GetService<MiniValidationValidator>().ValidateAndThrowAsync(current);
-        var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(IdentityUtils.UserAuthenticationType)) };
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(IdentityUtils.UserAuthenticationType)), RequestAborted = cancellation.Token };
         context.Request.SetUser(current);
         var calls = new List<string>();
         string? persistedVersion = null;
@@ -64,7 +66,12 @@ public sealed class AuthHandlerTests : TestWithServices
                 calls.Add("save-displaced");
             }).ReturnsAsync(displaced);
         users.Setup(repository => repository.SaveAsync(current, It.IsAny<CommandOptionsDescriptor<User>>()))
-            .Callback(() => calls.Add("save-current")).ReturnsAsync(current);
+            .Callback(() =>
+            {
+                calls.Add("save-current");
+                if (cancelAfterSave)
+                    cancellation.Cancel();
+            }).ReturnsAsync(current);
         var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
         tokens.Setup(repository => repository.RemoveAllByUserIdAsync(displaced.Id, null)).Returns(() =>
         {
@@ -100,6 +107,49 @@ public sealed class AuthHandlerTests : TestWithServices
         tokens.VerifyAll();
         oauthTokens.VerifyAll();
         providerClient.VerifyAll();
+    }
+
+    [Fact]
+    public async Task Handle_UnlinkCanceledAfterPersistence_CompletesTokenIssuance()
+    {
+        // Arrange
+        const string providerId = "unlink-after-persistence";
+        string previousVersion = StringExtensions.GetNewToken();
+        var user = GetService<UserData>().GenerateUser(id: TestConstants.UserId, emailAddress: TestConstants.UserEmail) with
+        {
+            Password = "local-password", AuthenticationVersion = previousVersion
+        };
+        user.AddOAuthAccount("github", providerId, user.EmailAddress);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        var context = new DefaultHttpContext { RequestAborted = cancellation.Token };
+        context.Request.SetUser(user);
+        var users = new Mock<IUserRepository>(MockBehavior.Strict);
+        users.Setup(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(user);
+        users.Setup(repository => repository.SaveAsync(user, It.IsAny<CommandOptionsDescriptor<User>>()))
+            .Callback(() => cancellation.Cancel()).ReturnsAsync(user);
+        var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
+        tokens.Setup(repository => repository.RemoveAllByUserIdAsync(user.Id, null)).ReturnsAsync(1L);
+        tokens.Setup(repository => repository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id, null)).ReturnsAsync(FindResults<Token>.Empty);
+        Token? issuedToken = null;
+        tokens.Setup(repository => repository.AddAsync(It.IsAny<Token>(), It.IsAny<CommandOptionsDescriptor<Token>>()))
+            .Callback((Token token, CommandOptionsDescriptor<Token> _) => issuedToken = token)
+            .ReturnsAsync((Token token, CommandOptionsDescriptor<Token> _) => token);
+        var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
+        oauthTokens.Setup(repository => repository.RemoveAllByUserIdAsync(user.Id, null)).ReturnsAsync(1L);
+        var handler = CreateHandler(users.Object, tokens.Object, oauthTokens.Object, Mock.Of<IOAuthProviderClient>());
+
+        // Act
+        var result = await handler.Handle(new RemoveExternalLogin("github", new ValueFromBody<string>(providerId), context));
+
+        // Assert
+        Assert.Equal(ResultStatus.Success, result.Status);
+        Assert.Empty(user.OAuthAccounts);
+        Assert.NotEqual(previousVersion, user.AuthenticationVersion);
+        Assert.NotNull(issuedToken);
+        Assert.Equal(user.AuthenticationVersion, issuedToken.AuthenticationVersion);
+        users.VerifyAll();
+        tokens.VerifyAll();
+        oauthTokens.VerifyAll();
     }
 
     [Theory]
