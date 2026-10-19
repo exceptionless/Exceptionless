@@ -23,13 +23,14 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         var user = new User { FullName = "Linked User", EmailAddress = "linked@localhost.test" };
         user.MarkEmailAddressVerified();
         user.AddOAuthAccount("google", "shared-subject", user.EmailAddress);
-        user.AddOAuthAccount("GOOGLE", "shared-subject", user.EmailAddress);
+        user.AddOAuthAccount("google", "shared-subject", user.EmailAddress);
         user.AddOAuthAccount("github", "other-subject", user.EmailAddress);
         await _repository.AddAsync(user, options => options.ImmediateConsistency());
 
         // Act
         var githubUser = await _repository.GetUserByOAuthProviderAsync("github", "shared-subject", TestCancellationToken);
-        var googleUser = await _repository.GetUserByOAuthProviderAsync("GOOGLE", "shared-subject", TestCancellationToken);
+        var googleUser = await _repository.GetUserByOAuthProviderAsync("google", "shared-subject", TestCancellationToken);
+        var differentProviderCaseUser = await _repository.GetUserByOAuthProviderAsync("GOOGLE", "shared-subject", TestCancellationToken);
         var differentCaseUser = await _repository.GetUserByOAuthProviderAsync("google", "SHARED-SUBJECT", TestCancellationToken);
 
         // Assert
@@ -38,6 +39,7 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         Assert.Equal(user.Id, googleUser.Id);
         Assert.Equal(2, googleUser.OAuthAccounts.Count);
         Assert.Null(differentCaseUser);
+        Assert.Null(differentProviderCaseUser);
     }
 
     [Theory]
@@ -75,6 +77,7 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
                 if (cancelAfterFirstPage)
                     cancellation.Cancel();
             }
+
             return Task.CompletedTask;
         });
 

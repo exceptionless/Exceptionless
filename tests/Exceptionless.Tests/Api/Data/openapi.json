@@ -2001,10 +2001,9 @@
           {
             "name": "providerName",
             "in": "path",
-            "description": "The provider name.",
+            "description": "The provider name: github, google, facebook, or windowslive (case sensitive).",
             "required": true,
             "schema": {
-              "minLength": 1,
               "type": "string"
             }
           }
@@ -2052,6 +2051,16 @@
               "application/problem\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }

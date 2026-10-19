@@ -53,6 +53,9 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
             locks.Setup(locker => locker.AcquireAsync(It.IsAny<string>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns(async (string resource, TimeSpan? expires, bool release, CancellationToken token) =>
                 {
+                    if (race.RejectLocks)
+                        throw new LockAcquisitionTimeoutException(resource);
+
                     await race.ObserveLockAsync(inner, resource);
                     return await inner.AcquireAsync(resource, expires, release, token);
                 });
@@ -115,6 +118,7 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
             user.MarkEmailAddressVerified();
             await _users.AddAsync(user, options => options.ImmediateConsistency());
         }
+
         _race.Start(stage, TestCancellationToken);
         var pendingRequest = client.PostAsJsonAsync("api/v2/auth/github", new ExternalAuthInfo
         {
@@ -223,6 +227,7 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
         {
             _race.ResumeFirstRequest.TrySetResult();
         }
+
         using var completedUnlinkResponse = unlinkResponse;
         using var loginResponse = await pendingLogin;
 

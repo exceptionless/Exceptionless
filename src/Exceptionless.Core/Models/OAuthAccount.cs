@@ -1,7 +1,19 @@
-﻿namespace Exceptionless.Core.Models;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Exceptionless.Core.Models;
 
 public record OAuthAccount
 {
+    public static class KnownProviders
+    {
+        public const string GitHub = "github";
+        public const string Google = "google";
+        public const string Facebook = "facebook";
+        public const string WindowsLive = "windowslive";
+
+        public static bool IsKnown([NotNullWhen(true)] string? providerName) => providerName is GitHub or Google or Facebook or WindowsLive;
+    }
+
     public required string Provider { get; init; }
     public required string ProviderUserId { get; init; }
     public required string Username { get; init; }

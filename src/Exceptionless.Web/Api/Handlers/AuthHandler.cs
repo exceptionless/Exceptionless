@@ -42,6 +42,7 @@ public class AuthHandler(
     private readonly ScopedCacheClient _cache = new(cacheClient, "Auth");
     private static bool _isFirstUserChecked;
     private static readonly TimeSpan IntercomJwtLifetime = TimeSpan.FromMinutes(60);
+    private static readonly TimeSpan ExternalAccountTimeout = TimeSpan.FromSeconds(15);
 
     public async Task<Result<TokenResult>> Handle(LoginMessage message)
     {
@@ -304,23 +305,19 @@ public class AuthHandler(
             return Result.BadRequest("Invalid Provider Name or Provider User Id.");
         }
 
-        using var lockTimeout = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
-        lockTimeout.CancelAfter(TimeSpan.FromSeconds(15));
-        await using var userLock = await lockProvider.TryAcquireAsync(GetExternalAccountUserLockKey(user.Id), cancellationToken: lockTimeout.Token);
-        if (userLock is null)
-            return Result.Unauthorized("Login failed.");
-
-        var authenticatedUser = user;
-        user = await userRepository.GetByIdAsync(user.Id, options => options.Cache(false)).WaitAsync(lockTimeout.Token);
-        if (user is null || !user.IsActive)
-            return Result.Unauthorized("Login failed.");
-
-        if (!String.Equals(authenticatedUser.AuthenticationVersion, user.AuthenticationVersion, StringComparison.Ordinal))
-            return Result.Unauthorized("Login failed.");
-
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
+        operationCancellation.CancelAfter(ExternalAccountTimeout);
         try
         {
-            lockTimeout.Token.ThrowIfCancellationRequested();
+            operationCancellation.Token.ThrowIfCancellationRequested();
+            await using var userLock = await lockProvider.AcquireAsync(GetExternalAccountUserLockKey(user.Id), cancellationToken: operationCancellation.Token);
+            var storedUser = await userRepository.GetByIdAsync(user.Id, options => options.Cache(false)).WaitAsync(operationCancellation.Token);
+            if (storedUser is null || !storedUser.IsActive
+                || !String.Equals(user.AuthenticationVersion, storedUser.AuthenticationVersion, StringComparison.Ordinal))
+                return Result.Unauthorized("Login failed.");
+
+            user = storedUser;
+            operationCancellation.Token.ThrowIfCancellationRequested();
             if (!user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId.Value))
             {
                 logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login", user.EmailAddress);
@@ -329,17 +326,23 @@ public class AuthHandler(
 
             user.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
             await userRepository.SaveAsync(user, o => o.Cache());
+
+            await ResetUserTokensAsync(user, "RemoveExternalLoginAsync", httpContext);
+
+            logger.UserRemovedExternalLogin(user.EmailAddress, message.ProviderName);
+            return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user, operationCancellation.Token) };
+        }
+        catch (Exception ex) when (ex is LockAcquisitionTimeoutException
+            || ex is OperationCanceledException && operationCancellation.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Remove external login failed for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
+            return Result.Unauthorized("Login failed.");
         }
         catch (Exception ex)
         {
             logger.LogCritical(ex, "Error removing external login for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
             throw;
         }
-
-        await ResetUserTokensAsync(user, "RemoveExternalLoginAsync", httpContext);
-
-        logger.UserRemovedExternalLogin(user.EmailAddress, message.ProviderName);
-        return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user, lockTimeout.Token) };
     }
 
     public async Task<Result<TokenResult>> Handle(ChangePassword message)
@@ -533,39 +536,43 @@ public class AuthHandler(
             throw;
         }
 
-        using var lockTimeout = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
-        lockTimeout.CancelAfter(TimeSpan.FromSeconds(15));
+        // Repository reads have no native cancellation API. Cancel read waits only; await every write inside its locks.
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
+        operationCancellation.CancelAfter(ExternalAccountTimeout);
         try
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
-            ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
+            if (!OAuthAccount.KnownProviders.IsKnown(userInfo.ProviderName))
+                throw new UnauthorizedAccessException("Unknown external login provider.");
+
             ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
 
             // Lock the identity and normalized email before resolving or creating its owner.
             string[] accountKeys = [
-                $"external-account:identity:{userInfo.ProviderName.ToLowerInvariant()}:{OAuthService.CreateTokenHash(userInfo.Id)}",
+                $"external-account:identity:{userInfo.ProviderName}:{OAuthService.CreateTokenHash(userInfo.Id)}",
                 $"external-account:email:{OAuthService.CreateTokenHash(userInfo.Email.Trim().ToLowerInvariant())}"
             ];
-            await using var accountLock = await lockProvider.AcquireAsync(accountKeys, cancellationToken: lockTimeout.Token);
-            var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id, lockTimeout.Token);
-            var emailUser = existingUser is null ? await userRepository.GetByEmailAddressAsync(userInfo.Email).WaitAsync(lockTimeout.Token) : null;
+            operationCancellation.Token.ThrowIfCancellationRequested();
+            await using var accountLock = await lockProvider.AcquireAsync(accountKeys, cancellationToken: operationCancellation.Token);
+            var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id, operationCancellation.Token);
+            var emailUser = existingUser is null ? await userRepository.GetByEmailAddressAsync(userInfo.Email).WaitAsync(operationCancellation.Token) : null;
             string? currentUserId = String.IsNullOrWhiteSpace(authInfo.InviteToken) && httpContext.User.IsUserAuthType()
                 ? httpContext.Request.GetUser().Id : null;
             var userKeys = new[] { existingUser?.Id, emailUser?.Id, currentUserId }
                 .OfType<string>().Select(GetExternalAccountUserLockKey);
             // Ordered user locks also protect transfers and different identities on the same user.
-            await using var userLock = await lockProvider.AcquireAsync(userKeys, cancellationToken: lockTimeout.Token);
-            lockTimeout.Token.ThrowIfCancellationRequested();
-            var user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext, existingUser, emailUser, lockTimeout.Token);
+            await using var userLock = await lockProvider.AcquireAsync(userKeys, cancellationToken: operationCancellation.Token);
+            operationCancellation.Token.ThrowIfCancellationRequested();
+            var user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext, existingUser, emailUser, operationCancellation.Token);
 
             if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
-                await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext, lockTimeout.Token);
+                await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext, operationCancellation.Token);
 
             logger.UserLoggedIn(user.EmailAddress);
-            return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user, lockTimeout.Token) };
+            return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user, operationCancellation.Token) };
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or LockAcquisitionTimeoutException
-            || ex is OperationCanceledException && lockTimeout.IsCancellationRequested)
+            || ex is OperationCanceledException && operationCancellation.IsCancellationRequested)
         {
             logger.LogWarning(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
             return Result.Unauthorized("Login failed.");
@@ -598,7 +605,7 @@ public class AuthHandler(
                 ?? throw new UnauthorizedAccessException("The user no longer exists.");
             EnsureUserIsActive(existingUser);
             if (!existingUser.OAuthAccounts.Any(account =>
-                String.Equals(account.Provider, userInfo.ProviderName, StringComparison.OrdinalIgnoreCase) &&
+                String.Equals(account.Provider, userInfo.ProviderName, StringComparison.Ordinal) &&
                 String.Equals(account.ProviderUserId, userInfo.Id, StringComparison.Ordinal)))
                 throw new UnauthorizedAccessException("The external account is no longer linked to this user.");
         }

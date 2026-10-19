@@ -23,7 +23,7 @@ public sealed class OAuthProviderClient(SlackService slackService) : IOAuthProvi
 {
     public Task<UserInfo> GetFacebookUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        return GetUserInfoAsync(authInfo, appId, appSecret, (factory, configuration) =>
+        return GetUserInfoAsync(authInfo, appId, appSecret, OAuthAccount.KnownProviders.Facebook, (factory, configuration) =>
         {
             configuration.Scope = "email";
             return new FacebookClient(factory, configuration);
@@ -32,7 +32,7 @@ public sealed class OAuthProviderClient(SlackService slackService) : IOAuthProvi
 
     public Task<UserInfo> GetGitHubUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        return GetUserInfoAsync(authInfo, appId, appSecret, (factory, configuration) =>
+        return GetUserInfoAsync(authInfo, appId, appSecret, OAuthAccount.KnownProviders.GitHub, (factory, configuration) =>
         {
             configuration.Scope = "user:email";
             return new GitHubClient(factory, configuration);
@@ -41,7 +41,7 @@ public sealed class OAuthProviderClient(SlackService slackService) : IOAuthProvi
 
     public Task<UserInfo> GetGoogleUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        return GetUserInfoAsync(authInfo, appId, appSecret, (factory, configuration) =>
+        return GetUserInfoAsync(authInfo, appId, appSecret, OAuthAccount.KnownProviders.Google, (factory, configuration) =>
         {
             configuration.Scope = "profile email";
             return new GoogleClient(factory, configuration);
@@ -50,7 +50,7 @@ public sealed class OAuthProviderClient(SlackService slackService) : IOAuthProvi
 
     public Task<UserInfo> GetMicrosoftUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        return GetUserInfoAsync(authInfo, appId, appSecret, (factory, configuration) =>
+        return GetUserInfoAsync(authInfo, appId, appSecret, OAuthAccount.KnownProviders.WindowsLive, (factory, configuration) =>
         {
             configuration.Scope = "wl.emails";
             return new WindowsLiveClient(factory, configuration);
@@ -62,10 +62,11 @@ public sealed class OAuthProviderClient(SlackService slackService) : IOAuthProvi
         return slackService.GetAccessTokenAsync(code);
     }
 
-    private static Task<UserInfo> GetUserInfoAsync<TClient>(
+    private static async Task<UserInfo> GetUserInfoAsync<TClient>(
         ExternalAuthInfo authInfo,
         string appId,
         string appSecret,
+        string providerName,
         Func<IRequestFactory, IClientConfiguration, TClient> createClient
     ) where TClient : OAuth2Client
     {
@@ -76,6 +77,8 @@ public sealed class OAuthProviderClient(SlackService slackService) : IOAuthProvi
             RedirectUri = authInfo.RedirectUri
         });
 
-        return client.GetUserInfoAsync(authInfo.Code, authInfo.RedirectUri);
+        var userInfo = await client.GetUserInfoAsync(authInfo.Code, authInfo.RedirectUri);
+        userInfo.ProviderName = providerName;
+        return userInfo;
     }
 }

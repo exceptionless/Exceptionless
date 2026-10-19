@@ -753,11 +753,14 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.False(String.IsNullOrEmpty(result.Token));
     }
 
-    [Fact]
-    public async Task RemoveExternalLoginAsync_WithLinkedAccount_RemovesAccount()
+    [Theory]
+    [InlineData("github")]
+    [InlineData("google")]
+    [InlineData("facebook")]
+    [InlineData("windowslive")]
+    public async Task RemoveExternalLoginAsync_WithLinkedAccount_RemovesAccount(string providerName)
     {
         // Arrange
-        const string providerName = "github";
         const string providerUserId = "github-remove-user";
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
@@ -779,6 +782,41 @@ public class AuthEndpointTests : IntegrationTestsBase
         var updatedUser = await _userRepository.GetByIdAsync(user.Id);
         Assert.NotNull(updatedUser);
         Assert.DoesNotContain(updatedUser.OAuthAccounts, account => account.Provider == providerName && account.ProviderUserId == providerUserId);
+    }
+
+    [Theory]
+    [InlineData("unknown")]
+    [InlineData("GitHub")]
+    [InlineData("GITHUB")]
+    [InlineData(" github")]
+    [InlineData("github ")]
+    public async Task RemoveExternalLoginAsync_InvalidProvider_IsRejectedWithoutChangingAccount(string providerName)
+    {
+        // Arrange
+        const string providerUserId = "github-invalid-provider";
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.AddOAuthAccount("github", providerUserId, user.EmailAddress);
+        await _userRepository.SaveAsync(user, options => options.ImmediateConsistency().Cache());
+        long originalTokenCount = (await _tokenRepository.CountAsync()).Total;
+
+        // Act
+        var problem = await SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>(request => request
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("auth", "unlink", providerName)
+            .Content(new ValueFromBody<string>(providerUserId))
+            .StatusCodeShouldBeUnprocessableEntity());
+
+        // Assert
+        Assert.NotNull(problem);
+        Assert.Contains("provider_name", problem.Errors.Keys);
+        var storedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
+        Assert.NotNull(storedUser);
+        Assert.Equal(user.AuthenticationVersion, storedUser.AuthenticationVersion);
+        Assert.Equal(user.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)),
+            storedUser.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)));
+        Assert.Equal(originalTokenCount, (await _tokenRepository.CountAsync()).Total);
     }
 
     [Fact]

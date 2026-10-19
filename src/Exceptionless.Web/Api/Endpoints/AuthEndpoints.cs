@@ -177,22 +177,24 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("unlink/{providerName:minlength(1)}", async (string providerName, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ValueFromBody<string> providerUserId)
-            => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.RemoveExternalLogin(providerName, providerUserId, httpContext))).ToHttpResult(resultMapper))
+        group.MapPost("unlink/{providerName:minlength(1)}", async ([AsParameters] RemoveExternalLoginRequest request, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ValueFromBody<string> providerUserId)
+            => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.RemoveExternalLogin(request.ProviderName, providerUserId, httpContext))).ToHttpResult(resultMapper))
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Removes an external login provider from the account")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The provider user id.",
             ParameterDescriptions = new() {
-                ["providerName"] = "The provider name.",
+                ["providerName"] = "The provider name: github, google, facebook, or windowslive (case sensitive).",
             },
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
                 ["400"] = "Invalid provider name.",
                 ["401"] = "Unauthorized",
+                ["422"] = "Validation error",
             }
         });
 

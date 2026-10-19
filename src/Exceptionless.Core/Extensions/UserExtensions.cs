@@ -64,7 +64,9 @@ public static class UserExtensions
 
     public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary? data = null)
     {
-        providerName = providerName.ToLowerInvariant();
+        if (!OAuthAccount.KnownProviders.IsKnown(providerName))
+            throw new ArgumentException("Unknown external login provider.", nameof(providerName));
+
         if (user.OAuthAccounts.Any(account => String.Equals(account.Provider, providerName, StringComparison.Ordinal)
             && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal)))
             return;
@@ -84,12 +86,15 @@ public static class UserExtensions
 
     public static bool RemoveOAuthAccount(this User user, string providerName, string providerUserId)
     {
+        if (!OAuthAccount.KnownProviders.IsKnown(providerName))
+            throw new ArgumentException("Unknown external login provider.", nameof(providerName));
+
         if (user.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(user.Password))
             return false;
 
-        var accounts = user.OAuthAccounts.Where(account => String.Equals(account.Provider, providerName.ToLowerInvariant(), StringComparison.Ordinal)
+        var accounts = user.OAuthAccounts.Where(account => String.Equals(account.Provider, providerName, StringComparison.Ordinal)
             && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal)).ToArray();
-        if (accounts.Length == 0)
+        if (accounts.Length is 0)
             return true;
 
         if (accounts.Length == user.OAuthAccounts.Count && String.IsNullOrEmpty(user.Password))
