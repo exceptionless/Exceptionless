@@ -160,6 +160,8 @@ public sealed class OrganizationHandlerTests : TestWithServices
         var publisher = new Mock<IMessagePublisher>(MockBehavior.Strict);
         if (!persistenceFails)
         {
+            users.Setup(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>()))
+                .ReturnsAsync(new User { Id = user.Id, EmailAddress = user.EmailAddress });
             projects.Setup(repository => repository.GetByOrganizationIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Project>>()))
                 .Callback(() => calls.Add("cleanup"))
                 .ThrowsAsync(failure);

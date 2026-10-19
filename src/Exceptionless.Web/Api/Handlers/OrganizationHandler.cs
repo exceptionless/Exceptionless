@@ -739,6 +739,12 @@ public class OrganizationHandler(
             }
         }
 
+        var currentUser = await userRepository.GetByIdAsync(user.Id, options => options.Cache());
+        bool hasOrganizationAccess = currentUser is not null
+            && (currentUser.OrganizationIds.Contains(organization.Id) || currentUser.Roles.Contains(AuthorizationRoles.GlobalAdmin));
+        if (hasOrganizationAccess)
+            return Result.Success();
+
         await messagePublisher.PublishAsync(new UserMembershipChanged
         {
             ChangeType = ChangeType.Removed,
