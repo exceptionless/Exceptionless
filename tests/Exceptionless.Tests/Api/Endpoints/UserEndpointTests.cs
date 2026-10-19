@@ -9,7 +9,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Validation;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Models;
@@ -34,12 +33,6 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         _userRepository = GetService<IUserRepository>();
         _oauthApplicationRepository = GetService<IOAuthApplicationRepository>();
         _oauthTokenRepository = GetService<IOAuthTokenRepository>();
-    }
-
-    protected override void RegisterServices(IServiceCollection services)
-    {
-        base.RegisterServices(services);
-        services.ReplaceSingleton<IUserRepository, PausingProfileUserRepository>();
     }
 
     protected override async Task ResetDataAsync()
@@ -426,13 +419,14 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task GetCurrentUserAsync_CachedUser_ReturnsCachedProfileUntilInvalidated()
     {
-        // Arrange: give the cache a distinct profile without changing the stored user.
+        // Arrange
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
-        string persistedName = user.FullName;
-        user.FullName = "Cached profile";
-        var repository = Assert.IsType<PausingProfileUserRepository>(_userRepository);
-        await repository.CacheUserAsync(user);
+        string cachedName = user.FullName;
+        const string persistedName = "Updated stored profile";
+        var configuration = GetService<ExceptionlessElasticConfiguration>();
+        var update = await configuration.Client.UpdateAsync<User, object>(configuration.Users.VersionedName, user.Id,
+            request => request.Doc(new { full_name = persistedName }), TestCancellationToken);
 
         // Act
         var cached = await GetTestOrganizationUserAsync();
@@ -440,7 +434,8 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         var refreshed = await GetTestOrganizationUserAsync();
 
         // Assert
-        Assert.Equal("Cached profile", cached.FullName);
+        Assert.True(update.IsValidResponse);
+        Assert.Equal(cachedName, cached.FullName);
         Assert.Equal(persistedName, refreshed.FullName);
     }
 
@@ -806,84 +801,67 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData(true)]
     [InlineData(false)]
-    public async Task PatchAsync_TourRecordedAfterProfileRead_PreservesProgressAndUnchangedFields(bool updateFullName)
+    [InlineData(true)]
+    public async Task PatchAsync_FieldUpdate_PreservesAuthenticationVersion(bool script)
     {
         // Arrange
-        var currentUser = await GetTestOrganizationUserAsync();
-        var user = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
+        string authenticationVersion = StringExtensions.GetNewToken();
+        var profile = await GetTestOrganizationUserAsync();
+        var user = await _userRepository.GetByIdAsync(profile.Id, o => o.Cache(false));
         Assert.NotNull(user);
-        var repository = Assert.IsType<PausingProfileUserRepository>(_userRepository);
-        var pause = repository.PauseNextRead(user.Id);
-        var recordedUtc = TimeProvider.GetUtcNow().UtcDateTime;
-        object changes = updateFullName
-            ? new { FullName = "Updated Name" }
-            : new { EmailNotificationsEnabled = false };
-        var update = SendRequestAsAsync<ViewUser>(r => r.Patch().AsGlobalAdminUser()
-            .AppendPaths("users", user.Id).Content(changes).StatusCodeShouldBeOk());
+        user.AuthenticationVersion = authenticationVersion;
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+        IPatchOperation patch = script
+            ? new ScriptPatch("ctx._source.full_name = 'Updated profile';")
+            : new PartialPatch(new { full_name = "Updated profile" });
 
-        // Act: save progress after the handler's read, then allow its profile write.
-        try
-        {
-            await pause.SnapshotRead.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellationToken);
-            await _userRepository.RecordProductTourAsync(user, "app_overview", recordedUtc);
-            await _userRepository.GetByIdAsync(user.Id, o => o.Cache());
-            await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
-        }
-        finally
-        {
-            pause.ResumeRead.TrySetResult();
-        }
-        var response = await update;
+        // Act
+        await _userRepository.PatchAsync(user.Id, patch, o => o.ImmediateConsistency());
         var persisted = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
-        var byId = await _userRepository.GetByIdAsync(user.Id, o => o.Cache());
-        var byEmail = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
 
         // Assert
-        Assert.NotNull(response);
-        Assert.Equal(updateFullName ? "Updated Name" : user.FullName, response.FullName);
-        Assert.Equal(updateFullName && user.EmailNotificationsEnabled, response.EmailNotificationsEnabled);
-        foreach (var result in new[] { persisted, byId, byEmail })
-        {
-            Assert.NotNull(result);
-            Assert.Equal(recordedUtc, result.ProductTours["app_overview"].GetDateTime());
-            Assert.Equal(response.FullName, result.FullName);
-            Assert.Equal(response.EmailNotificationsEnabled, result.EmailNotificationsEnabled);
-            Assert.Equal(user.EmailAddress, result.EmailAddress);
-            Assert.Equal(user.CreatedUtc, result.CreatedUtc);
-            Assert.Equal(user.Roles, result.Roles);
-        }
+        Assert.NotNull(persisted);
+        Assert.Equal(authenticationVersion, persisted.AuthenticationVersion);
+        Assert.Equal("Updated profile", persisted.FullName);
+        Assert.NotEqual(user.Version, persisted.Version);
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task UpdateUserAsync_DeletedAfterProfileRead_ReturnsNotFound(bool usePut)
+    public async Task PatchAllAsync_InterveningAuthenticationChange_PreservesNewGeneration(bool jsonPatch)
     {
-        var currentUser = await GetTestOrganizationUserAsync();
-        var user = await _userRepository.GetByIdAsync(currentUser.Id, o => o.Cache(false));
-        Assert.NotNull(user);
-        var repository = Assert.IsType<PausingProfileUserRepository>(_userRepository);
-        var pause = repository.PauseNextRead(user.Id);
-        var request = SendRequestAsync(r =>
+        // Arrange
+        string authenticationVersion = StringExtensions.GetNewToken();
+        const string updatedName = "Patched profile";
+        var user = await GetTestOrganizationUserAsync();
+        var repository = Assert.IsType<UserRepository>(_userRepository);
+        bool intervened = false;
+        using var subscription = repository.AfterQuery.AddHandler(async (_, args) =>
         {
-            r = usePut ? r.Put() : r.Patch();
-            r.AsGlobalAdminUser().AppendPaths("users", user.Id)
-                .Content(new { FullName = "Updated Name" }).StatusCodeShouldBeNotFound();
+            if (intervened || args.Result is not FindResults<User> results || !results.Documents.Any(u => String.Equals(u.Id, user.Id, StringComparison.Ordinal)))
+                return;
+
+            intervened = true;
+            var current = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
+            Assert.NotNull(current);
+            current.AuthenticationVersion = authenticationVersion;
+            await _userRepository.SaveAsync(current, o => o.ImmediateConsistency());
         });
+        IPatchOperation patch = jsonPatch
+            ? new JsonPatch(new PatchDocument(new ReplaceOperation { Path = "full_name", Value = updatedName }))
+            : new ActionPatch<User>(u => u.FullName = updatedName);
 
-        try
-        {
-            await pause.SnapshotRead.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellationToken);
-            await _userRepository.RemoveAsync(user);
-        }
-        finally
-        {
-            pause.ResumeRead.TrySetResult();
-        }
+        // Act
+        await _userRepository.PatchAllAsync(q => q.Id(user.Id), patch, o => o.ImmediateConsistency());
+        var persisted = await _userRepository.GetByIdAsync(user.Id, o => o.Cache(false));
 
-        await request;
+        // Assert
+        Assert.True(intervened);
+        Assert.NotNull(persisted);
+        Assert.Equal(authenticationVersion, persisted.AuthenticationVersion);
+        Assert.Equal(updatedName, persisted.FullName);
     }
 
     [Fact]
@@ -1209,35 +1187,6 @@ public sealed class UserEndpointTests : IntegrationTestsBase
         );
         Assert.NotNull(user);
         return user;
-    }
-
-    private sealed class PausingProfileUserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
-        : UserRepository(configuration, validator, options)
-    {
-        private ProfileReadPause? _pause;
-
-        public ProfileReadPause PauseNextRead(string userId) => _pause = new ProfileReadPause(userId);
-
-        public Task CacheUserAsync(User user) => AddDocumentsToCacheAsync(user, new CommandOptions<User>().Cache(), false);
-
-        public override async Task<User?> GetByIdAsync(Id id, ICommandOptions? options = null)
-        {
-            var user = await base.GetByIdAsync(id, options);
-            if (_pause is { } pause && user?.Id == pause.UserId)
-            {
-                _pause = null;
-                pause.SnapshotRead.TrySetResult();
-                await pause.ResumeRead.Task;
-            }
-            return user;
-        }
-    }
-
-    private sealed class ProfileReadPause(string userId)
-    {
-        public string UserId { get; } = userId;
-        public TaskCompletionSource SnapshotRead { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public TaskCompletionSource ResumeRead { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
     private static MultipartFormDataContent CreateProfileImageContent()

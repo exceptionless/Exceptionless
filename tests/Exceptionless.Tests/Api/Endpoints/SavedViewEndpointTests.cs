@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Seed;
 using Exceptionless.Core.Services;
@@ -12,6 +13,7 @@ using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
@@ -2004,6 +2006,79 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
 
 
     [Fact]
+    public async Task RemoveUser_PreviouslyCommittedRemoval_CompletesNotificationAndPrivateViewCleanup()
+    {
+        // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        var projects = GetService<IProjectRepository>();
+        var project = await projects.GetByIdAsync(SampleDataService.TEST_PROJECT_ID);
+        Assert.NotNull(project);
+        project.NotificationSettings[user.Id] = new NotificationSettings { ReportNewErrors = true };
+        await projects.SaveAsync(project, options => options.ImmediateConsistency());
+        var view = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = SampleDataService.TEST_ORG_ID, UserId = user.Id, CreatedByUserId = user.Id,
+            Name = "Interrupted cleanup", Slug = "interrupted-cleanup", ViewType = "events"
+        }, options => options.ImmediateConsistency());
+        user.OrganizationIds.Remove(SampleDataService.TEST_ORG_ID);
+        await _userRepository.SaveAsync(user);
+
+        // Act
+        await SendRequestAsync(request => request.Delete().AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "users", user.EmailAddress).StatusCodeShouldBeOk());
+        var remainingView = await _savedViewRepository.GetByIdAsync(view.Id, options => options.Cache(false));
+        var updatedProject = await projects.GetByIdAsync(project.Id, options => options.Cache(false));
+
+        // Assert
+        Assert.Null(remainingView);
+        Assert.NotNull(updatedProject);
+        Assert.False(updatedProject.NotificationSettings.ContainsKey(user.Id));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RemoveUser_NonmemberGlobalAdministrator_PreservesPrivateViews(bool hasInvite)
+    {
+        // Arrange
+        var administrator = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(administrator);
+        Assert.Contains(AuthorizationRoles.GlobalAdmin, administrator.Roles);
+        administrator.OrganizationIds.Remove(SampleDataService.TEST_ORG_ID);
+        await _userRepository.SaveAsync(administrator);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        if (hasInvite)
+        {
+            organization.Invites.Add(new Invite
+            {
+                EmailAddress = administrator.EmailAddress,
+                Token = Guid.NewGuid().ToString("N"),
+                DateAdded = TimeProvider.GetUtcNow().UtcDateTime
+            });
+            await _organizationRepository.SaveAsync(organization);
+        }
+
+        var view = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id, UserId = administrator.Id, CreatedByUserId = administrator.Id,
+            Name = "Administrator private view", Slug = "administrator-private-view", ViewType = "events"
+        }, options => options.ImmediateConsistency());
+
+        // Act
+        await SendRequestAsync(request => request.Delete().AsTestOrganizationUser()
+            .AppendPaths("organizations", organization.Id, "users", administrator.EmailAddress).StatusCodeShouldBeOk());
+        var retained = await _savedViewRepository.GetByIdAsync(view.Id, options => options.Cache(false));
+        var updatedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache(false));
+
+        // Assert
+        Assert.NotNull(retained);
+        Assert.NotNull(updatedOrganization);
+        Assert.DoesNotContain(updatedOrganization.Invites, invite => invite.EmailAddress == administrator.EmailAddress);
+    }
+
+    [Fact]
     public async Task RemoveUser_DeletesPrivateSavedViews_ButPreservesOrganizationWideViews()
     {
         // Arrange — create an organization-wide view and a private view for the test organization user
@@ -2063,6 +2138,48 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.NotNull(testUser);
         Assert.DoesNotContain(testUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.TEST_ORG_ID);
         Assert.Contains(testUser.SavedViewOrders, preference => preference.OrganizationId == SampleDataService.FREE_ORG_ID);
+    }
+
+    [Fact]
+    public async Task SoftDeleteOrganization_UserVersionConflict_PreservesOrganizationResources()
+    {
+        // Arrange
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(user);
+        Assert.NotNull(organization);
+        var view = await _savedViewRepository.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id, CreatedByUserId = user.Id,
+            Name = "Retained on conflict", Slug = "retained-on-conflict", ViewType = "events"
+        }, options => options.ImmediateConsistency());
+        bool changed = false;
+        using var subscription = _userRepository.DocumentsSaving.AddHandler(async (_, args) =>
+        {
+            if (changed || !args.Documents.Any(document => document.Value.Id == user.Id))
+                return;
+
+            changed = true;
+            var current = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
+            Assert.NotNull(current);
+            current.FullName = "Concurrent profile update";
+            await _userRepository.SaveAsync(current);
+        });
+
+        // Act
+        var exception = await Record.ExceptionAsync(() => _organizationService.SoftDeleteOrganizationAsync(organization, user.Id));
+        var retained = await _savedViewRepository.GetByIdAsync(view.Id, options => options.Cache(false));
+        var storedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache(false));
+        var storedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
+
+        // Assert
+        Assert.True(changed);
+        Assert.IsType<VersionConflictDocumentException>(exception);
+        Assert.NotNull(retained);
+        Assert.NotNull(storedOrganization);
+        Assert.False(storedOrganization.IsDeleted);
+        Assert.NotNull(storedUser);
+        Assert.Equal("Concurrent profile update", storedUser.FullName);
     }
 
     [Fact]

@@ -202,11 +202,11 @@ public class OrganizationService : IStartupAction
         if (organization.IsDeleted)
             return;
 
+        await RemoveUsersAsync(organization, currentUserId);
         await RemoveTokensAsync(organization);
         await RemoveWebHooksAsync(organization);
         await RemoveSavedViewsAsync(organization);
         await CancelSubscriptionsAsync(organization);
-        await RemoveUsersAsync(organization, currentUserId);
         await CleanupProjectNotificationSettingsAsync(organization, []);
 
         organization.IsDeleted = true;

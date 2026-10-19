@@ -20,6 +20,7 @@ using Foundatio.Caching;
 using Foundatio.Mediator;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Stripe;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
@@ -641,8 +642,22 @@ public class OrganizationHandler(
         {
             if (!user.OrganizationIds.Contains(organization.Id))
             {
-                user.OrganizationIds.Add(organization.Id);
-                await userRepository.SaveAsync(user, o => o.Cache());
+                try
+                {
+                    bool patched = await userRepository.PatchAsync(user.Id, new ActionPatch<User>(current => current.OrganizationIds.Add(organization.Id)), o => o.Cache());
+
+                    if (!patched)
+                        return Result.NotFound("User not found.");
+                }
+                catch (DocumentNotFoundException)
+                {
+                    return Result.NotFound("User not found.");
+                }
+
+                user = await userRepository.GetByIdAsync(user.Id, o => o.Cache());
+                if (user is null)
+                    return Result.NotFound("User not found.");
+
                 await messagePublisher.PublishAsync(new UserMembershipChanged
                 {
                     ChangeType = ChangeType.Added,
@@ -684,11 +699,14 @@ public class OrganizationHandler(
         if (user is null || !user.OrganizationIds.Contains(message.Id))
         {
             var invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, message.Email, StringComparison.OrdinalIgnoreCase));
-            if (invite is null)
-                return Result.Success();
+            if (invite is not null)
+            {
+                organization.Invites.Remove(invite);
+                await repository.SaveAsync(organization, o => o.Cache());
+            }
 
-            organization.Invites.Remove(invite);
-            await repository.SaveAsync(organization, o => o.Cache());
+            if (user is null || user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+                return Result.Success();
         }
         else
         {
@@ -699,22 +717,37 @@ public class OrganizationHandler(
             if (organizationUsers.Total is 1)
                 return Result.BadRequest("An organization must contain at least one user.");
 
-            await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
-            await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
-
-            user.OrganizationIds.Remove(organization.Id);
-            foreach (var preference in user.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
-                user.OrganizationPreferences.Remove(preference);
-            foreach (var preference in user.SavedViewOrders.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
-                user.SavedViewOrders.Remove(preference);
-            await userRepository.SaveAsync(user, o => o.Cache());
-            await messagePublisher.PublishAsync(new UserMembershipChanged
+            try
             {
-                ChangeType = ChangeType.Removed,
-                UserId = user.Id,
-                OrganizationId = organization.Id
-            });
+                bool patched = await userRepository.PatchAsync(user.Id, new ActionPatch<User>(current =>
+                {
+                    current.OrganizationIds.Remove(organization.Id);
+
+                    foreach (var preference in current.OrganizationPreferences.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
+                        current.OrganizationPreferences.Remove(preference);
+
+                    foreach (var preference in current.SavedViewOrders.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
+                        current.SavedViewOrders.Remove(preference);
+                }), o => o.Cache());
+
+                if (!patched)
+                    return Result.NotFound("User not found.");
+            }
+            catch (DocumentNotFoundException)
+            {
+                return Result.NotFound("User not found.");
+            }
         }
+
+        await messagePublisher.PublishAsync(new UserMembershipChanged
+        {
+            ChangeType = ChangeType.Removed,
+            UserId = user.Id,
+            OrganizationId = organization.Id
+        });
+
+        await organizationService.CleanupProjectNotificationSettingsAsync(organization, [user.Id]);
+        await organizationService.RemoveUserSavedViewsAsync(organization.Id, user.Id);
 
         return Result.Success();
     }
@@ -838,8 +871,32 @@ public class OrganizationHandler(
 
         var organization = await repository.AddAsync(value, o => o.Cache());
 
-        user.OrganizationIds.Add(organization.Id);
-        await userRepository.SaveAsync(user, o => o.Cache());
+        try
+        {
+            bool patched = await userRepository.PatchAsync(user.Id, new ActionPatch<User>(current => current.OrganizationIds.Add(organization.Id)), o => o.Cache());
+
+            if (!patched)
+                throw new DocumentNotFoundException("User not found.");
+        }
+        catch (DocumentException ex) when (ex is DocumentNotFoundException or VersionConflictDocumentException)
+        {
+            try
+            {
+                await repository.RemoveAsync(organization);
+            }
+            catch (Exception cleanupException)
+            {
+                _logger.LogCritical(cleanupException, "Unable to clean up organization {OrganizationId} after adding user {EmailAddress} failed: {Message}", organization.Id, user.EmailAddress, cleanupException.Message);
+            }
+
+            throw;
+        }
+
+        var updatedUser = await userRepository.GetByIdAsync(user.Id, o => o.Cache());
+        if (updatedUser is null)
+            throw new DocumentNotFoundException("User not found.");
+
+        httpContext.Request.SetUser(updatedUser);
         await messagePublisher.PublishAsync(new UserMembershipChanged
         {
             UserId = user.Id,
