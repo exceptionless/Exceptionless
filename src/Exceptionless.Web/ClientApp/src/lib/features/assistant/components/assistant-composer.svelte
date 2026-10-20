@@ -46,7 +46,16 @@
         resizeTextarea();
     });
 
-    export function focus(): void {
+    /**
+     * Moves focus to the message box. Automatic focus is skipped on touch screens, where it would
+     * open the on-screen keyboard and make iOS pan the fixed panel out of view; pass `force` when
+     * the user asked to type, such as editing a message.
+     */
+    export function focus(options: { force?: boolean } = {}): void {
+        if (!options.force && !window.matchMedia('(pointer: fine)').matches) {
+            return;
+        }
+
         textareaElement?.focus();
     }
 

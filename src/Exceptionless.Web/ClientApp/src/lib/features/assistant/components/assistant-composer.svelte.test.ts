@@ -57,6 +57,28 @@ describe('AssistantComposer', () => {
         expect(onCancelEdit).toHaveBeenCalledOnce();
     });
 
+    it('skips automatic focus on touch screens so the keyboard does not pop open', () => {
+        const view = render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit: vi.fn() } });
+        const textarea = screen.getByRole('textbox', { name: 'Message Exie' });
+
+        view.component.focus();
+        expect(document.activeElement).not.toBe(textarea);
+
+        view.component.focus({ force: true });
+        expect(document.activeElement).toBe(textarea);
+    });
+
+    it('focuses the message box automatically with a mouse or trackpad', () => {
+        vi.mocked(window.matchMedia).mockImplementationOnce(
+            (query: string) => ({ matches: query === '(pointer: fine)', media: query }) as MediaQueryList
+        );
+        const view = render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit: vi.fn() } });
+
+        view.component.focus();
+
+        expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Message Exie' }));
+    });
+
     it('does not submit an empty prompt', async () => {
         const onSubmit = vi.fn();
         render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit, value: '   ' } });
