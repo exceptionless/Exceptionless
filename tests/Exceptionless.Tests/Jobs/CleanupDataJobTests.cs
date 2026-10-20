@@ -9,6 +9,7 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Models;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
@@ -155,6 +156,63 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.True(madeShared);
         Assert.NotNull(retained);
         Assert.Null(retained.UserId);
+    }
+
+    [Fact]
+    public async Task RunAsync_InviteAcceptanceInProgress_PreservesPrivateView()
+    {
+        // Arrange
+        await GetService<SampleDataService>().CreateDataAsync();
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        var organization = _organizationData.GenerateOrganization(_billingManager, _plans, generateId: true);
+        var invite = new Invite
+        {
+            EmailAddress = user.EmailAddress, Token = StringExtensions.GetNewToken(),
+            DateAdded = TimeProvider.GetUtcNow().UtcDateTime
+        };
+        organization.Invites.Add(invite);
+        await _organizationRepository.AddAsync(organization, options => options.ImmediateConsistency());
+        var savedViews = GetService<ISavedViewRepository>();
+        var view = await savedViews.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id, UserId = user.Id, CreatedByUserId = user.Id,
+            Name = "Returning member", Slug = "returning-member", ViewType = "events"
+        }, options => options.ImmediateConsistency());
+        var grantStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishGrant = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var subscription = _userRepository.DocumentsSaving.AddHandler(async (_, args) =>
+        {
+            if (!args.Documents.Any(document => document.Value.Id == user.Id && document.Value.OrganizationIds.Contains(organization.Id)))
+                return;
+
+            grantStarted.TrySetResult();
+            await finishGrant.Task.WaitAsync(TestCancellationToken);
+        });
+
+        // Act
+        var grant = SendRequestAsync(request => request.Post().AppendPath("auth/login")
+            .Content(new Login { Email = user.EmailAddress, Password = SampleDataService.TEST_ORG_USER_PASSWORD, InviteToken = invite.Token })
+            .ExpectedStatus(System.Net.HttpStatusCode.OK));
+        Foundatio.Jobs.JobResult result;
+        try
+        {
+            await grantStarted.Task.WaitAsync(TimeSpan.FromSeconds(30), TestCancellationToken);
+            result = await _job.RunAsync(TestCancellationToken);
+        }
+        finally
+        {
+            finishGrant.TrySetResult();
+        }
+        using var response = await grant;
+        var member = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
+        var retained = await savedViews.GetByIdAsync(view.Id, options => options.Cache(false));
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(member);
+        Assert.Contains(organization.Id, member.OrganizationIds);
+        Assert.NotNull(retained);
     }
 
     [Theory]
