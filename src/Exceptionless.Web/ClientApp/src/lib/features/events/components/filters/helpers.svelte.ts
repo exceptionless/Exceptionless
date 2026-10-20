@@ -26,6 +26,10 @@ import {
 
 const filterCache = new SvelteMap<null | string, IFilter[]>();
 
+const PROJECT_TERM = String.raw`project(?:_id)?:(?:\([^)]*\)|[^\s()]+)`;
+// A project term, or a group of project terms joined by OR such as the project picker writes.
+const PROJECT_SCOPE_REGEX = new RegExp(String.raw`\(\s*${PROJECT_TERM}(?:\s+OR\s+${PROJECT_TERM})*\s*\)|(?<![\w.])${PROJECT_TERM}`, 'gi');
+
 interface SerializedFilter {
     hidden?: boolean;
     term?: string;
@@ -112,8 +116,8 @@ export function getProjectFilter(filters: IFilter[]): ProjectFilter {
 }
 
 /**
- * Projects that scope facet discovery: the project picker plus positive project terms in a raw
- * search, such as legacy saved views or hand-written URLs.
+ * Projects that scope facet discovery: the project picker plus project terms in a raw search, such
+ * as legacy saved views or hand-written URLs.
  */
 export function getProjectScopeFilter(filters: IFilter[]): string {
     const projectIds = [...(getProjectFilter(filters)?.value ?? [])];
@@ -122,12 +126,16 @@ export function getProjectScopeFilter(filters: IFilter[]): string {
             continue;
         }
 
+        // Only project terms combined with the rest of the search by AND certainly limit results to those
+        // projects. Any other OR branch or negation may include other projects, so that search is not used.
         const search = (filter as KeywordFilter).value ?? '';
-        for (const { 0: term, index } of search.matchAll(/(?<![\w.])project(?:_id)?:(?:\([^)]*\)|\S+)/gi)) {
-            if (isNegated(search, index)) {
-                continue;
-            }
+        const terms = [...search.matchAll(PROJECT_SCOPE_REGEX)].map(([term]) => term);
+        const remainder = terms.reduce((value, term) => value.replace(term, ' '), search).replace(/"(?:[^"\\]|\\.)*"/g, '""');
+        if (terms.length === 0 || /\b(?:OR|NOT)\b|\|\||(?:^|[\s(])[-!]/i.test(remainder)) {
+            continue;
+        }
 
+        for (const term of terms) {
             for (const [projectId] of term.matchAll(/\b[a-f0-9]{24}\b/gi)) {
                 projectIds.push(projectId.toLowerCase());
             }
@@ -245,25 +253,6 @@ export function shouldRefreshPersistentEventRemoval(
     id?: string
 ) {
     return removedFromTable || shouldRefreshPersistentEventChanged(filters, filter, organization_id, project_id, stack_id, id);
-}
-
-/** Whether the term at index is negated directly or by an enclosing group, such as `NOT (type:error OR project:id)`. */
-function isNegated(search: string, index: number): boolean {
-    const isNegatedHere = (position: number) => /(?:^|[\s(])(?:[-!]|NOT\s+)$/.test(search.slice(0, position));
-    const groups: boolean[] = [];
-    let quoted = false;
-    for (let position = 0; position < index; position++) {
-        const char = search[position];
-        if (char === '"' && search[position - 1] !== '\\') {
-            quoted = !quoted;
-        } else if (!quoted && char === '(') {
-            groups.push(groups.at(-1) === true || isNegatedHere(position));
-        } else if (!quoted && char === ')') {
-            groups.pop();
-        }
-    }
-
-    return groups.at(-1) === true || isNegatedHere(index);
 }
 
 const TYPE_FILTER_REGEX = /\btype:(\w+)\b/g;

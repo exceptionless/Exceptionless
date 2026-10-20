@@ -32,22 +32,34 @@ describe('EnvironmentFilter', () => {
         expect(filter.value).toEqual(['production', '']);
     });
 
-    it('scopes environment discovery to picked projects and project terms in a raw search', () => {
+    it('scopes environment discovery to picked projects and project terms that limit a raw search', () => {
         const first = '537650f3b77efe23a47914f3';
         const second = '537650f3b77efe23a47914f4';
-        const third = '537650f3b77efe23a47914f5';
 
         expect(getProjectScopeFilter([new TypeFilter(['error'])])).toBe('');
         expect(getProjectScopeFilter([new ProjectFilter([first]), new EnvironmentFilter(['production'])])).toBe(`project:${first}`);
         expect(getProjectScopeFilter([new KeywordFilter(`type:error project:${first}`)])).toBe(`project:${first}`);
-        expect(getProjectScopeFilter([new KeywordFilter(`(project:${first} OR project_id:${second})`)])).toBe(`(project:${first} OR project:${second})`);
-        expect(getProjectScopeFilter([new KeywordFilter(`project:(${first} OR ${second})`)])).toBe(`(project:${first} OR project:${second})`);
-        expect(getProjectScopeFilter([new KeywordFilter(`-project:${first} !project:${second} NOT project:${third}`)])).toBe('');
-        expect(getProjectScopeFilter([new ProjectFilter([first]), new KeywordFilter(`project:${second}`)])).toBe(`(project:${first} OR project:${second})`);
-        expect(getProjectScopeFilter([new KeywordFilter(`NOT (project:${first}) -(type:error OR project:${second}) !(project:${third})`)])).toBe('');
-        expect(getProjectScopeFilter([new KeywordFilter(`NOT (status:fixed) (project:${first} OR -(project:${second})) "a (" project:${third}`)])).toBe(
-            `(project:${first} OR project:${third})`
+        expect(getProjectScopeFilter([new KeywordFilter(`type:error (project:${first} OR project_id:${second}) status:open`)])).toBe(
+            `(project:${first} OR project:${second})`
         );
+        expect(getProjectScopeFilter([new KeywordFilter(`project:(${first} OR ${second})`)])).toBe(`(project:${first} OR project:${second})`);
+        expect(getProjectScopeFilter([new KeywordFilter(`"a OR b" project:${first}`)])).toBe(`project:${first}`);
+        expect(getProjectScopeFilter([new ProjectFilter([first]), new KeywordFilter(`project:${second}`)])).toBe(`(project:${first} OR project:${second})`);
+
+        // Other OR branches and negations may include other projects.
+        for (const search of [
+            `(project:${first} OR type:error)`,
+            `project:${first} OR type:error`,
+            `project:${first} || type:error`,
+            `-project:${first}`,
+            `!project:${first}`,
+            `NOT project:${first}`,
+            `NOT (project:${first})`,
+            `-(type:error OR project:${first})`
+        ]) {
+            expect(getProjectScopeFilter([new KeywordFilter(search)])).toBe('');
+            expect(getProjectScopeFilter([new ProjectFilter([second]), new KeywordFilter(search)])).toBe(`project:${second}`);
+        }
     });
 
     it('allows environment searches on free plans and keeps custom data premium', () => {
