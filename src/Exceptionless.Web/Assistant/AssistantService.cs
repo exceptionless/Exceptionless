@@ -100,7 +100,7 @@ public sealed class AssistantService(
                 messages.Add(new
                 {
                     role = "system",
-                    content = "Suggested follow-ups were captured. Provide the complete final answer now without calling another tool."
+                    content = "Suggested follow-ups were captured, but the user has not seen an answer yet. Write the complete answer now from the tool results without calling another tool. Do not refer to an earlier answer."
                 });
             }
             else if (toolBudgetExhausted)
@@ -421,8 +421,8 @@ public sealed class AssistantService(
                 {
                     ok = suggestedActions.Count > 0,
                     message = suggestedActions.Count > 0
-                        ? "Suggestions captured. Provide the complete final answer now."
-                        : "No valid suggestions were captured. Provide the complete final answer now."
+                        ? "Suggestions captured. The user has not seen an answer yet, so write the complete answer now."
+                        : "No valid suggestions were captured. The user has not seen an answer yet, so write the complete answer now."
                 }, s_jsonOptions);
                 foreach (var suggestedActionCall in suggestedActionCalls)
                     messages.Add(new { role = "tool", tool_call_id = suggestedActionCall.Id, content = suggestionResult });
@@ -852,7 +852,8 @@ public sealed class AssistantService(
     {
         foreach (string name in names)
         {
-            if (element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String)
+            // Strict tool calling fills optional arguments with "", which must still mean "use the default".
+            if (element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String && !String.IsNullOrWhiteSpace(value.GetString()))
                 return value.GetString();
         }
 

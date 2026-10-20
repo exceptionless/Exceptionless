@@ -30,8 +30,12 @@ The scenarios cover:
 - Finding top errors within one project.
 - Finding top errors across an organization’s projects.
 - Providing project client setup instructions.
+- Explaining the cause of an exception from its stack trace and error data.
+- Marking the current stack fixed in a version.
 
 Assertions check tool selection and call limits, expected navigation links, and a completed, nonempty response without streamed errors or raw DSML markup. Passing confirms these scenario assertions; answer quality still needs review when changing the model, system prompt, or tools.
+
+To compare models, set `ASSISTANT_EVAL_RESULTS` to a file path. Each turn is appended as one JSON line with the model, answer text, tool calls, failed tool results, duration, time to first text, and reported cost.
 
 These evaluations make billable provider requests and are disabled by default. Configure `EX_Assistant__ApiKey` in your environment using a dedicated key with a spending limit. Optionally set `EX_Assistant__Model` and `EX_Assistant__Endpoint` to test a different model or compatible provider.
 

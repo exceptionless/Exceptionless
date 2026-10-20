@@ -138,6 +138,33 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains(Items(result), stack => stack.Id == stacks[0].Id);
     }
 
+    [Theory]
+    [InlineData("title:*database*")]
+    [InlineData("*timeout*")]
+    [InlineData("type:error (?imeout)")]
+    public async Task SearchStacksAsync_LeadingWildcardFilter_ReturnsInvalidFilter(string filter)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, filter, last: "24h");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidFilter, result.Error?.Code);
+        Assert.Contains("leading wildcards", result.Error?.Message);
+    }
+
+    [Fact]
+    public async Task SearchStacksAsync_TrailingWildcardFilter_ReturnsMatchingStacks()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP database timeout"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, "title:datab*", limit: 50);
+
+        Assert.True(result.Ok);
+        Assert.Contains(Items(result), stack => stack.Id == stacks[0].Id);
+    }
+
     [Fact]
     public async Task SearchStacksAsync_ProjectOutsideAssistantOrganization_ReturnsNotAccessible()
     {

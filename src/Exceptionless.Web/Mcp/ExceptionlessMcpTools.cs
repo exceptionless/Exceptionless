@@ -18,6 +18,7 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Assistant;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
@@ -149,7 +150,7 @@ public sealed class ExceptionlessMcpTools
         string? organizationId = null,
         [Description(ProjectFilterDescription)]
         string? filter = null,
-        [Description("Optional sort expression. Defaults to project name.")]
+        [Description("Optional sort field: name, created_utc, updated_utc, or last_event_date_utc. Prefix with - for descending. Defaults to name.")]
         string? sort = null,
         [Description(SummaryLimitDescription)]
         int limit = DefaultLimit,
@@ -1164,6 +1165,10 @@ public sealed class ExceptionlessMcpTools
         if (!queryValidation.IsValid)
             return SearchValidationResult.Failed(McpErrors.InvalidFilter($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}"));
 
+        // Elasticsearch rejects leading wildcards, which would otherwise fail the whole search.
+        if (filter is not null && s_leadingWildcardPattern.IsMatch(filter))
+            return SearchValidationResult.Failed(McpErrors.InvalidFilter("Invalid filter: leading wildcards such as *timeout* are not supported. Search for a whole word instead, such as title:timeout or timeout."));
+
         var filterFieldError = GetFilterFieldError(filter, allowedFilterFields, allowIndexedDataFields);
         if (filterFieldError is not null)
             return SearchValidationResult.Failed(filterFieldError);
@@ -1584,7 +1589,8 @@ public sealed class ExceptionlessMcpTools
 
     private static bool IsExpectedToolError(Exception ex)
     {
-        return ex is ArgumentException or FormatException or InvalidOperationException or JsonException || ex.GetType().Name == "QueryValidationException";
+        // DocumentException covers queries Elasticsearch rejects at search time, so the model can correct its filter.
+        return ex is ArgumentException or FormatException or InvalidOperationException or JsonException or DocumentException || ex.GetType().Name == "QueryValidationException";
     }
 
     private static McpErrorInfo ToLookupError(string resourceName, string resourceId, Exception ex)
@@ -1865,6 +1871,8 @@ public sealed class ExceptionlessMcpTools
         ["os.version"] = new("os.version", "os.version"),
         ["browser"] = new("browser", EventIndex.Alias.Browser)
     };
+
+    private static readonly Regex s_leadingWildcardPattern = new(@"(?:^|[\s:(])[*?]\w", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
     private static readonly HashSet<string> ProjectSortFields = new(StringComparer.OrdinalIgnoreCase)
     {

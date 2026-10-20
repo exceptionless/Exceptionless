@@ -528,6 +528,72 @@ public sealed class AssistantServiceTests
     }
 
     [Fact]
+    public async Task StreamAsync_EmptyToolIdArgument_UsesCurrentPageId()
+    {
+        // Strict tool calling (OpenAI models) fills optional ids with "" instead of omitting them.
+        const string currentStackId = "537650f3b77efe23a47914aa";
+        string toolCallPayload = JsonSerializer.Serialize(new
+        {
+            choices = new[]
+            {
+                new
+                {
+                    delta = new
+                    {
+                        tool_calls = new[]
+                        {
+                            new
+                            {
+                                index = 0,
+                                id = "status-1",
+                                function = new
+                                {
+                                    name = "update_stack_status",
+                                    // The unsupported status stops the tool after id validation, before any repository lookup.
+                                    arguments = JsonSerializer.Serialize(new { stackId = "", status = "resolved" })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        var handler = new StubHttpMessageHandler(
+            $"data: {toolCallPayload}\n\ndata: [DONE]\n",
+            """
+            data: {"choices":[{"delta":{"content":"Done."}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "Resolve this.")],
+                OrganizationId: "organization-id",
+                Path: $"/stack/{currentStackId}"),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        var toolResult = Assert.Single(events, item => item.Type == "tool_result");
+        Assert.DoesNotContain($"\"code\":\"{McpErrorCodes.InvalidId}\"", toolResult.Result);
+        Assert.Contains($"\"code\":\"{McpErrorCodes.InvalidStatus}\"", toolResult.Result);
+    }
+
+    [Fact]
     public async Task StreamAsync_SuggestedActionsWithAnswer_EmitsValidatedActionsWithoutToolActivity()
     {
         string providerPayload = JsonSerializer.Serialize(new
@@ -764,6 +830,7 @@ public sealed class AssistantServiceTests
         Assert.Equal(initialRequest.RootElement.GetProperty("tools").GetRawText(), finalRequest.RootElement.GetProperty("tools").GetRawText());
         Assert.Equal("none", finalRequest.RootElement.GetProperty("tool_choice").GetString());
         Assert.Contains("Suggestions captured", handler.RequestBodies[1]);
+        Assert.Contains("the user has not seen an answer yet", handler.RequestBodies[1]);
         var suggestions = Assert.Single(events, item => item.Type == "suggested_actions").SuggestedActions!;
         Assert.Equal(AssistantLimits.MaximumSuggestedActions, suggestions.Count);
         Assert.DoesNotContain(suggestions, action => action.Label == "Ignored by cap");
