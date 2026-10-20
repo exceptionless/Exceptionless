@@ -46,6 +46,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
         var stacksRepository = _serviceProvider.GetRequiredService<IStackRepository>();
         var cacheClient = _serviceProvider.GetRequiredService<ICacheClient>();
         base.ConfigureQueryBuilder(builder);
+        builder.Register(new EventChartQueryBuilder());
         builder.RegisterBefore<ParsedExpressionQueryBuilder>(new EventStackFilterQueryBuilder(stacksRepository, cacheClient, _configuration.LoggerFactory));
     }
 
@@ -61,6 +62,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 .Add("idx_string", t => t.Match("*-s").Mapping(m => m.Keyword(s => s.IgnoreAbove(1024)))))
             .Properties(p => p
                 .SetupDefaults()
+                .AddTelemetry()
                 .Keyword(e => e.OrganizationId)
                     .FieldAlias(Alias.OrganizationId, a => a.Path(f => f.OrganizationId))
                 .Keyword(e => e.ProjectId)
@@ -154,6 +156,7 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                 EventIndexExtensions.DataPath<UserInfo>(Event.KnownDataKeys.UserInfo, u => u.Name)
             ])
             .AddQueryVisitor(new EventFieldsQueryVisitor())
+            .UseNested()
             .UseFieldMap(new Dictionary<string, string> {
                     { Alias.BrowserVersion, EventIndexExtensions.DataDictionaryPath<RequestInfo>(Event.KnownDataKeys.RequestInfo, r => r.Data, RequestInfo.KnownDataKeys.BrowserVersion) },
                     { Alias.BrowserMajorVersion, EventIndexExtensions.DataDictionaryPath<RequestInfo>(Event.KnownDataKeys.RequestInfo, r => r.Data, RequestInfo.KnownDataKeys.BrowserMajorVersion) },
@@ -164,6 +167,12 @@ public sealed class EventIndex : DailyIndex<PersistentEvent>
                     { Alias.OperatingSystemVersion, EventIndexExtensions.DataDictionaryPath<RequestInfo>(Event.KnownDataKeys.RequestInfo, r => r.Data, RequestInfo.KnownDataKeys.OSVersion) },
                     { Alias.OperatingSystemMajorVersion, EventIndexExtensions.DataDictionaryPath<RequestInfo>(Event.KnownDataKeys.RequestInfo, r => r.Data, RequestInfo.KnownDataKeys.OSMajorVersion) }
             });
+
+        var fieldResolver = config.FieldResolver;
+        config.UseFieldResolver((field, context) => MeasurementField.TryParse(field, out _, out _)
+            ? Task.FromResult<string?>("measurements.value")
+            : fieldResolver!(field, context));
+        config.UseNestedFilter((path, original, resolved, context) => path == "measurements" ? MeasurementField.Filter(original) : null);
     }
 
     public ElasticsearchOptions Options => _configuration.Options;

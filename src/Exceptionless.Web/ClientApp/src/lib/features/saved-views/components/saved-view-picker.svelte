@@ -1,6 +1,8 @@
 <script module lang="ts">
     import type { RowData } from '@tanstack/svelte-table';
 
+    import type { EventChart } from '#generated/api.ts';
+
     type TData = RowData;
 </script>
 
@@ -56,6 +58,7 @@
         activeSavedView?: SavedView;
         autoFillColumnId: AutoFillColumnSelection;
         canModifySavedView?: boolean;
+        chart?: EventChart | null;
         columnOrder?: string[];
         columnSizing?: Record<string, number>;
         columnVisibility?: Record<string, boolean>;
@@ -94,6 +97,7 @@
         activeSavedView,
         autoFillColumnId,
         canModifySavedView = true,
+        chart,
         columnOrder,
         columnSizing,
         columnVisibility,
@@ -236,6 +240,7 @@
 
     function getUpdateBody(): UpdateSavedView {
         return {
+            chart,
             columns: getSavedColumnSettings(),
             filter: currentFilterString || null,
             filter_definitions: serializeFilters(filters),
@@ -309,6 +314,7 @@
         const tour = savedViewCreateTour;
         const filterDefinitions = serializeFilters(filters);
         const body: NewSavedView = {
+            chart,
             columns: getSavedColumnSettings(),
             filter: currentFilterString || undefined,
             filter_definitions: filterDefinitions,

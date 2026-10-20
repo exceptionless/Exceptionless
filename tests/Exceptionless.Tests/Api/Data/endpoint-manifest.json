@@ -1487,9 +1487,37 @@
     "authenticationSchemes": []
   },
   {
+    "method": "POST",
+    "route": "/api/v2/organizations/{organizationId:objectid}/events/chart",
+    "displayName": "HTTP: POST api/v2/organizations/{organizationId:objectid}/events/chart",
+    "tags": [
+      "Event"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "EventsReadPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "GET",
     "route": "/api/v2/organizations/{organizationId:objectid}/events/count",
     "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/events/count",
+    "tags": [
+      "Event"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "EventsReadPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/organizations/{organizationId:objectid}/events/measurements",
+    "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/events/measurements",
     "tags": [
       "Event"
     ],

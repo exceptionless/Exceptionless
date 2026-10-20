@@ -56,6 +56,28 @@ public class Event : IData, IJsonOnDeserialized
     /// </summary>
     public int? Count { get; set; }
 
+    /// <summary>The ECS-aligned outcome: success, failure, or unknown. Omit when not applicable.</summary>
+    [StringLength(100, MinimumLength = 1), RegularExpression("^(success|failure|unknown)$")]
+    public string? Outcome { get; set; }
+
+    /// <summary>An optional detailed result, such as skipped, cancelled, or timed_out. Does not imply an outcome.</summary>
+    [StringLength(100, MinimumLength = 1)]
+    public string? Result { get; set; }
+
+    /// <summary>Reference of the immediate parent event in the same project.</summary>
+    public string? ParentReferenceId { get; set; }
+
+    /// <summary>Reference of the root event in the same project. Supplied by the producer.</summary>
+    public string? RootReferenceId { get; set; }
+
+    /// <summary>Up to 32 uniquely named numeric observations. Missing values are not zero.</summary>
+    [MaxLength(32)]
+    public List<EventMeasurement>? Measurements { get; set; }
+
+    /// <summary>Up to 32 categorical labels, indexed as exact strings without type inference.</summary>
+    [MaxLength(32), SkipRecursion]
+    public Dictionary<string, string>? Labels { get; set; }
+
     /// <summary>
     /// Optional data entries that contain additional information about this event.
     /// </summary>
@@ -102,6 +124,9 @@ public class Event : IData, IJsonOnDeserialized
             Data ??= [];
             foreach (var kvp in ExtensionData)
             {
+                if (EventTelemetryReader.TryRead(this, kvp.Key, kvp.Value))
+                    continue;
+
                 object? value = JsonElementConverter.Convert(kvp.Value);
                 EventDataNormalizer.Set(Data, kvp.Key, value);
             }
@@ -112,7 +137,10 @@ public class Event : IData, IJsonOnDeserialized
 
     protected bool Equals(Event other)
     {
-        return String.Equals(Type, other.Type) && String.Equals(Source, other.Source) && Tags.CollectionEquals(other.Tags) && String.Equals(Message, other.Message) && String.Equals(Geo, other.Geo) && Value == other.Value && Equals(Data, other.Data);
+        return String.Equals(Type, other.Type) && String.Equals(Source, other.Source) && Tags.CollectionEquals(other.Tags) && String.Equals(Message, other.Message) && String.Equals(Geo, other.Geo) && Value == other.Value && Equals(Data, other.Data)
+            && Outcome == other.Outcome && Result == other.Result && ParentReferenceId == other.ParentReferenceId && RootReferenceId == other.RootReferenceId
+            && (Measurements ?? []).OrderBy(m => m?.Name, StringComparer.Ordinal).SequenceEqual((other.Measurements ?? []).OrderBy(m => m?.Name, StringComparer.Ordinal))
+            && (Labels ?? []).OrderBy(d => d.Key, StringComparer.Ordinal).SequenceEqual((other.Labels ?? []).OrderBy(d => d.Key, StringComparer.Ordinal));
     }
 
     public override bool Equals(object? obj)
@@ -138,8 +166,20 @@ public class Event : IData, IJsonOnDeserialized
             hashCode = (hashCode * 397) ^ (Geo?.GetHashCode() ?? 0);
             hashCode = (hashCode * 397) ^ Value.GetHashCode();
             hashCode = (hashCode * 397) ^ (Data?.GetCollectionHashCode(_exclusions) ?? 0);
+            hashCode = (hashCode * 397) ^ HashCode.Combine(Outcome, Result, ParentReferenceId, RootReferenceId);
+            foreach (var measurement in (Measurements ?? []).OrderBy(m => m?.Name, StringComparer.Ordinal))
+                hashCode = (hashCode * 397) ^ (measurement?.GetHashCode() ?? 0);
+            foreach (var label in (Labels ?? []).OrderBy(d => d.Key, StringComparer.Ordinal))
+                hashCode = (hashCode * 397) ^ label.GetHashCode();
             return hashCode;
         }
+    }
+
+    public static class KnownOutcomes
+    {
+        public const string Success = "success";
+        public const string Failure = "failure";
+        public const string Unknown = "unknown";
     }
 
     public static class KnownTypes

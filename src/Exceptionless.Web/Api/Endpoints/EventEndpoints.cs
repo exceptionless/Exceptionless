@@ -25,6 +25,25 @@ public static class EventEndpoints
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Event");
 
+        group.MapPost("organizations/{organizationId:objectid}/events/chart", async (string organizationId, EventChartRequest request, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<EventChartResult>>(new GetEventChart(organizationId, request, httpContext))).ToHttpResult(resultMapper))
+            .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
+            .Produces<EventChartResult>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
+            .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+            .WithSummary("Chart event measurements or counts");
+
+        group.MapGet("organizations/{organizationId:objectid}/events/measurements", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? time = null, string? offset = null)
+            => (await mediator.InvokeAsync<Result<EventMeasurementCatalog>>(new GetEventMeasurements(organizationId, filter, time, offset, httpContext))).ToHttpResult(resultMapper))
+            .RequireAuthorization(AuthorizationRoles.EventsReadPolicy)
+            .Produces<EventMeasurementCatalog>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+            .WithSummary("List measurement names and units in the selected events");
+
         // Count
         group.MapGet("events/count", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? filter = null, string? aggregations = null, string? time = null, string? offset = null, string? mode = null)
             => (await mediator.InvokeAsync<Result<CountResult>>(new GetEventCount(filter, aggregations, time, offset, mode, httpContext))).ToHttpResult(resultMapper))

@@ -484,6 +484,135 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task TelemetryTools_RunAndOperationHistory_SupportScopedInvestigation()
+    {
+        var now = TimeProvider.GetUtcNow().AddMinutes(-1);
+        var (_, events) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Source("build").ReferenceId("build-0001").Date(now);
+            d.Event().TestProject().Source("suite").ReferenceId("suite-0001").Date(now);
+            var operation = d.Event().TestProject().Source("Case.A").Date(now);
+            d.Event().TestProject().Source("Case.A").Stack(operation).Date(now);
+            d.Event().TestProject().Source("Case.B").Date(now);
+            d.Event().TestProject().Project(SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID).Source("Case.A").Date(now);
+            d.Event().FreeProject().Source("Case.A").Date(now);
+            d.Event().TestProject().Source("Case.C").Date(now);
+        });
+        events[1].ParentReferenceId = events[1].RootReferenceId = "build-0001";
+        for (int i = 2; i < events.Count; i++)
+        {
+            events[i].ParentReferenceId = "suite-0001";
+            events[i].RootReferenceId = "build-0001";
+            events[i].Outcome = Event.KnownOutcomes.Success;
+            events[i].Result = "completed";
+            events[i].Labels = new() { ["runtime"] = "net10", ["branch"] = "main" };
+            events[i].Measurements = [new() { Name = "duration", Unit = "s", Value = 0 }];
+        }
+        events[2].Outcome = Event.KnownOutcomes.Failure;
+        events[2].Result = "timed_out";
+        events[2].Measurements = [new() { Name = "duration", Unit = "s", Value = 9 }, new() { Name = "sql.calls", Unit = "{call}", Value = 4 }];
+        events[3].ParentReferenceId = "suite-0002";
+        events[3].RootReferenceId = "build-0002";
+        events[3].Measurements = [new() { Name = "duration", Unit = "s", Value = 3 }];
+        events[5].Measurements = events[6].Measurements = [new() { Name = "duration", Unit = "s", Value = 999 }, new() { Name = "private", Unit = "By", Value = 1 }];
+        events[7].Measurements = [new() { Name = "allocated", Unit = "By", Value = 128 }];
+        events[7].Outcome = Event.KnownOutcomes.Unknown;
+        events[7].Result = "skipped";
+        await _eventRepository.SaveAsync(events, o => o.ImmediateConsistency());
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        const string suiteFilter = "parent_reference_id:suite-0001 AND labels.branch:main";
+        var first = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: suiteFilter, sort: "-measurement.duration@s", limit: 1);
+        var slowest = Assert.Single(Items(first));
+        Assert.Equal(events[2].Id, slowest.Id);
+        Assert.Equal("failure", slowest.Outcome);
+        Assert.Equal("timed_out", slowest.Result);
+        Assert.Equal("suite-0001", slowest.ParentReferenceId);
+        Assert.Equal("build-0001", slowest.RootReferenceId);
+        Assert.Equal("net10", slowest.Labels!["runtime"]);
+        Assert.Equal(9, slowest.Measurements!.Single(m => m.Name == "duration").Value);
+        Assert.True(first.Pagination!.HasMore);
+        var second = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: suiteFilter, sort: "-measurement.duration@s", limit: 1, after: first.Pagination.After);
+        Assert.Equal(events[4].Id, Assert.Single(Items(second)).Id);
+        Assert.True(second.Pagination!.HasMore);
+        var third = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: suiteFilter, sort: "-measurement.duration@s", limit: 1, after: second.Pagination.After);
+        Assert.Equal(events[7].Id, Assert.Single(Items(third)).Id);
+        Assert.False(third.Pagination!.HasMore);
+        var measured = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: suiteFilter + " AND _exists_:measurement.duration@s", sort: "-measurement.duration@s");
+        Assert.Equal(new[] { events[2].Id, events[4].Id }, Items(measured).Select(e => e.Id));
+
+        var suite = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: $"reference:{slowest.ParentReferenceId}");
+        Assert.Equal(events[1].Id, Assert.Single(Items(suite)).Id);
+        var run = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: "(reference:build-0001 OR root_reference_id:build-0001)");
+        Assert.Equal(5, Items(run).Count);
+        var failures = await tools.GetStackEventsAsync(slowest.StackId, filter: "outcome:failure AND result:timed_out AND measurement.duration@s:>1");
+        Assert.Equal(slowest.Id, Assert.Single(Items(failures)).Id);
+        var detail = Data(await tools.GetEventAsync(slowest.Id));
+        Assert.Equal(slowest.Measurements, detail.Measurements);
+        Assert.Equal("failure", detail.Outcome);
+
+        var counts = Data(await tools.CountEventsAsync(TestConstants.ProjectId, filter: suiteFilter, groupBy: "outcome"));
+        Assert.Equal(3, counts.Events);
+        Assert.Equal(new[] { "failure", "success", "unknown" }, counts.Groups!.Select(g => g.Key).Order().ToArray());
+        Assert.All(counts.Groups!, group => Assert.Equal(1, group.Events));
+        var byLabel = Data(await tools.CountEventsAsync(TestConstants.ProjectId, filter: suiteFilter, groupBy: "labels.runtime"));
+        Assert.Equal("net10", Assert.Single(byLabel.Groups!).Key);
+        var byResult = Data(await tools.CountEventsAsync(TestConstants.ProjectId, filter: suiteFilter, groupBy: "result"));
+        Assert.Contains(byResult.Groups!, group => group.Key == "timed_out" && group.Events == 1);
+
+        var catalog = Data(await tools.GetEventMeasurementsAsync(TestConstants.ProjectId, filter: suiteFilter));
+        Assert.Equal(new[] { new EventMeasurementDescriptor("allocated", "By"), new EventMeasurementDescriptor("duration", "s"), new EventMeasurementDescriptor("sql.calls", "{call}") }, catalog.Measurements);
+        Assert.False(catalog.Truncated);
+        var chart = Data(await tools.GetEventChartAsync(TestConstants.ProjectId, "duration", "s", filter: $"stack:{slowest.StackId}"));
+        Assert.Equal(2, chart.Total);
+        Assert.Equal(6, Assert.Single(Assert.Single(chart.Series).Points).Value);
+        var observations = Data(await tools.GetEventChartAsync(TestConstants.ProjectId, "duration", "s", mode: "events", filter: suiteFilter));
+        Assert.Equal(new double?[] { 0, 9 }, Assert.Single(observations.Series).Points.Select(p => p.Value).Order().ToArray());
+        var calls = Data(await tools.GetEventChartAsync(TestConstants.ProjectId, "sql.calls", "{call}", filter: suiteFilter));
+        Assert.Equal(4, Assert.Single(Assert.Single(calls.Series).Points).Value);
+        var nested = await tools.SearchEventsAsync(TestConstants.ProjectId, filter: "measurements:(measurements.name:sql.calls AND measurements.unit:\"{call}\" AND measurements.value:>3)");
+        Assert.Equal(slowest.Id, Assert.Single(Items(nested)).Id);
+    }
+
+    [Fact]
+    public async Task TelemetryTools_AuthorizationAndPlanLimits_DoNotExposeObservations()
+    {
+        var noScope = await CreateToolsAsync(AuthorizationRoles.McpRead);
+        Assert.Equal(McpErrorCodes.Forbidden, (await noScope.GetEventMeasurementsAsync(TestConstants.ProjectId)).Error?.Code);
+        Assert.Equal(McpErrorCodes.Forbidden, (await noScope.GetEventChartAsync(TestConstants.ProjectId, "duration", "s")).Error?.Code);
+
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+        Assert.False((await tools.GetEventMeasurementsAsync(SampleDataService.FREE_PROJECT_ID)).Ok);
+        Assert.False((await tools.GetEventChartAsync(SampleDataService.FREE_PROJECT_ID, "duration", "s")).Ok);
+
+        var freeTools = await CreateToolsForOrganizationsAsync(Guid.NewGuid().ToString("N"), [SampleDataService.FREE_ORG_ID], AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+        Assert.Equal(McpErrorCodes.PlanLimit, (await freeTools.GetEventMeasurementsAsync(SampleDataService.FREE_PROJECT_ID)).Error?.Code);
+        Assert.Equal(McpErrorCodes.PlanLimit, (await freeTools.GetEventChartAsync(SampleDataService.FREE_PROJECT_ID, "duration", "s")).Error?.Code);
+
+        var organization = await _organizationRepository.GetByIdAsync(TestConstants.OrganizationId);
+        organization!.IsSuspended = true;
+        organization.SuspensionCode = SuspensionCode.Billing;
+        organization.SuspensionDate = TimeProvider.GetUtcNow().UtcDateTime;
+        organization.SuspendedByUserId = TestConstants.UserId;
+        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+        Assert.Equal(McpErrorCodes.NotAccessible, (await tools.GetEventMeasurementsAsync(TestConstants.ProjectId)).Error?.Code);
+        Assert.Equal(McpErrorCodes.NotAccessible, (await tools.GetEventChartAsync(TestConstants.ProjectId, "duration", "s")).Error?.Code);
+    }
+
+    [Fact]
+    public async Task TelemetryTools_InvalidInputs_ReturnActionableErrors()
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+        Assert.Equal(McpErrorCodes.InvalidChart, (await tools.GetEventChartAsync(TestConstants.ProjectId, measurement: "duration")).Error?.Code);
+        Assert.Equal(McpErrorCodes.InvalidChart, (await tools.GetEventChartAsync(TestConstants.ProjectId, "duration", "s", groupBy: "labels.invalid name")).Error?.Code);
+        Assert.Equal(McpErrorCodes.InvalidSort, (await tools.SearchEventsAsync(TestConstants.ProjectId, sort: "-measurement.duration")).Error?.Code);
+        Assert.Equal(McpErrorCodes.UnknownFilterField, (await tools.SearchEventsAsync(TestConstants.ProjectId, filter: "measurement.duration:>1")).Error?.Code);
+        Assert.Equal(McpErrorCodes.UnknownFilterField, (await tools.SearchEventsAsync(TestConstants.ProjectId, filter: "_exists_:idx.private-s")).Error?.Code);
+        Assert.Equal(McpErrorCodes.InvalidTimeRange, (await tools.GetEventMeasurementsAsync(TestConstants.ProjectId, last: "24h", startUtc: "2026-10-01T00:00:00Z")).Error?.Code);
+        Assert.Equal(McpErrorCodes.InvalidTimeRange, (await tools.GetEventChartAsync(TestConstants.ProjectId, "duration", "s", startUtc: TimeProvider.GetUtcNow().AddHours(1).ToString("O"))).Error?.Code);
+    }
+
+    [Fact]
     public async Task SearchStacksAsync_MissingStacksScope_ReturnsError()
     {
         await CreateDataAsync(d => d.Event().TestProject().Message("MCP stack"));
@@ -803,7 +932,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
 
         Assert.True(result.Ok);
         Assert.Null(result.Error);
-        Assert.Equal("groupLimit was capped at 25.", result.Warning);
+        Assert.StartsWith("groupLimit was capped at 25.", result.Warning);
+        Assert.Contains("most frequent", result.Warning);
     }
 
     [Fact]
@@ -947,6 +1077,11 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Contains("path", item.Events.FilterFields);
         Assert.Empty(item.Stacks.DynamicFilterPrefixes);
         Assert.Contains("data.", item.Events.DynamicFilterPrefixes);
+        Assert.Contains("labels.", item.Events.DynamicFilterPrefixes);
+        Assert.Contains("measurement.", item.Events.DynamicSortPrefixes!);
+        Assert.Contains("outcome", item.Events.FilterFields);
+        Assert.Contains("result", item.Events.FilterFields);
+        Assert.Contains("root_reference_id", item.Events.FilterFields);
         Assert.DoesNotContain("idx.", item.Events.DynamicFilterPrefixes);
         Assert.DoesNotContain("idx", item.Events.FilterFields);
         Assert.Contains("indexed for search", item.Events.Notes, StringComparison.OrdinalIgnoreCase);
@@ -1626,6 +1761,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             GetService<ITextSerializer>(),
             GetService<ILogger<ExceptionlessMcpTools>>(),
             TimeProvider,
+            GetService<EventTelemetryService>(),
             assistantToolContext));
     }
 

@@ -143,6 +143,12 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             changed = true;
         }
 
+        if (existing.Chart != definition.Chart)
+        {
+            existing.Chart = definition.Chart is null ? null : definition.Chart with { };
+            changed = true;
+        }
+
         if (existing.ShowChart != definition.ShowChart)
         {
             existing.ShowChart = definition.ShowChart;
@@ -204,6 +210,7 @@ public class PredefinedSavedViewsDataSeed : IDataSeed
             Columns = CopyColumns(definition.Columns),
             ShowStats = definition.ShowStats,
             ShowChart = definition.ShowChart,
+            Chart = definition.Chart is null ? null : definition.Chart with { },
             Version = 1
         };
 
@@ -271,4 +278,7 @@ public sealed record PredefinedSavedViewDefinition
 
     [JsonPropertyName("showChart")]
     public bool? ShowChart { get; init; }
+
+    [JsonPropertyName("chart")]
+    public EventChart? Chart { get; init; }
 }

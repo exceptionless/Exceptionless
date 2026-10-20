@@ -186,6 +186,7 @@ public class Bootstrapper
         services.AddSingleton<BillingManager>();
         services.AddSingleton<BillingPlans>();
         services.AddSingleton<EventPostService>();
+        services.AddSingleton<EventTelemetryService>();
         services.AddSingleton<SampleDataService>();
         services.AddSingleton<SemanticVersionParser>();
         services.AddSingleton<EventParserPluginManager>();

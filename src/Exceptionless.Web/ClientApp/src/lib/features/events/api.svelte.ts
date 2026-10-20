@@ -3,6 +3,7 @@ import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryCli
 import { SvelteSet } from 'svelte/reactivity';
 
 import type { WebSocketMessageValue } from '#features/websockets/models.ts';
+import type { EventChartRequest, EventChartResult, EventMeasurementCatalog } from '#generated/api.ts';
 import type { CountResult, WorkInProgressResult } from '#shared/models/index.ts';
 
 import { accessToken } from '#features/auth/index.svelte.ts';
@@ -362,6 +363,47 @@ export function deleteEvent(request: DeleteEventsRequest) {
             schedulePersistentEventDeleteReconciliation(queryClient);
         }
     }));
+}
+
+export function getEventChartQuery(request: { body: EventChartRequest | undefined; enabled?: boolean; organizationId: string | undefined }) {
+    return createQuery<EventChartResult, ProblemDetails>(() => {
+        const organizationId = request.organizationId;
+        const body = request.body;
+        return {
+            enabled: !!accessToken.current && !!organizationId && !!body && (request.enabled ?? true),
+            queryFn: async ({ signal }) => {
+                const response = await useFetchClient().postJSON<EventChartResult>(`organizations/${organizationId}/events/chart`, body, {
+                    signal
+                });
+                return response.data!;
+            },
+            queryKey: [...queryKeys.organizations(organizationId), 'chart', body],
+            staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
+        };
+    });
+}
+
+export function getEventMeasurementsQuery(request: { enabled: boolean; filter?: null | string; organizationId: string | undefined; time?: null | string }) {
+    return createQuery<EventMeasurementCatalog, ProblemDetails>(() => {
+        const organizationId = request.organizationId;
+        const params = {
+            filter: request.filter,
+            offset: DEFAULT_OFFSET,
+            time: request.time
+        };
+        return {
+            enabled: !!accessToken.current && !!organizationId && request.enabled,
+            queryFn: async ({ signal }) => {
+                const response = await useFetchClient().getJSON<EventMeasurementCatalog>(`organizations/${organizationId}/events/measurements`, {
+                    params,
+                    signal
+                });
+                return response.data!;
+            },
+            queryKey: [...queryKeys.organizations(organizationId), 'measurements', params],
+            staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
+        };
+    });
 }
 
 // Cacheable reads intentionally finish after their observer unmounts so navigation can reuse the result instead of aborting and restarting the request.
@@ -729,7 +771,7 @@ function isOrganizationEventDashboardQueryKey(queryKey: readonly unknown[]): boo
     return (
         queryKey[0] === queryKeys.type[0] &&
         queryKey[1] === 'organizations' &&
-        (queryKey[3] === 'count' || queryKey[3] === 'events' || queryKey[3] === 'sessions')
+        (queryKey[3] === 'count' || queryKey[3] === 'events' || queryKey[3] === 'sessions' || queryKey[3] === 'chart' || queryKey[3] === 'measurements')
     );
 }
 

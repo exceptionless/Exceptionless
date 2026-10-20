@@ -82,6 +82,24 @@ public sealed class McpToolContractTests
         Assert.Equal(["open", "fixed", "ignored", "discarded"], status.GetProperty("enum").EnumerateArray().Select(item => item.GetString()));
     }
 
+    [Fact]
+    public void TelemetryTools_SchemasAdvertiseNativeFieldsAndQueryOptions()
+    {
+        var eventTool = CreateProtocolTool(nameof(ExceptionlessMcpTools.GetEventAsync));
+        string output = eventTool.OutputSchema!.Value.GetRawText();
+        Assert.Contains("measurements", output, StringComparison.Ordinal);
+        Assert.Contains("labels", output, StringComparison.Ordinal);
+        Assert.Contains("outcome", output, StringComparison.Ordinal);
+        Assert.Contains("parentReferenceId", output, StringComparison.Ordinal);
+
+        var chart = CreateProtocolTool(nameof(ExceptionlessMcpTools.GetEventChartAsync));
+        var properties = chart.InputSchema.GetProperty("properties");
+        Assert.Contains("p95", properties.GetProperty("aggregation").GetProperty("enum").EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(new[] { "buckets", "events" }, properties.GetProperty("mode").GetProperty("enum").EnumerateArray().Select(e => e.GetString()));
+        Assert.Contains("truncated", chart.OutputSchema!.Value.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("get_event_measurements", properties.GetProperty("measurement").GetProperty("description").GetString(), StringComparison.Ordinal);
+    }
+
     private static ModelContextProtocol.Protocol.Tool CreateProtocolTool(string methodName)
     {
         var method = typeof(ExceptionlessMcpTools).GetMethod(methodName)
@@ -107,5 +125,6 @@ public sealed class McpToolContractTests
         null!,
         null!,
         NullLogger<ExceptionlessMcpTools>.Instance,
-        TimeProvider.System);
+        TimeProvider.System,
+        null!);
 }

@@ -10,6 +10,7 @@ public static class McpErrorCodes
     public const string ContextRequired = "context_required";
     public const string Forbidden = "forbidden";
     public const string InvalidClientPlatform = "invalid_client_platform";
+    public const string InvalidChart = "invalid_chart";
     public const string InvalidCursor = "invalid_cursor";
     public const string InvalidDetailSize = "invalid_detail_size";
     public const string InvalidFilter = "invalid_filter";
@@ -27,6 +28,7 @@ public static class McpErrorCodes
     public const string NotAccessible = "not_accessible";
     public const string NotFound = "not_found";
     public const string QueryFailed = "query_failed";
+    public const string PlanLimit = "plan_limit";
     public const string UnknownFilterField = "unknown_filter_field";
 }
 
