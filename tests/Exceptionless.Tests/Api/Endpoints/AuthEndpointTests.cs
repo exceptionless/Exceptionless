@@ -790,10 +790,10 @@ public class AuthEndpointTests : IntegrationTestsBase
     [InlineData("GITHUB", "github-invalid-provider", "provider_name")]
     [InlineData(" github", "github-invalid-provider", "provider_name")]
     [InlineData("github ", "github-invalid-provider", "provider_name")]
-    [InlineData("github", null, "provider_user_id")]
-    [InlineData("github", "", "provider_user_id")]
-    [InlineData("github", " ", "provider_user_id")]
-    public async Task RemoveExternalLoginAsync_InvalidIdentity_IsRejectedWithoutChangingAccount(string providerName, string? providerUserId, string errorKey)
+    [InlineData("github", null, null)]
+    [InlineData("github", "", null)]
+    [InlineData("github", " ", null)]
+    public async Task RemoveExternalLoginAsync_InvalidIdentity_IsRejectedWithoutChangingAccount(string providerName, string? providerUserId, string? errorKey)
     {
         // Arrange
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
@@ -803,16 +803,23 @@ public class AuthEndpointTests : IntegrationTestsBase
         long originalTokenCount = (await _tokenRepository.CountAsync()).Total;
 
         // Act
-        var problem = await SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>(request => request
-            .Post()
-            .AsTestOrganizationUser()
-            .AppendPaths("auth", "unlink", providerName)
-            .Content(new ValueFromBody<string>(providerUserId!))
-            .StatusCodeShouldBeUnprocessableEntity());
+        var problem = await SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>(request =>
+        {
+            request.Post().AsTestOrganizationUser().AppendPaths("auth", "unlink", providerName)
+                .Content(new ValueFromBody<string>(providerUserId!));
+            if (errorKey is null)
+                request.StatusCodeShouldBeBadRequest();
+            else
+                request.StatusCodeShouldBeUnprocessableEntity();
+        });
 
         // Assert
         Assert.NotNull(problem);
-        Assert.Contains(errorKey, problem.Errors.Keys);
+        if (errorKey is null)
+            Assert.Equal("Invalid Provider Name or Provider User Id.", problem.Title);
+        else
+            Assert.Contains(errorKey, problem.Errors.Keys);
+
         var storedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
         Assert.NotNull(storedUser);
         Assert.Equal(user.AuthenticationVersion, storedUser.AuthenticationVersion);

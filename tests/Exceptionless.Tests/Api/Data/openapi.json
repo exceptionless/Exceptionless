@@ -2036,7 +2036,7 @@
             }
           },
           "400": {
-            "description": "The account must retain a sign-in method.",
+            "description": "Invalid provider user id, or the account would have no sign-in method.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

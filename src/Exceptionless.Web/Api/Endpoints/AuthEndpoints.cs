@@ -17,6 +17,7 @@ public static class AuthEndpoints
     {
         var group = endpoints.MapGroup("api/v2/auth")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
+            .AddEndpointFilter<UnlinkValidationResponseFilter>()
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Auth");
 
@@ -192,7 +193,7 @@ public static class AuthEndpoints
             },
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
-                ["400"] = "The account must retain a sign-in method.",
+                ["400"] = "Invalid provider user id, or the account would have no sign-in method.",
                 ["401"] = "Unauthorized",
                 ["422"] = "Validation error",
             }
