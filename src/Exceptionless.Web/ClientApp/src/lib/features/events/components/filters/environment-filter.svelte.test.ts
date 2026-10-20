@@ -43,6 +43,7 @@ describe('EnvironmentFilter', () => {
             `(project:${first} OR project:${second})`
         );
         expect(getProjectScopeFilter([new KeywordFilter(`project:(${first} OR ${second})`)])).toBe(`(project:${first} OR project:${second})`);
+        expect(getProjectScopeFilter([new KeywordFilter(`project:"${first}" project_id:(${first} || ${second})`)])).toBe(`project:${first}`);
         expect(getProjectScopeFilter([new KeywordFilter(`"a OR b" project:${first}`)])).toBe(`project:${first}`);
         expect(getProjectScopeFilter([new KeywordFilter(`project:${first} (status:open OR status:regressed) NOT type:log`)])).toBe(`project:${first}`);
         expect(getProjectScopeFilter([new KeywordFilter(`(project:${first} type:error) OR (project:${second} -status:fixed)`)])).toBe(
@@ -60,6 +61,10 @@ describe('EnvironmentFilter', () => {
             `!project:${first}`,
             `NOT project:${first}`,
             `NOT (project:${first})`,
+            `(project:${first} OR project:537*)`,
+            `project:${first.slice(0, 20)}`,
+            `project:[${first} TO ${second}]`,
+            `project:(${first} OR 537*)`,
             `-(type:error OR project:${first})`
         ]) {
             expect(getProjectScopeFilter([new KeywordFilter(search)])).toBe('');

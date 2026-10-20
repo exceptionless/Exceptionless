@@ -315,7 +315,7 @@ function getSearchProjectScope(search: string): null | string[] {
                     continue;
                 }
 
-                scope = /^project(?:_id)?:/i.test(term) ? [...term.matchAll(/\b[a-f0-9]{24}\b/gi)].map(([projectId]) => projectId.toLowerCase()) : null;
+                scope = getProjectTermScope(term);
             }
 
             clauses.push(negated ? null : scope);
@@ -331,6 +331,18 @@ function getSearchProjectScope(search: string): null | string[] {
     }
 
     return readGroup();
+}
+
+const PROJECT_ID = String.raw`"?[a-f0-9]{24}"?`;
+// Exact project IDs, alone or in an OR group. Wildcards, ranges, and partial IDs can match other projects.
+const EXACT_PROJECT_TERM_REGEX = new RegExp(
+    String.raw`^project(?:_id)?:(?:${PROJECT_ID}|\(\s*${PROJECT_ID}(?:\s+(?:OR\s+|\|\|\s+)?${PROJECT_ID})*\s*\))$`,
+    'i'
+);
+
+/** Projects that a project term limits results to, or null for any other term. */
+function getProjectTermScope(term: string): null | string[] {
+    return EXACT_PROJECT_TERM_REGEX.test(term) ? [...term.matchAll(/[a-f0-9]{24}/gi)].map(([projectId]) => projectId.toLowerCase()) : null;
 }
 
 /** Projects allowed by every scoped clause of an AND, or null when no clause limits the projects. */
