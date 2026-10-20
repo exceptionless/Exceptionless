@@ -112,20 +112,18 @@ export function getProjectFilter(filters: IFilter[]): ProjectFilter {
 }
 
 /**
- * Projects that scope facet discovery: the project picker plus project terms in a raw search, such
- * as legacy saved views or hand-written URLs.
+ * Projects that scope facet discovery: the project picker and any project terms in a raw search, such
+ * as legacy saved views or hand-written URLs. Filters are combined by AND, so their scopes intersect.
  */
 export function getProjectScopeFilter(filters: IFilter[]): string {
-    const projectIds = [...(getProjectFilter(filters)?.value ?? [])];
-    for (const filter of filters) {
-        if (filter.type !== 'keyword') {
-            continue;
-        }
+    const projectFilter = getProjectFilter(filters);
+    const scopes = [
+        projectFilter?.value.length ? projectFilter.value : null,
+        ...filters.filter((filter) => filter.type === 'keyword').map((filter) => getSearchProjectScope((filter as KeywordFilter).value ?? ''))
+    ];
 
-        projectIds.push(...(getSearchProjectScope((filter as KeywordFilter).value ?? '') ?? []));
-    }
-
-    return new ProjectFilter(projectIds.filter((projectId, index) => projectIds.indexOf(projectId) === index)).toFilter();
+    // Disjoint scopes match no events, so discovery falls back to the whole organization.
+    return new ProjectFilter(intersectProjectScopes(scopes) ?? []).toFilter();
 }
 
 export function getStackFilter(filters: IFilter[]): StringFilter | undefined {
@@ -238,6 +236,10 @@ export function shouldRefreshPersistentEventRemoval(
     return removedFromTable || shouldRefreshPersistentEventChanged(filters, filter, organization_id, project_id, stack_id, id);
 }
 
+function distinct(values: string[]): string[] {
+    return values.filter((value, index) => values.indexOf(value) === index);
+}
+
 /**
  * Projects that a raw search certainly limits results to, or null when it may include any project. An
  * unrelated AND clause keeps the scope, an OR branch without one removes it, and negations never add one.
@@ -322,14 +324,19 @@ function getSearchProjectScope(search: string): null | string[] {
 
         // Mixed AND and OR groups are treated as OR, which can only widen the scope.
         if (isOr) {
-            return clauses.length > 0 && clauses.every((scope) => scope !== null) ? clauses.flat() : null;
+            return clauses.length > 0 && clauses.every((scope) => scope !== null) ? distinct(clauses.flat()) : null;
         }
 
-        const scoped = clauses.filter((scope) => scope !== null);
-        return scoped.length > 0 ? scoped.flat() : null;
+        return intersectProjectScopes(clauses);
     }
 
     return readGroup();
+}
+
+/** Projects allowed by every scoped clause of an AND, or null when no clause limits the projects. */
+function intersectProjectScopes(scopes: (null | string[])[]): null | string[] {
+    const scoped = scopes.filter((scope) => scope !== null);
+    return scoped.length > 0 ? distinct(scoped.reduce((projectIds, scope) => projectIds.filter((projectId) => scope.includes(projectId)))) : null;
 }
 
 const TYPE_FILTER_REGEX = /\btype:(\w+)\b/g;
