@@ -2,6 +2,8 @@ import type { AssistantChatMessage, AssistantConversation, AssistantToolActivity
 
 const STORAGE_PREFIX = 'exie:conversations:v1:';
 const MAX_CONVERSATIONS = 20;
+/** Keeps Exie's history well under the origin's storage quota, which it shares with the sign-in token. */
+const MAX_STORED_CHARACTERS = 1_000_000;
 const MAX_TITLE_LENGTH = 80;
 /** Tool results above this size keep only the fields Exie needs to link resources. */
 const MAX_TOOL_RESULT_LENGTH = 16_000;
@@ -127,8 +129,14 @@ function writeConversations(scope: string, conversations: AssistantConversation[
     const key = `${STORAGE_PREFIX}${scope}`;
     let remaining = conversations;
     while (remaining.length > 0) {
+        const value = JSON.stringify(remaining);
+        if (value.length > MAX_STORED_CHARACTERS) {
+            remaining = remaining.slice(0, -1);
+            continue;
+        }
+
         try {
-            storage.setItem(key, JSON.stringify(remaining));
+            storage.setItem(key, value);
             return;
         } catch {
             // Storage is full: drop the oldest conversation and try again.

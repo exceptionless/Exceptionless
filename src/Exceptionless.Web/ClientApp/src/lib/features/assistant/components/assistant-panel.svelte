@@ -356,7 +356,8 @@
     }
 
     function persistConversation(): void {
-        if (!historyScope || messages.length === 0) {
+        // Signing out clears saved chats; never write them back once the session is gone.
+        if (!historyScope || messages.length === 0 || !accessToken.current) {
             return;
         }
 
@@ -596,9 +597,9 @@
                 } else if (!controller.signal.aborted) {
                     announcement = 'Exie finished responding.';
                 }
-            }
 
-            persistConversation();
+                persistConversation();
+            }
         }
     }
 
@@ -662,7 +663,7 @@
                 <AssistantHistoryMenu
                     activeId={messages.length > 0 ? threadId : undefined}
                     {conversations}
-                    disabled={!historyScope}
+                    disabled={!historyScope || isStreaming}
                     onDelete={deleteConversation}
                     onSelect={restoreConversation}
                 />

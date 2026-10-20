@@ -65,17 +65,6 @@
         onFeedback?.(feedback === 'helpful' ? undefined : 'helpful');
     }
 
-    function markNotHelpful(): void {
-        if (feedback === 'not-helpful') {
-            isReasonOpen = false;
-            onFeedback?.(undefined);
-            return;
-        }
-
-        onFeedback?.('not-helpful');
-        isReasonOpen = true;
-    }
-
     async function regenerate(): Promise<void> {
         if (!onRegenerate || isRegenerating) {
             return;
@@ -94,21 +83,30 @@
         onFeedback?.('not-helpful', reason);
         isReasonOpen = false;
     }
+
+    // The popover trigger handles both pointer and keyboard activation, so the rating follows its open state.
+    function setReasonOpen(open: boolean): void {
+        if (open && feedback === 'not-helpful') {
+            isReasonOpen = false;
+            onFeedback?.(undefined);
+            return;
+        }
+
+        if (open) {
+            onFeedback?.('not-helpful');
+        }
+
+        isReasonOpen = open;
+    }
 </script>
 
-{#snippet action(
-    label: string,
-    onclick: () => void,
-    icon: typeof Copy,
-    options: { disabled?: boolean; pressed?: boolean; props?: Record<string, unknown> } = {}
-)}
+{#snippet action(label: string, onclick: () => void, icon: typeof Copy, options: { disabled?: boolean; pressed?: boolean } = {})}
     {@const Icon = icon}
     <Tooltip.Root>
         <Tooltip.Trigger>
             {#snippet child({ props })}
                 <Button
                     {...props}
-                    {...options.props}
                     aria-label={label}
                     aria-pressed={options.pressed}
                     class="text-muted-foreground hover:text-foreground aria-pressed:text-foreground"
@@ -151,15 +149,28 @@
             {@render action('Good response', markHelpful, ThumbsUp, {
                 pressed: feedback === 'helpful'
             })}
-            <Popover.Root bind:open={isReasonOpen}>
-                <Popover.Trigger>
-                    {#snippet child({ props })}
-                        {@render action('Poor response', markNotHelpful, ThumbsDown, {
-                            pressed: feedback === 'not-helpful',
-                            props
-                        })}
-                    {/snippet}
-                </Popover.Trigger>
+            <Popover.Root bind:open={() => isReasonOpen, setReasonOpen}>
+                <Tooltip.Root>
+                    <Tooltip.Trigger>
+                        {#snippet child({ props: tooltipProps })}
+                            <Popover.Trigger {...tooltipProps}>
+                                {#snippet child({ props })}
+                                    <Button
+                                        {...props}
+                                        aria-label="Poor response"
+                                        aria-pressed={feedback === 'not-helpful'}
+                                        class="text-muted-foreground hover:text-foreground aria-pressed:text-foreground"
+                                        size="icon-xs"
+                                        variant="ghost"
+                                    >
+                                        <ThumbsDown aria-hidden="true" class={feedback === 'not-helpful' ? 'fill-current' : undefined} />
+                                    </Button>
+                                {/snippet}
+                            </Popover.Trigger>
+                        {/snippet}
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>Poor response</Tooltip.Content>
+                </Tooltip.Root>
                 <Popover.Content align="start" class="flex w-64 flex-col gap-2 p-3 text-sm" side="top">
                     <p class="font-medium">What went wrong?</p>
                     <div class="flex flex-wrap gap-1.5">

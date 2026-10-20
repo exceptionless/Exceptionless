@@ -9,7 +9,8 @@ vi.mock('#features/shared/environment.ts', () => ({
     }
 }));
 
-vi.mock('#features/auth/index.svelte.ts', () => ({ accessToken: { current: 'access-token' } }));
+const auth = vi.hoisted(() => ({ accessToken: { current: 'access-token' as null | string } }));
+vi.mock('#features/auth/index.svelte.ts', () => auth);
 vi.mock('#features/billing/stripe.svelte.ts', () => ({ isStripeEnabled: () => true }));
 vi.mock('katex/dist/katex.min.css', () => ({}));
 const goto = vi.hoisted(() => vi.fn(() => Promise.resolve()));
@@ -588,6 +589,33 @@ describe('AssistantPanel', () => {
         });
         expect(savedChat).toBeTruthy();
         localStorage.clear();
+    });
+
+    it('does not save the chat again after the user signs out', async () => {
+        localStorage.clear();
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'Private answer.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        const view = render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Private question' },
+                userId: 'user-1'
+            }
+        });
+        expect(await screen.findByText('Private answer.')).toBeTruthy();
+
+        localStorage.clear();
+        auth.accessToken.current = null;
+        try {
+            view.unmount();
+            expect(localStorage.length).toBe(0);
+        } finally {
+            auth.accessToken.current = 'access-token';
+        }
     });
 
     it('starts a new chat that can be undone', async () => {

@@ -80,6 +80,17 @@ describe('conversation history', () => {
         expect(conversations[0]?.id).toBe('chat-24');
     });
 
+    it('drops the oldest conversations to stay within the storage budget', () => {
+        const answer: AssistantChatMessage = { content: 'x'.repeat(300_000), id: 'a', parts: [], role: 'assistant', tools: [] };
+        for (let index = 0; index < 5; index++) {
+            saveAssistantConversation('scope', conversation(`chat-${index}`, index, [answer]), storage);
+        }
+
+        const conversations = loadAssistantConversations('scope', storage);
+        expect(conversations.map((item) => item.id)).toEqual(['chat-4', 'chat-3', 'chat-2']);
+        expect(storage.getItem('exie:conversations:v1:scope')!.length).toBeLessThanOrEqual(1_000_000);
+    });
+
     it('compacts large tool results to the fields needed for resource links', () => {
         const items = Array.from({ length: 400 }, (_, index) => ({
             description: 'x'.repeat(100),
