@@ -77,7 +77,8 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                 sessionsToUpdate.Add(sessionStart);
                 if (heartbeatResult?.CacheKey is not null)
                 {
-                    consumedHeartbeats[heartbeatResult.CacheKey] = heartbeatResult.ActivityUtc;
+                    // Keep the first value read: sessions on earlier pages only applied that one.
+                    consumedHeartbeats.TryAdd(heartbeatResult.CacheKey, heartbeatResult.ActivityUtc);
                     if (heartbeatResult.Close)
                         closeKeysToRemove.Add($"{heartbeatResult.CacheKey}-close");
                 }

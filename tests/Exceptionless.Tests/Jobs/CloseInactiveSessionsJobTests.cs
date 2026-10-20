@@ -147,19 +147,37 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         var initialSessionStarts = (await _eventRepository.GetAllAsync(o => o.PageLimit(500))).Documents.Where(e => e.IsSessionStart()).ToList();
         Assert.Equal(102, initialSessionStarts.Count);
 
-        await _cache.SetAsync($"Project:{initialSessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", DateTime.UtcNow.SubtractMinutes(1));
+        string heartbeatKey = $"Project:{initialSessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}";
+        await _cache.SetAsync(heartbeatKey, DateTime.UtcNow.SubtractMinutes(1));
         _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+
+        // A newer heartbeat arrives after the first page applied the original one, so the second page reads it.
+        var latestHeartbeatUtc = DateTime.UtcNow;
+        bool isFirstPage = true;
+        using var handler = _eventRepository.DocumentsSaved.AddHandler(async (_, _) =>
+        {
+            if (isFirstPage)
+            {
+                isFirstPage = false;
+                await _cache.SetAsync(heartbeatKey, latestHeartbeatUtc);
+            }
+        });
 
         // Act
         var result = await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
         var sessionStarts = (await _eventRepository.GetAllAsync(o => o.PageLimit(500))).Documents.Where(e => e.IsSessionStart()).ToList();
+        var heartbeat = await _cache.GetAsync<DateTime>(heartbeatKey);
 
         // Assert
         Assert.Equal(JobResult.Success, result);
+        Assert.False(isFirstPage);
         var openSessions = sessionStarts.Where(e => !e.HasSessionEndTime()).ToList();
         Assert.Equal(2, openSessions.Count);
         Assert.Equal(["production", "staging"], openSessions.Select(e => e.Environment).Order());
+        // The production session has not applied the newer heartbeat yet, so it is left for the next run.
+        Assert.True(heartbeat.HasValue);
+        Assert.Equal(latestHeartbeatUtc, heartbeat.Value);
     }
 
     [Fact]
