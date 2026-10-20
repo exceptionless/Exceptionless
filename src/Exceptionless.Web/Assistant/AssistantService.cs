@@ -443,7 +443,7 @@ public sealed class AssistantService(
                         error = new
                         {
                             code = "project_search_limit_reached",
-                            message = "The maximum project searches for one turn has been reached. Answer using the available results."
+                            message = "The maximum project searches for one turn has been reached. Answer using the available results and tell the user which projects were not searched."
                         }
                     }, s_jsonOptions);
                     remainingToolCalls--;

@@ -12,6 +12,9 @@
     import * as Kbd from '#comp/ui/kbd/index.ts';
 
     import type { AssistantContext } from '../assistant-starters';
+    import type { AssistantProject } from '../models';
+
+    import AssistantProjectScope from './assistant-project-scope.svelte';
 
     interface Props {
         context?: AssistantContext;
@@ -19,8 +22,13 @@
         isEditing?: boolean;
         isStreaming?: boolean;
         onCancelEdit?: () => void;
+        onProjectChange?: (projectId: string | undefined) => void;
         onStop: () => void;
         onSubmit: (value: string) => void;
+        /** The project Exie searches; undefined means all projects. */
+        projectId?: string;
+        /** Projects the user can scope Exie to. The picker is hidden when there is no choice to make. */
+        projects?: AssistantProject[];
         value?: string;
     }
 
@@ -30,8 +38,11 @@
         isEditing = false,
         isStreaming = false,
         onCancelEdit,
+        onProjectChange,
         onStop,
         onSubmit,
+        projectId,
+        projects = [],
         value = $bindable('')
     }: Props = $props();
     let textareaElement = $state<HTMLTextAreaElement | null>(null);
@@ -157,7 +168,13 @@
             rows={1}
         />
         <InputGroup.Addon align="block-end" class="justify-between gap-2 pt-0">
-            <span class="text-muted-foreground hidden items-center gap-1 text-[11px] font-normal pointer-fine:flex" id="assistant-composer-help">
+            {#if onProjectChange && projects.length > 1}
+                <AssistantProjectScope disabled={isStreaming} onChange={onProjectChange} {projects} value={projectId} />
+            {/if}
+            <span
+                class="text-muted-foreground hidden min-w-0 items-center gap-1 text-[11px] font-normal whitespace-nowrap pointer-fine:flex"
+                id="assistant-composer-help"
+            >
                 <Kbd.Root>↵</Kbd.Root> to send <span aria-hidden="true">·</span>
                 <Kbd.Root>⇧</Kbd.Root><Kbd.Root>↵</Kbd.Root> new line
             </span>

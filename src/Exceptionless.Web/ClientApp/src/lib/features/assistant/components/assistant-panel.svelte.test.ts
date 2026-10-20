@@ -560,6 +560,50 @@ describe('AssistantPanel', () => {
         expect(request.messages.map((message) => message.content)).toEqual(['Edited question']);
     });
 
+    it('searches the project the user picks instead of the page context', async () => {
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'Scoped answer', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        const props = {
+            context: { kind: 'stack' as const, title: 'Checkout failure' },
+            open: true,
+            organizationId: 'organization-1',
+            path: '/stack/5f8f8f8f8f8f8f8f8f8f8f8f',
+            projectId: 'project-1',
+            projects: [
+                { id: 'project-1', name: 'Storefront' },
+                { id: 'project-2', name: 'Billing API' }
+            ]
+        };
+        const view = render(AssistantPanel, { props });
+        const composer = await screen.findByRole('textbox', { name: 'Message Exie' });
+        expect(screen.getByRole('button', { name: 'Project scope: Storefront' })).toBeTruthy();
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Project scope: Storefront' }));
+        await fireEvent.click(await screen.findByRole('option', { name: 'Billing API' }));
+
+        expect(screen.getByRole('button', { name: 'Project scope: Billing API' })).toBeTruthy();
+        expect(screen.queryByTestId('assistant-context-chip')).toBeNull();
+        await fireEvent.input(composer, { target: { value: 'What broke today?' } });
+        await fireEvent.keyDown(composer, { key: 'Enter' });
+        await screen.findByText('Scoped answer');
+        let request = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body)) as { path: string; project_id?: string };
+        expect(request).toMatchObject({ path: resolve('/(app)'), project_id: 'project-2' });
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Project scope: Billing API' }));
+        await fireEvent.click(await screen.findByRole('option', { name: 'All projects' }));
+        await fireEvent.input(composer, { target: { value: 'And across everything?' } });
+        await fireEvent.keyDown(composer, { key: 'Enter' });
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+        request = JSON.parse(String((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body)) as { path: string; project_id?: string };
+        expect(request.project_id).toBeUndefined();
+
+        await view.rerender({ ...props, path: '/stack/6f8f8f8f8f8f8f8f8f8f8f8f' });
+        expect(await screen.findByRole('button', { name: 'Project scope: Storefront' })).toBeTruthy();
+        expect(screen.getByTestId('assistant-context-chip')).toBeTruthy();
+    });
+
     it('saves chats per user and organization and restores the latest one', async () => {
         localStorage.clear();
         const fetchMock = vi.fn(

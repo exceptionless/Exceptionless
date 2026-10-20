@@ -47,6 +47,29 @@ describe('AssistantComposer', () => {
         view.unmount();
     });
 
+    it('offers a project scope only when there is more than one project', async () => {
+        const onProjectChange = vi.fn();
+        const view = render(AssistantComposer, {
+            props: { onProjectChange, onStop: vi.fn(), onSubmit: vi.fn(), projects: [{ id: 'project-1', name: 'Storefront' }] }
+        });
+        expect(screen.queryByTestId('assistant-project-scope')).toBeNull();
+
+        await view.rerender({
+            onProjectChange,
+            onStop: vi.fn(),
+            onSubmit: vi.fn(),
+            projects: [
+                { id: 'project-1', name: 'Storefront' },
+                { id: 'project-2', name: 'Billing API' }
+            ]
+        });
+        await fireEvent.click(screen.getByRole('button', { name: 'Project scope: All projects' }));
+        await fireEvent.click(await screen.findByRole('option', { name: 'Storefront' }));
+
+        expect(onProjectChange).toHaveBeenCalledWith('project-1');
+        view.unmount();
+    });
+
     it('cancels editing a message with Escape', async () => {
         const onCancelEdit = vi.fn();
         render(AssistantComposer, { props: { isEditing: true, onCancelEdit, onStop: vi.fn(), onSubmit: vi.fn(), value: 'Original question' } });
@@ -69,9 +92,7 @@ describe('AssistantComposer', () => {
     });
 
     it('focuses the message box automatically with a mouse or trackpad', () => {
-        vi.mocked(window.matchMedia).mockImplementationOnce(
-            (query: string) => ({ matches: query === '(pointer: fine)', media: query }) as MediaQueryList
-        );
+        vi.mocked(window.matchMedia).mockImplementationOnce((query: string) => ({ matches: query === '(pointer: fine)', media: query }) as MediaQueryList);
         const view = render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit: vi.fn() } });
 
         view.component.focus();

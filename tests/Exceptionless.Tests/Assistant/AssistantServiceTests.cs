@@ -57,6 +57,7 @@ public sealed class AssistantServiceTests
         Assert.Contains("Never send last together with startUtc or endUtc.", systemPrompt, StringComparison.Ordinal);
         Assert.Contains("There is no organization-wide search", systemPrompt, StringComparison.Ordinal);
         Assert.Contains("never retry by removing them", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("I searched 5 of 12 projects", systemPrompt, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -154,7 +155,7 @@ public sealed class AssistantServiceTests
         Assert.Contains("CURRENT PROJECT RULE", handler.RequestBody);
         Assert.Contains("CLIENT SETUP RULE", handler.RequestBody);
         Assert.Contains("pass that exact projectName to get_project_setup", handler.RequestBody);
-        Assert.Contains("Do not call get_stack or list_projects for setup", handler.RequestBody);
+        Assert.Contains("Do not call get_stack for setup, and call list_projects only when no project is identified", handler.RequestBody);
         Assert.Contains("Never invent packages or advertise Python, Java, Ruby, or PHP clients", handler.RequestBody);
         Assert.Contains("describe React Native and Expo as supported only when returned by the tool", handler.RequestBody);
         Assert.Contains("do not call list_projects, call each needed project-scoped tool only once", handler.RequestBody);

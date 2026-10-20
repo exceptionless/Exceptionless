@@ -56,7 +56,7 @@
     import { setProductTourControls } from '#features/product-tours/controls.svelte.ts';
     import { isProductTourSetupRoute } from '#features/product-tours/eligibility.ts';
     import { productTourCheckpoint } from '#features/product-tours/state.svelte.ts';
-    import { invalidateProjectQueries } from '#features/projects/api.svelte.ts';
+    import { getOrganizationProjectsQuery, invalidateProjectQueries } from '#features/projects/api.svelte.ts';
     import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted, putUserSavedViewOrder } from '#features/saved-views/api.svelte.ts';
     import { getPersonalSavedViewOrder, resolvePersonalSavedViewOrder } from '#features/saved-views/ordering.ts';
     import { savedViewHref } from '#features/saved-views/slugs.ts';
@@ -382,6 +382,26 @@
         }
     });
     const updateAssistantConversationSharing = putAssistantConversationSharingMutation();
+    const assistantProjectsQuery = getOrganizationProjectsQuery({
+        enabled: () => assistantAccessState === 'available' && (isAssistantOpen || isAssistantPage),
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
+    let assistantProjects = $derived(
+        (assistantProjectsQuery.data?.data ?? []).flatMap((project) =>
+            project.id && project.name
+                ? [
+                      {
+                          id: project.id,
+                          name: project.name
+                      }
+                  ]
+                : []
+        )
+    );
 
     setAssistantControls({
         ask: (prompt) => void askAssistant(prompt),
@@ -918,6 +938,7 @@
                         path={assistantPath}
                         promptRequest={assistantPromptRequest}
                         projectId={assistantProjectId}
+                        projects={assistantProjects}
                         userId={meQuery.data?.id}
                     />
                 {/if}

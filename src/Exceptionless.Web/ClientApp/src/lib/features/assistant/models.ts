@@ -44,6 +44,12 @@ export type AssistantMessageEndReason = 'error' | 'stopped';
 
 export type AssistantMessagePart = { text: string; type: 'text' } | { toolId: string; type: 'tool' };
 
+/** A project Exie can be scoped to from the composer. */
+export interface AssistantProject {
+    id: string;
+    name: string;
+}
+
 export interface AssistantPromptRequest {
     id: string;
     prompt: string;

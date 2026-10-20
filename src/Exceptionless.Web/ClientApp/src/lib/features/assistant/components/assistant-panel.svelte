@@ -24,6 +24,7 @@
         AssistantConversationSharingSettings,
         AssistantFeedback,
         AssistantFeedbackReason,
+        AssistantProject,
         AssistantPromptRequest,
         AssistantSuggestedAction
     } from '../models';
@@ -71,7 +72,10 @@
         open?: boolean;
         organizationId?: string;
         path?: string;
+        /** The project the current page belongs to, which Exie searches until the user picks another scope. */
         projectId?: string;
+        /** Projects the user can scope Exie to from the composer. */
+        projects?: AssistantProject[];
         promptRequest?: AssistantPromptRequest;
         /** Scopes the locally saved chat history to the signed-in user. */
         userId?: string;
@@ -94,6 +98,7 @@
         organizationId,
         path,
         projectId,
+        projects = [],
         promptRequest,
         userId
     }: Props = $props();
@@ -110,7 +115,9 @@
     let prompt = $state('');
     let editingMessageId = $state<string>();
     let contextDismissed = $state(false);
-    let contextPath = $state<string>();
+    let contextKey = $state<string>();
+    /** The scope the user picked in the composer: undefined follows the page, and null searches all projects. */
+    let selectedProjectId = $state<null | string>();
     let isStreaming = $state(false);
     let streamingMessageId = $state<string>();
     let announcement = $state('');
@@ -128,7 +135,23 @@
     let wasVisible = false;
     let previousMode: 'page' | 'sheet' | undefined;
     let latestAssistantMessage = $derived(messages.filter((message) => message.role === 'assistant').at(-1));
-    let starters = $derived(getAssistantStarters(contextDismissed ? undefined : context));
+    // Project pages are covered by the project scope, so only an event or stack is shown as page context.
+    let resourceContext = $derived(context?.kind === 'project' ? undefined : context);
+    let scopeProjectId = $derived(selectedProjectId === undefined ? projectId : (selectedProjectId ?? undefined));
+    let usesPageContext = $derived(!contextDismissed && selectedProjectId === undefined);
+    let starters = $derived.by(() => {
+        if (resourceContext && usesPageContext) {
+            return getAssistantStarters(resourceContext);
+        }
+
+        return getAssistantStarters(
+            scopeProjectId
+                ? {
+                      kind: 'project'
+                  }
+                : undefined
+        );
+    });
 
     $effect(() => {
         sharingSettings = conversationSharing;
@@ -143,13 +166,14 @@
         }
     });
 
-    // A new page brings new context, so a dismissed context chip comes back.
+    // A new page brings new context, so a dismissed context chip comes back and the scope follows the page again.
     $effect(() => {
-        const currentPath = path;
+        const currentKey = `${organizationId}:${path}`;
         untrack(() => {
-            if (currentPath !== contextPath) {
-                contextPath = currentPath;
+            if (currentKey !== contextKey) {
+                contextKey = currentKey;
                 contextDismissed = false;
+                selectedProjectId = undefined;
             }
         });
     });
@@ -257,6 +281,18 @@
         }
     }
 
+    function changeProjectScope(nextProjectId: string | undefined): void {
+        selectedProjectId = nextProjectId === projectId ? undefined : (nextProjectId ?? null);
+        // An event or stack belongs to the page's project, so another scope leaves it out.
+        if (selectedProjectId !== undefined) {
+            contextDismissed = true;
+        }
+
+        const projectName = nextProjectId ? (projects.find((project) => project.id === nextProjectId)?.name ?? 'this project') : 'all projects';
+        announcement = `Exie will search ${projectName}.`;
+        composer?.focus();
+    }
+
     function collapseToSidePanel(): void {
         onCollapse?.();
     }
@@ -303,9 +339,11 @@
 
         editingMessageId = messageId;
         prompt = message.content;
-        void tick().then(() => composer?.focus({
- force: true 
-}));
+        void tick().then(() =>
+            composer?.focus({
+                force: true
+            })
+        );
     }
 
     function getTelemetryContext(message?: AssistantChatMessage): AssistantTelemetryContext {
@@ -315,7 +353,7 @@
             mode,
             organization_id: conversationOrganizationId ?? organizationId,
             path: (path ?? page.url.pathname).split(/[?#]/)[0],
-            project_id: projectId,
+            project_id: scopeProjectId,
             user_message_id: message?.role === 'user' ? message.id : undefined
         };
     }
@@ -438,6 +476,14 @@
         }
     }
 
+    function setContextDismissed(dismissed: boolean): void {
+        contextDismissed = dismissed;
+        // Restoring the event or stack also restores the project it belongs to.
+        if (!dismissed) {
+            selectedProjectId = undefined;
+        }
+    }
+
     function setMessageFeedback(messageId: string, feedback: AssistantFeedback | undefined, reason?: AssistantFeedbackReason): void {
         const message = messages.find((message) => message.id === messageId);
         if (!message) {
@@ -521,8 +567,8 @@
         announcement = 'Exie is responding…';
         const controller = new AbortController();
         abortController = controller;
-        const requestPath = contextDismissed ? resolve('/(app)') : (path ?? `${page.url.pathname}${page.url.search}`);
-        const requestProjectId = contextDismissed ? undefined : projectId;
+        const requestPath = usesPageContext ? (path ?? `${page.url.pathname}${page.url.search}`) : resolve('/(app)');
+        const requestProjectId = scopeProjectId;
         const userMessage = history.at(-1)!;
         const telemetry = new AssistantTurnTelemetry(
             {
@@ -803,14 +849,17 @@
             <div class={['mx-auto flex w-full flex-col gap-1.5', mode === 'page' && 'max-w-3xl']}>
                 <AssistantComposer
                     bind:this={composer}
-                    bind:contextDismissed
+                    bind:contextDismissed={() => contextDismissed, setContextDismissed}
                     bind:value={prompt}
-                    {context}
+                    context={resourceContext}
                     isEditing={!!editingMessageId}
                     {isStreaming}
                     onCancelEdit={cancelEdit}
+                    onProjectChange={changeProjectScope}
                     onStop={() => stopStreaming()}
                     onSubmit={(value) => void submitPrompt(value)}
+                    projectId={scopeProjectId}
+                    {projects}
                 />
                 <div class="text-muted-foreground flex items-center justify-between gap-3 px-1 text-[11px]">
                     <span>Exie can make mistakes.<span class="hidden sm:inline">&nbsp;Check important changes.</span></span>
