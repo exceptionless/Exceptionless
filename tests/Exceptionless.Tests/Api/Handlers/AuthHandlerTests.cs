@@ -3,6 +3,7 @@ using Foundatio.Repositories.Elasticsearch;
 using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -22,6 +23,7 @@ using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 
@@ -30,6 +32,12 @@ namespace Exceptionless.Tests.Api.Handlers;
 public sealed class AuthHandlerTests : TestWithServices
 {
     public AuthHandlerTests(ITestOutputHelper output) : base(output) { }
+
+    protected override void RegisterServices(IServiceCollection services, AppOptions options)
+    {
+        base.RegisterServices(services, options);
+        services.ReplaceSingleton<IStripeBillingClient, FakeStripeBillingClient>();
+    }
 
     [Theory]
     [InlineData(false)]
@@ -325,6 +333,7 @@ public sealed class AuthHandlerTests : TestWithServices
             GetService<ICacheClient>(),
             lockProvider ?? GetService<ILockProvider>(),
             GetService<AuthService>(),
+            GetService<OrganizationService>(),
             GetService<IMailer>(),
             GetService<IDomainLoginProvider>(),
             TimeProvider,

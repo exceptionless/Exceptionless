@@ -253,7 +253,7 @@ public sealed class OrganizationHandlerTests : TestWithServices
         var usage = GetService<UsageService>();
         var stripe = new FakeStripeBillingClient();
         var service = new OrganizationService(organizations, projects, savedViews, GetService<ITokenRepository>(), users,
-            GetService<IWebHookRepository>(), stripe, usage, Log);
+            GetService<IWebHookRepository>(), stripe, usage, GetService<ILockProvider>(), Log);
         var billing = new BillingManager(GetService<ILockProvider>(), organizations, projects, users, GetService<BillingPlans>(), TimeProvider);
 
         return new OrganizationHandler(service, organizations, GetService<ICacheClient>(), GetService<IEventRepository>(), users, projects,

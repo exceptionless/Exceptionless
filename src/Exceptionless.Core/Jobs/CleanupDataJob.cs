@@ -154,6 +154,10 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
+                await using var membershipLock = await _organizationService.TryAcquireUserMembershipLockAsync(group.Key.UserId!);
+                if (membershipLock is null)
+                    continue;
+
                 var currentOrganization = await _organizationRepository.GetByIdAsync(group.Key.OrganizationId, options => options.Cache(false));
                 var currentUser = await _userRepository.GetByIdAsync(group.Key.UserId!, options => options.Cache(false));
                 if (currentUser is not null && currentOrganization is not null

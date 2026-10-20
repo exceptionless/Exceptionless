@@ -642,6 +642,7 @@ public class OrganizationHandler(
         {
             if (!user.OrganizationIds.Contains(organization.Id))
             {
+                await using var membershipLock = await organizationService.AcquireUserMembershipLockAsync(user.Id, message.Context.RequestAborted);
                 try
                 {
                     bool patched = await userRepository.PatchAsync(user.Id, new ActionPatch<User>(current => current.OrganizationIds.Add(organization.Id)), o => o.Cache());
@@ -739,6 +740,7 @@ public class OrganizationHandler(
             }
         }
 
+        await using var membershipLock = await organizationService.AcquireUserMembershipLockAsync(user.Id, message.Context.RequestAborted);
         var currentUser = await userRepository.GetByIdAsync(user.Id, options => options.Cache());
         bool hasOrganizationAccess = currentUser is not null
             && (currentUser.OrganizationIds.Contains(organization.Id) || currentUser.Roles.Contains(AuthorizationRoles.GlobalAdmin));
@@ -875,6 +877,7 @@ public class OrganizationHandler(
             : plans.FreePlan;
         billingManager.ApplyBillingPlan(value, plan, user);
 
+        await using var membershipLock = await organizationService.AcquireUserMembershipLockAsync(user.Id, httpContext.RequestAborted);
         var organization = await repository.AddAsync(value, o => o.Cache());
 
         try
