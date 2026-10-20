@@ -12,6 +12,7 @@
     import { SvelteURLSearchParams } from 'svelte/reactivity';
     import { fade } from 'svelte/transition';
 
+    import type { AssistantContext } from '#features/assistant/assistant-starters.ts';
     import type { AssistantPromptRequest } from '#features/assistant/models.ts';
     import type { SavedView } from '#features/saved-views/models.ts';
 
@@ -101,6 +102,13 @@
     let assistantPath = $derived(getAssistantPath(assistantResourceContext, getAssistantSourcePath()));
     let assistantExpandHref = $derived(buildAssistantPageHref(getVisibleHref(), assistantPath, assistantProjectId));
     let assistantReturnHref = $derived(getAssistantReturnHref());
+    // The full-page view keeps the context of the page Exie was expanded from.
+    let assistantContextBeforePage = $state<AssistantContext>();
+    let assistantContext = $derived(
+        isAssistantPage
+            ? (assistantContextBeforePage ?? getAssistantContextFromPath(assistantPath))
+            : getAssistantContext(assistantResourceContext, page.params.projectId)
+    );
     let commandResetKey = $state(0);
     let isKeyboardShortcutsOpen = $state(false);
     let isOrganizationSwitcherOpen = $state(false);
@@ -154,6 +162,49 @@
         isKeyboardShortcutsOpen = false;
         isOrganizationSwitcherOpen = false;
         isUserMenuOpen = false;
+    }
+
+    function getAssistantContext(context: AssistantResourceContext | undefined, routeProjectId: string | undefined): AssistantContext | undefined {
+        if (context?.eventId) {
+            return {
+                kind: 'event',
+                title: context.title
+            };
+        }
+
+        if (context?.stackId) {
+            return {
+                kind: 'stack',
+                title: context.title
+            };
+        }
+
+        return routeProjectId
+            ? {
+                  kind: 'project'
+              }
+            : undefined;
+    }
+
+    function getAssistantContextFromPath(path: string): AssistantContext | undefined {
+        const pathname = path.split(/[?#]/)[0] ?? '';
+        if (/\/event\/[a-f0-9]{24}$/i.test(pathname)) {
+            return {
+                kind: 'event'
+            };
+        }
+
+        if (/\/stack\/[a-f0-9]{24}$/i.test(pathname)) {
+            return {
+                kind: 'stack'
+            };
+        }
+
+        return /\/project\/[a-f0-9]{24}\//i.test(pathname)
+            ? {
+                  kind: 'project'
+              }
+            : undefined;
     }
 
     function getAssistantPath(context: AssistantResourceContext | undefined, fallback: string): string {
@@ -445,6 +496,12 @@
         }
     });
 
+    $effect(() => {
+        if (!isAssistantPage) {
+            assistantContextBeforePage = getAssistantContext(assistantResourceContext, page.params.projectId);
+        }
+    });
+
     // WebSocket + keyboard shortcuts — only depends on token, not navigation
     $effect(() => {
         const currentToken = accessToken.current;
@@ -492,6 +549,12 @@
             if (isKeyboardShortcut(e, appKeyboardShortcuts.stacks)) {
                 e.preventDefault();
                 void goto(resolve('/(app)/stack'));
+                return;
+            }
+
+            if (isAssistantEnabled && isKeyboardShortcut(e, appKeyboardShortcuts.assistant)) {
+                e.preventDefault();
+                void toggleAssistantPanel();
                 return;
             }
 
@@ -827,7 +890,7 @@
                     routes={filteredRoutes}
                     {stopImpersonating}
                 />
-                <KeyboardShortcutsDialog bind:open={isKeyboardShortcutsOpen} />
+                <KeyboardShortcutsDialog assistantEnabled={isAssistantEnabled} bind:open={isKeyboardShortcutsOpen} />
 
                 <Notifications />
 
@@ -836,6 +899,7 @@
                         accessMessage={assistantAccess?.message}
                         accessState={assistantAccessState}
                         collapseHref={isAssistantPage ? assistantReturnHref : undefined}
+                        context={assistantContext}
                         conversationSharing={assistantConversationSharingQuery.data}
                         onConversationSharingChange={(enabled) =>
                             updateAssistantConversationSharing.mutateAsync({
@@ -854,6 +918,7 @@
                         path={assistantPath}
                         promptRequest={assistantPromptRequest}
                         projectId={assistantProjectId}
+                        userId={meQuery.data?.id}
                     />
                 {/if}
 

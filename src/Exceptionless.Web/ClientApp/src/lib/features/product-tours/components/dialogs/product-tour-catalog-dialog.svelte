@@ -1,10 +1,10 @@
 <script lang="ts">
     import Bookmark from '@lucide/svelte/icons/bookmark';
-    import Bot from '@lucide/svelte/icons/bot';
     import CircleCheck from '@lucide/svelte/icons/circle-check';
     import Folder from '@lucide/svelte/icons/folder';
     import Layers from '@lucide/svelte/icons/layers';
     import PanelLeft from '@lucide/svelte/icons/panel-left';
+    import Sparkles from '@lucide/svelte/icons/sparkles';
 
     import { H3, Muted } from '#comp/typography/index.ts';
     import { Badge } from '#comp/ui/badge/index.ts';
@@ -27,7 +27,7 @@
     const icons = {
         'app-overview': PanelLeft,
         'event-investigate': Layers,
-        'exie-overview': Bot,
+        'exie-overview': Sparkles,
         'project-configure': Folder,
         'saved-view-create': Bookmark
     };

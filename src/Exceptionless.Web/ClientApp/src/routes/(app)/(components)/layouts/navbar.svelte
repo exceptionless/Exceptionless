@@ -1,7 +1,7 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
-    import Bot from '@lucide/svelte/icons/bot';
     import Search from '@lucide/svelte/icons/search';
+    import Sparkles from '@lucide/svelte/icons/sparkles';
     import { MediaQuery } from 'svelte/reactivity';
 
     import DarkModeButton from '#comp/dark-mode-button.svelte';
@@ -54,16 +54,17 @@
                 {#if assistantEnabled}
                     <Button
                         aria-expanded={isAssistantOpen}
+                        aria-keyshortcuts="A"
                         aria-label={isAssistantOpen ? 'Close Exie' : 'Open Exie'}
                         class="px-2"
                         data-assistant-trigger
                         data-tour="exie-trigger"
                         onclick={toggleAssistant}
-                        title="Ask Exie"
-                        variant="outline"
+                        title={isAssistantOpen ? 'Close Exie (A)' : 'Ask Exie (A)'}
+                        variant={isAssistantOpen ? 'secondary' : 'outline'}
                     >
-                        <Bot aria-hidden="true" class="size-6" data-icon="inline-start" />
-                        <span class="hidden lg:inline">Ask Exie</span>
+                        <Sparkles aria-hidden="true" class="text-primary size-5" data-icon="inline-start" />
+                        <span class="hidden lg:inline">{isAssistantOpen ? 'Close Exie' : 'Ask Exie'}</span>
                     </Button>
                 {/if}
 

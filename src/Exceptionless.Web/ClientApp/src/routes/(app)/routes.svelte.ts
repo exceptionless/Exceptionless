@@ -1,10 +1,10 @@
 import { resolve } from '$app/paths';
 import Documentation from '@lucide/svelte/icons/book-open';
-import Exie from '@lucide/svelte/icons/bot';
 import ApiDocumentations from '@lucide/svelte/icons/braces';
 import Events from '@lucide/svelte/icons/calendar-days';
 import Support from '@lucide/svelte/icons/circle-help';
 import Stacks from '@lucide/svelte/icons/layers';
+import Exie from '@lucide/svelte/icons/sparkles';
 import Sessions from '@lucide/svelte/icons/timer';
 
 import GitHubIcon from '#comp/icons/GitHubIcon.svelte';

@@ -14,7 +14,15 @@
     import { cn } from '#lib/utils.ts';
     type Props = StreamdownProps;
 
-    let { class: className, components, content, ...restProps }: Props = $props();
+    let {
+        class: className,
+        components,
+        content,
+        linkSafety = {
+            enabled: false
+        },
+        ...restProps
+    }: Props = $props();
     let currentTheme = $derived(mode.current === 'dark' ? 'github-dark-default' : 'github-light-default');
 
     const assistantTheme = {
@@ -28,6 +36,9 @@
                 'pointer-events-auto flex shrink-0 items-center gap-1 rounded-md border border-sidebar bg-sidebar/90 px-1 py-0.5 supports-[backdrop-filter]:bg-sidebar/75 supports-[backdrop-filter]:backdrop-blur',
             container: 'overflow-x-auto rounded-md border border-border bg-background p-3 text-xs',
             header: 'flex h-7 items-center justify-between text-muted-foreground text-xs'
+        },
+        codespan: {
+            base: 'rounded bg-muted px-1.5 py-0.5 font-mono text-[0.9em] text-foreground wrap-anywhere'
         },
         components: {
             button: 'disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer p-1 text-muted-foreground transition-colors hover:text-foreground rounded hover:bg-border flex items-center justify-center size-7'
@@ -81,6 +92,7 @@
         {content}
         {components}
         baseTheme="shadcn"
+        {linkSafety}
         controls={{
             code: {
                 copy: true,

@@ -19,6 +19,8 @@ const submitLog = vi.hoisted(() =>
 );
 vi.mock('$app/navigation', () => ({ goto }));
 vi.mock('#features/auth/exceptionless-session.ts', () => ({ submitFeatureUsage, submitLog }));
+const toast = vi.hoisted(() => Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }));
+vi.mock('svelte-sonner', () => ({ toast }));
 
 import AssistantPanel from './assistant-panel.svelte';
 
@@ -365,8 +367,8 @@ describe('AssistantPanel', () => {
             }
         });
 
-        expect(screen.getByRole('log', { name: 'Conversation with Exie' })).toBeTruthy();
-        expect(screen.getByRole('button', { name: 'Clear conversation' }).hasAttribute('disabled')).toBe(true);
+        expect(screen.getByText('Hi, I’m Exie. How can I help?')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'New chat' }).hasAttribute('disabled')).toBe(true);
         const collapseLink = screen.getByRole('link', { name: 'Collapse Exie to side panel' });
         expect(collapseLink.getAttribute('href')).toBe('/stack');
 
@@ -404,7 +406,8 @@ describe('AssistantPanel', () => {
         });
 
         expect(screen.getByText('The conversation is still here.')).toBeTruthy();
-        expect(screen.getByRole('button', { name: 'Clear conversation' }).hasAttribute('disabled')).toBe(false);
+        expect(screen.getByRole('log', { name: 'Conversation with Exie' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'New chat' }).hasAttribute('disabled')).toBe(false);
         expect(fetchMock).toHaveBeenCalledOnce();
         expect(submitFeatureUsage.mock.calls.some(([feature]) => feature === 'assistant.Closed')).toBe(false);
     });
@@ -480,7 +483,7 @@ describe('AssistantPanel', () => {
         expect(payload.messages.at(-1)?.suggested_action_path).toBe('/stack/stack-a');
     });
 
-    it('hides tool calls by default and toggles them locally with /tools', async () => {
+    it('shows research steps by default', async () => {
         const fetchMock = vi.fn(
             async () =>
                 new Response(
@@ -498,23 +501,120 @@ describe('AssistantPanel', () => {
         });
 
         expect(await screen.findByText('No matching stacks were found.')).toBeTruthy();
-        expect(screen.queryByText('Searched error stacks')).toBeNull();
-        expect(screen.getByText(/\/ for commands/)).toBeTruthy();
-        await screen.findByRole('button', { name: 'Send message' });
-
-        const composer = screen.getByRole('textbox', { name: 'Message Exie' });
-        await fireEvent.input(composer, { target: { value: '/' } });
-        expect(screen.getByLabelText('Exie commands').textContent).toContain('/tools');
-        await fireEvent.click(screen.getByText('/tools'));
-
-        await waitFor(() => expect(screen.getByText('Searched error stacks')).toBeTruthy());
+        expect(screen.getByText('Searched error stacks')).toBeTruthy();
         expect(fetchMock).toHaveBeenCalledOnce();
+    });
 
-        await fireEvent.input(composer, { target: { value: '/tools' } });
+    it('keeps a stopped response with an explanation instead of an empty reply', async () => {
+        const fetchMock = vi.fn(
+            (_input: RequestInfo | URL, init?: RequestInit) =>
+                new Promise<Response>((_resolve, reject) => {
+                    init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+                })
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Summarize every stack.' }
+            }
+        });
+
+        await fireEvent.click(await screen.findByRole('button', { name: 'Stop generating' }));
+
+        expect(await screen.findByText('You stopped Exie before it responded.')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+    });
+
+    it('edits an earlier message and resends from that point', async () => {
+        const fetchMock = vi.fn(
+            async () =>
+                new Response(`${JSON.stringify({ text: `Answer ${fetchMock.mock.calls.length}`, type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Original question' }
+            }
+        });
+
+        expect(await screen.findByText('Answer 1')).toBeTruthy();
+        await fireEvent.click(screen.getByRole('button', { name: 'Edit and resend' }));
+        const composer = screen.getByRole('textbox', { name: 'Message Exie' }) as HTMLTextAreaElement;
+        expect(composer.value).toBe('Original question');
+        expect(screen.getByText('Editing message')).toBeTruthy();
+
+        await fireEvent.input(composer, { target: { value: 'Edited question' } });
         await fireEvent.keyDown(composer, { key: 'Enter' });
 
-        await waitFor(() => expect(screen.queryByText('Searched error stacks')).toBeNull());
-        expect(fetchMock).toHaveBeenCalledOnce();
+        expect(await screen.findByText('Answer 2')).toBeTruthy();
+        expect(screen.queryByText('Original question')).toBeNull();
+        expect(screen.queryByText('Answer 1')).toBeNull();
+        const request = JSON.parse(String((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body)) as { messages: Array<{ content: string }> };
+        expect(request.messages.map((message) => message.content)).toEqual(['Edited question']);
+    });
+
+    it('saves chats per user and organization and restores the latest one', async () => {
+        localStorage.clear();
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'Saved answer.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        const first = render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Remember this chat.' },
+                userId: 'user-1'
+            }
+        });
+        expect(await screen.findByText('Saved answer.')).toBeTruthy();
+        first.unmount();
+
+        render(AssistantPanel, { props: { open: true, organizationId: 'organization-1', userId: 'user-1' } });
+
+        expect(await screen.findByText('Saved answer.')).toBeTruthy();
+        await fireEvent.click(screen.getByRole('button', { name: 'Recent chats' }));
+        const savedChat = await waitFor(() => {
+            const item = document.querySelector('[aria-current="true"]');
+            expect(item?.textContent).toContain('Remember this chat.');
+            return item;
+        });
+        expect(savedChat).toBeTruthy();
+        localStorage.clear();
+    });
+
+    it('starts a new chat that can be undone', async () => {
+        localStorage.clear();
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'First answer.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'First question' },
+                userId: 'user-1'
+            }
+        });
+        expect(await screen.findByText('First answer.')).toBeTruthy();
+
+        await fireEvent.click(screen.getByRole('button', { name: 'New chat' }));
+
+        expect(screen.queryByText('First answer.')).toBeNull();
+        expect(screen.getByText('Hi, I’m Exie. How can I help?')).toBeTruthy();
+        const [, options] = toast.mock.calls.at(-1) as [string, { action: { onClick: () => void } }];
+        options.action.onClick();
+        expect(await screen.findByText('First answer.')).toBeTruthy();
+        localStorage.clear();
     });
 
     it('navigates a validated setup action without submitting another prompt', async () => {

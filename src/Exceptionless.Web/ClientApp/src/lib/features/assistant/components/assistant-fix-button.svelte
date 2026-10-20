@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Bot from '@lucide/svelte/icons/bot';
+    import Sparkles from '@lucide/svelte/icons/sparkles';
 
     import { Button } from '#comp/ui/button/index.ts';
 
@@ -27,7 +27,7 @@
 
 {#if assistant?.enabled()}
     <Button aria-label="Fix with Exie" data-assistant-trigger onclick={askExie} title="Fix with Exie" variant="outline">
-        <Bot aria-hidden="true" />
+        <Sparkles aria-hidden="true" class="text-primary" />
         <span>Fix</span>
     </Button>
 {/if}

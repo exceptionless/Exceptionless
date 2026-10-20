@@ -8,7 +8,7 @@ vi.mock('$app/state', () => ({ page: { url: new URL('https://exceptionless.local
 
 import type { AssistantToolActivity } from './models';
 
-import { addAssistantResourceLinks, normalizeAssistantUrl } from './assistant-links';
+import { addAssistantResourceLinks, createAssistantUrlTransform, normalizeAssistantUrl } from './assistant-links';
 
 beforeEach(() => {
     paths.base = '';
@@ -23,6 +23,21 @@ function toolResult(items: unknown[]): AssistantToolActivity {
         status: 'complete'
     };
 }
+
+describe('createAssistantUrlTransform', () => {
+    it('restores a tool web URL that the model prefixed with another host', () => {
+        const transform = createAssistantUrlTransform([toolResult([{ id: 'stack-1', title: 'Timeout', webUrl: '/stack/stack-1' }])]);
+
+        expect(transform('https://www.example.com/stack/stack-1#latest', 'href')).toBe('/stack/stack-1#latest');
+    });
+
+    it('leaves external links that do not match a tool web URL unchanged', () => {
+        const transform = createAssistantUrlTransform([toolResult([{ id: 'stack-1', title: 'Timeout', webUrl: '/stack/stack-1' }])]);
+
+        expect(transform('https://www.example.com/stack/stack-2', 'href')).toBe('https://www.example.com/stack/stack-2');
+        expect(transform('https://docs.example.com/stack/stack-1', 'src')).toBe('https://docs.example.com/stack/stack-1');
+    });
+});
 
 describe('normalizeAssistantUrl', () => {
     it('converts absolute Exceptionless app routes to same-origin paths', () => {

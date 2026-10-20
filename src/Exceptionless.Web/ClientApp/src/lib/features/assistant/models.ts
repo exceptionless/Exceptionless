@@ -13,9 +13,15 @@ export type AssistantAccessState = 'available' | 'disabled' | 'error' | 'loading
 export interface AssistantChatMessage {
     content: string;
     conversationId?: string;
+    /** Why the response ended early. Absent for a response that completed normally. */
+    endReason?: AssistantMessageEndReason;
+    errorMessage?: string;
     feedback?: AssistantFeedback;
+    feedbackReason?: AssistantFeedbackReason;
     id: string;
     isSuggestedAction?: boolean;
+    /** Text and tool activity in the order they streamed. */
+    parts: AssistantMessagePart[];
     role: 'assistant' | 'user';
     suggestedActionLabel?: string;
     suggestedActionPath?: string;
@@ -23,7 +29,20 @@ export interface AssistantChatMessage {
     tools: AssistantToolActivity[];
 }
 
+export interface AssistantConversation {
+    id: string;
+    messages: AssistantChatMessage[];
+    title: string;
+    updatedAt: number;
+}
+
 export type AssistantFeedback = 'helpful' | 'not-helpful';
+
+export type AssistantFeedbackReason = 'incomplete' | 'incorrect' | 'not-relevant' | 'other' | 'wrong-action';
+
+export type AssistantMessageEndReason = 'error' | 'stopped';
+
+export type AssistantMessagePart = { text: string; type: 'text' } | { toolId: string; type: 'tool' };
 
 export interface AssistantPromptRequest {
     id: string;

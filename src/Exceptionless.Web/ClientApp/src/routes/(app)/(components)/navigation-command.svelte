@@ -5,7 +5,6 @@
     import { resolve } from '$app/paths';
     import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import Activity from '@lucide/svelte/icons/activity';
-    import Bot from '@lucide/svelte/icons/bot';
     import Building2 from '@lucide/svelte/icons/building-2';
     import CircleHelp from '@lucide/svelte/icons/circle-help';
     import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
@@ -18,6 +17,7 @@
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
     import Route from '@lucide/svelte/icons/route';
     import Search from '@lucide/svelte/icons/search';
+    import Sparkles from '@lucide/svelte/icons/sparkles';
     import SunMoon from '@lucide/svelte/icons/sun-moon';
     import UserPlus from '@lucide/svelte/icons/user-plus';
     import Users from '@lucide/svelte/icons/users';
@@ -581,7 +581,7 @@
                 {#if isExieEnabled}
                     <Command.Group heading="Exie" value="Exie Assistant">
                         <Command.Item value="Ask Exie open assistant AI chat" onSelect={() => void openExieAssistant()}>
-                            <Bot />
+                            <Sparkles />
                             <span>Ask Exie</span>
                         </Command.Item>
                         <Command.Item value="Exie Triage Recent Errors investigate issues stacks" onSelect={() => void askExieAssistant(EXIE_TRIAGE_PROMPT)}>

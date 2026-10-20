@@ -7,11 +7,12 @@ import { createAssistantChatRequest } from './assistant-request';
 describe('createAssistantChatRequest', () => {
     it('sends the complete retained conversation so another app instance can continue it', () => {
         const messages: AssistantChatMessage[] = [
-            { content: 'First question', id: 'user-1', role: 'user', tools: [] },
+            { content: 'First question', id: 'user-1', parts: [], role: 'user', tools: [] },
             {
                 content: 'First answer',
                 feedback: 'helpful',
                 id: 'assistant-1',
+                parts: [],
                 role: 'assistant',
                 tools: [{ arguments: '{}', id: 'tool-1', name: 'search_stacks', result: '{}', status: 'complete' }]
             },
@@ -19,6 +20,7 @@ describe('createAssistantChatRequest', () => {
                 content: 'Follow-up question',
                 id: 'user-2',
                 isSuggestedAction: true,
+                parts: [],
                 role: 'user',
                 suggestedActionLabel: 'Follow up',
                 suggestedActionPath: '/stack/source-stack',
