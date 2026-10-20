@@ -157,6 +157,44 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     [Fact]
     public async Task WillKeepHeartbeatsWhenRunIsCancelledBeforeEveryPageIsProcessed()
     {
+        string heartbeatKey = await CreateSessionWithHeartbeatAsync();
+
+        // Cancels after the job saves its first page, before it checks for another page.
+        using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        int savedSessions = 0;
+        using var handler = _eventRepository.DocumentsSaved.AddHandler((_, args) =>
+        {
+            savedSessions += args.Documents.Count;
+            cancellationTokenSource.Cancel();
+            return Task.CompletedTask;
+        });
+
+        _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+        await _job.RunAsync(cancellationTokenSource.Token);
+
+        Assert.Equal(1, savedSessions);
+        Assert.True(await _cache.ExistsAsync(heartbeatKey));
+    }
+
+    [Fact]
+    public async Task WillKeepHeartbeatsWrittenWhileSessionPagesAreProcessed()
+    {
+        string heartbeatKey = await CreateSessionWithHeartbeatAsync();
+
+        // A heartbeat arrives after the job has applied the one it read.
+        var latestHeartbeatUtc = DateTime.UtcNow;
+        using var handler = _eventRepository.DocumentsSaved.AddHandler(async (_, _) => await _cache.SetAsync(heartbeatKey, latestHeartbeatUtc));
+
+        _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+        Assert.Equal(JobResult.Success, await _job.RunAsync(TestCancellationToken));
+
+        var heartbeat = await _cache.GetAsync<DateTime>(heartbeatKey);
+        Assert.True(heartbeat.HasValue);
+        Assert.Equal(latestHeartbeatUtc, heartbeat.Value);
+    }
+
+    private async Task<string> CreateSessionWithHeartbeatAsync()
+    {
         const string userId = "blake@exceptionless.io";
         var contexts = await _pipeline.RunAsync(new[] { GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId) }, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
         Assert.True(contexts.All(c => !c.HasError));
@@ -164,14 +202,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
 
         string heartbeatKey = $"Project:{TestConstants.ProjectId}:heartbeat:{userId.ToSHA1()}";
         await _cache.SetAsync(heartbeatKey, DateTime.UtcNow.SubtractMinutes(1));
-
-        // The job pauses after each page, so this cancels it before it checks for another page.
-        using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(1));
-        _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
-        await _job.RunAsync(cancellationTokenSource.Token);
-
-        Assert.True(await _cache.ExistsAsync(heartbeatKey));
+        return heartbeatKey;
     }
 
     [Fact]

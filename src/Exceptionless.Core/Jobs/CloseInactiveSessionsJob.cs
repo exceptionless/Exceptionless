@@ -52,7 +52,8 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
 
         // A user's heartbeat applies to their sessions in every environment, and those sessions can be on
         // different pages, so heartbeats are consumed only after every page has been processed.
-        var cacheKeysToRemove = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var consumedHeartbeats = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+        var closeKeysToRemove = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var existingSessionHeartbeatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
@@ -76,9 +77,9 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                 sessionsToUpdate.Add(sessionStart);
                 if (heartbeatResult?.CacheKey is not null)
                 {
-                    cacheKeysToRemove.Add(heartbeatResult.CacheKey);
+                    consumedHeartbeats[heartbeatResult.CacheKey] = heartbeatResult.ActivityUtc;
                     if (heartbeatResult.Close)
-                        cacheKeysToRemove.Add($"{heartbeatResult.CacheKey}-close");
+                        closeKeysToRemove.Add($"{heartbeatResult.CacheKey}-close");
                 }
 
                 Debug.Assert(sessionStart.Value is not null && sessionStart.Value >= 0, "Session start value cannot be a negative number.");
@@ -106,8 +107,13 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         }
 
         // Sessions on unprocessed pages still need the heartbeats, so a cancelled run leaves them for the next run.
-        if (cacheKeysToRemove.Count > 0 && !context.CancellationToken.IsCancellationRequested)
-            await _cache.RemoveAllAsync(cacheKeysToRemove);
+        if (!context.CancellationToken.IsCancellationRequested)
+        {
+            // A heartbeat written while later pages were processed has not been applied, so only unchanged values are removed.
+            await Task.WhenAll(consumedHeartbeats.Select(heartbeat => _cache.RemoveIfEqualAsync(heartbeat.Key, heartbeat.Value)));
+            if (closeKeysToRemove.Count > 0)
+                await _cache.RemoveAllAsync(closeKeysToRemove);
+        }
 
         _logger.LogInformation("Done checking active sessions. Closed {SessionClosedCount} of {SessionCount} sessions", sessionsClosed, totalSessions);
 
