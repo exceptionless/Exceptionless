@@ -27,17 +27,20 @@ public sealed class OrganizationServiceTests : TestWithServices
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task SoftDeleteOrganization_Failure_PersistsDeletionBeforeChangingMembers(bool deletionSaveFails)
+    public async Task SoftDeleteOrganization_Failure_PersistsDeletionAfterMembersBeforeResourceCleanup(bool deletionSaveFails)
     {
         // Arrange
         var organization = new Organization { Id = TestConstants.OrganizationId, Name = "Deleting organization" };
         var persistenceFailure = new IOException("Deletion marker failed");
         var cleanupFailure = new IOException("Token cleanup failed");
         bool persistedDeleted = false;
+        bool membersProcessed = false;
+        bool membersProcessedBeforeSave = false;
         var organizations = new Mock<IOrganizationRepository>(MockBehavior.Strict);
         organizations.Setup(repository => repository.SaveAsync(organization, It.IsAny<CommandOptionsDescriptor<Organization>>()))
             .Returns(() =>
             {
+                membersProcessedBeforeSave = membersProcessed;
                 if (deletionSaveFails)
                     return Task.FromException<Organization>(persistenceFailure);
 
@@ -46,7 +49,11 @@ public sealed class OrganizationServiceTests : TestWithServices
             });
         var users = new Mock<IUserRepository>(MockBehavior.Strict);
         users.Setup(repository => repository.GetByOrganizationIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<User>>()))
-            .ReturnsAsync(FindResults<User>.Empty);
+            .Returns(() =>
+            {
+                membersProcessed = true;
+                return Task.FromResult(FindResults<User>.Empty);
+            });
         var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
         tokens.Setup(repository => repository.RemoveAllByOrganizationIdAsync(organization.Id)).ThrowsAsync(cleanupFailure);
         var service = new OrganizationService(organizations.Object,
@@ -63,9 +70,10 @@ public sealed class OrganizationServiceTests : TestWithServices
         // Assert
         Assert.Same(deletionSaveFails ? persistenceFailure : cleanupFailure, exception);
         Assert.Equal(!deletionSaveFails, persistedDeleted);
+        Assert.True(membersProcessedBeforeSave);
         organizations.Verify(repository => repository.SaveAsync(organization, It.IsAny<CommandOptionsDescriptor<Organization>>()), Times.Once());
         users.Verify(repository => repository.GetByOrganizationIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<User>>()),
-            deletionSaveFails ? Times.Never() : Times.Once());
+            Times.Once());
         tokens.Verify(repository => repository.RemoveAllByOrganizationIdAsync(organization.Id),
             deletionSaveFails ? Times.Never() : Times.Once());
     }
