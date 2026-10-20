@@ -105,7 +105,8 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
             }
         }
 
-        if (cacheKeysToRemove.Count > 0)
+        // Sessions on unprocessed pages still need the heartbeats, so a cancelled run leaves them for the next run.
+        if (cacheKeysToRemove.Count > 0 && !context.CancellationToken.IsCancellationRequested)
             await _cache.RemoveAllAsync(cacheKeysToRemove);
 
         _logger.LogInformation("Done checking active sessions. Closed {SessionClosedCount} of {SessionCount} sessions", sessionsClosed, totalSessions);

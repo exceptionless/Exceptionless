@@ -44,6 +44,10 @@ describe('EnvironmentFilter', () => {
         expect(getProjectScopeFilter([new KeywordFilter(`project:(${first} OR ${second})`)])).toBe(`(project:${first} OR project:${second})`);
         expect(getProjectScopeFilter([new KeywordFilter(`-project:${first} !project:${second} NOT project:${third}`)])).toBe('');
         expect(getProjectScopeFilter([new ProjectFilter([first]), new KeywordFilter(`project:${second}`)])).toBe(`(project:${first} OR project:${second})`);
+        expect(getProjectScopeFilter([new KeywordFilter(`NOT (project:${first}) -(type:error OR project:${second}) !(project:${third})`)])).toBe('');
+        expect(getProjectScopeFilter([new KeywordFilter(`NOT (status:fixed) (project:${first} OR -(project:${second})) "a (" project:${third}`)])).toBe(
+            `(project:${first} OR project:${third})`
+        );
     });
 
     it('allows environment searches on free plans and keeps custom data premium', () => {

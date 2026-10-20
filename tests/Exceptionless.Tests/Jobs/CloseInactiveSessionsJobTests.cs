@@ -155,6 +155,26 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task WillKeepHeartbeatsWhenRunIsCancelledBeforeEveryPageIsProcessed()
+    {
+        const string userId = "blake@exceptionless.io";
+        var contexts = await _pipeline.RunAsync(new[] { GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId) }, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+        Assert.True(contexts.All(c => !c.HasError));
+        await RefreshDataAsync();
+
+        string heartbeatKey = $"Project:{TestConstants.ProjectId}:heartbeat:{userId.ToSHA1()}";
+        await _cache.SetAsync(heartbeatKey, DateTime.UtcNow.SubtractMinutes(1));
+
+        // The job pauses after each page, so this cancels it before it checks for another page.
+        using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(1));
+        _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+        await _job.RunAsync(cancellationTokenSource.Token);
+
+        Assert.True(await _cache.ExistsAsync(heartbeatKey));
+    }
+
+    [Fact]
     public async Task WillNotCloseDuplicateIdentitySessionsWithSessionIdHeartbeat()
     {
         const string userId = "blake@exceptionless.io";

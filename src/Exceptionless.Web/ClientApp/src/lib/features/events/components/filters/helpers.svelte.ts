@@ -122,7 +122,12 @@ export function getProjectScopeFilter(filters: IFilter[]): string {
             continue;
         }
 
-        for (const [term] of ((filter as KeywordFilter).value ?? '').matchAll(/(?<![-!\w.])(?<!\bNOT\s+)project(?:_id)?:(?:\([^)]*\)|\S+)/gi)) {
+        const search = (filter as KeywordFilter).value ?? '';
+        for (const { 0: term, index } of search.matchAll(/(?<![\w.])project(?:_id)?:(?:\([^)]*\)|\S+)/gi)) {
+            if (isNegated(search, index)) {
+                continue;
+            }
+
             for (const [projectId] of term.matchAll(/\b[a-f0-9]{24}\b/gi)) {
                 projectIds.push(projectId.toLowerCase());
             }
@@ -240,6 +245,25 @@ export function shouldRefreshPersistentEventRemoval(
     id?: string
 ) {
     return removedFromTable || shouldRefreshPersistentEventChanged(filters, filter, organization_id, project_id, stack_id, id);
+}
+
+/** Whether the term at index is negated directly or by an enclosing group, such as `NOT (type:error OR project:id)`. */
+function isNegated(search: string, index: number): boolean {
+    const isNegatedHere = (position: number) => /(?:^|[\s(])(?:[-!]|NOT\s+)$/.test(search.slice(0, position));
+    const groups: boolean[] = [];
+    let quoted = false;
+    for (let position = 0; position < index; position++) {
+        const char = search[position];
+        if (char === '"' && search[position - 1] !== '\\') {
+            quoted = !quoted;
+        } else if (!quoted && char === '(') {
+            groups.push(groups.at(-1) === true || isNegatedHere(position));
+        } else if (!quoted && char === ')') {
+            groups.pop();
+        }
+    }
+
+    return groups.at(-1) === true || isNegatedHere(index);
 }
 
 const TYPE_FILTER_REGEX = /\btype:(\w+)\b/g;
