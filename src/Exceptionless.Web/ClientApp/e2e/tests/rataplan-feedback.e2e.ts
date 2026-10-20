@@ -204,7 +204,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
         await page.goto(`/stream?project=${e2eScenario.projectId}&time=all`);
         await expect(page.getByText(journey.message).filter({ visible: true }).first()).toBeVisible({ timeout: 30_000 });
 
-        await page.getByTitle('Manage View Settings').click();
+        await page.locator('[data-tour="saved-view-trigger"]').click();
         await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
         await page.getByRole('button', { name: 'Add Message column' }).click();
         await expect(page.getByRole('checkbox', { name: 'Message wrap text' })).toBeVisible();
@@ -216,7 +216,7 @@ test('approved Rataplan UI feedback remains fixed', async ({ e2eApi, e2eScenario
         await page.goto(stackUrl);
         await expect(page.getByText(journey.message).filter({ visible: true }).first()).toBeVisible({ timeout: 30_000 });
 
-        await page.getByTitle('Manage View Settings').click();
+        await page.locator('[data-tour="saved-view-trigger"]').click();
         await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
 
         const summaryWrapCheckbox = page.getByRole('checkbox', { name: 'Summary wrap text' });
