@@ -154,8 +154,8 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
-                var currentUser = await _userRepository.GetByIdAsync(group.Key.UserId!, options => options.Cache(false));
                 var currentOrganization = await _organizationRepository.GetByIdAsync(group.Key.OrganizationId, options => options.Cache(false));
+                var currentUser = await _userRepository.GetByIdAsync(group.Key.UserId!, options => options.Cache(false));
                 if (currentUser is not null && currentOrganization is not null
                     && (currentUser.OrganizationIds.Contains(group.Key.OrganizationId) || currentUser.Roles.Contains(AuthorizationRoles.GlobalAdmin)))
                     continue;
