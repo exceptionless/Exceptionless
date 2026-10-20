@@ -542,9 +542,7 @@ public class AuthHandler(
         try
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
-            if (!OAuthAccount.KnownProviders.IsKnown(userInfo.ProviderName))
-                throw new UnauthorizedAccessException("Unknown external login provider.");
-
+            ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
             ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
 
             // Lock the identity and normalized email before resolving or creating its owner.

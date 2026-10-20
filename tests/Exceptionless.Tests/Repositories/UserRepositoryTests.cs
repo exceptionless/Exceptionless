@@ -1,6 +1,7 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Xunit;
@@ -14,6 +15,31 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
     public UserRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _repository = GetService<IUserRepository>();
+    }
+
+    [Fact]
+    public async Task SaveAsync_InvalidOAuthProvider_RejectsChangesBeforePersistence()
+    {
+        // Arrange
+        var user = new User { FullName = "Linked user", EmailAddress = "linked@localhost.test" };
+        user.MarkEmailAddressVerified();
+        user.AddOAuthAccount("github", "existing-subject", user.EmailAddress);
+        await _repository.AddAsync(user, options => options.ImmediateConsistency());
+        user.AddOAuthAccount("unknown", "new-subject", user.EmailAddress);
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await _repository.SaveAsync(user, options => options.ImmediateConsistency());
+        });
+
+        // Assert
+        Assert.IsType<MiniValidatorException>(exception);
+        var storedUser = await _repository.GetByIdAsync(user.Id, options => options.Cache(false));
+        Assert.NotNull(storedUser);
+        var account = Assert.Single(storedUser.OAuthAccounts);
+        Assert.Equal("github", account.Provider);
+        Assert.Equal("existing-subject", account.ProviderUserId);
     }
 
     [Fact]

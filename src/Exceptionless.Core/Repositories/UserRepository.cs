@@ -1,5 +1,4 @@
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
@@ -127,7 +126,7 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
     public async Task<User?> GetUserByOAuthProviderAsync(string provider, string providerUserId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (!OAuthAccount.KnownProviders.IsKnown(provider) || String.IsNullOrEmpty(providerUserId))
+        if (String.IsNullOrEmpty(provider) || String.IsNullOrEmpty(providerUserId))
             return null;
 
         // OAuth accounts are mapped as objects, so indexed fields cannot enforce matching within one account.

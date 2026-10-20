@@ -13,6 +13,35 @@ public sealed class UserValidatorTests : TestWithServices
         _validator = GetService<MiniValidationValidator>();
     }
 
+    [Theory]
+    [InlineData("github", true)]
+    [InlineData("google", true)]
+    [InlineData("facebook", true)]
+    [InlineData("windowslive", true)]
+    [InlineData("unknown", false)]
+    [InlineData("GitHub", false)]
+    [InlineData("", false)]
+    [InlineData(null, false)]
+    public async Task ValidateAsync_OAuthProvider_RequiresKnownCaseSensitiveName(string? providerName, bool expectedIsValid)
+    {
+        // Arrange
+        var user = new User
+        {
+            FullName = "Linked user",
+            EmailAddress = "linked@localhost.test",
+            IsEmailAddressVerified = true,
+            OAuthAccounts = [new OAuthAccount { Provider = providerName!, ProviderUserId = "subject", Username = "linked@localhost.test" }]
+        };
+
+        // Act
+        var result = await _validator.ValidateAsync(user);
+
+        // Assert
+        Assert.Equal(expectedIsValid, result.IsValid);
+        if (!expectedIsValid)
+            Assert.Contains(result.Errors.Keys, key => key.EndsWith(nameof(OAuthAccount.Provider), StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task ValidateAsync_WhenFullNameIsValid_ReturnsSuccess()
     {

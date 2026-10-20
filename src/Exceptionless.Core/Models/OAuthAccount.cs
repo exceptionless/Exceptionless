@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace Exceptionless.Core.Models;
 
@@ -10,10 +10,11 @@ public record OAuthAccount
         public const string Google = "google";
         public const string Facebook = "facebook";
         public const string WindowsLive = "windowslive";
-
-        public static bool IsKnown([NotNullWhen(true)] string? providerName) => providerName is GitHub or Google or Facebook or WindowsLive;
     }
 
+    [Required]
+    [AllowedValues(KnownProviders.GitHub, KnownProviders.Google, KnownProviders.Facebook, KnownProviders.WindowsLive,
+        ErrorMessage = "The provider name must be github, google, facebook, or windowslive.")]
     public required string Provider { get; init; }
     public required string ProviderUserId { get; init; }
     public required string Username { get; init; }
