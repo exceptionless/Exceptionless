@@ -37,9 +37,9 @@ public sealed class ExceptionlessMcpTools
     private const int MaxDetailSize = 64 * 1024;
     private const int MinDetailSize = 1024;
     private const string SummaryLimitDescription = "Maximum number of summary rows to return. Defaults to 10 and is capped at 100. Use the returned pagination.after or pagination.before cursor with the same limit to page through additional results.";
-    private const string LastDescription = "Optional relative time range such as 24h, 7d, or 30m. Do not combine with startUtc or endUtc.";
-    private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Do not combine with last.";
-    private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Do not combine with last.";
+    private const string LastDescription = "Optional relative time range ending now, such as 24h, 7d, or 30m. Use this for questions like the last 24 hours, today, or this week. When set, omit startUtc and endUtc.";
+    private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Use only for explicit calendar dates or ranges; when set, omit last.";
+    private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Use only for explicit calendar dates or ranges; when set, omit last.";
     private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
@@ -350,9 +350,9 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "search_stacks", Title = "Search error stacks", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
-    [Description("Searches stacks in an Exceptionless project for broad, top, or recent-issue questions. This tool has no stack id filter; use get_stack when stackId is known. When pagination.hasMore is true, pass pagination.after to fetch the next page or pagination.before to fetch the previous page.")]
+    [Description("Searches stacks in one Exceptionless project for broad, top, or recent-issue questions. There is no organization-wide search: when more than one project is accessible, pass projectId and call once per project. This tool has no stack id filter; use get_stack when stackId is known. When pagination.hasMore is true, pass pagination.after to fetch the next page or pagination.before to fetch the previous page.")]
     public async Task<McpResponse<McpListData<McpStackResult>>> SearchStacksAsync(
-        [Description("Optional Exceptionless project id to search within. May be omitted when only one project is accessible.")]
+        [Description("Exceptionless project id to search within. Required when more than one project is accessible; omit only when exactly one project is accessible.")]
         string? projectId = null,
         [Description(StackFilterDescription)]
         string? filter = null,

@@ -43,6 +43,22 @@ public sealed class AssistantServiceTests
             AssistantService.GetProjectSetupProjectId(requestedProjectId, requestedProjectName, currentProjectId));
     }
 
+    [Fact]
+    public void BuildMessages_SystemPrompt_IncludesCurrentTimeAndTimeRangeRule()
+    {
+        var request = new AssistantChatRequest([new AssistantChatMessage("user", "What are my top errors in the last 24 hours?")], OrganizationId: "organization-id", Path: "/stack/all");
+
+        var messages = AssistantService.BuildMessages(request, null, new DateTimeOffset(2026, 10, 20, 6, 15, 30, TimeSpan.Zero));
+
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(messages[0]));
+        string systemPrompt = document.RootElement.GetProperty("content").GetString()!;
+        Assert.Contains("Current UTC time: 2026-10-20T06:15:30Z.", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("Current project id: not selected.", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("Never send last together with startUtc or endUtc.", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("There is no organization-wide search", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("never retry by removing them", systemPrompt, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(AuthorizationRoles.EventsRead, true)]
     [InlineData(AuthorizationRoles.ProjectsRead, true)]

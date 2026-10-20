@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -66,7 +67,7 @@ public sealed class AssistantService(
         // Visible conversation text comes from the browser. Tool results are loaded only from the
         // server-owned distributed cache so a later request can be handled by any app replica
         // without trusting client-supplied tool output or requiring session affinity.
-        var messages = BuildMessages(request, conversationState);
+        var messages = BuildMessages(request, conversationState, timeProvider.GetUtcNow());
         int completedToolRounds = 0;
         int remainingToolCalls = AssistantLimits.MaximumToolCallsPerTurn;
         int remainingProjectSearches = AssistantLimits.MaximumProjectsPerTurn;
@@ -672,11 +673,13 @@ public sealed class AssistantService(
     private static bool ContainsAny(string value, params string[] terms)
         => terms.Any(term => value.Contains(term, StringComparison.OrdinalIgnoreCase));
 
-    private static List<object> BuildMessages(
+    internal static List<object> BuildMessages(
         AssistantChatRequest request,
-        AssistantConversationState? conversationState)
+        AssistantConversationState? conversationState,
+        DateTimeOffset utcNow)
     {
-        string context = $"Current organization id: {request.OrganizationId ?? "not selected"}. Current project id: {request.ProjectId ?? "not selected"}. Current stack id: {GetRouteValue(request.Path, "stack") ?? "not selected"}. Current event id: {GetRouteValue(request.Path, "event") ?? "not selected"}. Current page: {request.Path ?? "unknown"}.";
+        // The model has no clock; without the current time it guesses absolute dates for relative questions.
+        string context = $"Current UTC time: {utcNow.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture)}. Current organization id: {request.OrganizationId ?? "not selected"}. Current project id: {request.ProjectId ?? "not selected"}. Current stack id: {GetRouteValue(request.Path, "stack") ?? "not selected"}. Current event id: {GetRouteValue(request.Path, "event") ?? "not selected"}. Current page: {request.Path ?? "unknown"}.";
         var messages = new List<object>
         {
             new

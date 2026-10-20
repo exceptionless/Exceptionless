@@ -50,7 +50,7 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
 
     [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
     [Trait("Category", "AssistantEvaluation")]
-    public async Task ProductionScenarios_MeetToolEfficiencyAndAnswerQualityGate()
+    public async Task CurrentPage_UsesTheCurrentEventOnly()
     {
         RequireEvaluationConfiguration();
 
@@ -63,6 +63,13 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.DoesNotContain("get_stack", currentPage.ToolCalls);
         Assert.DoesNotContain("list_projects", currentPage.ToolCalls);
         Assert.DoesNotContain("search_stacks", currentPage.ToolCalls);
+    }
+
+    [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
+    [Trait("Category", "AssistantEvaluation")]
+    public async Task ProjectTopErrors_SearchesTheCurrentProjectOnce()
+    {
+        RequireEvaluationConfiguration();
 
         var projectTopErrors = await SendAssistantTurnAsync(
             "What are the top errors in this project in the last 24 hours? Link each result.",
@@ -72,15 +79,30 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.Equal(1, projectTopErrors.ToolCalls.Count(call => call == "search_stacks"));
         Assert.DoesNotContain("list_projects", projectTopErrors.ToolCalls);
         Assert.Contains("/stack/", projectTopErrors.Text, StringComparison.Ordinal);
+    }
 
+    [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
+    [Trait("Category", "AssistantEvaluation")]
+    public async Task OrganizationTopErrors_SearchesEachProjectWithoutToolErrors()
+    {
+        RequireEvaluationConfiguration();
+
+        // This is the "Top errors today" starter prompt shown on organization-wide pages.
         var organizationTopErrors = await SendAssistantTurnAsync(
-            "Across all projects in this organization, what are the top errors in the last 24 hours? Link each result.",
+            "What are my top errors in the last 24 hours?",
             "/stack/all",
             projectId: null);
         AssertSuccessfulAnswer(organizationTopErrors);
         Assert.Equal(1, organizationTopErrors.ToolCalls.Count(call => call == "list_projects"));
         Assert.InRange(organizationTopErrors.ToolCalls.Count(call => call == "search_stacks"), 1, AssistantLimits.MaximumProjectsPerTurn);
         Assert.Contains("/stack/", organizationTopErrors.Text, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
+    [Trait("Category", "AssistantEvaluation")]
+    public async Task ClientSetup_UsesProjectSetupOnly()
+    {
+        RequireEvaluationConfiguration();
 
         var clientSetup = await SendAssistantTurnAsync(
             "How do I configure this project to start sending events?",
@@ -104,7 +126,9 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
     {
         using var client = CreateHttpClient();
         using var request = new HttpRequestMessage(HttpMethod.Post, "assistant/chat");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", SampleDataService.TEST_USER_API_KEY);
+        // Exie needs a signed-in user, so authenticate as an organization member rather than with an access token.
+        string credentials = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{SampleDataService.TEST_ORG_USER_EMAIL}:{SampleDataService.TEST_ORG_USER_PASSWORD}"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
         request.Content = JsonContent.Create(new
         {
             conversation_id = Guid.NewGuid().ToString("N"),
@@ -138,10 +162,30 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
     private static void AssertSuccessfulAnswer(EvaluationTurn turn)
     {
         Assert.DoesNotContain(turn.Events, item => item.Type == "error");
+        // A turn that recovers from a malformed tool call still wastes the tool budget and shows the user failed steps.
+        Assert.DoesNotContain(turn.Events, item => item.Type == "tool_result" && IsFailedToolResult(item.Result));
         Assert.Contains(turn.Events, item => item.Type == "done");
         Assert.False(String.IsNullOrWhiteSpace(turn.Text));
         Assert.NotEmpty(turn.ToolCalls);
         Assert.DoesNotContain("DSML", turn.Text, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsFailedToolResult(string? result)
+    {
+        if (String.IsNullOrWhiteSpace(result))
+            return false;
+
+        try
+        {
+            using var document = JsonDocument.Parse(result);
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("ok", out var ok)
+                && ok.ValueKind == JsonValueKind.False;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private sealed record EvaluationTurn(
