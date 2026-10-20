@@ -1,12 +1,22 @@
 <script lang="ts">
+    import type { DateRange } from 'bits-ui';
+
+    import { CalendarDateTime, type DateValue, fromDate, getLocalTimeZone, toCalendarDate, toCalendarDateTime, today } from '@internationalized/date';
     import Check from '@lucide/svelte/icons/check';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
+    import { untrack } from 'svelte';
 
     import DateTime from '#comp/formatters/date-time.svelte';
     import { Button } from '#comp/ui/button/index.ts';
     import * as Field from '#comp/ui/field/index.ts';
     import { Input } from '#comp/ui/input/index.ts';
+    import { RangeCalendar } from '#comp/ui/range-calendar/index.ts';
+    import * as Tabs from '#comp/ui/tabs/index.ts';
     import { extractRangeExpressions, parseDateMath } from '#features/shared/utils/datemath.ts';
+
+    import DateTimeField from './date-time-field.svelte';
+
+    type Mode = 'absolute' | 'relative';
 
     type Props = {
         cancel?: () => void;
@@ -50,26 +60,30 @@
         }
     ];
 
+    const timeZone = getLocalTimeZone();
+    const locale = typeof navigator === 'undefined' ? undefined : navigator.language;
+    const inputError = 'Enter a year, month, date, timestamp, or relative time such as now-1h.';
+
+    let mode = $state<Mode>('absolute');
     let showCustom = $state(false);
+    // The editor the user last changed decides what is applied. Viewing the other tab doesn't
+    // convert a relative expression into fixed dates.
+    let editedMode = $state<Mode>();
     let startValue = $state('');
     let endValue = $state('');
+    let startDateTime = $state<CalendarDateTime>();
+    let endDateTime = $state<CalendarDateTime>();
+    let calendarRange = $state<DateRange>({
+        end: undefined,
+        start: undefined
+    });
+    let calendarPlaceholder = $state<DateValue>(today(timeZone));
 
-    // Keep custom fields synchronized with the persisted range. Common ranges stay collapsed,
-    // but their values must still be available when Custom range is opened after a remount.
+    // Keep both editors synchronized with the persisted range. Relative ranges also prefill the
+    // absolute fields with their resolved dates so they can be adjusted from there.
     $effect(() => {
-        const range = typeof value === 'string' ? extractRangeExpressions(value) : null;
-        if (range) {
-            startValue = range.start ?? '';
-            endValue = range.end ?? '';
-
-            if (!commonRanges.some((r) => r.value === value)) {
-                showCustom = true;
-            }
-        } else if (!value) {
-            startValue = '';
-            endValue = '';
-            showCustom = false;
-        }
+        const currentValue = value;
+        untrack(() => syncFromValue(currentValue));
     });
 
     const resolvedRange = $derived.by(() => {
@@ -84,21 +98,64 @@
     const rangeError = $derived(
         startValidation.success && endValidation.success && startValidation.date > endValidation.date ? 'End must be on or after start.' : undefined
     );
-    const isCustomValid = $derived(startValidation.success && endValidation.success && !rangeError);
-    const inputError = 'Enter a year, month, date, timestamp, or relative time such as now-1h.';
+    const isRelativeValid = $derived(startValidation.success && endValidation.success && !rangeError);
+
+    const absoluteRangeError = $derived(startDateTime && endDateTime && startDateTime.compare(endDateTime) > 0 ? 'End must be on or after start.' : undefined);
+    const isAbsoluteValid = $derived(!!startDateTime && !!endDateTime && !absoluteRangeError);
+    const isCustomValid = $derived((editedMode ?? mode) === 'absolute' ? isAbsoluteValid : isRelativeValid);
+    const isCustomValue = $derived(!!value && !commonRanges.some((range) => range.value === value));
 
     export function apply() {
-        if (showCustom && isCustomValid) {
+        if (editedMode && isCustomValid) {
             applyCustom();
         }
     }
 
     function applyCustom() {
-        if (isCustomValid) {
-            const customValue = `[${startValue.trim()} TO ${endValue.trim()}]`;
-            value = customValue;
-            onselect?.(customValue);
+        if (!isCustomValid) {
+            return;
         }
+
+        // Without edits, keep the original expression rather than its resolved dates.
+        let customValue = typeof value === 'string' && value ? value : `[${startValue.trim()} TO ${endValue.trim()}]`;
+        if (editedMode === 'absolute' && startDateTime && endDateTime) {
+            customValue = `[${formatBound(startDateTime, false)} TO ${formatBound(endDateTime, true)}]`;
+        } else if (editedMode === 'relative') {
+            customValue = `[${startValue.trim()} TO ${endValue.trim()}]`;
+        }
+
+        editedMode = undefined;
+        value = customValue;
+        onselect?.(customValue);
+    }
+
+    /** Whole-day bounds collapse to a calendar date so the API applies its day boundaries. */
+    function formatBound(dateTime: CalendarDateTime, isUpperLimit: boolean): string {
+        const date = toCalendarDate(dateTime).toString();
+        const isDayBoundary = isUpperLimit ? dateTime.hour === 23 && dateTime.minute === 59 : dateTime.hour === 0 && dateTime.minute === 0;
+        if (isDayBoundary) {
+            return date;
+        }
+
+        return `${date}T${String(dateTime.hour).padStart(2, '0')}:${String(dateTime.minute).padStart(2, '0')}`;
+    }
+
+    /** The first click selects that whole day; a second click extends the range. */
+    function handleCalendarChange(range: DateRange) {
+        if (!range.start) {
+            return;
+        }
+
+        const end = range.end ?? range.start;
+        startDateTime = new CalendarDateTime(range.start.year, range.start.month, range.start.day, 0, 0);
+        endDateTime = new CalendarDateTime(end.year, end.month, end.day, 23, 59);
+        editedMode = 'absolute';
+    }
+
+    function handleEndChange(dateValue: DateValue | undefined) {
+        endDateTime = dateValue ? toCalendarDateTime(dateValue) : undefined;
+        editedMode = 'absolute';
+        syncCalendar();
     }
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -111,14 +168,98 @@
         }
     }
 
+    /** Carry edits across when switching editors; untouched editors keep the original expressions. */
+    function handleModeChange(nextMode: string) {
+        if (nextMode === 'relative') {
+            if (editedMode === 'absolute' && startDateTime && endDateTime) {
+                startValue = formatBound(startDateTime, false);
+                endValue = formatBound(endDateTime, true);
+            }
+
+            mode = 'relative';
+        } else {
+            if (editedMode === 'relative' && isRelativeValid) {
+                setAbsoluteRangeFromExpressions(startValue, endValue);
+            }
+
+            mode = 'absolute';
+        }
+    }
+
+    function handleRelativeInput() {
+        editedMode = 'relative';
+    }
+
+    function handleStartChange(dateValue: DateValue | undefined) {
+        startDateTime = dateValue ? toCalendarDateTime(dateValue) : undefined;
+        editedMode = 'absolute';
+        syncCalendar();
+    }
+
+    function isRelativeExpression(...expressions: string[]): boolean {
+        return expressions.some((expression) => /now/i.test(expression));
+    }
+
     function selectRange(rangeValue: string) {
         value = rangeValue;
         onselect?.(rangeValue);
     }
+
+    function setAbsoluteRange(start: CalendarDateTime | undefined, end: CalendarDateTime | undefined) {
+        startDateTime = start;
+        endDateTime = end;
+        syncCalendar();
+    }
+
+    function setAbsoluteRangeFromExpressions(start: string, end: string) {
+        const referenceTime = new Date();
+        const startResult = parseDateMath(start, referenceTime);
+        const endResult = parseDateMath(end, referenceTime, true);
+        setAbsoluteRange(startResult.success ? toLocalDateTime(startResult.date) : undefined, endResult.success ? toLocalDateTime(endResult.date) : undefined);
+    }
+
+    function syncCalendar() {
+        calendarRange = {
+            end: endDateTime ? toCalendarDate(endDateTime) : undefined,
+            start: startDateTime ? toCalendarDate(startDateTime) : undefined
+        };
+
+        const visibleDate = endDateTime ?? startDateTime;
+        calendarPlaceholder = visibleDate ? toCalendarDate(visibleDate) : today(timeZone);
+    }
+
+    function syncFromValue(currentValue: Date | string | undefined) {
+        const range = typeof currentValue === 'string' ? extractRangeExpressions(currentValue) : null;
+        if (range) {
+            startValue = range.start ?? '';
+            endValue = range.end ?? '';
+
+            const isCommonRange = commonRanges.some((r) => r.value === currentValue);
+            mode = !isCommonRange && isRelativeExpression(startValue, endValue) ? 'relative' : 'absolute';
+            showCustom = !isCommonRange;
+            setAbsoluteRangeFromExpressions(startValue, endValue);
+        } else if (!currentValue) {
+            startValue = '';
+            endValue = '';
+            mode = 'absolute';
+            showCustom = false;
+            setAbsoluteRange(undefined, undefined);
+        }
+
+        editedMode = undefined;
+    }
+
+    function toLocalDateTime(date: Date): CalendarDateTime {
+        return toCalendarDateTime(fromDate(date, timeZone)).set({
+            millisecond: 0,
+            second: 0
+        });
+    }
 </script>
 
-<div class={className}>
-    <div class="flex flex-col p-1">
+<!-- Quick ranges apply on click. Custom ranges are edited in a separate panel that applies with the Apply button. -->
+<div class={['flex flex-col sm:flex-row', className]}>
+    <div class={['grid grid-cols-2 p-1 sm:flex sm:w-44 sm:shrink-0 sm:flex-col', showCustom && 'border-b sm:border-r sm:border-b-0']}>
         {#each commonRanges as range (range.value)}
             <button
                 type="button"
@@ -133,66 +274,120 @@
                 <span class={range.value === value ? 'font-medium' : ''}>{range.label}</span>
             </button>
         {/each}
-
         <button
             type="button"
-            class="hover:bg-muted hover:text-foreground flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none"
+            class={[
+                'hover:bg-muted hover:text-foreground flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors select-none',
+                showCustom && 'bg-muted text-foreground'
+            ]}
+            aria-controls={`${id}-custom-range`}
             aria-expanded={showCustom}
-            aria-controls={`${id}-custom`}
             onclick={() => (showCustom = !showCustom)}
         >
-            <ChevronRight class={['text-muted-foreground size-4 shrink-0 transition-transform', showCustom && 'rotate-90']} />
-            <span class={showCustom ? 'font-medium' : ''}>Custom range</span>
+            <span class="size-4 shrink-0">
+                {#if isCustomValue}
+                    <Check class="text-primary size-4" />
+                {/if}
+            </span>
+            <span class={isCustomValue ? 'font-medium' : ''}>Custom range</span>
+            <ChevronRight class="text-muted-foreground ml-auto size-4 shrink-0" aria-hidden="true" />
         </button>
-
-        {#if showCustom}
-            <Field.FieldGroup id={`${id}-custom`} class="gap-3 px-2 pt-2 pb-1">
-                <Field.FieldDescription id={`${id}-help`}>
-                    Use 2024, 2024-01, or 2024-01-01. Start and end include the whole year, month, or day in local time.
-                </Field.FieldDescription>
-                <Field.Field class="gap-1" data-invalid={!!startValue && !startValidation.success}>
-                    <Field.FieldLabel for={`${id}-start`}>Start</Field.FieldLabel>
-                    <Input
-                        id={`${id}-start`}
-                        placeholder="e.g. 2024-01-01 or now-1h"
-                        class="h-7 font-mono text-xs"
-                        bind:value={startValue}
-                        aria-invalid={startValue ? !startValidation.success : undefined}
-                        aria-describedby={`${id}-help ${id}-start-status`}
-                        onkeydown={handleKeyDown}
-                    />
-                    <div id={`${id}-start-status`} aria-live="polite">
-                        {#if startValue && startValidation.success}
-                            <p class="text-muted-foreground text-[11px]"><DateTime value={startValidation.date} /></p>
-                        {:else if startValue}
-                            <Field.FieldError>{inputError}</Field.FieldError>
-                        {/if}
-                    </div>
-                </Field.Field>
-                <Field.Field class="gap-1" data-invalid={(!!endValue && !endValidation.success) || !!rangeError}>
-                    <Field.FieldLabel for={`${id}-end`}>End</Field.FieldLabel>
-                    <Input
-                        id={`${id}-end`}
-                        placeholder="e.g. 2024-01-31 or now"
-                        class="h-7 font-mono text-xs"
-                        bind:value={endValue}
-                        aria-invalid={endValue ? !endValidation.success || !!rangeError : undefined}
-                        aria-describedby={`${id}-help ${id}-end-status`}
-                        onkeydown={handleKeyDown}
-                    />
-                    <div id={`${id}-end-status`} aria-live="polite">
-                        {#if endValue && endValidation.success}
-                            <p class="text-muted-foreground text-[11px]"><DateTime value={endValidation.date} /></p>
-                        {:else if endValue}
-                            <Field.FieldError>{inputError}</Field.FieldError>
-                        {/if}
-                        {#if rangeError}
-                            <Field.FieldError>{rangeError}</Field.FieldError>
-                        {/if}
-                    </div>
-                </Field.Field>
-                <Button size="sm" class="w-full" disabled={!isCustomValid} onclick={applyCustom}>Apply</Button>
-            </Field.FieldGroup>
-        {/if}
     </div>
+
+    {#if showCustom}
+        <div id={`${id}-custom-range`} class="flex w-72 flex-col gap-3 p-3">
+            <Tabs.Root value={mode} onValueChange={handleModeChange} class="gap-3">
+                <Tabs.List class="grid w-full grid-cols-2">
+                    <Tabs.Trigger value="absolute">Absolute</Tabs.Trigger>
+                    <Tabs.Trigger value="relative">Relative</Tabs.Trigger>
+                </Tabs.List>
+
+                <Tabs.Content value="absolute" class="flex flex-col gap-3">
+                    <div class="flex flex-col gap-2">
+                        <DateTimeField
+                            label="From"
+                            {locale}
+                            value={startDateTime}
+                            invalid={!!absoluteRangeError}
+                            onValueChange={handleStartChange}
+                            onkeydown={handleKeyDown}
+                        />
+                        <DateTimeField
+                            label="To"
+                            {locale}
+                            value={endDateTime}
+                            invalid={!!absoluteRangeError}
+                            onValueChange={handleEndChange}
+                            onkeydown={handleKeyDown}
+                        />
+                        {#if absoluteRangeError}
+                            <Field.FieldError>{absoluteRangeError}</Field.FieldError>
+                        {/if}
+                    </div>
+                    <RangeCalendar
+                        bind:value={calendarRange}
+                        bind:placeholder={calendarPlaceholder}
+                        class="mx-auto p-0"
+                        {locale}
+                        maxValue={today(timeZone)}
+                        onValueChange={handleCalendarChange}
+                    />
+                    <p class="text-muted-foreground text-xs">Times are in your local time zone ({timeZone}).</p>
+                </Tabs.Content>
+
+                <Tabs.Content value="relative">
+                    <Field.FieldGroup id={`${id}-custom`} class="gap-3">
+                        <Field.FieldDescription id={`${id}-help`}>
+                            Use now-1h, now-7d, or now/d for the start of today. Dates such as 2024 or 2024-01 cover the whole year or month.
+                        </Field.FieldDescription>
+                        <Field.Field class="gap-1" data-invalid={!!startValue && !startValidation.success}>
+                            <Field.FieldLabel for={`${id}-start`}>From</Field.FieldLabel>
+                            <Input
+                                id={`${id}-start`}
+                                placeholder="e.g. now-1h or 2024-01-01"
+                                class="h-8 font-mono text-sm"
+                                bind:value={startValue}
+                                aria-invalid={startValue ? !startValidation.success : undefined}
+                                aria-describedby={`${id}-help ${id}-start-status`}
+                                oninput={handleRelativeInput}
+                                onkeydown={handleKeyDown}
+                            />
+                            <div id={`${id}-start-status`} aria-live="polite">
+                                {#if startValue && startValidation.success}
+                                    <p class="text-muted-foreground text-xs"><DateTime value={startValidation.date} /></p>
+                                {:else if startValue}
+                                    <Field.FieldError>{inputError}</Field.FieldError>
+                                {/if}
+                            </div>
+                        </Field.Field>
+                        <Field.Field class="gap-1" data-invalid={(!!endValue && !endValidation.success) || !!rangeError}>
+                            <Field.FieldLabel for={`${id}-end`}>To</Field.FieldLabel>
+                            <Input
+                                id={`${id}-end`}
+                                placeholder="e.g. now or 2024-01-31"
+                                class="h-8 font-mono text-sm"
+                                bind:value={endValue}
+                                aria-invalid={endValue ? !endValidation.success || !!rangeError : undefined}
+                                aria-describedby={`${id}-help ${id}-end-status`}
+                                oninput={handleRelativeInput}
+                                onkeydown={handleKeyDown}
+                            />
+                            <div id={`${id}-end-status`} aria-live="polite">
+                                {#if endValue && endValidation.success}
+                                    <p class="text-muted-foreground text-xs"><DateTime value={endValidation.date} /></p>
+                                {:else if endValue}
+                                    <Field.FieldError>{inputError}</Field.FieldError>
+                                {/if}
+                                {#if rangeError}
+                                    <Field.FieldError>{rangeError}</Field.FieldError>
+                                {/if}
+                            </div>
+                        </Field.Field>
+                    </Field.FieldGroup>
+                </Tabs.Content>
+            </Tabs.Root>
+
+            <Button size="sm" class="w-full" disabled={!isCustomValid} onclick={applyCustom}>Apply</Button>
+        </div>
+    {/if}
 </div>
