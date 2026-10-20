@@ -2036,7 +2036,7 @@
             }
           },
           "400": {
-            "description": "Invalid provider name.",
+            "description": "The account must retain a sign-in method.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

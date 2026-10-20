@@ -17,15 +17,17 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         _repository = GetService<IUserRepository>();
     }
 
-    [Fact]
-    public async Task SaveAsync_InvalidOAuthProvider_RejectsChangesBeforePersistence()
+    [Theory]
+    [InlineData("unknown", "new-subject")]
+    [InlineData("github", " ")]
+    public async Task SaveAsync_InvalidOAuthIdentity_RejectsChangesBeforePersistence(string provider, string providerUserId)
     {
         // Arrange
         var user = new User { FullName = "Linked user", EmailAddress = "linked@localhost.test" };
         user.MarkEmailAddressVerified();
         user.AddOAuthAccount("github", "existing-subject", user.EmailAddress);
         await _repository.AddAsync(user, options => options.ImmediateConsistency());
-        user.AddOAuthAccount("unknown", "new-subject", user.EmailAddress);
+        user.AddOAuthAccount(provider, providerUserId, user.EmailAddress);
 
         // Act
         var exception = await Record.ExceptionAsync(async () =>

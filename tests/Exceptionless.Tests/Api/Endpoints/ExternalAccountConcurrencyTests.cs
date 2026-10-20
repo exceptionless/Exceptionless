@@ -150,6 +150,33 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ExternalLogin_StaleCachedEmailMiss_LinksStoredUserWithoutCreatingDuplicate()
+    {
+        // Arrange
+        const string code = "external-account-stale-email-miss";
+        var user = new User { FullName = "Existing email owner", EmailAddress = TestOAuthProviderClient.GetEmailAddress(code) };
+        user.MarkEmailAddressVerified();
+        await _users.AddAsync(user, options => options.ImmediateConsistency());
+        // A canceled cached lookup can publish its earlier miss after another request saves this user.
+        await ((PausingUserRepository)_users).CacheEmailMissAsync(user.EmailAddress);
+        long originalUserCount = (await _users.CountAsync()).Total;
+        using var client = _server.CreateClient();
+
+        // Act
+        var result = await SendExternalLoginAsync(client, code);
+
+        // Assert
+        Assert.NotNull(result);
+        var token = await _tokens.GetByIdAsync(result.Token);
+        Assert.NotNull(token);
+        Assert.Equal(user.Id, token.UserId);
+        Assert.Equal(originalUserCount, (await _users.CountAsync()).Total);
+        var storedUser = await _users.GetByIdAsync(user.Id, options => options.Cache(false));
+        Assert.NotNull(storedUser);
+        Assert.Single(storedUser.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
+    }
+
+    [Fact]
     public async Task ExternalLogin_AccountLockUnavailable_IsRejectedWithoutWrites()
     {
         // Arrange
@@ -300,6 +327,8 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
     private sealed class PausingUserRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, Exceptionless.Core.AppOptions options, ExternalAccountRace race)
         : UserRepository(configuration, validator, options), IUserRepository
     {
+        public Task CacheEmailMissAsync(string emailAddress) => Cache.SetAsync<ICollection<FindHit<User>>>($"Email:{emailAddress}", []);
+
         public new async Task<User?> GetUserByOAuthProviderAsync(string provider, string providerUserId, CancellationToken cancellationToken = default)
         {
             var user = await base.GetUserByOAuthProviderAsync(provider, providerUserId, cancellationToken);
@@ -307,9 +336,9 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
             return user;
         }
 
-        public new async Task<User?> GetByEmailAddressAsync(string emailAddress)
+        public new async Task<User?> GetByEmailAddressAsync(string emailAddress, CommandOptionsDescriptor<User>? options = null)
         {
-            var user = await base.GetByEmailAddressAsync(emailAddress);
+            var user = await base.GetByEmailAddressAsync(emailAddress, options);
             await race.AfterSnapshotReadAsync(LookupStage.Email, race.TestCancellationToken);
             return user;
         }

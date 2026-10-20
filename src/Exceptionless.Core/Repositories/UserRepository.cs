@@ -104,13 +104,17 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         }), options);
     }
 
-    public async Task<User?> GetByEmailAddressAsync(string emailAddress)
+    public async Task<User?> GetByEmailAddressAsync(string emailAddress, CommandOptionsDescriptor<User>? options = null)
     {
         if (String.IsNullOrWhiteSpace(emailAddress))
             return null;
 
         emailAddress = emailAddress.Trim().ToLowerInvariant();
-        var hit = await FindOneAsync(q => q.FieldEquals(u => u.EmailAddress, emailAddress), o => o.Cache(EmailCacheKey(emailAddress)));
+        ICommandOptions<User> commandOptions = new CommandOptions<User>().Cache(EmailCacheKey(emailAddress));
+        if (options is not null)
+            commandOptions = options(commandOptions);
+
+        var hit = await FindOneAsync(q => q.FieldEquals(u => u.EmailAddress, emailAddress), _ => commandOptions);
         return hit?.Document;
     }
 

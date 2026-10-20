@@ -297,13 +297,7 @@ public class AuthHandler(
     {
         var httpContext = message.Context;
         var user = httpContext.Request.GetUser();
-        using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(message.ProviderName).Identity(user.EmailAddress).Property("Provider User Id", message.ProviderUserId?.Value).SetHttpContext(httpContext));
-
-        if (String.IsNullOrWhiteSpace(message.ProviderName) || String.IsNullOrWhiteSpace(message.ProviderUserId?.Value))
-        {
-            logger.LogError("Remove external login failed for {EmailAddress}: Invalid Provider Name or Provider User Id", user.EmailAddress);
-            return Result.BadRequest("Invalid Provider Name or Provider User Id.");
-        }
+        using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(message.ProviderName).Identity(user.EmailAddress).Property("Provider User Id", message.ProviderUserId).SetHttpContext(httpContext));
 
         using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
         operationCancellation.CancelAfter(ExternalAccountAdmissionTimeout);
@@ -318,7 +312,7 @@ public class AuthHandler(
 
             user = storedUser;
             CompleteExternalAccountAdmission(operationCancellation);
-            if (!user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId.Value))
+            if (!user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId))
             {
                 logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login", user.EmailAddress);
                 return Result.BadRequest("You must set a local password before removing your external login.");
@@ -553,7 +547,8 @@ public class AuthHandler(
             operationCancellation.Token.ThrowIfCancellationRequested();
             await using var accountLock = await lockProvider.AcquireAsync(accountKeys, cancellationToken: operationCancellation.Token);
             var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id, operationCancellation.Token);
-            var emailUser = existingUser is null ? await userRepository.GetByEmailAddressAsync(userInfo.Email).WaitAsync(operationCancellation.Token) : null;
+            // Admission reads may outlive cancellation; do not read or populate a stale email cache entry.
+            var emailUser = existingUser is null ? await userRepository.GetByEmailAddressAsync(userInfo.Email, options => options.Cache(false)).WaitAsync(operationCancellation.Token) : null;
             string? currentUserId = String.IsNullOrWhiteSpace(authInfo.InviteToken) && httpContext.User.IsUserAuthType()
                 ? httpContext.Request.GetUser().Id : null;
             var userKeys = new[] { existingUser?.Id, emailUser?.Id, currentUserId }

@@ -14,15 +14,18 @@ public sealed class UserValidatorTests : TestWithServices
     }
 
     [Theory]
-    [InlineData("github", true)]
-    [InlineData("google", true)]
-    [InlineData("facebook", true)]
-    [InlineData("windowslive", true)]
-    [InlineData("unknown", false)]
-    [InlineData("GitHub", false)]
-    [InlineData("", false)]
-    [InlineData(null, false)]
-    public async Task ValidateAsync_OAuthProvider_RequiresKnownCaseSensitiveName(string? providerName, bool expectedIsValid)
+    [InlineData("github", "subject", true)]
+    [InlineData("google", "subject", true)]
+    [InlineData("facebook", "subject", true)]
+    [InlineData("windowslive", "subject", true)]
+    [InlineData("unknown", "subject", false)]
+    [InlineData("GitHub", "subject", false)]
+    [InlineData("", "subject", false)]
+    [InlineData(null, "subject", false)]
+    [InlineData("github", null, false)]
+    [InlineData("github", "", false)]
+    [InlineData("github", " ", false)]
+    public async Task ValidateAsync_OAuthAccount_RequiresValidIdentity(string? providerName, string? providerUserId, bool expectedIsValid)
     {
         // Arrange
         var user = new User
@@ -30,7 +33,7 @@ public sealed class UserValidatorTests : TestWithServices
             FullName = "Linked user",
             EmailAddress = "linked@localhost.test",
             IsEmailAddressVerified = true,
-            OAuthAccounts = [new OAuthAccount { Provider = providerName!, ProviderUserId = "subject", Username = "linked@localhost.test" }]
+            OAuthAccounts = [new OAuthAccount { Provider = providerName!, ProviderUserId = providerUserId!, Username = "linked@localhost.test" }]
         };
 
         // Act
@@ -39,7 +42,7 @@ public sealed class UserValidatorTests : TestWithServices
         // Assert
         Assert.Equal(expectedIsValid, result.IsValid);
         if (!expectedIsValid)
-            Assert.Contains(result.Errors.Keys, key => key.EndsWith(nameof(OAuthAccount.Provider), StringComparison.Ordinal));
+            Assert.Contains(result.Errors.Keys, key => key.EndsWith(String.IsNullOrWhiteSpace(providerUserId) ? nameof(OAuthAccount.ProviderUserId) : nameof(OAuthAccount.Provider), StringComparison.Ordinal));
     }
 
     [Fact]

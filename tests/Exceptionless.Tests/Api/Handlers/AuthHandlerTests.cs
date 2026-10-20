@@ -139,7 +139,7 @@ public sealed class AuthHandlerTests : TestWithServices
         var handler = CreateHandler(users.Object, tokens.Object, oauthTokens.Object, Mock.Of<IOAuthProviderClient>());
 
         // Act
-        var result = await handler.Handle(new RemoveExternalLogin("github", new ValueFromBody<string>(providerId), context));
+        var result = await handler.Handle(new RemoveExternalLogin("github", providerId, context));
 
         // Assert
         Assert.Equal(ResultStatus.Success, result.Status);
@@ -158,7 +158,7 @@ public sealed class AuthHandlerTests : TestWithServices
     {
         // Arrange
         var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
-        userRepository.Setup(repository => repository.GetByEmailAddressAsync("test@example.com"))
+        userRepository.Setup(repository => repository.GetByEmailAddressAsync("test@example.com", null))
             .ThrowsAsync(exception);
         var handler = CreateHandler(userRepository.Object, GetService<ITokenRepository>(), GetService<IOAuthTokenRepository>(), GetService<IOAuthProviderClient>());
         var message = new LoginMessage(
@@ -171,7 +171,7 @@ public sealed class AuthHandlerTests : TestWithServices
         // Assert
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
         Assert.Equal("Login failed.", result.Message);
-        userRepository.Verify(repository => repository.GetByEmailAddressAsync("test@example.com"), Times.Once);
+        userRepository.Verify(repository => repository.GetByEmailAddressAsync("test@example.com", null), Times.Once);
         userRepository.VerifyNoOtherCalls();
     }
 

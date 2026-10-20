@@ -785,18 +785,20 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData("unknown")]
-    [InlineData("GitHub")]
-    [InlineData("GITHUB")]
-    [InlineData(" github")]
-    [InlineData("github ")]
-    public async Task RemoveExternalLoginAsync_InvalidProvider_IsRejectedWithoutChangingAccount(string providerName)
+    [InlineData("unknown", "github-invalid-provider", "provider_name")]
+    [InlineData("GitHub", "github-invalid-provider", "provider_name")]
+    [InlineData("GITHUB", "github-invalid-provider", "provider_name")]
+    [InlineData(" github", "github-invalid-provider", "provider_name")]
+    [InlineData("github ", "github-invalid-provider", "provider_name")]
+    [InlineData("github", null, "provider_user_id")]
+    [InlineData("github", "", "provider_user_id")]
+    [InlineData("github", " ", "provider_user_id")]
+    public async Task RemoveExternalLoginAsync_InvalidIdentity_IsRejectedWithoutChangingAccount(string providerName, string? providerUserId, string errorKey)
     {
         // Arrange
-        const string providerUserId = "github-invalid-provider";
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
-        user.AddOAuthAccount("github", providerUserId, user.EmailAddress);
+        user.AddOAuthAccount("github", "github-invalid-provider", user.EmailAddress);
         await _userRepository.SaveAsync(user, options => options.ImmediateConsistency().Cache());
         long originalTokenCount = (await _tokenRepository.CountAsync()).Total;
 
@@ -805,34 +807,18 @@ public class AuthEndpointTests : IntegrationTestsBase
             .Post()
             .AsTestOrganizationUser()
             .AppendPaths("auth", "unlink", providerName)
-            .Content(new ValueFromBody<string>(providerUserId))
+            .Content(new ValueFromBody<string>(providerUserId!))
             .StatusCodeShouldBeUnprocessableEntity());
 
         // Assert
         Assert.NotNull(problem);
-        Assert.Contains("provider_name", problem.Errors.Keys);
+        Assert.Contains(errorKey, problem.Errors.Keys);
         var storedUser = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
         Assert.NotNull(storedUser);
         Assert.Equal(user.AuthenticationVersion, storedUser.AuthenticationVersion);
         Assert.Equal(user.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)),
             storedUser.OAuthAccounts.Select(account => (account.Provider, account.ProviderUserId, account.Username)));
         Assert.Equal(originalTokenCount, (await _tokenRepository.CountAsync()).Total);
-    }
-
-    [Fact]
-    public Task RemoveExternalLoginAsync_WithoutProviderUserId_ReturnsBadRequest()
-    {
-        // Arrange
-        var providerUserId = new ValueFromBody<string>(String.Empty);
-
-        // Act & Assert
-        return SendRequestAsync(r => r
-            .Post()
-            .AsTestOrganizationUser()
-            .AppendPaths("auth", "unlink", "github")
-            .Content(providerUserId)
-            .StatusCodeShouldBeBadRequest()
-        );
     }
 
     [Fact]

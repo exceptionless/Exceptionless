@@ -177,8 +177,8 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("unlink/{providerName:minlength(1)}", async ([AsParameters] RemoveExternalLoginRequest request, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ValueFromBody<string> providerUserId)
-            => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.RemoveExternalLogin(request.ProviderName, providerUserId, httpContext))).ToHttpResult(resultMapper))
+        group.MapPost("unlink/{providerName:minlength(1)}", async ([AsParameters] RemoveExternalLoginRequest request, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext)
+            => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.RemoveExternalLogin(request.ProviderName, request.ProviderUserId.Value, httpContext))).ToHttpResult(resultMapper))
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
@@ -192,7 +192,7 @@ public static class AuthEndpoints
             },
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
-                ["400"] = "Invalid provider name.",
+                ["400"] = "The account must retain a sign-in method.",
                 ["401"] = "Unauthorized",
                 ["422"] = "Validation error",
             }

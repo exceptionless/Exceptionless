@@ -16,6 +16,8 @@ public record OAuthAccount
     [AllowedValues(KnownProviders.GitHub, KnownProviders.Google, KnownProviders.Facebook, KnownProviders.WindowsLive,
         ErrorMessage = "The provider name must be github, google, facebook, or windowslive.")]
     public required string Provider { get; init; }
+
+    [Required]
     public required string ProviderUserId { get; init; }
     public required string Username { get; init; }
 
