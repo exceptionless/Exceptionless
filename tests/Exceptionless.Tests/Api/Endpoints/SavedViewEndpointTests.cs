@@ -2169,6 +2169,53 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task GetByOrganization_PredefinedInitializationOverlapsInvite_PreservesInvitationAndOrganizationData()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.Data = new DataDictionary { ["existing_setting"] = "existing" };
+        await _organizationRepository.SaveAsync(organization, options => options.Cache().ImmediateConsistency());
+        await _savedViewRepository.RemoveAllAsync(query => query.Organization(organization.Id), options => options.ImmediateConsistency());
+        var invite = new Invite
+        {
+            Token = Exceptionless.Core.Extensions.StringExtensions.GetNewToken(),
+            EmailAddress = "concurrent-invite@localhost.test",
+            DateAdded = TimeProvider.GetUtcNow().UtcDateTime
+        };
+        bool invited = false;
+        using var subscription = _savedViewRepository.DocumentsAdding.AddHandler(async (_, args) =>
+        {
+            if (invited || !args.Documents.Any(view => view.OrganizationId == organization.Id))
+                return;
+
+            invited = true;
+            var current = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache(false));
+            Assert.NotNull(current);
+            current.Invites.Add(invite);
+            current.Data!["concurrent_setting"] = "concurrent";
+            await _organizationRepository.SaveAsync(current, options => options.Cache().ImmediateConsistency());
+        });
+
+        // Act
+        using var response = await SendRequestAsync(request => request.AsGlobalAdminUser()
+            .AppendPaths("organizations", organization.Id, "saved-views").StatusCodeShouldBeOk());
+        var stored = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache(false));
+        var invitedOrganization = await _organizationRepository.GetByInviteTokenAsync(invite.Token);
+
+        // Assert
+        Assert.True(invited);
+        Assert.NotNull(stored);
+        Assert.Contains(stored.Invites, candidate => candidate.Token == invite.Token);
+        Assert.NotNull(stored.Data);
+        Assert.Equal("existing", stored.Data["existing_setting"]?.ToString());
+        Assert.Equal("concurrent", stored.Data["concurrent_setting"]?.ToString());
+        Assert.True(stored.Data.ContainsKey(PredefinedSavedViewsDataSeed.PredefinedSavedViewsContentHashDataKey));
+        Assert.NotNull(invitedOrganization);
+        Assert.Equal(organization.Id, invitedOrganization.Id);
+    }
+
+    [Fact]
     public async Task DeleteOrganization_UserVersionConflict_ReturnsConflictAndRetryPreservesRequester()
     {
         // Arrange
