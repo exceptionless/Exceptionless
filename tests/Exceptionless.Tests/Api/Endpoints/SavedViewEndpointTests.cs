@@ -2214,6 +2214,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Equal("Concurrent profile update", storedUser.FullName);
 
         // Act - retry completes membership removal before scheduling cleanup.
+        await RefreshDataAsync();
         using var retryResponse = await SendRequestAsync(request => request.Delete().AsGlobalAdminUser()
             .AppendPaths("organizations", organization.Id).StatusCodeShouldBeOk());
         await RefreshDataAsync();
