@@ -9,13 +9,13 @@ namespace Exceptionless.Web.Assistant;
 /// tool_calls. Some OpenRouter providers skip DeepSeek's tool parser, which leaves markup like
 /// <c>&lt;｜DSML｜tool_calls&gt;&lt;｜DSML｜invoke name="search_stacks"&gt;…</c> in the content.
 /// </summary>
-/// <remarks>Mirrors vLLM's DeepSeek V4 parser: string="true" values are literal text, and other values are JSON with a literal fallback.</remarks>
+/// <remarks>Mirrors vLLM's DeepSeek V4 and V4.1 parsers: string="true" values are literal text, and other values are JSON with a literal fallback.</remarks>
 internal static class AssistantDsmlToolCallParser
 {
-    // Providers have been seen emitting full-width, ASCII, and doubled pipes around DSML.
+    // Providers have been seen emitting full-width, ASCII, and doubled pipes around DSML, and V4.1 adds a space after it.
     private const string Tag = @"\s*[|｜]{1,2}\s*DSML\s*[|｜]{1,2}\s*";
     private static readonly TimeSpan s_timeout = TimeSpan.FromSeconds(1);
-    private static readonly Regex s_markupStart = new($@"<{Tag}(?:tool_?calls|tool|function_calls|invoke)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, s_timeout);
+    private static readonly Regex s_markupStart = new($@"<{Tag}(?:(?:tool_?|function_)?calls|tool|invoke)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, s_timeout);
     private static readonly Regex s_invoke = new($@"<{Tag}invoke\s+name=""([^""]+)""\s*>(.*?)</{Tag}invoke\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline, s_timeout);
     private static readonly Regex s_parameter = new($@"<{Tag}parameter\s+name=""([^""]+)""(?:\s+string=""([^""]*)"")?\s*>(.*?)</{Tag}parameter\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline, s_timeout);
     private static readonly Regex s_markupRemainder = new($@"</?{Tag}[a-z_]+\b[^>]*>|\s+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, s_timeout);

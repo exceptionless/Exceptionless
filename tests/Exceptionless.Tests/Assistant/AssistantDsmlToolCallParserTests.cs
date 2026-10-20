@@ -65,6 +65,26 @@ public sealed class AssistantDsmlToolCallParserTests
             });
     }
 
+    [Fact]
+    public void TryParse_DeepSeekV41SpacedMarkup_ReturnsToolCall()
+    {
+        const string content = """
+            Checking the last week.
+            <｜DSML｜ calls>
+            <｜DSML｜ invoke name="search_stacks">
+            <｜DSML｜ parameter name="last" string="true">7d</｜DSML｜ parameter>
+            </｜DSML｜ invoke>
+            </｜DSML｜ calls>
+            """;
+
+        Assert.True(AssistantDsmlToolCallParser.TryParse(content, out string leadingText, out var toolCalls));
+
+        Assert.Equal("Checking the last week.", leadingText);
+        var toolCall = Assert.Single(toolCalls);
+        Assert.Equal("search_stacks", toolCall.Name);
+        Assert.Equal("""{"last":"7d"}""", toolCall.Arguments);
+    }
+
     [Theory]
     [InlineData("<|DSML|tool_calls>")]
     [InlineData("""<｜DSML｜tool_calls><｜DSML｜invoke name="suggest_followups">""")]
