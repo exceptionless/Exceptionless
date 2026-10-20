@@ -1,7 +1,7 @@
 <script lang="ts">
-    import { Code } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { buttonVariants } from '$comp/ui/button';
+    import { Code } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { buttonVariants } from '#comp/ui/button/index.ts';
 
     interface Props {
         open: boolean;

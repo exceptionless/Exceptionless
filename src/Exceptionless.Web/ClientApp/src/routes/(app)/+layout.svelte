@@ -1,69 +1,73 @@
 <script lang="ts">
-    import type { AssistantPromptRequest } from '$features/assistant/models';
-    import type { SavedView } from '$features/saved-views/models';
     import type { Snippet } from 'svelte';
 
+    import { PUBLIC_INTERCOM_APPID } from '$app/env/public';
     import { beforeNavigate, goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { useSidebar } from '$comp/ui/sidebar';
-    import { env } from '$env/dynamic/public';
-    import { resolveAssistantAccessState } from '$features/assistant/access-state';
-    import {
-        getAssistantAccessQuery,
-        getAssistantConversationSharingQuery,
-        invalidateAssistantAccessQueries,
-        putAssistantConversationSharingMutation
-    } from '$features/assistant/api.svelte';
-    import { setAssistantControls } from '$features/assistant/controls.svelte';
-    import { assistantPageContext, type AssistantResourceContext } from '$features/assistant/page-context.svelte';
-    import { getIntercomTokenQuery } from '$features/auth/api.svelte';
-    import { accessToken, gotoLogin } from '$features/auth/index.svelte';
-    import { ChangePlanDialogHost, UpgradeRequiredDialog } from '$features/billing';
-    import {
-        createOrganizationEventNotificationRefresher,
-        invalidatePersistentEventQueries,
-        type OrganizationEventNotificationRefresher
-    } from '$features/events/api.svelte';
-    import { filterUsesPremiumFeatures, getSearchResourceForPathname } from '$features/events/premium-filter';
-    import { buildIntercomBootOptions, IntercomShell } from '$features/intercom';
-    import { shouldLoadIntercomOrganization } from '$features/intercom/config';
-    import { getIntercomRouteKey } from '$features/intercom/updates';
-    import Notifications from '$features/notifications/components/notifications.svelte';
-    import {
-        getOrganizationQuery,
-        getOrganizationsQuery,
-        invalidateOrganizationQueries,
-        invalidateOrganizationUsageQueries,
-        invalidatePlanOverageQueries
-    } from '$features/organizations/api.svelte';
-    import OrganizationNotifications from '$features/organizations/components/organization-notifications.svelte';
-    import { organization, showOrganizationNotifications } from '$features/organizations/context.svelte';
-    import { premiumPage } from '$features/organizations/premium-page.svelte';
-    import { getUtcMonthKey, ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS } from '$features/organizations/utils';
-    import ProductTourHost from '$features/product-tours/components/product-tour-host.svelte';
-    import { setProductTourControls } from '$features/product-tours/controls.svelte';
-    import { isProductTourSetupRoute } from '$features/product-tours/eligibility';
-    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
-    import { invalidateProjectQueries } from '$features/projects/api.svelte';
-    import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted, putUserSavedViewOrder } from '$features/saved-views/api.svelte';
-    import { getPersonalSavedViewOrder, resolvePersonalSavedViewOrder } from '$features/saved-views/ordering';
-    import { savedViewHref } from '$features/saved-views/slugs';
-    import { appKeyboardShortcuts, isKeyboardShortcut } from '$features/shared/keyboard-shortcuts';
-    import { createProjectStackNotificationRefresher, invalidateStackQueries, type ProjectStackNotificationRefresher } from '$features/stacks/api.svelte';
-    import { invalidateTokenQueries } from '$features/tokens/api.svelte';
-    import { getMeQuery, invalidateUserQueries } from '$features/users/api.svelte';
-    import { getGravatarFromCurrentUser } from '$features/users/gravatar.svelte';
-    import { invalidateWebhookQueries } from '$features/webhooks/api.svelte';
-    import { ChangeType, isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '$features/websockets/models';
-    import { WebSocketClient } from '$features/websockets/web-socket-client.svelte';
-    import { Telemetry } from '$lib/telemetry';
     import { useMiddleware } from '@foundatiofx/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { useInterval } from 'runed';
     import { tick } from 'svelte';
     import { SvelteURLSearchParams } from 'svelte/reactivity';
     import { fade } from 'svelte/transition';
+
+    import type { AssistantPromptRequest } from '#features/assistant/models.ts';
+    import type { SavedView } from '#features/saved-views/models.ts';
+
+    import { useSidebar } from '#comp/ui/sidebar/index.ts';
+    import { resolveAssistantAccessState } from '#features/assistant/access-state.ts';
+    import {
+        getAssistantAccessQuery,
+        getAssistantConversationSharingQuery,
+        invalidateAssistantAccessQueries,
+        putAssistantConversationSharingMutation
+    } from '#features/assistant/api.svelte.ts';
+    import { setAssistantControls } from '#features/assistant/controls.svelte.ts';
+    import { assistantPageContext, type AssistantResourceContext } from '#features/assistant/page-context.svelte.ts';
+    import { getIntercomTokenQuery } from '#features/auth/api.svelte.ts';
+    import { accessToken, gotoLogin } from '#features/auth/index.svelte.ts';
+    import { ChangePlanDialogHost, UpgradeRequiredDialog } from '#features/billing/index.ts';
+    import {
+        createOrganizationEventNotificationRefresher,
+        invalidatePersistentEventQueries,
+        type OrganizationEventNotificationRefresher
+    } from '#features/events/api.svelte.ts';
+    import { filterUsesPremiumFeatures, getSearchResourceForPathname } from '#features/events/premium-filter.ts';
+    import { shouldLoadIntercomOrganization } from '#features/intercom/config.ts';
+    import { buildIntercomBootOptions, IntercomShell } from '#features/intercom/index.ts';
+    import { getIntercomRouteKey } from '#features/intercom/updates.ts';
+    import { isShallowNavigationWithinPage } from '#features/navigation/shallow-navigation.ts';
+    import { getVisibleUrl } from '#features/navigation/visible-url.ts';
+    import Notifications from '#features/notifications/components/notifications.svelte';
+    import {
+        getOrganizationQuery,
+        getOrganizationsQuery,
+        invalidateOrganizationQueries,
+        invalidateOrganizationUsageQueries,
+        invalidatePlanOverageQueries
+    } from '#features/organizations/api.svelte.ts';
+    import OrganizationNotifications from '#features/organizations/components/organization-notifications.svelte';
+    import { organization, showOrganizationNotifications } from '#features/organizations/context.svelte.ts';
+    import { premiumPage } from '#features/organizations/premium-page.svelte.ts';
+    import { getUtcMonthKey, ORGANIZATION_USAGE_ROLLOVER_CHECK_INTERVAL_MS } from '#features/organizations/utils.ts';
+    import ProductTourHost from '#features/product-tours/components/product-tour-host.svelte';
+    import { setProductTourControls } from '#features/product-tours/controls.svelte.ts';
+    import { isProductTourSetupRoute } from '#features/product-tours/eligibility.ts';
+    import { productTourCheckpoint } from '#features/product-tours/state.svelte.ts';
+    import { invalidateProjectQueries } from '#features/projects/api.svelte.ts';
+    import { getSavedViewsQuery, invalidateSavedViewQueries, isSavedViewDeleted, putUserSavedViewOrder } from '#features/saved-views/api.svelte.ts';
+    import { getPersonalSavedViewOrder, resolvePersonalSavedViewOrder } from '#features/saved-views/ordering.ts';
+    import { savedViewHref } from '#features/saved-views/slugs.ts';
+    import { appKeyboardShortcuts, isKeyboardShortcut } from '#features/shared/keyboard-shortcuts.ts';
+    import { createProjectStackNotificationRefresher, invalidateStackQueries, type ProjectStackNotificationRefresher } from '#features/stacks/api.svelte.ts';
+    import { invalidateTokenQueries } from '#features/tokens/api.svelte.ts';
+    import { getMeQuery, invalidateUserQueries } from '#features/users/api.svelte.ts';
+    import { getGravatarFromCurrentUser } from '#features/users/gravatar.svelte.ts';
+    import { invalidateWebhookQueries } from '#features/webhooks/api.svelte.ts';
+    import { ChangeType, isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '#features/websockets/models.ts';
+    import { WebSocketClient } from '#features/websockets/web-socket-client.svelte.ts';
+    import { Telemetry } from '#lib/telemetry/index.ts';
 
     import { type NavigationItemContext, routes } from '../routes.svelte';
     import KeyboardShortcutsDialog from './(components)/keyboard-shortcuts-dialog.svelte';
@@ -82,20 +86,20 @@
     const assistantPageHref = resolve('/(app)/exie');
     let isAuthenticated = $derived(!!accessToken.current);
     let requiresPremium = $derived(
-        premiumPage.requiresPremium || filterUsesPremiumFeatures(page.url.searchParams.get('filter'), getSearchResourceForPathname(page.url.pathname))
+        premiumPage.requiresPremium || filterUsesPremiumFeatures(getVisibleUrl().searchParams.get('filter'), getSearchResourceForPathname(page.url.pathname))
     );
     const sidebar = useSidebar();
     let isCommandOpen = $state(false);
     let isAssistantOpen = $state(false);
-    let AssistantPanel = $state<typeof import('$features/assistant/components/assistant-panel.svelte').default>();
+    let AssistantPanel = $state<typeof import('#features/assistant/components/assistant-panel.svelte').default>();
     let assistantPromptRequest = $state<AssistantPromptRequest>();
     let isAssistantPage = $derived(page.url.pathname === assistantPageHref);
     let assistantResourceContext = $derived(isAssistantPage ? undefined : assistantPageContext.getContext(page.params.eventId, page.params.stackId));
     let assistantProjectId = $derived(
-        isAssistantPage ? (page.url.searchParams.get('project') ?? undefined) : (assistantResourceContext?.projectId ?? page.params.projectId)
+        isAssistantPage ? (getVisibleUrl().searchParams.get('project') ?? undefined) : (assistantResourceContext?.projectId ?? page.params.projectId)
     );
     let assistantPath = $derived(getAssistantPath(assistantResourceContext, getAssistantSourcePath()));
-    let assistantExpandHref = $derived(buildAssistantPageHref(`${page.url.pathname}${page.url.search}`, assistantPath, assistantProjectId));
+    let assistantExpandHref = $derived(buildAssistantPageHref(getVisibleHref(), assistantPath, assistantProjectId));
     let assistantReturnHref = $derived(getAssistantReturnHref());
     let commandResetKey = $state(0);
     let isKeyboardShortcutsOpen = $state(false);
@@ -110,8 +114,13 @@
         openCatalog: () => openGuidedTours()
     });
 
-    // Auto-reset premium page state on navigation so pages don't need cleanup
-    beforeNavigate(() => {
+    // Auto-reset premium page state on navigation so pages don't need cleanup. Shallow history
+    // changes keep the page mounted, so it would not set the state again.
+    beforeNavigate((navigation) => {
+        if (isShallowNavigationWithinPage(navigation)) {
+            return;
+        }
+
         premiumPage.current = undefined;
     });
 
@@ -171,19 +180,25 @@
     }
 
     function getAssistantReturnHref(): string {
-        return normalizeAssistantHref(page.url.searchParams.get('from')) ?? resolve('/');
+        return normalizeAssistantHref(getVisibleUrl().searchParams.get('from')) ?? resolve('/(app)');
     }
 
     function getAssistantSourcePath(): string {
         if (!isAssistantPage) {
-            return `${page.url.pathname}${page.url.search}`;
+            return getVisibleHref();
         }
 
-        return normalizeAssistantHref(page.url.searchParams.get('context')) ?? normalizeAssistantHref(page.url.searchParams.get('from')) ?? assistantPageHref;
+        const searchParams = getVisibleUrl().searchParams;
+        return normalizeAssistantHref(searchParams.get('context')) ?? normalizeAssistantHref(searchParams.get('from')) ?? assistantPageHref;
+    }
+
+    function getVisibleHref(): string {
+        const url = getVisibleUrl();
+        return `${url.pathname}${url.search}`;
     }
 
     async function loadAssistantPanel(): Promise<void> {
-        AssistantPanel ??= (await import('$features/assistant/components/assistant-panel.svelte')).default;
+        AssistantPanel ??= (await import('#features/assistant/components/assistant-panel.svelte')).default;
     }
 
     function normalizeAssistantHref(value: null | string): string | undefined {
@@ -192,7 +207,7 @@
         }
 
         const url = new URL(value, page.url.origin);
-        if (url.origin !== page.url.origin || url.pathname === assistantPageHref || !url.pathname.startsWith(resolve('/'))) {
+        if (url.origin !== page.url.origin || url.pathname === assistantPageHref || !url.pathname.startsWith(resolve(''))) {
             return undefined;
         }
 
@@ -261,7 +276,7 @@
     async function stopImpersonating(): Promise<void> {
         isCommandOpen = false;
         organization.current = organizations[0]?.id;
-        await goto(resolve('/'));
+        await goto(resolve('/(app)'));
     }
 
     async function toggleAssistantPanel(): Promise<void> {
@@ -555,7 +570,7 @@
     });
     const impersonatedOrganization = $derived(impersonatingOrganizationId ? impersonatedOrganizationQuery.data : undefined);
 
-    const intercomAppId = $derived(env.PUBLIC_INTERCOM_APPID ?? '');
+    const intercomAppId = $derived(PUBLIC_INTERCOM_APPID ?? '');
     const intercomTokenQuery = getIntercomTokenQuery();
     const shouldFetchIntercomOrganization = $derived(shouldLoadIntercomOrganization(intercomAppId, intercomTokenQuery.isSuccess));
 

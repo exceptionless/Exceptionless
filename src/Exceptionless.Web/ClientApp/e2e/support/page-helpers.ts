@@ -1,7 +1,14 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { parse } from 'devalue';
 
 export function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Reads the `page.state` that SvelteKit stored with the current history entry. */
+export async function getHistoryPageState(page: Page): Promise<Record<string, unknown> | undefined> {
+    const serialized = await page.evaluate(() => (window.history.state as null | { 'sveltekit:metadata'?: { state?: string } })?.['sveltekit:metadata']?.state);
+    return serialized ? (parse(serialized) as Record<string, unknown>) : undefined;
 }
 
 export function getIdFromUrl(page: Page, pattern: RegExp): string {

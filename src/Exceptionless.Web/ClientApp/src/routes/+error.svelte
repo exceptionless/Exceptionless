@@ -1,10 +1,6 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import Logo from '$comp/logo.svelte';
-    import { Button } from '$comp/ui/button';
-    import { accessToken } from '$features/auth/index.svelte';
-    import { documentationHref, supportIssuesHref } from '$features/shared/help-links';
     import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
     import BookOpenIcon from '@lucide/svelte/icons/book-open';
     import FolderKanbanIcon from '@lucide/svelte/icons/folder-kanban';
@@ -12,6 +8,11 @@
     import SearchXIcon from '@lucide/svelte/icons/search-x';
     import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
     import SparklesIcon from '@lucide/svelte/icons/sparkles';
+
+    import Logo from '#comp/logo.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { accessToken } from '#features/auth/index.svelte.ts';
+    import { documentationHref, supportIssuesHref } from '#features/shared/help-links.ts';
 
     const isAuthenticated = $derived(Boolean(accessToken.current));
     const isNotFound = $derived(page.status === 404);

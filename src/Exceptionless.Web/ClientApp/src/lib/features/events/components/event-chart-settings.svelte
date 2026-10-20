@@ -1,16 +1,17 @@
 <script lang="ts">
-    import type { EventChart } from '$generated/api';
-
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import * as Select from '$comp/ui/select';
-    import { organization } from '$features/organizations/context.svelte';
-    import { ariaInvalid, mapFieldErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
     import { untrack } from 'svelte';
+
+    import type { EventChart } from '#generated/api.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import * as Select from '#comp/ui/select/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { ariaInvalid, mapFieldErrors } from '#shared/validation.ts';
 
     import { getEventMeasurementsQuery } from '../api.svelte';
     import { eventChartSchema } from '../event-chart';

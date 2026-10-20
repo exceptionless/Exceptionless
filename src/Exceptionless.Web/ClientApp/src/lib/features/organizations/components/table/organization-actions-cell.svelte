@@ -1,13 +1,6 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { deleteOrganization, deleteOrganizationUser } from '$features/organizations/api.svelte';
-    import { getProblemMessage } from '$features/shared/validation';
-    import { getMeQuery } from '$features/users/api.svelte';
     import ChangePlan from '@lucide/svelte/icons/credit-card';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import ViewInvoices from '@lucide/svelte/icons/file-text';
@@ -15,6 +8,14 @@
     import Edit from '@lucide/svelte/icons/pen';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
+
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { deleteOrganization, deleteOrganizationUser } from '#features/organizations/api.svelte.ts';
+    import { getProblemMessage } from '#features/shared/validation.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
 
     import LeaveOrganizationDialog from '../dialogs/leave-organization-dialog.svelte';
     import RemoveOrganizationDialog from '../dialogs/remove-organization-dialog.svelte';

@@ -1,10 +1,11 @@
-import type { NewWebhook, Webhook } from '$features/webhooks/models';
-import type { WebSocketMessageValue } from '$features/websockets/models';
-
-import { accessToken } from '$features/auth/index.svelte';
-import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+
+import type { NewWebhook, Webhook } from '#features/webhooks/models.ts';
+import type { WebSocketMessageValue } from '#features/websockets/models.ts';
+
+import { accessToken } from '#features/auth/index.svelte.ts';
+import { DEFAULT_LIMIT } from '#features/shared/api/api.svelte.ts';
 
 export async function invalidateWebhookQueries(queryClient: QueryClient, message: WebSocketMessageValue<'WebhookChanged'>) {
     const { id, organization_id, project_id } = message;

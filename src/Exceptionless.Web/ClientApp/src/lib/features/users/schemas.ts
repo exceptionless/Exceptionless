@@ -1,6 +1,6 @@
 import { email, type infer as Infer, object } from 'zod';
 
-export { type UpdateUserFormData, UpdateUserSchema } from '$generated/schemas';
+export { type UpdateUserFormData, UpdateUserSchema } from '#generated/schemas.ts';
 
 export const InviteUserSchema = object({
     email: email('Please enter a valid email address')

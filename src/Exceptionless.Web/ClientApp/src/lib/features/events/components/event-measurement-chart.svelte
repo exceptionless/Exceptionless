@@ -1,12 +1,13 @@
 <script lang="ts">
-    import type { EventChart, EventChartResult } from '$generated/api';
-
-    import * as Chart from '$comp/ui/chart';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { formatDateLabel } from '$features/shared/dates';
     import { scaleUtc } from 'd3-scale';
     import { curveLinear } from 'd3-shape';
     import { BarChart, LineChart, Points, Spline } from 'layerchart';
+
+    import type { EventChart, EventChartResult } from '#generated/api.ts';
+
+    import * as Chart from '#comp/ui/chart/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { formatDateLabel } from '#features/shared/dates.ts';
 
     import { chartSeries, formatMeasurement, type MeasurementPoint, measurementUnit } from '../event-chart';
 

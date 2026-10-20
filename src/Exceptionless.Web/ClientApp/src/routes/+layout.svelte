@@ -4,21 +4,23 @@
     import { beforeNavigate, goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import * as Sidebar from '$comp/ui/sidebar';
-    import { Toaster } from '$comp/ui/sonner';
-    import { accessToken } from '$features/auth/index.svelte';
-    import { handleUnexpectedUnauthorized } from '$features/auth/unauthorized';
-    import { canonicalAppUrl } from '$features/navigation/legacy-links';
-    import { buildServiceStatusUrl, createServiceStatusRedirector } from '$features/status/service-status-redirect';
-    import { getApiUrl, getServerUrl } from '$shared/api/urls';
     import { type FetchClientContext, ProblemDetails, setAccessTokenFunc, setBaseUrl, setRequestOptions, useMiddleware } from '@foundatiofx/fetchclient';
     import { error, isHttpError } from '@sveltejs/kit';
     import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
     import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
+    import { ModeWatcher } from 'mode-watcher';
+
+    import * as Sidebar from '#comp/ui/sidebar/index.ts';
+    import { Toaster } from '#comp/ui/sonner/index.ts';
+    import { accessToken } from '#features/auth/index.svelte.ts';
+    import { handleUnexpectedUnauthorized } from '#features/auth/unauthorized.ts';
+    import { canonicalAppUrl } from '#features/navigation/legacy-links.ts';
+    import { getVisibleUrl } from '#features/navigation/visible-url.ts';
+    import { buildServiceStatusUrl, createServiceStatusRedirector } from '#features/status/service-status-redirect.ts';
 
     import '../app.css';
 
-    import { ModeWatcher } from 'mode-watcher';
+    import { getApiUrl, getServerUrl } from '#shared/api/urls.ts';
 
     import { routes } from './routes.svelte';
 
@@ -28,7 +30,11 @@
 
     let { children }: Props = $props();
 
-    beforeNavigate(({ cancel, to, type }) => {
+    beforeNavigate(({ cancel, shallow, to, type }) => {
+        if (shallow && type === 'goto') {
+            return;
+        }
+
         if (!to || to.url.origin !== page.url.origin) {
             return;
         }
@@ -37,7 +43,7 @@
             cancel();
             void goto(canonical, {
                 // A followed link needs its own history entry; Back/Forward must reuse the existing entry.
-                replaceState: type === 'popstate'
+                replace: type === 'popstate'
             });
         }
     });
@@ -64,13 +70,13 @@
             return response.ok;
         },
         navigate: async () => {
-            const url = page.url;
+            const url = getVisibleUrl();
             if (url.pathname.startsWith(resolve('/status'))) {
                 return;
             }
 
             await goto(buildServiceStatusUrl(resolve('/status'), url), {
-                replaceState: true
+                replace: true
             });
         }
     });

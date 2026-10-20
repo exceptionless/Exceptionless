@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Badge } from '$comp/ui/badge';
+    import { Badge } from '#comp/ui/badge/index.ts';
 
     interface Props {
         scopes: string[];

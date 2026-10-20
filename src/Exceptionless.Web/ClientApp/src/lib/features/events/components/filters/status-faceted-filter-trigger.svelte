@@ -1,8 +1,9 @@
 <script lang="ts">
-    import type { StackStatus } from '$features/stacks/models';
-
-    import { Button, type ButtonProps } from '$comp/ui/button';
     import Filter from '@lucide/svelte/icons/filter';
+
+    import type { StackStatus } from '#features/stacks/models.ts';
+
+    import { Button, type ButtonProps } from '#comp/ui/button/index.ts';
 
     import { StatusFilter } from './models.svelte';
 

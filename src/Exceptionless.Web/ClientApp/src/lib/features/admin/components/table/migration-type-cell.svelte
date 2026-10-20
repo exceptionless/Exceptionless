@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { MigrationType } from '$features/admin/models';
+    import { MigrationType } from '#features/admin/models.ts';
 
     interface Props {
         value: number;

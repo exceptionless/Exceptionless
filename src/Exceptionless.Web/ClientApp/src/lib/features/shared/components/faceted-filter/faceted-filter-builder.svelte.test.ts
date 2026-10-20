@@ -1,6 +1,7 @@
-import { DateFilter, KeywordFilter } from '$features/events/components/filters/models.svelte';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
+
+import { DateFilter, KeywordFilter } from '#features/events/components/filters/models.svelte.ts';
 
 import type { IFilter } from './models';
 

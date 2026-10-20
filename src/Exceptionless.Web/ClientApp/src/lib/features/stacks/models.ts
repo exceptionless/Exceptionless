@@ -1,2 +1,2 @@
-export type { Stack } from '$generated/api';
-export { StackStatus } from '$generated/api';
+export type { Stack } from '#generated/api.ts';
+export { StackStatus } from '#generated/api.ts';

@@ -1,6 +1,6 @@
-import type { CountResult } from '$shared/models';
-
 import { describe, expect, it } from 'vitest';
+
+import type { CountResult } from '#shared/models/index.ts';
 
 import { tagSuggestionAggregation, tagSuggestions, tagSuggestionSession } from './tag-suggestions';
 

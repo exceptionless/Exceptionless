@@ -1,7 +1,7 @@
-import type { EventChart, EventChartResult } from '$generated/api';
-
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { EventChart, EventChartResult } from '#generated/api.ts';
 
 import EventMeasurementChart from './event-measurement-chart.svelte';
 

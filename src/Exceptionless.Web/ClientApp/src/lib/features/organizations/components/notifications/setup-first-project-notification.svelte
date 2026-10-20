@@ -1,9 +1,10 @@
 <script lang="ts">
-    import type { NotificationProps } from '$comp/notification';
-
     import { resolve } from '$app/paths';
-    import { Notification, NotificationDescription, NotificationTitle } from '$comp/notification';
-    import { A } from '$comp/typography';
+
+    import type { NotificationProps } from '#comp/notification/index.ts';
+
+    import { Notification, NotificationDescription, NotificationTitle } from '#comp/notification/index.ts';
+    import { A } from '#comp/typography/index.ts';
 
     let { ...restProps }: NotificationProps = $props();
 </script>

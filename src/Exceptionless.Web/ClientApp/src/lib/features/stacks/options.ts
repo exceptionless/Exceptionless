@@ -1,6 +1,6 @@
-import type { DropdownItem } from '$features/shared/options';
+import type { DropdownItem } from '#features/shared/options.ts';
 
-import { StackStatus } from '$features/stacks/models';
+import { StackStatus } from '#features/stacks/models.ts';
 
 export const stackStatuses: DropdownItem<StackStatus>[] = [
     {

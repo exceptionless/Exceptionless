@@ -9,8 +9,8 @@ using Exceptionless.Core.Validation;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Insulation.Security;
 using Exceptionless.Web.Api;
-using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Api.Results;
+using Exceptionless.Web.Assistant;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Mcp;
@@ -31,6 +31,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Net.Http.Headers;
 using ModelContextProtocol.AspNetCore;
 using OpenTelemetry;
@@ -122,7 +123,9 @@ public partial class Program
             builder.Services.AddSingleton(configuration);
             builder.Services.AddSingleton(apmConfig);
             builder.Services.AddAppOptions(options);
+            builder.Services.AddSingleton(TrustedForwardedHeadersOptions.ReadFromConfiguration(configuration));
             builder.Services.AddHttpContextAccessor();
+            builder.Services.AddCsp(nonceByteAmount: 32);
 
             builder.Services.AddCors(b => b.AddPolicy("AllowAny", p => p
                 .AllowAnyHeader()
@@ -132,13 +135,8 @@ public partial class Program
                 .SetPreflightMaxAge(TimeSpan.FromMinutes(5))
                 .WithExposedHeaders("ETag", Headers.LegacyConfigurationVersion, Headers.ConfigurationVersion, HeaderNames.Link, Headers.RateLimit, Headers.RateLimitRemaining, Headers.ResultCount)));
 
-            builder.Services.Configure<ForwardedHeadersOptions>(o =>
-            {
-                o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-                o.RequireHeaderSymmetry = false;
-                o.KnownIPNetworks.Clear();
-                o.KnownProxies.Clear();
-            });
+            builder.Services.AddOptions<ForwardedHeadersOptions>()
+                .Configure<TrustedForwardedHeadersOptions>(ForwardedHeadersConfiguration.Configure);
 
             builder.Services.ConfigureHttpJsonOptions(o =>
             {
@@ -231,6 +229,7 @@ public partial class Program
                 }
             });
             app.UseStatusCodePages(WriteProblemDetailsStatusCodeResponseAsync);
+            app.UseForwardedHeaders();
 
             app.UseHealthChecks("/health", new HealthCheckOptions
             {
@@ -266,59 +265,8 @@ public partial class Program
             if (ssl)
                 app.UseHttpsRedirection();
 
-            app.UseCsp(csp =>
-            {
-                csp.AllowFonts.FromSelf()
-                    .From("https://fonts.gstatic.com")
-                    .From("https://www.gravatar.com")
-                    .From("https://fonts.intercomcdn.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowImages.FromSelf()
-                    .From("data:")
-                    .From("https://q.stripe.com")
-                    .From("https://js.intercomcdn.com")
-                    .From("https://downloads.intercomcdn.com")
-                    .From("https://uploads.intercomcdn.com")
-                    .From("https://static.intercomassets.com")
-                    .From("https://user-images.githubusercontent.com")
-                    .From("https://www.gravatar.com")
-                    .From("http://www.gravatar.com");
-                csp.AllowScripts.FromSelf()
-                    .AllowUnsafeInline()
-                    .AllowUnsafeEval()
-                    .From("https://js.stripe.com")
-                    .From("https://widget.intercom.io")
-                    .From("https://js.intercomcdn.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowStyles.FromSelf()
-                    .AllowUnsafeInline()
-                    .From("https://fonts.googleapis.com")
-                    .From("https://cdn.jsdelivr.net");
-                csp.AllowConnections.ToSelf()
-                    .To("https://collector.exceptionless.io")
-                    .To("https://config.exceptionless.io")
-                    .To("https://heartbeat.exceptionless.io")
-                    .To("https://via.intercom.io")
-                    .To("https://api.intercom.io")
-                    .To("https://api-iam.intercom.io/")
-                    .To("https://api-ping.intercom.io")
-                    .To("https://*.intercom-messenger.com")
-                    .To("wss://*.intercom-messenger.com")
-                    .To("https://nexus-websocket-a.intercom.io")
-                    .To("wss://nexus-websocket-a.intercom.io")
-                    .To("https://nexus-websocket-b.intercom.io")
-                    .To("wss://nexus-websocket-b.intercom.io")
-                    .To("https://uploads.intercomcdn.com")
-                    .To("https://uploads.intercomusercontent.com");
-
-                ApiContentSecurityPolicy.AllowConfiguredOrigins(csp, configuration.GetValue<string>("ApiUrl"));
-
-                csp.OnSendingHeader = new Func<CspSendingHeaderContext, Task>(context =>
-                {
-                    context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
-                    return Task.CompletedTask;
-                });
-            });
+            var frontendOptions = app.Services.GetRequiredService<AppOptions>();
+            app.UseCsp(csp => FrontendContentSecurityPolicy.Configure(csp, app.Environment.WebRootFileProvider, frontendOptions));
 
             app.UseSerilogRequestLogging(o =>
             {
@@ -343,14 +291,15 @@ public partial class Program
                 };
             });
 
-            app.UseStaticFiles();
+            var fileServerOptions = new FileServerOptions();
+            fileServerOptions.StaticFileOptions.OnPrepareResponse = ConfigureStaticFileResponse;
+            app.UseStaticFiles(fileServerOptions.StaticFileOptions);
             app.UseDefaultFiles();
-            app.UseFileServer();
+            app.UseFileServer(fileServerOptions);
             app.UseRouting();
             app.UseMiddleware<McpOriginValidationMiddleware>();
             app.UseCors("AllowAny");
             app.UseHttpMethodOverride();
-            app.UseForwardedHeaders();
 
             app.UseAuthentication();
             app.UseAuthorization();
@@ -370,12 +319,7 @@ public partial class Program
             }
 
             app.MapOpenApi("/docs/v2/openapi.json");
-            app.MapScalarApiReference("/docs", o =>
-            {
-                o.WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
-                    .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
-                    .AddPreferredSecuritySchemes("Bearer");
-            });
+            app.MapScalarApiReference("/docs", ConfigureScalar);
             app.MapApiEndpoints();
             app.MapGet("/mcp", () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed))
                 .RequireAuthorization(AuthorizationRoles.McpPolicy)
@@ -429,6 +373,28 @@ public partial class Program
             .ExecuteAsync(statusCodeContext.HttpContext);
     }
 
+    internal static void ConfigureStaticFileResponse(StaticFileResponseContext context)
+    {
+        // Revalidate the shell so a changed runtime-config version reaches the browser.
+        // env.js and compiled assets retain their cache-busting URLs and normal caching.
+        if (String.Equals(context.File.Name, "index.html", StringComparison.OrdinalIgnoreCase))
+            context.Context.Response.Headers.CacheControl = "no-cache";
+    }
+
+    internal static void ConfigureScalar(ScalarOptions options, HttpContext context)
+    {
+        // Resolve per request so the document and CSP header share a fresh nonce.
+        var nonceService = context.RequestServices.GetRequiredService<ICspNonceService>();
+        string nonce = nonceService.GetNonce();
+        options.WithNonce(nonce)
+            .DisableDefaultFonts()
+            // The optional AI agent queries Scalar services even without a key on localhost.
+            .DisableAgent()
+            .WithOpenApiRoutePattern("/docs/{documentName}/openapi.json")
+            .AddDocument("v2", "Exceptionless API", "/docs/{documentName}/openapi.json", true)
+            .AddPreferredSecuritySchemes("Bearer");
+    }
+
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
     {
         var app = endpoints.CreateApplicationBuilder();
@@ -447,7 +413,7 @@ public partial class Program
             return next(context);
         });
 
-        app.UseStaticFiles();
+        app.UseStaticFiles(new StaticFileOptions { OnPrepareResponse = ConfigureStaticFileResponse });
         return app.Build();
     }
 

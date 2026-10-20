@@ -2,7 +2,7 @@ import type { Locator, Page, Request } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
-import { getVisibleText } from '../support/page-helpers';
+import { getHistoryPageState, getVisibleText } from '../support/page-helpers';
 
 test('home navigation honors personal and organization saved views and survives deletion', async ({ e2eApi, e2eScenario, page, request }) => {
     // Arrange
@@ -97,6 +97,9 @@ test('home navigation honors personal and organization saved views and survives 
         await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
     });
 
+    // Assert: switching home views reuses in-flight requests instead of cancelling them.
+    expect(failedApiRequests).toEqual([]);
+
     await test.step('clear deleted defaults and return to the first Stacks saved view', async () => {
         // Act
         const deletion = await page.evaluate(
@@ -113,17 +116,16 @@ test('home navigation honors personal and organization saved views and survives 
             },
             { organizationId: e2eScenario.organizationId, token: e2eScenario.userToken, viewName }
         );
-        // Assert
+        // Assert: the open view no longer exists. The full-page error replaces the app shell,
+        // which cancels the shell's in-flight requests.
         expect(deletion).toBe(202);
+        await expect(page.getByRole('heading', { name: "We couldn't find that page" })).toBeVisible();
 
         // Act
         await page.goto('/');
         // Assert
         await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
     });
-
-    // Assert
-    expect(failedApiRequests).toEqual([]);
 });
 
 test('saved view navigation order is personal, persistent, and resettable', async ({ e2eScenario, page, request }) => {
@@ -872,12 +874,7 @@ test('stream switches to a session-local saved view draft without mixing in-flig
     await expect(getVisibleText(page, sourceMessage)).toBeHidden();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expect
-        .poll(() =>
-            page.evaluate(() => {
-                const state = window.history.state as { 'sveltekit:states'?: { __exceptionlessSavedViewDraftFilter?: unknown } };
-                return state['sveltekit:states']?.__exceptionlessSavedViewDraftFilter;
-            })
-        )
+        .poll(async () => (await getHistoryPageState(page))?.__exceptionlessSavedViewDraftFilter)
         .toEqual({ filter: new URL(page.url()).searchParams.get('filter'), viewId: savedView.id });
 
     const updatedFilterDefinitions = JSON.stringify([
@@ -907,12 +904,7 @@ test('stream switches to a session-local saved view draft without mixing in-flig
     streamRequestFilters.length = 0;
     await page.reload();
     await expect
-        .poll(() =>
-            page.evaluate(() => {
-                const state = window.history.state as { 'sveltekit:states'?: { __exceptionlessSavedViewDraftFilter?: unknown } };
-                return state['sveltekit:states']?.__exceptionlessSavedViewDraftFilter;
-            })
-        )
+        .poll(async () => (await getHistoryPageState(page))?.__exceptionlessSavedViewDraftFilter)
         .toEqual({ filter: new URL(page.url()).searchParams.get('filter'), viewId: savedView.id });
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect.poll(() => streamRequestFilters.join('\n')).toContain(remoteExpression);

@@ -1,6 +1,6 @@
-import type { EventChart, EventChartPoint, EventChartResult } from '$generated/api';
+import type { EventChart, EventChartPoint, EventChartResult } from '#generated/api.ts';
 
-import { EventChartSchema } from '$generated/schemas';
+import { EventChartSchema } from '#generated/schemas.ts';
 
 export const eventChartSchema = EventChartSchema.superRefine((chart, context) => {
     if (!chart.measurement && (chart.aggregation !== 'count' || chart.mode === 'events')) {

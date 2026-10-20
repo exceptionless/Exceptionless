@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { A } from '$comp/typography';
+    import { A } from '#comp/typography/index.ts';
 
     import { buildEventDetailsHref } from './index';
 

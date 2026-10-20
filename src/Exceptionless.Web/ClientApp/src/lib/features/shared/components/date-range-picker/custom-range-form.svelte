@@ -1,16 +1,17 @@
 <script lang="ts">
-    import type { CustomDateRange } from '$features/shared/models';
-
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import * as Tooltip from '$comp/ui/tooltip/index.js';
-    import { CustomDateRangeSchema } from '$features/shared/schemas';
-    import { validateAndResolveTime, validateDateMath } from '$features/shared/utils/datemath';
-    import { structuredCloneState } from '$features/shared/utils/state.svelte';
     import HelpCircle from '@lucide/svelte/icons/help-circle';
     import { createForm } from '@tanstack/svelte-form';
+
+    import type { CustomDateRange } from '#features/shared/models/index.ts';
+
+    import DateTime from '#comp/formatters/date-time.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
+    import { CustomDateRangeSchema } from '#features/shared/schemas.ts';
+    import { validateAndResolveTime, validateDateMath } from '#features/shared/utils/datemath.ts';
+    import { structuredCloneState } from '#features/shared/utils/state.svelte.ts';
 
     interface Props {
         apply?: (range: CustomDateRange) => void;

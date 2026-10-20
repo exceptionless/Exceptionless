@@ -1,39 +1,33 @@
 <script lang="ts">
-    import type { EventChart } from '$generated/api';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import * as DataTable from '$comp/data-table';
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import RefreshButton from '$comp/refresh-button.svelte';
-    import { H3 } from '$comp/typography';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { getEventChartQuery } from '$features/events/api.svelte';
+    import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
+    import { error } from '@sveltejs/kit';
+    import { createTable } from '@tanstack/svelte-table';
+    import { useEventListener, watch } from 'runed';
+    import { onDestroy, untrack } from 'svelte';
+    import { debounce } from 'throttle-debounce';
+
+    import type { EventChart } from '#generated/api.ts';
+
+    import * as DataTable from '#comp/data-table/index.ts';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import RefreshButton from '#comp/refresh-button.svelte';
+    import { H3 } from '#comp/typography/index.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/upgrade-required.svelte.ts';
+    import { getEventChartQuery } from '#features/events/api.svelte.ts';
     import {
         type GetEventsParams,
         getOrganizationCountQuery,
         getOrganizationEventsQuery,
         PERSISTENT_EVENT_DELETE_RECONCILE_EVENT
-    } from '$features/events/api.svelte';
-    import EventChartSettings from '$features/events/components/event-chart-settings.svelte';
-    import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
-    import EventMeasurementChart from '$features/events/components/event-measurement-chart.svelte';
-    import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
-    import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
-    import {
-        BooleanFilter,
-        DateFilter,
-        LevelFilter,
-        ProjectFilter,
-        ReferenceFilter,
-        SessionFilter,
-        StatusFilter,
-        StringFilter,
-        TagFilter,
-        TypeFilter,
-        VersionFilter
-    } from '$features/events/components/filters';
+    } from '#features/events/api.svelte.ts';
+    import EventChartSettings from '#features/events/components/event-chart-settings.svelte';
+    import EventDetailSheet from '#features/events/components/event-detail-sheet.svelte';
+    import EventMeasurementChart from '#features/events/components/event-measurement-chart.svelte';
+    import EventsDashboardChart from '#features/events/components/events-dashboard-chart.svelte';
+    import EventsStatsDashboard from '#features/events/components/events-stats-dashboard.svelte';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
@@ -46,34 +40,41 @@
         shouldRefreshPersistentEventRemoval,
         toFilter,
         updateFilterCache
-    } from '$features/events/components/filters/helpers.svelte';
-    import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
-    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
-    import EventsBulkActionsDropdownMenu from '$features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
-    import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
-    import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
-    import InvestigationListTour from '$features/events/components/tours/investigation-list.svelte';
-    import { type MeasurementPoint, parseChartParameter } from '$features/events/event-chart';
-    import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
-    import { organization } from '$features/organizations/context.svelte';
-    import { premiumPage } from '$features/organizations/premium-page.svelte';
-    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
-    import * as agg from '$features/shared/api/aggregations';
-    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
-    import { fillDateSeries } from '$features/shared/utils/charts.js';
-    import { toDateMathRange } from '$features/shared/utils/datemath';
-    import { parseDateMathRange } from '$features/shared/utils/datemath.js';
-    import { StackStatus } from '$features/stacks/models';
-    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
-    import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
-    import { error } from '@sveltejs/kit';
-    import { createTable } from '@tanstack/svelte-table';
-    import { useEventListener, watch } from 'runed';
-    import { onDestroy, untrack } from 'svelte';
-    import { debounce } from 'throttle-debounce';
+    } from '#features/events/components/filters/helpers.svelte.ts';
+    import {
+        BooleanFilter,
+        DateFilter,
+        LevelFilter,
+        ProjectFilter,
+        ReferenceFilter,
+        SessionFilter,
+        StatusFilter,
+        StringFilter,
+        TagFilter,
+        TypeFilter,
+        VersionFilter
+    } from '#features/events/components/filters/index.ts';
+    import OrganizationDefaultsFacetedFilterBuilder from '#features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
+    import EventsBulkActionsDropdownMenu from '#features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
+    import EventsDataTable from '#features/events/components/table/events-data-table.svelte';
+    import { defaultEventColumnVisibility, getColumns } from '#features/events/components/table/options.svelte.ts';
+    import InvestigationListTour from '#features/events/components/tours/investigation-list.svelte';
+    import { type MeasurementPoint, parseChartParameter } from '#features/events/event-chart.ts';
+    import { filterUsesPremiumFeatures } from '#features/events/premium-filter.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { premiumPage } from '#features/organizations/premium-page.svelte.ts';
+    import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '#features/saved-views/use-saved-views.svelte.ts';
+    import * as agg from '#features/shared/api/aggregations.ts';
+    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '#features/shared/table.svelte.ts';
+    import { fillDateSeries } from '#features/shared/utils/charts.ts';
+    import { toDateMathRange } from '#features/shared/utils/datemath.ts';
+    import { parseDateMathRange } from '#features/shared/utils/datemath.ts';
+    import { StackStatus } from '#features/stacks/models.ts';
+    import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
+    import { DEFAULT_OFFSET } from '#shared/api/api.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     import {
         ALL_TIME_QUERY_VALUE,

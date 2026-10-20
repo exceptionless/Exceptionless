@@ -1,6 +1,6 @@
-import type { EventChart } from '$generated/api';
-
 import { describe, expect, it } from 'vitest';
+
+import type { EventChart } from '#generated/api.ts';
 
 import { chartSeries, chartSignature, eventChartSchema, formatMeasurement, measurementUnit, parseChartParameter } from './event-chart';
 

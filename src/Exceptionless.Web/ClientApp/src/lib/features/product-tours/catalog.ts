@@ -1,7 +1,8 @@
 import type { RouteId } from '$app/types';
-import type { ProductTourState } from '$features/users/models';
 
 import { resolve } from '$app/paths';
+
+import type { ProductTourState } from '#features/users/models.ts';
 
 import type { ProductTourContext, ProductTourDefinition, ProductTourListItem, ProductTourName } from './models';
 
@@ -141,7 +142,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
         canResume: (checkpoint) => checkpoint === 'open-exie',
         description: 'Get help understanding errors and finding patterns.',
         name: 'exie-overview',
-        start: () => ({ checkpointName: 'open-exie', route: resolve('/') }),
+        start: () => ({ checkpointName: 'open-exie', route: resolve('/(app)') }),
         stateKey: 'exie_overview',
         title: 'Meet Exie'
     }

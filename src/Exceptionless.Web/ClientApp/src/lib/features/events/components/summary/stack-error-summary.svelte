@@ -1,9 +1,10 @@
 <script lang="ts">
-    import type { StackStatus } from '$features/stacks/models';
-
-    import { A, Muted } from '$comp/typography';
-    import StackStatusBadge from '$features/stacks/components/stack-status-badge.svelte';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
+
+    import type { StackStatus } from '#features/stacks/models.ts';
+
+    import { A, Muted } from '#comp/typography/index.ts';
+    import StackStatusBadge from '#features/stacks/components/stack-status-badge.svelte';
 
     import { buildStackDetailsHref, type StackSummaryModel, type SummaryModel, type SummaryTemplateKeys } from './index';
 

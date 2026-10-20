@@ -4,7 +4,7 @@
 
     $effect(() => {
         goto(resolve('/(app)/project/list'), {
-            replaceState: true
+            replace: true
         });
     });
 </script>

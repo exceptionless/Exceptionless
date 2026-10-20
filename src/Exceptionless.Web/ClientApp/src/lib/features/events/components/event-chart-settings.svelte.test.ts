@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import EventChartSettings from './event-chart-settings.svelte';
 
-vi.mock('$features/organizations/context.svelte', () => ({ organization: { current: 'organization-a' } }));
+vi.mock('#features/organizations/context.svelte.ts', () => ({ organization: { current: 'organization-a' } }));
 vi.mock('../api.svelte', () => ({
     getEventMeasurementsQuery: () => ({ data: { measurements: [{ name: 'duration', unit: 'ms' }], truncated: false }, error: null })
 }));
