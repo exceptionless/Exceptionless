@@ -2216,7 +2216,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         // Act - retry completes membership removal before scheduling cleanup.
         await RefreshDataAsync();
         using var retryResponse = await SendRequestAsync(request => request.Delete().AsGlobalAdminUser()
-            .AppendPaths("organizations", organization.Id).StatusCodeShouldBeOk());
+            .AppendPaths("organizations", organization.Id).StatusCodeShouldBeAccepted());
         await RefreshDataAsync();
         var result = await GetService<CleanupDataJob>().RunAsync(TestCancellationToken);
         var requester = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
