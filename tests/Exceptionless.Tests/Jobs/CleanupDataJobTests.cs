@@ -157,8 +157,10 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(retained.UserId);
     }
 
-    [Fact]
-    public async Task RunAsync_MembershipRestoredAfterOwnerRead_PreservesPrivateView()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task RunAsync_MembershipRestoredDuringOrganizationLookup_PreservesPrivateView(int restoreOnOrganizationRead)
     {
         // Arrange
         var savedViews = GetService<ISavedViewRepository>();
@@ -174,9 +176,14 @@ public class CleanupDataJobTests : IntegrationTestsBase
             Name = "Restored member", Slug = "restored-member", ViewType = "events"
         }, options => options.ImmediateConsistency());
         bool restored = false;
-        using var subscription = organizations.BeforeGet.AddHandler(async (_, _) =>
+        int organizationReads = 0;
+        using var subscription = organizations.BeforeGet.AddHandler(async (_, args) =>
         {
-            if (restored)
+            if (!args.Ids.Any(id => id.Value == organization.Id))
+                return;
+
+            organizationReads++;
+            if (restored || organizationReads != restoreOnOrganizationRead)
                 return;
 
             restored = true;
