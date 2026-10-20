@@ -405,7 +405,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await _organizationService.RemoveWebHooksAsync(organization);
         await _organizationService.RemoveSavedViewsAsync(organization);
         await _organizationService.CancelSubscriptionsAsync(organization);
-        await _organizationService.RemoveUsersAsync(organization, organization.DeletedByUserId);
+        await _organizationService.RemoveUsersAsync(organization, null);
 
         await RenewLockAsync(context);
         long removedEvents = await _eventRepository.RemoveAllByOrganizationIdAsync(organization.Id);

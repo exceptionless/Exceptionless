@@ -2169,7 +2169,7 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task DeleteOrganization_UserVersionConflict_ReturnsConflictAndCleanupJobPreservesRequester()
+    public async Task DeleteOrganization_UserVersionConflict_ReturnsConflictAndRetryPreservesRequester()
     {
         // Arrange
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
@@ -2209,11 +2209,13 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.NotNull(retained);
         Assert.NotNull(storedOrganization);
-        Assert.True(storedOrganization.IsDeleted);
+        Assert.False(storedOrganization.IsDeleted);
         Assert.NotNull(storedUser);
         Assert.Equal("Concurrent profile update", storedUser.FullName);
 
-        // Act - the existing cleanup job resumes the persisted deletion.
+        // Act - retry completes membership removal before scheduling cleanup.
+        using var retryResponse = await SendRequestAsync(request => request.Delete().AsGlobalAdminUser()
+            .AppendPaths("organizations", organization.Id).StatusCodeShouldBeOk());
         await RefreshDataAsync();
         var result = await GetService<CleanupDataJob>().RunAsync(TestCancellationToken);
         var requester = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
