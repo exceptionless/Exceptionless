@@ -288,6 +288,32 @@ public sealed class AssistantService(
                 yield break;
             }
 
+            if (allowTools
+                && toolCalls.Count == 0
+                && s_rawDsmlPattern.IsMatch(assistantContent.ToString())
+                && AssistantDsmlToolCallParser.TryParse(assistantContent.ToString(), out string leadingText, out var recoveredToolCalls))
+            {
+                // Some providers skip DeepSeek's tool parser; retrying usually hits the same provider again.
+                logger.LogInformation(
+                    "Recovered {ToolCallCount} assistant tool calls from raw DSML content for organization {OrganizationId}",
+                    recoveredToolCalls.Count,
+                    request.OrganizationId);
+                if (diagnostics is not null)
+                    diagnostics.RecoveredDsmlToolCalls += recoveredToolCalls.Count;
+
+                assistantContent.Clear().Append(leadingText);
+                assistantContentChunks.Clear();
+                if (leadingText.Length > 0)
+                    assistantContentChunks.Add(leadingText);
+
+                for (int index = 0; index < recoveredToolCalls.Count; index++)
+                {
+                    var pending = new PendingToolCall { Name = recoveredToolCalls[index].Name };
+                    pending.Arguments.Append(recoveredToolCalls[index].Arguments);
+                    toolCalls[index] = pending;
+                }
+            }
+
             if (s_rawDsmlPattern.IsMatch(assistantContent.ToString()))
             {
                 providerDiagnostics?.Reject("malformed_response");

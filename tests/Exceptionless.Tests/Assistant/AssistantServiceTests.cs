@@ -1874,6 +1874,85 @@ public sealed class AssistantServiceTests
         Assert.All(providerEntries, entry => Assert.Equal("malformed_response", entry.Properties["ProviderOutcome"]));
     }
 
+    [Fact]
+    public async Task StreamAsync_CompleteRawDsmlToolCall_ExecutesRecoveredToolWithoutRetry()
+    {
+        string dsmlPayload = JsonSerializer.Serialize(new
+        {
+            choices = new[]
+            {
+                new
+                {
+                    delta = new
+                    {
+                        content = """
+                            Let me snooze that stack.
+
+                            <｜DSML｜tool_calls>
+                            <｜DSML｜invoke name="snooze_stack">
+                            <｜DSML｜parameter name="stackId" string="true">invalid</｜DSML｜parameter>
+                            <｜DSML｜parameter name="duration" string="true">7d</｜DSML｜parameter>
+                            </｜DSML｜invoke>
+                            </｜DSML｜tool_calls>
+                            """
+                    }
+                }
+            }
+        });
+        var handler = new StubHttpMessageHandler(
+            $"data: {dsmlPayload}\n\ndata: [DONE]\n",
+            """
+            data: {"choices":[{"delta":{"content":"That stack id was not valid."}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "Snooze it for 7 days")], OrganizationId: "organization-id"),
+            "user-id",
+            CreatePlanOptions(),
+            diagnostics,
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        Assert.Equal(2, handler.RequestBodies.Count);
+        Assert.DoesNotContain("exposed internal DSML tool-call markup", handler.RequestBodies[1]);
+        Assert.Equal(["Let me snooze that stack.", "That stack id was not valid."], events.Where(item => item.Type == "text_delta").Select(item => item.Text));
+        var toolCall = Assert.Single(events, item => item.Type == "tool_call");
+        Assert.Equal("snooze_stack", toolCall.ToolName);
+        using (var arguments = JsonDocument.Parse(toolCall.Arguments!))
+        {
+            Assert.Equal("invalid", arguments.RootElement.GetProperty("stackId").GetString());
+            Assert.Equal("7d", arguments.RootElement.GetProperty("duration").GetString());
+        }
+
+        Assert.Contains($"\"code\":\"{McpErrorCodes.InvalidId}\"", Assert.Single(events, item => item.Type == "tool_result").Result);
+        Assert.DoesNotContain("DSML", JsonSerializer.Serialize(events), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1, diagnostics.RecoveredDsmlToolCalls);
+        Assert.Equal(0, diagnostics.MalformedResponseRetries);
+
+        // The follow-up request replays the recovered call as a structured tool call.
+        using var followup = JsonDocument.Parse(handler.RequestBodies[1]);
+        var assistant = Assert.Single(followup.RootElement.GetProperty("messages").EnumerateArray(),
+            message => message.GetProperty("role").GetString() == "assistant");
+        Assert.Equal("Let me snooze that stack.", assistant.GetProperty("content").GetString());
+        Assert.Equal("snooze_stack", assistant.GetProperty("tool_calls")[0].GetProperty("function").GetProperty("name").GetString());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
