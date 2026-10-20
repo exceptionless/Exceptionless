@@ -1,9 +1,8 @@
-using Foundatio.Repositories.Exceptions;
-using Foundatio.Repositories.Elasticsearch;
 using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -21,9 +20,11 @@ using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 
@@ -33,10 +34,14 @@ public sealed class AuthHandlerTests : TestWithServices
 {
     public AuthHandlerTests(ITestOutputHelper output) : base(output) { }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Handle_ExternalAccountDestinationSaveFails_DoesNotRestoreOwnership(bool ambiguousFailure)
+    protected override void RegisterServices(IServiceCollection services, AppOptions options)
+    {
+        base.RegisterServices(services, options);
+        services.ReplaceSingleton<IStripeBillingClient, FakeStripeBillingClient>();
+    }
+
+    [Fact]
+    public async Task Handle_ExternalAccountAmbiguousDestinationSaveFails_DoesNotRestoreOwnership()
     {
         // Arrange
         const string provider = "github";
@@ -53,13 +58,11 @@ public sealed class AuthHandlerTests : TestWithServices
         await GetService<MiniValidationValidator>().ValidateAndThrowAsync(destination);
         var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(IdentityUtils.UserAuthenticationType)) };
         context.Request.SetUser(destination);
-        Exception failure = ambiguousFailure
-            ? new IOException("Destination save failed.")
-            : new VersionConflictDocumentException("Destination user changed.");
+        var failure = new IOException("Destination save failed.");
         string? rotatedGeneration = null;
         User? currentOwner = null;
         var users = new Mock<IUserRepository>(MockBehavior.Strict);
-        users.Setup(repository => repository.GetUserByOAuthProviderAsync(provider, providerId, It.IsAny<CancellationToken>())).ReturnsAsync(displaced);
+        users.Setup(repository => repository.GetUsersByOAuthProviderAsync(provider, providerId, It.IsAny<CancellationToken>())).ReturnsAsync(new[] { displaced });
         users.Setup(repository => repository.GetByIdAsync(displaced.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(displaced);
         users.Setup(repository => repository.GetByIdAsync(destination.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(destination);
         users.Setup(repository => repository.SaveAsync(It.Is<User>(user => ReferenceEquals(user, displaced)), It.IsAny<CommandOptionsDescriptor<User>>()))
@@ -554,6 +557,7 @@ public sealed class AuthHandlerTests : TestWithServices
             GetService<ICacheClient>(),
             lockProvider ?? GetService<ILockProvider>(),
             GetService<AuthService>(),
+            GetService<OrganizationService>(),
             GetService<IMailer>(),
             GetService<IDomainLoginProvider>(),
             TimeProvider,

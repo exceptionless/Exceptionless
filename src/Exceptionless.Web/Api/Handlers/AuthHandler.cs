@@ -36,6 +36,7 @@ public class AuthHandler(
     ICacheClient cacheClient,
     ILockProvider lockProvider,
     AuthService authService,
+    OrganizationService organizationService,
     IMailer mailer,
     IDomainLoginProvider domainLoginProvider,
     TimeProvider timeProvider,
@@ -744,6 +745,7 @@ public class AuthHandler(
 
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("Invite").Identity(user.EmailAddress).SetHttpContext(httpContext));
 
+        await using var membershipLock = await organizationService.AcquireUserMembershipLockAsync(user.Id, httpContext.RequestAborted);
         var organization = await organizationRepository.GetByInviteTokenAsync(token);
         var invite = organization?.GetInvite(token);
         if (organization is null || invite is null)

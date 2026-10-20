@@ -62,7 +62,7 @@ public sealed class OrganizationServiceTests : TestWithServices
             tokens.Object, users.Object,
             new Mock<IWebHookRepository>(MockBehavior.Strict).Object,
             new Mock<IStripeBillingClient>(MockBehavior.Strict).Object,
-            GetService<UsageService>(), Log);
+            GetService<UsageService>(), GetService<Foundatio.Lock.ILockProvider>(), Log);
 
         // Act
         var exception = await Record.ExceptionAsync(() => service.SoftDeleteOrganizationAsync(organization, TestConstants.UserId));

@@ -2,6 +2,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Extensions.Hosting.Startup;
+using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
@@ -21,8 +22,9 @@ public class OrganizationService : IStartupAction
     private readonly IStripeBillingClient _stripeBillingClient;
     private readonly UsageService _usageService;
     private readonly ILogger _logger;
+    private readonly ILockProvider _lockProvider;
 
-    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IStripeBillingClient stripeBillingClient, UsageService usageService, ILoggerFactory loggerFactory)
+    public OrganizationService(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ISavedViewRepository savedViewRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IWebHookRepository webHookRepository, IStripeBillingClient stripeBillingClient, UsageService usageService, ILockProvider lockProvider, ILoggerFactory loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
@@ -32,8 +34,17 @@ public class OrganizationService : IStartupAction
         _webHookRepository = webHookRepository;
         _stripeBillingClient = stripeBillingClient;
         _usageService = usageService;
+        _lockProvider = lockProvider;
         _logger = loggerFactory.CreateLogger<OrganizationService>();
     }
+
+    public Task<ILock> AcquireUserMembershipLockAsync(string userId, CancellationToken cancellationToken = default)
+        => _lockProvider.AcquireAsync(GetUserMembershipLockKey(userId), cancellationToken: cancellationToken);
+
+    public Task<ILock?> TryAcquireUserMembershipLockAsync(string userId)
+        => _lockProvider.TryAcquireAsync(GetUserMembershipLockKey(userId), timeUntilExpires: null, acquireTimeout: TimeSpan.Zero);
+
+    private static string GetUserMembershipLockKey(string userId) => $"user-membership:{userId}";
 
     public Task RunAsync(CancellationToken shutdownToken = default)
     {
