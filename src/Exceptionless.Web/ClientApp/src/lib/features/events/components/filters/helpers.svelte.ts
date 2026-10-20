@@ -111,6 +111,27 @@ export function getProjectFilter(filters: IFilter[]): ProjectFilter {
     return filters.find((f) => f.type === 'project') as ProjectFilter;
 }
 
+/**
+ * Projects that scope facet discovery: the project picker plus positive project terms in a raw
+ * search, such as legacy saved views or hand-written URLs.
+ */
+export function getProjectScopeFilter(filters: IFilter[]): string {
+    const projectIds = [...(getProjectFilter(filters)?.value ?? [])];
+    for (const filter of filters) {
+        if (filter.type !== 'keyword') {
+            continue;
+        }
+
+        for (const [term] of ((filter as KeywordFilter).value ?? '').matchAll(/(?<![-!\w.])(?<!\bNOT\s+)project(?:_id)?:(?:\([^)]*\)|\S+)/gi)) {
+            for (const [projectId] of term.matchAll(/\b[a-f0-9]{24}\b/gi)) {
+                projectIds.push(projectId.toLowerCase());
+            }
+        }
+    }
+
+    return new ProjectFilter(projectIds.filter((projectId, index) => projectIds.indexOf(projectId) === index)).toFilter();
+}
+
 export function getStackFilter(filters: IFilter[]): StringFilter | undefined {
     return filters.find((f) => f.type === 'string') as StringFilter;
 }

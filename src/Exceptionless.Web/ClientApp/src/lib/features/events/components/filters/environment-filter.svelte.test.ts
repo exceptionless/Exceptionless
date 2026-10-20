@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { filterUsesPremiumFeatures } from '../../premium-filter';
-import { deserializeFilters, serializeFilters, toFilter } from './helpers.svelte';
-import { EnvironmentFilter, ProjectFilter } from './models.svelte';
+import { deserializeFilters, getProjectScopeFilter, serializeFilters, toFilter } from './helpers.svelte';
+import { EnvironmentFilter, KeywordFilter, ProjectFilter, TypeFilter } from './models.svelte';
 
 describe('EnvironmentFilter', () => {
     it('normalizes names and supports all, multiple, and unspecified environments', () => {
@@ -30,6 +30,20 @@ describe('EnvironmentFilter', () => {
         const clone = filter.clone();
         clone.value.push('staging');
         expect(filter.value).toEqual(['production', '']);
+    });
+
+    it('scopes environment discovery to picked projects and project terms in a raw search', () => {
+        const first = '537650f3b77efe23a47914f3';
+        const second = '537650f3b77efe23a47914f4';
+        const third = '537650f3b77efe23a47914f5';
+
+        expect(getProjectScopeFilter([new TypeFilter(['error'])])).toBe('');
+        expect(getProjectScopeFilter([new ProjectFilter([first]), new EnvironmentFilter(['production'])])).toBe(`project:${first}`);
+        expect(getProjectScopeFilter([new KeywordFilter(`type:error project:${first}`)])).toBe(`project:${first}`);
+        expect(getProjectScopeFilter([new KeywordFilter(`(project:${first} OR project_id:${second})`)])).toBe(`(project:${first} OR project:${second})`);
+        expect(getProjectScopeFilter([new KeywordFilter(`project:(${first} OR ${second})`)])).toBe(`(project:${first} OR project:${second})`);
+        expect(getProjectScopeFilter([new KeywordFilter(`-project:${first} !project:${second} NOT project:${third}`)])).toBe('');
+        expect(getProjectScopeFilter([new ProjectFilter([first]), new KeywordFilter(`project:${second}`)])).toBe(`(project:${first} OR project:${second})`);
     });
 
     it('allows environment searches on free plans and keeps custom data premium', () => {

@@ -9,7 +9,7 @@
     import { organization } from '#features/organizations/context.svelte.ts';
     import { terms } from '#features/shared/api/aggregations.ts';
 
-    import { toFilter } from './helpers.svelte';
+    import { getProjectScopeFilter } from './helpers.svelte';
     import { EnvironmentFilter } from './models.svelte';
 
     let { filter, filterChanged, filterRemoved, open = $bindable(false), title = 'Environment' }: FacetedFilterProps<EnvironmentFilter> = $props();
@@ -19,7 +19,7 @@
         params: {
             aggregations: 'terms:(environment~100)',
             get filter() {
-                return toFilter(scope?.filters.filter((filter) => filter.type === 'project') ?? []);
+                return getProjectScopeFilter(scope?.filters ?? []);
             },
             get time() {
                 return scope?.time ?? undefined;

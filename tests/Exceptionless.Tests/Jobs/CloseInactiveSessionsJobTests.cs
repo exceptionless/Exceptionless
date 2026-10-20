@@ -122,6 +122,39 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task WillApplyIdentityHeartbeatToEnvironmentSessionsOnDifferentPages()
+    {
+        const string userId = "blake@exceptionless.io";
+        var production = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+        production.Environment = "production";
+        var staging = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(10), userId);
+        staging.Environment = "staging";
+
+        // Open sessions are paged newest first, 100 at a time, so these place the staging session on the second page.
+        var events = new List<PersistentEvent> { production, staging };
+        for (int i = 0; i < 100; i++)
+            events.Add(GenerateEvent(DateTimeOffset.Now.SubtractMinutes(6).SubtractSeconds(i), $"user-{i}@exceptionless.io"));
+
+        var contexts = await _pipeline.RunAsync(events, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+        Assert.True(contexts.All(c => !c.HasError));
+
+        await RefreshDataAsync();
+        var sessionStarts = (await _eventRepository.GetAllAsync(o => o.PageLimit(500))).Documents.Where(e => e.IsSessionStart()).ToList();
+        Assert.Equal(102, sessionStarts.Count);
+
+        await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", DateTime.UtcNow.SubtractMinutes(1));
+
+        _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+        Assert.Equal(JobResult.Success, await _job.RunAsync(TestCancellationToken));
+        await RefreshDataAsync();
+
+        sessionStarts = (await _eventRepository.GetAllAsync(o => o.PageLimit(500))).Documents.Where(e => e.IsSessionStart()).ToList();
+        var openSessions = sessionStarts.Where(e => !e.HasSessionEndTime()).ToList();
+        Assert.Equal(2, openSessions.Count);
+        Assert.Equal(["production", "staging"], openSessions.Select(e => e.Environment).Order());
+    }
+
+    [Fact]
     public async Task WillNotCloseDuplicateIdentitySessionsWithSessionIdHeartbeat()
     {
         const string userId = "blake@exceptionless.io";

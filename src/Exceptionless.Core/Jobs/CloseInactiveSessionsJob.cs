@@ -50,12 +50,14 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         if (results.Documents.Count == 0)
             return JobResult.Success;
 
+        // A user's heartbeat applies to their sessions in every environment, and those sessions can be on
+        // different pages, so heartbeats are consumed only after every page has been processed.
+        var cacheKeysToRemove = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var existingSessionHeartbeatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             var inactivePeriodUtc = _timeProvider.GetUtcNow().UtcDateTime.Subtract(DefaultInactivePeriod);
             var sessionsToUpdate = new List<PersistentEvent>(results.Documents.Count);
-            var cacheKeysToRemove = new List<string>(results.Documents.Count * 2);
-            var existingSessionHeartbeatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var (sessionStart, heartbeatResult) in await GetHeartbeatsBatchAsync(results.Documents))
             {
@@ -88,9 +90,6 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
             if (sessionsToUpdate.Count > 0)
                 await _eventRepository.SaveAsync(sessionsToUpdate);
 
-            if (cacheKeysToRemove.Count > 0)
-                await _cache.RemoveAllAsync(cacheKeysToRemove);
-
             _logger.LogInformation("Closing {SessionClosedCount} of {SessionCount} sessions", sessionsToUpdate.Count, results.Documents.Count);
 
             // Sleep so we are not hammering the backend.
@@ -105,6 +104,10 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                 _lastActivity = _timeProvider.GetUtcNow().UtcDateTime;
             }
         }
+
+        if (cacheKeysToRemove.Count > 0)
+            await _cache.RemoveAllAsync(cacheKeysToRemove);
+
         _logger.LogInformation("Done checking active sessions. Closed {SessionClosedCount} of {SessionCount} sessions", sessionsClosed, totalSessions);
 
         return JobResult.Success;
