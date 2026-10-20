@@ -15,6 +15,7 @@ public sealed class AddEventEnvironmentMigrationTests : IntegrationTestsBase
     [Fact]
     public async Task RunAsync_LegacyDailyIndex_AddsMappingAndCanRunAgain()
     {
+        // Arrange
         var configuration = GetService<ExceptionlessElasticConfiguration>();
         string indexName = $"{configuration.Events.Name}-v0-2000.01.01";
         var client = configuration.Client;
@@ -28,10 +29,13 @@ public sealed class AddEventEnvironmentMigrationTests : IntegrationTestsBase
 
             var migration = new AddEventEnvironment(configuration, GetService<ILoggerFactory>());
             var context = new MigrationContext(EmptyLock.Empty, _logger, TestCancellationToken);
-            await migration.RunAsync(context);
-            await migration.RunAsync(context);
 
+            // Act
+            await migration.RunAsync(context);
+            await migration.RunAsync(context);
             var mapping = await client.Indices.GetMappingAsync(indexName, TestCancellationToken);
+
+            // Assert
             Assert.True(mapping.IsValidResponse, mapping.DebugInformation);
             var properties = Assert.Single(mapping.Mappings).Value.Mappings.Properties!;
             var environment = Assert.IsType<TextProperty>(properties["environment"]);

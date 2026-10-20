@@ -22,6 +22,12 @@ public sealed class EventEnvironmentFilterTests
     [InlineData("NOT (environment:staging AND type:error)", null)]
     public async Task GetAsync_EnvironmentScope_PreservesUsersOutsideTheEventType(string? filter, string? expected)
     {
-        Assert.Equal(expected, await EventEnvironmentFilter.GetAsync(filter));
+        // Arrange is provided by the theory data.
+
+        // Act
+        string? result = await EventEnvironmentFilter.GetAsync(filter);
+
+        // Assert
+        Assert.Equal(expected, result);
     }
 }

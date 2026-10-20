@@ -155,6 +155,7 @@ public class EventPostJobTests : IntegrationTestsBase
     [Fact]
     public async Task RunAsync_RetryingParsedBatch_PreservesEnvironmentWithoutCustomData()
     {
+        // Arrange
         var production = GenerateEvent(type: Event.KnownTypes.Log);
         production.Environment = "Production";
         var staging = GenerateEvent(type: Event.KnownTypes.Log);
@@ -164,14 +165,21 @@ public class EventPostJobTests : IntegrationTestsBase
         var services = GetService<IServiceProvider>();
         var failingPipeline = new FailingPipeline(services, _options, Log);
         var failingJob = ActivatorUtilities.CreateInstance<EventPostsJob>(services, failingPipeline);
-        Assert.True((await failingJob.RunAsync(TestCancellationToken)).IsSuccess);
-        Assert.Equal(3, (await _eventQueue.GetQueueStatsAsync()).Enqueued);
 
-        Assert.True((await _job.RunAsync(TestCancellationToken)).IsSuccess);
-        Assert.True((await _job.RunAsync(TestCancellationToken)).IsSuccess);
+        // Act
+        var failingResult = await failingJob.RunAsync(TestCancellationToken);
+        var queueStats = await _eventQueue.GetQueueStatsAsync();
+
+        var firstRetryResult = await _job.RunAsync(TestCancellationToken);
+        var secondRetryResult = await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
-
         var events = (await _eventRepository.GetAllAsync()).Documents;
+
+        // Assert
+        Assert.True(failingResult.IsSuccess);
+        Assert.Equal(3, queueStats.Enqueued);
+        Assert.True(firstRetryResult.IsSuccess);
+        Assert.True(secondRetryResult.IsSuccess);
         Assert.Equal(new[] { "Production", "Staging" }, events.Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
         Assert.All(events, ev => Assert.False(ev.Data?.ContainsKey("environment") ?? false));
     }

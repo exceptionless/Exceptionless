@@ -708,6 +708,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [Fact]
     public async Task CountEventsAsync_GroupByEnvironment_ReturnsFilteredDeploymentCounts()
     {
+        // Arrange
         const string referenceId = "mcp-count-environments";
         await CreateDataAsync(data =>
         {
@@ -715,7 +716,11 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             data.Event().TestProject().ReferenceId(referenceId).Mutate(ev => ev.Environment = "staging");
         });
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        // Act
         var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId} environment:production", groupBy: "environment");
+
+        // Assert
         Assert.True(result.Ok);
         var group = Assert.Single(Data(result).Groups!);
         Assert.Equal("production", group.Key);

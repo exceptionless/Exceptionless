@@ -9,7 +9,14 @@ public sealed class MigrationRegistrationTests : TestWithServices
     [Fact]
     public void MigrationRegistration_EventEnvironment_IsVersionedAndResumable()
     {
-        var migration = Assert.Single(GetService<IEnumerable<IMigration>>().OfType<AddEventEnvironment>().DistinctBy(migration => migration.GetType()));
+        // Arrange
+        var migrations = GetService<IEnumerable<IMigration>>();
+
+        // Act
+        var registeredMigrations = migrations.OfType<AddEventEnvironment>().DistinctBy(migration => migration.GetType()).ToList();
+
+        // Assert
+        var migration = Assert.Single(registeredMigrations);
         Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
         Assert.Equal(10, migration.Version);
     }

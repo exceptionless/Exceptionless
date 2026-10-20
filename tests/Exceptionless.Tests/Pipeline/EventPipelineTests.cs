@@ -88,6 +88,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
     [Fact]
     public async Task RunAsync_SameUserInDifferentEnvironments_SharesStackAndSeparatesAutomaticSessions()
     {
+        // Arrange
         var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
         var project = _projectData.GenerateSampleProject();
         var production = GenerateEvent(DateTimeOffset.Now.AddMinutes(-3), "same-user");
@@ -99,9 +100,17 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         laterProduction.Data![Event.KnownDataKeys.Error] = production.Data[Event.KnownDataKeys.Error];
         laterProduction.Environment = "PRODUCTION";
 
+        // Act
+        var contexts = new List<EventContext>();
         foreach (var ev in new[] { production, staging, laterProduction })
+            contexts.Add(await _pipeline.RunAsync(ev, organization, project));
+
+        await RefreshDataAsync();
+        var sessions = await _eventRepository.FindAsync(query => query.FilterExpression("type:session"));
+
+        // Assert
+        foreach (var context in contexts)
         {
-            var context = await _pipeline.RunAsync(ev, organization, project);
             Assert.False(context.HasError, context.ErrorMessage);
             Assert.True(context.IsProcessed);
         }
@@ -111,8 +120,6 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.NotEqual(production.GetSessionId(), staging.GetSessionId());
         Assert.Equal("Production", production.Environment);
         Assert.Equal("PRODUCTION", laterProduction.Environment);
-        await RefreshDataAsync();
-        var sessions = await _eventRepository.FindAsync(query => query.FilterExpression("type:session"));
         Assert.Equal(2, sessions.Total);
         Assert.Equal(new[] { "Production", "staging" }, sessions.Documents.Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
     }

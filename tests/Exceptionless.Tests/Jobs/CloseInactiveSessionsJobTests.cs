@@ -91,6 +91,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     [Fact]
     public async Task WillNotCloseIdentitySessionsInDifferentEnvironmentsAsDuplicates()
     {
+        // Arrange
         const string userId = "blake@exceptionless.io";
         var event1 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
         event1.Environment = "Production";
@@ -106,17 +107,20 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
 
         await RefreshDataAsync();
         var events = await _eventRepository.GetAllAsync();
-        var sessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
-        Assert.Equal(2, sessionStarts.Count);
-        Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
+        var initialSessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
+        Assert.Equal(2, initialSessionStarts.Count);
+        Assert.DoesNotContain(initialSessionStarts, e => e.HasSessionEndTime());
 
-        await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", DateTime.UtcNow.SubtractMinutes(1));
-
+        await _cache.SetAsync($"Project:{initialSessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", DateTime.UtcNow.SubtractMinutes(1));
         _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
-        Assert.Equal(JobResult.Success, await _job.RunAsync(TestCancellationToken));
-        await RefreshDataAsync();
 
-        sessionStarts = (await _eventRepository.GetAllAsync()).Documents.Where(e => e.IsSessionStart()).ToList();
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+        var sessionStarts = (await _eventRepository.GetAllAsync()).Documents.Where(e => e.IsSessionStart()).ToList();
+
+        // Assert
+        Assert.Equal(JobResult.Success, result);
         Assert.Equal(2, sessionStarts.Count);
         Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
     }
@@ -124,6 +128,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     [Fact]
     public async Task WillApplyIdentityHeartbeatToEnvironmentSessionsOnDifferentPages()
     {
+        // Arrange
         const string userId = "blake@exceptionless.io";
         var production = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
         production.Environment = "production";
@@ -139,16 +144,19 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         Assert.True(contexts.All(c => !c.HasError));
 
         await RefreshDataAsync();
-        var sessionStarts = (await _eventRepository.GetAllAsync(o => o.PageLimit(500))).Documents.Where(e => e.IsSessionStart()).ToList();
-        Assert.Equal(102, sessionStarts.Count);
+        var initialSessionStarts = (await _eventRepository.GetAllAsync(o => o.PageLimit(500))).Documents.Where(e => e.IsSessionStart()).ToList();
+        Assert.Equal(102, initialSessionStarts.Count);
 
-        await _cache.SetAsync($"Project:{sessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", DateTime.UtcNow.SubtractMinutes(1));
-
+        await _cache.SetAsync($"Project:{initialSessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", DateTime.UtcNow.SubtractMinutes(1));
         _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
-        Assert.Equal(JobResult.Success, await _job.RunAsync(TestCancellationToken));
-        await RefreshDataAsync();
 
-        sessionStarts = (await _eventRepository.GetAllAsync(o => o.PageLimit(500))).Documents.Where(e => e.IsSessionStart()).ToList();
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+        var sessionStarts = (await _eventRepository.GetAllAsync(o => o.PageLimit(500))).Documents.Where(e => e.IsSessionStart()).ToList();
+
+        // Assert
+        Assert.Equal(JobResult.Success, result);
         var openSessions = sessionStarts.Where(e => !e.HasSessionEndTime()).ToList();
         Assert.Equal(2, openSessions.Count);
         Assert.Equal(["production", "staging"], openSessions.Select(e => e.Environment).Order());
@@ -157,6 +165,7 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     [Fact]
     public async Task WillKeepHeartbeatsWhenRunIsCancelledBeforeEveryPageIsProcessed()
     {
+        // Arrange
         string heartbeatKey = await CreateSessionWithHeartbeatAsync();
 
         // Cancels after the job saves its first page, before it checks for another page.
@@ -170,15 +179,20 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         });
 
         _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
-        await _job.RunAsync(cancellationTokenSource.Token);
 
+        // Act
+        await _job.RunAsync(cancellationTokenSource.Token);
+        bool heartbeatExists = await _cache.ExistsAsync(heartbeatKey);
+
+        // Assert
         Assert.Equal(1, savedSessions);
-        Assert.True(await _cache.ExistsAsync(heartbeatKey));
+        Assert.True(heartbeatExists);
     }
 
     [Fact]
     public async Task WillKeepHeartbeatsWrittenWhileSessionPagesAreProcessed()
     {
+        // Arrange
         string heartbeatKey = await CreateSessionWithHeartbeatAsync();
 
         // A heartbeat arrives after the job has applied the one it read.
@@ -186,9 +200,13 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         using var handler = _eventRepository.DocumentsSaved.AddHandler(async (_, _) => await _cache.SetAsync(heartbeatKey, latestHeartbeatUtc));
 
         _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
-        Assert.Equal(JobResult.Success, await _job.RunAsync(TestCancellationToken));
 
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
         var heartbeat = await _cache.GetAsync<DateTime>(heartbeatKey);
+
+        // Assert
+        Assert.Equal(JobResult.Success, result);
         Assert.True(heartbeat.HasValue);
         Assert.Equal(latestHeartbeatUtc, heartbeat.Value);
     }

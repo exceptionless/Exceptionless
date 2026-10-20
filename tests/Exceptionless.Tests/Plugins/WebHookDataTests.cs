@@ -58,9 +58,15 @@ public sealed class WebHookDataTests : TestWithServices
     [Fact]
     public async Task CreateFromEventAsync_VersionTwo_PreservesDeploymentEnvironment()
     {
+        // Arrange
         var context = GetWebHookDataContext(WebHook.KnownVersions.Version2);
         context.Event!.Environment = "production";
-        var data = Assert.IsType<WebHookEvent>(await _webHookData.CreateFromEventAsync(context));
+
+        // Act
+        object? result = await _webHookData.CreateFromEventAsync(context);
+
+        // Assert
+        var data = Assert.IsType<WebHookEvent>(result);
         Assert.Equal("production", data.Environment);
     }
 

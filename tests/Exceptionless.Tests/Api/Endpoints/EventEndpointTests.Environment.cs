@@ -24,15 +24,19 @@ public partial class EventEndpointTests
     [InlineData("\"bad\\nenvironment\"", null, "environment")]
     public async Task PostEvent_RootEnvironment_StoresValidNamesAndPreservesOtherValuesAsCustomData(string environment, string? expected, string propertyName)
     {
+        // Arrange
+        var content = new Dictionary<string, object?>
+        {
+            ["type"] = "log",
+            ["message"] = "Legacy environment metadata",
+            ["reference_id"] = "legacy-environment-reference",
+            [propertyName] = JsonSerializer.Deserialize<JsonElement>(environment)
+        };
+
+        // Act
         await SendRequestAsync(request => request.Post()
             .AsTestOrganizationClientUser().AppendPath("events")
-            .Content(new Dictionary<string, object?>
-            {
-                ["type"] = "log",
-                ["message"] = "Legacy environment metadata",
-                ["reference_id"] = "legacy-environment-reference",
-                [propertyName] = JsonSerializer.Deserialize<JsonElement>(environment)
-            }).StatusCodeShouldBeAccepted());
+            .Content(content).StatusCodeShouldBeAccepted());
 
         await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
         await RefreshDataAsync();
@@ -40,6 +44,8 @@ public partial class EventEndpointTests
         var events = await SendRequestAsAsync<List<PersistentEvent>>(request => request
             .AsTestOrganizationUser().AppendPath("events")
             .QueryString("filter", "reference:legacy-environment-reference").StatusCodeShouldBeOk());
+
+        // Assert
         var ev = Assert.Single(Assert.IsType<List<PersistentEvent>>(events));
         Assert.Equal(expected, ev.Environment);
         Assert.NotNull(ev.Data);
@@ -63,6 +69,9 @@ public partial class EventEndpointTests
     [InlineData("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm", null, "environment")]
     public async Task GetSubmitEvent_EnvironmentParameter_StoresValidNamesAndPreservesOtherValuesAsCustomData(string environment, string? expected, string propertyName)
     {
+        // Arrange is provided by the theory data.
+
+        // Act
         await SendRequestAsync(request => request
             .AsTestOrganizationClientUser().AppendPaths("events", "submit")
             .QueryString("message", "GET environment submission")
@@ -71,8 +80,10 @@ public partial class EventEndpointTests
 
         await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
         await RefreshDataAsync();
+        var storedEvents = (await _eventRepository.GetAllAsync()).Documents;
 
-        var ev = Assert.Single((await _eventRepository.GetAllAsync()).Documents,
+        // Assert
+        var ev = Assert.Single(storedEvents,
             item => item.ReferenceId == "get-environment-reference");
         Assert.Equal(expected, ev.Environment);
         Assert.NotNull(ev.Data);
@@ -90,6 +101,7 @@ public partial class EventEndpointTests
     [Fact]
     public async Task GetStacks_EnvironmentFilter_ScopesUserCountsAndTheirCache()
     {
+        // Arrange
         await CreateDataAsync(data =>
         {
             var first = data.Event().FreeProject().Type(Event.KnownTypes.Error).Mutate(ev => { ev.Environment = "production"; ev.SetUserIdentity("production-0"); });
@@ -106,16 +118,26 @@ public partial class EventEndpointTests
             data.Event().FreeProject().Type(Event.KnownTypes.Log).Mutate(ev => ev.SetUserIdentity("unaffected-unspecified-user"));
         });
 
-        foreach (var (filter, expected, totalUsers) in new[]
+        var cases = new[]
         {
             ("environment:production", 12, 13), ("environment:staging", 1, 1), ("environment:production", 12, 13),
             ("environment:(production OR staging)", 13, 14), ("_missing_:environment", 1, 2), ("_exists_:environment", 14, 16),
             ("(_missing_:environment OR environment:production)", 13, 15), ("", 15, 18)
-        })
+        };
+
+        // Act
+        var results = new List<(int Expected, int TotalUsers, List<StackSummaryModel>? Stacks)>();
+        foreach (var (filter, expected, totalUsers) in cases)
         {
             var stacks = await SendRequestAsAsync<List<StackSummaryModel>>(request => request
                 .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "stack_frequent")
                 .QueryString("filter", $"type:error {filter}").StatusCodeShouldBeOk());
+            results.Add((expected, totalUsers, stacks));
+        }
+
+        // Assert
+        foreach (var (expected, totalUsers, stacks) in results)
+        {
             var stack = Assert.Single(Assert.IsType<List<StackSummaryModel>>(stacks));
             Assert.Equal(expected, stack.Total);
             Assert.Equal(expected, stack.Users);
@@ -126,6 +148,7 @@ public partial class EventEndpointTests
     [Fact]
     public async Task GetStacks_EnvironmentFilter_CountsUsersOnlyForTheStackProjects()
     {
+        // Arrange
         await CreateDataAsync(data =>
         {
             data.Event().FreeProject().Type(Event.KnownTypes.Error).Mutate(ev => { ev.Environment = "production"; ev.SetUserIdentity("stack-user"); });
@@ -142,10 +165,12 @@ public partial class EventEndpointTests
             }
         });
 
+        // Act
         var stacks = await SendRequestAsAsync<List<StackSummaryModel>>(request => request
             .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "stack_frequent")
             .QueryString("filter", "type:error environment:production").StatusCodeShouldBeOk());
 
+        // Assert
         var stack = Assert.Single(Assert.IsType<List<StackSummaryModel>>(stacks));
         Assert.Equal(1, stack.Users);
         Assert.Equal(1, stack.TotalUsers);
@@ -156,6 +181,9 @@ public partial class EventEndpointTests
     [InlineData("Environment")]
     public async Task GetSubmitEvent_RepeatedEnvironments_PreservesCollectionAsCustomData(string propertyName)
     {
+        // Arrange is provided by the theory data.
+
+        // Act
         await SendRequestAsync(request => request
             .AsTestOrganizationClientUser().AppendPaths("events", "submit")
             .QueryString("message", "Repeated GET environments")
@@ -164,8 +192,10 @@ public partial class EventEndpointTests
 
         await GetService<EventPostsJob>().RunAsync(TestCancellationToken);
         await RefreshDataAsync();
+        var storedEvents = (await _eventRepository.GetAllAsync()).Documents;
 
-        var ev = Assert.Single((await _eventRepository.GetAllAsync()).Documents,
+        // Assert
+        var ev = Assert.Single(storedEvents,
             item => item.ReferenceId == "repeated-environment-reference");
         Assert.Null(ev.Environment);
         Assert.NotNull(ev.Data);
@@ -177,6 +207,7 @@ public partial class EventEndpointTests
     [Fact]
     public async Task GetEvents_EnvironmentOnFreePlan_FiltersEventsSummariesAndStacks()
     {
+        // Arrange
         await CreateDataAsync(data =>
         {
             var production = data.Event().FreeProject().Mutate(ev => ev.Environment = " Production ");
@@ -186,29 +217,32 @@ public partial class EventEndpointTests
             data.Event().TestProject().Mutate(ev => ev.Environment = "private-environment");
         });
 
+        // Act
         var events = await SendRequestAsAsync<List<PersistentEvent>>(request => request
             .AsFreeOrganizationUser().AppendPath("events")
             .QueryString("filter", "environment:PRODUCTION").StatusCodeShouldBeOk());
-        Assert.Equal(new[] { "Production", "production" }, Assert.IsType<List<PersistentEvent>>(events).Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
 
         var summaries = await SendRequestAsAsync<List<EventSummaryModel>>(request => request
             .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "summary")
             .QueryString("filter", "environment:production").StatusCodeShouldBeOk());
-        Assert.Equal(new[] { "Production", "production" }, Assert.IsType<List<EventSummaryModel>>(summaries).Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
 
         var stacks = await SendRequestAsAsync<List<StackSummaryModel>>(request => request
             .AsFreeOrganizationUser().AppendPath("events").QueryString("mode", "stack_frequent")
             .QueryString("filter", "environment:production").StatusCodeShouldBeOk());
-        Assert.Equal(2, Assert.Single(Assert.IsType<List<StackSummaryModel>>(stacks)).Total);
 
         var missing = await SendRequestAsAsync<List<PersistentEvent>>(request => request
             .AsFreeOrganizationUser().AppendPath("events")
             .QueryString("filter", "_missing_:environment").StatusCodeShouldBeOk());
-        Assert.Null(Assert.Single(Assert.IsType<List<PersistentEvent>>(missing)).Environment);
 
         var count = await SendRequestAsAsync<CountResult>(request => request
             .AsFreeOrganizationUser().AppendPaths("events", "count")
             .QueryString("aggregations", "terms:(environment~100)").StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.Equal(new[] { "Production", "production" }, Assert.IsType<List<PersistentEvent>>(events).Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
+        Assert.Equal(new[] { "Production", "production" }, Assert.IsType<List<EventSummaryModel>>(summaries).Select(ev => ev.Environment).Order(StringComparer.Ordinal).ToArray());
+        Assert.Equal(2, Assert.Single(Assert.IsType<List<StackSummaryModel>>(stacks)).Total);
+        Assert.Null(Assert.Single(Assert.IsType<List<PersistentEvent>>(missing)).Environment);
         Assert.NotNull(count);
         Assert.Equal(4, count.Total);
         Assert.Equal(new[] { "production", "staging" }, count.Aggregations.Terms<string>("terms_environment")!.Buckets.Select(bucket => bucket.Key).Order().ToArray());
