@@ -172,8 +172,8 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         var releases = Enumerable.Range(0, requestCount)
             .Select(_ => new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
         int repositoryCalls = 0;
-        repository.Setup(repository => repository.GetByEmailAddressAsync(It.IsAny<string>()))
-            .Returns(async (string email) =>
+        repository.Setup(repository => repository.GetByEmailAddressAsync(It.IsAny<string>(), null))
+            .Returns(async (string email, CommandOptionsDescriptor<User>? _) =>
             {
                 int call = Interlocked.Increment(ref repositoryCalls) - 1;
                 await releases[call].Task.WaitAsync(TestTimeout, TestCancellationToken);
@@ -211,7 +211,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         Assert.Equal(limit, initiallyAdmitted);
         Assert.True(allWaiting);
         Assert.All(results, result => Assert.Equal(validPassword, result.Succeeded));
-        repository.Verify(repository => repository.GetByEmailAddressAsync(It.IsAny<string>()), Times.Exactly(validPassword ? requestCount : limit));
+        repository.Verify(repository => repository.GetByEmailAddressAsync(It.IsAny<string>(), null), Times.Exactly(validPassword ? requestCount : limit));
         repository.VerifyNoOtherCalls();
     }
 
@@ -229,7 +229,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         var service = GetService<AuthService>();
         var repository = new Mock<IUserRepository>();
         Exception failure = cancellationException ? new OperationCanceledException(cancellation.Token) : new IOException("Synthetic repository failure.");
-        repository.Setup(repository => repository.GetByEmailAddressAsync(EmailAddress))
+        repository.Setup(repository => repository.GetByEmailAddressAsync(EmailAddress, null))
             .Callback(() =>
             {
                 if (cancelRequest)
@@ -250,7 +250,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         var errors = Log.LogEntries.Where(entry => entry.CategoryName == typeof(ApiKeyAuthenticationHandler).FullName && entry.LogLevel >= LogLevel.Error).ToArray();
         Assert.Equal(expectedErrors, errors.Length);
         Assert.All(errors, entry => Assert.Same(failure, entry.Exception));
-        repository.Verify(repository => repository.GetByEmailAddressAsync(EmailAddress), Times.Once);
+        repository.Verify(repository => repository.GetByEmailAddressAsync(EmailAddress, null), Times.Once);
         repository.VerifyNoOtherCalls();
     }
 
