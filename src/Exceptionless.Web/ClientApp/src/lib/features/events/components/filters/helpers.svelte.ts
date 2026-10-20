@@ -26,10 +26,6 @@ import {
 
 const filterCache = new SvelteMap<null | string, IFilter[]>();
 
-const PROJECT_TERM = String.raw`project(?:_id)?:(?:\([^)]*\)|[^\s()]+)`;
-// A project term, or a group of project terms joined by OR such as the project picker writes.
-const PROJECT_SCOPE_REGEX = new RegExp(String.raw`\(\s*${PROJECT_TERM}(?:\s+OR\s+${PROJECT_TERM})*\s*\)|(?<![\w.])${PROJECT_TERM}`, 'gi');
-
 interface SerializedFilter {
     hidden?: boolean;
     term?: string;
@@ -126,20 +122,7 @@ export function getProjectScopeFilter(filters: IFilter[]): string {
             continue;
         }
 
-        // Only project terms combined with the rest of the search by AND certainly limit results to those
-        // projects. Any other OR branch or negation may include other projects, so that search is not used.
-        const search = (filter as KeywordFilter).value ?? '';
-        const terms = [...search.matchAll(PROJECT_SCOPE_REGEX)].map(([term]) => term);
-        const remainder = terms.reduce((value, term) => value.replace(term, ' '), search).replace(/"(?:[^"\\]|\\.)*"/g, '""');
-        if (terms.length === 0 || /\b(?:OR|NOT)\b|\|\||(?:^|[\s(])[-!]/i.test(remainder)) {
-            continue;
-        }
-
-        for (const term of terms) {
-            for (const [projectId] of term.matchAll(/\b[a-f0-9]{24}\b/gi)) {
-                projectIds.push(projectId.toLowerCase());
-            }
-        }
+        projectIds.push(...(getSearchProjectScope((filter as KeywordFilter).value ?? '') ?? []));
     }
 
     return new ProjectFilter(projectIds.filter((projectId, index) => projectIds.indexOf(projectId) === index)).toFilter();
@@ -253,6 +236,100 @@ export function shouldRefreshPersistentEventRemoval(
     id?: string
 ) {
     return removedFromTable || shouldRefreshPersistentEventChanged(filters, filter, organization_id, project_id, stack_id, id);
+}
+
+/**
+ * Projects that a raw search certainly limits results to, or null when it may include any project. An
+ * unrelated AND clause keeps the scope, an OR branch without one removes it, and negations never add one.
+ */
+function getSearchProjectScope(search: string): null | string[] {
+    let position = 0;
+
+    function readTerm(): string {
+        const start = position;
+        let depth = 0;
+        let quoted = false;
+        for (; position < search.length; position++) {
+            const char = search[position]!;
+            if (quoted) {
+                if (char === '\\') {
+                    position++;
+                } else if (char === '"') {
+                    quoted = false;
+                }
+            } else if (char === '"') {
+                quoted = true;
+            } else if (char === '(') {
+                depth++;
+            } else if (char === ')' && depth-- === 0) {
+                break;
+            } else if (/\s/.test(char) && depth === 0) {
+                break;
+            }
+        }
+
+        return search.slice(start, position);
+    }
+
+    function readGroup(): null | string[] {
+        const clauses: (null | string[])[] = [];
+        let isOr = false;
+        let negated = false;
+        while (position < search.length) {
+            const char = search[position]!;
+            if (char === ')') {
+                position++;
+                break;
+            }
+
+            if (/\s/.test(char) || char === '+') {
+                position++;
+                continue;
+            }
+
+            if (char === '-' || char === '!') {
+                negated = true;
+                position++;
+                continue;
+            }
+
+            let scope: null | string[];
+            if (char === '(') {
+                position++;
+                scope = readGroup();
+            } else {
+                const term = readTerm();
+                if (term === 'OR' || term === '||') {
+                    isOr = true;
+                    continue;
+                }
+
+                if (term === 'NOT') {
+                    negated = true;
+                    continue;
+                }
+
+                if (term === 'AND' || term === '&&') {
+                    continue;
+                }
+
+                scope = /^project(?:_id)?:/i.test(term) ? [...term.matchAll(/\b[a-f0-9]{24}\b/gi)].map(([projectId]) => projectId.toLowerCase()) : null;
+            }
+
+            clauses.push(negated ? null : scope);
+            negated = false;
+        }
+
+        // Mixed AND and OR groups are treated as OR, which can only widen the scope.
+        if (isOr) {
+            return clauses.length > 0 && clauses.every((scope) => scope !== null) ? clauses.flat() : null;
+        }
+
+        const scoped = clauses.filter((scope) => scope !== null);
+        return scoped.length > 0 ? scoped.flat() : null;
+    }
+
+    return readGroup();
 }
 
 const TYPE_FILTER_REGEX = /\btype:(\w+)\b/g;

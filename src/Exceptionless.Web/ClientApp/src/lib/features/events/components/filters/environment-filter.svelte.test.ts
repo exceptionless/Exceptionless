@@ -44,6 +44,10 @@ describe('EnvironmentFilter', () => {
         );
         expect(getProjectScopeFilter([new KeywordFilter(`project:(${first} OR ${second})`)])).toBe(`(project:${first} OR project:${second})`);
         expect(getProjectScopeFilter([new KeywordFilter(`"a OR b" project:${first}`)])).toBe(`project:${first}`);
+        expect(getProjectScopeFilter([new KeywordFilter(`project:${first} (status:open OR status:regressed) NOT type:log`)])).toBe(`project:${first}`);
+        expect(getProjectScopeFilter([new KeywordFilter(`(project:${first} type:error) OR (project:${second} -status:fixed)`)])).toBe(
+            `(project:${first} OR project:${second})`
+        );
         expect(getProjectScopeFilter([new ProjectFilter([first]), new KeywordFilter(`project:${second}`)])).toBe(`(project:${first} OR project:${second})`);
 
         // Other OR branches and negations may include other projects.
