@@ -1053,6 +1053,40 @@ describe('AssistantPanel', () => {
         localStorage.clear();
     });
 
+    it('does not reuse a restored chat server context before project access is known', async () => {
+        localStorage.clear();
+        const message = {
+            content: 'Billing answer.',
+            conversationId: 'billing-conversation',
+            id: 'assistant-1',
+            parts: [{ text: 'Billing answer.', type: 'text' }],
+            role: 'assistant',
+            tools: []
+        };
+        localStorage.setItem(
+            'exie:conversations:v1:user-1:organization-1',
+            JSON.stringify([{ id: 'chat-1', messages: [message], projectId: 'project-2', title: 'Billing question', updatedAt: Date.now() }])
+        );
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'Fresh answer.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        // The project list has not loaded, so access to project-2 is not confirmed yet.
+        render(AssistantPanel, {
+            props: { open: true, organizationId: 'organization-1', path: '/project/1/issues', projectId: 'project-1', userId: 'user-1' }
+        });
+        expect(await screen.findByText('Billing answer.')).toBeTruthy();
+        const composer = screen.getByRole('textbox', { name: 'Message Exie' });
+        await fireEvent.input(composer, { target: { value: 'What else broke?' } });
+        await fireEvent.keyDown(composer, { key: 'Enter' });
+        await screen.findByText('Fresh answer.');
+
+        const request = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body)) as { conversation_id: string };
+        expect(request.conversation_id).not.toBe('billing-conversation');
+        localStorage.clear();
+    });
+
     it('keeps a new chat blank after the panel reloads', async () => {
         localStorage.clear();
         const fetchMock = vi.fn(

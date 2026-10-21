@@ -561,6 +561,12 @@
             return;
         }
 
+        // Until the project list confirms the user can still see another project, the server's cached tool results
+        // for it must not be reused, so the chat continues in a new server conversation.
+        if (savedProjectId && savedProjectId !== projectId && !projectsLoaded) {
+            conversationId = createConversationId();
+        }
+
         selectedProjectId = (savedProjectId ?? undefined) === projectId ? undefined : savedProjectId;
         if (selectedProjectId !== undefined) {
             contextDismissed = true;
