@@ -13,14 +13,17 @@
 
     interface Props {
         actions?: Snippet;
+        /** True once the first event has taken long enough to offer help. */
+        isTakingAWhile?: boolean;
         platform?: Platform;
         serverUrl: string;
+        /** The troubleshooting disclosure stays closed until the user opens it. */
+        troubleshootingOpen?: boolean;
     }
 
-    let { actions, platform, serverUrl }: Props = $props();
+    let { actions, isTakingAWhile = $bindable(false), platform, serverUrl, troubleshootingOpen = $bindable(false) }: Props = $props();
 
     let elapsedSeconds = $state(0);
-    let troubleshootingOpen = $state(false);
     const showTroubleshooting = $derived(elapsedSeconds >= TROUBLESHOOTING_DELAY_SECONDS);
     const tips = $derived(getTroubleshootingTips(platform, serverUrl));
 
@@ -34,8 +37,8 @@
     });
 
     $effect(() => {
-        if (showTroubleshooting) {
-            troubleshootingOpen = true;
+        if (isTakingAWhile !== showTroubleshooting) {
+            isTakingAWhile = showTroubleshooting;
         }
     });
 </script>

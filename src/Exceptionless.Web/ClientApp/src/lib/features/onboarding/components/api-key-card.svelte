@@ -21,7 +21,7 @@
     let { apiKey, isDisabled, isError, isLoading, isSuspended, onContactSupport, onEnable, onRetry }: Props = $props();
 </script>
 
-<Card.Root data-api-key-card>
+<Card.Root class="scroll-mt-4 outline-none" data-api-key-card tabindex={-1}>
     <Card.Header>
         <Card.Title class="flex items-center gap-2"><KeyRound aria-hidden="true" class="text-muted-foreground size-4" /> Your API key</Card.Title>
         <Card.Description>The snippets below already include it. Keep it handy for config files and environment variables.</Card.Description>

@@ -8,6 +8,7 @@
     import CircleCheck from '@lucide/svelte/icons/circle-check';
     import NotificationSettings from '@lucide/svelte/icons/mail';
     import { useEventListener } from 'runed';
+    import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import { Notification, NotificationDescription, NotificationTitle } from '#comp/notification/index.ts';
@@ -78,6 +79,8 @@
     let firstEventReceived = $state(false);
     let celebrationOpen = $state(false);
     let sampleDataRequested = $state(false);
+    let isTakingAWhile = $state(false);
+    let troubleshootingOpen = $state(false);
     const tourActions = createProductTourActions();
     const projectConfigureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'project-configure' ? productTourCheckpoint.current : undefined);
 
@@ -148,6 +151,10 @@
             return 'celebrate' as const;
         }
 
+        if (eventStatus === 'waiting' && isTakingAWhile) {
+            return 'thinking' as const;
+        }
+
         if (eventStatus === 'waiting' && selectedPlatform) {
             return 'listening' as const;
         }
@@ -155,8 +162,20 @@
         return selectedPlatform ? ('idle' as const) : ('hello' as const);
     });
 
-    function selectPlatform(platform: Platform): void {
+    async function selectPlatform(platform: Platform): Promise<void> {
         queryParams.type = platform.id;
+        await tick();
+
+        // The picker collapses, so bring the steps into view and move focus with them.
+        const target = document.getElementById('platform-instructions-heading') ?? document.querySelector<HTMLElement>('[data-api-key-card]');
+        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        target?.scrollIntoView({
+            behavior: reduceMotion ? 'auto' : 'smooth',
+            block: 'start'
+        });
+        target?.focus({
+            preventScroll: true
+        });
     }
 
     useEventListener(document, 'PersistentEventChanged', async (event) => {
@@ -188,11 +207,17 @@
     }
 </script>
 
+{#snippet troubleshootingNudge()}
+    <Button onclick={() => (troubleshootingOpen = true)} size="sm" variant="outline">Show me</Button>
+{/snippet}
+
 <div class="flex flex-col gap-6">
     <div class="flex flex-col gap-4">
-        <ExieGuide mood={exieMood} size={64}>
+        <ExieGuide actions={eventStatus === 'waiting' && isTakingAWhile && !troubleshootingOpen ? troubleshootingNudge : undefined} mood={exieMood} size={64}>
             {#if eventStatus === 'received'}
                 {sampleDataRequested ? 'Sample events are rolling in. Take a look around!' : 'Your first event just landed. Nice work!'}
+            {:else if eventStatus === 'waiting' && isTakingAWhile}
+                Taking a while? I've got a few tips.
             {:else if selectedPlatform}
                 {selectedPlatform.tip}
             {:else if eventStatus === 'receiving'}
@@ -209,7 +234,7 @@
 
     {#if eventStatus === 'waiting'}
         <div data-tour="project-first-event">
-            <ListeningStatus platform={selectedPlatform} serverUrl={serverUrls.submissionServerUrl}>
+            <ListeningStatus bind:isTakingAWhile bind:troubleshootingOpen platform={selectedPlatform} serverUrl={serverUrls.submissionServerUrl}>
                 {#snippet actions()}
                     {#if projectConfigureCheckpoint && projectConfigureCheckpoint.checkpointName !== 'choose-platform'}
                         <Button onclick={() => projectConfigureCheckpoint && tourActions.dismiss(projectConfigureCheckpoint)} size="sm" variant="ghost"

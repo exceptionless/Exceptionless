@@ -544,10 +544,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             // Act
             const instructionButtons = page.locator('[data-tour="project-sdk-instructions"]').getByRole('button');
             const reachedButtons = new Set<number>();
-            await page
-                .locator('[data-tour="project-configure-platform"]')
-                .getByRole('button', { name: /^Browser JavaScript/ })
-                .focus();
+            await page.getByRole('button', { name: 'Change platform from Browser JavaScript' }).focus();
             for (let tab = 0; tab < 40 && reachedButtons.size < (await instructionButtons.count()); tab++) {
                 const focusedIndex = await instructionButtons.evaluateAll((buttons) => buttons.indexOf(document.activeElement as HTMLButtonElement));
                 if (focusedIndex >= 0) {

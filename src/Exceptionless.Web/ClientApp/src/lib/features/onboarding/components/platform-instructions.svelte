@@ -39,7 +39,9 @@
 
 <section aria-labelledby="platform-instructions-heading" class="flex flex-col gap-4" data-tour="project-sdk-instructions">
     <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 class="text-foreground text-base font-semibold" id="platform-instructions-heading">Connect {platform.label}</h2>
+        <h2 class="text-foreground scroll-mt-4 text-base font-semibold outline-none" id="platform-instructions-heading" tabindex="-1">
+            Connect {platform.label}
+        </h2>
         <A class="text-sm" href={platform.docsUrl} target="_blank">{platform.isRawHttp ? 'Event API docs' : `${platform.category} client docs`}</A>
     </div>
 

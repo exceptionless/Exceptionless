@@ -71,6 +71,12 @@ export async function navigateToSidebarView(page: Page, parentName: string, chil
 
 /** Picks a platform tile on the client setup page, for example "REST API (curl)". */
 export async function selectProjectType(page: Page, platformName: string): Promise<void> {
+    // A chosen platform collapses to one row; reopen the grid to pick another.
+    const change = page.getByRole('button', { name: /^Change platform from / });
+    if (await change.isVisible()) {
+        await change.click();
+    }
+
     await page
         .locator('[data-tour="project-configure-platform"]')
         .getByRole('button', { name: new RegExp(`^${escapeRegExp(platformName)}(?:\\s|$)`) })
