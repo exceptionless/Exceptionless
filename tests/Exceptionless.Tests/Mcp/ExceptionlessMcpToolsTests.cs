@@ -11,6 +11,7 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Assistant;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Mcp;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
@@ -719,6 +720,33 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             Assert.True(result.Ok, result.Error?.Message);
             Assert.Equal(DateTimeOffset.Parse(expectedStart, CultureInfo.InvariantCulture).UtcDateTime, data.StartUtc);
             Assert.Equal(DateTimeOffset.Parse(expectedEnd, CultureInfo.InvariantCulture).UtcDateTime, data.EndUtc);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
+    }
+
+    [Theory]
+    [InlineData("last 7 days")]
+    [InlineData("last 2 weeks")]
+    [InlineData("last 24 hours")]
+    public async Task CountEventsAsync_NaturalDurationAcrossDaylightSavingChange_KeepsElapsedTime(string time)
+    {
+        try
+        {
+            // Chicago fell back on 2026-11-01, so a week ago was UTC-5 and now is UTC-6.
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 11, 3, 18, 0, 0, TimeSpan.Zero));
+            var expected = TimeRangeParser.GetTimeInfo(time, TimeSpan.FromHours(-6), TimeProvider);
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+            var result = await tools.CountEventsAsync(TestConstants.ProjectId, time: time, timeZone: "America/Chicago");
+            var data = Data(result);
+
+            // A duration keeps the parser's elapsed time instead of moving its start to the older offset.
+            Assert.True(result.Ok, result.Error?.Message);
+            Assert.Equal(expected.Range.UtcStart, data.StartUtc);
+            Assert.Equal(expected.Range.UtcEnd, data.EndUtc);
         }
         finally
         {

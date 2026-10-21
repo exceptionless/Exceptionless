@@ -1315,7 +1315,7 @@ public sealed class ExceptionlessMcpTools
         if (match.Success)
             return (IsCalendarBoundary(match.Groups["start"].Value), IsCalendarBoundary(match.Groups["end"].Value));
 
-        // Named periods such as today or 2026-10 are calendar periods; "last 24 hours" style phrases are durations.
+        // Named periods such as today, last week, or 2026-10 are calendar periods; "last 7 days" style phrases are durations.
         bool isCalendar = !time.Contains("now", StringComparison.OrdinalIgnoreCase) && !s_durationWords.IsMatch(time);
         return (isCalendar, isCalendar);
     }
@@ -1899,7 +1899,8 @@ public sealed class ExceptionlessMcpTools
     private static readonly Regex IdRegex = new(@"^[A-Za-z0-9]{24,36}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex s_bracketTimeRange = new(@"^[\[{](?<start>.+?)\s+TO\s+(?<end>.+?)[\]}]$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex s_explicitOffset = new(@"T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-    private static readonly Regex s_durationWords = new(@"\b(minutes?|hours?|mins?|hrs?)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    // "last 7 days" or "past 2 weeks" is a duration, like [now-7d TO now]; "last week" with no number is a calendar week.
+    private static readonly Regex s_durationWords = new(@"\b\d+\s*(minutes?|mins?|hours?|hrs?|days?|weeks?|months?|years?)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex RelativeTimeRegex = new(@"^(?<value>\d+)(?<unit>[mhdw])$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IntervalRegex = new(@"^\d+[mhdwM]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
