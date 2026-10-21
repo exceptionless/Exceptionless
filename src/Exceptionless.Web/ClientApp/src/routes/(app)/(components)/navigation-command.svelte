@@ -17,7 +17,6 @@
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
     import Route from '@lucide/svelte/icons/route';
     import Search from '@lucide/svelte/icons/search';
-    import Sparkles from '@lucide/svelte/icons/sparkles';
     import SunMoon from '@lucide/svelte/icons/sun-moon';
     import UserPlus from '@lucide/svelte/icons/user-plus';
     import Users from '@lucide/svelte/icons/users';
@@ -29,6 +28,7 @@
     import type { ViewOrganization } from '#features/organizations/models.ts';
     import type { ViewProject } from '#features/projects/models.ts';
 
+    import AiSparkle from '#comp/icons/AiSparkleIcon.svelte';
     import * as Command from '#comp/ui/command/index.ts';
     import { logout } from '#features/auth/api.svelte.ts';
     import { accessToken } from '#features/auth/index.svelte.ts';
@@ -581,7 +581,7 @@
                 {#if isExieEnabled}
                     <Command.Group heading="Exie" value="Exie Assistant">
                         <Command.Item value="Ask Exie open assistant AI chat" onSelect={() => void openExieAssistant()}>
-                            <Sparkles />
+                            <AiSparkle />
                             <span>Ask Exie</span>
                         </Command.Item>
                         <Command.Item value="Exie Triage Recent Errors investigate issues stacks" onSelect={() => void askExieAssistant(EXIE_TRIAGE_PROMPT)}>

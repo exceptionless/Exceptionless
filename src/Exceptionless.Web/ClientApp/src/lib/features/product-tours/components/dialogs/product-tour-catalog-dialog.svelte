@@ -4,8 +4,8 @@
     import Folder from '@lucide/svelte/icons/folder';
     import Layers from '@lucide/svelte/icons/layers';
     import PanelLeft from '@lucide/svelte/icons/panel-left';
-    import Sparkles from '@lucide/svelte/icons/sparkles';
 
+    import AiSparkle from '#comp/icons/AiSparkleIcon.svelte';
     import { H3, Muted } from '#comp/typography/index.ts';
     import { Badge } from '#comp/ui/badge/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
@@ -27,7 +27,7 @@
     const icons = {
         'app-overview': PanelLeft,
         'event-investigate': Layers,
-        'exie-overview': Sparkles,
+        'exie-overview': AiSparkle,
         'project-configure': Folder,
         'saved-view-create': Bookmark
     };

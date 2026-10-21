@@ -1,6 +1,5 @@
 <script lang="ts">
-    import Sparkles from '@lucide/svelte/icons/sparkles';
-
+    import AiSparkle from '#comp/icons/AiSparkleIcon.svelte';
     import { cn } from '#lib/utils.ts';
 
     interface Props {
@@ -21,5 +20,5 @@
         className
     )}
 >
-    <Sparkles />
+    <AiSparkle />
 </span>

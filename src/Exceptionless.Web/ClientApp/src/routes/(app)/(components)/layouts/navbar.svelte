@@ -1,10 +1,10 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
     import Search from '@lucide/svelte/icons/search';
-    import Sparkles from '@lucide/svelte/icons/sparkles';
     import { MediaQuery } from 'svelte/reactivity';
 
     import DarkModeButton from '#comp/dark-mode-button.svelte';
+    import AiSparkle from '#comp/icons/AiSparkleIcon.svelte';
     import Logo from '#comp/logo.svelte';
     import { A } from '#comp/typography/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
@@ -63,7 +63,7 @@
                         title="Ask Exie (A)"
                         variant={isAssistantOpen ? 'secondary' : 'outline'}
                     >
-                        <Sparkles aria-hidden="true" class="text-primary size-5" data-icon="inline-start" />
+                        <AiSparkle aria-hidden="true" class="text-primary size-5" data-icon="inline-start" />
                         <!-- The label stays the same when open so the navbar never shifts; the button style and aria-expanded show the state. -->
                         <span class="hidden lg:inline">Ask Exie</span>
                     </Button>

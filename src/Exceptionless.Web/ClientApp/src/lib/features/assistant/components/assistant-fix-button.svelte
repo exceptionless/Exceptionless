@@ -1,6 +1,5 @@
 <script lang="ts">
-    import Sparkles from '@lucide/svelte/icons/sparkles';
-
+    import AiSparkle from '#comp/icons/AiSparkleIcon.svelte';
     import { Button } from '#comp/ui/button/index.ts';
 
     import { type AssistantFixResource, tryUseAssistantControls } from '../controls.svelte';
@@ -27,7 +26,7 @@
 
 {#if assistant?.enabled()}
     <Button aria-label="Fix with Exie" data-assistant-trigger onclick={askExie} title="Fix with Exie" variant="outline">
-        <Sparkles aria-hidden="true" class="text-primary" />
+        <AiSparkle aria-hidden="true" class="text-primary" />
         <span>Fix</span>
     </Button>
 {/if}
