@@ -9,8 +9,9 @@
     import githubDarkDefault from '@shikijs/themes/github-dark-default';
     import githubLightDefault from '@shikijs/themes/github-light-default';
     import { mode } from 'mode-watcher';
-    import { Streamdown, type StreamdownProps } from 'streamdown-svelte';
+    import { type LinkSafetyModalProps, Streamdown, type StreamdownProps } from 'streamdown-svelte';
 
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
     import { cn } from '#lib/utils.ts';
     type Props = StreamdownProps;
 
@@ -19,11 +20,27 @@
         components,
         content,
         linkSafety = {
-            enabled: false
+            enabled: true,
+            onLinkCheck: isTrustedLink,
+            renderModal: linkSafetyModal
         },
         ...restProps
     }: Props = $props();
     let currentTheme = $derived(mode.current === 'dark' ? 'github-dark-default' : 'github-light-default');
+
+    /** AI answers can repeat untrusted event data, so only the app's own links and Exceptionless sites open without asking. */
+    function isTrustedLink(href: string): boolean {
+        try {
+            const url = new URL(href, window.location.origin);
+            if (url.origin === window.location.origin) {
+                return true;
+            }
+
+            return url.protocol === 'https:' && (url.hostname === 'exceptionless.com' || url.hostname.endsWith('.exceptionless.com'));
+        } catch {
+            return false;
+        }
+    }
 
     const assistantTheme = {
         blockquote: {
@@ -86,6 +103,29 @@
         }
     } satisfies NonNullable<StreamdownProps['theme']>;
 </script>
+
+{#snippet linkSafetyModal({ isOpen, onClose, onConfirm, url }: LinkSafetyModalProps)}
+    <AlertDialog.Root onOpenChange={(open) => !open && onClose()} open={isOpen}>
+        <AlertDialog.Content>
+            <AlertDialog.Header>
+                <AlertDialog.Title>Open external link?</AlertDialog.Title>
+                <AlertDialog.Description>
+                    This link leaves Exceptionless. Answers can include text from your events, so check the address before you open it.
+                </AlertDialog.Description>
+            </AlertDialog.Header>
+            <p class="bg-muted text-foreground rounded-md p-3 font-mono text-xs break-all">{url}</p>
+            <AlertDialog.Footer>
+                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                <AlertDialog.Action
+                    onclick={() => {
+                        onConfirm();
+                        onClose();
+                    }}>Open link</AlertDialog.Action
+                >
+            </AlertDialog.Footer>
+        </AlertDialog.Content>
+    </AlertDialog.Root>
+{/snippet}
 
 <div class={cn('w-full min-w-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)}>
     <Streamdown

@@ -82,14 +82,32 @@ describe('AssistantMessage', () => {
         expect(container.querySelector('button[data-streamdown="link"]')).toBeNull();
     });
 
-    it('renders genuinely external links as anchors that open in a new tab', () => {
+    it('opens Exceptionless links in a new tab without asking', async () => {
+        const open = vi.spyOn(window, 'open').mockReturnValue(null);
         const message = assistantMessage({ content: 'Read the [docs](https://exceptionless.com/docs).' });
 
         render(AssistantMessage, { props: { message } });
+        await fireEvent.click(screen.getByRole('button', { name: 'docs' }));
 
-        const link = screen.getByRole('link', { name: 'docs' });
-        expect(link.getAttribute('href')).toBe('https://exceptionless.com/docs');
-        expect(link.getAttribute('target')).toBe('_blank');
+        await vi.waitFor(() => expect(open).toHaveBeenCalledWith('https://exceptionless.com/docs', '_blank', 'noreferrer'));
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        open.mockRestore();
+    });
+
+    it('asks before opening other external links, since answers can repeat untrusted event data', async () => {
+        const open = vi.spyOn(window, 'open').mockReturnValue(null);
+        const message = assistantMessage({ content: 'Sign in at [the portal](https://login.example.net/reset).' });
+
+        render(AssistantMessage, { props: { message } });
+        await fireEvent.click(screen.getByRole('button', { name: 'the portal' }));
+
+        const dialog = await screen.findByRole('alertdialog');
+        expect(dialog.textContent).toContain('https://login.example.net/reset');
+        expect(open).not.toHaveBeenCalled();
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Open link' }));
+        expect(open).toHaveBeenCalledWith('https://login.example.net/reset', '_blank', 'noreferrer');
+        open.mockRestore();
     });
 
     it('shows thinking before anything has streamed', () => {
