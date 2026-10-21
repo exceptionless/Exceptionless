@@ -68,7 +68,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" onkeydown={handleKeyDown}>
+    <Popover.Content align="start" class="max-h-(--bits-popover-content-available-height) w-auto overflow-y-auto p-0" side="bottom" onkeydown={handleKeyDown}>
         <div id={`${title}-help`} class="sr-only">Press Enter to apply filter, Escape to cancel</div>
         <DateRangePicker bind:this={dateRangePickerRef} value={filter.value} onselect={handleSelect} />
         <FacetedFilter.Actions clear={onClearFilter} hidden={filter.hidden} remove={onRemoveFilter} showClear={filter.value !== undefined} {toggleHidden} />
