@@ -1060,7 +1060,10 @@ public sealed class AssistantServiceTests
         [
             new AssistantConversationToolResult("call-kept", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Kept stack"}]}}""", null, DateTimeOffset.UtcNow, ["project-1"]),
             new AssistantConversationToolResult("call-deleted", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Deleted project stack"}]}}""", null, DateTimeOffset.UtcNow, ["project-1", "deleted-project"]),
-            new AssistantConversationToolResult("call-legacy", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Untracked stack"}]}}""", null, DateTimeOffset.UtcNow)
+            new AssistantConversationToolResult("call-legacy", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Untracked stack"}]}}""", null, DateTimeOffset.UtcNow),
+            // count_events can resolve an organization's only project without naming it, so the result records none.
+            new AssistantConversationToolResult("call-implicit", "count_events", "{}", """{"ok":true,"data":{"events":3,"groups":[{"title":"Implicit project stack"}]}}""", null, DateTimeOffset.UtcNow, []),
+            new AssistantConversationToolResult("call-failed", "search_stacks", "{}", """{"ok":false,"error":{"code":"invalid_filter","message":"Failed lookup kept"}}""", null, DateTimeOffset.UtcNow, [])
         ], TestContext.Current.CancellationToken);
         var projects = new Mock<IProjectRepository>();
         projects.Setup(repository => repository.GetByIdsAsync(It.IsAny<Ids>(), It.IsAny<CommandOptionsDescriptor<Project>>()))
@@ -1079,6 +1082,8 @@ public sealed class AssistantServiceTests
         Assert.Contains("Kept stack", handler.RequestBody);
         Assert.DoesNotContain("Deleted project stack", handler.RequestBody);
         Assert.DoesNotContain("Untracked stack", handler.RequestBody);
+        Assert.DoesNotContain("Implicit project stack", handler.RequestBody);
+        Assert.Contains("Failed lookup kept", handler.RequestBody);
     }
 
     [Fact]

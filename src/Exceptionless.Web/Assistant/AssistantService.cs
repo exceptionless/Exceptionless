@@ -715,12 +715,29 @@ public sealed class AssistantService(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogWarning(ex, "Unable to check the projects of cached assistant tool results for organization {OrganizationId}", organizationId);
+            logger.LogWarning(ex, "Unable to check the projects of cached assistant tool results for organization {OrganizationId}: {Message}", organizationId, ex.Message);
             return new AssistantConversationState([]);
         }
 
-        var kept = tracked.Where(result => result.ProjectIds!.All(existing.Contains)).ToList();
+        // A successful result with no recorded project, such as a count whose project the tool resolved implicitly,
+        // cannot be checked, so only failed results, which hold no project data, are kept without one.
+        var kept = tracked.Where(result => result.ProjectIds!.Count > 0 ? result.ProjectIds!.All(existing.Contains) : IsFailedToolResult(result.Result)).ToList();
         return kept.Count == state.ToolResults.Count ? state : new AssistantConversationState(kept);
+    }
+
+    private static bool IsFailedToolResult(string result)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(result);
+            return document.RootElement.ValueKind == JsonValueKind.Object
+                && document.RootElement.TryGetProperty("ok", out var ok)
+                && ok.ValueKind == JsonValueKind.False;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     /// <summary>The projects a tool result came from: its projectId argument or the page's project, and any project ids in the result.</summary>
