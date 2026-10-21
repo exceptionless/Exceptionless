@@ -1,5 +1,7 @@
 ---
 title: "Logging With Generic Host"
+metaTitle: ".NET generic host logging with Exceptionless"
+description: "Use Exceptionless as a Microsoft.Extensions.Logging provider in a .NET generic host, configured in appsettings.json with default data, tags, and settings."
 ---
 
 # Logging With Generic Host
@@ -52,7 +54,7 @@ If you are using a generic host in a web server application, you may want to cap
 
 Finally, you'll need to tell the app itself to use Exceptionless. You can do this in your `Configure` method liket his:
 
-`app.useExceptionless(Configuration);`
+`app.UseExceptionless(Configuration);`
 
 Now, you have access to send logs, exceptions, and messages to Exceptionless automatically through the generic host configuration. If you'd like to see a full, detailed example, [we have that here](https://github.com/exceptionless/Exceptionless.Net/blob/9e91a51c36d03fcc3bee79a8b6eaee3034ac78b4/samples/Exceptionless.SampleAspNetCore/Startup.cs).
 

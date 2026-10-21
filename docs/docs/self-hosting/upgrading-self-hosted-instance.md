@@ -1,5 +1,7 @@
 ---
 title: "Upgrading"
+metaTitle: "Upgrading a self-hosted Exceptionless server"
+description: "Upgrade a self-hosted Exceptionless server from v1 through v8, including Elasticsearch reindexing, migration jobs, proxy trust changes, and config updates."
 ---
 
 # Upgrading
@@ -33,7 +35,7 @@ A rerun does not change the recorded current migration version or the original m
 
 ## Upgrading from v7 to v7.1
 
-We made some changes to email configuration. Yoy wukk now be required to set the `EX_SmtpFrom` config map/environment variable in order to send email. The value should be in the following format: `"Exceptionless <noreply@YOUR_CUSTOM_DOMAIN_NAME>"`
+We made some changes to email configuration. You will now be required to set the `EX_SmtpFrom` config map/environment variable in order to send email. The value should be in the following format: `"Exceptionless <noreply@YOUR_CUSTOM_DOMAIN_NAME>"`
 
 ## Upgrading from v6 to v7
 
@@ -50,12 +52,12 @@ A migration job will need to be run as there are several in place data migration
 
 Version 6 added support for Elasticsearch 7, which requires a complete data migration from Elasticsearch 5.x. This tutorial assumes you have docker/Kubernetes installed and have followed the [setup guide](/docs/self-hosting/).
 
-1. Create a new Elasticsearch 7 cluster or modify your existing `docker-compose` file to also include our Elasticsearch 7.x image (There will need to be two Elasticsearch docker instances (5.x and 7.x). Please note that we've included the Elasticsearch major version number in the data path of the docker data path, this allows you to run two versions side by side without losing the data.
+1. Create a new Elasticsearch 7 cluster or modify your existing `docker-compose` file to also include our Elasticsearch 7.x image. There will need to be two Elasticsearch docker instances (5.x and 7.x). Please note that we've included the Elasticsearch major version number in the docker data path, which allows you to run two versions side by side without losing the data.
 2. Add a new environment variable or config map setting for `EX_ElasticsearchToMigrate` with the value of the `EX_Elasticsearch` 5.x connection string.
 3. Add your existing Elasticsearch instance to `reindex.remote.whitelist` in Elasticsearch 7's `elasticsearch.yml`. Make sure you include the port as well, for example `reindex.remote.whitelist: 127.0.0.1:9200`.
 4. Update the existing `EX_Elasticsearch` environment variable or config map entry to point to the Elasticsearch 7.x Cluster.
 5. Scale down existing Exceptionless apps and jobs.
-6. Start the Data Migration by running the `DataMigration` job. You can run it by opening the CLI and executing `dotnet Exceptionless.Job.dll DataMigration`. If you receive a warning that the port is already used, you need to change `ASPNETCORE_URLS` first, for example `ASPNETCORE_URLS=http://+:8080`. You can also run an incremental reindex by setting the `EX_ReindexCutOffDate` with a date value (E.G., `2022-01-28T18:00:00.00Z`., environment variable or config map entry and rerunning the Migration Job.
+6. Start the Data Migration by running the `DataMigration` job. You can run it by opening the CLI and executing `dotnet Exceptionless.Job.dll DataMigration`. If you receive a warning that the port is already used, you need to change `ASPNETCORE_URLS` first, for example `ASPNETCORE_URLS=http://+:8080`. You can also run an incremental reindex by setting the `EX_ReindexCutOffDate` environment variable or config map entry to a date value (e.g., `2022-01-28T18:00:00.00Z`) and rerunning the Migration Job.
 7. Scale up the rest of the app!
 
 ## Upgrading from v4 to v5

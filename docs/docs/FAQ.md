@@ -1,5 +1,7 @@
 ---
 title: "FAQ"
+metaTitle: "Exceptionless frequently asked questions"
+description: "Answers to common Exceptionless questions: app performance, throttling and plan limits, bursts of errors, resetting data, offline queuing, and test runs."
 ---
 
 # FAQ

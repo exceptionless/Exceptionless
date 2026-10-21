@@ -1,46 +1,30 @@
 ---
 title: "Log Levels"
+metaTitle: "Setting log levels in Exceptionless"
+description: "Set minimum log levels for Exceptionless log events in project settings or per log stack, so clients stop sending lower-level logs without a redeploy."
 ---
 
 # Log Levels
 
 Setting log levels allows you to control the flow of data into your Exceptionless account. This is important when you are trying to filter the signal from the noise. In most error monitoring services, you would need to manually configure what log levels are used to send events by customizing your code. With Exceptionless, you can update the log levels used right in the Exceptionless UI.
 
-To configure your default log levels, go to your project settings page by clicking the project name dropdown in the top left of the header. Hover over your project name, then click the gear icon. Once on the project settings page, click the Settings tab. Here, you will see the default log level options.
+To configure your default log level, open **Settings > Projects** in the sidebar, click your project, and then open the **Settings** tab. The **Default Log Level** section is at the top. Click the dropdown and pick the lowest level you want to keep.
 
-![Log Level Settings](img/default_log_levels.png)
+![Default Log Level dropdown on the project Settings tab](/assets/img/docs/setting-log-levels-project-default-light.webp)
 
-You can change this at the project level or override the setting on the Stacks page. To override the global log level, click on "Log Messages" on the left side of your screen:
+You can set the level for the whole project here, or override it for a single log source on that log's stack. To find a log stack, open **Events > Logs** in the sidebar. You can also filter **Stacks > All** or **Events > All** by type.
 
-![Log Levels](./img/logleveldashboard.png)
+![The Logs events view](/assets/img/docs/setting-log-levels-logs-view-light.webp)
 
-Next, you'll want to do one of two things:
-
-### 1. Click on "New Stacks" and then click on the log stack you'd like to change.
-
-The new stacks tab is on the left under Log Messages:
-
-![new stacks](./img/newstacks.png)
-
-When you click that link, you can click on the log stack and it will take you to this page:
-
-![log stack](./img/logstack.png)
-
-### 2. You can click on a log message event from the Log Messages -> Events dashboard or the All -> Events dashboard, then you can click on a particular log message and click Go To Stack.
-
-If you click Events, you'll see all log events (or all events depending on the dashboard you've chosen):
-
-![log message events](./img/logmessageevents.png)
-
-Then, click on the event and you'll be taken to a details page for that event where you will see a "Go To Stack" button:
-
-![log details](./img/logdetails.png)
+Click a log event. The event details open with the log's stack card at the top.
 
 ### Overriding Global Log Levels
 
-Now, you can override the global log levels for your account. Simply click the log level dropdown, select the new log level setting you'd like to capture in your stacks, and events of the same type or above will be captured, but any log levels below the type selected will no longer be captured.
+In the stack card header, click the log level button (the filter icon, first in the row of buttons) and select a new level. Events at that level or above are kept for this log source. Anything below it is no longer captured. The button only appears on log stacks that have a source.
 
-![override](./img/override.png)
+![Log Level menu on a log stack](/assets/img/docs/setting-log-levels-stack-override-light.webp)
+
+Once a stack has its own level, the menu also shows **Default** with the project's level. Click it to remove the override and go back to the project default.
 
 As with Data Exclusions, updates to project level and global log level settings will be passed down to the Exceptionless client in near real-time. While the Exceptionless server will catch event that should not be included in your dashboard, the client will catch them based on your configuration and prevent them from ever being sent to the server. Read more about [Project Settings](/docs/project-settings) here.
 

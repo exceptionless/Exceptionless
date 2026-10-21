@@ -1,5 +1,6 @@
 ---
 title: "JavaScript Source Maps"
+description: "Get readable JavaScript stack traces in Exceptionless with source maps: discover public maps automatically or upload private maps from your CI/CD pipeline."
 ---
 
 # JavaScript Source Maps

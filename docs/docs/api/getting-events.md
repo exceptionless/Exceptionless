@@ -1,5 +1,7 @@
 ---
 title: "Getting Events"
+metaTitle: "Getting events with the Exceptionless API"
+description: "Fetch events from the Exceptionless REST API with curl: count events, list paginated events for an organization or project, and get a single event by its ID."
 ---
 
 # Getting Events

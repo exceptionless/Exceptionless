@@ -1,5 +1,7 @@
 ---
 title: "Sending Events"
+metaTitle: "Sending events from JavaScript"
+description: "Send logs, feature usage, 404s, custom events, and caught errors from the Exceptionless JavaScript client, and attach tags, properties, and user identity."
 order: 4
 ---
 
@@ -28,7 +30,7 @@ await Exceptionless.submitNotFound('/somepage');
 await Exceptionless.createNotFound('/somepage').addTags('Exceptionless').submit();
 
 // Submit a custom event type
-await Exceptionless.submitEvent({ message = 'Low Fuel', type = 'racecar', source = 'Fuel System' });
+await Exceptionless.submitEvent({ message: 'Low Fuel', type: 'racecar', source: 'Fuel System' });
 ```
 
 ### Manually Sending Errors

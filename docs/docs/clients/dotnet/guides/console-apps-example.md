@@ -1,5 +1,7 @@
 ---
 title: "Console Apps Example"
+metaTitle: "Exceptionless in a .NET console app"
+description: "Add Exceptionless to a .NET console app: create a client with your API key, submit logs and exceptions, and process the event queue before the app exits."
 ---
 
 # Console Apps Example

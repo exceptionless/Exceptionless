@@ -26,4 +26,11 @@ if (apiKey) {
       context.event.data["@page.title"] = document.title
     })
   })
+
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-cta]") : null
+    if (target?.dataset.cta) {
+      void Exceptionless.createFeatureUsage("Sign Up Click").setProperty("cta", target.dataset.cta).submit()
+    }
+  })
 }

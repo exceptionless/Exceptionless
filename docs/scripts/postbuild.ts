@@ -5,6 +5,7 @@ type GeneratedData = {
 
 type ContentPage = {
   title: string
+  description?: string
   url: string
   sourcePath: string
   date?: string
@@ -37,10 +38,39 @@ type SearchCodeToken = {
 
 type SiteData = {
   description?: string
+  appUrl?: string
+  githubUrl?: string
 }
 
 const siteUrl = "https://exceptionless.com"
 const newsPostsPerPage = 10
+
+type Plan = {
+  name: string
+  monthlyPrice: number
+  description: string
+}
+
+const llmsProductPages = [
+  { title: "Features", url: "/tour/" },
+  { title: "AI: Exie and the MCP server", url: "/ai/" },
+  { title: "Why Exceptionless", url: "/why/" },
+  { title: "Pricing", url: "/pricing/" },
+  { title: "About", url: "/about/" },
+]
+
+const llmsDocsSections = [
+  { title: "Using Exceptionless", match: (path: string) => !/^docs\/(?:ai|clients|api|self-hosting)\//.test(path) },
+  { title: "AI", match: (path: string) => path.startsWith("docs/ai/") },
+  { title: ".NET client", match: (path: string) => path.startsWith("docs/clients/dotnet/") },
+  { title: "JavaScript and Node.js clients", match: (path: string) => path.startsWith("docs/clients/javascript/") },
+  {
+    title: "Other clients",
+    match: (path: string) => path.startsWith("docs/clients/") && !/^docs\/clients\/(?:dotnet|javascript)\//.test(path),
+  },
+  { title: "REST API", match: (path: string) => path.startsWith("docs/api/") },
+  { title: "Self-hosting", match: (path: string) => path.startsWith("docs/self-hosting/") },
+]
 const siteData = JSON.parse(await Deno.readTextFile("_data/site.json")) as SiteData
 const fallbackDescription = normalizeHtmlText(siteData.description ?? "")
 const generated = JSON.parse(await Deno.readTextFile("_site/site-data.json")) as GeneratedData
@@ -49,6 +79,9 @@ await copyDir("public", "_site")
 await copyDirIfExists("docs/img", "_site/docs/img")
 await copyNonMarkdownFiles("news", "_site/news")
 await rewriteHtmlReferences("_site")
+await renderDocsPageTocs("_site/docs")
+await addFaqStructuredData("_site")
+await writeDocsMarkdown(generated.docsPages)
 await rewriteNewsIndex(generated.newsPosts)
 
 const routes = await collectHtmlRoutes("_site")
@@ -145,6 +178,117 @@ async function rewriteHtmlReferences(root: string): Promise<void> {
 
     await Deno.writeTextFile(path, html)
   }
+}
+
+async function renderDocsPageTocs(root: string): Promise<void> {
+  for await (const path of walk(root)) {
+    if (!path.endsWith(".html")) {
+      continue
+    }
+
+    const html = await Deno.readTextFile(path)
+    const updated = renderDocsPageToc(html)
+    if (updated !== html) {
+      await Deno.writeTextFile(path, updated)
+    }
+  }
+}
+
+/** Builds the docs "On this page" list from rendered h2/h3 headings so it is present before scripts run. */
+/** Adds FAQPage structured data to pages that render a `.faq` list of <details> questions. */
+async function addFaqStructuredData(root: string): Promise<void> {
+  for await (const path of walk(root)) {
+    if (!path.endsWith(".html")) {
+      continue
+    }
+
+    const html = await Deno.readTextFile(path)
+    if (!html.includes('<div class="faq">')) {
+      continue
+    }
+
+    const questions = [...html.matchAll(
+      /<details>\s*<summary>([\s\S]*?)<\/summary>\s*<div class="faq-body">([\s\S]*?)<\/div>\s*<\/details>/g,
+    )].map(([, question, answer]) => ({
+      "@type": "Question",
+      name: htmlToText(question),
+      acceptedAnswer: { "@type": "Answer", text: htmlToText(answer) },
+    }))
+
+    if (!questions.length) {
+      continue
+    }
+
+    const json = JSON.stringify({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: questions })
+    const script = `<script type="application/ld+json">${json.replaceAll("</", "<\\/")}</script>`
+    await Deno.writeTextFile(path, html.replace("</head>", `${script}\n  </head>`))
+  }
+}
+
+/** Publishes each docs page as Markdown next to its HTML route (for example /docs/getting-started.md) for AI tools. */
+async function writeDocsMarkdown(pages: ContentPage[]): Promise<void> {
+  for (const page of pages) {
+    await Deno.writeTextFile(`_site${markdownUrl(page.url)}`, renderDocsMarkdown(page))
+  }
+}
+
+function renderDocsMarkdown(page: ContentPage): string {
+  const markdown = absolutizeMarkdownLinks(markdownBody(page.sourcePath)).trim()
+  const [, heading = `# ${page.title}`, body = markdown] = markdown.match(/^(# [^\n]+)\n+([\s\S]*)$/) ?? []
+  const summary = page.description ? `> ${page.description}\n\n` : ""
+  return `${heading}\n\n${summary}${body}\n\n---\n\nSource: ${siteUrl}${page.url}\nAll Exceptionless documentation: ${siteUrl}/llms.txt\n`
+}
+
+function markdownUrl(pageUrl: string): string {
+  return pageUrl === "/docs/" ? "/docs.md" : `${pageUrl.replace(/\/$/, "")}.md`
+}
+
+/** Makes root-relative links absolute, pointing docs page links at their Markdown copies. */
+function absolutizeMarkdownLinks(markdown: string): string {
+  return markdown
+    .replace(
+      /(?<!!)(\]\()(\/[^)\s]*)/g,
+      (_match, prefix: string, target: string) => `${prefix}${markdownLinkTarget(target)}`,
+    )
+    .replace(/(!\[[^\]]*\]\()(\/[^)\s]*)/g, (_match, prefix: string, target: string) => `${prefix}${siteUrl}${target}`)
+    .replace(/(\s(?:href|src)=")(\/[^"]*)/g, (_match, prefix: string, target: string) => `${prefix}${siteUrl}${target}`)
+}
+
+function markdownLinkTarget(target: string): string {
+  const [, path = target, hash = ""] = target.match(/^([^#?]*)(.*)$/) ?? []
+  if (!/^\/docs(?:\/|$)/.test(path) || /\.[a-z0-9]+$/i.test(path)) {
+    return `${siteUrl}${target}`
+  }
+
+  return `${siteUrl}${markdownUrl(ensureTrailingSlash(path))}${hash}`
+}
+
+function renderDocsPageToc(html: string): string {
+  const article = html.match(/<article\b[^>]*data-page-content[^>]*>([\s\S]*?)<\/article>/i)?.[1]
+  if (!article) {
+    return html
+  }
+
+  const items = [...article.matchAll(/<h([23])\b[^>]*\bid="([^"]+)"[^>]*>([\s\S]*?)<\/h\1>/gi)]
+    .map(([, depth, id, content]) => ({
+      depth,
+      id,
+      label: content.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim(),
+    }))
+    .filter((item) => item.label)
+
+  if (items.length < 2) {
+    return html
+  }
+
+  const list = items
+    .map((item) => `<li class="depth-${item.depth}"><a href="#${item.id}">${item.label}</a></li>`)
+    .join("")
+
+  return html.replace(
+    /(<nav class="page-toc"[^>]*?)\s+hidden(?:="")?>(\s*<h2>On this page<\/h2>)/,
+    `$1>$2<ol>${list}</ol>`,
+  )
 }
 
 function normalizeCodeBlockClasses(html: string): string {
@@ -256,19 +400,35 @@ async function renderNewsArticles(posts: ContentPage[]): Promise<string> {
   for (const post of posts) {
     try {
       const postHtml = await Deno.readTextFile(`_site${post.url}index.html`)
-      const body = extractPostBody(postHtml)
-      articles.push([
-        '<article class="post type-post status-publish format-standard">',
-        `    <h2 id="${slugify(post.title)}"><a href="${post.url}">${escapeHtml(post.title)}</a></h2>`,
-        body,
-        "</article>",
-      ].join("\n"))
+      const excerpt = postExcerpt(extractPostBody(postHtml))
+      articles.push(
+        [
+          `<a class="news-item" href="${post.url}">`,
+          `  <h2 id="${slugify(post.title)}">${escapeHtml(post.title)}</h2>`,
+          excerpt ? `  <p>${escapeHtml(excerpt)}</p>` : "",
+          '  <span class="text-link">Read more <span aria-hidden="true">&rarr;</span></span>',
+          "</a>",
+        ].filter(Boolean).join("\n"),
+      )
     } catch {
       // Missing post output should be caught by the normal build and link verification.
     }
   }
 
-  return articles.join("\n\n")
+  return `<div class="news-list">\n${articles.join("\n\n")}\n</div>`
+}
+
+function postExcerpt(html: string): string {
+  const paragraphs = html.match(/<p\b[^>]*>[\s\S]*?<\/p>/gi) ?? []
+  const text = paragraphs
+    .map((paragraph) => normalizeHtmlText(paragraph))
+    .find((paragraph) => paragraph.length > 60 && !/^https?:\/\//.test(paragraph)) ?? ""
+
+  if (text.length <= 240) {
+    return text
+  }
+
+  return `${text.slice(0, 240).replace(/\s+\S*$/, "")}...`
 }
 
 function renderNewsPager(pageNumber: number, pageCount: number): string {
@@ -282,10 +442,10 @@ function renderNewsPager(pageNumber: number, pageCount: number): string {
   return [
     '<ul class="pager">',
     `  <li class="previous${olderHref ? "" : " disabled"}">${
-      olderHref ? `<a href="${olderHref}">Older Articles</a>` : "<span>Older Articles</span>"
+      olderHref ? `<a href="${olderHref}">&larr; Older posts</a>` : "<span>&larr; Older posts</span>"
     }</li>`,
     `  <li class="next${newerHref ? "" : " disabled"}">${
-      newerHref ? `<a href="${newerHref}">Newer Articles</a>` : "<span>Newer Articles</span>"
+      newerHref ? `<a href="${newerHref}">Newer posts &rarr;</a>` : "<span>Newer posts &rarr;</span>"
     }</li>`,
     "</ul>",
   ].join("\n")
@@ -592,7 +752,7 @@ async function* walk(dir: string): AsyncGenerator<string> {
 }
 
 function renderFeed(posts: ContentPage[]): string {
-  const updated = new Date().toISOString()
+  const updated = new Date().toUTCString()
   const items = posts.map((post) => {
     const url = `${siteUrl}${post.url}`
     const published = post.date ? new Date(`${post.date}T00:00:00.000Z`).toUTCString() : new Date().toUTCString()
@@ -601,16 +761,18 @@ function renderFeed(posts: ContentPage[]): string {
       `      <title>${xml(post.title)}</title>`,
       `      <link>${xml(url)}</link>`,
       `      <guid>${xml(url)}</guid>`,
+      ...(post.description ? [`      <description>${xml(post.description)}</description>`] : []),
       `      <pubDate>${xml(published)}</pubDate>`,
       "    </item>",
     ].join("\n")
   }).join("\n")
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Exceptionless</title>
     <link>${siteUrl}/</link>
+    <atom:link href="${siteUrl}/feed.xml" rel="self" type="application/rss+xml" />
     <description>Exceptionless news, release notes, and engineering updates.</description>
     <lastBuildDate>${updated}</lastBuildDate>
 ${items}
@@ -633,7 +795,10 @@ ${urls}
 }
 
 function renderRobots(): string {
-  return `User-agent: *
+  return `# Exceptionless welcomes search engines and AI assistants.
+# Summary for language models: ${siteUrl}/llms.txt
+# Complete documentation as Markdown: ${siteUrl}/llms-full.txt
+User-agent: *
 Allow: /
 
 Sitemap: ${siteUrl}/sitemap.xml
@@ -641,25 +806,74 @@ Sitemap: ${siteUrl}/sitemap.xml
 }
 
 function renderLlms(pages: ContentPage[], includeBodies: boolean): string {
+  const plans = JSON.parse(Deno.readTextFileSync("_data/plans.json")) as Plan[]
+  const pricing = plans.map((plan) => `${plan.name} $${plan.monthlyPrice}`).join(", ")
   const lines = [
-    "# Exceptionless Documentation",
+    "# Exceptionless",
     "",
-    "Exceptionless is a real-time error monitoring platform for .NET, JavaScript, and self-hosted deployments.",
+    `> ${normalizeHtmlText(siteData.description ?? "")}`,
     "",
-    "## Pages",
+    "Key facts:",
+    "",
+    "- Exceptionless captures errors, crashes, logs, feature usage, 404s, and user sessions, and groups similar errors into stacks so you fix each problem once.",
+    "- It notifies you about new errors, regressions (fixed errors that come back), and critical events by email, Slack, Zapier, and webhooks.",
+    "- Exie is the built-in AI assistant: ask it about your errors in plain English and it investigates stacks and events using your permissions.",
+    "- The Exceptionless MCP server (https://be.exceptionless.io/mcp, OAuth sign-in) lets AI coding agents such as Claude Code, Codex, GitHub Copilot, and OpenCode search your errors, read event details, and, with permission, update stacks. It is included on every plan, including Free.",
+    "- Clients: .NET (ASP.NET Core, console and worker services, WPF, WinForms, Microsoft.Extensions.Logging, NLog, log4net, Serilog), JavaScript (browser, Node.js, React, Vue, Angular, Express), and React Native with Expo. Any language can send events to the REST API.",
+    `- Hosted plans are priced by monthly events, not seats. Monthly prices: ${pricing}. Yearly billing is priced at 11 months. Exie is included on Medium and larger plans.`,
+    "- Exceptionless is open source under the Apache 2.0 license and can be self-hosted with Docker or Kubernetes (requires Elasticsearch).",
+    `- Hosted app: ${siteData.appUrl}. Source code: ${siteData.githubUrl}.`,
+    `- Every documentation page is available as Markdown by replacing the trailing slash with .md, for example ${siteUrl}/docs/getting-started.md.`,
+    "",
+    "## Product",
+    "",
+    ...llmsProductPages
+      .filter((page) => existsLocalRoute(page.url, "_site"))
+      .map((page) => llmsLink(page.title, page.url, productPageDescription(page.url))),
     "",
   ]
 
-  for (const page of pages) {
-    lines.push(`- [${page.title}](${siteUrl}${page.url})`)
-    if (includeBodies) {
-      lines.push("")
-      lines.push(llmsMarkdownBody(page.sourcePath).trim())
-      lines.push("")
+  for (const section of llmsDocsSections) {
+    const sectionPages = pages.filter((page) => section.match(page.sourcePath))
+    if (!sectionPages.length) {
+      continue
+    }
+
+    lines.push(`## Docs: ${section.title}`, "")
+    for (const page of sectionPages) {
+      lines.push(llmsLink(page.title, markdownUrl(page.url), page.description))
+    }
+    lines.push("")
+  }
+
+  lines.push(
+    "## Optional",
+    "",
+    llmsLink("News and release notes", "/news/", "Product announcements and release notes."),
+    includeBodies
+      ? ""
+      : llmsLink("Full documentation", "/llms-full.txt", "Every documentation page in one Markdown file."),
+  )
+
+  if (includeBodies) {
+    for (const page of pages) {
+      lines.push("", "---", "", renderDocsMarkdown(page).trim())
     }
   }
 
-  return `${lines.join("\n")}\n`
+  return `${lines.join("\n").replace(/\n{3,}/g, "\n\n").trim()}\n`
+}
+
+function llmsLink(title: string, url: string, description?: string): string {
+  return `- [${title}](${siteUrl}${url})${description ? `: ${description}` : ""}`
+}
+
+function productPageDescription(url: string): string | undefined {
+  try {
+    return metaDescription(Deno.readTextFileSync(htmlPathForRoute("_site", url))) || undefined
+  } catch {
+    return undefined
+  }
 }
 
 function renderRedirects(aliases: RedirectAlias[]): string {
@@ -687,42 +901,12 @@ function renderRedirectPage(target: string): string {
 `
 }
 
-function llmsMarkdownBody(path: string): string {
-  return stripNonDocsInternalLinks(markdownBody(path))
-}
-
 function markdownBody(path: string): string {
   try {
     return Deno.readTextFileSync(path).replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "")
   } catch {
     return ""
   }
-}
-
-function stripNonDocsInternalLinks(markdown: string): string {
-  return markdown
-    .replace(/(?<!!)(\[([^\]]+)\]\(([^)]+)\))/g, (match, _full: string, label: string, target: string) => {
-      return isNonDocsInternalPageLink(target) ? label : match
-    })
-    .replace(/<((?:https?:\/\/)?exceptionless\.com\/[^>]+)>/gi, (match, target: string) => {
-      return isNonDocsInternalPageLink(target) ? target : match
-    })
-}
-
-function isNonDocsInternalPageLink(target: string): boolean {
-  const rawHref = target.trim().split(/\s+/, 1)[0]?.replace(/^<|>$/g, "") ?? ""
-  if (!rawHref) {
-    return false
-  }
-
-  let url: URL
-  try {
-    url = new URL(rawHref, siteUrl)
-  } catch {
-    return false
-  }
-
-  return url.origin === siteUrl && !url.pathname.startsWith("/docs/") && !url.pathname.startsWith("/assets/")
 }
 
 function shouldSkipHref(target: string): boolean {

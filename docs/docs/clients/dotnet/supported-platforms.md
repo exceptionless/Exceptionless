@@ -1,5 +1,7 @@
 ---
 title: "Supported Platforms"
+metaTitle: "Supported .NET platforms and NuGet packages"
+description: "See which Exceptionless NuGet package to use for console apps, ASP.NET Core, MVC, Web API, WebForms, Nancy, WPF, Windows Forms, NLog, log4net, and Serilog."
 order: 5
 ---
 

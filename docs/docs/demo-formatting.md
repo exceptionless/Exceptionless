@@ -1,5 +1,6 @@
 ---
 title: "Markdown Formatting Demo"
+description: "Internal demo of the Markdown formatting available in Exceptionless docs and blog posts: footnotes, anchors, attributes, spans, alerts, and tables."
 hidden: true
 url: false
 ---

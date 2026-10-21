@@ -1,5 +1,6 @@
 ---
 title: "Project Settings"
+description: "Configure Exceptionless project settings: API keys, data exclusions, error stacking, spam detection, client configuration values, and event exclusions."
 ---
 
 # Project Settings
@@ -47,19 +48,23 @@ Each client wrapper has its own guide to help you get started. Visit either one 
 
 Before doing anything, you want to create an API Key for your project. This protects you and your team by ensuring you are using a revokable key. Instead of using a user-scoped key that would provide access to everything, a project-scoped key is limited to—you guessed it—a single project.
 
-To generate an API Key, go to your project settings page and click on the API Keys tab. There, you can click the New API Key button.
+To open your project settings, go to **Settings** > **Projects** in the sidebar and click your project. The settings page has tabs for **General**, **API Keys**, **Settings**, **Configuration**, **Integrations**, **Stack Management**, and **Usage**.
 
-![exceptionless api keys](../docs/img/apikeys.png)
+To generate an API Key, click the **API Keys** tab, click **Add token**, and choose **Client API key**. The same menu also creates a **Source map upload token** for uploading source maps from CI/CD.
+
+![API Keys tab with the Add token menu open](/assets/img/docs/project-settings-api-keys-light.webp)
 
 ## Data Exclusions
 
 Data can be excluded from your error reports by specifying the information you'd like excluded. This is especially important when you are dealing with sensitive information. For example, an error on log in might, by default, send a user's password to our server. You probably don't want that, so you can exclude that type of data from being sent. For more on how we handle security issues, check out our [security page](/docs/security).
 
-To get started, go to your project settings page, click the Settings tab.
+To get started, go to your project settings page and click the **Settings** tab. The **Data Exclusions** section is near the top.
 
-![Settings](img/DataExclusions.png)
+![Data Exclusions section on the project Settings tab](/assets/img/docs/project-settings-data-exclusions-light.webp)
 
-A comma delimited list of field names that should be removed from any error report data (e.g., extended data properties, form fields, cookies and query parameters). Data Exclusions can be configured on the project settings page. You can also specify a field name with wildcards `*` to specify starts with, ends with, or contains just to be extra safe.
+Enter a comma delimited list of field names that should be removed from any error report data (e.g., extended data properties, form fields, cookies and query parameters). You can also specify a field name with wildcards `*` to specify starts with, ends with, or contains just to be extra safe. Changes save automatically when you leave the field.
+
+Turn on the switch below the field to automatically remove user identifiable information from events, such as the machine name, user information, and IP addresses.
 
 ### Example usage
 
@@ -78,13 +83,13 @@ You can also control how errors are stacked by specifying user namespaces (if yo
 
 If your app runs on .NET or other languages that support namespaces, you can define what namespaces your code runs in. This allows Exceptionless to pick a stacking target within your code.
 
-You can set this up on the project settings page in the Settings tab. You simply need to provide, a comma delimited list of the namespace names that your applications code belongs to. If this value is set, only methods inside of these namespaces will be considered as stacking targets.
+You can set this up on the project settings page in the **Settings** tab, under **Error Stacking** > **User Namespaces**. You simply need to provide a comma delimited list of the namespace names that your applications code belongs to. If this value is set, only methods inside of these namespaces will be considered as stacking targets.
 
 ### Common Methods
 
 Slightly different from your namespace definitions above, defining common methods here will *exclude* stacks from building up for specified methods. This is important as you may have catch-all methods in your code or specific methods that you expect to have frequent errors you'd rather not pass to Exceptionless.
 
-You can set this up on the project settings page in the Settings tab. Simply supply a comma delimited list of common method names that should not be used as stacking targets.
+You can set this up on the project settings page in the **Settings** tab, under **Error Stacking** > **Common Methods**. Simply supply a comma delimited list of common method names that should not be used as stacking targets.
 
 ---
 
@@ -92,13 +97,13 @@ You can set this up on the project settings page in the Settings tab. Simply sup
 
 Spam detection allows you to prevent noise from being tracked. Bots crawling your site or app can contribute to stacks that you simply do not want to see or track. We make it easy to filter these out.
 
-On your project settings page, click the Settings tab and scroll down to the Spam Detection section. There, you can also specify a comma delimited list of user agents that should be ignored client side. This list supports wildcards and by default covers a vast major of bots.
+On your project settings page, click the **Settings** tab and scroll down to the **Spam Detection** section. There, you can specify a comma delimited list of user agents that should be ignored client side. This list supports wildcards and by default covers a vast majority of bots.
+
+![Spam Detection section on the project Settings tab](/assets/img/docs/project-settings-spam-detection-light.webp)
 
 ### Automatic Spam Detection
 
-![Automatic Spam Filtering](img/Spam_Detection.png)
-
-We also provide you with a simple tool to automatically detect spam from a single IP address sending in a high volume of activity. Click the checkbox, and we will do the rest.
+We also provide you with a simple tool to automatically detect spam from a single IP address sending in a high volume of activity. Turn on the switch below the user agent list, and we will automatically hide high volumes of events coming from a single client IP address.
 
 ---
 
@@ -106,9 +111,9 @@ We also provide you with a simple tool to automatically detect spam from a singl
 
 Custom client configuration values allow you to control the behavior of your app in real time. They are a dictionary of key value pairs (string key, string value). Usage examples include controlling data exclusions to protecting sensitive data and or enabling/disabling features.
 
-To set up custom client configurations, click the All Projects drop down in the navigation header when you are signed into Exceptionless. Then, hover over your project name and you'll see a gear icon. Click that icon. This will take you to your project settings screen where you can click the tab called Client Configuration.
+To set up custom client configurations, go to **Settings** > **Projects** in the sidebar and click your project. On the project settings page, click the **Configuration** tab. Click the **+** (Add Configuration Value) button, enter a **Key** and **Value**, and click **Add Configuration Value**.
 
-![Exceptionless Project Settings](img/project-settings.png)
+![Configuration tab listing a project's client configuration values](/assets/img/docs/project-settings-configuration-light.webp)
 
 Once you have made changes to your Project Settings, the configuration values will only be read by your client if your client is aware of the configuration. This happens out of the box with the [Exceptionless .NET Client](/docs/clients/dotnet/) and the [Exceptionless JS Client](/docs/clients/javascript/). If you are building your own client or simply wrapping our API, you can still make use of these configuration values by reading them in periodically via a `GET` request to `/api/v2/projects/{id}/config`.
 

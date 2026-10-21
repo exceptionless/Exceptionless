@@ -1,5 +1,7 @@
 ---
 title: "Plugins"
+metaTitle: "Exceptionless .NET client plugins"
+description: "Write Exceptionless .NET client plugins that run on every event: implement IEventPlugin or pass an action, set priority, and add or remove plugins."
 order: 8
 ---
 
@@ -58,7 +60,9 @@ namespace Exceptionless.SampleConsole.Plugins {
 
 ### Output
 
-![Exceptionless Plugin Screenshot](/assets/img/news/exceptionless-plugin-system-uptime.png)
+Properties a plugin adds with `SetProperty` show up on the event's **Extended Data** tab, with each property in its own section. A plugin like the one above adds a **System Uptime** section to each feature usage event.
+
+![Custom data on an event's Extended Data tab](/assets/img/docs/plugins-extended-data-light.webp)
 
 ## Plugin Priority
 

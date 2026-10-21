@@ -1,5 +1,6 @@
 ---
 title: "Reference Ids"
+description: "Use Exceptionless reference IDs to look up submitted events: enable UseReferenceIds in .NET, show the last reference ID to users, and search by it."
 ---
 
 # Reference Ids
@@ -44,8 +45,10 @@ ExceptionlessClient.Default.GetLastReferenceId();
 ### JavaScript Last Reference Id Example
 
 ```javascript
+import { Exceptionless } from "@exceptionless/browser";
+
 // Get the last created Reference Id
-exceptionless.ExceptionlessClient.default.getLastReferenceId();
+Exceptionless.getLastReferenceId();
 ```
 
 ## Displaying Reference Ids to End Users
@@ -106,7 +109,7 @@ Now you'll get a user friendly error response that contains a Reference Id, like
 ## Looking up Events by Reference Id
 
 Link directly to an event by outputting a link in your UI or log files, like
-`https://be.exceptionless.io/event/by-ref/YOUR_REFERENCE_ID)`
+`https://be.exceptionless.io/event/by-ref/YOUR_REFERENCE_ID`
 
 Or you can search via the api/ui with `reference:YOUR_REFERENCE_ID`
 

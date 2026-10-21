@@ -1,12 +1,14 @@
 ---
 title: "Integrations"
+metaTitle: "Exceptionless integrations: Slack, Zapier, webhooks"
+description: "Connect Exceptionless to Slack, Zapier, and webhooks from project settings, pick which notifications to send, and see the webhook JSON payload."
 ---
 
 # Integrations
 
-To make managing events from your application easier, Exceptionless provides some useful integrations. You can access these integrations by clicking the Project dropdown menu, clicking the settings icon next to the project name, then clicking on the Integrations tab on the Settings page.
+To make managing events from your application easier, Exceptionless provides some useful integrations. To find them, go to **Settings** > **Projects** in the sidebar, click your project, then click the **Integrations** tab.
 
-![Integrations Page Screenshot](./img/integrations.png)
+![Integrations tab in project settings](/assets/img/docs/integrations-overview-light.webp)
 
 We provide three integrations:
 
@@ -16,21 +18,26 @@ We provide three integrations:
 
 ## Zapier
 
-Exceptionless has built a [first-class Zapier application](https://zapier.com/apps/exceptionless/integrations) that allows you to connect your Exceptionless account to over 3,000 other apps. To use this, simply sign into your Zapier account and search for Exceptionless.
-
-![Zapier page for Exceptionless](./img/exceptionless_zapier.png)
+Exceptionless has built a [first-class Zapier application](https://zapier.com/apps/exceptionless/integrations) that allows you to connect your Exceptionless account to over 3,000 other apps. Click **Connect Zapier** on the Integrations tab to open the Exceptionless app on Zapier, or sign into your Zapier account and search for Exceptionless.
 
 ## Slack
 
-Connecting to Slack is as simple as clicking the Slack integration button. You'll be prompted to sign into your Slack workspace. Once signed in, you can choose the channel for your notifications to be sent to. Then, back on the Settings page, you can configure what types of notifications are sent.
-
-![Slack integration example](./img/exceptionless-slack-settings.png)
+Connecting to Slack is as simple as clicking the **Connect Slack** button. You'll be prompted to sign into your Slack workspace. Once signed in, you can choose the channel for your notifications to be sent to. Then, back on the Integrations tab, use the switches to choose which notifications are sent: **New Errors**, **Critical Errors**, **Error Regressions**, **New Events**, and **Critical Events**. To disconnect, click **Remove Slack**.
 
 ## Webhooks
 
-By configuring a webhook, you are telling Exceptionless to post data to the specified endpoint whenever specific events happen. This is useful in creating custom, bespoke integrations for your Exceptionless account. Configuring a webhook is simple. Click the Add Webhook button on the Settins page and provide the information requested in the modal.
+By configuring a webhook, you are telling Exceptionless to post data to the specified endpoint whenever specific events happen. This is useful in creating custom, bespoke integrations for your Exceptionless account. Configuring a webhook is simple. Click the **+** (Add Webhook) button in the **Webhooks** section of the Integrations tab, enter the **URL** to call, choose the **Event Types** that should trigger it, and click **Add Webhook**.
 
-![Webhooks example](./img/exceptionless_webhooks.png)
+![Add New Webhook dialog with a URL and event types selected](/assets/img/docs/integrations-add-webhook-light.webp)
+
+You can choose from these event types:
+
+- **New Error**: a new error that has never been seen before is reported to your project.
+- **Critical Error**: an error that has been marked as critical is reported to your project.
+- **Regression**: an event that has been marked as fixed has reoccurred in your project.
+- **New Event**: a new event that has never been seen before is reported to your project.
+- **Critical Event**: an event that has been marked as critical is reported to your project.
+- **Promoted**: a stack is promoted to external systems.
 
 Here's an example of the event payload (this applies to v2 of the Exceptionless API):
 

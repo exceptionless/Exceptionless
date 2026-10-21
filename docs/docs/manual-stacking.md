@@ -1,5 +1,6 @@
 ---
 title: "Manual Stacking"
+description: "Group related Exceptionless events into a custom stack with a manual stacking key, with examples for the REST API, the .NET client, and JavaScript."
 ---
 
 # Manual Stacking
@@ -10,17 +11,15 @@ How might we do this? You can use the `SetManualStackingKey` method to facilitat
 
 ## Creating Custom Stacks
 
-In the below examples, we use `SetManualStackingKey` and are naming the custom stack "MyCustomStackingKey" and setting the value to "ANOTHER FEATURE. What this does is it ensures that any events, regardless of the type or reason for the event, will be grouped together.
+In the examples below, the cURL request sets a stacking key named "mystackingkey" to the value "ANOTHER FEATURE" and titles the stack "My stack title". The .NET and JavaScript examples call `SetManualStackingKey("MyCustomStackingKey")`, which stores "MyCustomStackingKey" as the event's `ManualStackingKey` value. Any events that share the same key are grouped into the same stack, regardless of the type or reason for the event.
 
-![Example manual stacking on dashboard](img/Manual_Key.png)
-
-In the example above, the events grouped under "My stack title" use custom stacking keys to group them together. Let's see how you would do this in practice.
+To check which values grouped a stack, open the stack, click the gear button next to the status button, and choose **View Stacking Information**. For a manually stacked event, it lists your stacking key and value. Let's see how you would do this in practice.
 
 ## cURL Example
 
 ```shell
 curl --location --request POST 'https://api.exceptionless.com/api/v2/events' \
---header 'Authorization: Bearer XUlBBdgFxAlmCsAZHDFTIacXpzYuZDuqDzzFYMlR' \
+--header 'Authorization: Bearer YOUR_PROJECT_TOKEN' \
 --header 'Content-Type: application/json' \
 --data-raw '{   "type": "error",
     "date":"2030-01-01T12:00:00.0000000-05:00",
@@ -30,7 +29,8 @@ curl --location --request POST 'https://api.exceptionless.com/api/v2/events' \
         "type": "System.Exception",
         "stack_trace": " at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests cs:line 99"
     },
-    "@stack": { "title": "My stack title", "signature_data": { "mystackingkey": "ANOTHER FEATURE" }}
+    "@stack": { "title": "My stack title", "signature_data": { "mystackingkey": "ANOTHER FEATURE" } }
+}'
 ```
 
 ## C# Example
@@ -52,14 +52,13 @@ event.SetManualStackingKey("MyCustomStackingKey");
 ## JavaScript Example
 
 ```javascript
-var client = exceptionless.ExceptionlessClient.default;
-// Node.Js
-// var client = require('exceptionless').ExceptionlessClient.default;
+import { Exceptionless } from "@exceptionless/browser";
+// For Node.js, import from "@exceptionless/node" instead.
 
 try {
-  throw new Error('Unable to create order from quote.');
+  throw new Error("Unable to create order from quote.");
 } catch (error) {
-  client.createException(error).setManualStackingKey('MyCustomStackingKey').submit();
+  await Exceptionless.createException(error).setManualStackingKey("MyCustomStackingKey").submit();
 }
 ```
 

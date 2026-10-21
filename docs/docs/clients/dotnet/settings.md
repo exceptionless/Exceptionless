@@ -1,5 +1,7 @@
 ---
 title: "Settings"
+metaTitle: "Exceptionless .NET client settings"
+description: "Change .NET app behavior at runtime with Exceptionless project settings, read typed values, define custom settings, and add default data and tags to reports."
 order: 7
 ---
 
@@ -28,9 +30,9 @@ order: 7
 
 The below example demonstrates **how we would turn on or off log event submissions at runtime** without redeploying the app or changing server config settings.
 
-First, we add a (completely arbitrary for this example) `enableLogSubmission` client configuration value key with value `true` in the Project's Settings in the Exceptionless dashboard.
+First, we add a (completely arbitrary for this example) `enableLogSubmission` client configuration value key with value `true` in the Exceptionless dashboard. Open your project's settings, click the **Configuration** tab, and click the **+** (Add Configuration Value) button.
 
-![Exceptionless Client Configuration Value](/assets/img/docs/client-configuration.png)
+![Add New Configuration Value dialog with the enableLogSubmission key and a value of true](/assets/img/docs/client-configuration-values-light.webp)
 
 Then, we register a new client side plugin that runs each time an event is created. If our key (`enableLogSubmission`) is set to false and the event type is set to log, we will discard the event.
 
@@ -62,8 +64,6 @@ We have a few helpers to convert string configuration values to different system
 - `GetStringCollection` (breaks a comma delimited list into an IEnumerable of strings)
 
 ## Updating Client Configuration settings
-
-![Exceptionless Client Configuration Settings](/assets/img/docs/client-configuration.png)
 
 All project settings are synced to the client in almost real time. When an event is submitted to Exceptionless we send down a response header with the current configuration version. If a newer version is available we will immediately retrieve and apply the latest configuration.
 

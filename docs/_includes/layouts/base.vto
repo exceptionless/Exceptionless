@@ -2,95 +2,134 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <script>
+      (function () {
+        var root = document.documentElement
+        root.classList.add("js")
+        try {
+          var theme = localStorage.getItem("theme")
+          if (theme !== "light" && theme !== "dark") {
+            theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+          }
+          root.dataset.theme = theme
+        } catch (error) {
+          root.dataset.theme = "light"
+        }
+      })()
+    </script>
 
-<title>{{ title ? title + " - Exceptionless" : "Exceptionless" }}</title>
+    {{ set pageTitle = url === "/" ? (metaTitle || "Exceptionless") : (metaTitle || title || "Exceptionless") + " - Exceptionless" }}
+    {{ set socialImage = image || defaultSocialImage }}
+    <title>{{ pageTitle }}</title>
 
-<meta name="description" content="{{ description || site.description }}">
-<meta name="robots" content="{{ robots || "index,follow" }}">
-<meta name="author" content="{{ author || site.author }}">
+    <meta name="description" content="{{ description || site.description }}">
+    <meta name="robots" content="{{ robots || "index,follow" }}">
+    <meta name="author" content="{{ author || site.author }}">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#04070b" media="(prefers-color-scheme: dark)">
 
-<link rel="canonical" href="{{ site.url }}{{ url }}">
+    <link rel="canonical" href="{{ site.url }}{{ url }}">
 
-<meta property="og:title" content="{{ title ? title + " - Exceptionless" : "Exceptionless" }}">
-<meta property="og:type" content="article">
-<meta property="og:url" content="{{ site.url }}{{ url }}">
-<meta property="og:description" content="{{ description || site.description }}">
-<meta property="og:image" content="{{ site.url }}{{ image || "/img/EU4EDeDEnb-235.png" }}">
+    <meta property="og:site_name" content="Exceptionless">
+    <meta property="og:title" content="{{ pageTitle }}">
+    <meta property="og:type" content="{{ date ? "article" : "website" }}">
+    <meta property="og:url" content="{{ site.url }}{{ url }}">
+    <meta property="og:description" content="{{ description || site.description }}">
+    <meta property="og:image" content="{{ site.url }}{{ socialImage }}">
+    {{ if !image }}<meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Exceptionless: find and fix errors before your users notice">{{ /if }}
 
-<meta name="twitter:card" content="summary">
-<meta name="twitter:site" content="{{ site.twitter }}">
-<meta name="twitter:url" content="{{ site.url }}{{ url }}">
-<meta name="twitter:title" content="{{ title ? title + " - Exceptionless" : "Exceptionless" }}">
-<meta name="twitter:description" content="{{ description || site.description }}">
-<meta name="twitter:image" content="{{ site.url }}{{ image || "/img/EU4EDeDEnb-235.png" }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="{{ site.twitter }}">
+    <meta name="twitter:url" content="{{ site.url }}{{ url }}">
+    <meta name="twitter:title" content="{{ pageTitle }}">
+    <meta name="twitter:description" content="{{ description || site.description }}">
+    <meta name="twitter:image" content="{{ site.url }}{{ socialImage }}">
 
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-433340-8"></script>
-
-<link rel="alternate" type="application/rss+xml" title="Exceptionless Feed" href="/feed.xml">
-<link rel="shortcut icon" href="/favicon.ico">
-
-<link rel="stylesheet" href="/assets/css/theme.css">
-<link rel="stylesheet" href="/assets/css/responsive.css">
-<link rel="stylesheet" href="/assets/css/fonts.css">
-<link rel="stylesheet" href="/assets/css/font-awesome.css">
-<link rel="stylesheet" href="/assets/css/prism.css">
-{{ for style of extraStyles || [] }}
-<link rel="stylesheet" href="{{ style }}">
-{{ /for }}
-<link rel="stylesheet" href="/assets/css/custom.css{{ siteAssetVersionQuery }}">
+    <link rel="alternate" type="application/rss+xml" title="Exceptionless News" href="/feed.xml">
+    {{ if url.startsWith("/docs/") }}<link rel="alternate" type="text/markdown" title="This page as Markdown" href="{{ url === "/docs/" ? "/docs.md" : url.replace(/\/$/, ".md") }}">{{ /if }}
+    {{ structuredData(page.data, search) }}
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="preload" href="/assets/fonts/inter/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="/assets/css/site.css{{ siteAssetVersionQuery }}">
   </head>
-  <body class="{{ bodyClass || "home page custom-background top-navbar" }}">
-    <header id="banner" class="topnavbar navbar navbar-fixed-top" role="banner">
-  <div class="navbar-inner">
-    <div class="container">
-      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </a>
-      <a class="brand" href="/">
-        <picture>
-          <source type="image/avif" srcset="/img/EU4EDeDEnb-235.avif 235w">
-          <source type="image/webp" srcset="/img/EU4EDeDEnb-235.webp 235w">
-          <img decoding="async" src="/img/EU4EDeDEnb-235.png" id="site-logo" alt="Exceptionless - .NET Exception Reporting" width="235" height="50">
-        </picture>
-      </a>
-      <nav id="nav-main" class="nav-main nav-collapse collapse" role="navigation">
-        <ul id="menu-primary-navigation" class="nav pull-right">
-          <li class="menu-tour"><a href="/tour/">Tour</a></li>
-          <li class="menu-why"><a href="/why/">Why?</a></li>
-          <li class="menu-pricing"><a href="/pricing/">Pricing</a></li>
-          <li class="menu-news"><a href="/news/">News</a></li>
-          <li class="menu-help"><a href="/docs/">Docs</a></li>
-          <li class="menu-log-in"><a href="{{ site.appUrl }}">Log In</a></li>
-          <li class="menu-sign-up"><a href="{{ site.signupUrl }}">Sign Up</a></li>
-        </ul>
-      </nav>
-    </div>
-  </div>
-  <div id="megaDrop" class="container-fluid top-megamenu">
-    <div class="container"><div class="row"></div></div>
-  </div>
-</header>
+  <body class="{{ bodyClass || "layout-page" }}">
+    <a class="skip-link" href="#page-content">Skip to content</a>
+
+    <header class="site-header" data-site-header>
+      <div class="container site-header-inner">
+        <a class="brand" href="/" aria-label="Exceptionless home">
+          <img class="only-light" src="/assets/img/logo.svg" alt="Exceptionless" width="233" height="50">
+          <img class="only-dark" src="/assets/img/logo-dark.svg" alt="Exceptionless" width="233" height="50">
+        </a>
+
+        <nav class="site-nav" aria-label="Primary">
+          <a href="/tour/"{{ if url === "/tour/" }} aria-current="page"{{ /if }}>Features</a>
+          <a href="/ai/"{{ if url === "/ai/" }} aria-current="page"{{ /if }}>AI<span class="ai-mark">{{ icons["ai-sparkle"] }}</span></a>
+          <a href="/why/"{{ if url === "/why/" }} aria-current="page"{{ /if }}>Why Exceptionless</a>
+          <a href="/pricing/"{{ if url === "/pricing/" }} aria-current="page"{{ /if }}>Pricing</a>
+          <a href="/docs/"{{ if url.startsWith("/docs/") }} aria-current="page"{{ /if }}>Docs</a>
+          <a href="/news/"{{ if url.startsWith("/news/") }} aria-current="page"{{ /if }}>News</a>
+        </nav>
+
+        <div class="header-actions">
+          <button class="search-trigger" type="button" data-site-search-open aria-label="Search documentation" aria-keyshortcuts="Meta+K Control+K /">
+            {{ icons.search }}
+            <span>Search docs</span>
+            <kbd aria-hidden="true">/</kbd>
+          </button>
+          <a class="github-link" href="{{ site.githubUrl }}" aria-label="Exceptionless on GitHub ({{ site.githubStars }} stars)">
+            {{ icons.github }}
+            <span data-github-stars>{{ site.githubStars }}</span>
+          </a>
+          <button class="icon-button theme-toggle" type="button" data-theme-toggle aria-label="Toggle dark mode">
+            <span class="icon-moon">{{ icons.moon }}</span>
+            <span class="icon-sun">{{ icons.sun }}</span>
+          </button>
+          <a class="btn btn-ghost btn-sm login-link" href="{{ site.appUrl }}">Log in</a>
+          <a class="btn btn-primary btn-sm header-cta" href="{{ site.signupUrl }}" data-cta="header">Get started</a>
+          <button class="icon-button nav-toggle" type="button" data-nav-toggle aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav">
+            {{ icons.menu }}
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <nav id="mobile-nav" class="mobile-nav" aria-label="Mobile">
+      <button class="mobile-nav-search" type="button" data-site-search-open>{{ icons.search }} Search docs</button>
+      <button class="mobile-nav-search" type="button" data-theme-toggle>{{ icons.moon }} Toggle dark mode</button>
+      <a href="/tour/">Features</a>
+      <a href="/ai/">AI<span class="ai-mark">{{ icons["ai-sparkle"] }}</span></a>
+      <a href="/why/">Why Exceptionless</a>
+      <a href="/pricing/">Pricing</a>
+      <a href="/docs/">Docs</a>
+      <a href="/news/">News</a>
+      <a href="{{ site.githubUrl }}">GitHub</a>
+      <a href="{{ site.appUrl }}">Log in</a>
+      <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="mobile-nav">Get started</a>
+    </nav>
 
     <main id="page-content">
       {{ content }}
     </main>
 
-    <dialog id="site-search-modal" class="modal site-search-dialog" aria-labelledby="site-search-title" data-search-ignore>
-        <div class="modal-header site-search-header">
-          <div>
-            <p class="site-search-eyebrow">Exceptionless Docs</p>
-            <h2 id="site-search-title">Search documentation</h2>
-          </div>
-          <button class="site-search-close" type="button" data-site-search-close aria-label="Close search">&times;</button>
+    <dialog id="site-search-modal" class="site-search-dialog" aria-labelledby="site-search-title" data-search-ignore>
+      <div class="site-search-header">
+        <div>
+          <p class="site-search-eyebrow">Exceptionless Docs</p>
+          <h2 id="site-search-title">Search documentation</h2>
         </div>
-        <div class="modal-body site-search-body">
-          <form id="site-search-form" class="site-search-form" role="search">
+        <button class="icon-button site-search-close" type="button" data-site-search-close aria-label="Close search">{{ icons.x }}</button>
+      </div>
+      <div class="site-search-body">
+        <form id="site-search-form" class="site-search-form" role="search">
           <div class="site-search-input-row">
-            <i class="icon-search" aria-hidden="true"></i>
+            {{ icons.search }}
             <input
               id="site-search-input"
               type="search"
@@ -103,82 +142,93 @@
               aria-controls="site-search-results"
               aria-expanded="false"
             >
-            <button id="site-search-clear" class="site-search-clear" type="button" aria-label="Clear search" hidden>&times;</button>
+            <button id="site-search-clear" class="icon-button site-search-clear" type="button" aria-label="Clear search" hidden>&times;</button>
           </div>
-          </form>
-          <p id="site-search-status" class="site-search-status" role="status" aria-live="polite">Start typing to search.</p>
-          <ol id="site-search-results" class="site-search-results" role="listbox" aria-label="Search results"></ol>
-        </div>
-        <div class="modal-footer site-search-footer" aria-hidden="true">
-          <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> Navigate</span>
-          <span><kbd>Enter</kbd> Open</span>
-          <span><kbd>Esc</kbd> Close</span>
-        </div>
+        </form>
+        <p id="site-search-status" class="site-search-status" role="status" aria-live="polite">Start typing to search.</p>
+        <ol id="site-search-results" class="site-search-results" role="listbox" aria-label="Search results"></ol>
+      </div>
+      <div class="site-search-footer" aria-hidden="true">
+        <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> Navigate</span>
+        <span><kbd>Enter</kbd> Open</span>
+        <span><kbd>Esc</kbd> Close</span>
+      </div>
     </dialog>
 
-    <div id="footer-wrapper">
-  <footer id="content-info" class="container" role="contentinfo">
-    <div class="row-fluid">
-      <div class="span4">
-        <section id="text-2" class="widget-1 widget-first widget widget_text">
-          <div class="widget-inner">
-            <div class="textwidget">
-              <h3 id="quick-links"><span class="slash">//</span> Quick Links</h3>
-              <ul class="footer-links clearfix">
-                <li><a href="/">Home</a></li>
-                <li><a href="/tour/">Tour</a></li>
-                <li><a href="/why/">Why?</a></li>
-                <li><a href="/pricing/">Pricing</a></li>
-                <li><a href="/news/">News</a></li>
-                <li><a href="/docs/">Docs</a></li>
-              </ul>
-              <ul class="footer-links clearfix">
-                <li><a href="/contact/">Contact</a></li>
-                <li><a href="{{ site.githubUrl }}" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-                <li><a href="/about/">About Us</a></li>
-                <li><a href="/terms/">Terms of Use</a></li>
-                <li><a href="/privacy/">Privacy Policy</a></li>
-                <li>&nbsp;</li>
-              </ul>
+    <footer class="site-footer" data-search-ignore>
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <img class="only-light" src="/assets/img/logo.svg" alt="Exceptionless" width="214" height="46" loading="lazy">
+            <img class="only-dark" src="/assets/img/logo-dark.svg" alt="Exceptionless" width="214" height="46" loading="lazy">
+            <p>Open source error monitoring, logging, and feature tracking for .NET, JavaScript, and React Native apps. Hosted or self-hosted.</p>
+            <div class="footer-social">
+              <a class="icon-button" href="{{ site.githubUrl }}" target="_blank" rel="noopener noreferrer" aria-label="GitHub">{{ icons.github }}</a>
+              <a class="icon-button" href="https://x.com/exceptionless" target="_blank" rel="noopener noreferrer" aria-label="X">
+                <svg class="icon" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17.75 3h3.07l-6.7 7.66L22 21h-6.17l-4.83-6.32L5.47 21H2.4l7.17-8.2L2 3h6.33l4.37 5.77zm-1.08 16.18h1.7L7.4 4.73H5.58z"/></svg>
+              </a>
+              <a class="icon-button" href="/feed.xml" aria-label="News RSS feed">{{ icons.rss || icons.newspaper }}</a>
             </div>
           </div>
-        </section>
-      </div>
-      <div class="span3"></div>
-      <div class="span4">
-        <section id="text-3" class="widget-1 widget-first widget widget_text">
-          <div class="widget-inner">
-            <div class="textwidget">
-              <h3 id="stay-in-touch"><span class="slash">//</span> Stay In Touch</h3>
-              <p>There are real people behind Exceptionless, so if you have a question or suggestion (no matter how small) please <a href="/contact/">get in touch with us</a>:</p>
-              <ul class="social-icons-container">
-                <li>
-                  <a href="https://x.com/exceptionless" target="_blank" class="social-icon social-icon-x" rel="noopener noreferrer">X</a>
-                </li>
-                <li>
-                  <a href="https://www.facebook.com/exceptionless" target="_blank" class="social-icon social-icon-facebook" rel="noopener noreferrer">Facebook</a>
-                </li>
-                <li>
-                  <a href="{{ site.githubUrl }}" target="_blank" class="social-icon social-icon-github" rel="noopener noreferrer">GitHub</a>
-                </li>
-              </ul>
-            </div>
+          <div class="footer-col">
+            <h2>Product</h2>
+            <ul>
+              <li><a href="/tour/">Features</a></li>
+              <li><a href="/ai/">AI: Exie and MCP</a></li>
+              <li><a href="/pricing/">Pricing</a></li>
+              <li><a href="/why/">Why Exceptionless</a></li>
+              <li><a href="{{ site.appUrl }}">Log in</a></li>
+            </ul>
           </div>
-        </section>
+          <div class="footer-col">
+            <h2>Developers</h2>
+            <ul>
+              <li><a href="/docs/">Documentation</a></li>
+              <li><a href="/docs/getting-started/">Getting started</a></li>
+              <li><a href="/docs/clients/dotnet/">.NET client</a></li>
+              <li><a href="/docs/clients/javascript/">JavaScript client</a></li>
+              <li><a href="/docs/api/api-getting-started/">API</a></li>
+              <li><a href="/docs/ai/mcp-server/">MCP server</a></li>
+              <li><a href="/llms.txt">llms.txt</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h2>Self-hosting</h2>
+            <ul>
+              <li><a href="/docs/self-hosting/">Overview</a></li>
+              <li><a href="/docs/self-hosting/docker/">Docker</a></li>
+              <li><a href="/docs/self-hosting/kubernetes/">Kubernetes</a></li>
+              <li><a href="{{ site.githubUrl }}">Source on GitHub</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h2>Company</h2>
+            <ul>
+              <li><a href="/about/">About</a></li>
+              <li><a href="/news/">News</a></li>
+              <li><a href="/contact/">Contact</a></li>
+              <li><a href="/terms/">Terms of use</a></li>
+              <li><a href="/privacy/">Privacy policy</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; {{ copyrightYear }} Exceptionless. Released under the Apache 2.0 license.</p>
+          <p>Made by developers who hate surprises in production.</p>
+        </div>
       </div>
-    </div>
-  </footer>
-  <div class="copyrightContainer">
-    <p class="copyright">&copy; {{ copyrightYear }} Exceptionless</p>
-  </div>
-</div>
+    </footer>
+
+    <dialog class="lightbox" data-lightbox-dialog aria-label="Screenshot preview">
+      <button class="icon-button lightbox-close" type="button" data-lightbox-close aria-label="Close preview">{{ icons.x }}</button>
+      <img alt="" data-lightbox-image>
+      <p data-lightbox-caption></p>
+    </dialog>
+
     {{ if exceptionlessClientScriptSrc }}
     <script type="module" src="{{ exceptionlessClientScriptSrc }}"></script>
     {{ /if }}
-    <script type="module" src="/assets/js/site.js"></script>
-    {{ for script of extraScripts || [] }}
-    <script defer src="{{ script }}"></script>
-    {{ /for }}
+    <script type="module" src="/assets/js/site.js{{ siteAssetVersionQuery }}"></script>
     {{ for script of extraModuleScripts || [] }}
     <script type="module" src="{{ script }}"></script>
     {{ /for }}

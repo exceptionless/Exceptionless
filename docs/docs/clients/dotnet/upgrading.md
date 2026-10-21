@@ -1,5 +1,7 @@
 ---
 title: "Upgrading"
+metaTitle: "Upgrading the Exceptionless .NET client"
+description: "Upgrade the Exceptionless .NET client across major versions: 5.x serialization changes, 4.x async API renames, a ProcessQueueAsync scope, and older renames."
 order: 11
 ---
 
