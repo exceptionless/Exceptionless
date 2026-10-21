@@ -725,6 +725,34 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         }
     }
 
+    [Theory]
+    // Chicago left daylight saving time on 2026-11-01, so now (Tuesday 2026-11-03) is UTC-6 but October was UTC-5.
+    // Weeks start on Sunday, as in the app's time filter, so last week is Sunday 2026-10-25 through Saturday 2026-10-31.
+    [InlineData("[now-1w/w TO now-1w/w]", "2026-10-25T05:00:00Z", "2026-11-01T04:59:59.999Z")]
+    [InlineData("[2026-10-01 TO 2026-10-01]", "2026-10-01T05:00:00Z", "2026-10-02T04:59:59.999Z")]
+    [InlineData("[now-1w/w TO now]", "2026-10-25T05:00:00Z", "2026-11-03T18:00:00Z")]
+    // A duration from now is exact, whatever the offset was a week ago.
+    [InlineData("[now-7d TO now]", "2026-10-27T18:00:00Z", "2026-11-03T18:00:00Z")]
+    public async Task CountEventsAsync_RangeAcrossDaylightSavingChange_UsesEachDaysOffset(string time, string expectedStart, string expectedEnd)
+    {
+        try
+        {
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 11, 3, 18, 0, 0, TimeSpan.Zero));
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+            var result = await tools.CountEventsAsync(TestConstants.ProjectId, time: time, timeZone: "America/Chicago");
+            var data = Data(result);
+
+            Assert.True(result.Ok, result.Error?.Message);
+            Assert.Equal(DateTimeOffset.Parse(expectedStart, CultureInfo.InvariantCulture).UtcDateTime, data.StartUtc);
+            Assert.Equal(DateTimeOffset.Parse(expectedEnd, CultureInfo.InvariantCulture).UtcDateTime, data.EndUtc);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
+    }
+
     [Fact]
     public async Task CountEventsAsync_LastAndInterval_ReturnsEventCounts()
     {

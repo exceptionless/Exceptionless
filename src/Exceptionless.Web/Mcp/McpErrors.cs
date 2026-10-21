@@ -9,6 +9,7 @@ public static class McpErrorCodes
     public const string ContextMismatch = "context_mismatch";
     public const string ContextRequired = "context_required";
     public const string Forbidden = "forbidden";
+    public const string InvalidArgument = "invalid_argument";
     public const string InvalidClientPlatform = "invalid_client_platform";
     public const string InvalidCursor = "invalid_cursor";
     public const string InvalidDetailSize = "invalid_detail_size";
@@ -175,6 +176,15 @@ public static class McpErrors
         {
             ["status"] = status,
             ["allowedStatuses"] = new[] { "open", "fixed", "ignored", "discarded" }
+        });
+    }
+
+    public static McpErrorInfo InvalidArgument(string message, IReadOnlyCollection<string> unknownArguments, IReadOnlyCollection<string> allowedArguments)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidArgument, message, new Dictionary<string, object?>
+        {
+            ["unknownArguments"] = unknownArguments,
+            ["allowedArguments"] = allowedArguments
         });
     }
 

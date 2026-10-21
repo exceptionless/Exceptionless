@@ -18,7 +18,9 @@ public sealed record McpResponse<T>(bool Ok, T? Data = default, McpErrorInfo? Er
     }
 }
 
-public sealed record McpListData<T>(IReadOnlyCollection<T> Items);
+/// <param name="Items">The items on this page.</param>
+/// <param name="Total">How many items match across all pages, so a count does not depend on the page size.</param>
+public sealed record McpListData<T>(IReadOnlyCollection<T> Items, long? Total = null);
 
 public sealed record McpPagination(bool HasMore, int Limit, string? Before = null, string? After = null);
 

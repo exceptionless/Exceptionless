@@ -34,6 +34,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Net.Http.Headers;
 using ModelContextProtocol.AspNetCore;
+using ModelContextProtocol.Server;
 using OpenTelemetry;
 using Scalar.AspNetCore;
 using Serilog;
@@ -204,7 +205,15 @@ public partial class Program
                 .WithHttpTransport()
                 .WithTools<ExceptionlessMcpTools>()
                 .WithRequestFilters(filters => filters.AddCallToolFilter(next => async (context, cancellationToken) =>
-                    McpToolResultFilter.MarkStructuredErrors(await next(context, cancellationToken))));
+                {
+                    if (context.MatchedPrimitive is McpServerTool tool
+                        && McpToolResultFilter.RejectUnknownArguments(tool.ProtocolTool.Name, tool.ProtocolTool.InputSchema, context.Params?.Arguments?.Keys) is { } rejected)
+                    {
+                        return rejected;
+                    }
+
+                    return McpToolResultFilter.MarkStructuredErrors(await next(context, cancellationToken));
+                }));
             builder.Services.AddSingleton(_ => new ThrottlingOptions
             {
                 MaxRequestsForUserIdentifierFunc = _ => options.ApiThrottleLimit,

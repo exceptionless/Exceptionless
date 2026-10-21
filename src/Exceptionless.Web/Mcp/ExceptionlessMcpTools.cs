@@ -1273,11 +1273,57 @@ public sealed class ExceptionlessMcpTools
         }
 
         var timeInfo = TimeRangeParser.GetTimeInfo(time.Trim(), utcOffset, _timeProvider);
+        (bool isCalendarStart, bool isCalendarEnd) = GetCalendarBoundaries(time);
         timeRange = new McpTimeRange(
-            timeInfo.Range.UtcStart == DateTime.MinValue ? null : timeInfo.Range.UtcStart,
-            timeInfo.Range.UtcEnd == DateTime.MaxValue ? null : timeInfo.Range.UtcEnd);
+            timeInfo.Range.UtcStart == DateTime.MinValue ? null : ToZoneBoundary(timeInfo.Range.UtcStart, utcOffset, zone, isCalendarStart, isStart: true),
+            timeInfo.Range.UtcEnd == DateTime.MaxValue ? null : ToZoneBoundary(timeInfo.Range.UtcEnd, utcOffset, zone, isCalendarEnd, isStart: false));
         error = null!;
         return true;
+    }
+
+    /// <summary>
+    /// Which sides of a range fall on calendar lines (now/d, now-1w/w, or a date) rather than a duration from now
+    /// such as now-24h. Only calendar boundaries depend on the zone's offset on that day.
+    /// </summary>
+    private static (bool Start, bool End) GetCalendarBoundaries(string time)
+    {
+        var match = s_bracketTimeRange.Match(time.Trim());
+        if (match.Success)
+            return (IsCalendarBoundary(match.Groups["start"].Value), IsCalendarBoundary(match.Groups["end"].Value));
+
+        // Named periods such as today or 2026-10 are calendar periods; "last 24 hours" style phrases are durations.
+        bool isCalendar = !time.Contains("now", StringComparison.OrdinalIgnoreCase) && !s_durationWords.IsMatch(time);
+        return (isCalendar, isCalendar);
+    }
+
+    private static bool IsCalendarBoundary(string boundary)
+    {
+        boundary = boundary.Trim();
+        return boundary != "*" && (boundary.Contains('/') || !boundary.StartsWith("now", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// TimeRangeParser resolves the whole range with today's offset. A calendar boundary on the other side of a
+    /// daylight saving change belongs to that day's offset, so this resolves its wall-clock time in the zone.
+    /// </summary>
+    private static DateTime ToZoneBoundary(DateTime utc, TimeSpan appliedOffset, TimeZoneInfo zone, bool isCalendarBoundary, bool isStart)
+    {
+        if (!isCalendarBoundary || zone == TimeZoneInfo.Utc)
+            return utc;
+
+        var wallClock = DateTime.SpecifyKind(utc + appliedOffset, DateTimeKind.Unspecified);
+        // A wall-clock time skipped by a daylight saving change starts at the end of the gap.
+        while (zone.IsInvalidTime(wallClock))
+            wallClock = wallClock.AddMinutes(30);
+
+        // A repeated hour starts at its first occurrence and ends at its last.
+        if (zone.IsAmbiguousTime(wallClock))
+        {
+            var offsets = zone.GetAmbiguousTimeOffsets(wallClock);
+            return new DateTimeOffset(wallClock, isStart ? offsets.Max() : offsets.Min()).UtcDateTime;
+        }
+
+        return TimeZoneInfo.ConvertTimeToUtc(wallClock, zone);
     }
 
     private static bool TryParseRelativeTime(string value, out TimeSpan duration)
@@ -1754,7 +1800,7 @@ public sealed class ExceptionlessMcpTools
         where TDocument : class
     {
         return McpResponse<McpListData<TResult>>.Success(
-            new McpListData<TResult>(results.Documents.Select(mapper).ToArray()),
+            new McpListData<TResult>(results.Documents.Select(mapper).ToArray(), results.Total),
             warning,
             new McpPagination(
                 results.HasMore,
@@ -1799,6 +1845,8 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly Regex FilterFieldRegex = new(@"(?:^|[-+\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex IdRegex = new(@"^[A-Za-z0-9]{24,36}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex s_bracketTimeRange = new(@"^[\[{](?<start>.+?)\s+TO\s+(?<end>.+?)[\]}]$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private static readonly Regex s_durationWords = new(@"\b(minutes?|hours?|mins?|hrs?)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex RelativeTimeRegex = new(@"^(?<value>\d+)(?<unit>[mhdw])$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IntervalRegex = new(@"^\d+[mhdwM]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
