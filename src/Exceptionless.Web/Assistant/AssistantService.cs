@@ -783,6 +783,10 @@ public sealed class AssistantService(
         while (timeZone.IsInvalidTime(midnight))
             midnight = midnight.AddMinutes(30);
 
+        // Others repeat midnight when it ends; the day begins at the first one, which has the larger offset.
+        if (timeZone.IsAmbiguousTime(midnight))
+            return new DateTimeOffset(midnight, timeZone.GetAmbiguousTimeOffsets(midnight).Max()).ToUniversalTime();
+
         return new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(midnight, timeZone), TimeSpan.Zero);
     }
 

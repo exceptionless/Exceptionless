@@ -77,6 +77,16 @@ public sealed class AssistantServiceTests
     }
 
     [Fact]
+    public void GetUserCalendarContext_RepeatedMidnight_StartsTheDayAtTheFirstMidnight()
+    {
+        // The Azores fall back from UTC+0 to UTC-1 at 01:00 UTC on 2026-10-25, so local midnight happens twice.
+        string context = AssistantService.GetUserCalendarContext("Atlantic/Azores", new DateTimeOffset(2026, 10, 25, 1, 30, 0, TimeSpan.Zero));
+
+        Assert.Contains("User local time: 2026-10-25T00:30:00-01:00.", context, StringComparison.Ordinal);
+        Assert.Contains("today starts at 2026-10-25T00:00:00Z", context, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BuildMessages_EarlierTurnsWithoutToolResults_TellsModelToRefreshToolContext()
     {
         var request = new AssistantChatRequest(

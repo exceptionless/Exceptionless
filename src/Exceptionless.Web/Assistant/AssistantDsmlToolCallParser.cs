@@ -19,6 +19,8 @@ internal static class AssistantDsmlToolCallParser
     private static readonly Regex s_invoke = new($@"<{Tag}invoke\s+name=""([^""]+)""\s*>(.*?)</{Tag}invoke\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline, s_timeout);
     private static readonly Regex s_parameter = new($@"<{Tag}parameter\s+name=""([^""]+)""(?:\s+string=""([^""]*)"")?\s*>(.*?)</{Tag}parameter\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline, s_timeout);
     private static readonly Regex s_markupRemainder = new($@"</?{Tag}[a-z_]+\b[^>]*>|\s+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, s_timeout);
+    private static readonly Regex s_closingWrapper = new($@"</{Tag}(?:(?:tool_?|function_)?calls|tool)\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, s_timeout);
+    private static readonly Regex s_tagStart = new(@"<\s*/?\s*[|｜]", RegexOptions.CultureInvariant, s_timeout);
 
     /// <summary>Parses complete DSML tool calls from provider content.</summary>
     /// <param name="content">The full provider message content.</param>
@@ -52,8 +54,9 @@ internal static class AssistantDsmlToolCallParser
                 consumed = invoke.Index + invoke.Length;
             }
 
-            // Like vLLM, text after the tool calls is dropped because a tool call ends the response.
-            if (calls.Count == 0 || calls.Any(call => call.Name.Length == 0))
+            // Like vLLM, text after the tool calls is dropped because a tool call ends the response. Leftover markup
+            // means a later call was cut off, and running only the calls before it could apply part of a change.
+            if (calls.Count == 0 || calls.Any(call => call.Name.Length == 0) || s_tagStart.IsMatch(s_closingWrapper.Replace(markup[consumed..], String.Empty)))
                 return false;
 
             leadingText = content[..start.Index].TrimEnd();

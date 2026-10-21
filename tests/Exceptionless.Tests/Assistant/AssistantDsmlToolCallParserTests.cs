@@ -91,6 +91,8 @@ public sealed class AssistantDsmlToolCallParserTests
     [InlineData("""<｜DSML｜invoke name="search_stacks"><｜DSML｜parameter name="filter" string="true">type:error</｜DSML｜invoke>""")]
     [InlineData("""<｜DSML｜invoke name="search_stacks">stray text</｜DSML｜invoke>""")]
     [InlineData("""<｜DSML｜invoke name="list_projects"></｜DSML｜invoke> I will also <｜DSML｜invoke name="search_stacks"></｜DSML｜invoke>""")]
+    [InlineData("""<｜DSML｜tool_calls><｜DSML｜invoke name="list_projects"></｜DSML｜invoke><｜DSML｜invoke name="snooze_stack"><｜DSML｜parameter name="stackId" string="true">abc""")]
+    [InlineData("""<｜DSML｜tool_calls><｜DSML｜invoke name="list_projects"></｜DSML｜invoke><｜DSML｜inv""")]
     [InlineData("No tool calls here.")]
     public void TryParse_IncompleteOrMixedMarkup_ReturnsFalse(string content)
     {
