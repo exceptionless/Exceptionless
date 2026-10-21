@@ -59,15 +59,23 @@ export function loadAssistantConversations(scope: string, storage = getStorage()
         return [];
     }
 
+    let stored: unknown;
     try {
-        const conversations = JSON.parse(value) as unknown;
-        const oldestUpdatedAt = Date.now() - MAX_CONVERSATION_AGE_MS;
-        return Array.isArray(conversations)
-            ? conversations.filter((conversation) => isConversation(conversation) && conversation.updatedAt >= oldestUpdatedAt)
-            : [];
+        stored = JSON.parse(value);
     } catch {
         return [];
     }
+
+    const oldestUpdatedAt = Date.now() - MAX_CONVERSATION_AGE_MS;
+    const conversations = Array.isArray(stored)
+        ? stored.filter((conversation): conversation is AssistantConversation => isConversation(conversation) && conversation.updatedAt >= oldestUpdatedAt)
+        : [];
+    // Expired chats must leave storage too, not just the list, since they can hold event details.
+    if (Array.isArray(stored) && conversations.length < stored.length) {
+        writeConversations(scope, conversations, storage);
+    }
+
+    return conversations;
 }
 
 /** Saves a conversation as the most recent one and returns the updated history, newest first. */

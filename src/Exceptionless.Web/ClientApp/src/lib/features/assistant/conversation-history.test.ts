@@ -126,6 +126,12 @@ describe('conversation history', () => {
         storage.setItem('exie:conversations:v1:scope', JSON.stringify([conversation('recent', 0), old]));
 
         expect(loadAssistantConversations('scope', storage).map((item) => item.id)).toEqual(['recent']);
+        const persisted = JSON.parse(storage.getItem('exie:conversations:v1:scope')!) as AssistantConversation[];
+        expect(persisted.map((item) => item.id)).toEqual(['recent']);
+
+        storage.setItem('exie:conversations:v1:scope', JSON.stringify([old]));
+        expect(loadAssistantConversations('scope', storage)).toEqual([]);
+        expect(storage.getItem('exie:conversations:v1:scope')).toBeNull();
     });
 
     it('remembers which chat to reopen, including a new blank chat', () => {
