@@ -197,6 +197,18 @@ describe('conversation history', () => {
         expect(storage.getItem('exie:conversations:v1:scope')).toBeNull();
     });
 
+    it('drops expired chats from organizations the user no longer opens', () => {
+        const expired = { ...conversation('a-old', 0), updatedAt: Date.now() - 31 * 24 * 60 * 60 * 1000 };
+        storage.setItem('exie:conversations:v1:user-1:org-a', JSON.stringify([conversation('a-recent', 0), expired]));
+        storage.setItem('exie:conversations:v1:user-1:org-c', JSON.stringify([expired]));
+
+        saveAssistantConversation('user-1:org-b', conversation('b-0', 1), storage);
+
+        const orgA = JSON.parse(storage.getItem('exie:conversations:v1:user-1:org-a')!) as AssistantConversation[];
+        expect(orgA.map((item) => item.id)).toEqual(['a-recent']);
+        expect(storage.getItem('exie:conversations:v1:user-1:org-c')).toBeNull();
+    });
+
     it('remembers which chat to reopen, including a new blank chat', () => {
         expect(getActiveAssistantConversationId('scope', storage)).toBeUndefined();
         setActiveAssistantConversationId('scope', 'chat-1', storage);

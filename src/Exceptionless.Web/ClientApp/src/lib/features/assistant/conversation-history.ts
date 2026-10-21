@@ -183,18 +183,27 @@ function pickResourceFields(value: unknown): unknown {
 }
 
 /** Reads another scope's history as stored, without the expiry cleanup that loading performs. */
-function readStoredHistories(storage: Storage, exceptKey: string): Map<string, AssistantConversation[]> {
+function readStoredHistories(storage: Storage, exceptKey: string): { expiredKeys: string[]; histories: Map<string, AssistantConversation[]> } {
     const histories = new Map<string, AssistantConversation[]>();
+    const expiredKeys: string[] = [];
+    const oldestUpdatedAt = Date.now() - MAX_CONVERSATION_AGE_MS;
     for (let index = 0; index < storage.length; index++) {
         const key = storage.key(index);
         if (!key?.startsWith(STORAGE_PREFIX) || key.startsWith(ACTIVE_PREFIX) || key === exceptKey) {
             continue;
         }
 
-        histories.set(key, readStoredHistory(storage, key));
+        // Organizations the user no longer opens are never loaded, so their expired chats are dropped here.
+        const stored = readStoredHistory(storage, key);
+        const current = stored.filter((conversation) => conversation.updatedAt >= oldestUpdatedAt);
+        if (current.length < stored.length) {
+            expiredKeys.push(key);
+        }
+
+        histories.set(key, current);
     }
 
-    return histories;
+    return { expiredKeys, histories };
 }
 
 function readStoredHistory(storage: Storage, key: string): AssistantConversation[] {
@@ -250,14 +259,18 @@ function writeConversations(scope: string, conversations: AssistantConversation[
     const key = `${STORAGE_PREFIX}${scope}`;
     if (conversations.length === 0) {
         storage.removeItem(key);
+        const { expiredKeys, histories } = readStoredHistories(storage, key);
+        writeOtherHistories(storage, histories, expiredKeys);
         return [];
     }
 
     // Every scope shares one budget, so the oldest chats anywhere make room before this scope's newest chat is dropped.
-    const histories = readStoredHistories(storage, key);
+    const { expiredKeys, histories } = readStoredHistories(storage, key);
+    // Other scopes as they stand after expiry, which a failed save restores, since expired chats stay removed.
+    const beforeEviction = new Map([...histories].map(([historyKey, history]) => [historyKey, [...history]]));
     // A copy, since evicting chats must not change the list the caller keeps in memory.
     histories.set(key, [...conversations]);
-    const changedKeys = new Set([key]);
+    const changedKeys = new Set([key, ...expiredKeys]);
     let newest = conversations[0]!;
     while (getStoredSize(histories) > MAX_STORED_CHARACTERS) {
         const oldest = findOldestConversation(histories, newest);
@@ -268,39 +281,39 @@ function writeConversations(scope: string, conversations: AssistantConversation[
             newest = withoutToolResults(newest);
             histories.set(key, [newest]);
         } else {
-            // The newest chat cannot fit on its own, so keep the history that was last saved.
+            // The newest chat cannot fit on its own, so keep the history that was last saved, minus expired chats.
+            writeOtherHistories(storage, beforeEviction, expiredKeys);
             return readStoredHistory(storage, key);
         }
     }
 
     // Write the scopes that gave up chats first, which frees space before this scope grows. If this scope still
     // cannot be saved, put the other scopes back so a failed save never costs older chats.
-    const previous = new Map([...changedKeys].map((changedKey) => [changedKey, storage.getItem(changedKey)]));
-    for (const changedKey of [...changedKeys].filter((item) => item !== key)) {
-        const history = histories.get(changedKey)!;
-        if (history.length === 0) {
-            storage.removeItem(changedKey);
-        } else {
-            try {
-                storage.setItem(changedKey, JSON.stringify(history));
-            } catch {
-                // A shorter history fits where the longer one did; if it does not, the scope keeps its previous chats.
-            }
-        }
-    }
+    const otherKeys = [...changedKeys].filter((item) => item !== key);
+    writeOtherHistories(storage, histories, otherKeys);
 
     const saved = trySetItem(storage, key, histories.get(key)!, newest);
     if (saved) {
         return saved;
     }
 
-    for (const [changedKey, value] of previous) {
-        if (value === null) {
-            storage.removeItem(changedKey);
-        } else {
-            storage.setItem(changedKey, value);
+    writeOtherHistories(storage, beforeEviction, otherKeys);
+    return readStoredHistory(storage, key);
+}
+
+/** Writes other scopes' histories, removing a scope that has no chats left. */
+function writeOtherHistories(storage: Storage, histories: Map<string, AssistantConversation[]>, keys: Iterable<string>): void {
+    for (const key of keys) {
+        const history = histories.get(key) ?? [];
+        if (history.length === 0) {
+            storage.removeItem(key);
+            continue;
+        }
+
+        try {
+            storage.setItem(key, JSON.stringify(history));
+        } catch {
+            // A shorter history fits where the longer one did; if it does not, the scope keeps its previous chats.
         }
     }
-
-    return readStoredHistory(storage, key);
 }
