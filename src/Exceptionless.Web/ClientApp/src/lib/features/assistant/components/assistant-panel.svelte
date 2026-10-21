@@ -499,8 +499,14 @@
 
     /** Follow-ups keep searching the projects the chat searched, since its earlier tool results came from them. */
     function restoreProjectScope(conversation: AssistantConversation): void {
-        // Older chats did not record a scope, so they follow the current page.
+        // Start from the page's scope so a project picked for another chat never carries over.
+        selectedProjectId = undefined;
+        contextDismissed = false;
+
+        // Older chats did not record a scope, so they follow the current page. Their earlier tool results may
+        // come from another project, so they also start a new server conversation.
         if (conversation.projectId === undefined) {
+            conversationId = createConversationId();
             return;
         }
 

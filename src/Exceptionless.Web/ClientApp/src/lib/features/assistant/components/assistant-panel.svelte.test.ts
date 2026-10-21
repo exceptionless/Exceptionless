@@ -958,6 +958,61 @@ describe('AssistantPanel', () => {
         localStorage.clear();
     });
 
+    it('follows the page when opening an older chat that did not record a project', async () => {
+        localStorage.clear();
+        const message = {
+            content: 'Legacy answer.',
+            conversationId: 'legacy-conversation',
+            id: 'assistant-1',
+            parts: [{ text: 'Legacy answer.', type: 'text' }],
+            role: 'assistant',
+            tools: []
+        };
+        // Older than the restore window, so it only opens from Recent chats.
+        localStorage.setItem(
+            'exie:conversations:v1:user-1:organization-1',
+            JSON.stringify([{ id: 'chat-legacy', messages: [message], title: 'Legacy question', updatedAt: Date.now() - 13 * 60 * 60 * 1000 }])
+        );
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'Page answer.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                path: '/project/5f8f8f8f8f8f8f8f8f8f8f8f/issues',
+                projectId: 'project-1',
+                projects: [
+                    { id: 'project-1', name: 'Storefront' },
+                    { id: 'project-2', name: 'Billing API' }
+                ],
+                projectsLoaded: true,
+                userId: 'user-1'
+            }
+        });
+        await fireEvent.click(await screen.findByRole('button', { name: 'Project scope: Storefront' }));
+        await fireEvent.click(await screen.findByRole('option', { name: 'Billing API' }));
+        expect(screen.getByRole('button', { name: 'Project scope: Billing API' })).toBeTruthy();
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Recent chats' }));
+        await fireEvent.click(await screen.findByText('Legacy question'));
+
+        expect(await screen.findByText('Legacy answer.')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Project scope: Storefront' })).toBeTruthy();
+        const composer = screen.getByRole('textbox', { name: 'Message Exie' });
+        await fireEvent.input(composer, { target: { value: 'What else broke?' } });
+        await fireEvent.keyDown(composer, { key: 'Enter' });
+        await screen.findByText('Page answer.');
+        const request = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body)) as {
+            conversation_id: string;
+            project_id?: string;
+        };
+        expect(request.project_id).toBe('project-1');
+        expect(request.conversation_id).not.toBe('legacy-conversation');
+        localStorage.clear();
+    });
+
     it('keeps a new chat blank after the panel reloads', async () => {
         localStorage.clear();
         const fetchMock = vi.fn(
