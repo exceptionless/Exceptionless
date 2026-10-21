@@ -198,9 +198,20 @@
         const availableProjects = projects;
         const loaded = projectsLoaded;
         untrack(() => {
-            if (loaded && typeof selectedProjectId === 'string' && !availableProjects.some((project) => project.id === selectedProjectId)) {
+            if (!loaded) {
+                return;
+            }
+
+            if (typeof selectedProjectId === 'string' && !availableProjects.some((project) => project.id === selectedProjectId)) {
                 selectedProjectId = undefined;
                 contextDismissed = false;
+            }
+
+            // The server conversation's project may also be the page's, such as a deleted project's stale URL, so its
+            // cached tool results are dropped whenever that project is missing from the list.
+            if (typeof conversationProjectId === 'string' && !availableProjects.some((project) => project.id === conversationProjectId)) {
+                conversationId = createConversationId();
+                conversationProjectId = undefined;
             }
         });
     });

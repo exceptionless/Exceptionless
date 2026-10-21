@@ -1087,6 +1087,40 @@ describe('AssistantPanel', () => {
         localStorage.clear();
     });
 
+    it('starts a new server conversation when the restored chat page project no longer exists', async () => {
+        localStorage.clear();
+        const message = {
+            content: 'Old answer.',
+            conversationId: 'old-conversation',
+            id: 'assistant-1',
+            parts: [{ text: 'Old answer.', type: 'text' }],
+            role: 'assistant',
+            tools: []
+        };
+        localStorage.setItem(
+            'exie:conversations:v1:user-1:organization-1',
+            JSON.stringify([{ id: 'chat-1', messages: [message], projectId: 'deleted-project', title: 'Old question', updatedAt: Date.now() }])
+        );
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'Fresh answer.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        // A stale URL for the deleted project, so the saved project matches the page's.
+        const props = { open: true, organizationId: 'organization-1', path: '/project/deleted/issues', projectId: 'deleted-project', userId: 'user-1' };
+        const view = render(AssistantPanel, { props });
+        expect(await screen.findByText('Old answer.')).toBeTruthy();
+
+        await view.rerender({ ...props, projects: [{ id: 'project-1', name: 'Storefront' }], projectsLoaded: true });
+        const composer = screen.getByRole('textbox', { name: 'Message Exie' });
+        await fireEvent.input(composer, { target: { value: 'What else broke?' } });
+        await fireEvent.keyDown(composer, { key: 'Enter' });
+        await screen.findByText('Fresh answer.');
+
+        const request = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body)) as { conversation_id: string };
+        expect(request.conversation_id).not.toBe('old-conversation');
+        localStorage.clear();
+    });
+
     it('keeps a new chat blank after the panel reloads', async () => {
         localStorage.clear();
         const fetchMock = vi.fn(
