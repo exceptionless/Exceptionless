@@ -111,6 +111,8 @@
     let messages = $state<AssistantChatMessage[]>([]);
     let threadId = $state(createConversationId());
     let conversationId = $state(createConversationId());
+    /** The project the server conversation's tool results came from: null for all projects, undefined before any request. */
+    let conversationProjectId: null | string | undefined;
     let conversationOrganizationId = $state<string>();
     let conversations = $state<AssistantConversation[]>([]);
     let historyScope = $state<string>();
@@ -452,6 +454,7 @@
         messages = [];
         threadId = createConversationId();
         conversationId = createConversationId();
+        conversationProjectId = undefined;
         prompt = '';
         editingMessageId = undefined;
         lastOutcome = undefined;
@@ -467,6 +470,7 @@
         messages = conversation.messages;
         threadId = conversation.id;
         conversationId = conversation.messages.findLast((message) => message.conversationId)?.conversationId ?? createConversationId();
+        conversationProjectId = conversation.projectId;
         restoreProjectScope(conversation);
         editingMessageId = undefined;
         prompt = '';
@@ -508,6 +512,7 @@
             messages = recent.messages;
             threadId = recent.id;
             conversationId = recent.messages.findLast((message) => message.conversationId)?.conversationId ?? conversationId;
+            conversationProjectId = recent.projectId;
             restoreProjectScope(recent);
         }
     }
@@ -624,6 +629,7 @@
         activeTurn = telemetry;
         lastOutcome = undefined;
         const request = createAssistantChatRequest(history, conversationId, organizationId, requestPath, requestProjectId);
+        conversationProjectId = requestProjectId ?? null;
 
         try {
             const response = await fetch(getApiUrl('assistant/chat'), {
@@ -700,8 +706,10 @@
         const editIndex = editingMessageId ? messages.findIndex((message) => message.id === editingMessageId) : -1;
         const source = editIndex >= 0 ? 'edit' : (options.source ?? 'composer');
         editingMessageId = undefined;
-        if (editIndex >= 0) {
-            // Editing rewrites history, so the server sees a new conversation.
+        // Editing rewrites history, and tool results from another project would answer for the wrong scope,
+        // so either one starts a new server conversation.
+        const scopeChanged = conversationProjectId !== undefined && conversationProjectId !== (scopeProjectId ?? null);
+        if (editIndex >= 0 || scopeChanged) {
             conversationId = createConversationId();
         }
 

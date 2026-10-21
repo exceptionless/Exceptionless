@@ -646,7 +646,11 @@ describe('AssistantPanel', () => {
         await fireEvent.input(composer, { target: { value: 'What broke today?' } });
         await fireEvent.keyDown(composer, { key: 'Enter' });
         await screen.findByText('Scoped answer');
-        let request = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body)) as { path: string; project_id?: string };
+        const request = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body)) as {
+            conversation_id: string;
+            path: string;
+            project_id?: string;
+        };
         expect(request).toMatchObject({ path: resolve('/(app)'), project_id: 'project-2' });
 
         await fireEvent.click(screen.getByRole('button', { name: 'Project scope: Billing API' }));
@@ -654,8 +658,19 @@ describe('AssistantPanel', () => {
         await fireEvent.input(composer, { target: { value: 'And across everything?' } });
         await fireEvent.keyDown(composer, { key: 'Enter' });
         await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-        request = JSON.parse(String((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body)) as { path: string; project_id?: string };
-        expect(request.project_id).toBeUndefined();
+        const allProjectsRequest = JSON.parse(String((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body)) as {
+            conversation_id: string;
+            project_id?: string;
+        };
+        expect(allProjectsRequest.project_id).toBeUndefined();
+        // Tool results from Billing API must not answer for all projects, so the server conversation starts over.
+        expect(allProjectsRequest.conversation_id).not.toBe(request.conversation_id);
+
+        await fireEvent.input(composer, { target: { value: 'Which one is newest?' } });
+        await fireEvent.keyDown(composer, { key: 'Enter' });
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+        const sameScopeRequest = JSON.parse(String((fetchMock.mock.calls[2] as unknown as [string, RequestInit])[1].body)) as { conversation_id: string };
+        expect(sameScopeRequest.conversation_id).toBe(allProjectsRequest.conversation_id);
 
         await view.rerender({ ...props, path: '/stack/6f8f8f8f8f8f8f8f8f8f8f8f' });
         expect(await screen.findByRole('button', { name: 'Project scope: Storefront' })).toBeTruthy();
