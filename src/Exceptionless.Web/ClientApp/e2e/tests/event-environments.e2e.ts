@@ -64,6 +64,49 @@ test('environment filters include unspecified events and persist in saved views'
     for (const message of messages) await expect(getVisibleText(page, message)).toBeVisible();
 });
 
+test('an environment in a saved view link overrides the saved environment', async ({ e2eApi, e2eScenario, page, request }) => {
+    const environments = ['production', 'staging'];
+    const messages = environments.map((environment) => `Saved view override ${environment} ${e2eScenario.run}`);
+    for (const [index, environment] of environments.entries()) {
+        const referenceId = createReferenceId(e2eScenario.run, `-env-override-${index}`);
+        await e2eApi.submitEvent(e2eScenario.projectId, e2eScenario.projectToken, {
+            environment,
+            message: messages[index],
+            reference_id: referenceId,
+            source: 'environment-override-test',
+            type: 'log'
+        });
+        await e2eApi.pollForEventByReference(e2eScenario.userToken, e2eScenario.projectId, referenceId);
+    }
+
+    const name = `Environment override ${e2eScenario.run.slice(-20)}`;
+    const slug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    const response = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
+        data: {
+            filter: `project:${e2eScenario.projectId} environment:production`,
+            filter_definitions: JSON.stringify([
+                { type: 'project', value: [e2eScenario.projectId] },
+                { type: 'environment', value: ['production'] }
+            ]),
+            name,
+            organization_id: e2eScenario.organizationId,
+            slug,
+            view_type: 'events'
+        },
+        headers: { Authorization: `Bearer ${e2eScenario.userToken}` }
+    });
+    expect(response.status(), await response.text()).toBe(201);
+
+    await page.goto(`/event/${slug}?environment=${encodeURIComponent(JSON.stringify(['staging']))}`);
+    await expect(page.getByRole('heading', { exact: true, name })).toBeVisible();
+    await expect(getVisibleText(page, messages[1]!)).toBeVisible({ timeout: 30_000 });
+    await expect(getVisibleText(page, messages[0]!)).toBeHidden();
+    await expect(page.getByRole('button', { name: /^Environment\s+staging/ })).toBeVisible();
+});
+
 test('stack, session, and stream filters retain names with no current events', async ({ e2eScenario, page }) => {
     for (const route of ['stack', 'sessions', 'stream']) {
         await page.goto(`/${route}?project=${e2eScenario.projectId}`);

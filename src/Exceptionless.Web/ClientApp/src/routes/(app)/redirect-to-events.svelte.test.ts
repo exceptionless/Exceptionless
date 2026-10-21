@@ -18,6 +18,7 @@ describe('redirect-to-events', () => {
         expect(deserializeEnvironmentQueryParam(url.searchParams.get('environment')!)).toEqual(names);
         expect(url.searchParams.has('filter')).toBe(false);
         expect(deserializeEnvironmentQueryParam('staging')).toEqual(['staging']);
+        expect(deserializeEnvironmentQueryParam('"qa west"')).toEqual(['qa west']);
     });
     it('snapshots list filter query parameters from shared reactive state', async () => {
         // Arrange

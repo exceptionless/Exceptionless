@@ -74,6 +74,10 @@ export function deserializeEnvironmentQueryParam(value: string): string[] {
         if (Array.isArray(values)) {
             return values.filter((name): name is string => typeof name === 'string');
         }
+
+        if (typeof values === 'string') {
+            return [values];
+        }
     } catch {
         // Single names are also accepted in hand-written URLs.
     }
