@@ -16,6 +16,7 @@ site.ignore(
   "_site",
   "deno.json",
   "deno.lock",
+  "docs-rewrite-plan.md",
   "news/index.md",
   "news/2020/2020-11-11-self-hosted-error-monitoring-on-azure.md",
   "package-lock.json",
