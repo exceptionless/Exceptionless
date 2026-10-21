@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import DateRangePicker from './date-range-picker.svelte';
 
+function getApplyButton(): HTMLButtonElement {
+    return screen.getByRole('button', { name: 'Apply' });
+}
+
 function getCalendarDay(day: number): HTMLElement {
     const match = Array.from(document.querySelectorAll<HTMLElement>('[data-bits-day]:not([data-outside-month])')).find(
         (element) => element.textContent?.trim() === String(day)
@@ -52,16 +56,71 @@ describe('DateRangePicker', () => {
         expect(onselect).toHaveBeenLastCalledWith('[2025-01-22 TO 2025-01-22]');
     });
 
-    it('includes the time when an absolute bound is not a whole day', async () => {
+    it('selects a single day when the last day of the selected range is clicked', async () => {
+        const onselect = vi.fn();
+        render(DateRangePicker, { onselect, value: '[2025-01-20 TO 2025-01-22]' });
+
+        await fireEvent.click(getCalendarDay(22));
+        await fireEvent.click(getApplyButton());
+
+        expect(onselect).toHaveBeenLastCalledWith('[2025-01-22 TO 2025-01-22]');
+    });
+
+    it('applies with Enter and includes the time when an absolute bound is not a whole day', async () => {
         const onselect = vi.fn();
         render(DateRangePicker, { onselect, value: '[2025-01-10 TO 2025-01-12]' });
 
         const [startHour] = Array.from(document.querySelectorAll<HTMLElement>('[data-segment="hour"]'));
         startHour!.focus();
         await fireEvent.keyDown(startHour!, { key: 'ArrowUp' });
-        await fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
+        await fireEvent.keyDown(startHour!, { key: 'Enter' });
 
         expect(onselect).toHaveBeenLastCalledWith('[2025-01-10T01:00 TO 2025-01-12]');
+    });
+
+    it.each([
+        { expected: '[2025-01-20T10:00 TO 2025-01-22T17:30:45]', value: '[2025-01-20T09:00:30 TO 2025-01-22T17:30:45]' },
+        { expected: '[2025-01-20T01:00 TO *]', value: '[2025-01-20 TO *]' }
+    ])('keeps the untouched bound of $value as written when the other absolute field changes', async ({ expected, value }) => {
+        const onselect = vi.fn();
+        render(DateRangePicker, { onselect, value });
+
+        const [startHour] = Array.from(document.querySelectorAll<HTMLElement>('[data-segment="hour"]'));
+        startHour!.focus();
+        await fireEvent.keyDown(startHour!, { key: 'ArrowUp' });
+        await fireEvent.click(getApplyButton());
+
+        expect(onselect).toHaveBeenLastCalledWith(expected);
+    });
+
+    it('keeps a rolling end when only the start of a quick range is changed', async () => {
+        const onselect = vi.fn();
+        render(DateRangePicker, { onselect, value: '[now-90d TO now]' });
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Custom range' }));
+        const [startHour] = Array.from(document.querySelectorAll<HTMLElement>('[data-segment="hour"]'));
+        startHour!.focus();
+        await fireEvent.keyDown(startHour!, { key: 'ArrowUp' });
+        await fireEvent.click(getApplyButton());
+
+        expect(onselect).toHaveBeenLastCalledWith(expect.stringMatching(/^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2} TO now\]$/));
+    });
+
+    it('puts back the original expression when switching to the absolute tab with one that does not parse', async () => {
+        const onselect = vi.fn();
+        const { component } = render(DateRangePicker, { onselect, value: '[now-2h/h TO now]' });
+
+        await fireEvent.input(screen.getByRole('textbox', { name: 'From' }), { target: { value: 'garbage' } });
+        expect(getApplyButton()).toBeDisabled();
+
+        await fireEvent.click(screen.getByRole('tab', { name: 'Absolute' }));
+        expect(getApplyButton()).toBeEnabled();
+
+        await fireEvent.click(screen.getByRole('tab', { name: 'Relative' }));
+        expect(screen.getByRole('textbox', { name: 'From' })).toHaveValue('now-2h/h');
+
+        component.apply();
+        expect(onselect).not.toHaveBeenCalled();
     });
 
     it('allows applying a relative range after selecting the last 90 days', async () => {

@@ -66,18 +66,18 @@
 
     let mode = $state<Mode>('absolute');
     let showCustom = $state(false);
-    // The editor the user last changed decides what is applied. Viewing the other tab doesn't
-    // convert a relative expression into fixed dates.
-    let editedMode = $state<Mode>();
+    // Both tabs edit the same From and To expressions. An absolute field replaces only its own
+    // bound, so the other bound keeps its original expression, such as now or *.
     let startValue = $state('');
     let endValue = $state('');
+    let originalStart = $state('');
+    let originalEnd = $state('');
     let startDateTime = $state<CalendarDateTime>();
     let endDateTime = $state<CalendarDateTime>();
     let calendarRange = $state<DateRange>({
         end: undefined,
         start: undefined
     });
-    let calendarPlaceholder = $state<DateValue>(today(timeZone));
 
     // Keep both editors synchronized with the persisted range. Relative ranges also prefill the
     // absolute fields with their resolved dates so they can be adjusted from there.
@@ -98,15 +98,12 @@
     const rangeError = $derived(
         startValidation.success && endValidation.success && startValidation.date > endValidation.date ? 'End must be on or after start.' : undefined
     );
-    const isRelativeValid = $derived(startValidation.success && endValidation.success && !rangeError);
-
-    const absoluteRangeError = $derived(startDateTime && endDateTime && startDateTime.compare(endDateTime) > 0 ? 'End must be on or after start.' : undefined);
-    const isAbsoluteValid = $derived(!!startDateTime && !!endDateTime && !absoluteRangeError);
-    const isCustomValid = $derived((editedMode ?? mode) === 'absolute' ? isAbsoluteValid : isRelativeValid);
+    const isCustomValid = $derived(startValidation.success && endValidation.success && !rangeError);
     const isCustomValue = $derived(!!value && !commonRanges.some((range) => range.value === value));
+    const isEdited = $derived(startValue.trim() !== originalStart.trim() || endValue.trim() !== originalEnd.trim());
 
     export function apply() {
-        if (editedMode && isCustomValid) {
+        if (isEdited && isCustomValid) {
             applyCustom();
         }
     }
@@ -116,15 +113,12 @@
             return;
         }
 
-        // Without edits, keep the original expression rather than its resolved dates.
-        let customValue = typeof value === 'string' && value ? value : `[${startValue.trim()} TO ${endValue.trim()}]`;
-        if (editedMode === 'absolute' && startDateTime && endDateTime) {
-            customValue = `[${formatBound(startDateTime, false)} TO ${formatBound(endDateTime, true)}]`;
-        } else if (editedMode === 'relative') {
-            customValue = `[${startValue.trim()} TO ${endValue.trim()}]`;
-        }
+        // Without edits, keep the original value as written.
+        const customValue = isEdited || typeof value !== 'string' || !value ? `[${startValue.trim()} TO ${endValue.trim()}]` : value;
 
-        editedMode = undefined;
+        // Applied expressions are no longer edits, so closing the popover doesn't apply them again.
+        originalStart = startValue;
+        originalEnd = endValue;
         value = customValue;
         onselect?.(customValue);
     }
@@ -149,12 +143,13 @@
         const end = range.end ?? range.start;
         startDateTime = new CalendarDateTime(range.start.year, range.start.month, range.start.day, 0, 0);
         endDateTime = new CalendarDateTime(end.year, end.month, end.day, 23, 59);
-        editedMode = 'absolute';
+        startValue = formatBound(startDateTime, false);
+        endValue = formatBound(endDateTime, true);
     }
 
     function handleEndChange(dateValue: DateValue | undefined) {
         endDateTime = dateValue ? toCalendarDateTime(dateValue) : undefined;
-        editedMode = 'absolute';
+        endValue = endDateTime ? formatBound(endDateTime, true) : '';
         syncCalendar();
     }
 
@@ -168,31 +163,26 @@
         }
     }
 
-    /** Carry edits across when switching editors; untouched editors keep the original expressions. */
+    /** The absolute fields can't show an expression that doesn't parse, so switching to them puts back the original one. */
     function handleModeChange(nextMode: string) {
-        if (nextMode === 'relative') {
-            if (editedMode === 'absolute' && startDateTime && endDateTime) {
-                startValue = formatBound(startDateTime, false);
-                endValue = formatBound(endDateTime, true);
+        if (nextMode === 'absolute') {
+            if (!startValidation.success) {
+                startValue = originalStart;
             }
 
-            mode = 'relative';
-        } else {
-            if (editedMode === 'relative' && isRelativeValid) {
-                setAbsoluteRangeFromExpressions(startValue, endValue);
+            if (!endValidation.success) {
+                endValue = originalEnd;
             }
 
-            mode = 'absolute';
+            setAbsoluteRangeFromExpressions(startValue, endValue);
         }
-    }
 
-    function handleRelativeInput() {
-        editedMode = 'relative';
+        mode = nextMode === 'relative' ? 'relative' : 'absolute';
     }
 
     function handleStartChange(dateValue: DateValue | undefined) {
         startDateTime = dateValue ? toCalendarDateTime(dateValue) : undefined;
-        editedMode = 'absolute';
+        startValue = startDateTime ? formatBound(startDateTime, false) : '';
         syncCalendar();
     }
 
@@ -218,14 +208,12 @@
         setAbsoluteRange(startResult.success ? toLocalDateTime(startResult.date) : undefined, endResult.success ? toLocalDateTime(endResult.date) : undefined);
     }
 
+    /** The calendar shows the month of the range's start. */
     function syncCalendar() {
         calendarRange = {
             end: endDateTime ? toCalendarDate(endDateTime) : undefined,
             start: startDateTime ? toCalendarDate(startDateTime) : undefined
         };
-
-        const visibleDate = endDateTime ?? startDateTime;
-        calendarPlaceholder = visibleDate ? toCalendarDate(visibleDate) : today(timeZone);
     }
 
     function syncFromValue(currentValue: Date | string | undefined) {
@@ -246,7 +234,8 @@
             setAbsoluteRange(undefined, undefined);
         }
 
-        editedMode = undefined;
+        originalStart = startValue;
+        originalEnd = endValue;
     }
 
     function toLocalDateTime(date: Date): CalendarDateTime {
@@ -308,7 +297,7 @@
                             label="From"
                             {locale}
                             value={startDateTime}
-                            invalid={!!absoluteRangeError}
+                            invalid={!!rangeError}
                             onValueChange={handleStartChange}
                             onkeydown={handleKeyDown}
                         />
@@ -316,21 +305,21 @@
                             label="To"
                             {locale}
                             value={endDateTime}
-                            invalid={!!absoluteRangeError}
+                            invalid={!!rangeError}
                             onValueChange={handleEndChange}
                             onkeydown={handleKeyDown}
                         />
-                        {#if absoluteRangeError}
-                            <Field.FieldError>{absoluteRangeError}</Field.FieldError>
+                        {#if rangeError}
+                            <Field.FieldError>{rangeError}</Field.FieldError>
                         {/if}
                     </div>
                     <RangeCalendar
                         bind:value={calendarRange}
-                        bind:placeholder={calendarPlaceholder}
                         class="mx-auto p-0"
                         {locale}
                         maxValue={today(timeZone)}
                         onValueChange={handleCalendarChange}
+                        preventDeselect
                     />
                     <p class="text-muted-foreground text-xs">Times are in your local time zone ({timeZone}).</p>
                 </Tabs.Content>
@@ -349,7 +338,6 @@
                                 bind:value={startValue}
                                 aria-invalid={startValue ? !startValidation.success : undefined}
                                 aria-describedby={`${id}-help ${id}-start-status`}
-                                oninput={handleRelativeInput}
                                 onkeydown={handleKeyDown}
                             />
                             <div id={`${id}-start-status`} aria-live="polite">
@@ -369,7 +357,6 @@
                                 bind:value={endValue}
                                 aria-invalid={endValue ? !endValidation.success || !!rangeError : undefined}
                                 aria-describedby={`${id}-help ${id}-end-status`}
-                                oninput={handleRelativeInput}
                                 onkeydown={handleKeyDown}
                             />
                             <div id={`${id}-end-status`} aria-live="polite">
