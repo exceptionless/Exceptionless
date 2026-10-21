@@ -351,7 +351,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "search_stacks", Title = "Search error stacks", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
-    [Description("Searches stacks in one Exceptionless project for broad, top, or recent-issue questions. There is no organization-wide search: when more than one project is accessible, pass projectId and call once per project. This tool has no stack id filter; use get_stack when stackId is known. When pagination.hasMore is true, pass pagination.after to fetch the next page or pagination.before to fetch the previous page.")]
+    [Description("Searches stacks in one Exceptionless project by stack fields such as status, tag, title, or type. time matches each stack's last occurrence, so a stack that occurred in a past period and again since is left out; to find or rank the stacks that occurred during a period, use count_events with groupBy stack. Stack occurrence counts are all-time totals. There is no organization-wide search: when more than one project is accessible, pass projectId and call once per project. This tool has no stack id filter; use get_stack when stackId is known. When pagination.hasMore is true, pass pagination.after to fetch the next page or pagination.before to fetch the previous page.")]
     public async Task<McpResponse<McpListData<McpStackResult>>> SearchStacksAsync(
         [Description("Exceptionless project id to search within. Required when more than one project is accessible; omit only when exactly one project is accessible.")]
         string? projectId = null,
@@ -607,7 +607,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "count_events", Title = "Count events", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
-    [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets and groupBy dimensions for questions like occurrences by version, tag, user, or error type. Groups are ordered by occurrences. groupBy stack ranks stacks by how often they occurred in the time range, like the Most Frequent view, and names each stack with its title and status.")]
+    [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets and groupBy dimensions for questions like occurrences by version, tag, user, or error type. Groups are ordered by occurrences. groupBy stack ranks stacks by how often they occurred in the time range, like the Most Frequent view, and names each stack with its title, status, and first and last occurrence, so a stack first seen in the range is a new error.")]
     public async Task<McpResponse<McpEventCountResult>> CountEventsAsync(
         [Description("Optional Exceptionless project id to count within. May be omitted when only one project is accessible.")]
         string? projectId = null,
@@ -700,7 +700,7 @@ public sealed class ExceptionlessMcpTools
                 {
                     var stacks = (await _stackRepository.GetByIdsAsync(groups.Select(group => group.Key).ToArray())).ToDictionary(stack => stack.Id);
                     groups = groups
-                        .Select(group => stacks.TryGetValue(group.Key, out var stack) ? group with { Title = stack.Title, Status = stack.Status.ToString().ToLowerInvariant() } : group)
+                        .Select(group => stacks.TryGetValue(group.Key, out var stack) ? group with { Title = stack.Title, Status = stack.Status.ToString().ToLowerInvariant(), FirstOccurrence = stack.FirstOccurrence, LastOccurrence = stack.LastOccurrence } : group)
                         .ToArray();
                 }
             }

@@ -145,8 +145,9 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
             SampleDataService.TEST_PROJECT_ID,
             timeZone: "America/Chicago");
         AssertSuccessfulAnswer(today);
-        Assert.Single(today.ToolCalls, call => call is "search_stacks" or "count_events");
-        Assert.Equal(["[now/d TO now/d]"], [.. GetToolArguments(today, "search_stacks", "time"), .. GetToolArguments(today, "count_events", "time")]);
+        // Which errors happened in a period comes from events in it, since search_stacks only checks each stack's last occurrence.
+        Assert.Equal(["count_events"], today.ToolCalls);
+        Assert.Equal(["[now/d TO now/d]"], GetToolArguments(today, "count_events", "time"));
     }
 
     [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
@@ -246,29 +247,27 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
             return $@"^\[{monday:yyyy-MM-dd} TO now\]$";
         }
     }
-    // Listing what happened in a period may use either tool; ranking the top errors must use count_events.
-    private const string Either = "search_stacks|count_events";
 
     private static readonly Dictionary<string, TimeRangeScenario> s_timeRangeScenarios = new()
     {
         ["last_24_hours"] = new("What are the top errors in this project in the last 24 hours?", "project", "count_events", @"^\[now-(24h|1d) TO now\]$"),
-        ["last_hour"] = new("Were there any new errors in this project in the last hour?", "project", Either, @"^\[now-(1h|60m) TO now\]$"),
-        ["last_2_days"] = new("Which errors did this project have over the last 2 days?", "project", Either, @"^\[now-(2d|48h)(/d)? TO now\]$"),
-        ["past_7_days"] = new("What errors happened in this project in the past 7 days?", "project", Either, @"^\[now-(7d|1w)(/d)? TO now\]$"),
+        ["last_hour"] = new("Were there any new errors in this project in the last hour?", "project", "count_events", @"^\[now-(1h|60m) TO now\]$"),
+        ["last_2_days"] = new("Which errors did this project have over the last 2 days?", "project", "count_events", @"^\[now-(2d|48h)(/d)? TO now\]$"),
+        ["past_7_days"] = new("What errors happened in this project in the past 7 days?", "project", "count_events", @"^\[now-(7d|1w)(/d)? TO now\]$"),
         ["last_30_days"] = new("What are the top errors in this project over the last 30 days?", "project", "count_events", @"^\[now-30d(/d)? TO now\]$"),
-        ["today"] = new("Which errors happened in this project today?", "project", Either, @"^\[now/d TO now(/d)?\]$"),
-        ["yesterday"] = new("What errors did this project have yesterday?", "project", Either, @"^\[now-1d/d TO now-1d/d\]$"),
+        ["today"] = new("Which errors happened in this project today?", "project", "count_events", @"^\[now/d TO now(/d)?\]$"),
+        ["yesterday"] = new("What errors did this project have yesterday?", "project", "count_events", @"^\[now-1d/d TO now-1d/d\]$"),
         ["this_week"] = new("Show me this week's top errors in this project.", "project", "count_events", @"^\[now/w TO now(/w)?\]$"),
         ["last_week"] = new("What were the top errors in this project last week?", "project", "count_events", @"^\[now-1w/w TO now-1w/w\]$"),
         ["this_month"] = new("What are the top errors in this project this month?", "project", "count_events", @"^\[now/M TO now(/M)?\]$"),
-        ["since_monday"] = new("What errors has this project had since Monday?", "project", Either, SinceMondayPattern),
-        ["explicit_day"] = new("What errors happened in this project on October 1, 2026?", "project", Either, @"^\[2026-10-01 TO 2026-10-01\]$"),
+        ["since_monday"] = new("What errors has this project had since Monday?", "project", "count_events", SinceMondayPattern),
+        ["explicit_day"] = new("What errors happened in this project on October 1, 2026?", "project", "count_events", @"^\[2026-10-01 TO 2026-10-01\]$"),
         ["explicit_range"] = new("Show the top errors in this project between October 1 and October 15, 2026.", "project", "count_events", @"^\[2026-10-01 TO 2026-10-15\]$"),
         ["no_time"] = new("What are the top errors in this project?", "project", "count_events", @"^\[now-7d TO now\]$"),
         ["stack_today"] = new("How many times did this stack occur today?", "stack", "get_stack_events", @"^\[now/d TO now(/d)?\]$"),
         ["stack_all_time"] = new("How many times has this stack occurred in total?", "stack", "get_stack", AnyOrNoTime),
-        ["organization_today"] = new("Which errors happened today across all of my projects?", "organization", Either, @"^\[now/d TO now(/d)?\]$"),
-        ["follow_up_yesterday"] = new("And yesterday?", "project", Either, @"^\[now-1d/d TO now-1d/d\]$", FollowUpTo: "today")
+        ["organization_today"] = new("Which errors happened today across all of my projects?", "organization", "count_events", @"^\[now/d TO now(/d)?\]$"),
+        ["follow_up_yesterday"] = new("And yesterday?", "project", "count_events", @"^\[now-1d/d TO now-1d/d\]$", FollowUpTo: "today")
     };
 
     public static TheoryData<string, int> TimeRangeScenarios()

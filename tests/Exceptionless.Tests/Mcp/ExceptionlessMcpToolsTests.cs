@@ -780,6 +780,8 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Equal("MCP frequent single", groups[1].Title);
         Assert.Equal(3, groups[1].Occurrences);
         Assert.All(groups, group => Assert.Equal("open", group.Status));
+        Assert.All(groups, group => Assert.NotNull(group.FirstOccurrence));
+        Assert.All(groups, group => Assert.NotNull(group.LastOccurrence));
     }
 
     [Theory]

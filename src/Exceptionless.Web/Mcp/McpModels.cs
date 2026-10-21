@@ -82,13 +82,17 @@ public sealed record McpEventTrendBucket(
 /// <param name="Trend">Occurrences per interval when an interval is requested.</param>
 /// <param name="Title">The stack title when grouped by stack, so the group can be named without another lookup.</param>
 /// <param name="Status">The stack status when grouped by stack.</param>
+/// <param name="FirstOccurrence">When the stack first occurred, so a new error can be told apart from a recurring one.</param>
+/// <param name="LastOccurrence">When the stack last occurred, at any time.</param>
 public sealed record McpEventCountGroup(
     string Key,
     long Events,
     double Occurrences,
     IReadOnlyCollection<McpEventTrendBucket> Trend,
     string? Title = null,
-    string? Status = null);
+    string? Status = null,
+    DateTime? FirstOccurrence = null,
+    DateTime? LastOccurrence = null);
 
 public sealed record McpProjectResult(
     string Id,
