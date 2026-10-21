@@ -191,6 +191,8 @@
                     });
                 }
                 stopStreaming('organization_changed');
+                // Switching organizations is in-app navigation, so save the chat under the organization it belongs to first.
+                persistConversation();
             });
             resetConversation();
             conversationOrganizationId = currentOrganizationId;

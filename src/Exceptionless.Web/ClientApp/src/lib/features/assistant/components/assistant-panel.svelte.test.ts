@@ -326,6 +326,35 @@ describe('AssistantPanel', () => {
         expect(screen.queryByText('Partial answer')).toBeNull();
     });
 
+    it('saves a streaming chat under its organization before switching organizations', async () => {
+        localStorage.clear();
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(
+                async (_input: RequestInfo | URL, init?: RequestInit) =>
+                    new Response(
+                        new ReadableStream<Uint8Array>({
+                            start(controller) {
+                                controller.enqueue(new TextEncoder().encode('{"type":"text_delta","text":"Partial answer"}\n'));
+                                init?.signal?.addEventListener('abort', () => controller.error(new DOMException('Aborted', 'AbortError')));
+                            }
+                        })
+                    )
+            )
+        );
+        const view = render(AssistantPanel, {
+            props: { open: true, organizationId: 'organization-1', promptRequest: { id: 'prompt-request', prompt: 'My question' }, userId: 'user-1' }
+        });
+        await screen.findByText('Partial answer');
+
+        await view.rerender({ open: true, organizationId: 'organization-2', userId: 'user-1' });
+
+        await waitFor(() => expect(screen.queryByText('Partial answer')).toBeNull());
+        const saved = JSON.parse(localStorage.getItem('exie:conversations:v1:user-1:organization-1') ?? '[]') as Array<{ title: string }>;
+        expect(saved.map((conversation) => conversation.title)).toEqual(['My question']);
+        localStorage.clear();
+    });
+
     it('records an explicit stop once and distinguishes it from leaving the page', async () => {
         vi.stubGlobal(
             'fetch',
