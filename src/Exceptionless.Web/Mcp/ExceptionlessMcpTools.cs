@@ -40,11 +40,11 @@ public sealed class ExceptionlessMcpTools
     private const string LastDescription = "Optional relative time range such as 24h, 7d, or 30m. Do not combine with startUtc or endUtc.";
     private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Do not combine with last.";
     private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Do not combine with last.";
-    private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
+    private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: environment, version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
     private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences.";
-    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*. data.* works for custom data values that were indexed for search; arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
+    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, environment, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*. data.* works for custom data values that were indexed for search; arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
 
     private const string IndexedDataFilterNote = "data.* filters work for custom data values that were indexed for search. Arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
 
@@ -1655,7 +1655,8 @@ public sealed class ExceptionlessMcpTools
             ev.Source,
             ev.Message,
             ev.ReferenceId,
-            includeDetails ? ToEventDetails(ev, maxDetailSize) : null);
+            includeDetails ? ToEventDetails(ev, maxDetailSize) : null,
+            ev.Environment);
     }
 
     private McpEventDetails ToEventDetails(PersistentEvent ev, int maxDetailSize)
@@ -1832,6 +1833,7 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly string[] EventGroupByAllowedFields =
     [
+        "environment",
         "version",
         "type",
         "source",
@@ -1849,6 +1851,7 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly IReadOnlyDictionary<string, McpEventGroupBy> EventGroupByFields = new Dictionary<string, McpEventGroupBy>(StringComparer.OrdinalIgnoreCase)
     {
+        ["environment"] = new("environment", EventIndex.Alias.Environment),
         ["version"] = new("version", EventIndex.Alias.Version),
         ["type"] = new("type", EventIndex.Alias.Type),
         ["source"] = new("source", EventIndex.Alias.Source),
@@ -1922,6 +1925,7 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly HashSet<string> EventSortFields = new(StringComparer.OrdinalIgnoreCase)
     {
+        EventIndex.Alias.Environment,
         EventIndex.Alias.Date,
         EventIndex.Alias.Type,
         EventIndex.Alias.Source,

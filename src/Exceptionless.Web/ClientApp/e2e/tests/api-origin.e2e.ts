@@ -123,4 +123,7 @@ test('the application sends API requests and push connections to its configured 
     await expect.poll(() => pushConnections.length).toBeGreaterThan(0);
     await expect.poll(() => telemetryRequests).toContain('/api/v2/projects/config');
     expect(sameOriginApiRequests).toEqual([]);
+
+    // Background queries can still be forwarding through the API route when the assertions finish.
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
 });

@@ -39,6 +39,7 @@
     import {
         BooleanFilter,
         DateFilter,
+        EnvironmentFilter,
         LevelFilter,
         ProjectFilter,
         ReferenceFilter,
@@ -70,6 +71,7 @@
 
     import {
         ALL_TIME_QUERY_VALUE,
+        deserializeEnvironmentQueryParam,
         deserializeTimeQueryParam,
         getEventsNavigationOptionsForFilter,
         getListFilterQueryParams,
@@ -109,6 +111,7 @@
     const pageSizePreference = createPageSizePreference(PAGE_SIZE_PREFERENCE_KEY);
     const DEFAULT_PARAMS = {
         bot: undefined as string | undefined,
+        environment: undefined as string | undefined,
         filter: undefined as string | undefined,
         first: undefined as string | undefined,
         level: undefined as string | undefined,
@@ -153,6 +156,10 @@
         const first = parseBooleanQueryParam(params.first);
         if (first !== undefined) {
             filters.push(new BooleanFilter('first', first));
+        }
+
+        if (params.environment) {
+            filters.push(new EnvironmentFilter(deserializeEnvironmentQueryParam(params.environment)));
         }
 
         if (params.level) {
@@ -223,6 +230,7 @@
         history: 'push',
         schema: {
             bot: 'string',
+            environment: 'string',
             filter: 'string',
             first: 'string',
             level: 'string',
@@ -357,6 +365,10 @@
 
         if (params.filter === '') {
             removedKeys.push(...savedViewFilters.filter((filter) => filter.type !== 'date' && !isQueryParamFilter(filter)).map((filter) => filter.key));
+        }
+
+        if (params.environment === '') {
+            removedKeys.push('environment');
         }
 
         if (params.level === '') {
@@ -501,6 +513,7 @@
             newTimeParam !== queryParams.time ||
             queryFilterParams.bot !== queryParams.bot ||
             queryFilterParams.first !== queryParams.first ||
+            queryFilterParams.environment !== queryParams.environment ||
             queryFilterParams.level !== queryParams.level ||
             queryFilterParams.project !== queryParams.project ||
             queryFilterParams.reference !== queryParams.reference ||
@@ -529,6 +542,7 @@
         queryParams.update(
             {
                 bot: queryFilterParams.bot,
+                environment: queryFilterParams.environment,
                 filter: newFilterParam,
                 first: queryFilterParams.first,
                 level: queryFilterParams.level,
@@ -580,6 +594,7 @@
 
         return {
             bot: getDelta(currentParams.bot, baseParams.bot),
+            environment: getDelta(currentParams.environment, baseParams.environment),
             first: getDelta(currentParams.first, baseParams.first),
             level: getDelta(currentParams.level, baseParams.level),
             project: getDelta(currentParams.project, baseParams.project),
@@ -596,6 +611,7 @@
     function getQueryFilterParams(filters: FacetedFilter.IFilter[]) {
         const botFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'bot');
         const firstFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'first');
+        const environmentFilter = filters.find((filter): filter is EnvironmentFilter => filter.type === 'environment');
         const levelFilter = filters.find((f): f is LevelFilter => f.type === 'level');
         const projectFilter = filters.find((f): f is ProjectFilter => f.type === 'project');
         const referenceFilter = filters.find((f): f is ReferenceFilter => f.type === 'reference');
@@ -608,6 +624,7 @@
 
         return {
             bot: botFilter?.value === undefined ? null : String(botFilter.value),
+            environment: environmentFilter?.value.length ? JSON.stringify(environmentFilter.value) : null,
             first: firstFilter?.value === undefined ? null : String(firstFilter.value),
             level: levelFilter?.value.length ? levelFilter.value.join(',') : null,
             project: projectFilter?.value.length ? projectFilter.value.join(',') : null,
@@ -634,7 +651,7 @@
             return false;
         }
 
-        return ['level', 'project', 'reference', 'session', 'status', 'tag', 'type', 'version'].includes(filter.type);
+        return ['environment', 'level', 'project', 'reference', 'session', 'status', 'tag', 'type', 'version'].includes(filter.type);
     }
 
     function setPageSize(value: number): void {
@@ -866,7 +883,7 @@
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">{pageTitle}</H3>
         <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
-            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved} time={getQueryTime()}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
         </div>

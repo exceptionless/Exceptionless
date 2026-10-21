@@ -2,7 +2,7 @@ import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { serializeFilters } from '#features/events/components/filters/helpers.svelte.ts';
-import { DateFilter, ProjectFilter, StringFilter } from '#features/events/components/filters/index.ts';
+import { DateFilter, EnvironmentFilter, ProjectFilter, StringFilter } from '#features/events/components/filters/index.ts';
 import { ChangeType } from '#features/websockets/models.ts';
 
 import type { SavedView } from './models';
@@ -160,6 +160,9 @@ describe('useSavedViews', () => {
             expect(getSavedViewOverrideSignature(new URL('https://example.test/event/errors?time=30d&status=open'))).not.toBe(baseline);
             expect(getSavedViewOverrideSignature(new URL('https://example.test/event/errors?time=90d'))).not.toBe(baseline);
             expect(getSavedViewOverrideSignature(new URL('https://example.test/event/errors?time=90d&status=open&sort=type'))).not.toBe(baseline);
+            expect(getSavedViewOverrideSignature(new URL('https://example.test/event/errors?time=90d&status=open&environment=%5B%22staging%22%5D'))).not.toBe(
+                baseline
+            );
         });
     });
 
@@ -173,10 +176,13 @@ describe('useSavedViews', () => {
                 version: 1 as const
             };
 
-            expect(getExpressionFilterOverrideKeys([new StringFilter('error.type', 'OldException')], [new ProjectFilter(['project-1'])], draft)).toEqual([
-                'string-error.type',
-                'keyword'
-            ]);
+            expect(
+                getExpressionFilterOverrideKeys(
+                    [new StringFilter('error.type', 'OldException')],
+                    [new ProjectFilter(['project-1']), new EnvironmentFilter(['staging'])],
+                    draft
+                )
+            ).toEqual(['string-error.type', 'keyword']);
         });
     });
 
