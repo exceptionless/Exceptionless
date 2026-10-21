@@ -108,6 +108,8 @@
         userId
     }: Props = $props();
 
+    /** Space kept above the latest question when a long answer fills the view. */
+    const QUESTION_SCROLL_MARGIN = 16;
     /** A restored chat older than this starts fresh, since its page context is likely stale. */
     const RESTORE_WINDOW_MS = 12 * 60 * 60 * 1000;
 
@@ -134,6 +136,10 @@
     let isSavingSharing = $state(false);
     let requestedSharing = $state<boolean | null>(null);
     let composer = $state<ReturnType<typeof AssistantComposer>>();
+    let scrollViewport = $state<HTMLElement | null>(null);
+    /** Whether the view keeps up with the answer being written; scrolling up stops it until the next message. */
+    let isFollowingAnswer = false;
+    let followScrollTop = 0;
     const isSharingEnabled = $derived(sharingSettings?.enabled === true && !sharingSuppressed);
     let abortController: AbortController | undefined;
     let handledPromptRequestId: string | undefined;
@@ -243,6 +249,40 @@
         if (mode === 'page' && accessState === 'available' && composer) {
             void tick().then(() => composer?.focus());
         }
+    });
+
+    // Keep up with the answer while it is written, and stop when the reader scrolls up to read something else.
+    $effect(() => {
+        const viewport = scrollViewport;
+        if (!viewport) {
+            return;
+        }
+
+        untrack(() => scrollToLatest());
+        const handleScroll = () => {
+            if (isFollowingAnswer && viewport.scrollTop < followScrollTop - 2) {
+                isFollowingAnswer = false;
+            }
+        };
+        const observer =
+            typeof ResizeObserver === 'undefined'
+                ? undefined
+                : new ResizeObserver(() => {
+                      if (isFollowingAnswer) {
+                          scrollToLatest();
+                      }
+                  });
+        for (const child of viewport.children) {
+            observer?.observe(child);
+        }
+
+        viewport.addEventListener('scroll', handleScroll, {
+            passive: true
+        });
+        return () => {
+            observer?.disconnect();
+            viewport.removeEventListener('scroll', handleScroll);
+        };
     });
 
     onDestroy(() => {
@@ -495,7 +535,11 @@
         if (historyScope) {
             setActiveAssistantConversationId(historyScope, threadId);
         }
-        void tick().then(() => composer?.focus());
+        isFollowingAnswer = false;
+        void tick().then(() => {
+            scrollToLatest();
+            composer?.focus();
+        });
     }
 
     /** Follow-ups keep searching the projects the chat searched, since its earlier tool results came from them. */
@@ -538,6 +582,29 @@
             conversationProjectId = recent.projectId;
             restoreProjectScope(recent);
         }
+    }
+
+    /**
+     * Scrolls down to show as much of the latest answer as fits without pushing its question above the top, so
+     * the earlier conversation stays in view for short answers and a long answer still starts at its question.
+     */
+    function scrollToLatest(): void {
+        const viewport = scrollViewport;
+        if (!viewport) {
+            return;
+        }
+
+        const maxScrollTop = viewport.scrollHeight - viewport.clientHeight;
+        const question = [...viewport.querySelectorAll<HTMLElement>('[data-message-role="user"]')].at(-1);
+        const questionScrollTop = question
+            ? viewport.scrollTop + question.getBoundingClientRect().top - viewport.getBoundingClientRect().top - QUESTION_SCROLL_MARGIN
+            : maxScrollTop;
+        const target = Math.max(0, Math.min(maxScrollTop, questionScrollTop));
+        if (target > viewport.scrollTop + 1 || !isFollowingAnswer) {
+            viewport.scrollTop = target;
+        }
+
+        followScrollTop = viewport.scrollTop;
     }
 
     function setContextDismissed(dismissed: boolean): void {
@@ -631,6 +698,8 @@
     ): Promise<void> {
         isStreaming = true;
         streamingMessageId = assistantMessage.id;
+        isFollowingAnswer = true;
+        void tick().then(() => scrollToLatest());
         announcement = 'Exie is responding…';
         const controller = new AbortController();
         abortController = controller;
@@ -707,6 +776,14 @@
                 isStreaming = false;
                 streamingMessageId = undefined;
                 abortController = undefined;
+                // Suggestions and actions appear once the answer ends, so follow one last time and then stop.
+                void tick().then(() => {
+                    if (isFollowingAnswer) {
+                        scrollToLatest();
+                    }
+
+                    isFollowingAnswer = false;
+                });
                 const finished = messages.find((message) => message.id === assistantMessage.id);
                 if (finished?.endReason === 'error') {
                     announcement = `Exie couldn’t finish the response. ${finished.errorMessage ?? ''}`.trim();
@@ -875,10 +952,10 @@
         {:else if messages.length === 0}
             {@render emptyState()}
         {:else}
-            <!-- Answers arrive a step at a time, so following the bottom would jump past the question; keep the question anchored and let the reader scroll. -->
-            <MessageScroller.Provider defaultScrollPosition="last-anchor">
+            <!-- The panel scrolls itself (scrollToLatest), so the provider never anchors rows or follows the bottom. -->
+            <MessageScroller.Provider defaultScrollPosition="end">
                 <MessageScroller.Root>
-                    <MessageScroller.Viewport>
+                    <MessageScroller.Viewport bind:ref={scrollViewport}>
                         <MessageScroller.Content
                             aria-busy={isStreaming}
                             aria-label="Conversation with Exie"
@@ -890,8 +967,8 @@
                                 <!-- Skipped rendering guesses each row at 10rem, so rows resize as they appear and the chat jumps; render every row. -->
                                 <MessageScroller.Item
                                     class="[contain-intrinsic-size:none] [content-visibility:visible]"
+                                    data-message-role={message.role}
                                     messageId={message.id}
-                                    scrollAnchor={message.role === 'user'}
                                 >
                                     <AssistantMessage
                                         {isLast}
