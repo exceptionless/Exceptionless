@@ -43,8 +43,9 @@
     import SuspendedOrganizationNotification from './notifications/suspended-organization-notification.svelte';
 
     interface Props extends NotificationProps {
-        ignoreConfigureProjects?: boolean;
         ignoreFree?: boolean;
+        /** The page shows its own setup prompt (Exie's empty state), so don't add a second one or an upsell. */
+        ignoreSetupPrompts?: boolean;
         isChatEnabled: boolean;
         openChat: () => void;
         premiumFeatureName?: string;
@@ -52,8 +53,8 @@
     }
 
     let {
-        ignoreConfigureProjects = false,
         ignoreFree = false,
+        ignoreSetupPrompts = false,
         isChatEnabled,
         openChat,
         premiumFeatureName,
@@ -111,9 +112,7 @@
     const isExceededRequestLimit = $derived(!!organization?.is_over_request_limit);
     const isFreePlan = $derived(!ignoreFree && /free/i.test(organization?.plan_name ?? ''));
     const hasNoProjects = $derived(projectsQuery.isSuccess && projects.length === 0);
-    const needsProjectConfiguration = $derived(
-        projectsQuery.isSuccess && !ignoreConfigureProjects && projects.length > 0 && projectsNeedingConfig.length === projects.length
-    );
+    const needsProjectConfiguration = $derived(projectsQuery.isSuccess && projects.length > 0 && projectsNeedingConfig.length === projects.length);
     const requiresPremiumUpgrade = $derived(requiresPremium && !organization?.has_premium_features && !needsProjectConfiguration);
 
     useEventListener(document, 'PersistentEventChanged', (event) => {
@@ -143,10 +142,14 @@
         <HourlyOverageNotification name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if isExceededRequestLimit}
         <RequestLimitNotification name={organization.name} {isChatEnabled} {openChat} {...restProps} />
-    {:else if hasNoProjects}
-        <SetupFirstProjectNotification {...restProps} />
-    {:else if needsProjectConfiguration}
-        <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
+    {:else if hasNoProjects || needsProjectConfiguration}
+        {#if ignoreSetupPrompts}
+            <!-- The page's own setup prompt takes this slot. -->
+        {:else if hasNoProjects}
+            <SetupFirstProjectNotification {...restProps} />
+        {:else}
+            <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
+        {/if}
     {:else if requiresPremiumUpgrade}
         <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} {premiumFeatureName} {...restProps} />
     {:else if isFreePlan}

@@ -75,6 +75,25 @@ describe('OrganizationNotifications', () => {
         expect(screen.getAllByRole('alert')).toHaveLength(1);
     });
 
+    it.each([
+        ['no projects', []],
+        ['only unconfigured projects', [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }]]
+    ])('leaves the setup prompt to pages with their own for an organization with %s', (_, organizationProjects) => {
+        // Arrange
+        organizationState.current = { has_premium_features: false, id: 'organization-id', name: 'Free Organization', plan_name: 'Free' };
+        projects.splice(0, projects.length, ...organizationProjects);
+
+        // Act
+        render(OrganizationNotifications, {
+            ignoreSetupPrompts: true,
+            isChatEnabled: false,
+            openChat: vi.fn()
+        });
+
+        // Assert
+        expect(screen.queryAllByRole('alert')).toHaveLength(0);
+    });
+
     it('records configuration events before project data loads', () => {
         const configuredProjectIds = new Set<string>();
 

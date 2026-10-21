@@ -727,7 +727,7 @@
         intercomUnreadCount = Math.max(0, unreadCount);
     }
 
-    // These pages show Exie's empty state until the first event, which replaces the setup notification.
+    // These pages show Exie's empty state until the first event, which replaces the setup notifications.
     const eventListRouteIds = new Set<null | string>([
         '/(app)/event',
         '/(app)/event/[slug=savedview]',
@@ -873,7 +873,7 @@
                     {#if showOrganizationNotifications.current}
                         <OrganizationNotifications
                             {isChatEnabled}
-                            ignoreConfigureProjects={isEventListPage}
+                            ignoreSetupPrompts={isEventListPage}
                             {openChat}
                             {requiresPremium}
                             premiumFeatureName={premiumPage.current}
