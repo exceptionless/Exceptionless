@@ -503,7 +503,8 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.Single(problemDetails.Errors);
         Assert.Contains(problemDetails.Errors, error => String.Equals(error.Key, "password"));
 
-        await SendRequestAsync(r => r
+        // The Svelte signup form uses this title to explain that the account already exists.
+        var existingAccountProblem = await SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(r => r
             .Post()
             .AppendPath("auth/signup")
             .Content(new Signup
@@ -514,6 +515,9 @@ public class AuthEndpointTests : IntegrationTestsBase
             })
             .StatusCodeShouldBeUnauthorized()
         );
+
+        Assert.NotNull(existingAccountProblem);
+        Assert.Equal("Login failed.", existingAccountProblem.Title);
     }
 
     [Fact]
@@ -1264,14 +1268,15 @@ public class AuthEndpointTests : IntegrationTestsBase
         }
 
         // Act
-        var response = await SendRequestAsync(request => request
+        var problem = await SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(request => request
             .Post()
             .AppendPath("auth/login")
             .Content(new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = SampleDataService.TEST_USER_PASSWORD })
             .StatusCodeShouldBeUnauthorized());
 
-        // Assert
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        // Assert: the Svelte login form uses this title to show a rate limit message.
+        Assert.NotNull(problem);
+        Assert.Equal("Login denied.", problem.Title);
     }
 
     [Fact]
