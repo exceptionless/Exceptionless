@@ -22,10 +22,23 @@
 
     let { isSampleData = false, onSeeAllEvents, open = $bindable(false), projectId }: Props = $props();
 
+    const POLL_TIMEOUT_MS = 30_000;
+    let isPollingExpired = $state(false);
+
+    // The notification can arrive before the event is searchable, so look again for a while, then fall back to the list.
+    $effect(() => {
+        if (!open) {
+            return;
+        }
+
+        isPollingExpired = false;
+        const timeout = setTimeout(() => (isPollingExpired = true), POLL_TIMEOUT_MS);
+        return () => clearTimeout(timeout);
+    });
+
     const latestEventQuery = getProjectLatestEventQuery({
         enabled: () => open,
-        // The notification can arrive before the event is searchable, so look again briefly.
-        pollUntilFound: true,
+        pollUntilFound: () => open && !isPollingExpired,
         route: {
             get projectId() {
                 return projectId;
@@ -80,7 +93,7 @@
                     <span class="text-muted-foreground ml-auto text-xs"><TimeAgo value={event.date} /></span>
                 </div>
                 <p class="text-foreground line-clamp-2 font-medium break-words">{summary}</p>
-            {:else if latestEventQuery.isError}
+            {:else if latestEventQuery.isError || isPollingExpired}
                 <p class="text-muted-foreground">Your event arrived, but I couldn't load its details. You'll find it with the rest of your events.</p>
             {:else}
                 <Skeleton class="h-4 w-24" />
@@ -90,12 +103,15 @@
         </div>
 
         <Dialog.Footer class="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button onclick={() => onSeeAllEvents()} variant="outline">See all events</Button>
             {#if eventHref}
+                <Button onclick={() => onSeeAllEvents()} variant="outline">See all events</Button>
                 <Button href={eventHref}>
                     Take me to it <ArrowRight data-icon="inline-end" aria-hidden="true" />
                 </Button>
+            {:else if latestEventQuery.isError || isPollingExpired}
+                <Button onclick={() => onSeeAllEvents()}>See all events</Button>
             {:else}
+                <Button onclick={() => onSeeAllEvents()} variant="outline">See all events</Button>
                 <Button disabled>Take me to it</Button>
             {/if}
         </Dialog.Footer>

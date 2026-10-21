@@ -11,7 +11,12 @@ import { getContinueSetupHref, isProjectAwaitingFirstEvent } from './project-sta
  * Tracks whether the current organization has received any events, combining the project
  * flags with live event notifications so empty states clear as soon as an event arrives.
  */
-export function useOrganizationOnboarding(getOrganizationId: () => string | undefined) {
+export interface OrganizationOnboardingOptions {
+    /** Gate the event-count check, for callers that only need it on some pages. */
+    enabled?: () => boolean;
+}
+
+export function useOrganizationOnboarding(getOrganizationId: () => string | undefined, options: OrganizationOnboardingOptions = {}) {
     const projectsQuery = getOrganizationProjectsQuery({
         route: {
             get organizationId() {
@@ -27,7 +32,7 @@ export function useOrganizationOnboarding(getOrganizationId: () => string | unde
     // A project is flagged as configured by a background job after its first event, so confirm
     // "no events yet" against the organization's event count before showing first-run states.
     const eventCountQuery = getOrganizationCountQuery({
-        enabled: () => projectsQuery.isSuccess && !projectsReportEvents,
+        enabled: () => (options.enabled?.() ?? true) && projectsQuery.isSuccess && !projectsReportEvents,
         route: {
             get organizationId() {
                 return getOrganizationId();
@@ -62,6 +67,10 @@ export function useOrganizationOnboarding(getOrganizationId: () => string | unde
         },
         get isReady() {
             return projectsQuery.isSuccess;
+        },
+        /** True once there is enough information to decide whether events have arrived. */
+        get isSettled() {
+            return projectsQuery.isSuccess && (projectsReportEvents || eventCountQuery.isSuccess || eventCountQuery.isError);
         },
         get projects() {
             return projects;

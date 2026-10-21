@@ -243,8 +243,8 @@ export interface GetProjectCountRequest {
 
 export interface GetProjectLatestEventRequest {
     enabled?: () => boolean;
-    /** Refetch every 1.5 seconds until an event is found, for example right after a change notification. */
-    pollUntilFound?: boolean;
+    /** While this returns true, refetch every 1.5 seconds until an event is found (for example right after a change notification). */
+    pollUntilFound?: () => boolean;
     route: {
         projectId: string | undefined;
     };
@@ -615,9 +615,8 @@ export function getProjectLatestEventQuery(request: GetProjectLatestEventRequest
                 return response.data?.[0] ?? null;
             },
             queryKey: queryKeys.projectLatest(projectId),
-            refetchInterval: request.pollUntilFound
-                ? (query: { state: { data: null | PersistentEvent | undefined } }) => (query.state.data ? false : 1500)
-                : false
+            refetchInterval: (query: { state: { data: null | PersistentEvent | undefined } }) =>
+                !query.state.data && request.pollUntilFound?.() ? 1500 : false
         };
     });
 }

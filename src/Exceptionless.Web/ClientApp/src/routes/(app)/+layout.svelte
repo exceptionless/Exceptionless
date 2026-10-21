@@ -41,6 +41,7 @@
     import { getVisibleUrl } from '#features/navigation/visible-url.ts';
     import Notifications from '#features/notifications/components/notifications.svelte';
     import SetupTopBar from '#features/onboarding/components/setup-top-bar.svelte';
+    import { useOrganizationOnboarding } from '#features/onboarding/onboarding-state.svelte.ts';
     import {
         getOrganizationQuery,
         getOrganizationsQuery,
@@ -727,7 +728,7 @@
         intercomUnreadCount = Math.max(0, unreadCount);
     }
 
-    // These pages show Exie's empty state until the first event, which replaces the setup notifications.
+    // These pages show Exie's empty state until the first event; while it shows, it replaces the setup notifications.
     const eventListRouteIds = new Set<null | string>([
         '/(app)/event',
         '/(app)/event/[slug=savedview]',
@@ -736,6 +737,10 @@
         '/(app)/stream'
     ]);
     const isEventListPage = $derived(eventListRouteIds.has(page.route.id));
+    const eventListOnboarding = useOrganizationOnboarding(() => organization.current, {
+        enabled: () => isEventListPage
+    });
+    const isShowingExieEmptyState = $derived(isEventListPage && eventListOnboarding.isAwaitingFirstEvent);
     const setupPath = resolve('/(app)/organization/add');
     const isSetupPage = $derived(page.url.pathname === setupPath);
     const suppressAutomaticProductTours = $derived(isProductTourSetupRoute(page.route.id));
@@ -873,7 +878,7 @@
                     {#if showOrganizationNotifications.current}
                         <OrganizationNotifications
                             {isChatEnabled}
-                            ignoreSetupPrompts={isEventListPage}
+                            ignoreSetupPrompts={isShowingExieEmptyState}
                             {openChat}
                             {requiresPremium}
                             premiumFeatureName={premiumPage.current}
