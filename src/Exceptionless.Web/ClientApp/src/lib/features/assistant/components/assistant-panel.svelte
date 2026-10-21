@@ -174,8 +174,9 @@
     });
 
     // A new page brings new context, so a dismissed context chip comes back and the scope follows the page again.
+    // Filters and paging only change the query string, so they keep the user's choice.
     $effect(() => {
-        const currentKey = `${organizationId}:${path}`;
+        const currentKey = `${organizationId}:${path?.split(/[?#]/)[0]}`;
         untrack(() => {
             if (currentKey !== contextKey) {
                 contextKey = currentKey;

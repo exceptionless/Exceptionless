@@ -711,6 +711,27 @@ describe('AssistantPanel', () => {
         expect(screen.getByTestId('assistant-context-chip')).toBeTruthy();
     });
 
+    it('keeps the picked project when only filters or paging change', async () => {
+        const props = {
+            open: true,
+            organizationId: 'organization-1',
+            path: '/stack/all?filter=status%3Aopen',
+            projects: [
+                { id: 'project-1', name: 'Storefront' },
+                { id: 'project-2', name: 'Billing API' }
+            ]
+        };
+        const view = render(AssistantPanel, { props });
+        await fireEvent.click(await screen.findByRole('button', { name: 'Project scope: All projects' }));
+        await fireEvent.click(await screen.findByRole('option', { name: 'Billing API' }));
+
+        await view.rerender({ ...props, path: '/stack/all?filter=status%3Aopen&page=2' });
+        expect(screen.getByRole('button', { name: 'Project scope: Billing API' })).toBeTruthy();
+
+        await view.rerender({ ...props, path: '/stack/most-frequent-errors' });
+        expect(await screen.findByRole('button', { name: 'Project scope: All projects' })).toBeTruthy();
+    });
+
     it('restores the project a saved chat searched', async () => {
         localStorage.clear();
         const fetchMock = vi.fn(
