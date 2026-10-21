@@ -182,6 +182,21 @@
         });
     });
 
+    // A chat can be restored before the project list loads, so recheck its project once the list arrives.
+    $effect(() => {
+        const availableProjects = projects;
+        untrack(() => {
+            if (
+                typeof selectedProjectId === 'string' &&
+                availableProjects.length > 0 &&
+                !availableProjects.some((project) => project.id === selectedProjectId)
+            ) {
+                selectedProjectId = undefined;
+                contextDismissed = false;
+            }
+        });
+    });
+
     $effect(() => {
         const currentOrganizationId = organizationId;
         const currentScope = getAssistantConversationScope(userId, currentOrganizationId);

@@ -795,6 +795,56 @@ describe('AssistantPanel', () => {
         localStorage.clear();
     });
 
+    it('follows the page when a restored chat searched a project that is no longer available', async () => {
+        localStorage.clear();
+        const message = {
+            content: 'Earlier answer.',
+            conversationId: 'conversation-1',
+            id: 'assistant-1',
+            parts: [{ text: 'Earlier answer.', type: 'text' }],
+            role: 'assistant',
+            tools: []
+        };
+        localStorage.setItem(
+            'exie:conversations:v1:user-1:organization-1',
+            JSON.stringify([{ id: 'chat-1', messages: [message], projectId: 'deleted-project', title: 'Earlier question', updatedAt: Date.now() }])
+        );
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'Page answer.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        const props = {
+            open: true,
+            organizationId: 'organization-1',
+            path: '/project/5f8f8f8f8f8f8f8f8f8f8f8f/issues',
+            projectId: 'project-1',
+            userId: 'user-1'
+        };
+        const view = render(AssistantPanel, { props });
+        expect(await screen.findByText('Earlier answer.')).toBeTruthy();
+
+        await view.rerender({
+            ...props,
+            projects: [
+                { id: 'project-1', name: 'Storefront' },
+                { id: 'project-2', name: 'Billing API' }
+            ]
+        });
+
+        expect(await screen.findByRole('button', { name: 'Project scope: Storefront' })).toBeTruthy();
+        const composer = screen.getByRole('textbox', { name: 'Message Exie' });
+        await fireEvent.input(composer, { target: { value: 'What else broke?' } });
+        await fireEvent.keyDown(composer, { key: 'Enter' });
+        await screen.findByText('Page answer.');
+        const request = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body)) as {
+            conversation_id: string;
+            project_id?: string;
+        };
+        expect(request.project_id).toBe('project-1');
+        expect(request.conversation_id).not.toBe('conversation-1');
+        localStorage.clear();
+    });
+
     it('keeps a new chat blank after the panel reloads', async () => {
         localStorage.clear();
         const fetchMock = vi.fn(

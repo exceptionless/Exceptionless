@@ -38,9 +38,9 @@ public sealed class ExceptionlessMcpTools
     private const int MaxDetailSize = 64 * 1024;
     private const int MinDetailSize = 1024;
     private const string SummaryLimitDescription = "Maximum number of summary rows to return. Defaults to 10 and is capped at 100. Use the returned pagination.after or pagination.before cursor with the same limit to page through additional results.";
-    private const string LastDescription = "Optional relative time range ending now, such as 24h, 7d, or 30m. Use this for questions like the last 24 hours, today, or this week. When set, omit startUtc and endUtc.";
-    private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Use only for explicit calendar dates or ranges; when set, omit last.";
-    private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Use only for explicit calendar dates or ranges; when set, omit last.";
+    private const string LastDescription = "Optional rolling time range ending now, such as 24h, 7d, or 30m. Use this for questions like the last 24 hours or the last 7 days. For calendar periods such as today or this week, use startUtc instead. When set, omit startUtc and endUtc.";
+    private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Use for calendar periods such as today, yesterday, or this week, computed from midnight in the user's time zone, and for explicit dates or ranges; when set, omit last.";
+    private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Use for closed calendar periods such as yesterday and for explicit dates or ranges; omit it to include events up to now. When set, omit last.";
     private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
