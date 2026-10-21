@@ -9,6 +9,7 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
+using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Assistant;
 using Xunit;
 
@@ -48,45 +49,52 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
                 .Type(Event.KnownTypes.Error)
                 .Date(TimeProvider.GetUtcNow().AddMinutes(-5))
                 .Message("Assistant evaluation null reference");
-            data.Event()
-                .TestProject()
-                .Type(Event.KnownTypes.Error)
-                .Date(TimeProvider.GetUtcNow().AddMinutes(-10))
-                .Source("Shop.Checkout.OrderService")
-                .RequestInfo(new RequestInfo { HttpMethod = "POST", Host = "shop.example.com", Path = "/checkout/submit", IsSecure = true })
-                .Version("4.2.0")
-                .Mutate(ev => ev.SetError(new Error
-                {
-                    Type = "System.NullReferenceException",
-                    Message = "Object reference not set to an instance of an object.",
-                    StackTrace =
-                    [
-                        new StackFrame
-                        {
-                            DeclaringNamespace = "Shop.Checkout",
-                            DeclaringType = "OrderService",
-                            Name = "CalculateTotal",
-                            FileName = "src/Shop/Checkout/OrderService.cs",
-                            LineNumber = 87,
-                            Parameters = [new Parameter { Type = "Order", Name = "order" }]
-                        },
-                        new StackFrame
-                        {
-                            DeclaringNamespace = "Shop.Checkout",
-                            DeclaringType = "CheckoutController",
-                            Name = "Submit",
-                            FileName = "src/Shop/Checkout/CheckoutController.cs",
-                            LineNumber = 42
-                        }
-                    ],
-                    Data = new DataDictionary { ["DiscountCode"] = "SPRING25", ["Order.ShippingAddress"] = "null" }
-                }));
+            // A second, older occurrence of the same stack, so "today" (1) and all-time (2) totals differ.
+            var checkout = AddCheckoutEvent(data, TimeProvider.GetUtcNow().AddMinutes(-10));
+            AddCheckoutEvent(data, TimeProvider.GetUtcNow().AddDays(-3)).Stack(checkout);
         });
 
         _currentEvent = events[0];
         _currentStack = stacks.Single(stack => stack.Id == _currentEvent.StackId);
         _checkoutEvent = events[2];
         _checkoutStack = stacks.Single(stack => stack.Id == _checkoutEvent.StackId);
+    }
+
+    private static EventDataBuilder AddCheckoutEvent(DataBuilder data, DateTimeOffset date)
+    {
+        return data.Event()
+            .TestProject()
+            .Type(Event.KnownTypes.Error)
+            .Date(date)
+            .Source("Shop.Checkout.OrderService")
+            .RequestInfo(new RequestInfo { HttpMethod = "POST", Host = "shop.example.com", Path = "/checkout/submit", IsSecure = true })
+            .Version("4.2.0")
+            .Mutate(ev => ev.SetError(new Error
+            {
+                Type = "System.NullReferenceException",
+                Message = "Object reference not set to an instance of an object.",
+                StackTrace =
+                [
+                    new StackFrame
+                    {
+                        DeclaringNamespace = "Shop.Checkout",
+                        DeclaringType = "OrderService",
+                        Name = "CalculateTotal",
+                        FileName = "src/Shop/Checkout/OrderService.cs",
+                        LineNumber = 87,
+                        Parameters = [new Parameter { Type = "Order", Name = "order" }]
+                    },
+                    new StackFrame
+                    {
+                        DeclaringNamespace = "Shop.Checkout",
+                        DeclaringType = "CheckoutController",
+                        Name = "Submit",
+                        FileName = "src/Shop/Checkout/CheckoutController.cs",
+                        LineNumber = 42
+                    }
+                ],
+                Data = new DataDictionary { ["DiscountCode"] = "SPRING25", ["Order.ShippingAddress"] = "null" }
+            }));
     }
 
     [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
@@ -218,7 +226,117 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
             Assert.Skip("Set EX_Assistant__ApiKey before running the assistant quality gate.");
     }
 
-    private async Task<EvaluationTurn> SendAssistantTurnAsync(string prompt, string path, string? projectId, string? timeZone = null, [CallerMemberName] string scenario = "")
+    /// <summary>
+    /// A way of asking about a period, the date math Exie must send for it, and the tool it should use. Patterns
+    /// allow equivalent spellings such as [now-24h TO now] and [now-1d TO now]. A null pattern means no time limit.
+    /// </summary>
+    private sealed record TimeRangeScenario(string Prompt, string Page, string Tool, string? TimePattern, string? FollowUpTo = null);
+
+    private const string AnyOrNoTime = "(any)";
+
+    private static readonly Dictionary<string, TimeRangeScenario> s_timeRangeScenarios = new()
+    {
+        ["last_24_hours"] = new("What are the top errors in this project in the last 24 hours?", "project", "search_stacks", @"^\[now-(24h|1d) TO now\]$"),
+        ["last_hour"] = new("Were there any new errors in this project in the last hour?", "project", "search_stacks", @"^\[now-(1h|60m) TO now\]$"),
+        ["last_2_days"] = new("Which errors did this project have over the last 2 days?", "project", "search_stacks", @"^\[now-(2d|48h)(/d)? TO now\]$"),
+        ["past_7_days"] = new("What errors happened in this project in the past 7 days?", "project", "search_stacks", @"^\[now-(7d|1w)(/d)? TO now\]$"),
+        ["last_30_days"] = new("What are the top errors in this project over the last 30 days?", "project", "search_stacks", @"^\[now-30d(/d)? TO now\]$"),
+        ["today"] = new("Which errors happened in this project today?", "project", "search_stacks", @"^\[now/d TO now(/d)?\]$"),
+        ["yesterday"] = new("What errors did this project have yesterday?", "project", "search_stacks", @"^\[now-1d/d TO now-1d/d\]$"),
+        ["this_week"] = new("Show me this week's top errors in this project.", "project", "search_stacks", @"^\[now/w TO now(/w)?\]$"),
+        ["last_week"] = new("What were the top errors in this project last week?", "project", "search_stacks", @"^\[now-1w/w TO now-1w/w\]$"),
+        ["this_month"] = new("What are the top errors in this project this month?", "project", "search_stacks", @"^\[now/M TO now(/M)?\]$"),
+        ["since_monday"] = new("What errors has this project had since Monday?", "project", "search_stacks", @"^\[(now/w|2026-10-19) TO now\]$"),
+        ["explicit_day"] = new("What errors happened in this project on October 1, 2026?", "project", "search_stacks", @"^\[2026-10-01 TO 2026-10-01\]$"),
+        ["explicit_range"] = new("Show the top errors in this project between October 1 and October 15, 2026.", "project", "search_stacks", @"^\[2026-10-01 TO 2026-10-15\]$"),
+        ["no_time"] = new("What are the top errors in this project?", "project", "search_stacks", AnyOrNoTime),
+        ["stack_today"] = new("How many times did this stack occur today?", "stack", "get_stack_events", @"^\[now/d TO now(/d)?\]$"),
+        ["stack_all_time"] = new("How many times has this stack occurred in total?", "stack", "get_stack", AnyOrNoTime),
+        ["organization_today"] = new("Which errors happened today across all of my projects?", "organization", "search_stacks", @"^\[now/d TO now(/d)?\]$"),
+        ["follow_up_yesterday"] = new("And yesterday?", "project", "search_stacks", @"^\[now-1d/d TO now-1d/d\]$", FollowUpTo: "today")
+    };
+
+    public static TheoryData<string, int> TimeRangeScenarios()
+    {
+        int runs = Int32.TryParse(Environment.GetEnvironmentVariable("ASSISTANT_EVAL_RUNS"), out int value) && value > 0 ? value : 1;
+        // ASSISTANT_EVAL_SCENARIOS limits a run to some scenarios, for example stack_today,stack_all_time.
+        string[] only = (Environment.GetEnvironmentVariable("ASSISTANT_EVAL_SCENARIOS") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var data = new TheoryData<string, int>();
+        foreach (string name in s_timeRangeScenarios.Keys.Where(name => only.Length == 0 || only.Contains(name)))
+        {
+            for (int run = 1; run <= runs; run++)
+                data.Add(name, run);
+        }
+
+        return data;
+    }
+
+    [Theory(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
+    [MemberData(nameof(TimeRangeScenarios))]
+    [Trait("Category", "AssistantEvaluation")]
+    public async Task TimeRange_SendsDateMathInOneSearch(string name, int run)
+    {
+        RequireEvaluationConfiguration();
+        var scenario = s_timeRangeScenarios[name];
+        (string path, string? projectId) = scenario.Page switch
+        {
+            "stack" => ($"/stack/{_checkoutStack.Id}", SampleDataService.TEST_PROJECT_ID),
+            "organization" => ("/stack/all", (string?)null),
+            _ => ("/stack", SampleDataService.TEST_PROJECT_ID)
+        };
+
+        List<(string Role, string Content)>? history = null;
+        if (scenario.FollowUpTo is not null)
+        {
+            var first = s_timeRangeScenarios[scenario.FollowUpTo];
+            var earlier = await SendAssistantTurnAsync(first.Prompt, path, projectId, "America/Chicago", scenario: $"time_{scenario.FollowUpTo}_for_{name}");
+            AssertSuccessfulAnswer(earlier);
+            history = [("user", first.Prompt), ("assistant", earlier.Text)];
+        }
+
+        var turn = await SendAssistantTurnAsync(scenario.Prompt, path, projectId, "America/Chicago", history, scenario: $"time_{name}_{run}");
+
+        AssertSuccessfulAnswer(turn);
+        var times = turn.Events
+            .Where(item => item.Type == "tool_call" && item.ToolName == scenario.Tool)
+            .Select(item => GetStringArgument(item.Arguments, "time"))
+            .ToArray();
+        Assert.NotEmpty(times);
+        if (scenario.TimePattern != AnyOrNoTime)
+            Assert.All(times, time => Assert.Matches(scenario.TimePattern!, time ?? "(no time)"));
+
+        // The checkout stack occurred once today and once three days ago, so a total of 2 means Exie ignored the period.
+        if (name == "stack_today")
+            Assert.DoesNotMatch(@"\b(2|two) (times|occurrences)\b", turn.Text);
+        if (name == "stack_all_time")
+            Assert.Matches(@"\b(2|two) (times|occurrences)\b", turn.Text);
+
+        // One lookup answers a scoped question; more means Exie retried or searched again.
+        if (scenario.Page == "organization")
+        {
+            Assert.Equal(1, turn.ToolCalls.Count(call => call == "list_projects"));
+            Assert.InRange(times.Length, 1, AssistantLimits.MaximumProjectsPerTurn);
+        }
+        else
+        {
+            Assert.Single(times);
+            Assert.DoesNotContain("list_projects", turn.ToolCalls);
+            Assert.InRange(turn.ToolCalls.Count, 1, 2);
+        }
+    }
+
+    private static string? GetStringArgument(string? arguments, string name)
+    {
+        if (String.IsNullOrWhiteSpace(arguments))
+            return null;
+
+        using var document = JsonDocument.Parse(arguments);
+        return document.RootElement.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+            ? System.Text.RegularExpressions.Regex.Replace(value.GetString()!.Trim(), @"\s+", " ")
+            : null;
+    }
+
+    private async Task<EvaluationTurn> SendAssistantTurnAsync(string prompt, string path, string? projectId, string? timeZone = null, IReadOnlyList<(string Role, string Content)>? history = null, [CallerMemberName] string scenario = "")
     {
         var usageService = GetService<AssistantUsageService>();
         long costBefore = (await usageService.GetMonthlyUsageAsync(SampleDataService.TEST_ORG_ID)).CostInMicrodollars;
@@ -232,7 +350,7 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         request.Content = JsonContent.Create(new
         {
             conversation_id = Guid.NewGuid().ToString("N"),
-            messages = new[] { new { role = "user", content = prompt } },
+            messages = (history ?? []).Select(message => new { role = message.Role, content = message.Content }).Append(new { role = "user", content = prompt }).ToArray(),
             organization_id = SampleDataService.TEST_ORG_ID,
             project_id = projectId,
             path,
