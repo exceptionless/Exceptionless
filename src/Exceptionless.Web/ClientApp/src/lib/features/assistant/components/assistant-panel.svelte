@@ -428,7 +428,8 @@
         conversations = saveAssistantConversation(historyScope, {
             id: threadId,
             messages: savedMessages,
-            projectId: scopeProjectId ?? null,
+            // Record the scope the server conversation searched, which can differ from the page after navigating mid-response.
+            projectId: conversationProjectId !== undefined ? conversationProjectId : (scopeProjectId ?? null),
             title: getAssistantConversationTitle(savedMessages),
             updatedAt: Date.now()
         });

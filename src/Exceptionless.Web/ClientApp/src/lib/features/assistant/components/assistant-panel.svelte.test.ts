@@ -795,6 +795,45 @@ describe('AssistantPanel', () => {
         localStorage.clear();
     });
 
+    it('saves the project a response searched even after moving to another project mid-response', async () => {
+        localStorage.clear();
+        let finishResponse: () => void = () => {};
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(
+                async () =>
+                    new Response(
+                        new ReadableStream<Uint8Array>({
+                            start(controller) {
+                                controller.enqueue(new TextEncoder().encode(`${JSON.stringify({ text: 'Storefront answer.', type: 'text_delta' })}\n`));
+                                finishResponse = () => {
+                                    controller.enqueue(new TextEncoder().encode(`${JSON.stringify({ type: 'done' })}\n`));
+                                    controller.close();
+                                };
+                            }
+                        })
+                    )
+            )
+        );
+        const projects = [
+            { id: 'project-1', name: 'Storefront' },
+            { id: 'project-2', name: 'Billing API' }
+        ];
+        const storefront = { open: true, organizationId: 'organization-1', path: '/project/1/issues', projectId: 'project-1', projects, userId: 'user-1' };
+        const billing = { ...storefront, path: '/project/2/issues', projectId: 'project-2' };
+        const view = render(AssistantPanel, { props: { ...storefront, promptRequest: { id: 'request-1', prompt: 'What broke?' } } });
+        expect(await screen.findByText('Storefront answer.')).toBeTruthy();
+
+        await view.rerender(billing);
+        finishResponse();
+        await waitFor(() => expect(screen.queryByRole('button', { name: 'Stop generating' })).toBeNull());
+        view.unmount();
+
+        const saved = JSON.parse(localStorage.getItem('exie:conversations:v1:user-1:organization-1') ?? '[]') as Array<{ projectId?: null | string }>;
+        expect(saved[0]?.projectId).toBe('project-1');
+        localStorage.clear();
+    });
+
     it('follows the page when a restored chat searched a project that is no longer available', async () => {
         localStorage.clear();
         const message = {

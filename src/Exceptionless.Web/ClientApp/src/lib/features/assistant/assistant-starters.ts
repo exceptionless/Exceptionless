@@ -31,7 +31,7 @@ export function getAssistantStarters(context: AssistantContext | undefined): Ass
             ];
         default:
             return [
-                { label: 'Top errors today', prompt: 'What are my top errors in the last 24 hours?' },
+                { label: 'Top errors in the last 24 hours', prompt: 'What are my top errors in the last 24 hours?' },
                 { label: 'What’s new?', prompt: 'Which new stacks appeared in the last 24 hours?' },
                 { label: 'What needs attention?', prompt: 'Which open stacks occurred most recently and need attention?' }
             ];

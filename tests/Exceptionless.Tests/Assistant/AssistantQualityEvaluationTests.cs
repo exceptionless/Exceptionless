@@ -128,7 +128,7 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
     {
         RequireEvaluationConfiguration();
 
-        // This is the "Top errors today" starter prompt shown on organization-wide pages.
+        // This is the "Top errors in the last 24 hours" starter prompt shown on organization-wide pages.
         var organizationTopErrors = await SendAssistantTurnAsync(
             "What are my top errors in the last 24 hours?",
             "/stack/all",
