@@ -4,7 +4,6 @@
     import Circle from '@lucide/svelte/icons/circle';
     import CircleCheck from '@lucide/svelte/icons/circle-check';
     import X from '@lucide/svelte/icons/x';
-    import { PersistedState } from 'runed';
     import { toast } from 'svelte-sonner';
     import { SvelteSet } from 'svelte/reactivity';
 
@@ -30,6 +29,7 @@
         isChecklistComplete,
         shouldShowChecklist
     } from '../checklist';
+    import { ChecklistLayoutPreference } from '../checklist-layout.svelte';
     import { useOrganizationOnboarding } from '../onboarding-state.svelte';
     import ExieGuide from './exie-guide.svelte';
 
@@ -51,7 +51,9 @@
         }
     });
 
-    const collapsed = new PersistedState('getting-started-checklist-collapsed', false);
+    // Full list until the first event; a single row afterwards unless this user chose otherwise.
+    const layoutPreference = new ChecklistLayoutPreference(() => meQuery.data?.id);
+    const isExpanded = $derived(layoutPreference.expanded ?? !onboarding.hasReceivedEvents);
     // Visits recorded in this session show as done before the user refetch finishes.
     const visitedItems = new SvelteSet<ChecklistVisitItemId>();
     let dismissed = $state(false);
@@ -72,6 +74,7 @@
         )
     );
     const completedCount = $derived(items.filter((item) => item.complete).length);
+    const nextItem = $derived(items.find((item) => !item.complete));
     const isComplete = $derived(isChecklistComplete(items));
     const isVisible = $derived(
         !dismissed &&
@@ -199,35 +202,62 @@
 
 {#if isVisible}
     <Card.Root aria-labelledby="getting-started-checklist-title" data-getting-started-checklist role="region" size="sm">
-        <Collapsible.Root open={!collapsed.current} onOpenChange={(open) => (collapsed.current = !open)}>
+        <Collapsible.Root onOpenChange={(open) => layoutPreference.set(open)} open={isExpanded}>
             <Card.Header class="flex flex-row items-center gap-3">
                 <!-- The sparkle inherits brand green; the robot outline uses the foreground color. -->
                 <span class="bg-muted text-primary flex size-8 shrink-0 items-center justify-center rounded-lg">
                     <ExieIcon class="[&_g]:text-foreground" height={20} width={20} />
                 </span>
-                <div class="flex min-w-0 flex-1 flex-col gap-1">
-                    <Card.Title id="getting-started-checklist-title">Exie's checklist</Card.Title>
-                    <div class="flex items-center gap-2">
-                        <div
-                            aria-label="Checklist progress"
-                            aria-valuemax={items.length}
-                            aria-valuemin={0}
-                            aria-valuenow={completedCount}
-                            class="bg-muted h-1.5 w-24 overflow-hidden rounded-full sm:w-40"
-                            role="progressbar"
-                        >
+                <div class="flex min-w-0 flex-1 flex-col gap-1 md:flex-row md:items-center md:gap-4">
+                    <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                        <Card.Title class="shrink-0" id="getting-started-checklist-title">Exie's checklist</Card.Title>
+                        <div class="flex items-center gap-2">
                             <div
-                                class="bg-primary h-full rounded-full transition-[width] duration-500"
-                                style:width="{(completedCount / items.length) * 100}%"
-                            ></div>
+                                aria-label="Checklist progress"
+                                aria-valuemax={items.length}
+                                aria-valuemin={0}
+                                aria-valuenow={completedCount}
+                                class="bg-muted h-1.5 w-20 overflow-hidden rounded-full sm:w-32"
+                                role="progressbar"
+                            >
+                                <div
+                                    class="bg-primary h-full rounded-full transition-[width] duration-500"
+                                    style:width="{(completedCount / items.length) * 100}%"
+                                ></div>
+                            </div>
+                            <span class="text-muted-foreground text-xs whitespace-nowrap tabular-nums">{completedCount} of {items.length} done</span>
                         </div>
-                        <span class="text-muted-foreground text-xs tabular-nums">{completedCount} of {items.length} done</span>
                     </div>
+                    {#if !isExpanded}
+                        <p class="text-muted-foreground min-w-0 truncate text-sm" data-checklist-next>
+                            {#if nextItem}
+                                {@const nextCopy = getItemCopy(nextItem.id)}
+                                Next:
+                                {#if nextCopy.href}
+                                    <a
+                                        class="text-foreground font-medium underline-offset-4 hover:underline"
+                                        href={nextCopy.href}
+                                        onclick={() => recordVisit(nextItem)}
+                                        rel={nextCopy.external ? 'noopener noreferrer' : undefined}
+                                        target={nextCopy.external ? '_blank' : undefined}>{nextCopy.label}</a
+                                    >
+                                {:else}
+                                    <button
+                                        class="text-foreground font-medium underline-offset-4 hover:underline"
+                                        onclick={() => layoutPreference.set(true)}
+                                        type="button">{nextCopy.label}</button
+                                    >
+                                {/if}
+                            {:else}
+                                You're all set!
+                            {/if}
+                        </p>
+                    {/if}
                 </div>
                 <Collapsible.Trigger>
                     {#snippet child({ props })}
-                        <Button {...props} aria-label={collapsed.current ? 'Expand checklist' : 'Collapse checklist'} size="icon-sm" variant="ghost">
-                            <ChevronDown aria-hidden="true" class={cn('transition-transform', !collapsed.current && 'rotate-180')} />
+                        <Button {...props} aria-label={isExpanded ? 'Collapse checklist' : 'Expand checklist'} size="icon-sm" variant="ghost">
+                            <ChevronDown aria-hidden="true" class={cn('transition-transform', isExpanded && 'rotate-180')} />
                         </Button>
                     {/snippet}
                 </Collapsible.Trigger>
