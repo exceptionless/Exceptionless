@@ -54,36 +54,34 @@ public sealed class AssistantServiceTests
         string systemPrompt = document.RootElement.GetProperty("content").GetString()!;
         Assert.Contains("Current UTC time: 2026-10-20T06:15:30Z.", systemPrompt, StringComparison.Ordinal);
         Assert.Contains("Current project id: not selected.", systemPrompt, StringComparison.Ordinal);
-        Assert.Contains("Never send last together with startUtc or endUtc.", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("[now/d TO now/d] for today", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("Never convert a period to UTC timestamps yourself.", systemPrompt, StringComparison.Ordinal);
         Assert.Contains("There is no organization-wide search", systemPrompt, StringComparison.Ordinal);
         Assert.Contains("never retry by removing them", systemPrompt, StringComparison.Ordinal);
         Assert.Contains("I searched 5 of 12 projects", systemPrompt, StringComparison.Ordinal);
-        Assert.Contains("User time zone: UTC.", systemPrompt, StringComparison.Ordinal);
-        Assert.Contains("The user's today starts at 2026-10-20T00:00:00Z", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("User time zone: UTC. User local time: 2026-10-20T06:15:30+00:00.", systemPrompt, StringComparison.Ordinal);
     }
 
     [Theory]
     // 01:15 UTC on Tuesday is still Monday evening in Chicago (UTC-5 during daylight saving time).
-    [InlineData("America/Chicago", "User local time: 2026-10-19T20:15:30-05:00.", "today starts at 2026-10-19T05:00:00Z, yesterday starts at 2026-10-18T05:00:00Z, and this week (from Monday) starts at 2026-10-19T05:00:00Z.")]
-    [InlineData("Asia/Tokyo", "User local time: 2026-10-20T10:15:30+09:00.", "today starts at 2026-10-19T15:00:00Z, yesterday starts at 2026-10-18T15:00:00Z, and this week (from Monday) starts at 2026-10-18T15:00:00Z.")]
-    [InlineData("Not/A_Zone", "User time zone: UTC. User local time: 2026-10-20T01:15:30+00:00.", "today starts at 2026-10-20T00:00:00Z, yesterday starts at 2026-10-19T00:00:00Z, and this week (from Monday) starts at 2026-10-19T00:00:00Z.")]
-    [InlineData(null, "User time zone: UTC.", "today starts at 2026-10-20T00:00:00Z")]
-    public void GetUserCalendarContext_TimeZone_ReturnsLocalDayAndWeekBoundaries(string? timeZone, string expectedLocalTime, string expectedBoundaries)
+    [InlineData("America/Chicago", "User time zone: America/Chicago. User local time: 2026-10-19T20:15:30-05:00.")]
+    [InlineData("Asia/Tokyo", "User time zone: Asia/Tokyo. User local time: 2026-10-20T10:15:30+09:00.")]
+    [InlineData("Not/A_Zone", "User time zone: UTC. User local time: 2026-10-20T01:15:30+00:00.")]
+    [InlineData(null, "User time zone: UTC. User local time: 2026-10-20T01:15:30+00:00.")]
+    public void GetUserCalendarContext_TimeZone_ReturnsLocalTime(string? timeZone, string expected)
     {
-        string context = AssistantService.GetUserCalendarContext(timeZone, new DateTimeOffset(2026, 10, 20, 1, 15, 30, TimeSpan.Zero));
-
-        Assert.Contains(expectedLocalTime, context, StringComparison.Ordinal);
-        Assert.Contains(expectedBoundaries, context, StringComparison.Ordinal);
+        Assert.Equal(expected, AssistantService.GetUserCalendarContext(timeZone, new DateTimeOffset(2026, 10, 20, 1, 15, 30, TimeSpan.Zero)));
     }
 
-    [Fact]
-    public void GetUserCalendarContext_RepeatedMidnight_StartsTheDayAtTheFirstMidnight()
+    [Theory]
+    [InlineData("America/Chicago", "America/Chicago")]
+    [InlineData("Not/A_Zone", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void GetUserTimeZoneId_BrowserTimeZone_ReturnsOnlyRecognizedZones(string? timeZone, string? expected)
     {
-        // The Azores fall back from UTC+0 to UTC-1 at 01:00 UTC on 2026-10-25, so local midnight happens twice.
-        string context = AssistantService.GetUserCalendarContext("Atlantic/Azores", new DateTimeOffset(2026, 10, 25, 1, 30, 0, TimeSpan.Zero));
-
-        Assert.Contains("User local time: 2026-10-25T00:30:00-01:00.", context, StringComparison.Ordinal);
-        Assert.Contains("today starts at 2026-10-25T00:00:00Z", context, StringComparison.Ordinal);
+        // Tools reject an unknown zone, so Exie falls back to UTC rather than failing the search.
+        Assert.Equal(expected, AssistantService.GetUserTimeZoneId(timeZone));
     }
 
     [Fact]
@@ -207,7 +205,10 @@ public sealed class AssistantServiceTests
         Assert.Contains("This tool has no stack id filter", handler.RequestBody);
         Assert.Contains("Never pass a stackId as eventId", handler.RequestBody);
         Assert.Contains("\"eventId\"", handler.RequestBody);
-        Assert.Contains("\"startUtc\"", handler.RequestBody);
+        Assert.Contains("\"time\"", handler.RequestBody);
+        // Exie supplies the browser's time zone itself, so the model never sees the parameter.
+        Assert.DoesNotContain("\"timeZone\"", handler.RequestBody);
+        Assert.DoesNotContain("\"startUtc\"", handler.RequestBody);
         Assert.Contains("\"after\"", handler.RequestBody);
         Assert.Contains("\"maximum\":10", handler.RequestBody);
         Assert.Contains("\"maximum\":16384", handler.RequestBody);

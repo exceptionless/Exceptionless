@@ -59,8 +59,8 @@ export function getAssistantToolDetail(tool: AssistantToolActivity, projectNames
         details.push(args.filter.trim());
     }
 
-    if (typeof args?.last === 'string' && args.last.trim()) {
-        details.push(`last ${args.last.trim()}`);
+    if (typeof args?.time === 'string' && args.time.trim()) {
+        details.push(describeTimeRange(args.time.trim()));
     }
 
     if (details.length === 0 && tool.status === 'complete' && (tool.name === 'get_stack' || tool.name === 'get_event')) {
@@ -173,4 +173,31 @@ function parseRecord(value: unknown): Record<string, unknown> | undefined {
     }
 
     return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : undefined;
+}
+
+const calendarPeriods: Record<string, string> = {
+    '[now-1d/d TO now-1d/d]': 'yesterday',
+    '[now-1M/M TO now-1M/M]': 'last month',
+    '[now-1w/w TO now-1w/w]': 'last week',
+    '[now/d TO now/d]': 'today',
+    '[now/M TO now/M]': 'this month',
+    '[now/w TO now/w]': 'this week'
+};
+const timeUnits: Record<string, string> = { d: 'days', h: 'hours', m: 'minutes', M: 'months', w: 'weeks', y: 'years' };
+
+/** Names a date math time range the way a person would, such as "last 24 hours" or "today", and shows anything else as written. */
+export function describeTimeRange(time: string): string {
+    const normalized = time.replace(/\s+/g, ' ');
+    const calendarPeriod = calendarPeriods[normalized];
+    if (calendarPeriod) {
+        return calendarPeriod;
+    }
+
+    const rolling = /^\[now-(\d+)([mhdwMy]) TO now\]$/.exec(normalized);
+    if (rolling) {
+        const [, amount, unit] = rolling;
+        return `last ${amount} ${timeUnits[unit!]}`;
+    }
+
+    return normalized;
 }

@@ -569,9 +569,8 @@ public sealed class AssistantService(
                 GetString(root, "filter"),
                 GetString(root, "sort") ?? "-date",
                 GetBoundedInt32(root, AssistantLimits.MaximumToolItemsPerCall, AssistantLimits.MaximumToolItemsPerCall, "limit"),
-                GetString(root, "last"),
-                GetString(root, "startUtc", "start_utc"),
-                GetString(root, "endUtc", "end_utc"),
+                GetString(root, "time"),
+                GetUserTimeZoneId(request.TimeZone),
                 GetString(root, "after"),
                 GetString(root, "before")),
             ListProjectsTool => await tools.ListProjectsAsync(
@@ -586,9 +585,8 @@ public sealed class AssistantService(
                 GetString(root, "filter"),
                 GetString(root, "sort") ?? "-last_occurrence",
                 GetBoundedInt32(root, AssistantLimits.MaximumToolItemsPerCall, AssistantLimits.MaximumToolItemsPerCall, "limit"),
-                GetString(root, "last"),
-                GetString(root, "startUtc", "start_utc"),
-                GetString(root, "endUtc", "end_utc"),
+                GetString(root, "time"),
+                GetUserTimeZoneId(request.TimeZone),
                 GetString(root, "after"),
                 GetString(root, "before")),
             UpdateStackStatusTool => await tools.UpdateStackStatusAsync(
@@ -691,34 +689,17 @@ public sealed class AssistantService(
     private static string FormatUtc(DateTimeOffset value)
         => value.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture);
 
-    /// <summary>Gives the model the user's calendar day and week boundaries, which it cannot compute reliably across time zones.</summary>
+    /// <summary>The browser's time zone when the server recognizes it, so tools resolve now/d at the user's midnight.</summary>
+    internal static string? GetUserTimeZoneId(string? timeZoneId)
+        => !String.IsNullOrWhiteSpace(timeZoneId) && timeZoneId.Length <= 64 && TimeZoneInfo.TryFindSystemTimeZoneById(timeZoneId, out _) ? timeZoneId : null;
+
+    /// <summary>Lets the model read timestamps and show times in the user's local time.</summary>
     internal static string GetUserCalendarContext(string? timeZoneId, DateTimeOffset utcNow)
     {
-        var timeZone = TimeZoneInfo.Utc;
-        if (!String.IsNullOrWhiteSpace(timeZoneId) && timeZoneId.Length <= 64 && TimeZoneInfo.TryFindSystemTimeZoneById(timeZoneId, out var userTimeZone))
-            timeZone = userTimeZone;
-
+        string? userTimeZoneId = GetUserTimeZoneId(timeZoneId);
+        var timeZone = userTimeZoneId is null ? TimeZoneInfo.Utc : TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
         var localNow = TimeZoneInfo.ConvertTime(utcNow, timeZone);
-        var startOfToday = GetLocalMidnightUtc(localNow.Date, timeZone);
-        int daysSinceMonday = ((int)localNow.DayOfWeek + 6) % 7;
-        var startOfWeek = GetLocalMidnightUtc(localNow.Date.AddDays(-daysSinceMonday), timeZone);
-        var startOfYesterday = GetLocalMidnightUtc(localNow.Date.AddDays(-1), timeZone);
-        string name = timeZone == TimeZoneInfo.Utc ? "UTC" : timeZoneId!;
-        return $"User time zone: {name}. User local time: {localNow.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture)}. The user's today starts at {FormatUtc(startOfToday)}, yesterday starts at {FormatUtc(startOfYesterday)}, and this week (from Monday) starts at {FormatUtc(startOfWeek)}.";
-    }
-
-    private static DateTimeOffset GetLocalMidnightUtc(DateTime localDate, TimeZoneInfo timeZone)
-    {
-        var midnight = DateTime.SpecifyKind(localDate, DateTimeKind.Unspecified);
-        // Some time zones skip midnight when daylight saving time starts; the day then begins an hour later.
-        while (timeZone.IsInvalidTime(midnight))
-            midnight = midnight.AddMinutes(30);
-
-        // Others repeat midnight when it ends; the day begins at the first one, which has the larger offset.
-        if (timeZone.IsAmbiguousTime(midnight))
-            return new DateTimeOffset(midnight, timeZone.GetAmbiguousTimeOffsets(midnight).Max()).ToUniversalTime();
-
-        return new DateTimeOffset(TimeZoneInfo.ConvertTimeToUtc(midnight, timeZone), TimeSpan.Zero);
+        return $"User time zone: {userTimeZoneId ?? "UTC"}. User local time: {localNow.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture)}.";
     }
 
     private static string LimitToolResult(string result, ref int remainingCharacters)

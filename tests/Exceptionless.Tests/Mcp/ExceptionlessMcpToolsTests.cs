@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
 using Exceptionless.Core.Authorization;
@@ -146,7 +147,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead);
 
-        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, filter, last: "24h");
+        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, filter, time: "[now-24h TO now]");
 
         Assert.False(result.Ok);
         Assert.Equal(McpErrorCodes.InvalidFilter, result.Error?.Code);
@@ -681,16 +682,47 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Equal("Limit was capped at 100.", result.Warning);
     }
 
-    [Fact]
-    public async Task SearchEventsAsync_InvalidTimeRange_ReturnsError()
+    [Theory]
+    [InlineData("24h", null)]
+    [InlineData("not a date", null)]
+    [InlineData("[now/d TO now-1d/d]", null)]
+    [InlineData("[now/d TO now/d]", "Not/A_Zone")]
+    public async Task SearchEventsAsync_InvalidTimeRange_ReturnsError(string time, string? timeZone)
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
-        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, last: "24h", startUtc: "2026-06-25T00:00:00Z");
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, time: time, timeZone: timeZone);
 
         Assert.False(result.Ok);
         Assert.Equal(McpErrorCodes.InvalidTimeRange, result.Error?.Code);
         Assert.Null(result.Data);
+    }
+
+    [Theory]
+    // 01:15 UTC on Tuesday is still Monday evening in Chicago (UTC-5 during daylight saving time).
+    [InlineData("[now/d TO now/d]", "America/Chicago", "2026-10-19T05:00:00Z", "2026-10-20T04:59:59.999Z")]
+    [InlineData("[now/d TO now/d]", null, "2026-10-20T00:00:00Z", "2026-10-20T23:59:59.999Z")]
+    [InlineData("[now-1d/d TO now-1d/d]", "America/Chicago", "2026-10-18T05:00:00Z", "2026-10-19T04:59:59.999Z")]
+    [InlineData("[now-24h TO now]", "America/Chicago", "2026-10-19T01:15:30Z", "2026-10-20T01:15:30Z")]
+    [InlineData("[2026-10-01 TO 2026-10-01]", "Asia/Tokyo", "2026-09-30T15:00:00Z", "2026-10-01T14:59:59.999Z")]
+    public async Task CountEventsAsync_DateMathTime_ResolvesInTimeZone(string time, string? timeZone, string expectedStart, string expectedEnd)
+    {
+        try
+        {
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 10, 20, 1, 15, 30, TimeSpan.Zero));
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+            var result = await tools.CountEventsAsync(TestConstants.ProjectId, time: time, timeZone: timeZone);
+            var data = Data(result);
+
+            Assert.True(result.Ok, result.Error?.Message);
+            Assert.Equal(DateTimeOffset.Parse(expectedStart, CultureInfo.InvariantCulture).UtcDateTime, data.StartUtc);
+            Assert.Equal(DateTimeOffset.Parse(expectedEnd, CultureInfo.InvariantCulture).UtcDateTime, data.EndUtc);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
     }
 
     [Fact]
@@ -701,7 +733,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         await RefreshDataAsync();
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
-        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", last: "24h", interval: "1h");
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", time: "[now-24h TO now]", interval: "1h");
         var data = Data(result);
 
         Assert.True(result.Ok);
@@ -767,7 +799,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             await RefreshDataAsync();
             var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
-            var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", last: "7d", interval: "1d", groupBy: "version");
+            var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", time: "[now-7d TO now]", interval: "1d", groupBy: "version");
             var data = Data(result);
 
             Assert.True(result.Ok);
@@ -1478,12 +1510,13 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var tool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions());
         var properties = tool.ProtocolTool.InputSchema.GetProperty("properties");
 
-        Assert.True(properties.TryGetProperty("last", out var last), "The last time range must be advertised in the MCP tool schema.");
-        Assert.True(properties.TryGetProperty("startUtc", out var startUtc), "The startUtc time range must be advertised in the MCP tool schema.");
-        Assert.True(properties.TryGetProperty("endUtc", out var endUtc), "The endUtc time range must be advertised in the MCP tool schema.");
-        Assert.Contains("24h", last.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("UTC", startUtc.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("UTC", endUtc.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.True(properties.TryGetProperty("time", out var time), "The time range must be advertised in the MCP tool schema.");
+        Assert.True(properties.TryGetProperty("timeZone", out var timeZone), "The time zone must be advertised in the MCP tool schema.");
+        Assert.Contains("[now/d TO now/d]", time.GetProperty("description").GetString(), StringComparison.Ordinal);
+        Assert.Contains("IANA", timeZone.GetProperty("description").GetString(), StringComparison.Ordinal);
+        Assert.False(properties.TryGetProperty("last", out _));
+        Assert.False(properties.TryGetProperty("startUtc", out _));
+        Assert.False(properties.TryGetProperty("endUtc", out _));
     }
 
     [Fact]

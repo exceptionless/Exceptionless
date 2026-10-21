@@ -178,13 +178,12 @@ public static class McpErrors
         });
     }
 
-    public static McpErrorInfo InvalidTimeRange(string message, string? last, string? startUtc, string? endUtc)
+    public static McpErrorInfo InvalidTimeRange(string message, string? time, string? timeZone)
     {
         return new McpErrorInfo(McpErrorCodes.InvalidTimeRange, message, new Dictionary<string, object?>
         {
-            ["last"] = last,
-            ["startUtc"] = startUtc,
-            ["endUtc"] = endUtc
+            ["time"] = time,
+            ["timeZone"] = timeZone
         });
     }
 

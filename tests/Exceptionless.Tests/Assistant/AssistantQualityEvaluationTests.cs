@@ -120,6 +120,24 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.Equal(1, projectTopErrors.ToolCalls.Count(call => call == "search_stacks"));
         Assert.DoesNotContain("list_projects", projectTopErrors.ToolCalls);
         Assert.Contains("/stack/", projectTopErrors.Text, StringComparison.Ordinal);
+        // Periods go to the server as date math instead of timestamps the model computed.
+        Assert.All(GetToolArguments(projectTopErrors, "search_stacks", "time"), time => Assert.Matches(@"^\[now-(24h|1d) TO now\]$", time));
+    }
+
+    [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
+    [Trait("Category", "AssistantEvaluation")]
+    public async Task ProjectErrorsToday_SearchesTheCalendarDay()
+    {
+        RequireEvaluationConfiguration();
+
+        var today = await SendAssistantTurnAsync(
+            "Which errors happened in this project today?",
+            "/stack",
+            SampleDataService.TEST_PROJECT_ID,
+            timeZone: "America/Chicago");
+        AssertSuccessfulAnswer(today);
+        Assert.Equal(1, today.ToolCalls.Count(call => call == "search_stacks"));
+        Assert.Equal(["[now/d TO now/d]"], GetToolArguments(today, "search_stacks", "time"));
     }
 
     [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
@@ -200,7 +218,7 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
             Assert.Skip("Set EX_Assistant__ApiKey before running the assistant quality gate.");
     }
 
-    private async Task<EvaluationTurn> SendAssistantTurnAsync(string prompt, string path, string? projectId, [CallerMemberName] string scenario = "")
+    private async Task<EvaluationTurn> SendAssistantTurnAsync(string prompt, string path, string? projectId, string? timeZone = null, [CallerMemberName] string scenario = "")
     {
         var usageService = GetService<AssistantUsageService>();
         long costBefore = (await usageService.GetMonthlyUsageAsync(SampleDataService.TEST_ORG_ID)).CostInMicrodollars;
@@ -217,7 +235,8 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
             messages = new[] { new { role = "user", content = prompt } },
             organization_id = SampleDataService.TEST_ORG_ID,
             project_id = projectId,
-            path
+            path,
+            time_zone = timeZone
         });
 
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, TestContext.Current.CancellationToken);
@@ -297,6 +316,16 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         {
             return false;
         }
+    }
+
+    private static string[] GetToolArguments(EvaluationTurn turn, string toolName, string argumentName)
+    {
+        return turn.Events
+            .Where(item => item.Type == "tool_call" && item.ToolName == toolName && item.Arguments is not null)
+            .Select(item => JsonDocument.Parse(item.Arguments!).RootElement)
+            .Where(arguments => arguments.TryGetProperty(argumentName, out var value) && value.ValueKind == JsonValueKind.String)
+            .Select(arguments => arguments.GetProperty(argumentName).GetString()!)
+            .ToArray();
     }
 
     private sealed record EvaluationTurn(

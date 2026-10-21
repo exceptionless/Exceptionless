@@ -55,6 +55,9 @@ internal static class AssistantToolDefinitions
             if (protocolTool.Name == "get_event")
                 ApplyMaximum(schema, "maxDetailSize", AssistantLimits.MaximumEventDetailCharacters);
 
+            // Exie resolves time in the browser's time zone, so the model never chooses one.
+            RemoveProperty(schema, "timeZone");
+
             return new
             {
                 type = "function",
@@ -126,6 +129,19 @@ internal static class AssistantToolDefinitions
         });
 
         return definitions.ToArray();
+    }
+
+    private static void RemoveProperty(JsonObject schema, string propertyName)
+    {
+        (schema["properties"] as JsonObject)?.Remove(propertyName);
+        if (schema["required"] is JsonArray required)
+        {
+            for (int index = required.Count - 1; index >= 0; index--)
+            {
+                if (String.Equals(required[index]?.GetValue<string>(), propertyName, StringComparison.Ordinal))
+                    required.RemoveAt(index);
+            }
+        }
     }
 
     private static void ApplyMaximum(JsonObject schema, string propertyName, int maximum)

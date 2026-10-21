@@ -14,6 +14,8 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Assistant;
 using Foundatio.Repositories;
@@ -37,9 +39,8 @@ public sealed class ExceptionlessMcpTools
     private const int MaxDetailSize = 64 * 1024;
     private const int MinDetailSize = 1024;
     private const string SummaryLimitDescription = "Maximum number of summary rows to return. Defaults to 10 and is capped at 100. Use the returned pagination.after or pagination.before cursor with the same limit to page through additional results.";
-    private const string LastDescription = "Optional rolling time range ending now, such as 24h, 7d, or 30m. Use this for questions like the last 24 hours or the last 7 days. For calendar periods such as today or this week, use startUtc instead. When set, omit startUtc and endUtc.";
-    private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Use for calendar periods such as today, yesterday, or this week, computed from midnight in the user's time zone, and for explicit dates or ranges; when set, omit last.";
-    private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Use for closed calendar periods such as yesterday and for explicit dates or ranges; omit it to include events up to now. When set, omit last.";
+    private const string TimeDescription = "Optional date range in the same syntax as the Exceptionless app's time filter, resolved in timeZone. Use date math in brackets: [now-24h TO now] for the last 24 hours, [now-7d TO now] for the last 7 days, [now/d TO now/d] for today, [now-1d/d TO now-1d/d] for yesterday, [now/w TO now/w] for this week, [now-1w/w TO now-1w/w] for last week, [now/M TO now/M] for this month, or dates such as [2026-06-01 TO 2026-06-30]. Omit for no time limit.";
+    private const string TimeZoneDescription = "Optional IANA time zone, such as America/Chicago, that time is resolved in, so now/d is the user's midnight. Defaults to UTC.";
     private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: environment, version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
@@ -360,12 +361,10 @@ public sealed class ExceptionlessMcpTools
         string? sort = "-last_occurrence",
         [Description(SummaryLimitDescription)]
         int limit = DefaultLimit,
-        [Description(LastDescription)]
-        string? last = null,
-        [Description(StartUtcDescription)]
-        string? startUtc = null,
-        [Description(EndUtcDescription)]
-        string? endUtc = null,
+        [Description(TimeDescription)]
+        string? time = null,
+        [Description(TimeZoneDescription)]
+        string? timeZone = null,
         [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
         string? after = null,
         [Description("Optional cursor returned from a previous response. Fetches results before this cursor.")]
@@ -384,7 +383,7 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidatePaginationCursors(after, before, out var cursorError))
                 return McpResponse<McpListData<McpStackResult>>.Failed(cursorError);
 
-            if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
+            if (!TryResolveTimeRange(time, timeZone, out var timeRange, out var timeError))
                 return McpResponse<McpListData<McpStackResult>>.Failed(timeError);
 
             var projectContext = await _mcpContextService.ResolveProjectAsync(projectId);
@@ -453,12 +452,10 @@ public sealed class ExceptionlessMcpTools
         string? sort = "-date",
         [Description(SummaryLimitDescription)]
         int limit = DefaultLimit,
-        [Description(LastDescription)]
-        string? last = null,
-        [Description(StartUtcDescription)]
-        string? startUtc = null,
-        [Description(EndUtcDescription)]
-        string? endUtc = null,
+        [Description(TimeDescription)]
+        string? time = null,
+        [Description(TimeZoneDescription)]
+        string? timeZone = null,
         [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
         string? after = null,
         [Description("Optional cursor returned from a previous response. Fetches results before this cursor.")]
@@ -480,7 +477,7 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidatePaginationCursors(after, before, out var cursorError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(cursorError);
 
-            if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
+            if (!TryResolveTimeRange(time, timeZone, out var timeRange, out var timeError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(timeError);
 
             var (stack, organization) = await GetStackAndOrganizationAsync(stackId, projectId);
@@ -516,12 +513,10 @@ public sealed class ExceptionlessMcpTools
         string? sort = "-date",
         [Description(SummaryLimitDescription)]
         int limit = DefaultLimit,
-        [Description(LastDescription)]
-        string? last = null,
-        [Description(StartUtcDescription)]
-        string? startUtc = null,
-        [Description(EndUtcDescription)]
-        string? endUtc = null,
+        [Description(TimeDescription)]
+        string? time = null,
+        [Description(TimeZoneDescription)]
+        string? timeZone = null,
         [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
         string? after = null,
         [Description("Optional cursor returned from a previous response. Fetches results before this cursor.")]
@@ -540,7 +535,7 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidatePaginationCursors(after, before, out var cursorError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(cursorError);
 
-            if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
+            if (!TryResolveTimeRange(time, timeZone, out var timeRange, out var timeError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(timeError);
 
             var projectContext = await _mcpContextService.ResolveProjectAsync(projectId);
@@ -618,12 +613,10 @@ public sealed class ExceptionlessMcpTools
         string? projectId = null,
         [Description(EventFilterDescription)]
         string? filter = null,
-        [Description(LastDescription)]
-        string? last = null,
-        [Description(StartUtcDescription)]
-        string? startUtc = null,
-        [Description(EndUtcDescription)]
-        string? endUtc = null,
+        [Description(TimeDescription)]
+        string? time = null,
+        [Description(TimeZoneDescription)]
+        string? timeZone = null,
         [Description("Optional date histogram interval for trend buckets, such as 1h, 1d, or 1w. Leave blank for a total only.")]
         string? interval = null,
         [Description(EventGroupByDescription)]
@@ -641,7 +634,7 @@ public sealed class ExceptionlessMcpTools
             if (validation.Error is not null)
                 return McpResponse<McpEventCountResult>.Failed(validation.Error);
 
-            if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
+            if (!TryResolveTimeRange(time, timeZone, out var timeRange, out var timeError))
                 return McpResponse<McpEventCountResult>.Failed(timeError);
 
             if (!TryValidateInterval(interval, out var intervalError))
@@ -1252,43 +1245,37 @@ public sealed class ExceptionlessMcpTools
         return Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
     }
 
-    private bool TryResolveTimeRange(string? last, string? startUtc, string? endUtc, out McpTimeRange timeRange, out McpErrorInfo error)
+    /// <summary>Resolves a time filter the same way the API's time parameter does, so tools and the app agree on ranges.</summary>
+    private bool TryResolveTimeRange(string? time, string? timeZone, out McpTimeRange timeRange, out McpErrorInfo error)
     {
         timeRange = new McpTimeRange(null, null);
-
-        if (!String.IsNullOrWhiteSpace(last) && (!String.IsNullOrWhiteSpace(startUtc) || !String.IsNullOrWhiteSpace(endUtc)))
+        var zone = TimeZoneInfo.Utc;
+        if (!String.IsNullOrWhiteSpace(timeZone) && !TimeZoneInfo.TryFindSystemTimeZoneById(timeZone.Trim(), out zone))
         {
-            error = McpErrors.InvalidTimeRange("Use either last or startUtc/endUtc, not both.", last, startUtc, endUtc);
+            error = McpErrors.InvalidTimeRange("timeZone must be an IANA time zone such as America/Chicago.", time, timeZone);
             return false;
         }
 
-        if (!String.IsNullOrWhiteSpace(last))
+        if (String.IsNullOrWhiteSpace(time))
         {
-            if (!TryParseRelativeTime(last, out var duration))
-            {
-                error = McpErrors.InvalidTimeRange("last must be a relative duration such as 30m, 24h, 7d, or 1w.", last, startUtc, endUtc);
-                return false;
-            }
-
-            var end = _timeProvider.GetUtcNow().UtcDateTime;
-            timeRange = new McpTimeRange(end.Subtract(duration), end);
             error = null!;
             return true;
         }
 
-        if (!TryParseUtcDate(startUtc, out DateTime? start, out error))
-            return false;
-
-        if (!TryParseUtcDate(endUtc, out DateTime? endUtcDate, out error))
-            return false;
-
-        if (start.HasValue && endUtcDate.HasValue && start.Value >= endUtcDate.Value)
+        var utcOffset = zone.GetUtcOffset(_timeProvider.GetUtcNow());
+        // Check the parsed range before TimeRangeParser fills an open end with now, which would hide a parse failure.
+        // An inverted range such as [now/d TO now-1d/d] parses to a single instant.
+        var parsedRange = DateTimeRange.Parse(time.Trim(), _timeProvider.GetUtcNow().ToOffset(utcOffset));
+        if (parsedRange == DateTimeRange.Empty || parsedRange.UtcStart >= parsedRange.UtcEnd)
         {
-            error = McpErrors.InvalidTimeRange("startUtc must be before endUtc.", last, startUtc, endUtc);
+            error = McpErrors.InvalidTimeRange("time must be a date range such as [now-24h TO now], [now/d TO now/d] for today, [now-1d/d TO now-1d/d] for yesterday, or [2026-06-01 TO 2026-06-30].", time, timeZone);
             return false;
         }
 
-        timeRange = new McpTimeRange(start, endUtcDate);
+        var timeInfo = TimeRangeParser.GetTimeInfo(time.Trim(), utcOffset, _timeProvider);
+        timeRange = new McpTimeRange(
+            timeInfo.Range.UtcStart == DateTime.MinValue ? null : timeInfo.Range.UtcStart,
+            timeInfo.Range.UtcEnd == DateTime.MaxValue ? null : timeInfo.Range.UtcEnd);
         error = null!;
         return true;
     }
@@ -1310,26 +1297,6 @@ public sealed class ExceptionlessMcpTools
         };
 
         return duration > TimeSpan.Zero;
-    }
-
-    private static bool TryParseUtcDate(string? value, out DateTime? date, out McpErrorInfo error)
-    {
-        date = null;
-        if (String.IsNullOrWhiteSpace(value))
-        {
-            error = null!;
-            return true;
-        }
-
-        if (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dto))
-        {
-            date = dto.UtcDateTime;
-            error = null!;
-            return true;
-        }
-
-        error = McpErrors.InvalidTimeRange($"{value} is not a valid UTC date/time.", last: null, startUtc: value, endUtc: null);
-        return false;
     }
 
     private static bool TryValidateInterval(string? interval, out McpErrorInfo error)
