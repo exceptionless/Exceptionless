@@ -1,216 +1,221 @@
 ---
-title: Feature Tour
+title: Features
 layout: layouts/base.vto
-description: Tour Exceptionless error monitoring, logging, notifications, and event management.
+description: Tour Exceptionless error monitoring, from intelligent stacking and rich event details to the Exie AI assistant, MCP server, saved views, sessions, logs, and notifications.
 ---
-<div class="page-header margin-top">
-  <h1 id="feature-tour">Feature Tour</h1>
-</div>
-
-<div id="wrap" class="container" role="document">
-  <div id="content" class="row-fluid">
-    <div id="main" class="span12" role="main">
-    <div class="row">
-        <div class="span7">
-            <h2>Dashboard</h2>
-            <p>The dashboard provides a beautiful, high level view of your project's exception and event history. You can quickly <strong>view the health</strong> of your application, <strong>measure end user experience</strong> from real users, and <strong>intelligently view the most frequent and most recent errors</strong> for your application.</p>
-            <p>You will be surprised how helpful a graphical representation of your errors are, whether you're working with an ASP.NET, Web API, WebForms, WPF, Console, or MVC application. It is especially nice to visualize progress towards eliminating errors.</p>
-        </div>
-        <div class="span5">
-            <div class="thumb thumb-right"><a class="fancybox image" href="/assets/img/tour/dashboard.png" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/dashboard.png" alt="Exceptionless Dashboard" width="940" height="545" loading="lazy" decoding="async"></a></div>
-        </div>
+<section class="page-hero">
+  <div class="container">
+    <p class="eyebrow">{{ icons["layout-dashboard"] }} Product tour</p>
+    <h1>Everything you need to go from <span class="text-gradient">alert to fix</span></h1>
+    <p>A fast, focused app for the work that actually happens after something breaks: finding the right error, understanding it, and making sure it stays fixed.</p>
+    <div class="btn-group">
+      <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="tour-hero">Get started {{ icons["arrow-right"] }}</a>
+      <a class="btn btn-secondary btn-lg" href="/docs/">Read the docs</a>
     </div>
-    <hr>
-    <div class="row">
-        <div class="span5">
-            <div class="thumb thumb-left"><a class="fancybox image" href="/assets/img/tour/event-report.jpeg" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/event-report.jpeg" alt="Exceptionless Event Occurrence" width="940" height="726" loading="lazy" decoding="async"></a></div>
-        </div>
-        <div class="span7">
-            <h2>Detailed Error Reports</h2>
-            <p>Exceptionless error reports contain <strong>intelligently organized information</strong> to help you <strong>quickly track down and fix the error</strong>. We guarantee you won't be stressed out by the usual overwhelming information overload.</p>
-            <p class="lead" style="margin-bottom: 5px;">You never have to ask the same old questions again.</p>
-            <ul>
-                <li>What version are you using?</li>
-                <li>Can you please send me a stack trace?</li>
-                <li>How can I reproduce this issue?</li>
-            </ul>
-            <p>By default, these exception reports include type of error, message, stack trace, occurrence date, request information, and environment information. You can also <strong>easily add your own information to reports</strong> with Custom Objects.</p>
-        </div>
-    </div>
-    <hr>
-    <div class="row">
-        <div class="span7">
-            <h2>Custom Objects</h2>
-            <p>Exceptionless automatically tracks a lot of the contextual information about an error that will <a href="/docs/getting-started/">help you fix the bug fast</a>. But what if you want to <strong>track even more information</strong>, like the order information that the user was in the process of submitting, or any other contextual information useful in figuring out when and where the error happened?</p>
-            <p class="lead" style="margin-bottom: 5px;"><strong>Easily add any custom objects</strong> to your error report and then treat them as <strong>first class citizens</strong> within the error details.</p>
-            <p>You can even <strong>promote your custom objects to top level tabs</strong> and customize how the information is displayed using custom templates.</p>
-        </div>
-        <div class="span5">
-            <div class="thumb thumb-right"><a class="fancybox image" href="/assets/img/tour/custom-objects.jpeg" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/custom-objects.jpeg" alt="Exceptionless Custom Objects" width="541" height="528" loading="lazy" decoding="async"></a></div>
-        </div>
-    </div>
-    <hr>
-    <div class="row">
-        <div class="span5">
-            <div class="thumb thumb-left"><a class="fancybox image" href="/assets/img/tour/error-grouping.png" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/error-grouping.png" alt="Exceptionless Error Grouping" width="802" height="617" loading="lazy" decoding="async"></a></div>
-        </div>
-        <div class="span7">
-            <h2>Intelligent Error Grouping</h2>
-            <p>Errors are organized into stacks based on <strong>where the error occurred </strong>in the code and the type of the error. Exceptionless lets you easily see what information it used to create a stack. It also shows you the <strong>full history</strong> of the error and lets you dive into specific error occurrences.</p>
-            <p>Learn why and how we <a title="Intelligent App Error Grouping Helps Organize Your Exceptions" href="/docs/managing-stacks/">group your app errors</a>.</p>
-        </div>
-    </div>
-    <hr>
-    <div class="row">
-        <div class="span7">
-            <h2>Most Frequent Errors</h2>
-            <p>Exceptionless gives you <strong>great insight into your application</strong> by showing your applications most frequent errors. This gives you the ability to <strong>quickly prioritize</strong> which errors you should fix first.</p>
-            <blockquote><p><div class="text-accent"><br>
-                About 20 percent of the bugs cause 80 percent of all errors, and–this is stunning to me–one percent of bugs cause half of all errors.<br>
-            </div></p></blockquote>
-            <p>Exceptionless <strong>shows you what bugs are effecting your user base</strong> and allows you to <strong>take action</strong>!</p>
-        </div>
-        <div class="span5">
-            <div class="thumb thumb-right"><a class="fancybox image" href="/assets/img/tour/most-frequent-errors.png" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/most-frequent-errors.png" alt="Exceptionless Most Recent Errors" width="839" height="610" loading="lazy" decoding="async"></a></div>
-        </div>
-    </div>
-    <hr>
-    <div class="row">
-        <div class="span5">
-            <div class="thumb thumb-left"><a class="fancybox image" href="/assets/img/tour/notifications.png" rel="tour"><img class="alignnone size-full thumb" src="/assets/img/tour/notifications.png" alt="Email Notifications" width="665" height="433" loading="lazy" decoding="async"></a></div>
-        </div>
-        <div class="span7">
-            <h2>Email Notifications</h2>
-            <p>Exceptionless sends email notifications based on your notification settings. You can choose to receive notifications every time an error happens, only when new errors happen, or never.</p>
-            <p class="lead" style="margin-bottom: 5px;">Get notified about critical issues as they happen.</p>
-            <p>You can also choose to be <strong>notified when errors have been marked as fixed but then regress</strong>.</p>
-            <p>Learn more about our <a title="Receive Error Notifications from Your App via Email" href="/docs/notifications/">Error Reporting Email Notifications</a>.</p>
-        </div>
-    </div>
-    <hr>
-    <div class="row">
-        <div class="span7">
-            <h2>Fluent API</h2>
-            <p>The Exceptionless client includes a <strong>fluent API for sending manual error reports and events with detailed information</strong> attached to them. Easily add custom objects, tags, and other information. You can also mark specific errors as being critical.</p>
-            <p><a title="Exceptionless API Documentation" href="/docs/api/api-getting-started/">API Documentation</a></p>
-        </div>
-        <div class="span5">
-            <div class="thumb thumb-right"><a class="fancybox image" href="/assets/img/toexceptionless1.png" rel="tour"><img class="alignnone size-full wp-image-148 thumb" src="/assets/img/toexceptionless1.png" alt="Fluent API" width="560" height="280" data-id="148" srcset="/assets/img/toexceptionless1.png 560w, /assets/img/toexceptionless1-300x150.png 300w" sizes="(max-width: 560px) 100vw, 560px"></a></div>
-        </div>
-    </div>
-    <hr>
-    <div class="row">
-        <div class="span5">
-            <div class="thumb thumb-left"><a class="fancybox image" href="/assets/img/tour/logs.jpeg" rel="tour"><img class="thumb aligncenter size-full" src="/assets/img/tour/logs.jpeg" alt="Exceptionless Log Events" width="705" height="556" loading="lazy" decoding="async"></a></div>
-        </div>
-        <div class="span7">
-            <h2>Report Log Messages and Feature Usages</h2>
-            <p>Exceptionless is more than just errors. Send events such as log messages and feature usages to your dashboard as well!</p>
-            <p class="lead" style="margin-bottom: 5px;">Never miss important events in your app again.</p>
-        </div>
-    </div>
-    <hr>
-    <div class="signup center"><a class="btn btn-large btn-primary" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Sign Up For <strong>FREE</strong> Now!</a></div>
-</div>
   </div>
-</div>
+</section>
 
-<dialog class="tour-lightbox" aria-label="Tour screenshot">
-    <div class="tour-lightbox-frame">
-        <button type="button" class="tour-lightbox-close" aria-label="Close image">Close</button>
-        <button type="button" class="tour-lightbox-control tour-lightbox-previous" aria-label="Previous image">Prev</button>
-        <img class="tour-lightbox-image" alt="">
-        <button type="button" class="tour-lightbox-control tour-lightbox-next" aria-label="Next image">Next</button>
-        <p class="tour-lightbox-caption"></p>
+<nav class="anchor-nav" aria-label="Feature sections" data-anchor-nav>
+  <ul class="container">
+    <li><a href="#stacks">{{ icons.layers }} Stacks</a></li>
+    <li><a href="#investigate">{{ icons["file-code"] }} Event details</a></li>
+    <li><a href="#exie">{{ icons.exie }} Exie</a></li>
+    <li><a href="#mcp">{{ icons.plug }} MCP</a></li>
+    <li><a href="#search">{{ icons["list-filter"] }} Search</a></li>
+    <li><a href="#sessions">{{ icons.users }} Sessions</a></li>
+    <li><a href="#logs">{{ icons["scroll-text"] }} Logs</a></li>
+    <li><a href="#notifications">{{ icons.bell }} Alerts</a></li>
+    <li><a href="#everything-else">{{ icons["layout-dashboard"] }} More</a></li>
+  </ul>
+</nav>
+
+<section class="section">
+  <div class="container">
+    <div class="feature-row reveal" id="stacks">
+      <div class="feature-copy">
+        <span class="feature-icon">{{ icons.layers }}</span>
+        <h2>Intelligent stacking</h2>
+        <p>Exceptionless groups every occurrence of the same problem into a stack based on the error type and where it happened in your code. A noisy release that throws 10,000 exceptions shows up as the three bugs that caused them.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Prioritize with built-in views</strong> for most frequent errors, most frequent 404s, and most used features.</span></li>
+          <li>{{ icons.check }}<span><strong>See the impact</strong> with occurrence counts, affected users, and first and last seen times.</span></li>
+          <li>{{ icons.check }}<span><strong>Take action in bulk:</strong> mark fixed, snooze, ignore, mark critical, or delete.</span></li>
+          <li>{{ icons.check }}<span><strong>Custom stacking</strong> lets you choose the signature when the default grouping isn't right.</span></li>
+        </ul>
+        <a class="text-link" href="/docs/managing-stacks/">Managing stacks {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        {{ productShot("most-frequent", "Most frequent errors view with occurrence counts and affected users") }}
+      </div>
     </div>
-</dialog>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        var links = Array.prototype.slice.call(document.querySelectorAll("a.fancybox[href]"));
-        var dialog = document.querySelector(".tour-lightbox");
-        var image = document.querySelector(".tour-lightbox-image");
-        var caption = document.querySelector(".tour-lightbox-caption");
-        var previous = document.querySelector(".tour-lightbox-previous");
-        var next = document.querySelector(".tour-lightbox-next");
-        var close = document.querySelector(".tour-lightbox-close");
-        var index = 0;
+    <div class="feature-row reverse reveal" id="investigate">
+      <div class="feature-copy">
+        <span class="feature-icon">{{ icons["file-code"] }}</span>
+        <h2>Detailed error reports</h2>
+        <p>Never ask "what version are you on?" or "can you send me the stack trace?" again. Each event is organized into tabs so you find what matters without wading through noise.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Exception</strong> details with full stack traces, inner exceptions, and source-mapped JavaScript.</span></li>
+          <li>{{ icons.check }}<span><strong>Request and environment</strong> information like URL, headers, browser, OS, machine, and version.</span></li>
+          <li>{{ icons.check }}<span><strong>User and session</strong> context, so you know who hit it and what they did first.</span></li>
+          <li>{{ icons.check }}<span><strong>Custom objects</strong> as first-class data you can promote to their own tabs.</span></li>
+        </ul>
+        <a class="text-link" href="/docs/clients/dotnet/sending-events/">Add custom data to events {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        {{ productShot("event", "Event details showing the exception tab and stack trace") }}
+      </div>
+    </div>
 
-        if (!links.length || !dialog || !image) {
-            return;
-        }
+    <div class="feature-row reveal" id="exie">
+      <div class="feature-copy">
+        <span class="feature-icon">{{ icons.exie }}</span>
+        <h2>Meet Exie, your debugging sidekick</h2>
+        {{ include "partials/exie-says.vto" { text: "Hi, I'm Exie. Point me at a stack, an event, or a whole project and I'll tell you what's going on." } }}
+        <p>Exie lives inside Exceptionless and knows your stacks and events. Open it from anywhere with <strong>Ask Exie</strong> and it picks up the stack, event, or project you are looking at as context.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Triage faster:</strong> "What are my top errors in the last 24 hours?" or "What changed after version 2.4?"</span></li>
+          <li>{{ icons.check }}<span><strong>Understand causes</strong> with explanations grounded in your real stack traces and event data.</span></li>
+          <li>{{ icons.check }}<span><strong>Act when you say so.</strong> Exie can mark stacks fixed, snooze them, or add reference links, but only when you ask.</span></li>
+          <li>{{ icons.check }}<span><strong>Respects your access.</strong> Exie only reads data your account can already see.</span></li>
+        </ul>
+        <p class="note">Exie is included with Medium plans and up. <a href="/docs/ai/exie/">Read the Exie guide</a>.</p>
+      </div>
+      <div class="feature-media">
+        {{ productShot("exie", "Exie answering which errors hit the most users this week") }}
+      </div>
+    </div>
 
-        function showImage(nextIndex) {
-            index = (nextIndex + links.length) % links.length;
+    <div class="feature-row reverse reveal" id="mcp">
+      <div class="feature-copy">
+        <span class="feature-icon">{{ icons.plug }}</span>
+        <h2>An MCP server for your coding agent</h2>
+        <p>Your AI coding tools can investigate production errors directly. Add the hosted Exceptionless MCP server, sign in with OAuth, and ask your agent to find and fix your top issue.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Copy-paste setup</strong> for Claude Code, Codex, GitHub Copilot, and OpenCode.</span></li>
+          <li>{{ icons.check }}<span><strong>Search stacks and events</strong>, read stack traces, and count events over time.</span></li>
+          <li>{{ icons.check }}<span><strong>Revoke access anytime</strong> from your account's connected applications.</span></li>
+          <li>{{ icons.check }}<span><strong>Included on every plan</strong>, including Free.</span></li>
+        </ul>
+        <a class="text-link" href="/docs/ai/mcp-server/">Set up the MCP server {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        {{ productShot("mcp", "AI tools setup page with Claude Code MCP commands") }}
+      </div>
+    </div>
 
-            var link = links[index];
-            var thumbnail = link.querySelector("img");
-            var label = thumbnail ? thumbnail.alt : "";
+    {{ include "partials/signup-banner.vto" { cta: "tour-ai", title: "Put Exie and your coding agent to work", text: "Exie is included with Medium plans and up, and the MCP server is included on every plan, including Free.", secondaryHref: "/pricing/", secondaryLabel: "Compare plans" } }}
 
-            image.src = link.href;
-            image.alt = label;
-            if (caption) {
-                caption.textContent = label;
-            }
-        }
+    <div class="feature-row reveal" id="search">
+      <div class="feature-copy">
+        <span class="feature-icon">{{ icons["list-filter"] }}</span>
+        <h2>Search, filters, and saved views</h2>
+        <p>Slice events by type, status, tag, version, user, reference ID, or any custom field. When you find a view worth keeping, save it, pick its columns, and share it with your organization.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Readable query syntax</strong> like <code>type:error (status:open OR status:regressed)</code>.</span></li>
+          <li>{{ icons.check }}<span><strong>Saved views</strong> with personal or organization defaults.</span></li>
+          <li>{{ icons.check }}<span><strong>Charts and stats</strong> above every list, scoped to your filters and date range.</span></li>
+        </ul>
+        <a class="text-link" href="/docs/filtering-and-searching/">Filtering and searching {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        {{ productShot("errors", "Errors view with filters, stats, and an event timeline", { sizes: "(max-width: 960px) 100vw, 680px" }) }}
+      </div>
+    </div>
 
-        function openImage(nextIndex) {
-            showImage(nextIndex);
+    <div class="feature-row reverse reveal" id="sessions">
+      <div class="feature-copy">
+        <span class="feature-icon">{{ icons.users }}</span>
+        <h2>Sessions and users</h2>
+        <p>Turn on session tracking to see how long people use your app, who is active right now, and every event that happened in a session, right up to the error.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Session dashboard</strong> with totals, averages, users, and duration.</span></li>
+          <li>{{ icons.check }}<span><strong>User identity</strong> on every event, so you can see exactly who was affected.</span></li>
+          <li>{{ icons.check }}<span><strong>Session events</strong> tab on each error to replay the steps that led there.</span></li>
+        </ul>
+        <a class="text-link" href="/docs/user-sessions/">User sessions {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        {{ productShot("sessions", "Sessions dashboard with session counts, users, and durations") }}
+      </div>
+    </div>
 
-            if (typeof dialog.showModal === "function") {
-                dialog.showModal();
-            } else {
-                dialog.setAttribute("open", "");
-            }
-        }
+    <div class="feature-row reveal" id="logs">
+      <div class="feature-copy">
+        <span class="feature-icon">{{ icons["scroll-text"] }}</span>
+        <h2>Logs, feature usage, and 404s</h2>
+        <p>Exceptionless is more than errors. Send structured log messages, track feature usage, and catch broken links, all grouped into stacks and searchable alongside your exceptions.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Log levels and sources</strong> you can raise or lower from the project settings without redeploying.</span></li>
+          <li>{{ icons.check }}<span><strong>Feature usage</strong> to learn what people actually use.</span></li>
+          <li>{{ icons.check }}<span><strong>Integrations</strong> for Microsoft.Extensions.Logging, NLog, log4net, and Serilog.</span></li>
+        </ul>
+        <a class="text-link" href="/docs/setting-log-levels/">Setting log levels {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        {{ productShot("logs", "Log events with levels and sources") }}
+      </div>
+    </div>
 
-        function closeImage() {
-            if (typeof dialog.close === "function") {
-                dialog.close();
-            } else {
-                dialog.removeAttribute("open");
-            }
-        }
+    <div class="feature-row reverse reveal" id="notifications">
+      <div class="feature-copy">
+        <span class="feature-icon">{{ icons.bell }}</span>
+        <h2>Notifications and integrations</h2>
+        <p>Choose exactly what deserves an interruption. Get alerted when a new error appears, a fixed error regresses, or a critical event comes in, and keep everything else to a daily summary.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Email notifications</strong> per project and per user.</span></li>
+          <li>{{ icons.check }}<span><strong>Slack</strong> with per-channel notification settings.</span></li>
+          <li>{{ icons.check }}<span><strong>Webhooks and Zapier</strong> to connect anything else.</span></li>
+        </ul>
+        <a class="text-link" href="/docs/notifications/">Notifications {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        <div class="card notify-card">
+          <div class="notify-demo">
+            <div class="notify"><span class="notify-icon red">{{ icons["rotate-ccw"] }}</span><div><strong>Regression in Rocket Ship 2.4.1</strong><span>TimeoutException was marked fixed in 2.4.0 and is happening again.</span></div></div>
+            <div class="notify"><span class="notify-icon">{{ icons.bug }}</span><div><strong>New error in Checkout API</strong><span>NullReferenceException in OrderService.Submit</span></div></div>
+            <div class="notify"><span class="notify-icon red">{{ icons.zap }}</span><div><strong>Critical event in Billing</strong><span>PaymentDeclinedException for customer 4821</span></div></div>
+            <div class="notify"><span class="notify-icon">{{ icons.mail }}</span><div><strong>Daily summary for Disintegrating Pistol</strong><span>139 events in 21 stacks, 16 of them new.</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-        links.forEach(function (link, linkIndex) {
-            link.addEventListener("click", function (event) {
-                event.preventDefault();
-                openImage(linkIndex);
-            });
-        });
+<section class="section section-subtle" id="everything-else">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">{{ icons["layout-dashboard"] }} And there's more</p>
+      <h2 class="section-title">The details that add up</h2>
+      <p class="section-lead">Years of production use have shaped dozens of small features that make day-to-day debugging easier.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card reveal"><span class="feature-icon">{{ icons.radio }}</span><h3>Real-time event stream</h3><p>Watch events arrive the moment they happen, filtered to the projects and statuses you care about.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons["rotate-ccw"] }}</span><h3>Regression detection</h3><p>Mark a stack fixed in a version and Exceptionless reopens it and alerts you if it comes back in a newer one.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons["sliders-horizontal"] }}</span><h3>Real-time configuration</h3><p>Push settings and log levels to running clients without changing code or redeploying.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons["eye-off"] }}</span><h3>Data exclusions</h3><p>Strip passwords, card numbers, and any other sensitive fields before events leave your app.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons["file-code"] }}</span><h3>Source maps</h3><p>Readable JavaScript stack traces from minified bundles, discovered automatically or uploaded from CI.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons.hash }}</span><h3>Reference IDs</h3><p>Show users a reference ID on your error page and jump straight to the matching event from a support ticket.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons["wifi-off"] }}</span><h3>Offline support</h3><p>Clients queue events while disconnected and send them when the connection comes back.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons.command }}</span><h3>Command palette and shortcuts</h3><p>Jump anywhere, switch organizations, and run project actions without leaving the keyboard.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons.moon }}</span><h3>Dark mode and guided tours</h3><p>A light or dark theme that follows your system, plus built-in tours that show new teammates around.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons.users }}</span><h3>Unlimited users on larger plans</h3><p>Invite your whole team on Large plans and up, without per-seat pricing.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons.code }}</span><h3>A complete REST API</h3><p>Everything in the app is available through a documented API with OpenAPI support.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons.server }}</span><h3>Self-hosting</h3><p>Run the exact same product on your own servers with Docker or Kubernetes. Apache 2.0 licensed, no lock-in.</p></div>
+    </div>
+  </div>
+</section>
 
-        if (previous) {
-            previous.addEventListener("click", function () {
-                showImage(index - 1);
-            });
-        }
-
-        if (next) {
-            next.addEventListener("click", function () {
-                showImage(index + 1);
-            });
-        }
-
-        if (close) {
-            close.addEventListener("click", closeImage);
-        }
-
-        dialog.addEventListener("click", function (event) {
-            if (event.target === dialog) {
-                closeImage();
-            }
-        });
-
-        document.addEventListener("keydown", function (event) {
-            if (!dialog.open) {
-                return;
-            }
-
-            if (event.key === "ArrowLeft") {
-                showImage(index - 1);
-            } else if (event.key === "ArrowRight") {
-                showImage(index + 1);
-            }
-        });
-    });
-</script>
+<section class="section section-sm">
+  <div class="container">
+    <div class="cta reveal">
+      <h2>See it with your own errors</h2>
+      <p>Create a project, add a few lines of code, and watch your first stacks appear in minutes. No credit card required.</p>
+      <div class="btn-group">
+        <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="tour-footer">Get started {{ icons["arrow-right"] }}</a>
+        <a class="btn btn-secondary btn-lg" href="/pricing/">See pricing</a>
+      </div>
+    </div>
+  </div>
+</section>

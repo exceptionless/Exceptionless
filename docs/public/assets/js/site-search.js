@@ -23,6 +23,7 @@ export function initializeSiteSearch(modal) {
   const loadSearchIndex = createSearchIndexLoader()
   let visibleResults = []
   let visibleResultsQuery = ""
+  let selectionChosen = false
 
   document.querySelectorAll("[data-site-search-open]").forEach((trigger) => {
     trigger.addEventListener("click", (event) => {
@@ -52,12 +53,14 @@ export function initializeSiteSearch(modal) {
 
     if (event.key === "ArrowDown") {
       event.preventDefault()
+      selectionChosen = true
       setActiveResult(Math.min(activeIndex + 1, visibleResults.length - 1))
       return
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault()
+      selectionChosen = true
       setActiveResult(Math.max(activeIndex - 1, 0))
     }
   })
@@ -75,7 +78,7 @@ export function initializeSiteSearch(modal) {
     }
   })
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault()
     const currentQuery = input.value.trim()
     if (!currentQuery) {
@@ -83,17 +86,34 @@ export function initializeSiteSearch(modal) {
       return
     }
 
-    if (visibleResultsQuery !== currentQuery) {
-      window.clearTimeout(debounceTimer)
-      void performSearch(currentQuery)
+    // A result the user arrowed or pointed to wins, even if a newer search is still pending.
+    const activeResult = visibleResults[activeIndex]
+    if (activeResult && (selectionChosen || visibleResultsQuery === currentQuery)) {
+      openResult(activeResult.url)
       return
     }
 
-    const activeResult = visibleResults[activeIndex]
-    if (activeResult) {
-      window.location.href = activeResult.url
+    // Otherwise finish searching for what was typed and open its top result.
+    window.clearTimeout(debounceTimer)
+    await performSearch(currentQuery)
+    const topResult = visibleResultsQuery === currentQuery ? visibleResults[activeIndex] : undefined
+    if (topResult) {
+      openResult(topResult.url)
     }
   })
+
+  globalThis.addEventListener("pageshow", (event) => {
+    if (event.persisted && modal instanceof HTMLDialogElement && modal.open) {
+      modal.close()
+    }
+  })
+
+  function openResult(url) {
+    window.clearTimeout(debounceTimer)
+    activeSearchId++
+    closeSearch()
+    window.location.assign(url)
+  }
 
   input.addEventListener("input", () => {
     window.clearTimeout(debounceTimer)
@@ -124,6 +144,7 @@ export function initializeSiteSearch(modal) {
       return
     }
 
+    selectionChosen = true
     setActiveResult(Number(item.dataset.siteSearchResultIndex))
   })
 
@@ -184,6 +205,7 @@ export function initializeSiteSearch(modal) {
 
   function renderResults(query, totalCount) {
     visibleResultsQuery = query.trim()
+    selectionChosen = false
     resultsList.replaceChildren(...visibleResults.map((result, index) => renderResult(result, index, query)))
     input.setAttribute("aria-expanded", String(visibleResults.length > 0))
     setActiveResult(visibleResults.length ? 0 : -1)

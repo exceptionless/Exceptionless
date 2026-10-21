@@ -1,5 +1,6 @@
 ---
 title: "Custom Exceptionless Clients"
+description: "Build a custom Exceptionless client in any language: use a client-scoped API key, follow the event data model and known data keys, and call the REST API."
 ---
 
 # Custom Exceptionless Clients
@@ -23,9 +24,9 @@ Think of a user-scoped key as the master key for that particular user. It allows
 
 Instead, you should use a client-scoped key. A client-scoped key only has access to very specific endpoints and provides a significantly increased level of security compared to using a user-scoped key.
 
-In the Exceptionless UI, you can create a project API key by going to a project's settings page. To do so, click on the project dropdown in the top-menu, hover over the project's name, and then click the gear icon. On the settings page, you'll see an API Keys tab. Click that and you can generate a new client-scoped key.
+In the Exceptionless UI, you can create a project API key from a project's settings page. To do so, go to **Settings** > **Projects** in the sidebar and click your project. On the settings page, click the **API Keys** tab, click **Add token**, and choose **Client API key** to generate a new client-scoped key.
 
-![Generate API Key in UI](../../img/apiKeyGeneration.png)
+![API Keys tab with the Add token menu open](/assets/img/docs/project-settings-api-keys-light.webp)
 
 This is the key that will need to be passed into the configuration settings of your custom client.
 

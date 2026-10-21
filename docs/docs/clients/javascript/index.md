@@ -1,5 +1,6 @@
 ---
 title: "JavaScript Client"
+description: "Install the Exceptionless JavaScript client with npm or a CDN script tag, capture unhandled browser errors, submit exceptions, and fix minified stack traces."
 ---
 
 # JavaScript Client
@@ -43,7 +44,7 @@ try {
 To install via a script tag referencing Exceptionless over a CDN, add the following before your closing `<body>` tag and call startup like so:
 
 ```html
-`<script type="module">`
+<script type="module">
   import { Exceptionless } from "https://unpkg.com/@exceptionless/browser";
   await Exceptionless.startup("API KEY HERE");
 
@@ -52,7 +53,7 @@ To install via a script tag referencing Exceptionless over a CDN, add the follow
   } catch (error) {
     await Exceptionless.submitException(error);
   }
-`</script>`
+</script>
 ```
 
 ## Production stack traces

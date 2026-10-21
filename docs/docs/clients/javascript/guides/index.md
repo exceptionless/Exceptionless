@@ -1,5 +1,6 @@
 ---
 title: "JavaScript Framework Guides"
+description: "Guides for adding Exceptionless error and event tracking to JavaScript frameworks, including React, Angular, and Vue in the browser and Express on Node.js."
 order: 3
 ---
 

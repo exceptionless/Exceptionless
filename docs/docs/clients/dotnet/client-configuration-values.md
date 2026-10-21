@@ -1,5 +1,7 @@
 ---
 title: "Client Configuration Values"
+metaTitle: ".NET client configuration values"
+description: "Read Exceptionless client configuration values in .NET with typed helpers like GetBoolean, control how settings sync, and subscribe to setting changes."
 order: 3
 ---
 

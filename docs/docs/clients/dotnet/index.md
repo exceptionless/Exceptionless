@@ -1,5 +1,6 @@
 ---
 title: ".NET Client"
+description: "Install the Exceptionless .NET client from NuGet with the dotnet CLI and choose packages for ASP.NET Core, MVC, Web API, WPF, WinForms, NLog, and Serilog."
 ---
 
 # .NET Client

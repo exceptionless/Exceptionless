@@ -4,6 +4,7 @@ type Searcher = {
 
 type LumePageData = {
   title?: string
+  description?: string
   url?: string | false
   date?: Date | string | number
   order?: number
@@ -17,6 +18,7 @@ type LumePageData = {
 
 export type ContentPage = {
   title: string
+  description?: string
   url: string
   sourcePath: string
   date?: string
@@ -67,6 +69,32 @@ export function docsNavHtml(search: Searcher, currentUrl = ""): string {
   return `<ul class="toc-list">${renderNavItems(nav, currentUrl)}</ul>`
 }
 
+export type Breadcrumb = {
+  name: string
+  url: string
+}
+
+/** Returns the Home > Docs > section > page trail for a docs URL, using page titles where they exist. */
+export function docsBreadcrumbs(search: Searcher, currentUrl: string): Breadcrumb[] {
+  if (!currentUrl.startsWith("/docs/")) {
+    return []
+  }
+
+  const titles = new Map(docsPages(search).map((page) => [page.url, page.title]))
+  const crumbs: Breadcrumb[] = [{ name: "Home", url: "/" }, { name: "Docs", url: "/docs/" }]
+  const segments = currentUrl.split("/").filter(Boolean).slice(1)
+  let path = "/docs/"
+  for (const segment of segments) {
+    path += `${segment}/`
+    const title = titles.get(path)
+    if (title) {
+      crumbs.push({ name: title, url: path })
+    }
+  }
+
+  return crumbs
+}
+
 export function siteDataJson(search: Searcher): string {
   return JSON.stringify(
     {
@@ -94,6 +122,7 @@ function toContentPage(page: LumePageData): ContentPage | undefined {
 
   return {
     title: page.title || titleFromPath(sourcePath),
+    description: page.description,
     url: page.url,
     sourcePath,
     date: dateFromPath(sourcePath) || dateToIsoDate(page.date),

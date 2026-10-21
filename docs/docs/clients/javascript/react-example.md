@@ -1,5 +1,7 @@
 ---
 title: "React Example"
+metaTitle: "React error boundary example for Exceptionless"
+description: "Report React rendering errors to Exceptionless by wrapping your root component in ExceptionlessErrorBoundary, with an optional custom fallback UI."
 ---
 
 # React Example

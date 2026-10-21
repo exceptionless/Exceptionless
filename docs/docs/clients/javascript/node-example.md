@@ -1,5 +1,7 @@
 ---
 title: "Node.js Example"
+metaTitle: "Exceptionless Node.js example"
+description: "A minimal Node.js script that imports @exceptionless/node, starts the Exceptionless client with your API key, and submits a caught exception."
 ---
 
 # Node.js Example

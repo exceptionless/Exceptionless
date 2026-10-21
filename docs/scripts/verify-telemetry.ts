@@ -12,7 +12,11 @@ if (apiKey) {
     throw new Error("Configured builds must emit the Exceptionless browser bootstrap")
   }
 
-  const siteScriptIndex = html.indexOf('<script type="module" src="/assets/js/site.js"></script>')
+  const siteScriptIndex = html.search(/<script type="module" src="\/assets\/js\/site\.js(?:\?[^"]*)?"><\/script>/)
+  if (siteScriptIndex === -1) {
+    throw new Error("The site.js module script is missing")
+  }
+
   if (scriptMatch.index === undefined || scriptMatch.index >= siteScriptIndex) {
     throw new Error("The Exceptionless browser bootstrap must load before site.js")
   }

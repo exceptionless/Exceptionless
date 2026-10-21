@@ -1,5 +1,7 @@
 ---
 title: "Angular"
+metaTitle: "Exceptionless error tracking for Angular"
+description: "Install @exceptionless/browser in an Angular app, start the default Exceptionless client with your API key, and submit caught errors from an Angular component."
 order: 3
 ---
 

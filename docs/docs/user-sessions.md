@@ -1,20 +1,21 @@
 ---
 title: "User Sessions"
+description: "Track user sessions in Exceptionless from .NET and JavaScript: set a user identity, enable sessions, send start, heartbeat, and end events, and view reports."
 ---
 
 # User Sessions
 
 With user session tracking, you can easily see what a user is doing that leads up to an event occurrence, or just see how they are using your app.
 
-Each session has a list of events (feature usages, exceptions, log messages, etc) that the user triggered. Each can be clicked on to drill down.
+Each session has a list of events (feature usages, exceptions, log messages, etc.) that the user triggered. Open any event in the session and click the **Session Events** tab to see them. Click an event to drill down, or use the events button above the list to open the Events view filtered to that session.
 
-![Exceptionless User Session Events](img/sessions-event-tab-user-footsteps.jpg)
+![Session Events tab on an event](/assets/img/docs/user-sessions-session-events-light.webp)
 
-Browser and environment information, along with any other data that persists throughout the user session is stored as well.
+Browser and environment information, along with any other data that persists throughout the user session, is stored as well.
 
-Once you set up session tracking, you can find the report under Reports > Sessions, or click on the unique session id in any event's overview tab.
+Once you set up session tracking, click **Sessions** in the sidebar to see every session in the selected time range, with totals for sessions, users, and average duration. Turn on **View Active** to show only sessions that have not ended. Click a session to open its details. You can also click the session ID on any event's **Overview** tab.
 
-![Exceptionless Sessions Report](img/dashboard-nav.jpg)
+![Sessions dashboard](/assets/img/docs/user-sessions-dashboard-light.webp)
 
 ## Turn On Session Tracking
 
@@ -30,7 +31,9 @@ ExceptionlessClient.Default.Configuration.SetUserIdentity("UNIQUE_ID_OR_EMAIL_AD
 ### JavaScript Set User Identity Example
 
 ```javascript
-exceptionless.ExceptionlessClient.default.config.setUserIdentity('UNIQUE_ID_OR_EMAIL_ADDRESS', 'Display Name');
+import { Exceptionless } from "@exceptionless/browser";
+
+Exceptionless.config.setUserIdentity("UNIQUE_ID_OR_EMAIL_ADDRESS", "Display Name");
 ```
 
 **Please Note: In WinForms and WPF applications**, a plugin will automatically set the default user to the `Environment.UserName` if the default user hasn’t been already set. Likewise, if you are in a web environment, we will set the default user to the request principal’s identity if the default user hasn’t already been set.
@@ -47,7 +50,9 @@ ExceptionlessClient.Default.Configuration.UseSessions();
 ### JavaScript Use Sessions Example
 
 ```javascript
-exceptionless.ExceptionlessClient.default.config.useSessions();
+import { Exceptionless } from "@exceptionless/browser";
+
+Exceptionless.config.useSessions();
 ```
 
 ## Manually Send SessionStart, SessionEnd, and heartbeat Events
@@ -66,9 +71,11 @@ await ExceptionlessClient.Default.SubmitSessionEndAsync();
 ### JavaScript Submit Session Events Example
 
 ```javascript
-exceptionless.ExceptionlessClient.default.submitSessionStart();
-exceptionless.ExceptionlessClient.default.submitSessionHeartbeat();
-exceptionless.ExceptionlessClient.default.submitSessionEnd();
+import { Exceptionless } from "@exceptionless/browser";
+
+await Exceptionless.submitSessionStart();
+await Exceptionless.submitSessionHeartbeat();
+await Exceptionless.submitSessionEnd();
 ```
 
 ## Disable Heartbeat

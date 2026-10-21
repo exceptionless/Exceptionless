@@ -1,5 +1,7 @@
 ---
 title: "Express Example"
+metaTitle: "Exceptionless Express.js middleware example"
+description: "Capture unhandled Express.js errors and 404s with Exceptionless middleware on Node.js, then run the sample Express app from the Exceptionless GitHub repo."
 ---
 
 # Express Example
@@ -52,4 +54,4 @@ We recommend enabling debug logging by calling `Exceptionless.config.useDebugLog
 
 ---
 
-[Next > Angular Example](/docs/clients/javascript/react-example)
+[Next > Vue Example](/docs/clients/javascript/vue-example)

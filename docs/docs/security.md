@@ -1,5 +1,7 @@
 ---
 title: "Security"
+metaTitle: "Exceptionless security and data exclusions"
+description: "Learn how Exceptionless protects data with SSL and how to use data exclusions with wildcards to remove passwords and other sensitive fields from reports."
 ---
 
 # Security

@@ -1,5 +1,7 @@
 ---
 title: "Versioning"
+metaTitle: "Versioning and regression detection"
+description: "Set an application version in Exceptionless so stacks marked fixed in a version reopen as regressed only when a newer version hits the same error."
 ---
 
 # Versioning
@@ -23,16 +25,18 @@ An application version will try and be resolved if possible, but it's a good ide
 
 ## What does mark fixed do?
 
-![Exceptionless Mark Fixed](img/versioning.png)
+To mark a stack fixed, open the stack, click the status button in the top-right corner (it shows the current status, such as **Open**), and choose **Fixed**. You can also select several stacks in a list and choose **Mark Fixed** from the [**Actions**](/docs/bulk-actions) menu. Enter the version that contains the fix in the **Version** box, or leave it empty, and then click **Mark Stack Fixed**.
+
+![Mark Stack As Fixed dialog with an optional version](/assets/img/docs/versioning-mark-fixed-light.webp)
 
 When you mark a stack as fixed, the following meta data is recorded on the stack:
 
 * when the stack was fixed
 * and **optionally** the semantic version that you fixed this behavior in.
 
-> **NOTE:** If you are using a **four-part version number** (E.G., `1.2.3.4`), you'll need to enter it as `1.2.3-4`. We will automatically handle this conversion when processing events.
+> **NOTE:** Versions are semantic versions. If you enter a **four-part version number** (E.G., `1.2.3.4`), the dialog changes it to `1.2.3-4` for you, and a two-part version like `1.2` becomes `1.2.0`. We automatically handle four-part versions when processing events.
 
-Next, all stack event occurrences are marked as fixed and will be hidden from all dashboards. You can show fixed events in dashboards by updating the search box with `*` or `fixed:true`.
+Next, the stack is hidden from the default stack lists, which only show open and regressed stacks. To see fixed stacks, include **Fixed** in the list's **Status** filter.
 
 This meta data is then inspected when an matching event is processed to determine if the stack and all occurrences should be regressed (_marked not fixed_). There are two scenarios where a stack will be marked as regressed:
 

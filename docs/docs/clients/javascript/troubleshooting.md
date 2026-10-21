@@ -1,5 +1,7 @@
 ---
 title: "Troubleshooting"
+metaTitle: "Troubleshooting the JavaScript client"
+description: "Fix Exceptionless JavaScript client events that are not sent: update the client, process the queue before exit, enable debug logging, and check your API key."
 order: 6
 ---
 

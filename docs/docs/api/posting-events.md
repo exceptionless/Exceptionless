@@ -1,5 +1,7 @@
 ---
 title: "Posting Events"
+metaTitle: "Posting events with the Exceptionless API"
+description: "Send events to the Exceptionless REST API with curl: post messages, log events with user details, and errors with a stack trace using a project token."
 ---
 
 # Posting Events

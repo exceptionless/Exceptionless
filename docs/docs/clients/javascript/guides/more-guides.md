@@ -1,5 +1,7 @@
 ---
 title: "More Guides"
+metaTitle: "More JavaScript guides and sample apps"
+description: "Find complete Exceptionless JavaScript sample apps on GitHub that go beyond the React, Vue, Angular, and Express quick-start guides in these docs."
 order: 5
 ---
 

@@ -1,5 +1,7 @@
 ---
 title: "Self Hosting"
+metaTitle: "Self-hosting Exceptionless overview"
+description: "Self-host Exceptionless with Docker or Kubernetes and configure trusted reverse proxies with ForwardedHeaders so client IPs and HTTPS are detected."
 ---
 
 # Self Hosting

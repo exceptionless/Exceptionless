@@ -1,5 +1,6 @@
 ---
 title: ".NET Platform Guides"
+description: "Guides for setting up Exceptionless on .NET platforms, starting with console and service apps and ASP.NET Core web servers, plus the supported platforms."
 order: 3
 ---
 

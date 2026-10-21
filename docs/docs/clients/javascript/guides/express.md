@@ -1,5 +1,7 @@
 ---
 title: "Express"
+metaTitle: "Exceptionless error tracking for Express"
+description: "Set up Exceptionless in an Express app on Node.js: install @exceptionless/node, submit logs, and report unhandled errors and 404s with request details."
 order: 4
 ---
 
