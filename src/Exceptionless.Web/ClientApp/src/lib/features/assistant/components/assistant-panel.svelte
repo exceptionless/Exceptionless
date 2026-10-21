@@ -78,6 +78,8 @@
         projectId?: string;
         /** Projects the user can scope Exie to from the composer. */
         projects?: AssistantProject[];
+        /** Whether the project list has loaded, since an empty list can also mean the user has no projects left. */
+        projectsLoaded?: boolean;
         promptRequest?: AssistantPromptRequest;
         /** Scopes the locally saved chat history to the signed-in user. */
         userId?: string;
@@ -101,6 +103,7 @@
         path,
         projectId,
         projects = [],
+        projectsLoaded = false,
         promptRequest,
         userId
     }: Props = $props();
@@ -185,12 +188,9 @@
     // A chat can be restored before the project list loads, so recheck its project once the list arrives.
     $effect(() => {
         const availableProjects = projects;
+        const loaded = projectsLoaded;
         untrack(() => {
-            if (
-                typeof selectedProjectId === 'string' &&
-                availableProjects.length > 0 &&
-                !availableProjects.some((project) => project.id === selectedProjectId)
-            ) {
+            if (loaded && typeof selectedProjectId === 'string' && !availableProjects.some((project) => project.id === selectedProjectId)) {
                 selectedProjectId = undefined;
                 contextDismissed = false;
             }
@@ -505,7 +505,7 @@
         }
 
         const savedProjectId = conversation.projectId;
-        if (savedProjectId && projects.length > 0 && !projects.some((project) => project.id === savedProjectId)) {
+        if (savedProjectId && projectsLoaded && !projects.some((project) => project.id === savedProjectId)) {
             return;
         }
 

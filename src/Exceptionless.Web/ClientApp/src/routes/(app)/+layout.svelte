@@ -941,6 +941,7 @@
                         promptRequest={assistantPromptRequest}
                         projectId={assistantProjectId}
                         projects={assistantProjects}
+                        projectsLoaded={assistantProjectsQuery.isSuccess}
                         userId={meQuery.data?.id}
                     />
                 {/if}

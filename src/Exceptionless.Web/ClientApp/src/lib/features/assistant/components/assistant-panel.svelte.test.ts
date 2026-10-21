@@ -726,6 +726,7 @@ describe('AssistantPanel', () => {
                 { id: 'project-1', name: 'Storefront' },
                 { id: 'project-2', name: 'Billing API' }
             ],
+            projectsLoaded: true,
             userId: 'user-1'
         };
         const first = render(AssistantPanel, { props });
@@ -901,7 +902,8 @@ describe('AssistantPanel', () => {
             projects: [
                 { id: 'project-1', name: 'Storefront' },
                 { id: 'project-2', name: 'Billing API' }
-            ]
+            ],
+            projectsLoaded: true
         });
 
         expect(await screen.findByRole('button', { name: 'Project scope: Storefront' })).toBeTruthy();
@@ -914,6 +916,44 @@ describe('AssistantPanel', () => {
             project_id?: string;
         };
         expect(request.project_id).toBe('project-1');
+        expect(request.conversation_id).not.toBe('conversation-1');
+        localStorage.clear();
+    });
+
+    it('follows the page when a restored chat searched a project and no projects remain', async () => {
+        localStorage.clear();
+        const message = {
+            content: 'Earlier answer.',
+            conversationId: 'conversation-1',
+            id: 'assistant-1',
+            parts: [{ text: 'Earlier answer.', type: 'text' }],
+            role: 'assistant',
+            tools: []
+        };
+        localStorage.setItem(
+            'exie:conversations:v1:user-1:organization-1',
+            JSON.stringify([{ id: 'chat-1', messages: [message], projectId: 'deleted-project', title: 'Earlier question', updatedAt: Date.now() }])
+        );
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'Fresh answer.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        const props = { open: true, organizationId: 'organization-1', path: '/stack/all', userId: 'user-1' };
+        const view = render(AssistantPanel, { props });
+        expect(await screen.findByText('Earlier answer.')).toBeTruthy();
+
+        // The list loaded and is empty, which is different from not having loaded yet.
+        await view.rerender({ ...props, projects: [], projectsLoaded: true });
+
+        const composer = screen.getByRole('textbox', { name: 'Message Exie' });
+        await fireEvent.input(composer, { target: { value: 'What else broke?' } });
+        await fireEvent.keyDown(composer, { key: 'Enter' });
+        await screen.findByText('Fresh answer.');
+        const request = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body)) as {
+            conversation_id: string;
+            project_id?: string;
+        };
+        expect(request.project_id).toBeUndefined();
         expect(request.conversation_id).not.toBe('conversation-1');
         localStorage.clear();
     });
