@@ -103,6 +103,22 @@ describe('addAssistantResourceLinks', () => {
         expect(result).toContain('**[Connection refused (localhost:9200)](/stack/stack-1)**');
     });
 
+    it('links stacks ranked by count_events', () => {
+        const ranked: AssistantToolActivity = {
+            arguments: '{"groupBy":"stack"}',
+            id: 'tool-call',
+            name: 'count_events',
+            result: JSON.stringify({
+                data: { group_by: 'stack', groups: [{ key: 'stack-1', occurrences: 12, title: 'Checkout failed', webUrl: '/stack/stack-1' }] },
+                ok: true
+            }),
+            status: 'complete'
+        };
+
+        expect(addAssistantResourceLinks('Checkout failed happened 12 times.', [ranked])).toBe('[Checkout failed](/stack/stack-1) happened 12 times.');
+        expect(createAssistantUrlTransform([ranked])('https://example.com/stack/stack-1', 'href')).toBe('/stack/stack-1');
+    });
+
     it('preserves existing links and code examples', () => {
         const content = `[Timeout expired](/stack/existing) is already linked.
 

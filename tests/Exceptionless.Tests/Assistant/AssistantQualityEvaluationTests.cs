@@ -264,7 +264,7 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         ["explicit_day"] = new("What errors happened in this project on October 1, 2026?", "project", "count_events", @"^\[2026-10-01 TO 2026-10-01\]$"),
         ["explicit_range"] = new("Show the top errors in this project between October 1 and October 15, 2026.", "project", "count_events", @"^\[2026-10-01 TO 2026-10-15\]$"),
         ["no_time"] = new("What are the top errors in this project?", "project", "count_events", @"^\[now-7d TO now\]$"),
-        ["stack_today"] = new("How many times did this stack occur today?", "stack", "get_stack_events", @"^\[now/d TO now(/d)?\]$"),
+        ["stack_today"] = new("How many times did this stack occur today?", "stack", "count_events", @"^\[now/d TO now(/d)?\]$"),
         ["stack_all_time"] = new("How many times has this stack occurred in total?", "stack", "get_stack", AnyOrNoTime),
         ["organization_today"] = new("Which errors happened today across all of my projects?", "organization", "count_events", @"^\[now/d TO now(/d)?\]$"),
         ["follow_up_yesterday"] = new("And yesterday?", "project", "count_events", @"^\[now-1d/d TO now-1d/d\]$", FollowUpTo: "today")
@@ -319,12 +319,16 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.NotEmpty(times);
         if (scenario.TimePattern != AnyOrNoTime)
             Assert.All(times, time => Assert.Matches(scenario.TimePattern!, time ?? "(no time)"));
-        if (scenario.Tool == "count_events")
+        if (scenario.Tool == "count_events" && scenario.Page != "stack")
             Assert.All(GetToolArguments(turn, "count_events", "groupBy"), groupBy => Assert.Equal("stack", groupBy));
 
         // The checkout stack occurred once today and once three days ago, so a total of 2 means Exie ignored the period.
         if (name == "stack_today")
+        {
             Assert.DoesNotMatch(@"\b(2|two) (times|occurrences)\b", turn.Text);
+            // Occurrences come from count_events limited to this stack, since event documents can stand for several.
+            Assert.All(GetToolArguments(turn, "count_events", "filter"), filter => Assert.Contains($"stack:{_checkoutStack.Id}", filter));
+        }
         if (name == "stack_all_time")
             Assert.Matches(@"\b(2|two) (times|occurrences)\b", turn.Text);
 

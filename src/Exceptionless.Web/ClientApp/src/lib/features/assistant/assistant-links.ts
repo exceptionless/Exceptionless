@@ -93,12 +93,10 @@ function collectAssistantResourceLinks(value: unknown, urlsByLabel: Map<string, 
         return;
     }
 
-    if (Array.isArray(value.data.items)) {
-        for (const item of value.data.items) {
-            collectAssistantResourceLink(item, urlsByLabel);
-        }
-    } else {
-        collectAssistantResourceLink(value.data, urlsByLabel);
+    // List tools return items; count_events grouped by stack returns groups with each stack's title and webUrl.
+    const entries = Array.isArray(value.data.items) ? value.data.items : Array.isArray(value.data.groups) ? value.data.groups : [value.data];
+    for (const entry of entries) {
+        collectAssistantResourceLink(entry, urlsByLabel);
     }
 }
 
