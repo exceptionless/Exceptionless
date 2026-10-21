@@ -6,6 +6,7 @@
     import Maximize2 from '@lucide/svelte/icons/maximize-2';
     import Minimize2 from '@lucide/svelte/icons/minimize-2';
     import SquarePen from '@lucide/svelte/icons/square-pen';
+    import X from '@lucide/svelte/icons/x';
     import { onDestroy, tick, untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
 
@@ -904,6 +905,19 @@
                     <Tooltip.Content>Collapse to side panel</Tooltip.Content>
                 </Tooltip.Root>
             {/if}
+            {#if mode === 'sheet'}
+                <!-- Part of the header actions so it lines up with them, instead of the sheet's separately positioned close button. -->
+                <Tooltip.Root>
+                    <Tooltip.Trigger>
+                        {#snippet child({ props })}
+                            <Button {...props} aria-label="Close Exie" onclick={() => (open = false)} size="icon-sm" variant="ghost">
+                                <X aria-hidden="true" />
+                            </Button>
+                        {/snippet}
+                    </Tooltip.Trigger>
+                    <Tooltip.Content>Close</Tooltip.Content>
+                </Tooltip.Root>
+            {/if}
         </div>
     </Tooltip.Provider>
 {/snippet}
@@ -1058,12 +1072,13 @@
             data-tour="exie-panel"
             onInteractOutside={handleInteractOutside}
             onOpenAutoFocus={handleOpenAutoFocus}
+            showCloseButton={false}
             overlayProps={{
                 class: 'top-16! bg-black/5 dark:bg-black/30 supports-backdrop-filter:backdrop-blur-[0.5px]'
             }}
             preventScroll={false}
         >
-            <Sheet.Header class="flex-row items-center justify-between gap-2 border-b px-4 py-3 pr-12">
+            <Sheet.Header class="flex-row items-center justify-between gap-2 border-b px-4 py-3">
                 <div class="flex min-w-0 items-center gap-2.5">
                     <ExieAvatar />
                     <div class="min-w-0">
