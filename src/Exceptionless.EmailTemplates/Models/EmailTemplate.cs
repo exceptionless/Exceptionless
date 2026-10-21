@@ -78,7 +78,7 @@ public sealed record ProjectDailySummaryEmail(
 
 public sealed record StackSummary(string Title, string? TypeName, bool IsRegressed, string Url);
 
-public sealed record UserEmailVerifyEmail(string Subject, string UserFullName, EmailAction Action)
+public sealed record UserEmailVerifyEmail(string Subject, string UserFullName, bool IsNewAccount, string AppUrl, EmailAction Action)
     : EmailTemplate(Subject, Action);
 
 public sealed record UserPasswordResetEmail(string Subject, string UserFullName, string CancelUrl, EmailAction Action)

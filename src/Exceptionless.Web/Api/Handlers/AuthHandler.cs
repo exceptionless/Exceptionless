@@ -248,7 +248,7 @@ public class AuthHandler(
             await AddInvitedUserToOrganizationAsync(model.InviteToken, user, httpContext);
 
         if (!user.IsEmailAddressVerified)
-            await mailer.SendUserEmailVerifyAsync(user);
+            await mailer.SendUserEmailVerifyAsync(user, isNewAccount: true);
 
         logger.UserSignedUp(user.EmailAddress);
         return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };

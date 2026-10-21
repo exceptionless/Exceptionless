@@ -11,6 +11,6 @@ public interface IMailer
     Task SendOrganizationNoticeAsync(User user, Organization organization, bool isOverMonthlyLimit, bool isOverHourlyLimit);
     Task SendOrganizationPaymentFailedAsync(User owner, Organization organization);
     Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan);
-    Task SendUserEmailVerifyAsync(User user);
+    Task SendUserEmailVerifyAsync(User user, bool isNewAccount = false);
     Task SendUserPasswordResetAsync(User user);
 }
