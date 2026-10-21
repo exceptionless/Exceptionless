@@ -152,6 +152,7 @@ type SavedViewDraftFilterPageState = App.PageState & {
 const SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS: readonly string[] = [
     'boolean-bot',
     'boolean-first',
+    'environment',
     'level',
     'project',
     'reference',
@@ -315,6 +316,7 @@ export function isSavedViewDraftFilterHistoryEntry(entry: unknown, viewId: strin
 
 const SAVED_VIEW_OVERRIDE_QUERY_PARAMETERS = [
     'bot',
+    'environment',
     'filter',
     'filters',
     'first',
@@ -575,6 +577,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         const keys: string[] = [];
         const queryParameterKeys = [
             ['bot', 'boolean-bot'],
+            ['environment', 'environment'],
             ['first', 'boolean-first'],
             ['level', 'level'],
             ['project', 'project'],
