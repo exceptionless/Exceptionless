@@ -1,0 +1,306 @@
+<script lang="ts">
+    import { resolve } from '$app/paths';
+    import ChevronDown from '@lucide/svelte/icons/chevron-down';
+    import Circle from '@lucide/svelte/icons/circle';
+    import CircleCheck from '@lucide/svelte/icons/circle-check';
+    import X from '@lucide/svelte/icons/x';
+    import { PersistedState } from 'runed';
+    import { toast } from 'svelte-sonner';
+    import { SvelteSet } from 'svelte/reactivity';
+
+    import ExieIcon from '#comp/icons/ExieIcon.svelte';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import * as Collapsible from '#comp/ui/collapsible/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { FREE_PLAN_ID } from '#features/billing/index.ts';
+    import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { getMeQuery, putCurrentUserProductTour, resendVerificationEmail } from '#features/users/api.svelte.ts';
+    import { cn } from '#lib/utils.ts';
+
+    import {
+        CHECKLIST_DISMISSED_KEY,
+        CHECKLIST_VISIT_KEYS,
+        type ChecklistItem,
+        type ChecklistItemId,
+        type ChecklistVisitItemId,
+        getChecklistItems,
+        isChecklistComplete,
+        shouldShowChecklist
+    } from '../checklist';
+    import { useOrganizationOnboarding } from '../onboarding-state.svelte';
+    import ExieGuide from './exie-guide.svelte';
+
+    const meQuery = getMeQuery();
+    const organizationQuery = getOrganizationQuery({
+        route: {
+            get id() {
+                return organization.current;
+            }
+        }
+    });
+    const onboarding = useOrganizationOnboarding(() => organization.current);
+    const recordMutation = putCurrentUserProductTour();
+    const resendMutation = resendVerificationEmail({
+        route: {
+            get id() {
+                return meQuery.data?.id;
+            }
+        }
+    });
+
+    const collapsed = new PersistedState('getting-started-checklist-collapsed', false);
+    // Visits recorded in this session show as done before the user refetch finishes.
+    const visitedItems = new SvelteSet<ChecklistVisitItemId>();
+    let dismissed = $state(false);
+
+    const items = $derived(
+        getChecklistItems({
+            emailVerified: !!meQuery.data?.is_email_address_verified,
+            hasEvents: onboarding.hasReceivedEvents,
+            hasProject: onboarding.hasProject,
+            productTours: meQuery.data?.product_tours
+        }).map((item) =>
+            item.kind === 'visit' && visitedItems.has(item.id as ChecklistVisitItemId)
+                ? {
+                      ...item,
+                      complete: true
+                  }
+                : item
+        )
+    );
+    const completedCount = $derived(items.filter((item) => item.complete).length);
+    const isComplete = $derived(isChecklistComplete(items));
+    const isVisible = $derived(
+        !dismissed &&
+            !!meQuery.data &&
+            onboarding.isReady &&
+            shouldShowChecklist({
+                organizationCreatedUtc: organizationQuery.data?.created_utc,
+                productTours: meQuery.data.product_tours
+            })
+    );
+    const isFreePlan = $derived(organizationQuery.data?.plan_id === FREE_PLAN_ID);
+
+    interface ItemCopy {
+        description?: string;
+        external?: boolean;
+        href?: string;
+        label: string;
+    }
+
+    async function dismiss(): Promise<void> {
+        const userId = meQuery.data?.id;
+        if (!userId) {
+            return;
+        }
+
+        dismissed = true;
+        try {
+            await recordMutation.mutateAsync({
+                tourName: CHECKLIST_DISMISSED_KEY,
+                userId
+            });
+            // The checklist replaces the generic welcome card; don't show that afterwards.
+            void recordMutation
+                .mutateAsync({
+                    tourName: 'app-welcome',
+                    userId
+                })
+                .catch(() => undefined);
+        } catch {
+            dismissed = false;
+            toast.error('We could not hide the checklist. Please try again.');
+        }
+    }
+
+    function getItemCopy(id: ChecklistItemId): ItemCopy {
+        switch (id) {
+            case 'account':
+                return {
+                    label: 'Create your account'
+                };
+            case 'ai-tools':
+                return {
+                    description: 'Ask about errors from your editor or chat. Works on every plan.',
+                    href: resolve('/(app)/account/ai-tools'),
+                    label: 'Connect your AI assistant via MCP'
+                };
+            case 'first-event':
+                return {
+                    href: onboarding.continueSetupHref,
+                    label: 'Catch your first event'
+                };
+            case 'invite-team':
+                return {
+                    description: isFreePlan ? 'Inviting teammates is a paid-plan feature.' : 'Triage together and share the load.',
+                    href: organization.current
+                        ? resolve('/(app)/organization/[organizationId]/users', {
+                              organizationId: organization.current
+                          })
+                        : undefined,
+                    label: 'Invite your team'
+                };
+            case 'notifications':
+                return {
+                    description: 'Get an email when something new breaks.',
+                    href: resolve('/(app)/account/notifications'),
+                    label: 'Turn on notifications'
+                };
+            case 'project':
+                return {
+                    href: resolve('/(app)/project/add'),
+                    label: 'Name your project'
+                };
+            case 'verify-email':
+                return {
+                    description: meQuery.data?.email_address ? `Check ${meQuery.data.email_address} for the link.` : undefined,
+                    label: 'Verify your email'
+                };
+            case 'versions':
+                return {
+                    description: 'Tag events with your app version and environment.',
+                    external: true,
+                    href: 'https://exceptionless.com/docs/versioning/',
+                    label: 'Track versions & environments'
+                };
+        }
+    }
+
+    function recordVisit(item: ChecklistItem): void {
+        const userId = meQuery.data?.id;
+        if (item.kind !== 'visit' || item.complete || !userId) {
+            return;
+        }
+
+        const id = item.id as ChecklistVisitItemId;
+        visitedItems.add(id);
+        void recordMutation
+            .mutateAsync({
+                tourName: CHECKLIST_VISIT_KEYS[id],
+                userId
+            })
+            .catch(() => visitedItems.delete(id));
+    }
+
+    async function resend(): Promise<void> {
+        try {
+            await resendMutation.mutateAsync();
+            toast.success('Verification email sent', {
+                description: 'Check your inbox for the link.'
+            });
+        } catch {
+            toast.error('We could not send the verification email. Please try again.');
+        }
+    }
+</script>
+
+{#if isVisible}
+    <Card.Root aria-labelledby="getting-started-checklist-title" data-getting-started-checklist role="region" size="sm">
+        <Collapsible.Root open={!collapsed.current} onOpenChange={(open) => (collapsed.current = !open)}>
+            <Card.Header class="flex flex-row items-center gap-3">
+                <!-- The sparkle inherits brand green; the robot outline uses the foreground color. -->
+                <span class="bg-muted text-primary flex size-8 shrink-0 items-center justify-center rounded-lg">
+                    <ExieIcon class="[&_g]:text-foreground" height={20} width={20} />
+                </span>
+                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                    <Card.Title id="getting-started-checklist-title">Exie's checklist</Card.Title>
+                    <div class="flex items-center gap-2">
+                        <div
+                            aria-label="Checklist progress"
+                            aria-valuemax={items.length}
+                            aria-valuemin={0}
+                            aria-valuenow={completedCount}
+                            class="bg-muted h-1.5 w-24 overflow-hidden rounded-full sm:w-40"
+                            role="progressbar"
+                        >
+                            <div
+                                class="bg-primary h-full rounded-full transition-[width] duration-500"
+                                style:width="{(completedCount / items.length) * 100}%"
+                            ></div>
+                        </div>
+                        <span class="text-muted-foreground text-xs tabular-nums">{completedCount} of {items.length} done</span>
+                    </div>
+                </div>
+                <Collapsible.Trigger>
+                    {#snippet child({ props })}
+                        <Button {...props} aria-label={collapsed.current ? 'Expand checklist' : 'Collapse checklist'} size="icon-sm" variant="ghost">
+                            <ChevronDown aria-hidden="true" class={cn('transition-transform', !collapsed.current && 'rotate-180')} />
+                        </Button>
+                    {/snippet}
+                </Collapsible.Trigger>
+                <Button aria-label="Dismiss checklist" onclick={dismiss} size="icon-sm" title="Dismiss checklist" variant="ghost">
+                    <X aria-hidden="true" />
+                </Button>
+            </Card.Header>
+            <Collapsible.Content>
+                <Card.Content class="pt-3">
+                    {#if isComplete}
+                        <ExieGuide mood="celebrate" size={56} title="You're all set!">
+                            You've done everything on my list. I'll keep watching for new errors.
+                            {#snippet actions()}
+                                <Button onclick={dismiss} size="sm">Hide checklist</Button>
+                            {/snippet}
+                        </ExieGuide>
+                    {:else}
+                        <ul class="grid gap-1 md:grid-cols-2">
+                            {#each items as item (item.id)}
+                                {@const copy = getItemCopy(item.id)}
+                                <li>
+                                    {#snippet row()}
+                                        {#if item.complete}
+                                            <CircleCheck aria-hidden="true" class="text-primary mt-0.5 size-4 shrink-0" />
+                                        {:else}
+                                            <Circle aria-hidden="true" class="text-muted-foreground mt-0.5 size-4 shrink-0" />
+                                        {/if}
+                                        <span class="flex min-w-0 flex-col">
+                                            <span class={cn('text-sm font-medium', item.complete ? 'text-muted-foreground line-through' : 'text-foreground')}>
+                                                {copy.label}<span class="sr-only">{item.complete ? ' (done)' : ' (to do)'}</span>
+                                            </span>
+                                            {#if copy.description && !item.complete}
+                                                <span class="text-muted-foreground text-xs">{copy.description}</span>
+                                            {/if}
+                                        </span>
+                                    {/snippet}
+
+                                    {#if copy.href && !item.complete}
+                                        <a
+                                            class="hover:bg-muted focus-visible:ring-ring/50 flex items-start gap-2 rounded-md p-2 outline-none focus-visible:ring-3"
+                                            href={copy.href}
+                                            onclick={() => recordVisit(item)}
+                                            rel={copy.external ? 'noopener noreferrer' : undefined}
+                                            target={copy.external ? '_blank' : undefined}
+                                        >
+                                            {@render row()}
+                                            {#if item.id === 'invite-team' && isFreePlan}
+                                                <Badge class="ml-auto shrink-0" variant="secondary">Paid plans</Badge>
+                                            {/if}
+                                        </a>
+                                    {:else}
+                                        <div class="flex items-start gap-2 p-2">
+                                            {@render row()}
+                                            {#if item.id === 'verify-email' && !item.complete}
+                                                <Button
+                                                    class="ml-auto shrink-0"
+                                                    disabled={resendMutation.isPending}
+                                                    onclick={resend}
+                                                    size="xs"
+                                                    variant="outline"
+                                                >
+                                                    {#if resendMutation.isPending}<Spinner data-icon="inline-start" />{/if}
+                                                    Resend
+                                                </Button>
+                                            {/if}
+                                        </div>
+                                    {/if}
+                                </li>
+                            {/each}
+                        </ul>
+                    {/if}
+                </Card.Content>
+            </Collapsible.Content>
+        </Collapsible.Root>
+    </Card.Root>
+{/if}

@@ -898,6 +898,7 @@
         isNavigationOverlayOpen={isProductTourNavigationOverlayOpen}
         isSetupPage={suppressAutomaticProductTours}
         openAssistant={openAssistantPanel}
+        organizationCreatedUtc={organizations.find((organizationItem) => organizationItem.id === organization.current)?.created_utc}
         organizationId={organization.current}
         pathname={page.url.pathname}
         setMobileNavigationOpen={(open) => (sidebar.isMobile ? sidebar.setOpenMobile(open) : sidebar.setOpen(open))}

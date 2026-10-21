@@ -54,6 +54,7 @@
     import EventsDataTable from '#features/events/components/table/events-data-table.svelte';
     import { defaultStackColumnVisibility, getColumns } from '#features/events/components/table/options.svelte.ts';
     import { filterUsesPremiumFeatures } from '#features/events/premium-filter.ts';
+    import GettingStartedChecklist from '#features/onboarding/components/getting-started-checklist.svelte';
     import { organization } from '#features/organizations/context.svelte.ts';
     import { premiumPage } from '#features/organizations/premium-page.svelte.ts';
     import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
@@ -921,6 +922,8 @@
     </div>
 
     <div class="flex flex-col gap-y-4">
+        <GettingStartedChecklist />
+
         {#if showStats}
             <EventsStatsDashboard
                 eventsPerHour={stats.eventsPerHour}

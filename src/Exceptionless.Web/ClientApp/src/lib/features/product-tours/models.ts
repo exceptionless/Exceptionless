@@ -1,6 +1,7 @@
 import type { RouteId } from '$app/types';
 
 import type { AssistantAccess } from '#features/assistant/models.ts';
+import type { ChecklistStateKey } from '#features/onboarding/checklist.ts';
 import type { ViewProject } from '#features/projects/models.ts';
 export const PRODUCT_TOUR_CHECKPOINTS = {
     'app-overview': ['navigation', 'events', 'filters', 'saved-views', 'exie', 'command-search'],
@@ -42,7 +43,8 @@ export interface ProductTourDefinition<Name extends ProductTourName = ProductTou
     stateKey: string;
     title: string;
 }
-export type ProductTourKey = 'app-welcome' | 'exie-announcement' | ProductTourName;
+/** Per-user keys recorded through the product tour endpoint, including the getting-started checklist. */
+export type ProductTourKey = 'app-welcome' | 'exie-announcement' | ChecklistStateKey | ProductTourName;
 
 export interface ProductTourListItem<Name extends ProductTourName = ProductTourName> extends ProductTourDefinition<Name> {
     currentAvailability: ProductTourAvailability;
