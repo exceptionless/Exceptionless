@@ -573,9 +573,10 @@
             return;
         }
 
-        // After New chat the user keeps a blank chat, even across reloads.
+        // After New chat the user keeps a blank chat, even across reloads. A remembered chat that has since
+        // expired or been removed falls back to the newest one.
         const activeId = getActiveAssistantConversationId(scope);
-        const recent = activeId === undefined ? conversations[0] : conversations.find((conversation) => conversation.id === activeId);
+        const recent = activeId === null ? undefined : (conversations.find((conversation) => conversation.id === activeId) ?? conversations[0]);
         if (recent && Date.now() - recent.updatedAt < RESTORE_WINDOW_MS) {
             messages = recent.messages;
             threadId = recent.id;

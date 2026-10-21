@@ -1034,6 +1034,25 @@ describe('AssistantPanel', () => {
         localStorage.clear();
     });
 
+    it('opens the newest chat when the remembered chat has expired', async () => {
+        localStorage.clear();
+        const message = (text: string) => ({ content: text, id: crypto.randomUUID(), parts: [{ text, type: 'text' }], role: 'assistant', tools: [] });
+        localStorage.setItem(
+            'exie:conversations:v1:user-1:organization-1',
+            JSON.stringify([
+                { id: 'chat-recent', messages: [message('Recent answer.')], title: 'Recent question', updatedAt: Date.now() - 60_000 },
+                { id: 'chat-expired', messages: [message('Expired answer.')], title: 'Expired question', updatedAt: Date.now() - 31 * 24 * 60 * 60 * 1000 }
+            ])
+        );
+        localStorage.setItem('exie:conversations:v1:active:user-1:organization-1', 'chat-expired');
+
+        render(AssistantPanel, { props: { open: true, organizationId: 'organization-1', userId: 'user-1' } });
+
+        expect(await screen.findByText('Recent answer.')).toBeTruthy();
+        expect(screen.queryByText('Expired answer.')).toBeNull();
+        localStorage.clear();
+    });
+
     it('keeps a new chat blank after the panel reloads', async () => {
         localStorage.clear();
         const fetchMock = vi.fn(
