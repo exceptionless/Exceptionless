@@ -55,16 +55,17 @@
                     <Button
                         aria-expanded={isAssistantOpen}
                         aria-keyshortcuts="A"
-                        aria-label={isAssistantOpen ? 'Close Exie' : 'Open Exie'}
+                        aria-label="Ask Exie"
                         class="px-2"
                         data-assistant-trigger
                         data-tour="exie-trigger"
                         onclick={toggleAssistant}
-                        title={isAssistantOpen ? 'Close Exie (A)' : 'Ask Exie (A)'}
+                        title="Ask Exie (A)"
                         variant={isAssistantOpen ? 'secondary' : 'outline'}
                     >
                         <Sparkles aria-hidden="true" class="text-primary size-5" data-icon="inline-start" />
-                        <span class="hidden lg:inline">{isAssistantOpen ? 'Close Exie' : 'Ask Exie'}</span>
+                        <!-- The label stays the same when open so the navbar never shifts; the button style and aria-expanded show the state. -->
+                        <span class="hidden lg:inline">Ask Exie</span>
                     </Button>
                 {/if}
 

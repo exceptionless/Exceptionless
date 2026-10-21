@@ -55,10 +55,10 @@ test('Exie opens from navigation and expands without losing the conversation', a
         await page.getByRole('link', { name: 'Collapse Exie to side panel' }).click();
         await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
         await expect(page.locator('[data-assistant-panel]')).toBeVisible();
-        await page.getByRole('button', { name: 'Close Exie' }).click();
+        await page.getByRole('button', { exact: true, name: 'Ask Exie' }).click();
 
         await page.goto('/stack?filter=status%3Aopen');
-        await page.getByRole('button', { name: 'Open Exie' }).click();
+        await page.getByRole('button', { exact: true, name: 'Ask Exie' }).click();
         await page.getByRole('textbox', { name: 'Message Exie' }).fill('Keep this conversation when I expand it.');
         await page.getByRole('button', { name: 'Send message' }).click();
         await expect(page.getByText('This conversation followed you into the full-page chat.')).toBeVisible();
