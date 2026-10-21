@@ -231,6 +231,39 @@ describe('conversation history', () => {
         expect(result.data.items[0]).toEqual({ id: 'stack-0', title: 'Stack 0', webUrl: '/stack/0' });
     });
 
+    it('keeps the stack names and links of large grouped counts', () => {
+        const groups = Array.from({ length: 200 }, (_, index) => ({
+            events: index,
+            key: `stack-${index}`,
+            occurrences: index,
+            title: `Stack ${index}`,
+            trend: Array.from({ length: 5 }, () => ({ date: '2026-10-21T00:00:00Z', events: 1, occurrences: 1 })),
+            webUrl: `/stack/stack-${index}`
+        }));
+        const message: AssistantChatMessage = {
+            content: 'Done',
+            id: 'assistant-1',
+            parts: [],
+            role: 'assistant',
+            tools: [
+                {
+                    arguments: '{}',
+                    id: 'tool-1',
+                    name: 'count_events',
+                    result: JSON.stringify({ data: { group_by: 'stack', groups }, ok: true }),
+                    status: 'complete'
+                }
+            ]
+        };
+
+        saveAssistantConversation('scope', conversation('a', 1, [message]), storage);
+
+        const result = JSON.parse(loadAssistantConversations('scope', storage)[0]!.messages[0]!.tools[0]!.result!) as {
+            data: { groups: Array<Record<string, string>> };
+        };
+        expect(result.data.groups[0]).toEqual({ key: 'stack-0', title: 'Stack 0', webUrl: '/stack/stack-0' });
+    });
+
     it('ignores corrupt stored data and supports deleting and clearing', () => {
         storage.setItem('exie:conversations:v1:broken', '{not json');
         expect(loadAssistantConversations('broken', storage)).toEqual([]);

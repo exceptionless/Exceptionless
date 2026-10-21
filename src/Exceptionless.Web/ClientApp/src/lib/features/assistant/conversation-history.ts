@@ -14,7 +14,7 @@ const MAX_STORED_CHARACTERS = 1_000_000;
 const MAX_TITLE_LENGTH = 80;
 /** Tool results above this size keep only the fields Exie needs to link resources. */
 const MAX_TOOL_RESULT_LENGTH = 16_000;
-const RESOURCE_FIELDS = ['id', 'name', 'stack_id', 'title', 'webUrl'];
+const RESOURCE_FIELDS = ['id', 'key', 'name', 'stack_id', 'title', 'webUrl'];
 
 /** Removes every stored Exie conversation, for example when the user signs out. */
 export function clearAssistantConversations(storage = getStorage()): void {
@@ -116,10 +116,13 @@ function compactTool(tool: AssistantToolActivity): AssistantToolActivity {
 
     try {
         const root = JSON.parse(tool.result) as { data?: unknown };
-        const data = root.data;
-        const compactData = Array.isArray((data as { items?: unknown })?.items)
-            ? { items: ((data as { items: unknown[] }).items ?? []).map(pickResourceFields) }
-            : pickResourceFields(data);
+        const data = root.data as undefined | { groups?: unknown; items?: unknown };
+        // List tools return items, and count_events grouped by stack returns groups; both keep what links need.
+        const compactData = Array.isArray(data?.items)
+            ? { items: data.items.map(pickResourceFields) }
+            : Array.isArray(data?.groups)
+              ? { groups: data.groups.map(pickResourceFields) }
+              : pickResourceFields(data);
         return { ...tool, result: JSON.stringify({ data: compactData, truncated: true }) };
     } catch {
         return { ...tool, result: undefined };
