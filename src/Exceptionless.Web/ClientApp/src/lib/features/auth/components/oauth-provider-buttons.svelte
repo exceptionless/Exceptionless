@@ -1,7 +1,6 @@
 <script lang="ts">
     import type { Component } from 'svelte';
 
-    import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { toast } from 'svelte-sonner';
 
     import FacebookIcon from '#comp/icons/FacebookIcon.svelte';
@@ -82,7 +81,7 @@
         try {
             await provider.login(redirectUrl, inviteToken);
         } catch (error: unknown) {
-            const { description, title } = getOAuthErrorMessage(error, provider.label, error instanceof ProblemDetails ? error : undefined);
+            const { description, title } = getOAuthErrorMessage(error, provider.label);
             toastId = toast.error(title, {
                 description
             });

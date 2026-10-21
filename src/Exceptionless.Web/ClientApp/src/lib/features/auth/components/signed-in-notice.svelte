@@ -12,13 +12,11 @@
     import { clearAuthenticationSession } from '../session.svelte';
 
     interface Props {
-        /** Where Continue goes. */
+        /** Where to go when keeping the current session; the invitation is not accepted. */
         continueHref: string;
-        /** Explains what signing out allows, for example accepting an invitation. */
-        description: string;
     }
 
-    let { continueHref, description }: Props = $props();
+    let { continueHref }: Props = $props();
 
     const queryClient = useQueryClient();
     const client = useFetchClient();
@@ -40,6 +38,10 @@
     }
 </script>
 
+<!--
+    Invitations are accepted only while logging in or signing up with the token, and an existing
+    member is added to organizations directly, so an invitation link here is for another account.
+-->
 <Card.Root class="w-full" data-signed-in-notice>
     <Card.Header>
         <Card.Title>
@@ -51,16 +53,20 @@
                 <Skeleton class="h-5 w-56" />
             {/if}
         </Card.Title>
-        <Card.Description>{description}</Card.Description>
+        <Card.Description>
+            This invitation has to be accepted from the invited account. Sign out, then log in or create an account with the email address it was sent to.
+        </Card.Description>
     </Card.Header>
-    <Card.Footer class="flex flex-wrap gap-2">
-        <Button href={continueHref}>Continue</Button>
-        <Button disabled={isSigningOut} onclick={signOut} variant="outline">
+    <Card.Footer class="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <Button disabled={isSigningOut} onclick={signOut}>
             {#if isSigningOut}
                 <Spinner data-icon="inline-start" /> Signing out…
             {:else}
-                Sign out
+                Sign out and accept invitation
             {/if}
+        </Button>
+        <Button class="max-w-full" href={continueHref} variant="outline">
+            <span class="truncate">Continue as {meQuery.data?.email_address ?? 'this account'} without accepting</span>
         </Button>
     </Card.Footer>
 </Card.Root>

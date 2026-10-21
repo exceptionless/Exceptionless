@@ -78,10 +78,7 @@
             </Card.Content>
         </Card.Root>
     {:else if isSignedIn}
-        <SignedInNotice
-            continueHref={redirectUrl}
-            description="To accept this invitation with a different account, sign out first. To keep using this account, continue."
-        />
+        <SignedInNotice continueHref={redirectUrl} />
     {:else}
         <Card.Root class="w-full">
             <Card.Header>

@@ -87,10 +87,7 @@
                 </Card.Content>
             </Card.Root>
         {:else if isSignedIn}
-            <SignedInNotice
-                continueHref={getPostLoginRedirect(params)}
-                description="To accept this invitation with a new account, sign out first. To keep using this account, continue."
-            />
+            <SignedInNotice continueHref={getPostLoginRedirect(params)} />
         {:else}
             <Card.Root class="w-full">
                 <Card.Header>

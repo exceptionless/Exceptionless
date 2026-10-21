@@ -114,7 +114,8 @@ test('existing invited user can accept an organization invitation when logging i
             await invitedPage.goto(`/login?token=${encodeURIComponent(inviteToken)}`);
             // An existing session is never ended silently; the user chooses to sign out.
             await expect(invitedPage.getByText(`You're signed in as ${invitedEmail}`)).toBeVisible();
-            await invitedPage.getByRole('button', { exact: true, name: 'Sign out' }).click();
+            await expect(invitedPage.getByRole('link', { name: `Continue as ${invitedEmail} without accepting` })).toBeVisible();
+            await invitedPage.getByRole('button', { exact: true, name: 'Sign out and accept invitation' }).click();
             expect((await logoutResponse).ok()).toBe(true);
             await expect(invitedPage.getByRole('link', { name: 'Create an account' })).toHaveAttribute(
                 'href',
