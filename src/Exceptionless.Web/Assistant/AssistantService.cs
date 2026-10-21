@@ -61,6 +61,8 @@ public sealed class AssistantService(
                 userId,
                 request.OrganizationId,
                 request.ConversationId);
+            if (conversationState is not null)
+                conversationState = await RemoveToolResultsFromMissingProjectsAsync(conversationState, request.OrganizationId);
         }
 
         // Visible conversation text comes from the browser. Tool results are loaded only from the
@@ -437,7 +439,8 @@ public sealed class AssistantService(
                     arguments,
                     result,
                     request.Path,
-                    timeProvider.GetUtcNow()));
+                    timeProvider.GetUtcNow(),
+                    GetReferencedProjectIds(arguments, result, request.ProjectId)));
             }
 
             if (conversationToolResults.Count > 0
@@ -693,6 +696,78 @@ public sealed class AssistantService(
             messages.Add(new { role = message.Role, content = message.Content });
 
         return messages;
+    }
+
+    /// <summary>
+    /// Drops cached tool results from projects that no longer exist in the organization, such as a deleted project,
+    /// so a later turn never answers from them. Results whose projects cannot be checked are dropped too.
+    /// </summary>
+    private async Task<AssistantConversationState> RemoveToolResultsFromMissingProjectsAsync(AssistantConversationState state, string organizationId)
+    {
+        var tracked = state.ToolResults.Where(result => result.ProjectIds is not null).ToList();
+        string[] projectIds = tracked.SelectMany(result => result.ProjectIds!).Distinct(StringComparer.Ordinal).ToArray();
+        IReadOnlySet<string> existing;
+        try
+        {
+            existing = await tools.GetExistingProjectIdsAsync(organizationId, projectIds);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Unable to check the projects of cached assistant tool results for organization {OrganizationId}", organizationId);
+            return new AssistantConversationState([]);
+        }
+
+        var kept = tracked.Where(result => result.ProjectIds!.All(existing.Contains)).ToList();
+        return kept.Count == state.ToolResults.Count ? state : new AssistantConversationState(kept);
+    }
+
+    /// <summary>The projects a tool result came from: its projectId argument or the page's project, and any project ids in the result.</summary>
+    internal static IReadOnlyCollection<string> GetReferencedProjectIds(string arguments, string result, string? currentProjectId)
+    {
+        var projectIds = new HashSet<string>(StringComparer.Ordinal);
+        if (!String.IsNullOrWhiteSpace(currentProjectId))
+            projectIds.Add(currentProjectId);
+
+        AddProjectIds(arguments, projectIds);
+        AddProjectIds(result, projectIds);
+        return projectIds;
+    }
+
+    private static void AddProjectIds(string json, HashSet<string> projectIds)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            AddProjectIds(document.RootElement, projectIds, depth: 0);
+        }
+        catch (JsonException)
+        {
+            // A truncated result is not JSON; the page's project still covers it.
+        }
+    }
+
+    private static void AddProjectIds(JsonElement element, HashSet<string> projectIds, int depth)
+    {
+        if (depth > 8)
+            return;
+
+        if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in element.EnumerateArray())
+                AddProjectIds(item, projectIds, depth + 1);
+            return;
+        }
+
+        if (element.ValueKind != JsonValueKind.Object)
+            return;
+
+        foreach (var property in element.EnumerateObject())
+        {
+            if (property.Name is "projectId" or "project_id" && property.Value.ValueKind == JsonValueKind.String && !String.IsNullOrWhiteSpace(property.Value.GetString()))
+                projectIds.Add(property.Value.GetString()!);
+            else
+                AddProjectIds(property.Value, projectIds, depth + 1);
+        }
     }
 
     private static string FormatUtc(DateTimeOffset value)

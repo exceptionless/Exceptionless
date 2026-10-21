@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Time.Testing;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net;
@@ -8,6 +7,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Endpoints;
@@ -16,12 +16,16 @@ using Exceptionless.Web.Mcp;
 using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Messaging;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Options;
 using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
+using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Assistant;
@@ -1035,6 +1039,59 @@ public sealed class AssistantServiceTests
         Assert.DoesNotContain("server-recorded tool results from earlier turns", isolatedHandler.RequestBody);
     }
 
+    [Fact]
+    public async Task StreamAsync_CachedResultsFromMissingProjects_AreNotReused()
+    {
+        var handler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"Answer."}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions { CloneValues = true, LoggerFactory = NullLoggerFactory.Instance, TimeProvider = TimeProvider.System });
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        const string conversationId = "1d4f0c6a1a6b4d61a0f7a2b4c1e9d8f3";
+        var conversations = new AssistantConversationService(cache, lockProvider, NullLogger<AssistantConversationService>.Instance);
+        await conversations.AppendToolResultsAsync("user-id", "organization-id", conversationId,
+        [
+            new AssistantConversationToolResult("call-kept", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Kept stack"}]}}""", null, DateTimeOffset.UtcNow, ["project-1"]),
+            new AssistantConversationToolResult("call-deleted", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Deleted project stack"}]}}""", null, DateTimeOffset.UtcNow, ["project-1", "deleted-project"]),
+            new AssistantConversationToolResult("call-legacy", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Untracked stack"}]}}""", null, DateTimeOffset.UtcNow)
+        ], TestContext.Current.CancellationToken);
+        var projects = new Mock<IProjectRepository>();
+        projects.Setup(repository => repository.GetByIdsAsync(It.IsAny<Ids>(), It.IsAny<CommandOptionsDescriptor<Project>>()))
+            .ReturnsAsync([new Project { Id = "project-1", OrganizationId = "organization-id", Name = "Storefront" }]);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, projectRepository: projects.Object);
+
+        await foreach (var _ in service.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "What happened?")], OrganizationId: "organization-id", ConversationId: conversationId),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+        }
+
+        // A deleted project's results, and results recorded before projects were tracked, never reach the model.
+        Assert.Contains("Kept stack", handler.RequestBody);
+        Assert.DoesNotContain("Deleted project stack", handler.RequestBody);
+        Assert.DoesNotContain("Untracked stack", handler.RequestBody);
+    }
+
+    [Fact]
+    public void GetReferencedProjectIds_ToolResult_IncludesArgumentPageAndResultProjects()
+    {
+        var projectIds = AssistantService.GetReferencedProjectIds(
+            """{"projectId":"project-arg"}""",
+            """{"ok":true,"data":{"items":[{"id":"stack-1","project_id":"project-result"},{"id":"stack-2","project_id":"project-arg"}]}}""",
+            "project-page");
+
+        Assert.Equal(["project-arg", "project-page", "project-result"], projectIds.Order(StringComparer.Ordinal));
+    }
+
     [Theory]
     [InlineData(",\"cost\":0.002345", 2345)]
     [InlineData(",\"cost\":0", 0)]
@@ -1976,10 +2033,10 @@ public sealed class AssistantServiceTests
         public HttpClient CreateClient(string name) => new(handler, disposeHandler: false);
     }
 
-    private static ExceptionlessMcpTools CreateMcpTools(AssistantToolContext assistantToolContext) => new(
+    private static ExceptionlessMcpTools CreateMcpTools(AssistantToolContext assistantToolContext, IProjectRepository? projectRepository = null) => new(
         new HttpContextAccessor { HttpContext = new DefaultHttpContext() },
         null!,
-        null!,
+        projectRepository!,
         null!,
         null!,
         null!,
@@ -2000,7 +2057,8 @@ public sealed class AssistantServiceTests
         AssistantUsageService? usageService = null,
         AssistantModelSettingsService? modelSettingsService = null,
         ILogger<AssistantService>? logger = null,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        IProjectRepository? projectRepository = null)
     {
         cache ??= new InMemoryCacheClient(new InMemoryCacheClientOptions
         {
@@ -2021,7 +2079,7 @@ public sealed class AssistantServiceTests
         return new AssistantService(
             new StubHttpClientFactory(handler),
             appOptions,
-            CreateMcpTools(assistantToolContext),
+            CreateMcpTools(assistantToolContext, projectRepository),
             assistantToolContext,
             new AssistantConversationService(cache, lockProvider, NullLogger<AssistantConversationService>.Instance),
             modelSettingsService,

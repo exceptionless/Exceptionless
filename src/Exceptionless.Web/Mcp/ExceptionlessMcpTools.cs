@@ -1254,6 +1254,16 @@ public sealed class ExceptionlessMcpTools
     }
 
     /// <summary>Resolves a time filter the same way the API's time parameter does, so tools and the app agree on ranges.</summary>
+    /// <summary>Returns which of the given projects still exist in the organization, for reusing cached tool results.</summary>
+    public async Task<IReadOnlySet<string>> GetExistingProjectIdsAsync(string organizationId, IReadOnlyCollection<string> projectIds)
+    {
+        if (projectIds.Count == 0)
+            return new HashSet<string>(StringComparer.Ordinal);
+
+        var projects = await _projectRepository.GetByIdsAsync(projectIds.ToArray(), o => o.Cache());
+        return projects.Where(project => String.Equals(project.OrganizationId, organizationId, StringComparison.Ordinal)).Select(project => project.Id).ToHashSet(StringComparer.Ordinal);
+    }
+
     private bool TryResolveTimeRange(string? time, string? timeZone, out McpTimeRange timeRange, out McpErrorInfo error)
     {
         timeRange = new McpTimeRange(null, null);
