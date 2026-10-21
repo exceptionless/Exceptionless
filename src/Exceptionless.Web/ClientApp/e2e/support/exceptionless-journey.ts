@@ -111,17 +111,16 @@ export class ExceptionlessE2EJourney {
             await this.page.getByRole('link', { name: 'add a new project' }).click();
             await expect(this.page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
 
-            await this.page.getByLabel('Project Name', { exact: true }).fill(this.projectName);
+            await this.page.getByLabel("What's your app called?", { exact: true }).fill(this.projectName);
             await this.page.getByRole('button', { name: 'Continue to Client Setup' }).click();
 
             await this.page.waitForURL(/\/project\/[^/]+\/configure/, { timeout: 30_000 });
             this.projectId = getIdFromUrl(this.page, /\/project\/([^/]+)\/configure/);
         }
 
-        await expect(this.page.getByRole('button', { name: 'Please select a project type' })).toBeVisible();
+        await expect(this.page.getByText('Listening for your first event')).toBeVisible();
 
-        await selectProjectType(this.page, 'Bash Shell');
-        await expect(this.page.getByText('Execute the following in your shell.')).toBeVisible();
+        await selectProjectType(this.page, 'REST API (curl)');
         await expect(this.page.getByText(/Authorization: Bearer (?!YOUR_API_KEY)[A-Za-z0-9_-]+/)).toBeVisible();
 
         this.projectToken = await getProjectTokenFromConfigurePage(this.page);
@@ -208,10 +207,10 @@ export class ExceptionlessE2EJourney {
         await this.page.getByLabel('Email', { exact: true }).fill(this.email);
         await waitForEmailValidation(this.page);
         await this.page.getByLabel('Password', { exact: true }).fill(E2E_TEST_PASSWORD);
-        await this.page.getByRole('button', { name: 'Create My Account' }).click();
+        await this.page.getByRole('button', { name: 'Create account' }).click();
 
         this.userToken = await getUserToken(this.page);
-        const setupHeading = this.page.getByText('Set Up Exceptionless');
+        const setupHeading = this.page.getByRole('heading', { name: 'Set up Exceptionless' });
 
         if (!(await setupHeading.isVisible())) {
             await this.page.goto('/organization/add');
@@ -219,14 +218,16 @@ export class ExceptionlessE2EJourney {
 
         await expect(setupHeading).toBeVisible({ timeout: 30_000 });
 
-        await this.page.getByLabel('Organization Name', { exact: true }).fill(this.organizationName);
-        await this.page.getByLabel('Project Name', { exact: true }).fill(this.projectName);
-        await this.page.getByRole('button', { name: 'Continue' }).click();
+        // Exie suggests an organization name from the account; the journey replaces it with a unique one.
+        await expect(this.page.getByLabel('Organization name', { exact: true })).not.toHaveValue('');
+        await this.page.getByLabel("What's your app called?", { exact: true }).fill(this.projectName);
+        await this.page.getByLabel('Organization name', { exact: true }).fill(this.organizationName);
+        await this.page.getByRole('button', { exact: true, name: 'Continue' }).click();
 
         await this.page.waitForURL(/\/project\/[^/]+\/configure/, { timeout: 30_000 });
         this.projectId = getIdFromUrl(this.page, /\/project\/([^/]+)\/configure/);
         this.organizationId = await this.getOrganizationIdByName();
-        await expect(this.page.getByRole('button', { name: 'Please select a project type' })).toBeVisible();
+        await expect(this.page.getByRole('heading', { name: 'Pick your platform' })).toBeVisible();
     }
 
     public async submitRepresentativeEvent(): Promise<void> {

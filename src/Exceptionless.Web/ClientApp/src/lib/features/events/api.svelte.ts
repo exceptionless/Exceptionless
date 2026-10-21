@@ -107,6 +107,7 @@ export const queryKeys = {
     organizationsCount: (id: string | undefined, params?: GetOrganizationCountRequest['params']) => [...queryKeys.organizations(id), 'count', params] as const,
     organizationsEvents: (id: string | undefined, params?: GetEventsParams) => [...queryKeys.organizations(id), 'events', params] as const,
     organizationsSessions: (id: string | undefined, params?: GetEventsParams) => [...queryKeys.organizations(id), 'sessions', 'list', params] as const,
+    projectLatest: (id: string | undefined) => [...queryKeys.projects(id), 'latest'] as const,
     projects: (id: string | undefined) => [...queryKeys.type, 'projects', id] as const,
     projectsCount: (id: string | undefined, params?: GetProjectCountRequest['params']) => [...queryKeys.projects(id), 'count', params] as const,
     sessionEvents: (id: string | undefined, projectId?: string | undefined, params?: GetSessionEventsRequest['params']) =>
@@ -235,6 +236,15 @@ export interface GetProjectCountRequest {
         offset?: string;
         time?: string;
     };
+    route: {
+        projectId: string | undefined;
+    };
+}
+
+export interface GetProjectLatestEventRequest {
+    enabled?: () => boolean;
+    /** Refetch every 1.5 seconds until an event is found, for example right after a change notification. */
+    pollUntilFound?: boolean;
     route: {
         projectId: string | undefined;
     };
@@ -579,6 +589,39 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
  * Get events within a session by session ID.
  * Uses endpoint: /events/sessions/{sessionId}
  */
+/** The newest event in a project, for example the first event after client setup. */
+export function getProjectLatestEventQuery(request: GetProjectLatestEventRequest) {
+    return createQuery<null | PersistentEvent, ProblemDetails>(() => {
+        const projectId = request.route.projectId;
+        const requestEnabled = request.enabled?.() ?? true;
+
+        return {
+            enabled: () => !!accessToken.current && !!projectId && requestEnabled,
+            queryFn: async ({ signal }: { signal: AbortSignal }) => {
+                const client = useFetchClient();
+                const response = await client.getJSON<PersistentEvent[]>(`projects/${projectId}/events`, {
+                    params: {
+                        ...(DEFAULT_OFFSET
+                            ? {
+                                  offset: DEFAULT_OFFSET
+                              }
+                            : {}),
+                        limit: 1,
+                        sort: '-date'
+                    },
+                    signal
+                });
+
+                return response.data?.[0] ?? null;
+            },
+            queryKey: queryKeys.projectLatest(projectId),
+            refetchInterval: request.pollUntilFound
+                ? (query: { state: { data: null | PersistentEvent | undefined } }) => (query.state.data ? false : 1500)
+                : false
+        };
+    });
+}
+
 export function getSessionEventsQuery(request: GetSessionEventsRequest) {
     return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.sessionId,

@@ -69,15 +69,13 @@ export async function navigateToSidebarView(page: Page, parentName: string, chil
     await childLink.click();
 }
 
-export async function selectProjectType(page: Page, optionName: string): Promise<void> {
-    await page.getByRole('button', { name: /Please select a project type|Command Line:/ }).click();
-    const option = page.getByRole('option', { name: optionName });
-
-    try {
-        await option.click({ timeout: 5_000 });
-    } catch {
-        await page.keyboard.press('Enter');
-    }
+/** Picks a platform tile on the client setup page, for example "REST API (curl)". */
+export async function selectProjectType(page: Page, platformName: string): Promise<void> {
+    await page
+        .locator('[data-tour="project-configure-platform"]')
+        .getByRole('button', { name: new RegExp(`^${escapeRegExp(platformName)}(?:\\s|$)`) })
+        .click();
+    await expect(page.getByRole('heading', { name: `Connect ${platformName}` })).toBeVisible();
 }
 
 export async function waitForEmailValidation(page: Page): Promise<void> {
