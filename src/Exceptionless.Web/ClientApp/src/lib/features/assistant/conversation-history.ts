@@ -6,7 +6,10 @@ const ACTIVE_PREFIX = `${STORAGE_PREFIX}active:`;
 const MAX_CONVERSATIONS = 20;
 /** Saved chats can hold event details, so they are not kept forever. */
 const MAX_CONVERSATION_AGE_MS = 30 * 24 * 60 * 60 * 1000;
-/** Keeps Exie's history well under the origin's storage quota, which it shares with the sign-in token. */
+/**
+ * One budget for every user and organization's history together, so belonging to many organizations cannot fill
+ * the origin's storage quota, which Exie shares with the sign-in token.
+ */
 const MAX_STORED_CHARACTERS = 1_000_000;
 const MAX_TITLE_LENGTH = 80;
 /** Tool results above this size keep only the fields Exie needs to link resources. */
@@ -124,12 +127,35 @@ function compactTool(tool: AssistantToolActivity): AssistantToolActivity {
     }
 }
 
+/** Finds the oldest chat in any history except the one being saved now, which must be kept. */
+function findOldestConversation(histories: Map<string, AssistantConversation[]>, keep: AssistantConversation): undefined | { index: number; key: string } {
+    let oldest: undefined | { index: number; key: string; updatedAt: number };
+    for (const [key, conversations] of histories) {
+        conversations.forEach((conversation, index) => {
+            if (conversation !== keep && (!oldest || conversation.updatedAt < oldest.updatedAt)) {
+                oldest = { index, key, updatedAt: conversation.updatedAt };
+            }
+        });
+    }
+
+    return oldest && { index: oldest.index, key: oldest.key };
+}
+
 function getStorage(): Storage | undefined {
     try {
         return typeof localStorage === 'undefined' ? undefined : localStorage;
     } catch {
         return undefined;
     }
+}
+
+function getStoredSize(histories: Map<string, AssistantConversation[]>): number {
+    let size = 0;
+    for (const conversations of histories.values()) {
+        size += conversations.length > 0 ? JSON.stringify(conversations).length : 0;
+    }
+
+    return size;
 }
 
 function isConversation(value: unknown): value is AssistantConversation {
@@ -154,6 +180,51 @@ function pickResourceFields(value: unknown): unknown {
     return Object.fromEntries(Object.entries(value).filter(([key, fieldValue]) => RESOURCE_FIELDS.includes(key) && typeof fieldValue === 'string'));
 }
 
+/** Reads another scope's history as stored, without the expiry cleanup that loading performs. */
+function readStoredHistories(storage: Storage, exceptKey: string): Map<string, AssistantConversation[]> {
+    const histories = new Map<string, AssistantConversation[]>();
+    for (let index = 0; index < storage.length; index++) {
+        const key = storage.key(index);
+        if (!key?.startsWith(STORAGE_PREFIX) || key.startsWith(ACTIVE_PREFIX) || key === exceptKey) {
+            continue;
+        }
+
+        try {
+            const stored = JSON.parse(storage.getItem(key) ?? '[]') as unknown;
+            histories.set(key, Array.isArray(stored) ? stored.filter(isConversation) : []);
+        } catch {
+            histories.set(key, []);
+        }
+    }
+
+    return histories;
+}
+
+/** Saves a history, dropping its oldest chats if the browser's storage is full for other reasons. */
+function trySetItem(storage: Storage, key: string, history: AssistantConversation[], keep: AssistantConversation): boolean {
+    let remaining = history;
+    while (remaining.length > 0) {
+        try {
+            storage.setItem(key, JSON.stringify(remaining));
+            return true;
+        } catch {
+            // Storage is full: drop the oldest chat, but never the one being saved now.
+            const oldestIndex = remaining.reduce(
+                (oldest, conversation, index) =>
+                    conversation !== keep && (oldest < 0 || conversation.updatedAt < remaining[oldest]!.updatedAt) ? index : oldest,
+                -1
+            );
+            if (oldestIndex < 0) {
+                return false;
+            }
+
+            remaining = remaining.filter((_, index) => index !== oldestIndex);
+        }
+    }
+
+    return false;
+}
+
 function withoutToolResults(conversation: AssistantConversation): AssistantConversation {
     return {
         ...conversation,
@@ -175,26 +246,32 @@ function writeConversations(scope: string, conversations: AssistantConversation[
         return;
     }
 
-    let remaining = conversations;
-    let hasStrippedNewest = false;
-    while (remaining.length > 0) {
-        const value = JSON.stringify(remaining);
-        if (value.length <= MAX_STORED_CHARACTERS) {
-            try {
-                storage.setItem(key, value);
-                return;
-            } catch {
-                // Storage is full: shrink the history below and try again.
-            }
-        }
-
-        if (remaining.length > 1) {
-            remaining = remaining.slice(0, -1);
-        } else if (!hasStrippedNewest) {
-            remaining = [withoutToolResults(remaining[0]!)];
-            hasStrippedNewest = true;
+    // Every scope shares one budget, so the oldest chats anywhere make room before this scope's newest chat is dropped.
+    const histories = readStoredHistories(storage, key);
+    // A copy, since evicting chats must not change the list the caller keeps in memory.
+    histories.set(key, [...conversations]);
+    const changedKeys = new Set([key]);
+    let newest = conversations[0]!;
+    while (getStoredSize(histories) > MAX_STORED_CHARACTERS) {
+        const oldest = findOldestConversation(histories, newest);
+        if (oldest) {
+            histories.get(oldest.key)!.splice(oldest.index, 1);
+            changedKeys.add(oldest.key);
+        } else if (newest.messages.some((message) => message.tools.some((tool) => tool.result !== undefined))) {
+            newest = withoutToolResults(newest);
+            histories.set(key, [newest]);
         } else {
             // The newest chat cannot fit on its own, so keep the history that was last saved.
+            return;
+        }
+    }
+
+    // Write the scopes that gave up chats first, which frees space before this scope grows.
+    for (const changedKey of [...changedKeys].filter((item) => item !== key).concat(key)) {
+        const history = histories.get(changedKey)!;
+        if (history.length === 0) {
+            storage.removeItem(changedKey);
+        } else if (!trySetItem(storage, changedKey, history, newest)) {
             return;
         }
     }

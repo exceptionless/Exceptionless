@@ -94,6 +94,34 @@ describe('conversation history', () => {
         expect(storage.getItem('exie:conversations:v1:scope')!.length).toBeLessThanOrEqual(1_000_000);
     });
 
+    it('shares one storage budget across organizations and drops the oldest chats anywhere first', () => {
+        const answer: AssistantChatMessage = { content: 'x'.repeat(300_000), id: 'a', parts: [], role: 'assistant', tools: [] };
+        for (let index = 0; index < 3; index++) {
+            saveAssistantConversation('user-1:org-a', conversation(`a-${index}`, index, [answer]), storage);
+        }
+        setActiveAssistantConversationId('user-1:org-a', 'a-2', storage);
+
+        saveAssistantConversation('user-1:org-b', conversation('b-0', 10, [answer]), storage);
+
+        expect(loadAssistantConversations('user-1:org-a', storage).map((item) => item.id)).toEqual(['a-2', 'a-1']);
+        expect(loadAssistantConversations('user-1:org-b', storage).map((item) => item.id)).toEqual(['b-0']);
+        const total = Array.from({ length: storage.length }, (_, index) => storage.key(index))
+            .filter((key) => key?.startsWith('exie:conversations:v1:') && !key.startsWith('exie:conversations:v1:active:'))
+            .reduce((size, key) => size + storage.getItem(key!)!.length, 0);
+        expect(total).toBeLessThanOrEqual(1_000_000);
+        expect(getActiveAssistantConversationId('user-1:org-a', storage)).toBe('a-2');
+    });
+
+    it('removes another organization history once all of its chats are dropped for space', () => {
+        const answer: AssistantChatMessage = { content: 'x'.repeat(600_000), id: 'a', parts: [], role: 'assistant', tools: [] };
+        saveAssistantConversation('user-1:org-a', conversation('a-0', 0, [answer]), storage);
+
+        saveAssistantConversation('user-1:org-b', conversation('b-0', 10, [answer]), storage);
+
+        expect(storage.getItem('exie:conversations:v1:user-1:org-a')).toBeNull();
+        expect(loadAssistantConversations('user-1:org-b', storage).map((item) => item.id)).toEqual(['b-0']);
+    });
+
     it('keeps the saved history when the newest conversation is too large to store', () => {
         saveAssistantConversation('scope', conversation('older', 1, [userMessage('Older question')]), storage);
         const answer: AssistantChatMessage = { content: 'x'.repeat(1_100_000), id: 'a', parts: [], role: 'assistant', tools: [] };
