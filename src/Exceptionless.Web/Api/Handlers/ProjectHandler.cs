@@ -558,7 +558,9 @@ public class ProjectHandler(
         value.AddDefaultNotificationSettings(GetCurrentUserId(httpContext));
         value.SetDefaultUserAgentBotPatterns();
         value.Configuration.IncrementVersion();
-        return repository.AddAsync(value, o => o.Cache());
+        // Clients list the organization's projects right after creating one (first-run setup), so the
+        // new project must be searchable before we respond.
+        return repository.AddAsync(value, o => o.Cache().ImmediateConsistency());
     }
 
     private async Task<Result<ViewProject>?> CanUpdateAsync(Project original, Delta<UpdateProject> changes, HttpContext httpContext)

@@ -836,7 +836,8 @@ public class OrganizationHandler(
             : plans.FreePlan;
         billingManager.ApplyBillingPlan(value, plan, user);
 
-        var organization = await repository.AddAsync(value, o => o.Cache());
+        // First-run setup lists organizations immediately after creating one, so make it searchable before responding.
+        var organization = await repository.AddAsync(value, o => o.Cache().ImmediateConsistency());
 
         user.OrganizationIds.Add(organization.Id);
         await userRepository.SaveAsync(user, o => o.Cache());
