@@ -112,6 +112,40 @@ describe('conversation history', () => {
         expect(getActiveAssistantConversationId('user-1:org-a', storage)).toBe('a-2');
     });
 
+    it('returns the history as stored after chats are dropped for space', () => {
+        const answer: AssistantChatMessage = { content: 'x'.repeat(300_000), id: 'a', parts: [], role: 'assistant', tools: [] };
+        for (let index = 0; index < 3; index++) {
+            saveAssistantConversation('scope', conversation(`chat-${index}`, index, [answer]), storage);
+        }
+
+        const conversations = saveAssistantConversation('scope', conversation('chat-3', 3, [answer]), storage);
+
+        expect(conversations.map((item) => item.id)).toEqual(['chat-3', 'chat-2', 'chat-1']);
+        expect(loadAssistantConversations('scope', storage).map((item) => item.id)).toEqual(['chat-3', 'chat-2', 'chat-1']);
+    });
+
+    it('keeps other organizations chats when the new chat cannot be saved', () => {
+        const answer: AssistantChatMessage = { content: 'x'.repeat(300_000), id: 'a', parts: [], role: 'assistant', tools: [] };
+        for (let index = 0; index < 3; index++) {
+            saveAssistantConversation('user-1:org-a', conversation(`a-${index}`, index, [answer]), storage);
+        }
+
+        // Unrelated data fills the browser's quota, so this organization's history cannot be written at all.
+        const setItem = storage.setItem.bind(storage);
+        storage.setItem = (key, value) => {
+            if (key === 'exie:conversations:v1:user-1:org-b') {
+                throw new DOMException('Quota exceeded', 'QuotaExceededError');
+            }
+
+            setItem(key, value);
+        };
+
+        const conversations = saveAssistantConversation('user-1:org-b', conversation('b-0', 10, [answer]), storage);
+
+        expect(conversations).toEqual([]);
+        expect(loadAssistantConversations('user-1:org-a', storage).map((item) => item.id)).toEqual(['a-2', 'a-1', 'a-0']);
+    });
+
     it('removes another organization history once all of its chats are dropped for space', () => {
         const answer: AssistantChatMessage = { content: 'x'.repeat(600_000), id: 'a', parts: [], role: 'assistant', tools: [] };
         saveAssistantConversation('user-1:org-a', conversation('a-0', 0, [answer]), storage);
@@ -128,7 +162,8 @@ describe('conversation history', () => {
 
         const conversations = saveAssistantConversation('scope', conversation('huge', 2, [answer]), storage);
 
-        expect(conversations.map((item) => item.id)).toEqual(['huge', 'older']);
+        // The returned history is what is stored, so the oversized chat that could not be saved is not offered later.
+        expect(conversations.map((item) => item.id)).toEqual(['older']);
         expect(loadAssistantConversations('scope', storage).map((item) => item.id)).toEqual(['older']);
     });
 

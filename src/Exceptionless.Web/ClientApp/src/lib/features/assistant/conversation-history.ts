@@ -32,8 +32,7 @@ export function clearAssistantConversations(storage = getStorage()): void {
 
 export function deleteAssistantConversation(scope: string, id: string, storage = getStorage()): AssistantConversation[] {
     const conversations = loadAssistantConversations(scope, storage).filter((conversation) => conversation.id !== id);
-    writeConversations(scope, conversations, storage);
-    return conversations;
+    return writeConversations(scope, conversations, storage);
 }
 
 /**
@@ -81,7 +80,7 @@ export function loadAssistantConversations(scope: string, storage = getStorage()
     return conversations;
 }
 
-/** Saves a conversation as the most recent one and returns the updated history, newest first. */
+/** Saves a conversation as the most recent one and returns the history as stored, newest first. */
 export function saveAssistantConversation(scope: string, conversation: AssistantConversation, storage = getStorage()): AssistantConversation[] {
     const compacted: AssistantConversation = {
         ...conversation,
@@ -91,8 +90,8 @@ export function saveAssistantConversation(scope: string, conversation: Assistant
         .sort((left, right) => right.updatedAt - left.updatedAt)
         .slice(0, MAX_CONVERSATIONS);
 
-    writeConversations(scope, conversations, storage);
-    return conversations;
+    // The stored history can be shorter than this list once older chats are dropped for space.
+    return writeConversations(scope, conversations, storage);
 }
 
 export function setActiveAssistantConversationId(scope: string, id: null | string, storage = getStorage()): void {
@@ -189,24 +188,28 @@ function readStoredHistories(storage: Storage, exceptKey: string): Map<string, A
             continue;
         }
 
-        try {
-            const stored = JSON.parse(storage.getItem(key) ?? '[]') as unknown;
-            histories.set(key, Array.isArray(stored) ? stored.filter(isConversation) : []);
-        } catch {
-            histories.set(key, []);
-        }
+        histories.set(key, readStoredHistory(storage, key));
     }
 
     return histories;
 }
 
-/** Saves a history, dropping its oldest chats if the browser's storage is full for other reasons. */
-function trySetItem(storage: Storage, key: string, history: AssistantConversation[], keep: AssistantConversation): boolean {
+function readStoredHistory(storage: Storage, key: string): AssistantConversation[] {
+    try {
+        const stored = JSON.parse(storage.getItem(key) ?? '[]') as unknown;
+        return Array.isArray(stored) ? stored.filter(isConversation) : [];
+    } catch {
+        return [];
+    }
+}
+
+/** Saves a history, dropping its oldest chats if the browser's storage is full for other reasons, and returns what was saved. */
+function trySetItem(storage: Storage, key: string, history: AssistantConversation[], keep: AssistantConversation): AssistantConversation[] | undefined {
     let remaining = history;
     while (remaining.length > 0) {
         try {
             storage.setItem(key, JSON.stringify(remaining));
-            return true;
+            return remaining;
         } catch {
             // Storage is full: drop the oldest chat, but never the one being saved now.
             const oldestIndex = remaining.reduce(
@@ -215,14 +218,14 @@ function trySetItem(storage: Storage, key: string, history: AssistantConversatio
                 -1
             );
             if (oldestIndex < 0) {
-                return false;
+                return undefined;
             }
 
             remaining = remaining.filter((_, index) => index !== oldestIndex);
         }
     }
 
-    return false;
+    return undefined;
 }
 
 function withoutToolResults(conversation: AssistantConversation): AssistantConversation {
@@ -235,15 +238,16 @@ function withoutToolResults(conversation: AssistantConversation): AssistantConve
     };
 }
 
-function writeConversations(scope: string, conversations: AssistantConversation[], storage: Storage | undefined): void {
+/** Writes a scope's history within the shared budget and returns what is stored for that scope afterward. */
+function writeConversations(scope: string, conversations: AssistantConversation[], storage: Storage | undefined): AssistantConversation[] {
     if (!storage) {
-        return;
+        return conversations;
     }
 
     const key = `${STORAGE_PREFIX}${scope}`;
     if (conversations.length === 0) {
         storage.removeItem(key);
-        return;
+        return [];
     }
 
     // Every scope shares one budget, so the oldest chats anywhere make room before this scope's newest chat is dropped.
@@ -262,17 +266,38 @@ function writeConversations(scope: string, conversations: AssistantConversation[
             histories.set(key, [newest]);
         } else {
             // The newest chat cannot fit on its own, so keep the history that was last saved.
-            return;
+            return readStoredHistory(storage, key);
         }
     }
 
-    // Write the scopes that gave up chats first, which frees space before this scope grows.
-    for (const changedKey of [...changedKeys].filter((item) => item !== key).concat(key)) {
+    // Write the scopes that gave up chats first, which frees space before this scope grows. If this scope still
+    // cannot be saved, put the other scopes back so a failed save never costs older chats.
+    const previous = new Map([...changedKeys].map((changedKey) => [changedKey, storage.getItem(changedKey)]));
+    for (const changedKey of [...changedKeys].filter((item) => item !== key)) {
         const history = histories.get(changedKey)!;
         if (history.length === 0) {
             storage.removeItem(changedKey);
-        } else if (!trySetItem(storage, changedKey, history, newest)) {
-            return;
+        } else {
+            try {
+                storage.setItem(changedKey, JSON.stringify(history));
+            } catch {
+                // A shorter history fits where the longer one did; if it does not, the scope keeps its previous chats.
+            }
         }
     }
+
+    const saved = trySetItem(storage, key, histories.get(key)!, newest);
+    if (saved) {
+        return saved;
+    }
+
+    for (const [changedKey, value] of previous) {
+        if (value === null) {
+            storage.removeItem(changedKey);
+        } else {
+            storage.setItem(changedKey, value);
+        }
+    }
+
+    return readStoredHistory(storage, key);
 }
