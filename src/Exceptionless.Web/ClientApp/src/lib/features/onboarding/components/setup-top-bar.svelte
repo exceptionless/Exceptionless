@@ -37,7 +37,7 @@
 </script>
 
 <header class="border-border flex items-center justify-between gap-3 border-b px-4 py-3">
-    <Logo class="mx-0 max-h-8 w-auto" />
+    <Logo class="mx-0 h-8 max-h-none w-auto object-contain" />
     <div class="flex min-w-0 items-center gap-2 text-sm">
         {#if emailAddress}
             <span class="text-muted-foreground hidden min-w-0 truncate sm:inline">Not {emailAddress}?</span>

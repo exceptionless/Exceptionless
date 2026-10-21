@@ -14,9 +14,11 @@
         /** Mark the current step as done too (for example, after the first event arrives). */
         currentComplete?: boolean;
         orientation?: 'horizontal' | 'vertical';
+        /** Show each step's one-line description (vertical layout only). */
+        showDescriptions?: boolean;
     }
 
-    let { class: className, current, currentComplete = false, orientation = 'horizontal' }: Props = $props();
+    let { class: className, current, currentComplete = false, orientation = 'horizontal', showDescriptions = false }: Props = $props();
 
     const currentIndex = $derived(current ? ONBOARDING_STEPS.findIndex((step) => step.id === current) : -1);
 </script>
@@ -48,16 +50,23 @@
                         {index + 1}
                     {/if}
                 </span>
-                <span
-                    class={cn(
-                        'text-sm whitespace-nowrap',
-                        isCurrent ? 'text-foreground font-medium' : 'text-muted-foreground',
-                        orientation === 'horizontal' && !isCurrent && 'sr-only sm:not-sr-only'
-                    )}
-                >
-                    {step.label}
-                    {#if isDone}<span class="sr-only"> (done)</span>{/if}
-                </span>
+                {#if orientation === 'vertical' && showDescriptions}
+                    <span class="flex min-w-0 flex-col">
+                        <span class="text-foreground text-sm font-medium">{step.label}</span>
+                        <span class="text-muted-foreground text-sm">{step.description}</span>
+                    </span>
+                {:else}
+                    <span
+                        class={cn(
+                            'text-sm whitespace-nowrap',
+                            isCurrent ? 'text-foreground font-medium' : 'text-muted-foreground',
+                            orientation === 'horizontal' && !isCurrent && 'sr-only sm:not-sr-only'
+                        )}
+                    >
+                        {step.label}
+                        {#if isDone}<span class="sr-only"> (done)</span>{/if}
+                    </span>
+                {/if}
                 {#if orientation === 'horizontal' && index < ONBOARDING_STEPS.length - 1}
                     <span aria-hidden="true" class={cn('h-px min-w-3 flex-1', isDone ? 'bg-primary' : 'bg-border')}></span>
                 {/if}
