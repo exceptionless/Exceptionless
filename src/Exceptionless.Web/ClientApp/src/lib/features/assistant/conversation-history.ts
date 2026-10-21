@@ -4,6 +4,8 @@ const STORAGE_PREFIX = 'exie:conversations:v1:';
 /** Shares the history prefix so signing out clears it too. */
 const ACTIVE_PREFIX = `${STORAGE_PREFIX}active:`;
 const MAX_CONVERSATIONS = 20;
+/** Saved chats can hold event details, so they are not kept forever. */
+const MAX_CONVERSATION_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 /** Keeps Exie's history well under the origin's storage quota, which it shares with the sign-in token. */
 const MAX_STORED_CHARACTERS = 1_000_000;
 const MAX_TITLE_LENGTH = 80;
@@ -59,7 +61,10 @@ export function loadAssistantConversations(scope: string, storage = getStorage()
 
     try {
         const conversations = JSON.parse(value) as unknown;
-        return Array.isArray(conversations) ? conversations.filter(isConversation) : [];
+        const oldestUpdatedAt = Date.now() - MAX_CONVERSATION_AGE_MS;
+        return Array.isArray(conversations)
+            ? conversations.filter((conversation) => isConversation(conversation) && conversation.updatedAt >= oldestUpdatedAt)
+            : [];
     } catch {
         return [];
     }

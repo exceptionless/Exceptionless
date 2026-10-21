@@ -43,8 +43,9 @@ class MemoryStorage implements Storage {
 
 let storage: MemoryStorage;
 
-function conversation(id: string, updatedAt: number, messages: AssistantChatMessage[] = []): AssistantConversation {
-    return { id, messages, title: id, updatedAt };
+/** Saved chats expire after 30 days, so the relative order is based on the current time. */
+function conversation(id: string, order: number, messages: AssistantChatMessage[] = []): AssistantConversation {
+    return { id, messages, title: id, updatedAt: Date.now() + order };
 }
 
 function userMessage(content: string): AssistantChatMessage {
@@ -118,6 +119,13 @@ describe('conversation history', () => {
         const [saved] = loadAssistantConversations('scope', storage);
         expect(saved?.messages[0]?.tools).toHaveLength(70);
         expect(saved?.messages[0]?.tools[0]?.result).toBeUndefined();
+    });
+
+    it('drops chats older than 30 days', () => {
+        const old = { ...conversation('old', 0), updatedAt: Date.now() - 31 * 24 * 60 * 60 * 1000 };
+        storage.setItem('exie:conversations:v1:scope', JSON.stringify([conversation('recent', 0), old]));
+
+        expect(loadAssistantConversations('scope', storage).map((item) => item.id)).toEqual(['recent']);
     });
 
     it('remembers which chat to reopen, including a new blank chat', () => {

@@ -128,9 +128,11 @@
 {/snippet}
 
 <div class={cn('w-full min-w-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)}>
+    <!-- Answers can repeat untrusted event data: raw HTML shows as text so it cannot skip the link check, and remote images cannot load. -->
     <Streamdown
         {content}
         {components}
+        allowedImagePrefixes={[]}
         baseTheme="shadcn"
         {linkSafety}
         controls={{
@@ -141,6 +143,7 @@
             table: false
         }}
         mergeTheme={true}
+        renderHtml={false}
         shikiTheme={currentTheme}
         shikiThemes={{
             'github-dark-default': githubDarkDefault,

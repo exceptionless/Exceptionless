@@ -18,7 +18,6 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Assistant;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
-using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Serializer;
@@ -1589,8 +1588,7 @@ public sealed class ExceptionlessMcpTools
 
     private static bool IsExpectedToolError(Exception ex)
     {
-        // DocumentException covers queries Elasticsearch rejects at search time, so the model can correct its filter.
-        return ex is ArgumentException or FormatException or InvalidOperationException or JsonException or DocumentException || ex.GetType().Name == "QueryValidationException";
+        return ex is ArgumentException or FormatException or InvalidOperationException or JsonException || ex.GetType().Name == "QueryValidationException";
     }
 
     private static McpErrorInfo ToLookupError(string resourceName, string resourceId, Exception ex)

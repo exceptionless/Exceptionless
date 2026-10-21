@@ -122,7 +122,3 @@ export function getAssistantMessageSegments(message: AssistantChatMessage): Assi
 
     return segments;
 }
-
-export function hasAssistantMessageOutput(message: AssistantChatMessage): boolean {
-    return message.content.trim().length > 0 || message.tools.length > 0;
-}

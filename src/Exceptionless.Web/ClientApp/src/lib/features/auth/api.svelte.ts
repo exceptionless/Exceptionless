@@ -2,7 +2,6 @@ import { PUBLIC_INTERCOM_APPID } from '$app/env/public';
 import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createQuery, type QueryClient } from '@tanstack/svelte-query';
 
-import { clearAssistantConversations } from '#features/assistant/conversation-history.ts';
 import { getIntercomTokenSessionKey, intercomTokenRefreshIntervalMs } from '#features/intercom/config.ts';
 import { organization } from '#features/organizations/context.svelte.ts';
 
@@ -112,7 +111,6 @@ export async function logout(queryClient?: QueryClient, client = useFetchClient(
     queryClient?.clear();
 
     clearAuthenticationSession();
-    clearAssistantConversations();
 
     organization.current = undefined;
     if (typeof localStorage !== 'undefined') {

