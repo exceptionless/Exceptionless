@@ -133,7 +133,7 @@ public sealed class AssistantServiceTests
             item => Assert.Equal("done", item.Type));
         Assert.Equal("Bearer", handler.AuthorizationScheme);
         using var providerRequest = JsonDocument.Parse(handler.RequestBody);
-        Assert.Equal("~deepseek/deepseek-v4-flash-latest", providerRequest.RootElement.GetProperty("model").GetString());
+        Assert.Equal("openai/gpt-6.1-sol", providerRequest.RootElement.GetProperty("model").GetString());
         Assert.Contains($"\"max_tokens\":{AssistantLimits.MaximumOutputTokens}", handler.RequestBody);
         Assert.Contains("get_event", handler.RequestBody);
         Assert.Contains("get_stack", handler.RequestBody);
