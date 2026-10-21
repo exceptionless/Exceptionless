@@ -1,4 +1,4 @@
-import { render } from '@testing-library/svelte';
+import { render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -9,9 +9,17 @@ import OrganizationNotifications, { recordConfiguredProjectId } from './organiza
 const organizationRefetch = vi.hoisted(() => vi.fn());
 const projectsRefetch = vi.hoisted(() => vi.fn());
 const projects = vi.hoisted(() => [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }]);
+const organizationState = vi.hoisted(() => ({
+    current: undefined as undefined | { has_premium_features: boolean; id: string; name: string; plan_name: string }
+}));
+
+vi.mock('$app/paths', () => ({
+    resolve: (path: string, params?: Record<string, string>) =>
+        Object.entries(params ?? {}).reduce((href, [key, value]) => href.replace(`[${key}]`, value), path.replace('/(app)', ''))
+}));
 
 vi.mock('#features/organizations/api.svelte.ts', () => ({
-    getOrganizationQuery: () => ({ data: undefined, refetch: organizationRefetch }),
+    getOrganizationQuery: () => ({ data: organizationState.current, refetch: organizationRefetch }),
     getOrganizationsQuery: () => ({ data: { data: [] } })
 }));
 
@@ -31,7 +39,40 @@ describe('OrganizationNotifications', () => {
     beforeEach(() => {
         organizationRefetch.mockReset();
         projectsRefetch.mockReset();
-        projects[0]!.is_configured = false;
+        organizationState.current = undefined;
+        projects.splice(0, projects.length, { id: 'project-id', is_configured: false, organization_id: 'organization-id' });
+    });
+
+    it.each([
+        ['no projects', [], {}, 'Set up your first project'],
+        [
+            'only unconfigured projects',
+            [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }],
+            {},
+            "We haven't received any events yet!"
+        ],
+        ['no projects on a premium page', [], { premiumFeatureName: 'Sessions', requiresPremium: true }, 'Set up your first project'],
+        [
+            'a configured project',
+            [{ id: 'project-id', is_configured: true, organization_id: 'organization-id' }],
+            {},
+            'Free Organization is currently on a free plan.'
+        ]
+    ])('shows setup prompts before free plan upsells for an organization with %s', (_, organizationProjects, props, title) => {
+        // Arrange
+        organizationState.current = { has_premium_features: false, id: 'organization-id', name: 'Free Organization', plan_name: 'Free' };
+        projects.splice(0, projects.length, ...organizationProjects);
+
+        // Act
+        render(OrganizationNotifications, {
+            isChatEnabled: false,
+            openChat: vi.fn(),
+            ...props
+        });
+
+        // Assert
+        expect(screen.getByText(title)).toBeInTheDocument();
+        expect(screen.getAllByRole('alert')).toHaveLength(1);
     });
 
     it('records configuration events before project data loads', () => {

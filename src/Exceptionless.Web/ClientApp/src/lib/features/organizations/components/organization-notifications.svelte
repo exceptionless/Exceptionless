@@ -127,6 +127,7 @@
 {/if}
 
 {#if organization}
+    <!-- Account problems come first, then setup steps, then upgrade prompts. -->
     {#if isSuspended}
         <SuspendedOrganizationNotification
             name={organization.name}
@@ -142,13 +143,13 @@
         <HourlyOverageNotification name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if isExceededRequestLimit}
         <RequestLimitNotification name={organization.name} {isChatEnabled} {openChat} {...restProps} />
+    {:else if hasNoProjects}
+        <SetupFirstProjectNotification {...restProps} />
     {:else if needsProjectConfiguration}
         <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
     {:else if requiresPremiumUpgrade}
         <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} {premiumFeatureName} {...restProps} />
     {:else if isFreePlan}
         <FreePlanNotification name={organization.name} organizationId={organization.id} {...restProps} />
-    {:else if hasNoProjects}
-        <SetupFirstProjectNotification {...restProps} />
     {/if}
 {/if}
