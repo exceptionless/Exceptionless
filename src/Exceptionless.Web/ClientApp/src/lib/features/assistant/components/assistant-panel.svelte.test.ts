@@ -506,6 +506,35 @@ describe('AssistantPanel', () => {
         expect(fetchMock).toHaveBeenCalledOnce();
     });
 
+    it('lists steps in the order they ran when a change comes between lookups', async () => {
+        const toolEvents = [
+            { arguments: '{}', tool_call_id: 'tool-1', tool_name: 'get_stack', type: 'tool_call' },
+            { result: '{"ok":true,"data":{}}', tool_call_id: 'tool-1', type: 'tool_result' },
+            { arguments: '{"status":"fixed"}', tool_call_id: 'tool-2', tool_name: 'update_stack_status', type: 'tool_call' },
+            { result: '{"ok":true,"data":{"changed":true}}', tool_call_id: 'tool-2', type: 'tool_result' },
+            { arguments: '{}', tool_call_id: 'tool-3', tool_name: 'get_event', type: 'tool_call' },
+            { result: '{"ok":true,"data":{}}', tool_call_id: 'tool-3', type: 'tool_result' },
+            { text: 'Marked it fixed.', type: 'text_delta' },
+            { type: 'done' }
+        ];
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async () => new Response(toolEvents.map((item) => `${JSON.stringify(item)}\n`).join('')))
+        );
+
+        render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Mark this fixed.' }
+            }
+        });
+
+        expect(await screen.findByText('Marked it fixed.')).toBeTruthy();
+        const steps = [...document.querySelectorAll('[data-tool]')].map((element) => element.getAttribute('data-tool'));
+        expect(steps).toEqual(['get_stack', 'update_stack_status', 'get_event']);
+    });
+
     it('keeps a stopped response with an explanation instead of an empty reply', async () => {
         const fetchMock = vi.fn(
             (_input: RequestInfo | URL, init?: RequestInit) =>
@@ -604,6 +633,39 @@ describe('AssistantPanel', () => {
         expect(screen.getByTestId('assistant-context-chip')).toBeTruthy();
     });
 
+    it('restores the project a saved chat searched', async () => {
+        localStorage.clear();
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'Billing answer.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        const props = {
+            open: true,
+            organizationId: 'organization-1',
+            path: '/project/5f8f8f8f8f8f8f8f8f8f8f8f/issues',
+            projectId: 'project-1',
+            projects: [
+                { id: 'project-1', name: 'Storefront' },
+                { id: 'project-2', name: 'Billing API' }
+            ],
+            userId: 'user-1'
+        };
+        const first = render(AssistantPanel, { props });
+        const composer = await screen.findByRole('textbox', { name: 'Message Exie' });
+        await fireEvent.click(screen.getByRole('button', { name: 'Project scope: Storefront' }));
+        await fireEvent.click(await screen.findByRole('option', { name: 'Billing API' }));
+        await fireEvent.input(composer, { target: { value: 'What broke in billing?' } });
+        await fireEvent.keyDown(composer, { key: 'Enter' });
+        expect(await screen.findByText('Billing answer.')).toBeTruthy();
+        first.unmount();
+
+        render(AssistantPanel, { props });
+
+        expect(await screen.findByText('Billing answer.')).toBeTruthy();
+        expect(screen.getByRole('button', { name: 'Project scope: Billing API' })).toBeTruthy();
+        localStorage.clear();
+    });
+
     it('saves chats per user and organization and restores the latest one', async () => {
         localStorage.clear();
         const fetchMock = vi.fn(
@@ -686,6 +748,32 @@ describe('AssistantPanel', () => {
         const [, options] = toast.mock.calls.at(-1) as [string, { action: { onClick: () => void } }];
         options.action.onClick();
         expect(await screen.findByText('First answer.')).toBeTruthy();
+        localStorage.clear();
+    });
+
+    it('keeps a new chat blank after the panel reloads', async () => {
+        localStorage.clear();
+        const fetchMock = vi.fn(
+            async () => new Response(`${JSON.stringify({ text: 'Earlier answer.', type: 'text_delta' })}\n${JSON.stringify({ type: 'done' })}\n`)
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        const first = render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Earlier question' },
+                userId: 'user-1'
+            }
+        });
+        expect(await screen.findByText('Earlier answer.')).toBeTruthy();
+        await fireEvent.click(screen.getByRole('button', { name: 'New chat' }));
+        first.unmount();
+
+        render(AssistantPanel, { props: { open: true, organizationId: 'organization-1', userId: 'user-1' } });
+
+        expect(await screen.findByText('Hi, I’m Exie. How can I help?')).toBeTruthy();
+        expect(screen.queryByText('Earlier answer.')).toBeNull();
         localStorage.clear();
     });
 

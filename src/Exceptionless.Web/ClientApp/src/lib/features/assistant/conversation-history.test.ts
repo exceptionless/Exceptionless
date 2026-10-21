@@ -5,10 +5,12 @@ import type { AssistantChatMessage, AssistantConversation } from './models';
 import {
     clearAssistantConversations,
     deleteAssistantConversation,
+    getActiveAssistantConversationId,
     getAssistantConversationScope,
     getAssistantConversationTitle,
     loadAssistantConversations,
-    saveAssistantConversation
+    saveAssistantConversation,
+    setActiveAssistantConversationId
 } from './conversation-history';
 
 class MemoryStorage implements Storage {
@@ -89,6 +91,44 @@ describe('conversation history', () => {
         const conversations = loadAssistantConversations('scope', storage);
         expect(conversations.map((item) => item.id)).toEqual(['chat-4', 'chat-3', 'chat-2']);
         expect(storage.getItem('exie:conversations:v1:scope')!.length).toBeLessThanOrEqual(1_000_000);
+    });
+
+    it('keeps the saved history when the newest conversation is too large to store', () => {
+        saveAssistantConversation('scope', conversation('older', 1, [userMessage('Older question')]), storage);
+        const answer: AssistantChatMessage = { content: 'x'.repeat(1_100_000), id: 'a', parts: [], role: 'assistant', tools: [] };
+
+        const conversations = saveAssistantConversation('scope', conversation('huge', 2, [answer]), storage);
+
+        expect(conversations.map((item) => item.id)).toEqual(['huge', 'older']);
+        expect(loadAssistantConversations('scope', storage).map((item) => item.id)).toEqual(['older']);
+    });
+
+    it('drops tool results from the newest conversation when that is what makes it fit', () => {
+        const tool = { arguments: '{}', id: 'tool-1', name: 'get_event', result: 'x'.repeat(15_000), status: 'complete' as const };
+        const answer: AssistantChatMessage = {
+            content: 'Done',
+            id: 'a',
+            parts: [],
+            role: 'assistant',
+            tools: Array.from({ length: 70 }, (_, index) => ({ ...tool, id: `tool-${index}` }))
+        };
+
+        saveAssistantConversation('scope', conversation('tools', 1, [answer]), storage);
+
+        const [saved] = loadAssistantConversations('scope', storage);
+        expect(saved?.messages[0]?.tools).toHaveLength(70);
+        expect(saved?.messages[0]?.tools[0]?.result).toBeUndefined();
+    });
+
+    it('remembers which chat to reopen, including a new blank chat', () => {
+        expect(getActiveAssistantConversationId('scope', storage)).toBeUndefined();
+        setActiveAssistantConversationId('scope', 'chat-1', storage);
+        expect(getActiveAssistantConversationId('scope', storage)).toBe('chat-1');
+        setActiveAssistantConversationId('scope', null, storage);
+        expect(getActiveAssistantConversationId('scope', storage)).toBeNull();
+
+        clearAssistantConversations(storage);
+        expect(getActiveAssistantConversationId('scope', storage)).toBeUndefined();
     });
 
     it('compacts large tool results to the fields needed for resource links', () => {

@@ -5,7 +5,9 @@ public sealed record AssistantChatRequest(
     string? OrganizationId = null,
     string? ProjectId = null,
     string? Path = null,
-    string? ConversationId = null);
+    string? ConversationId = null,
+    // The browser's IANA time zone, used to resolve "today" and "this week".
+    string? TimeZone = null);
 
 public sealed record AssistantChatMessage(string Role, string Content)
 {

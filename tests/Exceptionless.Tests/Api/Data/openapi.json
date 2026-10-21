@@ -11967,6 +11967,12 @@
               "null",
               "string"
             ]
+          },
+          "time_zone": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

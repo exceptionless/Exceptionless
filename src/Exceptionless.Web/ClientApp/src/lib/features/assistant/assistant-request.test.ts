@@ -43,7 +43,8 @@ describe('createAssistantChatRequest', () => {
             ],
             organization_id: 'organization-id',
             path: '/stack/stack-id',
-            project_id: 'project-id'
+            project_id: 'project-id',
+            time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone
         });
     });
 });

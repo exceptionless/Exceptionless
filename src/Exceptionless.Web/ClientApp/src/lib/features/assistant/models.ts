@@ -32,6 +32,8 @@ export interface AssistantChatMessage {
 export interface AssistantConversation {
     id: string;
     messages: AssistantChatMessage[];
+    /** The project Exie searched, or null for all projects. Chats saved before scopes were recorded omit it. */
+    projectId?: null | string;
     title: string;
     updatedAt: number;
 }

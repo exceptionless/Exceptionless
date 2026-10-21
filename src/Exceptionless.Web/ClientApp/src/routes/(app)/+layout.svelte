@@ -104,9 +104,11 @@
     let assistantReturnHref = $derived(getAssistantReturnHref());
     // The full-page view keeps the context of the page Exie was expanded from.
     let assistantContextBeforePage = $state<AssistantContext>();
+    // Only the expand flow carries a source page; opening Exie directly has no page context.
+    let isExpandedAssistantPage = $derived(isAssistantPage && (getVisibleUrl().searchParams.has('from') || getVisibleUrl().searchParams.has('context')));
     let assistantContext = $derived(
         isAssistantPage
-            ? (assistantContextBeforePage ?? getAssistantContextFromPath(assistantPath))
+            ? ((isExpandedAssistantPage ? assistantContextBeforePage : undefined) ?? getAssistantContextFromPath(assistantPath))
             : getAssistantContext(assistantResourceContext, page.params.projectId)
     );
     let commandResetKey = $state(0);

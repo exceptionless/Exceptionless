@@ -43,10 +43,12 @@
     } from '../assistant-telemetry';
     import {
         deleteAssistantConversation,
+        getActiveAssistantConversationId,
         getAssistantConversationScope,
         getAssistantConversationTitle,
         loadAssistantConversations,
-        saveAssistantConversation
+        saveAssistantConversation,
+        setActiveAssistantConversationId
     } from '../conversation-history';
     import AssistantComposer from './assistant-composer.svelte';
     import AssistantConversationSharing from './assistant-conversation-sharing.svelte';
@@ -328,6 +330,7 @@
         conversations = deleteAssistantConversation(historyScope, id);
         if (id === threadId && !isStreaming) {
             resetConversation();
+            setActiveAssistantConversationId(historyScope, null);
         }
     }
 
@@ -406,9 +409,11 @@
         conversations = saveAssistantConversation(historyScope, {
             id: threadId,
             messages: savedMessages,
+            projectId: scopeProjectId ?? null,
             title: getAssistantConversationTitle(savedMessages),
             updatedAt: Date.now()
         });
+        setActiveAssistantConversationId(historyScope, threadId);
     }
 
     async function regenerateResponse(assistantMessageId: string): Promise<void> {
@@ -460,19 +465,48 @@
         messages = conversation.messages;
         threadId = conversation.id;
         conversationId = conversation.messages.findLast((message) => message.conversationId)?.conversationId ?? createConversationId();
+        restoreProjectScope(conversation);
         editingMessageId = undefined;
         prompt = '';
         lastOutcome = undefined;
+        if (historyScope) {
+            setActiveAssistantConversationId(historyScope, threadId);
+        }
         void tick().then(() => composer?.focus());
+    }
+
+    /** Follow-ups keep searching the projects the chat searched, since its earlier tool results came from them. */
+    function restoreProjectScope(conversation: AssistantConversation): void {
+        // Older chats did not record a scope, so they follow the current page.
+        if (conversation.projectId === undefined) {
+            return;
+        }
+
+        const savedProjectId = conversation.projectId;
+        if (savedProjectId && projects.length > 0 && !projects.some((project) => project.id === savedProjectId)) {
+            return;
+        }
+
+        selectedProjectId = (savedProjectId ?? undefined) === projectId ? undefined : savedProjectId;
+        if (selectedProjectId !== undefined) {
+            contextDismissed = true;
+        }
     }
 
     function restoreRecentConversation(scope: string | undefined): void {
         conversations = scope ? loadAssistantConversations(scope) : [];
-        const recent = conversations[0];
-        if (messages.length === 0 && recent && Date.now() - recent.updatedAt < RESTORE_WINDOW_MS) {
+        if (!scope || messages.length > 0) {
+            return;
+        }
+
+        // After New chat the user keeps a blank chat, even across reloads.
+        const activeId = getActiveAssistantConversationId(scope);
+        const recent = activeId === undefined ? conversations[0] : conversations.find((conversation) => conversation.id === activeId);
+        if (recent && Date.now() - recent.updatedAt < RESTORE_WINDOW_MS) {
             messages = recent.messages;
             threadId = recent.id;
             conversationId = recent.messages.findLast((message) => message.conversationId)?.conversationId ?? conversationId;
+            restoreProjectScope(recent);
         }
     }
 
@@ -526,6 +560,9 @@
         persistConversation();
         const previousThreadId = threadId;
         resetConversation();
+        if (historyScope) {
+            setActiveAssistantConversationId(historyScope, null);
+        }
         announcement = 'Started a new chat.';
         composer?.focus();
         toast('Started a new chat', {

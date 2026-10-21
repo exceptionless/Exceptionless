@@ -1,6 +1,8 @@
 import type { AssistantChatMessage, AssistantConversation, AssistantToolActivity } from './models';
 
 const STORAGE_PREFIX = 'exie:conversations:v1:';
+/** Shares the history prefix so signing out clears it too. */
+const ACTIVE_PREFIX = `${STORAGE_PREFIX}active:`;
 const MAX_CONVERSATIONS = 20;
 /** Keeps Exie's history well under the origin's storage quota, which it shares with the sign-in token. */
 const MAX_STORED_CHARACTERS = 1_000_000;
@@ -27,6 +29,15 @@ export function deleteAssistantConversation(scope: string, id: string, storage =
     const conversations = loadAssistantConversations(scope, storage).filter((conversation) => conversation.id !== id);
     writeConversations(scope, conversations, storage);
     return conversations;
+}
+
+/**
+ * The chat to reopen on the next visit: an id, null after the user started a new chat, or undefined when
+ * nothing was recorded, which reopens the most recent chat.
+ */
+export function getActiveAssistantConversationId(scope: string, storage = getStorage()): null | string | undefined {
+    const value = storage?.getItem(`${ACTIVE_PREFIX}${scope}`);
+    return value === null || value === undefined ? undefined : value || null;
 }
 
 /** Conversations are stored per user and organization so switching either never mixes histories. */
@@ -66,6 +77,14 @@ export function saveAssistantConversation(scope: string, conversation: Assistant
 
     writeConversations(scope, conversations, storage);
     return conversations;
+}
+
+export function setActiveAssistantConversationId(scope: string, id: null | string, storage = getStorage()): void {
+    try {
+        storage?.setItem(`${ACTIVE_PREFIX}${scope}`, id ?? '');
+    } catch {
+        // Storage is full; the most recent chat reopens instead.
+    }
 }
 
 function compactMessage(message: AssistantChatMessage): AssistantChatMessage {
@@ -108,6 +127,7 @@ function isConversation(value: unknown): value is AssistantConversation {
         typeof conversation.id === 'string' &&
         typeof conversation.title === 'string' &&
         typeof conversation.updatedAt === 'number' &&
+        (conversation.projectId === undefined || conversation.projectId === null || typeof conversation.projectId === 'string') &&
         Array.isArray(conversation.messages) &&
         conversation.messages.every((message) => typeof message?.id === 'string' && Array.isArray(message.parts) && Array.isArray(message.tools))
     );
@@ -121,28 +141,48 @@ function pickResourceFields(value: unknown): unknown {
     return Object.fromEntries(Object.entries(value).filter(([key, fieldValue]) => RESOURCE_FIELDS.includes(key) && typeof fieldValue === 'string'));
 }
 
+function withoutToolResults(conversation: AssistantConversation): AssistantConversation {
+    return {
+        ...conversation,
+        messages: conversation.messages.map((message) => ({
+            ...message,
+            tools: message.tools.map((tool) => ({ ...tool, result: undefined }))
+        }))
+    };
+}
+
 function writeConversations(scope: string, conversations: AssistantConversation[], storage: Storage | undefined): void {
     if (!storage) {
         return;
     }
 
     const key = `${STORAGE_PREFIX}${scope}`;
-    let remaining = conversations;
-    while (remaining.length > 0) {
-        const value = JSON.stringify(remaining);
-        if (value.length > MAX_STORED_CHARACTERS) {
-            remaining = remaining.slice(0, -1);
-            continue;
-        }
-
-        try {
-            storage.setItem(key, value);
-            return;
-        } catch {
-            // Storage is full: drop the oldest conversation and try again.
-            remaining = remaining.slice(0, -1);
-        }
+    if (conversations.length === 0) {
+        storage.removeItem(key);
+        return;
     }
 
-    storage.removeItem(key);
+    let remaining = conversations;
+    let hasStrippedNewest = false;
+    while (remaining.length > 0) {
+        const value = JSON.stringify(remaining);
+        if (value.length <= MAX_STORED_CHARACTERS) {
+            try {
+                storage.setItem(key, value);
+                return;
+            } catch {
+                // Storage is full: shrink the history below and try again.
+            }
+        }
+
+        if (remaining.length > 1) {
+            remaining = remaining.slice(0, -1);
+        } else if (!hasStrippedNewest) {
+            remaining = [withoutToolResults(remaining[0]!)];
+            hasStrippedNewest = true;
+        } else {
+            // The newest chat cannot fit on its own, so keep the history that was last saved.
+            return;
+        }
+    }
 }

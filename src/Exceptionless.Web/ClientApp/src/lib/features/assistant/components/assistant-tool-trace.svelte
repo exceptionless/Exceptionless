@@ -35,13 +35,35 @@
     }
 
     let { isStreaming = false, projectNames = new Map(), tools }: Props = $props();
+    type TraceSegment = { id: string; kind: 'change'; tool: AssistantToolActivity } | { id: string; kind: 'research'; tools: AssistantToolActivity[] };
+
     let visibleTools = $derived(tools.filter((tool) => !isHiddenAssistantTool(tool)));
-    let researchTools = $derived(visibleTools.filter((tool) => !isMutationTool(tool)));
-    let changeTools = $derived(visibleTools.filter((tool) => isMutationTool(tool)));
-    let isResearching = $derived(isStreaming && researchTools.some((tool) => tool.status === 'running'));
-    let failedResearchCount = $derived(researchTools.filter((tool) => tool.status === 'failed').length);
-    // The reader's choice for the step summary. Until they click, it stays open while research runs.
-    let summaryOpen = $state<boolean>();
+    // Steps stay in the order they ran: consecutive lookups share a summary, and each change gets its own row.
+    let segments = $derived.by(() => {
+        const result: TraceSegment[] = [];
+        for (const tool of visibleTools) {
+            const previous = result.at(-1);
+            if (isMutationTool(tool)) {
+                result.push({
+                    id: tool.id,
+                    kind: 'change',
+                    tool
+                });
+            } else if (previous?.kind === 'research') {
+                previous.tools.push(tool);
+            } else {
+                result.push({
+                    id: tool.id,
+                    kind: 'research',
+                    tools: [tool]
+                });
+            }
+        }
+
+        return result;
+    });
+    // The reader's choice for each step summary. Until they click, a summary stays open while its research runs.
+    let summaryOpen = $state<Record<string, boolean>>({});
     // Details render only once opened, so long JSON results are never highlighted unseen.
     let openToolIds = $state<Record<string, boolean>>({});
 
@@ -154,46 +176,53 @@
     {/if}
 {/snippet}
 
+{#snippet researchSummary(id: string, researchTools: AssistantToolActivity[])}
+    {@const isResearching = isStreaming && researchTools.some((tool) => tool.status === 'running')}
+    {@const failedResearchCount = researchTools.filter((tool) => tool.status === 'failed').length}
+    <Trace.Collapsible onOpenChange={(open) => (summaryOpen[id] = open)} open={summaryOpen[id] ?? isResearching}>
+        <Trace.CollapsibleTrigger>
+            <Trace.Line status={isResearching ? 'running' : failedResearchCount > 0 ? 'error' : undefined}>
+                <Trace.Icon>
+                    {#if isResearching}
+                        <LoaderCircle class="animate-spin" />
+                    {:else if failedResearchCount > 0}
+                        <CircleAlert />
+                    {:else}
+                        <FileSearch />
+                    {/if}
+                </Trace.Icon>
+                <Trace.Title>
+                    {#if isResearching}
+                        Researching…
+                    {:else}
+                        Researched in {researchTools.length} steps
+                    {/if}
+                </Trace.Title>
+                {#if !isResearching && failedResearchCount > 0}
+                    <Trace.Description>{failedResearchCount} failed</Trace.Description>
+                {/if}
+            </Trace.Line>
+        </Trace.CollapsibleTrigger>
+        <Trace.CollapsibleContent>
+            <Trace.Root>
+                {#each researchTools as tool (tool.id)}
+                    {@render toolRow(tool)}
+                {/each}
+            </Trace.Root>
+        </Trace.CollapsibleContent>
+    </Trace.Collapsible>
+{/snippet}
+
 {#if visibleTools.length > 0}
     <Trace.Root aria-label="Exie’s steps" class="text-sm">
-        {#if researchTools.length === 1}
-            {@render toolRow(researchTools[0]!)}
-        {:else if researchTools.length > 1}
-            <Trace.Collapsible onOpenChange={(open) => (summaryOpen = open)} open={summaryOpen ?? isResearching}>
-                <Trace.CollapsibleTrigger>
-                    <Trace.Line status={isResearching ? 'running' : failedResearchCount > 0 ? 'error' : undefined}>
-                        <Trace.Icon>
-                            {#if isResearching}
-                                <LoaderCircle class="animate-spin" />
-                            {:else if failedResearchCount > 0}
-                                <CircleAlert />
-                            {:else}
-                                <FileSearch />
-                            {/if}
-                        </Trace.Icon>
-                        <Trace.Title>
-                            {#if isResearching}
-                                Researching…
-                            {:else}
-                                Researched in {researchTools.length} steps
-                            {/if}
-                        </Trace.Title>
-                        {#if !isResearching && failedResearchCount > 0}
-                            <Trace.Description>{failedResearchCount} failed</Trace.Description>
-                        {/if}
-                    </Trace.Line>
-                </Trace.CollapsibleTrigger>
-                <Trace.CollapsibleContent>
-                    <Trace.Root>
-                        {#each researchTools as tool (tool.id)}
-                            {@render toolRow(tool)}
-                        {/each}
-                    </Trace.Root>
-                </Trace.CollapsibleContent>
-            </Trace.Collapsible>
-        {/if}
-        {#each changeTools as tool (tool.id)}
-            {@render toolRow(tool)}
+        {#each segments as segment (segment.id)}
+            {#if segment.kind === 'change'}
+                {@render toolRow(segment.tool)}
+            {:else if segment.tools.length === 1}
+                {@render toolRow(segment.tools[0]!)}
+            {:else}
+                {@render researchSummary(segment.id, segment.tools)}
+            {/if}
         {/each}
     </Trace.Root>
 {/if}

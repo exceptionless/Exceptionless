@@ -58,6 +58,40 @@ public sealed class AssistantServiceTests
         Assert.Contains("There is no organization-wide search", systemPrompt, StringComparison.Ordinal);
         Assert.Contains("never retry by removing them", systemPrompt, StringComparison.Ordinal);
         Assert.Contains("I searched 5 of 12 projects", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("User time zone: UTC.", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("The user's today starts at 2026-10-20T00:00:00Z", systemPrompt, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    // 01:15 UTC on Tuesday is still Monday evening in Chicago (UTC-5 during daylight saving time).
+    [InlineData("America/Chicago", "User local time: 2026-10-19T20:15:30-05:00.", "today starts at 2026-10-19T05:00:00Z, yesterday starts at 2026-10-18T05:00:00Z, and this week (from Monday) starts at 2026-10-19T05:00:00Z.")]
+    [InlineData("Asia/Tokyo", "User local time: 2026-10-20T10:15:30+09:00.", "today starts at 2026-10-19T15:00:00Z, yesterday starts at 2026-10-18T15:00:00Z, and this week (from Monday) starts at 2026-10-18T15:00:00Z.")]
+    [InlineData("Not/A_Zone", "User time zone: UTC. User local time: 2026-10-20T01:15:30+00:00.", "today starts at 2026-10-20T00:00:00Z, yesterday starts at 2026-10-19T00:00:00Z, and this week (from Monday) starts at 2026-10-19T00:00:00Z.")]
+    [InlineData(null, "User time zone: UTC.", "today starts at 2026-10-20T00:00:00Z")]
+    public void GetUserCalendarContext_TimeZone_ReturnsLocalDayAndWeekBoundaries(string? timeZone, string expectedLocalTime, string expectedBoundaries)
+    {
+        string context = AssistantService.GetUserCalendarContext(timeZone, new DateTimeOffset(2026, 10, 20, 1, 15, 30, TimeSpan.Zero));
+
+        Assert.Contains(expectedLocalTime, context, StringComparison.Ordinal);
+        Assert.Contains(expectedBoundaries, context, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BuildMessages_EarlierTurnsWithoutToolResults_TellsModelToRefreshToolContext()
+    {
+        var request = new AssistantChatRequest(
+            [
+                new AssistantChatMessage("user", "What broke?"),
+                new AssistantChatMessage("assistant", "The checkout stack failed 12 times."),
+                new AssistantChatMessage("user", "Which browsers were affected?")
+            ],
+            OrganizationId: "organization-id");
+
+        var restoredMessages = JsonSerializer.Serialize(AssistantService.BuildMessages(request, null, DateTimeOffset.UtcNow));
+        var firstTurnMessages = JsonSerializer.Serialize(AssistantService.BuildMessages(request with { Messages = [request.Messages.First()] }, null, DateTimeOffset.UtcNow));
+
+        Assert.Contains("no longer available", restoredMessages, StringComparison.Ordinal);
+        Assert.DoesNotContain("no longer available", firstTurnMessages, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -1941,8 +1975,10 @@ public sealed class AssistantServiceTests
         Assert.All(providerEntries, entry => Assert.Equal("malformed_response", entry.Properties["ProviderOutcome"]));
     }
 
-    [Fact]
-    public async Task StreamAsync_CompleteRawDsmlToolCall_ExecutesRecoveredToolWithoutRetry()
+    [Theory]
+    [InlineData("｜")]
+    [InlineData("||")]
+    public async Task StreamAsync_CompleteRawDsmlToolCall_ExecutesRecoveredToolWithoutRetry(string pipe)
     {
         string dsmlPayload = JsonSerializer.Serialize(new
         {
@@ -1961,7 +1997,7 @@ public sealed class AssistantServiceTests
                             <｜DSML｜parameter name="duration" string="true">7d</｜DSML｜parameter>
                             </｜DSML｜invoke>
                             </｜DSML｜tool_calls>
-                            """
+                            """.Replace("｜", pipe, StringComparison.Ordinal)
                     }
                 }
             }
