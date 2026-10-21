@@ -187,10 +187,12 @@ async function oauthLogin(options: OAuthLoginOptions) {
         state: data.state
     });
 
-    if (response.ok && response.data?.token) {
-        accessToken.current = response.data.token;
-        await gotoRedirect(options.redirectUrl || resolve('/(app)'));
+    if (!response.ok || !response.data?.token) {
+        throw new Error('The sign-in provider did not return a session.');
     }
+
+    accessToken.current = response.data.token;
+    await gotoRedirect(options.redirectUrl || resolve('/(app)'));
 }
 
 async function openOAuthPopup(options: OAuthPopupOptions): Promise<OAuthResponseData> {
