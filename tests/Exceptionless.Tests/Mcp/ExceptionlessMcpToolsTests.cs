@@ -686,6 +686,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [InlineData("24h", null)]
     [InlineData("not a date", null)]
     [InlineData("[now/d TO now-1d/d]", null)]
+    [InlineData("[2026-07-02T00:00:00Z TO 2026-07-01T00:00:00Z]", null)]
     [InlineData("[now/d TO now/d]", "Not/A_Zone")]
     public async Task SearchEventsAsync_InvalidTimeRange_ReturnsError(string time, string? timeZone)
     {
@@ -725,6 +726,34 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         }
     }
 
+    [Fact]
+    public async Task CountEventsAsync_GroupByStack_RanksByOccurrencesAndNamesStacks()
+    {
+        const string tag = "mcp-rank-stacks";
+        await CreateDataAsync(d =>
+        {
+            // One event that stands for 10 merged occurrences outranks three single occurrences.
+            d.Event().TestProject().Type(Event.KnownTypes.Error).Tag(tag).Message("MCP rare but repeated").Mutate(ev => ev.Count = 10);
+            var frequent = d.Event().TestProject().Type(Event.KnownTypes.Error).Tag(tag).Message("MCP frequent single");
+            d.Event().TestProject().Type(Event.KnownTypes.Error).Tag(tag).Message("MCP frequent single").Stack(frequent);
+            d.Event().TestProject().Type(Event.KnownTypes.Error).Tag(tag).Message("MCP frequent single").Stack(frequent);
+        });
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"tag:{tag}", time: "[now-1d TO now]", groupBy: "stack");
+        var groups = Data(result).Groups!.ToArray();
+
+        Assert.True(result.Ok, result.Error?.Message);
+        Assert.Equal(2, groups.Length);
+        Assert.Equal("MCP rare but repeated", groups[0].Title);
+        Assert.Equal(10, groups[0].Occurrences);
+        Assert.Equal(1, groups[0].Events);
+        Assert.Equal("MCP frequent single", groups[1].Title);
+        Assert.Equal(3, groups[1].Occurrences);
+        Assert.All(groups, group => Assert.Equal("open", group.Status));
+    }
+
     [Theory]
     // Chicago left daylight saving time on 2026-11-01, so now (Tuesday 2026-11-03) is UTC-6 but October was UTC-5.
     // Weeks start on Sunday, as in the app's time filter, so last week is Sunday 2026-10-25 through Saturday 2026-10-31.
@@ -733,6 +762,10 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [InlineData("[now-1w/w TO now]", "2026-10-25T05:00:00Z", "2026-11-03T18:00:00Z")]
     // A duration from now is exact, whatever the offset was a week ago.
     [InlineData("[now-7d TO now]", "2026-10-27T18:00:00Z", "2026-11-03T18:00:00Z")]
+    // Timestamps with Z or an offset are exact instants, even in July when Chicago was on daylight saving time.
+    [InlineData("[2026-07-01T00:00:00Z TO 2026-07-02T00:00:00Z]", "2026-07-01T00:00:00Z", "2026-07-02T00:00:00Z")]
+    [InlineData("[2026-07-01T00:00:00-05:00 TO 2026-07-01T12:00:00-05:00]", "2026-07-01T05:00:00Z", "2026-07-01T17:00:00Z")]
+    [InlineData("[2026-11-03T12:00:00Z TO now]", "2026-11-03T12:00:00Z", "2026-11-03T18:00:00Z")]
     public async Task CountEventsAsync_RangeAcrossDaylightSavingChange_UsesEachDaysOffset(string time, string expectedStart, string expectedEnd)
     {
         try

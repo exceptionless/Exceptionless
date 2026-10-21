@@ -76,11 +76,19 @@ public sealed record McpEventTrendBucket(
     long Events,
     double Occurrences);
 
+/// <param name="Key">The group value, such as a version or, when grouped by stack, the stack id.</param>
+/// <param name="Events">Event documents in the group.</param>
+/// <param name="Occurrences">Occurrences in the group, counting repeated events that were merged into one document.</param>
+/// <param name="Trend">Occurrences per interval when an interval is requested.</param>
+/// <param name="Title">The stack title when grouped by stack, so the group can be named without another lookup.</param>
+/// <param name="Status">The stack status when grouped by stack.</param>
 public sealed record McpEventCountGroup(
     string Key,
     long Events,
     double Occurrences,
-    IReadOnlyCollection<McpEventTrendBucket> Trend);
+    IReadOnlyCollection<McpEventTrendBucket> Trend,
+    string? Title = null,
+    string? Status = null);
 
 public sealed record McpProjectResult(
     string Id,

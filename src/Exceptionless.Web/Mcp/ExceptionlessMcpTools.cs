@@ -39,7 +39,7 @@ public sealed class ExceptionlessMcpTools
     private const int MaxDetailSize = 64 * 1024;
     private const int MinDetailSize = 1024;
     private const string SummaryLimitDescription = "Maximum number of summary rows to return. Defaults to 10 and is capped at 100. Use the returned pagination.after or pagination.before cursor with the same limit to page through additional results.";
-    private const string TimeDescription = "Optional date range in the same syntax as the Exceptionless app's time filter, resolved in timeZone. Use date math in brackets: [now-24h TO now] for the last 24 hours, [now-7d TO now] for the last 7 days, [now/d TO now/d] for today, [now-1d/d TO now-1d/d] for yesterday, [now/w TO now/w] for this week, [now-1w/w TO now-1w/w] for last week, [now/M TO now/M] for this month, or dates such as [2026-06-01 TO 2026-06-30]. Omit for no time limit.";
+    private const string TimeDescription = "Optional date range in the same syntax as the Exceptionless app's time filter, resolved in timeZone. Use date math in brackets: [now-24h TO now] for the last 24 hours, [now-7d TO now] for the last 7 days, [now/d TO now/d] for today, [now-1d/d TO now-1d/d] for yesterday, [now/w TO now/w] for this week, [now-1w/w TO now-1w/w] for last week, [now/M TO now/M] for this month, or dates such as [2026-06-01 TO 2026-06-30]. Weeks start on Sunday, so for a period that starts on another named day, such as since Monday, use that date: [2026-06-22 TO now]. Omit for no time limit.";
     private const string TimeZoneDescription = "Optional IANA time zone, such as America/Chicago, that time is resolved in, so now/d is the user's midnight. Defaults to UTC.";
     private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: environment, version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
@@ -607,7 +607,7 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "count_events", Title = "Count events", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
-    [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets and groupBy dimensions for questions like occurrences by version, tag, user, or error type.")]
+    [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets and groupBy dimensions for questions like occurrences by version, tag, user, or error type. Groups are ordered by occurrences. groupBy stack ranks stacks by how often they occurred in the time range, like the Most Frequent view, and names each stack with its title and status.")]
     public async Task<McpResponse<McpEventCountResult>> CountEventsAsync(
         [Description("Optional Exceptionless project id to count within. May be omitted when only one project is accessible.")]
         string? projectId = null,
@@ -695,6 +695,14 @@ public sealed class ExceptionlessMcpTools
                             groupTrend);
                     })
                     .ToArray() ?? [];
+
+                if (resolvedGroupBy.Name == "stack" && groups.Count > 0)
+                {
+                    var stacks = (await _stackRepository.GetByIdsAsync(groups.Select(group => group.Key).ToArray())).ToDictionary(stack => stack.Id);
+                    groups = groups
+                        .Select(group => stacks.TryGetValue(group.Key, out var stack) ? group with { Title = stack.Title, Status = stack.Status.ToString().ToLowerInvariant() } : group)
+                        .ToArray();
+                }
             }
 
             string? warning = CombineWarnings(groupLimitWarning, GetGroupByOverlapWarning(resolvedGroupBy));
@@ -1263,23 +1271,39 @@ public sealed class ExceptionlessMcpTools
         }
 
         var utcOffset = zone.GetUtcOffset(_timeProvider.GetUtcNow());
-        // Check the parsed range before TimeRangeParser fills an open end with now, which would hide a parse failure.
-        // An inverted range such as [now/d TO now-1d/d] parses to a single instant.
-        var parsedRange = DateTimeRange.Parse(time.Trim(), _timeProvider.GetUtcNow().ToOffset(utcOffset));
-        if (parsedRange == DateTimeRange.Empty || parsedRange.UtcStart >= parsedRange.UtcEnd)
+        (DateTime? exactStart, DateTime? exactEnd, string expression) = GetExactBoundaries(time.Trim());
+        DateTime? start = exactStart;
+        DateTime? end = exactEnd;
+        if (exactStart is null || exactEnd is null)
         {
-            error = McpErrors.InvalidTimeRange("time must be a date range such as [now-24h TO now], [now/d TO now/d] for today, [now-1d/d TO now-1d/d] for yesterday, or [2026-06-01 TO 2026-06-30].", time, timeZone);
+            // Check the parsed range before TimeRangeParser fills an open end with now, which would hide a parse failure.
+            // An inverted range such as [now/d TO now-1d/d] parses to a single instant.
+            var parsedRange = DateTimeRange.Parse(expression, _timeProvider.GetUtcNow().ToOffset(utcOffset));
+            if (parsedRange == DateTimeRange.Empty || parsedRange.UtcStart >= parsedRange.UtcEnd)
+            {
+                error = InvalidTimeExpression(time, timeZone);
+                return false;
+            }
+
+            var timeInfo = TimeRangeParser.GetTimeInfo(expression, utcOffset, _timeProvider);
+            (bool isCalendarStart, bool isCalendarEnd) = GetCalendarBoundaries(expression);
+            start ??= timeInfo.Range.UtcStart == DateTime.MinValue ? null : ToZoneBoundary(timeInfo.Range.UtcStart, utcOffset, zone, isCalendarStart, isStart: true);
+            end ??= timeInfo.Range.UtcEnd == DateTime.MaxValue ? null : ToZoneBoundary(timeInfo.Range.UtcEnd, utcOffset, zone, isCalendarEnd, isStart: false);
+        }
+
+        if (start >= end)
+        {
+            error = InvalidTimeExpression(time, timeZone);
             return false;
         }
 
-        var timeInfo = TimeRangeParser.GetTimeInfo(time.Trim(), utcOffset, _timeProvider);
-        (bool isCalendarStart, bool isCalendarEnd) = GetCalendarBoundaries(time);
-        timeRange = new McpTimeRange(
-            timeInfo.Range.UtcStart == DateTime.MinValue ? null : ToZoneBoundary(timeInfo.Range.UtcStart, utcOffset, zone, isCalendarStart, isStart: true),
-            timeInfo.Range.UtcEnd == DateTime.MaxValue ? null : ToZoneBoundary(timeInfo.Range.UtcEnd, utcOffset, zone, isCalendarEnd, isStart: false));
+        timeRange = new McpTimeRange(start, end);
         error = null!;
         return true;
     }
+
+    private static McpErrorInfo InvalidTimeExpression(string time, string? timeZone)
+        => McpErrors.InvalidTimeRange("time must be a date range such as [now-24h TO now], [now/d TO now/d] for today, [now-1d/d TO now-1d/d] for yesterday, or [2026-06-01 TO 2026-06-30].", time, timeZone);
 
     /// <summary>
     /// Which sides of a range fall on calendar lines (now/d, now-1w/w, or a date) rather than a duration from now
@@ -1296,10 +1320,37 @@ public sealed class ExceptionlessMcpTools
         return (isCalendar, isCalendar);
     }
 
+    /// <summary>
+    /// Boundaries written with Z or a numeric offset are exact instants. DateTimeRange reads them as local times in
+    /// the requested zone, or cannot parse them, so they are parsed here and replaced with * in the expression it sees.
+    /// </summary>
+    private static (DateTime? Start, DateTime? End, string Expression) GetExactBoundaries(string time)
+    {
+        var match = s_bracketTimeRange.Match(time);
+        if (!match.Success)
+            return (null, null, time);
+
+        var start = GetExactInstant(match.Groups["start"].Value);
+        var end = GetExactInstant(match.Groups["end"].Value);
+        string expression = $"{time[0]}{(start is null ? match.Groups["start"].Value : "*")} TO {(end is null ? match.Groups["end"].Value : "*")}{time[^1]}";
+        return (start, end, expression);
+    }
+
+    private static DateTime? GetExactInstant(string boundary)
+    {
+        boundary = boundary.Trim();
+        return s_explicitOffset.IsMatch(boundary) && DateTimeOffset.TryParse(boundary, CultureInfo.InvariantCulture, DateTimeStyles.None, out var instant)
+            ? instant.UtcDateTime
+            : null;
+    }
+
     private static bool IsCalendarBoundary(string boundary)
     {
         boundary = boundary.Trim();
-        return boundary != "*" && (boundary.Contains('/') || !boundary.StartsWith("now", StringComparison.OrdinalIgnoreCase));
+        // A timestamp with Z or a numeric offset is already an exact instant, not a local calendar value.
+        return boundary != "*"
+            && !s_explicitOffset.IsMatch(boundary)
+            && (boundary.Contains('/') || !boundary.StartsWith("now", StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -1405,9 +1456,10 @@ public sealed class ExceptionlessMcpTools
         if (groupBy is null)
             return rootAggregations;
 
+        // Order groups by occurrences, as the app's Most Frequent view does, rather than by event documents.
         string groupAggregations = String.IsNullOrWhiteSpace(interval)
-            ? "sum:count~1"
-            : $"sum:count~1 date:(date~{interval} sum:count~1)";
+            ? "-sum:count~1"
+            : $"-sum:count~1 date:(date~{interval} sum:count~1)";
 
         return $"terms:({groupBy.AggregationField}~{groupLimit} {groupAggregations}) {rootAggregations}";
     }
@@ -1846,6 +1898,7 @@ public sealed class ExceptionlessMcpTools
     private static readonly Regex FilterFieldRegex = new(@"(?:^|[-+\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex IdRegex = new(@"^[A-Za-z0-9]{24,36}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex s_bracketTimeRange = new(@"^[\[{](?<start>.+?)\s+TO\s+(?<end>.+?)[\]}]$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private static readonly Regex s_explicitOffset = new(@"T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex s_durationWords = new(@"\b(minutes?|hours?|mins?|hrs?)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex RelativeTimeRegex = new(@"^(?<value>\d+)(?<unit>[mhdw])$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IntervalRegex = new(@"^\d+[mhdwM]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
