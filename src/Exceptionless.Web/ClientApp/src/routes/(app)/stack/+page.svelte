@@ -54,7 +54,9 @@
     import EventsDataTable from '#features/events/components/table/events-data-table.svelte';
     import { defaultStackColumnVisibility, getColumns } from '#features/events/components/table/options.svelte.ts';
     import { filterUsesPremiumFeatures } from '#features/events/premium-filter.ts';
+    import ExieEmptyState from '#features/onboarding/components/exie-empty-state.svelte';
     import GettingStartedChecklist from '#features/onboarding/components/getting-started-checklist.svelte';
+    import { useOrganizationOnboarding } from '#features/onboarding/onboarding-state.svelte.ts';
     import { organization } from '#features/organizations/context.svelte.ts';
     import { premiumPage } from '#features/organizations/premium-page.svelte.ts';
     import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
@@ -874,6 +876,8 @@
     function onRangeSelect(start: Date, end: Date) {
         onFilterChanged(new DateFilter('date', toDateMathRange(start, end)));
     }
+
+    const onboarding = useOrganizationOnboarding(() => organization.current);
 </script>
 
 {#if savedViewsState.isMissing}
@@ -924,43 +928,55 @@
     <div class="flex flex-col gap-y-4">
         <GettingStartedChecklist />
 
-        {#if showStats}
-            <EventsStatsDashboard
-                eventsPerHour={stats.eventsPerHour}
-                isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
-                newStacks={stats.newStacks}
-                totalEvents={stats.totalEvents}
-                totalStacks={stats.totalStacks}
+        {#if onboarding.isAwaitingFirstEvent}
+            <ExieEmptyState
+                continueSetupHref={onboarding.continueSetupHref}
+                sampleProject={onboarding.firstProject
+                    ? {
+                          id: onboarding.firstProject.id,
+                          name: onboarding.firstProject.name
+                      }
+                    : undefined}
             />
+        {:else}
+            {#if showStats}
+                <EventsStatsDashboard
+                    eventsPerHour={stats.eventsPerHour}
+                    isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
+                    newStacks={stats.newStacks}
+                    totalEvents={stats.totalEvents}
+                    totalStacks={stats.totalStacks}
+                />
+            {/if}
+
+            {#if showChart}
+                <EventsDashboardChart
+                    data={chartData()}
+                    isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
+                    {onRangeSelect}
+                />
+            {/if}
+
+            <EventsDataTable
+                autoFillColumnId={savedViewsState.autoFillColumnId}
+                bind:limit={eventsQueryParameters.limit!}
+                isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+                onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
+                {rowClick}
+                {rowHref}
+                {table}
+                wrappedColumnIds={savedViewsState.wrappedColumnIds}
+            >
+                {#snippet footerChildren()}
+                    <div class="flex min-w-0 items-center gap-3">
+                        <TableStacksBulkActionsDropdownMenu {table} />
+                        <DataTable.Selection {table} />
+                    </div>
+
+                    <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} variant="floating" />
+                {/snippet}
+            </EventsDataTable>
         {/if}
-
-        {#if showChart}
-            <EventsDashboardChart
-                data={chartData()}
-                isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
-                {onRangeSelect}
-            />
-        {/if}
-
-        <EventsDataTable
-            autoFillColumnId={savedViewsState.autoFillColumnId}
-            bind:limit={eventsQueryParameters.limit!}
-            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
-            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
-            {rowClick}
-            {rowHref}
-            {table}
-            wrappedColumnIds={savedViewsState.wrappedColumnIds}
-        >
-            {#snippet footerChildren()}
-                <div class="flex min-w-0 items-center gap-3">
-                    <TableStacksBulkActionsDropdownMenu {table} />
-                    <DataTable.Selection {table} />
-                </div>
-
-                <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} variant="floating" />
-            {/snippet}
-        </EventsDataTable>
     </div>
 </div>
 

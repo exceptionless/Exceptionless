@@ -727,6 +727,15 @@
         intercomUnreadCount = Math.max(0, unreadCount);
     }
 
+    // These pages show Exie's empty state until the first event, which replaces the setup notification.
+    const eventListRouteIds = new Set<null | string>([
+        '/(app)/event',
+        '/(app)/event/[slug=savedview]',
+        '/(app)/stack',
+        '/(app)/stack/[slug=savedview]',
+        '/(app)/stream'
+    ]);
+    const isEventListPage = $derived(eventListRouteIds.has(page.route.id));
     const setupPath = resolve('/(app)/organization/add');
     const isSetupPage = $derived(page.url.pathname === setupPath);
     const suppressAutomaticProductTours = $derived(isProductTourSetupRoute(page.route.id));
@@ -862,7 +871,14 @@
 
                 {#if !isAssistantPage}
                     {#if showOrganizationNotifications.current}
-                        <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />
+                        <OrganizationNotifications
+                            {isChatEnabled}
+                            ignoreConfigureProjects={isEventListPage}
+                            {openChat}
+                            {requiresPremium}
+                            premiumFeatureName={premiumPage.current}
+                            class="mb-4"
+                        />
                     {/if}
 
                     <div
