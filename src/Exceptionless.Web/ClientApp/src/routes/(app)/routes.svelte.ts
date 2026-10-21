@@ -6,7 +6,7 @@ import Support from '@lucide/svelte/icons/circle-help';
 import Stacks from '@lucide/svelte/icons/layers';
 import Sessions from '@lucide/svelte/icons/timer';
 
-import AiSparkle from '#comp/icons/AiSparkleIcon.svelte';
+import ExieIcon from '#comp/icons/ExieIcon.svelte';
 import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
 import { apiReferenceHref, documentationHref, githubRepositoryHref, supportIssuesHref } from '#features/shared/help-links.ts';
 import { appKeyboardShortcuts } from '#features/shared/keyboard-shortcuts.ts';
@@ -44,7 +44,7 @@ export function routes(): NavigationItem[] {
         {
             group: 'Dashboards',
             href: resolve('/(app)/exie'),
-            icon: AiSparkle,
+            icon: ExieIcon,
             keywords: ['AI', 'assistant', 'chat'],
             title: 'Exie'
         },

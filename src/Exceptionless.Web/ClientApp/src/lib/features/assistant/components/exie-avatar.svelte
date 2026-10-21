@@ -1,5 +1,5 @@
 <script lang="ts">
-    import AiSparkle from '#comp/icons/AiSparkleIcon.svelte';
+    import ExieIcon from '#comp/icons/ExieIcon.svelte';
     import { cn } from '#lib/utils.ts';
 
     interface Props {
@@ -20,5 +20,5 @@
         className
     )}
 >
-    <AiSparkle />
+    <ExieIcon />
 </span>
