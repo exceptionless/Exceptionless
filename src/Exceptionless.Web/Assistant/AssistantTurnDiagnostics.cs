@@ -53,8 +53,6 @@ internal sealed class AssistantTurnDiagnostics : IDisposable
     public int ToolCalls { get; private set; }
     public int ToolFailures { get; private set; }
     public int ToolRounds { get; set; }
-    public int MalformedResponseRetries { get; set; }
-    public int RecoveredDsmlToolCalls { get; set; }
     public string? LastTool { get; private set; }
     public string? LastToolError { get; private set; }
     public AssistantProviderDiagnostics? Provider { get; private set; }
@@ -144,8 +142,6 @@ internal sealed class AssistantTurnDiagnostics : IDisposable
         _activity?.SetTag("assistant.provider.requests", ProviderRequests);
         _activity?.SetTag("assistant.tool.calls", ToolCalls);
         _activity?.SetTag("assistant.tool.rounds", ToolRounds);
-        _activity?.SetTag("assistant.malformed_response.retries", MalformedResponseRetries);
-        _activity?.SetTag("assistant.dsml_tool_calls.recovered", RecoveredDsmlToolCalls);
         if (outcome == "failed")
             _activity?.SetStatus(ActivityStatusCode.Error, reason);
 

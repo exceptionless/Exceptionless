@@ -46,7 +46,7 @@ public sealed class AssistantDiagnosticsTests
     [Theory]
     [InlineData("empty_response")]
     [InlineData("output_limit")]
-    [InlineData("malformed_response")]
+    [InlineData("incomplete_stream")]
     [InlineData("tool_round_limit")]
     [InlineData("usage_limit")]
     public async Task WriteResponseAsync_StreamedError_RecordsCorrelatedFailureWithoutChangingResponse(string reason)

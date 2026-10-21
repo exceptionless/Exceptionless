@@ -279,7 +279,6 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.Contains(turn.Events, item => item.Type == "done");
         Assert.False(String.IsNullOrWhiteSpace(turn.Text));
         Assert.NotEmpty(turn.ToolCalls);
-        Assert.DoesNotContain("DSML", turn.Text, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsFailedToolResult(string? result)

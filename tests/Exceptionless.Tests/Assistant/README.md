@@ -33,7 +33,7 @@ The scenarios cover:
 - Explaining the cause of an exception from its stack trace and error data.
 - Marking the current stack fixed in a version.
 
-Assertions check tool selection and call limits, expected navigation links, and a completed, nonempty response without streamed errors or raw DSML markup. Passing confirms these scenario assertions; answer quality still needs review when changing the model, system prompt, or tools.
+Assertions check tool selection and call limits, expected navigation links, and a completed, nonempty response without streamed errors. Passing confirms these scenario assertions; answer quality still needs review when changing the model, system prompt, or tools.
 
 To compare models, set `ASSISTANT_EVAL_RESULTS` to a file path. Each turn is appended as one JSON line with the model, answer text, tool calls, failed tool results, duration, time to first text, and reported cost.
 

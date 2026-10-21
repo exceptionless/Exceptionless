@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models.Billing;
@@ -35,8 +34,6 @@ public sealed class AssistantService(
     private const string SnoozeStackTool = "snooze_stack";
     private const string UpdateStackStatusTool = "update_stack_status";
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
-    // Matches every pipe form AssistantDsmlToolCallParser accepts, so recoverable markup always reaches it.
-    private static readonly Regex s_rawDsmlPattern = new(@"<\s*/?\s*[|｜]{1,2}\s*DSML\s*[|｜]{1,2}", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
     public IAsyncEnumerable<AssistantStreamEvent> StreamAsync(
         AssistantChatRequest request,
@@ -76,8 +73,6 @@ public sealed class AssistantService(
         IReadOnlyCollection<AssistantSuggestedAction> pendingSuggestedActions = [];
         string? configureHref = String.IsNullOrWhiteSpace(request.ProjectId) ? null : AssistantRoutes.ProjectConfigure(request.ProjectId);
         bool requireFinalAnswer = false;
-        int malformedResponseRetries = 0;
-        object? malformedResponseCorrection = null;
 
         while (true)
         {
@@ -248,11 +243,7 @@ public sealed class AssistantService(
                 providerDiagnostics?.RecordException(ex);
                 // A cancelled tool round can describe actions that have not executed yet.
                 if (ex is OperationCanceledException cancellationException && assistantContent.Length > 0 && toolCalls.Count == 0)
-                {
-                    string partialResponse = assistantContent.ToString();
-                    if (!s_rawDsmlPattern.IsMatch(partialResponse))
-                        throw new AssistantProviderCanceledException(partialResponse, cancellationException);
-                }
+                    throw new AssistantProviderCanceledException(assistantContent.ToString(), cancellationException);
                 throw;
             }
             finally
@@ -287,66 +278,6 @@ public sealed class AssistantService(
                 yield return AssistantStreamEvent.Error("Exie received an incomplete response from the AI provider. Please try again.", "incomplete_stream");
                 yield return AssistantStreamEvent.Done();
                 yield break;
-            }
-
-            if (allowTools
-                && toolCalls.Count == 0
-                && s_rawDsmlPattern.IsMatch(assistantContent.ToString())
-                && AssistantDsmlToolCallParser.TryParse(assistantContent.ToString(), out string leadingText, out var recoveredToolCalls))
-            {
-                // Some providers skip DeepSeek's tool parser; retrying usually hits the same provider again.
-                logger.LogInformation(
-                    "Recovered {ToolCallCount} assistant tool calls from raw DSML content for organization {OrganizationId}",
-                    recoveredToolCalls.Count,
-                    request.OrganizationId);
-                if (diagnostics is not null)
-                    diagnostics.RecoveredDsmlToolCalls += recoveredToolCalls.Count;
-
-                assistantContent.Clear().Append(leadingText);
-                assistantContentChunks.Clear();
-                if (leadingText.Length > 0)
-                    assistantContentChunks.Add(leadingText);
-
-                for (int index = 0; index < recoveredToolCalls.Count; index++)
-                {
-                    var pending = new PendingToolCall { Name = recoveredToolCalls[index].Name };
-                    pending.Arguments.Append(recoveredToolCalls[index].Arguments);
-                    toolCalls[index] = pending;
-                }
-            }
-
-            if (s_rawDsmlPattern.IsMatch(assistantContent.ToString()))
-            {
-                providerDiagnostics?.Reject("malformed_response");
-                if (malformedResponseRetries < AssistantLimits.MaximumMalformedResponseRetries)
-                {
-                    malformedResponseRetries++;
-                    if (diagnostics is not null)
-                        diagnostics.MalformedResponseRetries = malformedResponseRetries;
-                    logger.LogWarning(
-                        "Assistant provider returned raw DSML content for organization {OrganizationId}; retrying response",
-                        request.OrganizationId);
-                    malformedResponseCorrection = new
-                    {
-                        role = "system",
-                        content = "The previous provider response exposed internal DSML tool-call markup as text. Retry the response from the beginning. Return normal answer text and use only the structured tool_calls field for tools. Never include DSML markup in content."
-                    };
-                    messages.Add(malformedResponseCorrection);
-                    continue;
-                }
-
-                logger.LogWarning(
-                    "Assistant provider returned raw DSML content again for organization {OrganizationId}",
-                    request.OrganizationId);
-                yield return AssistantStreamEvent.Error("Exie received a malformed response from the AI provider. Please try again.", "malformed_response");
-                yield return AssistantStreamEvent.Done();
-                yield break;
-            }
-
-            if (malformedResponseCorrection is not null)
-            {
-                messages.Remove(malformedResponseCorrection);
-                malformedResponseCorrection = null;
             }
 
             if (providerFailureCode is null && !allowTools && toolCalls.Count > 0)
