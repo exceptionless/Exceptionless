@@ -63,6 +63,10 @@ export function getAssistantToolDetail(tool: AssistantToolActivity, projectNames
         details.push(describeTimeRange(args.time.trim()));
     }
 
+    if (typeof args?.groupBy === 'string' && args.groupBy.trim()) {
+        details.push(`by ${args.groupBy.trim()}`);
+    }
+
     if (details.length === 0 && tool.status === 'complete' && (tool.name === 'get_stack' || tool.name === 'get_event')) {
         const data = parseRecord(parseRecord(tool.result)?.data);
         const title = getAssistantToolStackTitle(tool) ?? (typeof data?.message === 'string' ? data.message.trim() : undefined);

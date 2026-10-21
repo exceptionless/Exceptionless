@@ -27,4 +27,18 @@ describe('describeTimeRange', () => {
 
         expect(detail).toBe('type:error · last 24 hours');
     });
+
+    it('shows how counted events were grouped', () => {
+        const detail = getAssistantToolDetail(
+            {
+                arguments: JSON.stringify({ filter: 'type:error', groupBy: 'stack', time: '[now/d TO now/d]' }),
+                id: 'tool-1',
+                name: 'count_events',
+                status: 'complete'
+            },
+            new Map()
+        );
+
+        expect(detail).toBe('type:error · today · by stack');
+    });
 });

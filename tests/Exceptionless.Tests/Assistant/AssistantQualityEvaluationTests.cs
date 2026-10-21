@@ -125,11 +125,12 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
             "/stack",
             SampleDataService.TEST_PROJECT_ID);
         AssertSuccessfulAnswer(projectTopErrors);
-        Assert.Equal(1, projectTopErrors.ToolCalls.Count(call => call == "search_stacks"));
-        Assert.DoesNotContain("list_projects", projectTopErrors.ToolCalls);
+        // Ranking a period needs per-period counts, which count_events gives in one call.
+        Assert.Equal(["count_events"], projectTopErrors.ToolCalls);
+        Assert.Equal(["stack"], GetToolArguments(projectTopErrors, "count_events", "groupBy"));
         Assert.Contains("/stack/", projectTopErrors.Text, StringComparison.Ordinal);
         // Periods go to the server as date math instead of timestamps the model computed.
-        Assert.All(GetToolArguments(projectTopErrors, "search_stacks", "time"), time => Assert.Matches(@"^\[now-(24h|1d) TO now\]$", time));
+        Assert.All(GetToolArguments(projectTopErrors, "count_events", "time"), time => Assert.Matches(@"^\[now-(24h|1d) TO now\]$", time));
     }
 
     [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
@@ -144,8 +145,8 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
             SampleDataService.TEST_PROJECT_ID,
             timeZone: "America/Chicago");
         AssertSuccessfulAnswer(today);
-        Assert.Equal(1, today.ToolCalls.Count(call => call == "search_stacks"));
-        Assert.Equal(["[now/d TO now/d]"], GetToolArguments(today, "search_stacks", "time"));
+        Assert.Single(today.ToolCalls, call => call is "search_stacks" or "count_events");
+        Assert.Equal(["[now/d TO now/d]"], [.. GetToolArguments(today, "search_stacks", "time"), .. GetToolArguments(today, "count_events", "time")]);
     }
 
     [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
@@ -161,7 +162,8 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
             projectId: null);
         AssertSuccessfulAnswer(organizationTopErrors);
         Assert.Equal(1, organizationTopErrors.ToolCalls.Count(call => call == "list_projects"));
-        Assert.InRange(organizationTopErrors.ToolCalls.Count(call => call == "search_stacks"), 1, AssistantLimits.MaximumProjectsPerTurn);
+        Assert.InRange(organizationTopErrors.ToolCalls.Count(call => call == "count_events"), 1, AssistantLimits.MaximumProjectsPerTurn);
+        Assert.Equal(organizationTopErrors.ToolCalls.Count - 1, organizationTopErrors.ToolCalls.Count(call => call == "count_events"));
         Assert.Contains("/stack/", organizationTopErrors.Text, StringComparison.Ordinal);
     }
 
@@ -227,33 +229,46 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
     }
 
     /// <summary>
-    /// A way of asking about a period, the date math Exie must send for it, and the tool it should use. Patterns
+    /// A way of asking about a period, the date math Exie must send for it, and the tools it may use. Patterns
     /// allow equivalent spellings such as [now-24h TO now] and [now-1d TO now]. A null pattern means no time limit.
     /// </summary>
     private sealed record TimeRangeScenario(string Prompt, string Page, string Tool, string? TimePattern, string? FollowUpTo = null);
 
     private const string AnyOrNoTime = "(any)";
 
+    /// <summary>Weeks start on Sunday, so "since Monday" must name the most recent Monday in the user's time zone.</summary>
+    private static string SinceMondayPattern
+    {
+        get
+        {
+            var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("America/Chicago")).DateTime);
+            var monday = today.AddDays(-(((int)today.DayOfWeek + 6) % 7));
+            return $@"^\[{monday:yyyy-MM-dd} TO now\]$";
+        }
+    }
+    // Listing what happened in a period may use either tool; ranking the top errors must use count_events.
+    private const string Either = "search_stacks|count_events";
+
     private static readonly Dictionary<string, TimeRangeScenario> s_timeRangeScenarios = new()
     {
-        ["last_24_hours"] = new("What are the top errors in this project in the last 24 hours?", "project", "search_stacks", @"^\[now-(24h|1d) TO now\]$"),
-        ["last_hour"] = new("Were there any new errors in this project in the last hour?", "project", "search_stacks", @"^\[now-(1h|60m) TO now\]$"),
-        ["last_2_days"] = new("Which errors did this project have over the last 2 days?", "project", "search_stacks", @"^\[now-(2d|48h)(/d)? TO now\]$"),
-        ["past_7_days"] = new("What errors happened in this project in the past 7 days?", "project", "search_stacks", @"^\[now-(7d|1w)(/d)? TO now\]$"),
-        ["last_30_days"] = new("What are the top errors in this project over the last 30 days?", "project", "search_stacks", @"^\[now-30d(/d)? TO now\]$"),
-        ["today"] = new("Which errors happened in this project today?", "project", "search_stacks", @"^\[now/d TO now(/d)?\]$"),
-        ["yesterday"] = new("What errors did this project have yesterday?", "project", "search_stacks", @"^\[now-1d/d TO now-1d/d\]$"),
-        ["this_week"] = new("Show me this week's top errors in this project.", "project", "search_stacks", @"^\[now/w TO now(/w)?\]$"),
-        ["last_week"] = new("What were the top errors in this project last week?", "project", "search_stacks", @"^\[now-1w/w TO now-1w/w\]$"),
-        ["this_month"] = new("What are the top errors in this project this month?", "project", "search_stacks", @"^\[now/M TO now(/M)?\]$"),
-        ["since_monday"] = new("What errors has this project had since Monday?", "project", "search_stacks", @"^\[(now/w|2026-10-19) TO now\]$"),
-        ["explicit_day"] = new("What errors happened in this project on October 1, 2026?", "project", "search_stacks", @"^\[2026-10-01 TO 2026-10-01\]$"),
-        ["explicit_range"] = new("Show the top errors in this project between October 1 and October 15, 2026.", "project", "search_stacks", @"^\[2026-10-01 TO 2026-10-15\]$"),
-        ["no_time"] = new("What are the top errors in this project?", "project", "search_stacks", AnyOrNoTime),
+        ["last_24_hours"] = new("What are the top errors in this project in the last 24 hours?", "project", "count_events", @"^\[now-(24h|1d) TO now\]$"),
+        ["last_hour"] = new("Were there any new errors in this project in the last hour?", "project", Either, @"^\[now-(1h|60m) TO now\]$"),
+        ["last_2_days"] = new("Which errors did this project have over the last 2 days?", "project", Either, @"^\[now-(2d|48h)(/d)? TO now\]$"),
+        ["past_7_days"] = new("What errors happened in this project in the past 7 days?", "project", Either, @"^\[now-(7d|1w)(/d)? TO now\]$"),
+        ["last_30_days"] = new("What are the top errors in this project over the last 30 days?", "project", "count_events", @"^\[now-30d(/d)? TO now\]$"),
+        ["today"] = new("Which errors happened in this project today?", "project", Either, @"^\[now/d TO now(/d)?\]$"),
+        ["yesterday"] = new("What errors did this project have yesterday?", "project", Either, @"^\[now-1d/d TO now-1d/d\]$"),
+        ["this_week"] = new("Show me this week's top errors in this project.", "project", "count_events", @"^\[now/w TO now(/w)?\]$"),
+        ["last_week"] = new("What were the top errors in this project last week?", "project", "count_events", @"^\[now-1w/w TO now-1w/w\]$"),
+        ["this_month"] = new("What are the top errors in this project this month?", "project", "count_events", @"^\[now/M TO now(/M)?\]$"),
+        ["since_monday"] = new("What errors has this project had since Monday?", "project", Either, SinceMondayPattern),
+        ["explicit_day"] = new("What errors happened in this project on October 1, 2026?", "project", Either, @"^\[2026-10-01 TO 2026-10-01\]$"),
+        ["explicit_range"] = new("Show the top errors in this project between October 1 and October 15, 2026.", "project", "count_events", @"^\[2026-10-01 TO 2026-10-15\]$"),
+        ["no_time"] = new("What are the top errors in this project?", "project", "count_events", @"^\[now-7d TO now\]$"),
         ["stack_today"] = new("How many times did this stack occur today?", "stack", "get_stack_events", @"^\[now/d TO now(/d)?\]$"),
         ["stack_all_time"] = new("How many times has this stack occurred in total?", "stack", "get_stack", AnyOrNoTime),
-        ["organization_today"] = new("Which errors happened today across all of my projects?", "organization", "search_stacks", @"^\[now/d TO now(/d)?\]$"),
-        ["follow_up_yesterday"] = new("And yesterday?", "project", "search_stacks", @"^\[now-1d/d TO now-1d/d\]$", FollowUpTo: "today")
+        ["organization_today"] = new("Which errors happened today across all of my projects?", "organization", Either, @"^\[now/d TO now(/d)?\]$"),
+        ["follow_up_yesterday"] = new("And yesterday?", "project", Either, @"^\[now-1d/d TO now-1d/d\]$", FollowUpTo: "today")
     };
 
     public static TheoryData<string, int> TimeRangeScenarios()
@@ -297,13 +312,16 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         var turn = await SendAssistantTurnAsync(scenario.Prompt, path, projectId, "America/Chicago", history, scenario: $"time_{name}_{run}");
 
         AssertSuccessfulAnswer(turn);
+        string[] tools = scenario.Tool.Split('|');
         var times = turn.Events
-            .Where(item => item.Type == "tool_call" && item.ToolName == scenario.Tool)
+            .Where(item => item.Type == "tool_call" && tools.Contains(item.ToolName))
             .Select(item => GetStringArgument(item.Arguments, "time"))
             .ToArray();
         Assert.NotEmpty(times);
         if (scenario.TimePattern != AnyOrNoTime)
             Assert.All(times, time => Assert.Matches(scenario.TimePattern!, time ?? "(no time)"));
+        if (scenario.Tool == "count_events")
+            Assert.All(GetToolArguments(turn, "count_events", "groupBy"), groupBy => Assert.Equal("stack", groupBy));
 
         // The checkout stack occurred once today and once three days ago, so a total of 2 means Exie ignored the period.
         if (name == "stack_today")

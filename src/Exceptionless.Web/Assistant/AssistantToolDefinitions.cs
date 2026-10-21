@@ -11,6 +11,7 @@ internal static class AssistantToolDefinitions
 
     private static readonly string[] s_methodNames =
     [
+        nameof(ExceptionlessMcpTools.CountEventsAsync),
         nameof(ExceptionlessMcpTools.GetEventAsync),
         nameof(ExceptionlessMcpTools.GetProjectSetupAsync),
         nameof(ExceptionlessMcpTools.GetStackAsync),
@@ -51,6 +52,9 @@ internal static class AssistantToolDefinitions
 
             if (protocolTool.Name is "get_stack_events" or "list_projects" or "search_stacks")
                 ApplyMaximum(schema, "limit", AssistantLimits.MaximumToolItemsPerCall);
+
+            if (protocolTool.Name == "count_events")
+                ApplyMaximum(schema, "groupLimit", AssistantLimits.MaximumToolItemsPerCall);
 
             if (protocolTool.Name == "get_event")
                 ApplyMaximum(schema, "maxDetailSize", AssistantLimits.MaximumEventDetailCharacters);

@@ -23,6 +23,7 @@ public sealed class AssistantService(
     ILogger<AssistantService> logger)
 {
     private const string AddStackReferenceLinkTool = "add_stack_reference_link";
+    private const string CountEventsTool = "count_events";
     private const string GetEventTool = "get_event";
     private const string GetProjectSetupTool = "get_project_setup";
     private const string GetStackTool = "get_stack";
@@ -393,7 +394,7 @@ public sealed class AssistantService(
                         }
                     }, s_jsonOptions);
                 }
-                else if (toolCall.Name == SearchStacksTool && remainingProjectSearches <= 0)
+                else if (toolCall.Name is SearchStacksTool or CountEventsTool && remainingProjectSearches <= 0)
                 {
                     result = JsonSerializer.Serialize(new
                     {
@@ -409,7 +410,7 @@ public sealed class AssistantService(
                 else
                 {
                     remainingToolCalls--;
-                    if (toolCall.Name == SearchStacksTool)
+                    if (toolCall.Name is SearchStacksTool or CountEventsTool)
                         remainingProjectSearches--;
 
                     try
@@ -580,6 +581,14 @@ public sealed class AssistantService(
                 GetBoundedInt32(root, AssistantLimits.MaximumToolItemsPerCall, AssistantLimits.MaximumToolItemsPerCall, "limit"),
                 GetString(root, "after"),
                 GetString(root, "before")),
+            CountEventsTool => await tools.CountEventsAsync(
+                GetString(root, "projectId", "project_id") ?? request.ProjectId,
+                GetString(root, "filter"),
+                GetString(root, "time"),
+                GetUserTimeZoneId(request.TimeZone),
+                GetString(root, "interval"),
+                GetString(root, "groupBy", "group_by"),
+                GetBoundedInt32(root, AssistantLimits.MaximumToolItemsPerCall, AssistantLimits.MaximumToolItemsPerCall, "groupLimit", "group_limit")),
             SearchStacksTool => await tools.SearchStacksAsync(
                 GetString(root, "projectId", "project_id") ?? request.ProjectId,
                 GetString(root, "filter"),
