@@ -40,6 +40,7 @@
     import { isShallowNavigationWithinPage } from '#features/navigation/shallow-navigation.ts';
     import { getVisibleUrl } from '#features/navigation/visible-url.ts';
     import Notifications from '#features/notifications/components/notifications.svelte';
+    import SetupTopBar from '#features/onboarding/components/setup-top-bar.svelte';
     import {
         getOrganizationQuery,
         getOrganizationsQuery,
@@ -748,9 +749,11 @@
 </script>
 
 {#snippet setupShell()}
-    <div class="flex h-screen w-full items-center justify-center px-4">
-        <main class="w-full">
+    <div class="flex min-h-dvh w-full flex-col">
+        <SetupTopBar canCancel={organizations.length > 0} emailAddress={meQuery.data?.email_address} />
+        <main class="flex w-full flex-1 justify-center px-4 py-6 sm:py-10">
             <div
+                class="w-full"
                 in:fade={{
                     delay: 150,
                     duration: 150
