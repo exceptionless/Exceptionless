@@ -430,6 +430,8 @@ public sealed class AssistantService(
                 if (toolCall.Name == GetProjectSetupTool)
                     configureHref = AssistantSuggestedActionParser.GetProjectSetupHref(result) ?? configureHref;
 
+                // Read the projects before truncation, which wraps the result in a string and hides its project ids.
+                var projectIds = GetReferencedProjectIds(arguments, result, request.ProjectId);
                 result = LimitToolResult(result, ref remainingToolContextCharacters);
                 yield return AssistantStreamEvent.ToolResult(toolCall.Id, toolCall.Name, result);
                 messages.Add(new { role = "tool", tool_call_id = toolCall.Id, content = result });
@@ -440,7 +442,7 @@ public sealed class AssistantService(
                     result,
                     request.Path,
                     timeProvider.GetUtcNow(),
-                    GetReferencedProjectIds(arguments, result, request.ProjectId)));
+                    projectIds));
             }
 
             if (conversationToolResults.Count > 0

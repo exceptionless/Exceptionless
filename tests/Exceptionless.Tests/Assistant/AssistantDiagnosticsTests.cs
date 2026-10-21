@@ -298,6 +298,17 @@ public sealed class AssistantDiagnosticsTests
     }
 
     [Fact]
+    public void StartTool_CountEvents_RecordsTheToolName()
+    {
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+
+        diagnostics.StartTool("count_events");
+
+        Assert.Equal("count_events", diagnostics.LastTool);
+    }
+
+    [Fact]
     public void RecordToolResult_FailedTool_RecordsCodeWithoutArgumentsOrResult()
     {
         var logger = new RecordingAssistantLogger();

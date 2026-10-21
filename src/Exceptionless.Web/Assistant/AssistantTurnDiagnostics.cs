@@ -167,7 +167,7 @@ internal sealed class AssistantTurnDiagnostics : IDisposable
 
     private static string GetToolName(string name) => name switch
     {
-        "get_event" or "get_stack" or "get_project_setup" or "get_stack_events" or "list_projects" or "search_stacks"
+        "count_events" or "get_event" or "get_stack" or "get_project_setup" or "get_stack_events" or "list_projects" or "search_stacks"
             or "update_stack_status" or "snooze_stack" or "set_stack_critical" or "add_stack_reference_link" or "remove_stack_reference_link" => name,
         _ => "unknown"
     };
