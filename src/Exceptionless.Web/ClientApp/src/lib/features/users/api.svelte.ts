@@ -82,6 +82,8 @@ export interface UserAvatarRequest {
     };
 }
 
+export type VerifyEmailAddressResult = 'expired' | 'invalid' | 'verified';
+
 export function deleteCurrentUser() {
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
         enabled: () => !!accessToken.current,
@@ -356,6 +358,31 @@ export function uploadUserAvatar(request: UserAvatarRequest) {
             }
         }
     }));
+}
+
+/**
+ * Verifies the current user's email address with the token from the emailed link.
+ * Refreshes the current user so the verification prompt disappears.
+ */
+export async function verifyEmailAddress(queryClient: QueryClient, token: string): Promise<VerifyEmailAddressResult> {
+    const client = useFetchClient();
+    const response = await client.get(`users/verify-email-address/${encodeURIComponent(token)}`, {
+        expectedStatusCodes: [404, 422]
+    });
+
+    if (response.status === 404) {
+        return 'invalid';
+    }
+
+    if (response.status === 422) {
+        return 'expired';
+    }
+
+    await queryClient.invalidateQueries({
+        queryKey: queryKeys.me()
+    });
+
+    return 'verified';
 }
 
 function setCurrentUser(queryClient: QueryClient, currentUser: ViewCurrentUser, changes: Partial<ViewCurrentUser>): void {
