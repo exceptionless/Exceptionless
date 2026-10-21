@@ -62,7 +62,7 @@
 
         return result;
     });
-    // The reader's choice for each step summary. Until they click, a summary stays open while its research runs.
+    // The reader's choice for each step summary, which starts collapsed.
     let summaryOpen = $state<Record<string, boolean>>({});
     // Details render only once opened, so long JSON results are never highlighted unseen.
     let openToolIds = $state<Record<string, boolean>>({});
@@ -179,7 +179,9 @@
 {#snippet researchSummary(id: string, researchTools: AssistantToolActivity[])}
     {@const isResearching = isStreaming && researchTools.some((tool) => tool.status === 'running')}
     {@const failedResearchCount = researchTools.filter((tool) => tool.status === 'failed').length}
-    <Trace.Collapsible onOpenChange={(open) => (summaryOpen[id] = open)} open={summaryOpen[id] ?? isResearching}>
+    {@const currentTool = isResearching ? researchTools.findLast((tool) => tool.status === 'running') : undefined}
+    <!-- The summary stays collapsed until the reader opens it, so its height never changes while Exie works and the chat does not jump. -->
+    <Trace.Collapsible onOpenChange={(open) => (summaryOpen[id] = open)} open={summaryOpen[id] ?? false}>
         <Trace.CollapsibleTrigger>
             <Trace.Line status={isResearching ? 'running' : failedResearchCount > 0 ? 'error' : undefined}>
                 <Trace.Icon>
@@ -198,7 +200,9 @@
                         Researched in {researchTools.length} steps
                     {/if}
                 </Trace.Title>
-                {#if !isResearching && failedResearchCount > 0}
+                {#if currentTool}
+                    <Trace.Description class="min-w-0 shrink truncate">{getAssistantToolLabel(currentTool, isStreaming)}</Trace.Description>
+                {:else if !isResearching && failedResearchCount > 0}
                     <Trace.Description>{failedResearchCount} failed</Trace.Description>
                 {/if}
             </Trace.Line>

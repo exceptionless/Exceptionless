@@ -535,6 +535,40 @@ describe('AssistantPanel', () => {
         expect(fetchMock).toHaveBeenCalledOnce();
     });
 
+    it('keeps research collapsed to one line that names the running step', async () => {
+        const toolEvents = [
+            { arguments: '{}', tool_call_id: 'tool-1', tool_name: 'list_projects', type: 'tool_call' },
+            { result: '{"ok":true,"data":{"items":[]}}', tool_call_id: 'tool-1', type: 'tool_result' },
+            { arguments: '{}', tool_call_id: 'tool-2', tool_name: 'search_stacks', type: 'tool_call' }
+        ];
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(
+                async () =>
+                    new Response(
+                        new ReadableStream<Uint8Array>({
+                            start(controller) {
+                                controller.enqueue(new TextEncoder().encode(toolEvents.map((item) => `${JSON.stringify(item)}\n`).join('')));
+                            }
+                        })
+                    )
+            )
+        );
+
+        render(AssistantPanel, {
+            props: {
+                open: true,
+                organizationId: 'organization-1',
+                promptRequest: { id: 'request-1', prompt: 'Find matching stacks.' }
+            }
+        });
+
+        // Expanding and collapsing the steps would change the chat's height while Exie works and make it jump.
+        const summary = (await screen.findByText('Researching…')).closest('[data-slot="trace-line"]')!;
+        expect(summary.querySelector('[data-slot="trace-description"]')?.textContent).toBe('Searching error stacks…');
+        expect(summary.closest('[aria-expanded]')?.getAttribute('aria-expanded')).toBe('false');
+    });
+
     it('lists steps in the order they ran when a change comes between lookups', async () => {
         const toolEvents = [
             { arguments: '{}', tool_call_id: 'tool-1', tool_name: 'get_stack', type: 'tool_call' },

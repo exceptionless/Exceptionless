@@ -868,7 +868,8 @@
         {:else if messages.length === 0}
             {@render emptyState()}
         {:else}
-            <MessageScroller.Provider autoScroll defaultScrollPosition="last-anchor">
+            <!-- Answers arrive a step at a time, so following the bottom would jump past the question; keep the question anchored and let the reader scroll. -->
+            <MessageScroller.Provider defaultScrollPosition="last-anchor">
                 <MessageScroller.Root>
                     <MessageScroller.Viewport>
                         <MessageScroller.Content
@@ -879,7 +880,12 @@
                         >
                             {#each messages as message, index (message.id)}
                                 {@const isLast = index === messages.length - 1}
-                                <MessageScroller.Item messageId={message.id} scrollAnchor={message.role === 'user'}>
+                                <!-- Skipped rendering guesses each row at 10rem, so rows resize as they appear and the chat jumps; render every row. -->
+                                <MessageScroller.Item
+                                    class="[contain-intrinsic-size:none] [content-visibility:visible]"
+                                    messageId={message.id}
+                                    scrollAnchor={message.role === 'user'}
+                                >
                                     <AssistantMessage
                                         {isLast}
                                         isStreaming={isStreaming && message.id === streamingMessageId}
