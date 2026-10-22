@@ -58,6 +58,28 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(logoutPath.TryGetProperty("get", out var logoutGet));
         AssertResponseCodes(logoutGet, "200", "401", "403");
 
+        foreach (var (path, method) in new[] {
+            ("/api/v2/organizations", "post"),
+            ("/api/v2/organizations/{ids}", "delete"),
+            ("/api/v2/organizations/{id}/users/{email}", "post"),
+            ("/api/v2/organizations/{id}/users/{email}", "delete"),
+            ("/api/v2/auth/login", "post"),
+            ("/api/v2/auth/signup", "post"),
+            ("/api/v2/users/{id}", "patch"),
+            ("/api/v2/users/{id}", "put"),
+            ("/api/v2/users/me", "delete"),
+            ("/api/v2/users/{ids}", "delete"),
+            ("/api/v2/users/{id}/avatar", "post"),
+            ("/api/v2/users/{id}/avatar", "delete"),
+            ("/api/v2/users/{id}/email-address/{email}", "post"),
+            ("/api/v2/users/verify-email-address/{token}", "get"),
+            ("/api/v2/users/{id}/resend-verification-email", "get")
+        })
+            AssertResponseCodes(paths.GetProperty(path).GetProperty(method), "409");
+
+        var forgotPassword = paths.GetProperty("/api/v2/auth/forgot-password/{email}").GetProperty("get");
+        Assert.False(forgotPassword.GetProperty("responses").TryGetProperty("409", out _));
+
         Assert.True(paths.TryGetProperty("/api/v2/projects", out var projectsPath));
         Assert.True(projectsPath.TryGetProperty("post", out var projectsPost));
         Assert.True(projectsPost.TryGetProperty("requestBody", out _));
@@ -133,6 +155,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(schemas.TryGetProperty("RecordProductTourResult", out var recordProductTourResult));
         Assert.Equal("recorded_utc", Assert.Single(recordProductTourResult.GetProperty("properties").EnumerateObject()).Name);
         Assert.True(schemas.TryGetProperty("ViewOrganization", out _));
+        var user = schemas.GetProperty("User");
+        Assert.Contains(user.GetProperty("required").EnumerateArray(), property => property.GetString() == "version");
+        Assert.Equal("string", user.GetProperty("properties").GetProperty("version").GetProperty("type").GetString());
 
         var savedViewColumnProperties = savedViewColumnSettings.GetProperty("properties");
         Assert.Equal("boolean", savedViewColumnProperties.GetProperty("auto_fill").GetProperty("type")[1].GetString());

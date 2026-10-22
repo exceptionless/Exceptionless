@@ -1,8 +1,14 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Models;
 using Xunit;
 
@@ -15,6 +21,178 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
     public UserRepositoryTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _repository = GetService<IUserRepository>();
+    }
+
+    [Theory]
+    [InlineData("id")]
+    [InlineData("ids")]
+    [InlineData("email")]
+    public async Task GetAsync_StoredUserWithoutVersion_ReadsVersionWithoutRewritingDocument(string lookup)
+    {
+        // Arrange
+        const string userId = "770000000000000000000096";
+        const string emailAddress = "legacy@localhost.test";
+        var configuration = GetService<ExceptionlessElasticConfiguration>();
+        var source = new JsonObject
+        {
+            ["id"] = userId,
+            ["email_address"] = emailAddress,
+            ["full_name"] = "Existing User"
+        };
+        var indexed = await configuration.Client.IndexAsync(source,
+            request => request.Index(configuration.Users.VersionedName).Id(userId).Refresh(Refresh.WaitFor),
+            TestCancellationToken);
+        string expectedVersion = new ElasticDocumentVersion(indexed.PrimaryTerm.GetValueOrDefault(), indexed.SeqNo.GetValueOrDefault());
+
+        // Act
+        var loaded = lookup switch
+        {
+            "ids" => (await _repository.GetByIdsAsync(new[] { userId })).Single(),
+            "email" => await _repository.GetByEmailAddressAsync(emailAddress),
+            _ => await _repository.GetByIdAsync(userId)
+        };
+        var stored = await configuration.Client.GetAsync<JsonElement>(
+            configuration.Users.VersionedName, userId, TestCancellationToken);
+
+        // Assert
+        Assert.True(indexed.IsValidResponse);
+        Assert.NotNull(loaded);
+        Assert.Equal(expectedVersion, loaded.Version);
+        Assert.Equal("Existing User", loaded.FullName);
+        Assert.True(stored.IsValidResponse);
+        Assert.Equal(indexed.SeqNo, stored.SeqNo);
+        Assert.False(stored.Source.TryGetProperty("version", out _));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PatchAsync_MembershipChanges_RefreshesCachedUserLookups(bool remove)
+    {
+        // Arrange
+        const string organizationId = "770000000000000000000001";
+        var user = new User { FullName = "Cached User", EmailAddress = "cached@localhost.test" };
+        user.MarkEmailAddressVerified();
+        if (remove)
+            user.OrganizationIds.Add(organizationId);
+        await _repository.AddAsync(user, options => options.Cache());
+        var before = await _repository.GetByIdAsync(user.Id, options => options.Cache());
+        var beforeEmail = await _repository.GetByEmailAddressAsync(user.EmailAddress);
+
+        // Act
+        bool patched = await _repository.PatchAsync(user.Id, new ActionPatch<User>(current =>
+        {
+            if (remove)
+                current.OrganizationIds.Remove(organizationId);
+            else
+                current.OrganizationIds.Add(organizationId);
+        }), options => options.Cache());
+        var byId = await _repository.GetByIdAsync(user.Id, options => options.Cache());
+        var byEmail = await _repository.GetByEmailAddressAsync(user.EmailAddress);
+        var stored = await _repository.GetByIdAsync(user.Id, options => options.Cache(false));
+
+        // Assert
+        Assert.NotNull(before);
+        Assert.NotNull(beforeEmail);
+        Assert.Equal(remove, before.OrganizationIds.Contains(organizationId));
+        Assert.Equal(remove, beforeEmail.OrganizationIds.Contains(organizationId));
+        Assert.True(patched);
+        Assert.NotNull(stored);
+        Assert.NotEqual(before.Version, stored.Version);
+        foreach (var loaded in new[] { byId, byEmail })
+        {
+            Assert.NotNull(loaded);
+            Assert.Equal(!remove, loaded.OrganizationIds.Contains(organizationId));
+            Assert.Equal(stored.Version, loaded.Version);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task UpdateProfileAsync_TourRecordedAfterSnapshot_PreservesProgressAndUnchangedFields(bool updateFullName)
+    {
+        // Arrange
+        var user = new User { FullName = "Existing User", EmailAddress = "profile@localhost.test" };
+        user.MarkEmailAddressVerified();
+        await _repository.AddAsync(user, options => options.Cache());
+        var recordedUtc = TimeProvider.GetUtcNow().UtcDateTime;
+        await _repository.RecordProductTourAsync(user, "app_overview", recordedUtc);
+        await _repository.GetByIdAsync(user.Id, options => options.Cache());
+        await _repository.GetByEmailAddressAsync(user.EmailAddress);
+
+        // Act
+        var updated = await _repository.UpdateProfileAsync(user, updateFullName ? "Updated Name" : null, updateFullName ? null : false);
+        var byId = await _repository.GetByIdAsync(user.Id, options => options.Cache());
+        var byEmail = await _repository.GetByEmailAddressAsync(user.EmailAddress);
+
+        // Assert
+        Assert.Empty(user.ProductTours);
+        foreach (var result in new[] { updated, byId, byEmail })
+        {
+            Assert.NotNull(result);
+            Assert.Equal(recordedUtc, result.ProductTours["app_overview"].GetDateTime());
+            Assert.Equal(updateFullName ? "Updated Name" : user.FullName, result.FullName);
+            Assert.Equal(updateFullName && user.EmailNotificationsEnabled, result.EmailNotificationsEnabled);
+            Assert.Equal(user.EmailAddress, result.EmailAddress);
+            Assert.Equal(user.CreatedUtc, result.CreatedUtc);
+            Assert.Equal(user.Roles, result.Roles);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateProfileAsync_UserDeletedAfterSnapshot_DoesNotRecreateUser()
+    {
+        // Arrange
+        var user = new User { FullName = "Deleted User", EmailAddress = "deleted@localhost.test" };
+        user.MarkEmailAddressVerified();
+        await _repository.AddAsync(user, options => options.Cache());
+        await _repository.RemoveAsync(user);
+
+        // Act
+        var failure = await Record.ExceptionAsync(async () =>
+        {
+            _ = await _repository.UpdateProfileAsync(user, "Updated Name", null);
+        });
+        var stored = await _repository.GetByIdAsync(user.Id);
+
+        // Assert
+        Assert.IsType<DocumentNotFoundException>(failure);
+        Assert.Null(stored);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SaveAsync_VersionChecks_RejectStaleOrMissingVersion(bool missingVersion)
+    {
+        // Arrange
+        var user = new User { FullName = "Versioned User", EmailAddress = "versioned@localhost.test" };
+        user.MarkEmailAddressVerified();
+        await _repository.AddAsync(user, options => options.ImmediateConsistency());
+        var stale = user with { FullName = "Stale profile" };
+        user.AuthenticationVersion = "rotated-generation";
+        string originalVersion = user.Version;
+        var saved = await _repository.SaveAsync(user, options => options.ImmediateConsistency());
+        if (missingVersion)
+            stale.Version = null!;
+
+        // Act
+        var failure = await Record.ExceptionAsync(async () =>
+        {
+            _ = await _repository.SaveAsync(stale);
+        });
+        var persisted = await _repository.GetByIdAsync(user.Id);
+
+        // Assert
+        Assert.IsAssignableFrom<DocumentException>(failure);
+        if (!missingVersion)
+            Assert.IsType<VersionConflictDocumentException>(failure);
+        Assert.Same(user, saved);
+        Assert.NotEqual(originalVersion, user.Version);
+        Assert.NotNull(persisted);
+        Assert.Equal("rotated-generation", persisted.AuthenticationVersion);
+        Assert.Equal(user.FullName, persisted.FullName);
     }
 
     [Theory]

@@ -110,6 +110,7 @@ public static class UserEndpoints
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The changes",
@@ -129,6 +130,7 @@ public static class UserEndpoints
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Update")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The changes",
@@ -146,6 +148,7 @@ public static class UserEndpoints
         .Accepts<IFormFile>("multipart/form-data")
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithMetadata(
             new MultipartFileUploadAttribute(),
@@ -166,6 +169,7 @@ public static class UserEndpoints
         group.MapDelete("users/{id:objectid}/avatar", DeleteAvatarAsync)
         .Produces<ViewUser>()
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Remove avatar")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -196,11 +200,13 @@ public static class UserEndpoints
             => (await mediator.InvokeAsync<Result<ModelActionResults>>(new UserMessages.DeleteCurrentUser())).ToHttpResult(resultMapper))
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Delete current user")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["202"] = "Accepted",
                 ["404"] = "The current user could not be found.",
+                ["409"] = "The account changed while the request was being processed.",
             }
         });
 
@@ -210,6 +216,7 @@ public static class UserEndpoints
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .WithSummary("Remove")
         .WithMetadata(new EndpointDocumentation {
@@ -220,6 +227,7 @@ public static class UserEndpoints
                 ["202"] = "Accepted",
                 ["400"] = "One or more validation errors occurred.",
                 ["404"] = "One or more users were not found.",
+                ["409"] = "An account changed while the request was being processed.",
                 ["500"] = "An error occurred while deleting one or more users.",
             }
         });
@@ -229,6 +237,7 @@ public static class UserEndpoints
         .Produces<UpdateEmailAddressResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .ProducesProblem(StatusCodes.Status429TooManyRequests)
         .WithSummary("Update email address")
@@ -248,6 +257,7 @@ public static class UserEndpoints
             => (await mediator.InvokeAsync<Result>(new UserMessages.VerifyEmailAddress(token))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Verify email address")
         .WithMetadata(new EndpointDocumentation {
@@ -264,6 +274,7 @@ public static class UserEndpoints
             => (await mediator.InvokeAsync<Result>(new UserMessages.ResendVerificationEmail(id))).ToHttpResult(resultMapper))
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Resend verification email")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -285,6 +296,7 @@ public static class UserEndpoints
         })
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ExcludeFromDescription();
 
         group.MapPost("users/{id:objectid}/admin-role", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
@@ -292,6 +304,7 @@ public static class UserEndpoints
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ExcludeFromDescription();
 
         group.MapDelete("users/{id:objectid}/admin-role", async (string id, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
@@ -299,6 +312,7 @@ public static class UserEndpoints
         .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ExcludeFromDescription();
 
         return endpoints;

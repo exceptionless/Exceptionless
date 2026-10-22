@@ -18,6 +18,7 @@ using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Microsoft.IdentityModel.Tokens;
 using OAuth2.Models;
 
@@ -431,7 +432,14 @@ public class AuthHandler(
         }
 
         user.CreatePasswordResetToken(timeProvider);
-        await userRepository.SaveAsync(user, o => o.Cache());
+        try
+        {
+            await userRepository.SaveAsync(user, o => o.Cache());
+        }
+        catch (VersionConflictDocumentException)
+        {
+            return Result.Success();
+        }
 
         await mailer.SendUserPasswordResetAsync(user);
         logger.UserForgotPassword(user.EmailAddress);

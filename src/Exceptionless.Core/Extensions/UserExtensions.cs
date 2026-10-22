@@ -64,8 +64,9 @@ public static class UserExtensions
 
     public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary? data = null)
     {
-        var account = user.OAuthAccounts.FirstOrDefault(account => String.Equals(account.Provider, providerName, StringComparison.Ordinal)
-            && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal));
+        var accounts = user.OAuthAccounts.Where(account => String.Equals(account.Provider, providerName, StringComparison.Ordinal)
+            && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal)).ToArray();
+        var account = accounts.FirstOrDefault();
         if (account is null)
         {
             account = new OAuthAccount
@@ -83,6 +84,9 @@ public static class UserExtensions
 
         if (data is not null)
             account.ExtraData.Apply(data);
+
+        foreach (var duplicate in accounts.Skip(1))
+            user.OAuthAccounts.Remove(duplicate);
     }
 
     public static bool RemoveOAuthAccount(this User user, string providerName, string providerUserId)
