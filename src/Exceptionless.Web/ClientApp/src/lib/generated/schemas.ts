@@ -118,6 +118,7 @@ export const AssistantChatRequestSchema = object({
     .min(1, "Conversation id is required")
     .nullable()
     .optional(),
+  time_zone: string().min(1, "Time zone is required").nullable().optional(),
 });
 export type AssistantChatRequestFormData = Infer<
   typeof AssistantChatRequestSchema

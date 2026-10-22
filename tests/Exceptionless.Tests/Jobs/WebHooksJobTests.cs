@@ -199,15 +199,16 @@ public sealed class WebHooksJobTests : TestWithServices
         // Arrange
         var requests = new ConcurrentQueue<(string Path, string Cookie, string TraceParent, string TraceState, string Baggage)>();
         var activities = new ConcurrentQueue<Activity>();
+        var sampledTraceIds = new ConcurrentDictionary<ActivityTraceId, bool>();
         // Parallel application hosts keep a parent-based HTTP tracing provider active in this process.
         using var applicationTracing = Sdk.CreateTracerProviderBuilder()
             .SetSampler(new ParentBasedSampler(new AlwaysOnSampler()))
             .AddHttpClientInstrumentation(options => options.EnrichWithHttpRequestMessage = WebHookDelivery.EnrichActivity)
             .Build();
         using var tracing = Sdk.CreateTracerProviderBuilder()
-            .SetSampler(sampled ? new AlwaysOnSampler() : new AlwaysOffSampler())
+            .SetSampler(new TrackingSampler(sampled ? new AlwaysOnSampler() : new AlwaysOffSampler(), sampledTraceIds))
             .AddHttpClientInstrumentation(options => options.EnrichWithHttpRequestMessage = WebHookDelivery.EnrichActivity)
-            .AddProcessor(new CaptureActivityProcessor(activities))
+            .AddProcessor(new CaptureActivityProcessor(activities, sampledTraceIds))
             .Build();
         // Inspect outgoing diagnostics without including the receiver's request logs.
         Log.SetLogLevel("Microsoft.AspNetCore", LogLevel.Warning);
@@ -325,9 +326,29 @@ public sealed class WebHooksJobTests : TestWithServices
         return factory.Object;
     }
 
-    private sealed class CaptureActivityProcessor(ConcurrentQueue<Activity> activities) : BaseProcessor<Activity>
+    /// <summary>
+    /// Captures only activities this tracer sampled. Integration test hosts in the same process register their own
+    /// tracers, which record HttpClient activities that would otherwise reach this processor too.
+    /// </summary>
+    private sealed class CaptureActivityProcessor(ConcurrentQueue<Activity> activities, ConcurrentDictionary<ActivityTraceId, bool> sampledTraceIds) : BaseProcessor<Activity>
     {
-        public override void OnEnd(Activity activity) => activities.Enqueue(activity);
+        public override void OnEnd(Activity activity)
+        {
+            if (sampledTraceIds.ContainsKey(activity.TraceId))
+                activities.Enqueue(activity);
+        }
+    }
+
+    private sealed class TrackingSampler(Sampler inner, ConcurrentDictionary<ActivityTraceId, bool> sampledTraceIds) : Sampler
+    {
+        public override SamplingResult ShouldSample(in SamplingParameters samplingParameters)
+        {
+            var result = inner.ShouldSample(samplingParameters);
+            if (result.Decision != SamplingDecision.Drop)
+                sampledTraceIds.TryAdd(samplingParameters.TraceId, true);
+
+            return result;
+        }
     }
 
     private sealed class DelegateHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> send) : HttpMessageHandler

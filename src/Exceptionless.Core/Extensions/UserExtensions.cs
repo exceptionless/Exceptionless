@@ -91,15 +91,16 @@ public static class UserExtensions
 
     public static bool RemoveOAuthAccount(this User user, string providerName, string providerUserId)
     {
-        if (user.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(user.Password))
-            return false;
-
         var accounts = user.OAuthAccounts.Where(account => String.Equals(account.Provider, providerName, StringComparison.Ordinal)
             && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal)).ToArray();
         if (accounts.Length is 0)
             return true;
 
-        if (accounts.Length == user.OAuthAccounts.Count && String.IsNullOrEmpty(user.Password))
+        var activeOAuthAccounts = user.OAuthAccounts
+            .Where(account => !String.Equals(account.Provider, OAuthAccount.KnownProviders.Facebook, StringComparison.OrdinalIgnoreCase)
+                && !String.Equals(account.Provider, OAuthAccount.KnownProviders.WindowsLive, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (String.IsNullOrEmpty(user.Password) && activeOAuthAccounts.Length <= accounts.Length && activeOAuthAccounts.Contains(accounts[0]))
             return false;
 
         foreach (var account in accounts)

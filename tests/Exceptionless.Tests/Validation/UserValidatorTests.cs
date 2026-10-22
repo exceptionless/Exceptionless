@@ -16,6 +16,7 @@ public sealed class UserValidatorTests : TestWithServices
     [Theory]
     [InlineData("github", "subject", true)]
     [InlineData("google", "subject", true)]
+    [InlineData("microsoft", "subject", true)]
     [InlineData("facebook", "subject", true)]
     [InlineData("windowslive", "subject", true)]
     [InlineData("unknown", "subject", false)]

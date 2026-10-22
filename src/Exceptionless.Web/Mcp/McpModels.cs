@@ -18,7 +18,9 @@ public sealed record McpResponse<T>(bool Ok, T? Data = default, McpErrorInfo? Er
     }
 }
 
-public sealed record McpListData<T>(IReadOnlyCollection<T> Items);
+/// <param name="Items">The items on this page.</param>
+/// <param name="Total">How many items match across all pages, so a count does not depend on the page size.</param>
+public sealed record McpListData<T>(IReadOnlyCollection<T> Items, long? Total = null);
 
 public sealed record McpPagination(bool HasMore, int Limit, string? Before = null, string? After = null);
 
@@ -74,11 +76,23 @@ public sealed record McpEventTrendBucket(
     long Events,
     double Occurrences);
 
+/// <param name="Key">The group value, such as a version or, when grouped by stack, the stack id.</param>
+/// <param name="Events">Event documents in the group.</param>
+/// <param name="Occurrences">Occurrences in the group, counting repeated events that were merged into one document.</param>
+/// <param name="Trend">Occurrences per interval when an interval is requested.</param>
+/// <param name="Title">The stack title when grouped by stack, so the group can be named without another lookup.</param>
+/// <param name="Status">The stack status when grouped by stack.</param>
+/// <param name="FirstOccurrence">When the stack first occurred, so a new error can be told apart from a recurring one.</param>
+/// <param name="LastOccurrence">When the stack last occurred, at any time.</param>
 public sealed record McpEventCountGroup(
     string Key,
     long Events,
     double Occurrences,
-    IReadOnlyCollection<McpEventTrendBucket> Trend);
+    IReadOnlyCollection<McpEventTrendBucket> Trend,
+    string? Title = null,
+    string? Status = null,
+    DateTime? FirstOccurrence = null,
+    DateTime? LastOccurrence = null);
 
 public sealed record McpProjectResult(
     string Id,

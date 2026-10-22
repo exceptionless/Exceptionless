@@ -276,16 +276,7 @@ public class AuthHandler(
         );
     }
 
-    public Task<Result<TokenResult>> Handle(FacebookLogin message)
-    {
-        return ExternalLoginAsync(message.AuthInfo, message.Context,
-            authOptions.FacebookId,
-            authOptions.FacebookSecret,
-            oauthProviderClient.GetFacebookUserInfoAsync
-        );
-    }
-
-    public Task<Result<TokenResult>> Handle(LiveLogin message)
+    public Task<Result<TokenResult>> Handle(MicrosoftLogin message)
     {
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.MicrosoftId,
@@ -660,6 +651,7 @@ public class AuthHandler(
             }
 
             currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
+            RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName);
             return await userRepository.SaveAsync(currentUser, o => o.Cache());
         }
 
@@ -668,10 +660,14 @@ public class AuthHandler(
             CompleteExternalAccountAdmission(admissionCancellation);
             existingUser.MarkEmailAddressVerified();
             existingUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
+            RemoveLegacyMicrosoftOAuthAccounts(existingUser, userInfo.ProviderName);
             return await userRepository.SaveAsync(existingUser, o => o.Cache());
         }
 
         var user = emailUser is not null ? await userRepository.GetByIdAsync(emailUser.Id, options => options.Cache(false)).WaitAsync(cancellationToken) : null;
+        if (user is not null && !String.Equals(user.EmailAddress, userInfo.Email.Trim(), StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("The user's email address has changed.");
+
         if (user is null)
         {
             if (!await IsAccountCreationEnabledAsync(inviteToken, cancellationToken))
@@ -687,6 +683,7 @@ public class AuthHandler(
         CompleteExternalAccountAdmission(admissionCancellation);
         user.MarkEmailAddressVerified();
         user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
+        RemoveLegacyMicrosoftOAuthAccounts(user, userInfo.ProviderName);
 
         if (String.IsNullOrEmpty(user.Id))
             await userRepository.AddAsync(user, o => o.Cache());
@@ -700,6 +697,20 @@ public class AuthHandler(
     {
         if (!user.IsActive)
             throw new UnauthorizedAccessException("The user is inactive.");
+    }
+
+    private static bool RemoveLegacyMicrosoftOAuthAccounts(User user, string providerName)
+    {
+        if (!String.Equals(providerName, OAuthAccount.KnownProviders.Microsoft, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var legacyAccounts = user.OAuthAccounts
+            .Where(account => String.Equals(account.Provider, OAuthAccount.KnownProviders.WindowsLive, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        foreach (var account in legacyAccounts)
+            user.OAuthAccounts.Remove(account);
+
+        return legacyAccounts.Length > 0;
     }
 
     private async Task<bool> IsAccountCreationEnabledAsync(string? token, CancellationToken cancellationToken = default)

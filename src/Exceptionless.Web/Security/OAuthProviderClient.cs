@@ -12,7 +12,6 @@ namespace Exceptionless.Web.Security;
 
 public interface IOAuthProviderClient
 {
-    Task<UserInfo> GetFacebookUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret);
     Task<UserInfo> GetGitHubUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret);
     Task<UserInfo> GetGoogleUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret);
     Task<UserInfo> GetMicrosoftUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret);
@@ -21,15 +20,6 @@ public interface IOAuthProviderClient
 
 public sealed class OAuthProviderClient(SlackService slackService) : IOAuthProviderClient
 {
-    public Task<UserInfo> GetFacebookUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
-    {
-        return GetUserInfoAsync(authInfo, appId, appSecret, OAuthAccount.KnownProviders.Facebook, (factory, configuration) =>
-        {
-            configuration.Scope = "email";
-            return new FacebookClient(factory, configuration);
-        });
-    }
-
     public Task<UserInfo> GetGitHubUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
         return GetUserInfoAsync(authInfo, appId, appSecret, OAuthAccount.KnownProviders.GitHub, (factory, configuration) =>
@@ -50,10 +40,10 @@ public sealed class OAuthProviderClient(SlackService slackService) : IOAuthProvi
 
     public Task<UserInfo> GetMicrosoftUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        return GetUserInfoAsync(authInfo, appId, appSecret, OAuthAccount.KnownProviders.WindowsLive, (factory, configuration) =>
+        return GetUserInfoAsync(authInfo, appId, appSecret, OAuthAccount.KnownProviders.Microsoft, (factory, configuration) =>
         {
-            configuration.Scope = "wl.emails";
-            return new WindowsLiveClient(factory, configuration);
+            configuration.Scope = "User.Read";
+            return new MicrosoftClient(factory, configuration);
         });
     }
 

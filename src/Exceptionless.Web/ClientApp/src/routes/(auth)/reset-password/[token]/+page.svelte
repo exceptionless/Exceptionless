@@ -50,7 +50,12 @@
 
     async function handleCancelToken() {
         if (shouldCancel && token) {
-            await cancelResetPassword(token);
+            const response = await cancelResetPassword(token);
+            if (!response.ok) {
+                toast.error('An error occurred while trying to cancel your password reset. Please try again.');
+                return;
+            }
+
             await goto(resolve('/(auth)/login'));
         }
     }

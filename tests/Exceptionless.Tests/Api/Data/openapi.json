@@ -1901,82 +1901,7 @@
         }
       }
     },
-    "/api/v2/auth/facebook": {
-      "post": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Sign in with Facebook",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExternalAuthInfo"
-              }
-            },
-            "application/*\u002Bjson": {
-              "schema": {
-                "$ref": "#/components/schemas/ExternalAuthInfo"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "User Authentication Token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenResult"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Account Creation is currently disabled",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "The account changed while the request was being processed.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation error",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v2/auth/live": {
+    "/api/v2/auth/microsoft": {
       "post": {
         "tags": [
           "Auth"
@@ -2061,7 +1986,7 @@
           {
             "name": "providerName",
             "in": "path",
-            "description": "The provider name: github, google, facebook, or windowslive (case sensitive).",
+            "description": "The provider name: github, google, microsoft, facebook, or windowslive (case sensitive).",
             "required": true,
             "schema": {
               "type": "string"
@@ -12296,6 +12221,12 @@
             ]
           },
           "conversation_id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "time_zone": {
             "type": [
               "null",
               "string"

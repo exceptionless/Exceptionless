@@ -231,9 +231,124 @@ public sealed class AuthHandlerTests : TestWithServices
         new OperationCanceledException("Repository operation was canceled.")
     };
 
-    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient providerClient, ILockProvider? lockProvider = null)
+    [Fact]
+    public async Task Handle_ExternalLoginEmailChangesAfterLookup_ReturnsUnauthorized()
+    {
+        // Arrange
+        const string providerId = "github-email-changed-after-lookup";
+        const string previousEmail = "previous@example.test";
+        const string currentEmail = "current@example.test";
+        var emailUser = new User { Id = TestConstants.UserId, FullName = "Email owner", EmailAddress = previousEmail, Version = "previous-version" };
+        emailUser.MarkEmailAddressVerified();
+        var storedUser = emailUser with { EmailAddress = currentEmail, Version = "current-version" };
+        storedUser.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        string? verificationToken = storedUser.VerifyEmailAddressToken;
+        var users = new Mock<IUserRepository>(MockBehavior.Strict);
+        users.Setup(repository => repository.GetUsersByOAuthProviderAsync("github", providerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<User>());
+        users.Setup(repository => repository.FindOneAsync(It.IsAny<RepositoryQueryDescriptor<User>>(), It.IsAny<CommandOptionsDescriptor<User>>()))
+            .ReturnsAsync(new FindHit<User>(emailUser.Id, emailUser, 0, emailUser.Version, null, null));
+        users.Setup(repository => repository.GetByIdAsync(emailUser.Id, It.IsAny<CommandOptionsDescriptor<User>>()))
+            .ReturnsAsync(storedUser);
+        users.Setup(repository => repository.SaveAsync(storedUser, It.IsAny<CommandOptionsDescriptor<User>>()))
+            .ReturnsAsync(storedUser);
+        var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
+        tokens.Setup(repository => repository.GetByTypeAndUserIdAsync(TokenType.Authentication, storedUser.Id, null))
+            .ReturnsAsync(FindResults<Token>.Empty);
+        tokens.Setup(repository => repository.AddAsync(It.IsAny<Token>(), It.IsAny<CommandOptionsDescriptor<Token>>()))
+            .ReturnsAsync((Token token, CommandOptionsDescriptor<Token> _) => token);
+        var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
+        var providerClient = new Mock<IOAuthProviderClient>(MockBehavior.Strict);
+        providerClient.Setup(client => client.GetGitHubUserInfoAsync(It.IsAny<ExternalAuthInfo>(), "test-client", "test-secret"))
+            .ReturnsAsync(new OAuth2.Models.UserInfo { ProviderName = "github", Id = providerId, Email = previousEmail });
+        var options = GetService<AppOptions>().AuthOptions;
+        options.GitHubId = "test-client";
+        options.GitHubSecret = "test-secret";
+        var handler = CreateHandler(users.Object, tokens.Object, oauthTokens.Object, providerClient.Object);
+
+        // Act
+        var result = await handler.Handle(new GitHubLogin(new ExternalAuthInfo(), new DefaultHttpContext()));
+
+        // Assert
+        Assert.Equal(ResultStatus.Unauthorized, result.Status);
+        Assert.Equal(currentEmail, storedUser.EmailAddress);
+        Assert.False(storedUser.IsEmailAddressVerified);
+        Assert.Equal(verificationToken, storedUser.VerifyEmailAddressToken);
+        Assert.Empty(storedUser.OAuthAccounts);
+        users.Verify(repository => repository.GetByIdAsync(emailUser.Id, It.IsAny<CommandOptionsDescriptor<User>>()), Times.Once);
+        users.Verify(repository => repository.SaveAsync(It.IsAny<User>(), It.IsAny<CommandOptionsDescriptor<User>>()), Times.Never);
+        tokens.VerifyNoOtherCalls();
+        oauthTokens.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData("facebook", false)]
+    [InlineData("windowslive", false)]
+    [InlineData("facebook", true)]
+    [InlineData("windowslive", true)]
+    public async Task Handle_RemoveLastUsableExternalLogin_ReturnsBadRequest(string retiredProvider, bool hasDuplicateIdentity)
+    {
+        // Arrange
+        var user = GetService<UserData>().GenerateUser(id: TestConstants.UserId, emailAddress: TestConstants.UserEmail);
+        user.Password = null;
+        user.AddOAuthAccount("google", "google-user", user.EmailAddress);
+        if (hasDuplicateIdentity)
+            user.OAuthAccounts.Add(user.OAuthAccounts.First());
+        user.AddOAuthAccount(retiredProvider, "retired-user", user.EmailAddress);
+        string? authenticationVersion = user.AuthenticationVersion;
+        var context = new DefaultHttpContext();
+        context.Request.SetUser(user);
+        var users = new Mock<IUserRepository>(MockBehavior.Strict);
+        users.Setup(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(user);
+        var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
+        var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
+        var handler = CreateHandler(users.Object, tokens.Object, oauthTokens.Object, GetService<IOAuthProviderClient>());
+
+        // Act
+        var result = await handler.Handle(new RemoveExternalLogin("google", "google-user", context));
+
+        // Assert
+        Assert.Equal(ResultStatus.BadRequest, result.Status);
+        Assert.Equal(hasDuplicateIdentity ? 3 : 2, user.OAuthAccounts.Count);
+        Assert.Equal(authenticationVersion, user.AuthenticationVersion);
+        users.Verify(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>()), Times.Once);
+        users.VerifyNoOtherCalls();
+        tokens.VerifyNoOtherCalls();
+        oauthTokens.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Handle_MicrosoftProviderFails_DoesNotAccessUserRepository()
+    {
+        // Arrange
+        var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
+        var oauthProvider = new Mock<IOAuthProviderClient>(MockBehavior.Strict);
+        oauthProvider.Setup(provider => provider.GetMicrosoftUserInfoAsync(It.IsAny<ExternalAuthInfo>(), "microsoft-client-id", "microsoft-client-secret"))
+            .ThrowsAsync(new InvalidOperationException("Microsoft provider failed."));
+        var handler = CreateHandler(
+            userRepository.Object,
+            GetService<ITokenRepository>(),
+            GetService<IOAuthTokenRepository>(),
+            oauthProvider.Object);
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await handler.Handle(new MicrosoftLogin(
+                new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = "provider-failure", RedirectUri = "http://localhost" },
+                new DefaultHttpContext()));
+        });
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(exception);
+        userRepository.VerifyNoOtherCalls();
+    }
+
+    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient oauthProvider, ILockProvider? lockProvider = null)
     {
         var appOptions = GetService<AppOptions>();
+        appOptions.AuthOptions.MicrosoftId = "microsoft-client-id";
+        appOptions.AuthOptions.MicrosoftSecret = "microsoft-client-secret";
 
         return new AuthHandler(
             appOptions.AuthOptions,
@@ -242,7 +357,7 @@ public sealed class AuthHandlerTests : TestWithServices
             userRepository,
             tokenRepository,
             oauthTokenRepository,
-            providerClient,
+            oauthProvider,
             GetService<ICacheClient>(),
             lockProvider ?? GetService<ILockProvider>(),
             GetService<AuthService>(),

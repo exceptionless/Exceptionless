@@ -8,13 +8,14 @@ public record OAuthAccount
     {
         public const string GitHub = "github";
         public const string Google = "google";
+        public const string Microsoft = "microsoft";
         public const string Facebook = "facebook";
         public const string WindowsLive = "windowslive";
     }
 
     [Required]
-    [AllowedValues(KnownProviders.GitHub, KnownProviders.Google, KnownProviders.Facebook, KnownProviders.WindowsLive,
-        ErrorMessage = "The provider name must be github, google, facebook, or windowslive.")]
+    [AllowedValues(KnownProviders.GitHub, KnownProviders.Google, KnownProviders.Microsoft, KnownProviders.Facebook, KnownProviders.WindowsLive,
+        ErrorMessage = "The provider name must be github, google, microsoft, facebook, or windowslive.")]
     public required string Provider { get; init; }
 
     [Required]

@@ -143,31 +143,9 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("facebook", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
+        group.MapPost("microsoft", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
-            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.FacebookLogin(value, httpContext))).ToHttpResult(resultMapper);
-        })
-        .AllowAnonymous()
-        .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
-        .Produces<TokenResult>()
-        .ProducesProblem(StatusCodes.Status401Unauthorized)
-        .ProducesProblem(StatusCodes.Status403Forbidden)
-        .ProducesProblem(StatusCodes.Status409Conflict)
-        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Sign in with Facebook")
-        .WithMetadata(new EndpointDocumentation {
-            ResponseDescriptions = new() {
-                ["200"] = "User Authentication Token",
-                ["401"] = "Unauthorized",
-                ["403"] = "Account Creation is currently disabled",
-                ["409"] = "The account changed while the request was being processed.",
-                ["422"] = "Validation error",
-            }
-        });
-
-        group.MapPost("live", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
-        {
-            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.LiveLogin(value, httpContext))).ToHttpResult(resultMapper);
+            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.MicrosoftLogin(value, httpContext))).ToHttpResult(resultMapper);
         })
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
@@ -199,7 +177,7 @@ public static class AuthEndpoints
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The provider user id.",
             ParameterDescriptions = new() {
-                ["providerName"] = "The provider name: github, google, facebook, or windowslive (case sensitive).",
+                ["providerName"] = "The provider name: github, google, microsoft, facebook, or windowslive (case sensitive).",
             },
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
