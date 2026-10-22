@@ -266,7 +266,9 @@ public class AdminHandler(
         if (String.IsNullOrEmpty(message.OrganizationId) || !httpContext.Request.CanAccessOrganization(message.OrganizationId))
             return new ChangePlanResponse(false, "Invalid Organization Id.");
 
-        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
+        // Share the billing lock with user plan changes and the trial expiration job, and reload inside it.
+        await using var billingLock = await billingManager.AcquireOrganizationLockAsync(message.OrganizationId);
+        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId, o => o.Cache(false));
         if (organization is null)
             return new ChangePlanResponse(false, "Invalid Organization Id.");
 
@@ -286,7 +288,7 @@ public class AdminHandler(
         else
             billingManager.ApplyBillingPlan(organization, plan, currentUser, false);
 
-        await organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
+        await organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
         await messagePublisher.PublishAsync(new PlanChanged
         {
             OrganizationId = organization.Id
