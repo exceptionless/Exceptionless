@@ -188,6 +188,7 @@ if (!servicesOnly)
 
 #pragma warning disable ASPIREBROWSERLOGS001
     var app = builder.AddViteApp("App", "../Exceptionless.Web/ClientApp")
+        .WithNpm(install: !ciE2E, installCommand: "ci")
         .WithBrowserLogs()
         .WithReference(api)
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_API_KEY", builder.Configuration["PUBLIC_EXCEPTIONLESS_API_KEY"])
