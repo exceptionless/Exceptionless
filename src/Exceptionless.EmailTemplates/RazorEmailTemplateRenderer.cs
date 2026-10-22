@@ -1,4 +1,4 @@
-using Exceptionless.EmailTemplates.Components;
+﻿using Exceptionless.EmailTemplates.Components;
 using Exceptionless.EmailTemplates.Models;
 using Exceptionless.EmailTemplates.Templates;
 using Microsoft.AspNetCore.Components;
@@ -34,6 +34,7 @@ public sealed class RazorEmailTemplateRenderer : IEmailTemplateRenderer
             OrganizationInvitedEmail value => RenderComponentAsync<OrganizationInvited, OrganizationInvitedEmail>(value),
             OrganizationNoticeEmail value => RenderComponentAsync<OrganizationNotice, OrganizationNoticeEmail>(value),
             OrganizationPaymentFailedEmail value => RenderComponentAsync<OrganizationPaymentFailed, OrganizationPaymentFailedEmail>(value),
+            OrganizationTrialEndingEmail value => RenderComponentAsync<OrganizationTrialEnding, OrganizationTrialEndingEmail>(value),
             ProjectDailySummaryEmail value => RenderComponentAsync<ProjectDailySummary, ProjectDailySummaryEmail>(value),
             UserEmailVerifyEmail value => RenderComponentAsync<UserEmailVerify, UserEmailVerifyEmail>(value),
             UserPasswordResetEmail value => RenderComponentAsync<UserPasswordReset, UserPasswordResetEmail>(value),

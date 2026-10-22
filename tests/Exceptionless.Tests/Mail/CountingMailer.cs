@@ -1,4 +1,4 @@
-using Exceptionless.Core.Mail;
+﻿using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Tests.Mail;
@@ -10,6 +10,8 @@ public class CountingMailer : IMailer
     public int OrganizationNoticeCount => _organizationNoticeCount;
 
     public List<OrganizationNoticeCall> OrganizationNoticeCalls { get; } = [];
+
+    public List<OrganizationTrialEndingCall> OrganizationTrialEndingCalls { get; } = [];
 
     /// <summary>
     /// When true, <see cref="SendOrganizationNoticeAsync"/> throws instead of recording a call.
@@ -55,6 +57,15 @@ public class CountingMailer : IMailer
         return Task.CompletedTask;
     }
 
+    public Task SendOrganizationTrialEndingAsync(User user, Organization organization)
+    {
+        lock (OrganizationTrialEndingCalls)
+        {
+            OrganizationTrialEndingCalls.Add(new OrganizationTrialEndingCall(user.Id, organization.Id));
+        }
+        return Task.CompletedTask;
+    }
+
     public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
     {
         return Task.CompletedTask;
@@ -77,8 +88,14 @@ public class CountingMailer : IMailer
         {
             OrganizationNoticeCalls.Clear();
         }
+        lock (OrganizationTrialEndingCalls)
+        {
+            OrganizationTrialEndingCalls.Clear();
+        }
         ShouldThrow = false;
     }
 }
 
 public record OrganizationNoticeCall(string UserId, string OrganizationId, bool IsOverMonthlyLimit, bool IsOverHourlyLimit);
+
+public record OrganizationTrialEndingCall(string UserId, string OrganizationId);

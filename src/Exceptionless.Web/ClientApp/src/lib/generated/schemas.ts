@@ -84,6 +84,7 @@ export const AssistantAccessResponseSchema = object({
     .min(1, "Minimum plan id is required")
     .nullable()
     .optional(),
+  email_verification_required: boolean(),
 });
 export type AssistantAccessResponseFormData = Infer<
   typeof AssistantAccessResponseSchema
@@ -915,6 +916,7 @@ export const UserSchema = object({
     .min(1, "Verify email address token is required")
     .nullable()
     .optional(),
+  trial_started_utc: iso.datetime().nullable().optional(),
   verify_email_address_token_expiration: iso.datetime(),
   is_active: boolean(),
   roles: array(string()),
@@ -1025,6 +1027,7 @@ export const ViewOrganizationSchema = object({
     .optional(),
   billing_status: BillingStatusSchema,
   billing_price: number(),
+  trial_ends_utc: iso.datetime().nullable().optional(),
   max_events_per_month: int32(),
   bonus_events_per_month: int32(),
   bonus_expiration: iso.datetime().nullable().optional(),

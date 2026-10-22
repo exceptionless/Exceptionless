@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Exceptionless.Core.Extensions;
@@ -182,6 +182,11 @@ public sealed class ContactEndpointTests : IntegrationTestsBase
         }
 
         public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SendOrganizationTrialEndingAsync(User user, Organization organization)
         {
             return Task.CompletedTask;
         }

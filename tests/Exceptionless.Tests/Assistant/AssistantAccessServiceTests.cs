@@ -1,4 +1,4 @@
-using Exceptionless.Core;
+﻿using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -7,6 +7,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Assistant;
+using Exceptionless.Web.Extensions;
 using Foundatio.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -133,6 +134,7 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
 
     [Theory]
     [InlineData("EX_FREE", false)]
+    [InlineData("EX_TRIAL", true)]
     [InlineData("EX_SMALL", false)]
     [InlineData("EX_SMALL_YEARLY", false)]
     [InlineData("EX_MEDIUM", true)]
@@ -159,6 +161,9 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
     {
         var billingPlans = new BillingPlans(CreateOptions());
 
+        AssertPlan(billingPlans.TrialPlan.Assistant, 1, 5, 5_000_000, 1m);
+        Assert.Equal("trial", billingPlans.TrialPlan.Assistant!.SharedDailyCostLimitKey);
+        Assert.Equal(25m, billingPlans.TrialPlan.Assistant.MaximumSharedDailyCostUsd);
         AssertPlan(billingPlans.MediumPlan.Assistant, 2, 10, 25_000_000, 5m);
         Assert.Same(billingPlans.MediumPlan.Assistant, billingPlans.MediumYearlyPlan.Assistant);
         AssertPlan(billingPlans.LargePlan.Assistant, 3, 15, 50_000_000, 10m);
@@ -236,6 +241,32 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
         repository.VerifyNoOtherCalls();
     }
 
+    [Theory]
+    [InlineData(false, false, AssistantAccessReason.EmailVerificationRequired)]
+    [InlineData(true, true, AssistantAccessReason.Available)]
+    public async Task GetAccessAsync_TrialPlan_RequiresVerifiedEmail(bool isEmailAddressVerified, bool expectedAccess, AssistantAccessReason expectedReason)
+    {
+        // Arrange
+        var options = CreateOptions(new Dictionary<string, string?> { ["Assistant:ApiKey"] = "test-key" });
+        var billingPlans = new BillingPlans(options);
+        var organization = new Organization { Id = TestConstants.OrganizationId, Name = "Trial", PlanId = billingPlans.TrialPlan.Id };
+        var repository = new Mock<IOrganizationRepository>();
+        repository.Setup(repository => repository.GetByIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Organization>>()))
+            .ReturnsAsync(organization);
+        var service = new AssistantAccessService(options, billingPlans, repository.Object, CreateSystemSettingsService(options));
+        var request = CreateRequest(organization.Id);
+        request.GetUser().IsEmailAddressVerified = isEmailAddressVerified;
+
+        // Act
+        var access = await service.GetAccessAsync(request, organization.Id);
+
+        // Assert
+        Assert.Equal(expectedAccess, access.HasAccess);
+        Assert.Equal(expectedReason, access.Reason);
+        Assert.False(access.UpgradeRequired);
+        Assert.Equal(!isEmailAddressVerified, access.ToResponse().EmailVerificationRequired);
+    }
+
     private static void AssertPlan(AssistantPlanOptions? options, int concurrentTurns, int turnsPerMinute, long monthlyTokens, decimal monthlyCost)
     {
         Assert.NotNull(options);
@@ -288,6 +319,7 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
         {
             User = new System.Security.Claims.ClaimsPrincipal(user.ToIdentity())
         };
+        context.Request.SetUser(user);
         return context.Request;
     }
 }

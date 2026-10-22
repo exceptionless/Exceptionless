@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
@@ -37,6 +37,37 @@ public sealed class AssistantUsageServiceTests
         Assert.False(blocked.Allowed);
         Assert.Equal(AssistantUsageLimit.MinuteTurns, blocked.Limit);
         Assert.Equal(new DateTimeOffset(2026, 8, 2, 12, 1, 0, TimeSpan.Zero), blocked.ResetAtUtc);
+    }
+
+    [Fact]
+    public async Task TryStartTurnAsync_SharedDailyCostLimitReached_BlocksEveryOrganizationSharingTheLimitUntilTomorrow()
+    {
+        // Arrange
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        using var cache = CreateCache(timeProvider);
+        var service = CreateService(cache, CreateOptions(), timeProvider);
+        var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 1m };
+        var unsharedPlanOptions = CreatePlanOptions();
+
+        foreach ((string organizationId, decimal costUsd) in new[] { ("first-organization", 0.6m), ("second-organization", 0.5m) })
+        {
+            await using var providerRequest = await service.StartProviderRequestAsync(organizationId, 100, sharedPlanOptions);
+            providerRequest.MarkAccepted();
+            await providerRequest.ReconcileAsync(new AssistantProviderUsage(1_000, 100, costUsd));
+        }
+
+        // Act
+        await using var blocked = await service.TryStartTurnAsync("third-organization", sharedPlanOptions);
+        await using var unshared = await service.TryStartTurnAsync("paid-organization", unsharedPlanOptions);
+        timeProvider.Advance(TimeSpan.FromDays(1));
+        await using var nextDay = await service.TryStartTurnAsync("third-organization", sharedPlanOptions);
+
+        // Assert
+        Assert.False(blocked.Allowed);
+        Assert.Equal(AssistantUsageLimit.SharedDailyCost, blocked.Limit);
+        Assert.Equal(new DateTimeOffset(2026, 8, 3, 0, 0, 0, TimeSpan.Zero), blocked.ResetAtUtc);
+        Assert.True(unshared.Allowed);
+        Assert.True(nextDay.Allowed);
     }
 
     [Fact]
