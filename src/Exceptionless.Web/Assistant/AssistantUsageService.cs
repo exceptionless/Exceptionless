@@ -325,16 +325,26 @@ public sealed class AssistantUsageService(
     /// Adjusts the shared daily cost counter for a reservation's day. The estimate is added when the provider
     /// request starts, then replaced by the actual cost or removed when the reservation is released.
     /// </summary>
-    private Task IncrementSharedDailyCostAsync(AssistantProviderReservation reservation, long costInMicrodollars)
+    private async Task IncrementSharedDailyCostAsync(AssistantProviderReservation reservation, long costInMicrodollars)
     {
         if (reservation.SharedDailyCostLimitKey is not { } sharedDailyCostLimitKey || costInMicrodollars == 0)
-            return Task.CompletedTask;
+            return;
 
         var usageDate = reservation.UsageDateUtc is { } date
             ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
             : timeProvider.GetUtcNow();
         var day = GetDayWindow(usageDate);
-        return _cache.IncrementAsync(GetSharedDailyCostKey(sharedDailyCostLimitKey, day.Id), costInMicrodollars, day.ResetAtUtc.UtcDateTime);
+
+        // The shared counter is a guardrail on top of each organization's own limits. It runs after durable usage is
+        // recorded, so a failure here must not fail the request and cause the usage to be recorded again.
+        try
+        {
+            await _cache.IncrementAsync(GetSharedDailyCostKey(sharedDailyCostLimitKey, day.Id), costInMicrodollars, day.ResetAtUtc.UtcDateTime);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unable to update the shared daily assistant cost for {SharedDailyCostLimitKey}: {Message}", sharedDailyCostLimitKey, ex.Message);
+        }
     }
 
     private async Task<AssistantUsageDecision?> GetSharedDailyCostDecisionAsync(AssistantPlanOptions planOptions, DateTimeOffset now)
