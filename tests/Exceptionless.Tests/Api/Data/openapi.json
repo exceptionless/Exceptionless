@@ -7196,6 +7196,16 @@
               }
             }
           },
+          "403": {
+            "description": "Please verify your email address before inviting users.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "The organization was not found.",
             "content": {
@@ -7206,8 +7216,8 @@
               }
             }
           },
-          "426": {
-            "description": "Please upgrade your plan to add an additional user.",
+          "429": {
+            "description": "You\u0027ve sent the maximum number of invites for today.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
