@@ -12,7 +12,6 @@ IResourceBuilder<ParameterResource>? assistantApiKey = !String.IsNullOrWhiteSpac
     : null;
 bool servicesOnly = HasArgument("--services-only");
 bool ciE2E = HasArgument("--ci-e2e");
-bool skipClientDependencyInstall = HasArgument("--skip-client-dependency-install");
 bool includeDevTools = !ciE2E;
 int appPort = worktreePorts?.AppHttps ?? 7131;
 string appOrigin = worktreePorts?.AppHttpsUrl ?? $"https://web-ex.dev.localhost:{appPort}";
@@ -218,7 +217,7 @@ if (!servicesOnly)
     }
 
     // The e2e workflow runs npm ci before starting the AppHost, so it skips Aspire's second install.
-    if (skipClientDependencyInstall)
+    if (ciE2E)
         app.WithNpm(install: false);
 
     if (includeDevTools)

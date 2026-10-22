@@ -367,7 +367,7 @@ jobs:
           mkdir -p "$HOME/.aspnet/https"
           # Aspire builds the AppHost and its referenced projects in Debug. Do not build
           # the entire solution in Release first (including an unused test assembly).
-          aspire run --apphost src/Exceptionless.AppHost --non-interactive --nologo -- --ci-e2e --skip-client-dependency-install > aspire-run.log 2>&1 &
+          aspire run --apphost src/Exceptionless.AppHost --non-interactive --nologo -- --ci-e2e > aspire-run.log 2>&1 &
           echo "$!" > aspire-run.pid
           sleep 5
           if ! kill -0 "$(cat aspire-run.pid)" 2>/dev/null; then
