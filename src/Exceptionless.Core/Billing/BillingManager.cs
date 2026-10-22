@@ -31,11 +31,20 @@ public class BillingManager
     public Task<ILock> AcquireOrganizationLockAsync(string organizationId)
         => _lockProvider.AcquireAsync(GetOrganizationLockKey(organizationId), BillingLockDuration, TimeSpan.FromSeconds(30));
 
-    public Task<ILock> AcquireUserOrganizationCreationLockAsync(string userId)
+    /// <summary>
+    /// Serializes changes that can give an owner a free or trial organization (creating one, or downgrading to Free),
+    /// so concurrent requests can't both pass the one-free-organization rule.
+    /// </summary>
+    public Task<ILock> AcquireOwnerFreeOrganizationLockAsync(string userId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
-        return _lockProvider.AcquireAsync($"User:{userId}:create-organization", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+        return _lockProvider.AcquireAsync($"User:{userId}:free-organization", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
     }
+
+    /// <summary>
+    /// The organization's owner: its creator, or for organizations created before that was recorded, the user who last changed its plan.
+    /// </summary>
+    public static string? GetOwnerId(Organization organization) => organization.CreatedByUserId ?? organization.BillingChangedByUserId;
 
     public Task<ILock?> TryAcquireOrganizationLockAsync(string organizationId)
         => _lockProvider.TryAcquireAsync(GetOrganizationLockKey(organizationId), BillingLockDuration, TimeSpan.Zero);
@@ -161,7 +170,7 @@ public class BillingManager
 
     private async Task<bool> OwnerHasOtherFreeOrTrialOrganizationAsync(Organization organization, User actingUser)
     {
-        string ownerId = organization.CreatedByUserId ?? organization.BillingChangedByUserId ?? actingUser.Id;
+        string ownerId = GetOwnerId(organization) ?? actingUser.Id;
         var ownerOrganizationIds = String.Equals(ownerId, actingUser.Id, StringComparison.Ordinal)
             ? actingUser.OrganizationIds
             : (await _userRepository.GetByIdAsync(ownerId))?.OrganizationIds ?? new HashSet<string>();

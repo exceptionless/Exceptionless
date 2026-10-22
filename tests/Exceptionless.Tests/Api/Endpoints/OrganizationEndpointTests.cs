@@ -2899,6 +2899,39 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePlanAsync_ConcurrentDowngradesOfTwoOwnedOrganizations_AllowsOnlyOneFree()
+    {
+        // Arrange
+        const string password = "Owner password";
+        var owner = await CreateUserAsync("concurrent-downgrade-owner@exceptionless.test", password, isEmailAddressVerified: true);
+        var organizationIds = new List<string>();
+        for (int index = 0; index < 2; index++)
+        {
+            var paidOrganization = new Organization { Name = $"Concurrent Paid Organization {index}", CreatedByUserId = owner.Id, StripeCustomerId = $"cus_concurrent_{index}", CardLast4 = "4242", SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime };
+            _billingManager.ApplyBillingPlan(paidOrganization, _plans.SmallPlan, owner);
+            organizationIds.Add((await AddMemberOrganizationAsync(owner, paidOrganization)).Id);
+        }
+
+        // Act
+        var results = await WithBillingEnabledAsync(async () =>
+        {
+            using var client = CreateHttpClient();
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic",
+                Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{owner.EmailAddress}:{password}")));
+            var responses = await Task.WhenAll(organizationIds.Select(organizationId => client.PostAsync($"organizations/{organizationId}/change-plan",
+                System.Net.Http.Json.JsonContent.Create(new { plan_id = _plans.FreePlan.Id }), TestCancellationToken)));
+
+            return await Task.WhenAll(responses.Select(response => response.DeserializeAsync<ChangePlanResult>()));
+        });
+
+        // Assert
+        Assert.Single(results, result => result?.Success is true);
+        await RefreshDataAsync();
+        var organizations = await _organizationRepository.GetByIdsAsync(organizationIds);
+        Assert.Single(organizations, organization => organization.PlanId == _plans.FreePlan.Id);
+    }
+
+    [Fact]
     public async Task ChangePlanAsync_MemberDowngradesOwnersSecondOrganizationToFree_ReturnsFailure()
     {
         // Arrange
