@@ -9,9 +9,11 @@ import {
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { useFetchClient } from '@foundatiofx/fetchclient';
+import { toast } from 'svelte-sonner';
 
 import { gotoRedirect } from '#features/navigation/redirect.ts';
 import { getVisibleUrl } from '#features/navigation/visible-url.ts';
+import { getProblemMessage } from '#shared/validation.ts';
 
 import type { TokenResult } from './models';
 
@@ -54,7 +56,7 @@ export interface OAuthResponseData {
     state: string;
 }
 
-export type SupportedOAuthProviders = 'facebook' | 'github' | 'google' | 'live' | 'slack';
+export type SupportedOAuthProviders = 'facebook' | 'github' | 'google' | 'microsoft' | 'slack';
 
 export const enableAccountCreation = PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
 export const facebookClientId = PUBLIC_FACEBOOK_APPID;
@@ -133,21 +135,21 @@ export async function gotoLogin() {
     });
 }
 
-export async function liveLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function microsoftLogin(redirectUrl?: string, inviteToken?: null | string) {
     if (!microsoftClientId) {
-        throw new Error('Live client id not set');
+        throw new Error('Microsoft client id not set');
     }
 
     await oauthLogin({
-        authUrl: 'https://login.live.com/oauth20_authorize.srf',
+        authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
         clientId: microsoftClientId,
         extraParams: {
-            display: 'popup'
+            state: createOAuthState()
         },
         inviteToken,
-        provider: 'live',
+        provider: 'microsoft',
         redirectUrl,
-        scope: 'wl.emails'
+        scope: 'User.Read'
     });
 }
 
@@ -175,21 +177,37 @@ export async function slackOAuthLogin(): Promise<string> {
 
 // OAuth helpers
 
+function createOAuthState() {
+    if (typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+
+    return Array.from(crypto.getRandomValues(new Uint8Array(16)), (value) => value.toString(16).padStart(2, '0')).join('');
+}
+
 async function oauthLogin(options: OAuthLoginOptions) {
     const data = await openOAuthPopup(options);
 
     const client = useFetchClient();
-    const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
-        clientId: options.clientId,
-        code: data.code,
-        inviteToken: options.inviteToken,
-        redirectUri: window.location.origin,
-        state: data.state
-    });
+    const response = await client.postJSON<TokenResult>(
+        `auth/${options.provider}`,
+        {
+            clientId: options.clientId,
+            code: data.code,
+            inviteToken: options.inviteToken,
+            redirectUri: window.location.origin,
+            state: data.state
+        },
+        {
+            expectedStatusCodes: [401, 403, 422]
+        }
+    );
 
     if (response.ok && response.data?.token) {
         accessToken.current = response.data.token;
         await gotoRedirect(options.redirectUrl || resolve('/(app)'));
+    } else {
+        toast.error(getProblemMessage(response.problem, 'Unable to sign in. Please try again.'));
     }
 }
 

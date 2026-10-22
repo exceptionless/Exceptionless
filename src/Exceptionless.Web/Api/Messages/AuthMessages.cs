@@ -9,7 +9,7 @@ public record SignupMessage(Signup Model, HttpContext Context);
 public record GitHubLogin(ExternalAuthInfo AuthInfo, HttpContext Context);
 public record GoogleLogin(ExternalAuthInfo AuthInfo, HttpContext Context);
 public record FacebookLogin(ExternalAuthInfo AuthInfo, HttpContext Context);
-public record LiveLogin(ExternalAuthInfo AuthInfo, HttpContext Context);
+public record MicrosoftLogin(ExternalAuthInfo AuthInfo, HttpContext Context);
 public record RemoveExternalLogin(string ProviderName, ValueFromBody<string> ProviderUserId, HttpContext Context);
 public record ChangePassword(ChangePasswordModel Model, HttpContext Context);
 public record CheckEmailAddress(string Email, HttpContext Context);

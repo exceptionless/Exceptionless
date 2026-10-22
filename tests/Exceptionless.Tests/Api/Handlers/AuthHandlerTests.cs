@@ -128,18 +128,89 @@ public sealed class AuthHandlerTests : TestWithServices
         new OperationCanceledException("Repository operation was canceled.")
     };
 
-    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient providerClient)
+    [Theory]
+    [InlineData(null)]
+    [InlineData("invitation-token")]
+    public async Task Handle_UnlinkedMicrosoftIdentity_DoesNotLookUpEmailOrModifyAccounts(string? inviteToken)
+    {
+        // Arrange
+        var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
+        userRepository.Setup(repository => repository.GetUserByOAuthProviderAsync("Microsoft", "matching-user"))
+            .ReturnsAsync((User?)null);
+        var handler = CreateHandler(userRepository.Object);
+
+        // Act
+        var result = await handler.Handle(new MicrosoftLogin(
+            new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = "matching-user", RedirectUri = "http://localhost", InviteToken = inviteToken },
+            new DefaultHttpContext()));
+
+        // Assert
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
+        Assert.Contains("link", result.Message, StringComparison.OrdinalIgnoreCase);
+        userRepository.VerifyAll();
+        userRepository.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Handle_UnverifiedAuthenticatedUser_DoesNotLinkMicrosoft()
+    {
+        // Arrange
+        var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
+        userRepository.Setup(repository => repository.GetUserByOAuthProviderAsync("Microsoft", "unverified-user"))
+            .ReturnsAsync((User?)null);
+        var user = new User { Id = "unverified", EmailAddress = "unverified@exceptionless.test" };
+        var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(IdentityUtils.UserAuthenticationType)) };
+        context.Request.SetUser(user);
+
+        // Act
+        var result = await CreateHandler(userRepository.Object).Handle(new MicrosoftLogin(
+            new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = "unverified-user", RedirectUri = "http://localhost" }, context));
+
+        // Assert
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
+        Assert.Contains("Verify", result.Message);
+        Assert.Empty(user.OAuthAccounts);
+        userRepository.VerifyAll();
+        userRepository.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Handle_MicrosoftProviderFails_DoesNotAccessUserRepository()
+    {
+        // Arrange
+        var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
+        var oauthProvider = new Mock<IOAuthProviderClient>(MockBehavior.Strict);
+        oauthProvider.Setup(provider => provider.GetMicrosoftUserInfoAsync(It.IsAny<ExternalAuthInfo>(), "microsoft-client-id", "microsoft-client-secret"))
+            .ThrowsAsync(new InvalidOperationException("Microsoft provider failed."));
+        var handler = CreateHandler(userRepository.Object, oauthProvider: oauthProvider.Object);
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await handler.Handle(new MicrosoftLogin(
+                new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = "provider-failure", RedirectUri = "http://localhost" },
+                new DefaultHttpContext()));
+        });
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(exception);
+        userRepository.VerifyNoOtherCalls();
+    }
+
+    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository? tokenRepository = null, IOAuthTokenRepository? oauthTokenRepository = null, IOAuthProviderClient? oauthProvider = null)
     {
         var appOptions = GetService<AppOptions>();
+        appOptions.AuthOptions.MicrosoftId = "microsoft-client-id";
+        appOptions.AuthOptions.MicrosoftSecret = "microsoft-client-secret";
 
         return new AuthHandler(
             appOptions.AuthOptions,
             appOptions.IntercomOptions,
             GetService<IOrganizationRepository>(),
             userRepository,
-            tokenRepository,
-            oauthTokenRepository,
-            providerClient,
+            tokenRepository ?? GetService<ITokenRepository>(),
+            oauthTokenRepository ?? GetService<IOAuthTokenRepository>(),
+            oauthProvider ?? GetService<IOAuthProviderClient>(),
             GetService<ICacheClient>(),
             GetService<AuthService>(),
             GetService<IMailer>(),

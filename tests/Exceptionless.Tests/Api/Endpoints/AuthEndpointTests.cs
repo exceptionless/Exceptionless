@@ -556,16 +556,20 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task LiveAsync_WithConfiguredProvider_ReturnsToken()
+    public async Task MicrosoftAsync_WithLinkedIdentity_ReturnsToken()
     {
         // Arrange
-        const string code = "live-user";
+        const string code = "microsoft-user";
+        var user = new User { EmailAddress = TestOAuthProviderClient.GetEmailAddress(code), FullName = "Microsoft User" };
+        user.MarkEmailAddressVerified();
+        user.AddOAuthAccount("Microsoft", code, user.EmailAddress);
+        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
         // Act
-        var result = await SendExternalLoginAsync("live", code);
+        var result = await SendExternalLoginAsync("microsoft", code);
 
         // Assert
-        await AssertExternalLoginAsync(result, "windowslive", code);
+        await AssertExternalLoginAsync(result, "microsoft", code);
     }
 
     [Fact]
@@ -1995,14 +1999,14 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.False(token.IsSuspended);
     }
 
-    private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId)
+    private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId, bool isEmailVerified = true)
     {
         Assert.NotNull(result);
         Assert.False(String.IsNullOrEmpty(result.Token));
 
         var user = await _userRepository.GetByEmailAddressAsync(TestOAuthProviderClient.GetEmailAddress(providerUserId));
         Assert.NotNull(user);
-        Assert.True(user.IsEmailAddressVerified);
+        Assert.Equal(isEmailVerified, user.IsEmailAddressVerified);
         var account = Assert.Single(user.OAuthAccounts);
         Assert.Equal(providerName, account.Provider);
         Assert.Equal(providerUserId, account.ProviderUserId);
