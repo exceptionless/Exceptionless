@@ -274,11 +274,15 @@ public class AdminHandler(
         if (plan is null)
             return new ChangePlanResponse(false, "Invalid PlanId.");
 
+        // Trials start or extend a no-card trial. A paying organization keeps its subscription, so don't move it onto one.
+        if (plans.IsTrialPlan(plan.Id) && !plans.IsFreeOrTrialPlan(organization.PlanId))
+            return new ChangePlanResponse(false, "Only free or trial organizations can be put on a trial.");
+
         organization.BillingStatus = !plans.IsFreeOrTrialPlan(plan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
         organization.RemoveSuspension();
         var currentUser = httpContext.Request.GetUser();
         if (plans.IsTrialPlan(plan.Id))
-            billingManager.ApplyTrialPlan(organization, currentUser, updateBillingPrice: false);
+            billingManager.ApplyTrialPlan(organization, currentUser);
         else
             billingManager.ApplyBillingPlan(organization, plan, currentUser, false);
 
