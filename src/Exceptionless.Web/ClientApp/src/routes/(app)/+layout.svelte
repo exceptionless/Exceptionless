@@ -41,6 +41,7 @@
     import { getVisibleUrl } from '#features/navigation/visible-url.ts';
     import Notifications from '#features/notifications/components/notifications.svelte';
     import SetupTopBar from '#features/onboarding/components/setup-top-bar.svelte';
+    import { useFirstEventToast } from '#features/onboarding/first-event-toast.svelte.ts';
     import { useOrganizationOnboarding } from '#features/onboarding/onboarding-state.svelte.ts';
     import {
         getOrganizationQuery,
@@ -741,6 +742,13 @@
         enabled: () => isEventListPage
     });
     const isShowingExieEmptyState = $derived(isEventListPage && eventListOnboarding.isAwaitingFirstEvent);
+    useFirstEventToast({
+        getEventsHref: () => (page.route.id?.startsWith('/(app)/event') ? undefined : resolve('/(app)/event')),
+        getOrganizationId: () => organization.current,
+        hasReceivedEvents: () => eventListOnboarding.hasReceivedEvents,
+        isAwaitingFirstEvent: () => eventListOnboarding.isAwaitingFirstEvent,
+        isOnEmptyStatePage: () => isEventListPage
+    });
     const setupPath = resolve('/(app)/organization/add');
     const isSetupPage = $derived(page.url.pathname === setupPath);
     const suppressAutomaticProductTours = $derived(isProductTourSetupRoute(page.route.id));
