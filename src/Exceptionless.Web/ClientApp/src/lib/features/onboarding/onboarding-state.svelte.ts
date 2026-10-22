@@ -39,7 +39,9 @@ export function useOrganizationOnboarding(getOrganizationId: () => string | unde
             }
         }
     });
-    const hasReceivedEvents = $derived(projectsReportEvents || (eventCountQuery.data?.total ?? 0) > 0);
+    // The organization's event count lags asynchronous event deletion, so it can still be positive after its
+    // last project is gone; events only count while the organization has a project to hold them.
+    const hasReceivedEvents = $derived(projects.length > 0 && (projectsReportEvents || (eventCountQuery.data?.total ?? 0) > 0));
 
     useEventListener(document, 'PersistentEventChanged', (event) => {
         const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;

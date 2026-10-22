@@ -254,12 +254,29 @@ export function deleteProject(request: DeleteProjectRequest) {
                 })
             );
         },
-        onSuccess: () => {
-            request.route.ids?.forEach((id) =>
-                queryClient.invalidateQueries({
-                    queryKey: queryKeys.id(id)
-                })
+        onSuccess: async () => {
+            // Drop the projects from every cached organization list right away, the way postProject adds them,
+            // so lists don't show a deleted project while the refetch below is in flight.
+            const deletedIds = request.route.ids ?? [];
+            queryClient.setQueriesData<FetchClientResponse<ViewProject[]> | undefined>(
+                {
+                    queryKey: [...queryKeys.type, 'organization']
+                },
+                (response) => {
+                    if (!response?.data?.some((project) => deletedIds.includes(project.id))) {
+                        return response;
+                    }
+
+                    return {
+                        ...response,
+                        data: response.data.filter((project) => !deletedIds.includes(project.id))
+                    };
+                }
             );
+
+            await queryClient.invalidateQueries({
+                queryKey: queryKeys.type
+            });
         }
     }));
 }
