@@ -3,12 +3,12 @@ import type { QueryClient } from '@tanstack/svelte-query';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import type { WebSocketMessageValue } from '#features/websockets/models.ts';
 import type { BillingPlan, ChangePlanRequest, ChangePlanResult } from '#lib/generated/api.ts';
 
 import { accessToken } from '#features/auth/index.svelte.ts';
 import { fetchApiJson } from '#features/shared/api/api.svelte.ts';
 import { queryKeys as userQueryKeys } from '#features/users/api.svelte.ts';
+import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
 
 import type { Invoice, InvoiceGridModel, NewOrganization, SuspensionCode, ViewOrganization } from './models';
 
@@ -59,6 +59,43 @@ export async function invalidateOrganizationUsageQueries(queryClient: QueryClien
 
 export async function invalidatePlanOverageQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PlanOverage'>) {
     await invalidateOrganizationUsageQueries(queryClient, message.organization_id);
+}
+
+/**
+ * Handles a user being added to or removed from an organization. Everyone in the organization sees its member list
+ * change; the affected user's own organizations, `/` redirect, and command palette follow their memberships.
+ */
+export async function invalidateUserMembershipQueries(
+    queryClient: QueryClient,
+    message: WebSocketMessageValue<'UserMembershipChanged'>,
+    currentUserId: string | undefined
+) {
+    const { change_type, organization_id, user_id } = message;
+    await queryClient.invalidateQueries({
+        queryKey: userQueryKeys.organization(organization_id)
+    });
+
+    if (!currentUserId || user_id !== currentUserId) {
+        return;
+    }
+
+    await Promise.all([
+        queryClient.invalidateQueries({
+            queryKey: queryKeys.list(undefined)
+        }),
+        queryClient.invalidateQueries({
+            queryKey: userQueryKeys.me()
+        })
+    ]);
+
+    if (change_type === ChangeType.Removed) {
+        // The user can no longer read this organization, so mark what is cached stale without refetching it;
+        // the layout moves them to another organization once the refreshed list arrives.
+        await queryClient.invalidateQueries({
+            queryKey: queryKeys.id(organization_id, undefined),
+            refetchType: 'none'
+        });
+    }
 }
 
 export const queryKeys = {

@@ -48,7 +48,8 @@
         getOrganizationsQuery,
         invalidateOrganizationQueries,
         invalidateOrganizationUsageQueries,
-        invalidatePlanOverageQueries
+        invalidatePlanOverageQueries,
+        invalidateUserMembershipQueries
     } from '#features/organizations/api.svelte.ts';
     import OrganizationNotifications from '#features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '#features/organizations/context.svelte.ts';
@@ -68,7 +69,7 @@
     import { getMeQuery, invalidateUserQueries } from '#features/users/api.svelte.ts';
     import { getGravatarFromCurrentUser } from '#features/users/gravatar.svelte.ts';
     import { invalidateWebhookQueries } from '#features/webhooks/api.svelte.ts';
-    import { ChangeType, isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '#features/websockets/models.ts';
+    import { ChangeType, isEntityChangedType, isPlanOverageType, isUserMembershipChangedType, type WebSocketMessageType } from '#features/websockets/models.ts';
     import { WebSocketClient } from '#features/websockets/web-socket-client.svelte.ts';
     import { Telemetry } from '#lib/telemetry/index.ts';
 
@@ -378,6 +379,9 @@
 
         if (isPlanOverageType(data)) {
             await invalidatePlanOverageQueries(queryClient, data.message);
+        } else if (isUserMembershipChangedType(data)) {
+            // Sent when a user is added to or removed from an organization (an invitation, or a member being removed).
+            await invalidateUserMembershipQueries(queryClient, data.message, meQuery.data?.id);
         } else if (isEntityChangedType(data)) {
             switch (data.type) {
                 case 'OrganizationChanged':
@@ -414,12 +418,6 @@
                     break;
             }
         }
-
-        // This event is fired when a user is added or removed from an organization.
-        // if (data.type === "UserMembershipChanged" && data.message?.organization_id) {
-        //     $rootScope.$emit("OrganizationChanged", data.message);
-        //     $rootScope.$emit("ProjectChanged", data.message);
-        // }
     }
 
     // Close Sidebar on page change on mobile

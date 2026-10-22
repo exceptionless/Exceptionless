@@ -45,7 +45,7 @@ public sealed class MessageBusBroker : IStartupAction
         _logger.LogDebug("Subscribed to message bus notifications");
     }
 
-    private async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default)
+    internal async Task OnUserMembershipChangedAsync(UserMembershipChanged userMembershipChanged, CancellationToken cancellationToken = default)
     {
         if (String.IsNullOrEmpty(userMembershipChanged?.OrganizationId))
         {
@@ -65,6 +65,11 @@ public sealed class MessageBusBroker : IStartupAction
         }
 
         await GroupSendAsync(userMembershipChanged.OrganizationId, userMembershipChanged);
+
+        // The removed user's connections just left the group, so the group send above skipped them. Tell them directly
+        // so their organization list and current organization update.
+        if (userMembershipChanged.ChangeType is ChangeType.Removed && userConnectionIds.Count > 0)
+            await TypedSendAsync(userConnectionIds.ToList(), userMembershipChanged);
     }
 
     internal async Task OnEntityChangedAsync(EntityChanged ec, CancellationToken cancellationToken = default)
