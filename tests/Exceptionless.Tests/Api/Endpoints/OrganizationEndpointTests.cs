@@ -2872,6 +2872,33 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_OwnerWithManyPaidOrganizationsAndOneFree_CannotCreateAnotherFreeOrganization()
+    {
+        // Arrange
+        const string password = "Owner password";
+        var owner = await CreateUserAsync("many-organizations-owner@exceptionless.test", password, isEmailAddressVerified: true);
+        var organizations = Enumerable.Range(0, 101).Select(index =>
+        {
+            var paidOrganization = new Organization { Name = $"Paid Organization {index}", CreatedByUserId = owner.Id, StripeCustomerId = $"cus_{index}", CardLast4 = "4242", SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime };
+            _billingManager.ApplyBillingPlan(paidOrganization, _plans.SmallPlan, owner);
+            return paidOrganization;
+        }).ToList();
+        var freeOrganization = new Organization { Name = "Only Free Organization", CreatedByUserId = owner.Id };
+        _billingManager.ApplyBillingPlan(freeOrganization, _plans.FreePlan, owner);
+        organizations.Add(freeOrganization);
+        await _organizationRepository.AddAsync(organizations, o => o.ImmediateConsistency());
+
+        // Act & Assert
+        await WithBillingEnabledAsync(() => SendRequestAsync(r => r
+            .BasicAuthorization(owner.EmailAddress, password)
+            .Post()
+            .AppendPath("organizations")
+            .Content(new NewOrganization { Name = "Second Free Organization" })
+            .StatusCodeShouldBeUpgradeRequired()
+        ));
+    }
+
+    [Fact]
     public async Task ChangePlanAsync_MemberDowngradesOwnersSecondOrganizationToFree_ReturnsFailure()
     {
         // Arrange
