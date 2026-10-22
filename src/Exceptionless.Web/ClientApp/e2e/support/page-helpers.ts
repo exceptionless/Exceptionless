@@ -70,7 +70,7 @@ export async function navigateToSidebarView(page: Page, parentName: string, chil
 }
 
 export async function selectProjectType(page: Page, optionName: string): Promise<void> {
-    await page.getByRole('button', { name: /Please select a project type|Command Line:/ }).click();
+    await page.getByRole('combobox', { exact: true, name: 'Project type' }).click();
     const option = page.getByRole('option', { name: optionName });
 
     try {
