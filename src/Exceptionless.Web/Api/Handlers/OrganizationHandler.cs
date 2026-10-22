@@ -875,7 +875,17 @@ public class OrganizationHandler(
         var organization = await repository.AddAsync(value, o => o.ImmediateConsistency().Cache());
 
         user.OrganizationIds.Add(organization.Id);
-        await userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        try
+        {
+            await userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        }
+        catch (Exception ex)
+        {
+            // Without the membership the user couldn't reach the organization, but it would still count as theirs.
+            _logger.LogError(ex, "Unable to add user {UserId} to new organization {OrganizationId}, removing it: {Message}", user.Id, organization.Id, ex.Message);
+            await repository.RemoveAsync(organization, o => o.ImmediateConsistency());
+            throw;
+        }
         await messagePublisher.PublishAsync(new UserMembershipChanged
         {
             UserId = user.Id,
