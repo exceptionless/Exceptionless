@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -684,12 +684,13 @@ public class OrganizationHandler(
         if (!currentUser.IsEmailAddressVerified)
             return Result.Forbidden("Please verify your email address before inviting users.");
 
-        int dailyLimit = plans.IsFreeOrTrialPlan(organization.PlanId)
+        bool isFreeOrTrial = plans.IsFreeOrTrialPlan(organization.PlanId);
+        int dailyLimit = isFreeOrTrial
             ? options.BillingOptions.FreeInviteDailyLimit
             : options.BillingOptions.PaidInviteDailyLimit;
 
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
-        string cacheKey = $"user:{currentUser.Id}:organization-invites:{utcNow:yyyyMMdd}";
+        string cacheKey = $"user:{currentUser.Id}:organization-invites:{(isFreeOrTrial ? "free" : "paid")}:{utcNow:yyyyMMdd}";
         long invites = await cacheClient.IncrementAsync(cacheKey, 1, utcNow.Date.AddDays(1));
         if (invites <= dailyLimit)
             return null;
@@ -857,7 +858,7 @@ public class OrganizationHandler(
         var user = GetCurrentUser(httpContext);
         if (!options.StripeOptions.EnableBilling || user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
             billingManager.ApplyBillingPlan(value, plans.UnlimitedPlan, user);
-        else if (billingManager.CanStartTrial(user))
+        else if (await billingManager.CanStartTrialAsync(user))
             billingManager.StartTrial(value, user);
         else
             billingManager.ApplyBillingPlan(value, plans.FreePlan, user);

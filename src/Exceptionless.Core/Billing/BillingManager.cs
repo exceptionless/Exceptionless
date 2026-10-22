@@ -36,17 +36,21 @@ public class BillingManager
         if (user is null)
             return false;
 
-        var organizations = await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray());
-        return !organizations.Any(o => _plans.IsFreeOrTrialPlan(o.PlanId));
+        var ownedOrganizations = await GetOwnedOrganizationsAsync(user);
+        return !ownedOrganizations.Any(o => _plans.IsFreeOrTrialPlan(o.PlanId));
     }
 
     /// <summary>
-    /// A user gets one no-card trial, and only for the first organization they create.
+    /// A user gets one no-card trial, and only for the first organization they own. Being a member of
+    /// someone else's organization doesn't count.
     /// </summary>
-    public bool CanStartTrial(User user)
+    public async Task<bool> CanStartTrialAsync(User user)
     {
         ArgumentNullException.ThrowIfNull(user);
-        return _billingOptions.TrialDays > 0 && user.TrialStartedUtc is null && user.OrganizationIds.Count == 0;
+        if (_billingOptions.TrialDays <= 0 || user.TrialStartedUtc is not null)
+            return false;
+
+        return (await GetOwnedOrganizationsAsync(user)).Count == 0;
     }
 
     public void StartTrial(Organization organization, User user)
@@ -91,8 +95,8 @@ public class BillingManager
         if (String.IsNullOrWhiteSpace(organization?.Id))
             return ChangePlanResult.FailWithMessage("Invalid Organization");
 
-        // Ensure the user can't be apart of more than one free or trial plan.
-        if (_plans.IsFreePlan(plan.Id) && user is not null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray())).Any(o => !String.Equals(o.Id, organization.Id) && _plans.IsFreeOrTrialPlan(o.PlanId)))
+        // Ensure the user can't own more than one free or trial organization.
+        if (_plans.IsFreePlan(plan.Id) && user is not null && (await GetOwnedOrganizationsAsync(user)).Any(o => !String.Equals(o.Id, organization.Id) && _plans.IsFreeOrTrialPlan(o.PlanId)))
             return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
 
         return new ChangePlanResult { Success = true };
@@ -145,6 +149,19 @@ public class BillingManager
 
         organization.StripeSubscriptionId = subscriptionId;
         organization.StripeSubscriptionEventDate = null;
+    }
+
+    /// <summary>
+    /// Organizations the user put on their current plan. Organizations have no owner field, so the user who
+    /// last changed the billing plan (the creator for free and trial organizations) is treated as the owner.
+    /// </summary>
+    private async Task<IReadOnlyCollection<Organization>> GetOwnedOrganizationsAsync(User user)
+    {
+        if (user.OrganizationIds.Count == 0)
+            return [];
+
+        var organizations = await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray());
+        return organizations.Where(o => String.Equals(o.BillingChangedByUserId, user.Id, StringComparison.Ordinal)).ToList();
     }
 
     private static string GetOrganizationLockKey(string organizationId)

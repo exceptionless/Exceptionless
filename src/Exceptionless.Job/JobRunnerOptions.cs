@@ -1,4 +1,4 @@
-﻿namespace Exceptionless.Job;
+namespace Exceptionless.Job;
 
 public class JobRunnerOptions
 {

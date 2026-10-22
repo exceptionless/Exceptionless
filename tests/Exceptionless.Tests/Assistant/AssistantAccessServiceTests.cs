@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -242,14 +242,22 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
     }
 
     [Theory]
-    [InlineData(false, false, AssistantAccessReason.EmailVerificationRequired)]
-    [InlineData(true, true, AssistantAccessReason.Available)]
-    public async Task GetAccessAsync_TrialPlan_RequiresVerifiedEmail(bool isEmailAddressVerified, bool expectedAccess, AssistantAccessReason expectedReason)
+    [InlineData(false, 3, false, AssistantAccessReason.EmailVerificationRequired)]
+    [InlineData(true, 3, true, AssistantAccessReason.Available)]
+    [InlineData(true, -1, false, AssistantAccessReason.UpgradeRequired)]
+    [InlineData(true, null, false, AssistantAccessReason.UpgradeRequired)]
+    public async Task GetAccessAsync_TrialPlan_RequiresVerifiedEmailAndActiveTrial(bool isEmailAddressVerified, int? trialDaysLeft, bool expectedAccess, AssistantAccessReason expectedReason)
     {
         // Arrange
         var options = CreateOptions(new Dictionary<string, string?> { ["Assistant:ApiKey"] = "test-key" });
         var billingPlans = new BillingPlans(options);
-        var organization = new Organization { Id = TestConstants.OrganizationId, Name = "Trial", PlanId = billingPlans.TrialPlan.Id };
+        var organization = new Organization
+        {
+            Id = TestConstants.OrganizationId,
+            Name = "Trial",
+            PlanId = billingPlans.TrialPlan.Id,
+            TrialEndsUtc = trialDaysLeft is null ? null : DateTime.UtcNow.AddDays(trialDaysLeft.Value)
+        };
         var repository = new Mock<IOrganizationRepository>();
         repository.Setup(repository => repository.GetByIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Organization>>()))
             .ReturnsAsync(organization);
@@ -263,8 +271,8 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
         // Assert
         Assert.Equal(expectedAccess, access.HasAccess);
         Assert.Equal(expectedReason, access.Reason);
-        Assert.False(access.UpgradeRequired);
-        Assert.Equal(!isEmailAddressVerified, access.ToResponse().EmailVerificationRequired);
+        Assert.Equal(expectedReason == AssistantAccessReason.UpgradeRequired, access.UpgradeRequired);
+        Assert.Equal(expectedReason == AssistantAccessReason.EmailVerificationRequired, access.ToResponse().EmailVerificationRequired);
     }
 
     private static void AssertPlan(AssistantPlanOptions? options, int concurrentTurns, int turnsPerMinute, long monthlyTokens, decimal monthlyCost)

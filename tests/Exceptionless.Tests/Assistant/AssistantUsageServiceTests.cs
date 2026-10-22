@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
@@ -68,6 +68,27 @@ public sealed class AssistantUsageServiceTests
         Assert.Equal(new DateTimeOffset(2026, 8, 3, 0, 0, 0, TimeSpan.Zero), blocked.ResetAtUtc);
         Assert.True(unshared.Allowed);
         Assert.True(nextDay.Allowed);
+    }
+
+    [Fact]
+    public async Task StartProviderRequestAsync_SharedDailyCostLimit_CountsInFlightEstimateUntilReleased()
+    {
+        // Arrange
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        using var cache = CreateCache(timeProvider);
+        var service = CreateService(cache, CreateOptions(), timeProvider);
+        var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 0.000001m };
+
+        // Act
+        var providerRequest = await service.StartProviderRequestAsync("first-organization", 1_000, sharedPlanOptions);
+        await using var whileInFlight = await service.TryStartTurnAsync("second-organization", sharedPlanOptions);
+        await providerRequest.DisposeAsync();
+        await using var afterRelease = await service.TryStartTurnAsync("second-organization", sharedPlanOptions);
+
+        // Assert
+        Assert.False(whileInFlight.Allowed);
+        Assert.Equal(AssistantUsageLimit.SharedDailyCost, whileInFlight.Limit);
+        Assert.True(afterRelease.Allowed);
     }
 
     [Fact]

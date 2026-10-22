@@ -1,4 +1,4 @@
-﻿using Exceptionless.EmailTemplates.Components;
+using Exceptionless.EmailTemplates.Components;
 using Exceptionless.EmailTemplates.Models;
 using Exceptionless.EmailTemplates.Templates;
 using Microsoft.AspNetCore.Components;

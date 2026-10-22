@@ -494,7 +494,7 @@
         if (isTrialCurrent) {
             return {
                 isFree: true as const,
-                label: `Free trial · ${trialDaysRemaining === 1 ? '1 day' : `${trialDaysRemaining} days`} left`,
+                label: trialDaysRemaining > 0 ? `Free trial · ${trialDaysRemaining === 1 ? '1 day' : `${trialDaysRemaining} days`} left` : 'Free trial · ended',
                 period: '',
                 price: 0
             };
