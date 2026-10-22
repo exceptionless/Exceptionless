@@ -27,10 +27,10 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
     }
 
     [Fact]
-    public async Task RunAsync_OrganizationsWithLegacyLimits_BecomeUnlimitedAndCreatorIsQueryable()
+    public async Task RunAsync_LegacyOrganizations_BecomeUnlimitedAndGetQueryableCreator()
     {
         // Arrange
-        var limited = new Organization { Name = "Legacy Free Organization", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = 1, MaxProjects = 1, CreatedByUserId = TestConstants.UserId };
+        var limited = new Organization { Name = "Legacy Free Organization", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = 1, MaxProjects = 1, BillingChangedByUserId = TestConstants.UserId };
         var deleted = new Organization { Name = "Deleted Small Organization", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = 10, MaxProjects = 5, IsDeleted = true };
         await _organizationRepository.AddAsync([limited, deleted], options => options.ImmediateConsistency());
 
