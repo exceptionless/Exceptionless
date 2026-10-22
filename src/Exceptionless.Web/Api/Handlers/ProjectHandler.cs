@@ -138,7 +138,8 @@ public class ProjectHandler(
         if (message.Changes.ContainsChangedProperty(p => p.PromotedTabs!))
             original.PromotedTabs = NormalizePromotedTabs(original.PromotedTabs);
 
-        await repository.SaveAsync(original, o => o.Cache());
+        // Clients list the organization's projects right after a rename, so the change must be searchable before we respond.
+        await repository.SaveAsync(original, o => o.Cache().ImmediateConsistency());
         return await MapToViewAsync(original);
     }
 
@@ -599,7 +600,8 @@ public class ProjectHandler(
         foreach (var project in projects.OfType<ISupportSoftDeletes>())
             project.IsDeleted = true;
 
-        await repository.SaveAsync(projects);
+        // Clients list the organization's projects right after a delete, so the soft delete must be searchable before we respond.
+        await repository.SaveAsync(projects, o => o.ImmediateConsistency());
         return [];
     }
 
