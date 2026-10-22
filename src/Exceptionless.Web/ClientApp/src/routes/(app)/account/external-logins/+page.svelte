@@ -41,7 +41,11 @@
 
     const oauthAccounts = $derived(meQuery.data?.o_auth_accounts ?? []);
     const hasLocalAccount = $derived(meQuery.data?.has_local_account ?? false);
-    const canUnlinkAccount = $derived(hasLocalAccount || oauthAccounts.length > 1);
+    const activeOAuthAccountCount = $derived(oauthAccounts.filter((account) => !['facebook', 'windowslive'].includes(account.provider.toLowerCase())).length);
+
+    function canUnlinkAccount(provider: string) {
+        return hasLocalAccount || ['facebook', 'windowslive'].includes(provider.toLowerCase()) || activeOAuthAccountCount > 1;
+    }
 </script>
 
 <div class="space-y-6">
@@ -89,10 +93,10 @@
                                 <Table.Cell class="text-right">
                                     <Button
                                         aria-label="Remove {account.provider} account"
-                                        disabled={!canUnlinkAccount}
+                                        disabled={!canUnlinkAccount(account.provider)}
                                         onclick={() => handleUnlinkAccount(account.provider, account.provider_user_id)}
                                         size="icon"
-                                        title={canUnlinkAccount ? 'Remove' : 'Cannot remove the only login method'}
+                                        title={canUnlinkAccount(account.provider) ? 'Remove' : 'Cannot remove the only login method'}
                                         variant="ghost"
                                     >
                                         <X class="size-4" />

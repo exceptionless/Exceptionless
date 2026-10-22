@@ -295,19 +295,16 @@ public class AuthHandler(
             return Result.BadRequest("Invalid Provider Name or Provider User Id.");
         }
 
-        if (user.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(user.Password))
-        {
-            logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login", user.EmailAddress);
-            return Result.BadRequest("You must set a local password before removing your external login.");
-        }
-
         try
         {
-            if (user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId.Value))
+            if (!user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId.Value))
             {
-                user.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
-                await userRepository.SaveAsync(user, o => o.Cache());
+                logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login", user.EmailAddress);
+                return Result.BadRequest("You must set a local password before removing your external login.");
             }
+
+            user.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
+            await userRepository.SaveAsync(user, o => o.Cache());
         }
         catch (Exception ex)
         {
@@ -513,6 +510,7 @@ public class AuthHandler(
         }
 
         User? user;
+        bool isNewUser;
         try
         {
             var result = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext);
@@ -520,6 +518,7 @@ public class AuthHandler(
                 return Result<TokenResult>.FromResult(result);
 
             user = result.Value;
+            isNewUser = result.Status == ResultStatus.Created;
         }
         catch (ApplicationException ex)
         {
@@ -535,6 +534,9 @@ public class AuthHandler(
         if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
             await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext);
 
+        if (isNewUser && !user.IsEmailAddressVerified)
+            await mailer.SendUserEmailVerifyAsync(user);
+
         logger.UserLoggedIn(user.EmailAddress);
         return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
@@ -545,6 +547,7 @@ public class AuthHandler(
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
 
+        bool isMicrosoft = String.Equals(userInfo.ProviderName, MicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase);
         var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(userInfo.ProviderName).Identity(userInfo.Email).SetHttpContext(httpContext));
 
@@ -579,7 +582,7 @@ public class AuthHandler(
         if (existingUser is not null)
         {
             bool hasChanges = RemoveLegacyMicrosoftOAuthAccounts(existingUser, userInfo.ProviderName);
-            if (!existingUser.IsEmailAddressVerified)
+            if (!isMicrosoft && !existingUser.IsEmailAddressVerified)
             {
                 existingUser.MarkEmailAddressVerified();
                 hasChanges = true;
@@ -592,6 +595,9 @@ public class AuthHandler(
         }
 
         var user = !String.IsNullOrEmpty(userInfo.Email) ? await userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
+        // Microsoft Graph mail is editable and does not establish ownership of an existing account.
+        if (isMicrosoft && user is not null)
+            return Result.Forbidden("Sign in to your existing account first, then link Microsoft from your account settings.");
 
         if (user is null)
         {
@@ -604,15 +610,17 @@ public class AuthHandler(
             await AddGlobalAdminRoleIfFirstUserAsync(user);
         }
 
-        user.MarkEmailAddressVerified();
+        if (isMicrosoft)
+            user.ResetVerifyEmailAddressTokenAndExpiration(timeProvider);
+        else
+            user.MarkEmailAddressVerified();
+
         user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
 
         if (String.IsNullOrEmpty(user.Id))
-            await userRepository.AddAsync(user, o => o.Cache());
-        else
-            await userRepository.SaveAsync(user, o => o.Cache());
+            return Result.Created(await userRepository.AddAsync(user, o => o.Cache()));
 
-        return user;
+        return await userRepository.SaveAsync(user, o => o.Cache());
     }
 
     private static bool RemoveLegacyMicrosoftOAuthAccounts(User user, string providerName)

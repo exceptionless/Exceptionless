@@ -79,12 +79,18 @@ public static class UserExtensions
 
     public static bool RemoveOAuthAccount(this User user, string providerName, string providerUserId)
     {
-        if (user.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(user.Password))
-            return false;
-
-        var account = user.OAuthAccounts.FirstOrDefault(o => o.Provider == providerName.ToLowerInvariant() && o.ProviderUserId == providerUserId);
+        var account = user.OAuthAccounts.FirstOrDefault(o => String.Equals(o.Provider, providerName, StringComparison.OrdinalIgnoreCase) && o.ProviderUserId == providerUserId);
         if (account is null)
             return true;
+
+        // Retired provider records cannot keep a passwordless account accessible.
+        if (String.IsNullOrEmpty(user.Password)
+            && !String.Equals(account.Provider, "facebook", StringComparison.OrdinalIgnoreCase)
+            && !String.Equals(account.Provider, "windowslive", StringComparison.OrdinalIgnoreCase)
+            && !user.OAuthAccounts.Any(other => other != account
+                && !String.Equals(other.Provider, "facebook", StringComparison.OrdinalIgnoreCase)
+                && !String.Equals(other.Provider, "windowslive", StringComparison.OrdinalIgnoreCase)))
+            return false;
 
         return user.OAuthAccounts.Remove(account);
     }

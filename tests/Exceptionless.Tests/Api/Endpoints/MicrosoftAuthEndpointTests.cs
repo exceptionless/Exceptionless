@@ -1,15 +1,19 @@
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using FluentRest;
 using Foundatio.Repositories;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using ProblemDetails = Microsoft.AspNetCore.Mvc.ProblemDetails;
 
 namespace Exceptionless.Tests.Api.Endpoints;
 
@@ -21,6 +25,7 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
     private readonly string? _originalMicrosoftSecret;
     private readonly IUserRepository _userRepository;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly CountingMailer _mailer;
 
     public MicrosoftAuthEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
@@ -30,6 +35,14 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         _originalMicrosoftSecret = _authOptions.MicrosoftSecret;
         _userRepository = GetService<IUserRepository>();
         _organizationRepository = GetService<IOrganizationRepository>();
+        _mailer = GetService<CountingMailer>();
+    }
+
+    protected override void RegisterServices(IServiceCollection services)
+    {
+        base.RegisterServices(services);
+        services.AddSingleton<CountingMailer>();
+        services.ReplaceSingleton<IMailer>(provider => provider.GetRequiredService<CountingMailer>());
     }
 
     protected override async Task ResetDataAsync()
@@ -39,6 +52,7 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         _authOptions.MicrosoftId = "microsoft-client-id";
         _authOptions.MicrosoftSecret = "microsoft-client-secret";
         await GetService<SampleDataService>().CreateDataAsync();
+        _mailer.Reset();
     }
 
     [Fact]
@@ -66,12 +80,13 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task MicrosoftAsync_ExistingModernIdentity_MarksEmailVerified()
+    public async Task MicrosoftAsync_ExistingModernIdentity_PreservesEmailVerification()
     {
         // Arrange
         const string code = "existing-microsoft-user";
         var user = CreateUser(TestOAuthProviderClient.GetEmailAddress(code));
         user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        string? verificationToken = user.VerifyEmailAddressToken;
         user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
         user.AddOAuthAccount("Microsoft", code, user.EmailAddress);
         await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
@@ -85,32 +100,41 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         var account = Assert.Single(updatedUser.OAuthAccounts);
         Assert.Equal("microsoft", account.Provider);
         Assert.Equal(code, account.ProviderUserId);
-        Assert.True(updatedUser.IsEmailAddressVerified);
-        Assert.Null(updatedUser.VerifyEmailAddressToken);
+        Assert.False(updatedUser.IsEmailAddressVerified);
+        Assert.Equal(verificationToken, updatedUser.VerifyEmailAddressToken);
+        Assert.Equal(0, _mailer.UserEmailVerificationCount);
     }
 
     [Fact]
-    public async Task MicrosoftAsync_ExactEmailMatch_SignsIntoExistingUser()
+    public async Task MicrosoftAsync_ExactEmailMatch_RequiresAuthenticatedLink()
     {
         // Arrange
         const string code = "matching-email-user";
         var user = CreateUser(TestOAuthProviderClient.GetEmailAddress(code));
+        user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
         await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
         // Act
-        await SendMicrosoftLoginAsync(code);
+        var problem = await SendRequestAsAsync<ProblemDetails>(request => request
+            .Post()
+            .AppendPaths("auth", "microsoft")
+            .Content(new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = code, RedirectUri = "http://localhost" })
+            .StatusCodeShouldBeForbidden());
 
         // Assert
         var updatedUser = await _userRepository.GetByEmailAddressAsync(user.EmailAddress);
         Assert.NotNull(updatedUser);
         Assert.Equal(user.Id, updatedUser.Id);
         var account = Assert.Single(updatedUser.OAuthAccounts);
-        Assert.Equal("microsoft", account.Provider);
-        Assert.Equal(code, account.ProviderUserId);
+        Assert.Equal("windowslive", account.Provider);
+        Assert.Equal("legacy-user", account.ProviderUserId);
+        Assert.NotNull(problem);
+        Assert.Contains("link Microsoft", problem.Title);
+        Assert.Equal(0, _mailer.UserEmailVerificationCount);
     }
 
     [Fact]
-    public async Task MicrosoftAsync_UnmatchedEmail_CreatesUser()
+    public async Task MicrosoftAsync_UnmatchedEmail_CreatesUnverifiedUserAndSendsOneVerification()
     {
         // Arrange
         const string code = "new-microsoft-user";
@@ -118,14 +142,19 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
 
         // Act
         await SendMicrosoftLoginAsync(code);
+        await RefreshDataAsync();
+        await SendMicrosoftLoginAsync(code);
 
         // Assert
         var microsoftUser = await _userRepository.GetByEmailAddressAsync(emailAddress);
         Assert.NotNull(microsoftUser);
-        Assert.True(microsoftUser.IsEmailAddressVerified);
+        Assert.False(microsoftUser.IsEmailAddressVerified);
+        Assert.NotNull(microsoftUser.VerifyEmailAddressToken);
+        Assert.True(microsoftUser.HasValidVerifyEmailAddressTokenExpiration(TimeProvider));
         var account = Assert.Single(microsoftUser.OAuthAccounts);
         Assert.Equal("microsoft", account.Provider);
         Assert.Equal(code, account.ProviderUserId);
+        Assert.Equal(1, _mailer.UserEmailVerificationCount);
     }
 
     [Fact]
@@ -133,6 +162,7 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
     {
         // Arrange
         const string code = "invited-microsoft-user";
+        _authOptions.EnableAccountCreation = false;
         string emailAddress = TestOAuthProviderClient.GetEmailAddress(code);
         var organization = (await _organizationRepository.GetAllAsync()).Documents.First();
         var invite = new Invite {
@@ -154,6 +184,8 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         var updatedOrganization = await _organizationRepository.GetByIdAsync(organization.Id);
         Assert.NotNull(updatedOrganization);
         Assert.DoesNotContain(updatedOrganization.Invites, existing => existing.Token == invite.Token);
+        Assert.Null(user.VerifyEmailAddressToken);
+        Assert.Equal(0, _mailer.UserEmailVerificationCount);
     }
 
     [Fact]
