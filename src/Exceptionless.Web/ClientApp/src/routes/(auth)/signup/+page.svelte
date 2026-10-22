@@ -66,7 +66,7 @@
         <div>
             {#if googleClientId || gitHubClientId}
                 <P class="text-center">Sign up with</P>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if googleClientId}
                         <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google

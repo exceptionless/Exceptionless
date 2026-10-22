@@ -23,12 +23,13 @@ vi.mock('#features/users/api.svelte.ts', () => ({
 }));
 
 describe('external logins', () => {
-    it('keeps legacy accounts available to unlink when no providers are configured', () => {
+    it('hides external logins when no providers are configured', () => {
         render(ExternalLogins);
 
         expect(screen.getByText('External login providers are not configured.')).toBeVisible();
         expect(screen.queryByRole('button', { name: /Link .* account/ })).not.toBeInTheDocument();
-        expect(screen.getByText('facebook (legacy-user)')).toBeVisible();
-        expect(screen.getByRole('button', { name: 'Remove facebook account' })).toBeEnabled();
+        expect(screen.queryByText('Existing external logins')).not.toBeInTheDocument();
+        expect(screen.queryByText('facebook (legacy-user)')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Remove facebook account' })).not.toBeInTheDocument();
     });
 });
