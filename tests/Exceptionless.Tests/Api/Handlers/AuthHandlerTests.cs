@@ -65,7 +65,7 @@ public sealed class AuthHandlerTests : TestWithServices
         string? rotatedGeneration = null;
         User? currentOwner = null;
         var users = new Mock<IUserRepository>(MockBehavior.Strict);
-        users.Setup(repository => repository.GetUserByOAuthProviderAsync(provider, providerId, It.IsAny<CancellationToken>())).ReturnsAsync(displaced);
+        users.Setup(repository => repository.GetUsersByOAuthProviderAsync(provider, providerId, It.IsAny<CancellationToken>())).ReturnsAsync(new[] { displaced });
         users.Setup(repository => repository.GetByIdAsync(displaced.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(displaced);
         users.Setup(repository => repository.GetByIdAsync(destination.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(destination);
         users.Setup(repository => repository.SaveAsync(It.Is<User>(user => ReferenceEquals(user, displaced)), It.IsAny<CommandOptionsDescriptor<User>>()))
