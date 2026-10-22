@@ -30,6 +30,56 @@ public sealed class AuthHandlerTests : TestWithServices
     public AuthHandlerTests(ITestOutputHelper output) : base(output) { }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Handle_ExternalAccountLockUnavailable_IsRejectedBeforeRepositoryAccess(bool unlink)
+    {
+        // Arrange
+        var users = new Mock<IUserRepository>(MockBehavior.Strict);
+        var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
+        var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
+        var providerClient = new Mock<IOAuthProviderClient>(MockBehavior.Strict);
+        providerClient.Setup(client => client.GetGitHubUserInfoAsync(It.IsAny<ExternalAuthInfo>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(new OAuth2.Models.UserInfo { ProviderName = "github", Id = "locked-account", Email = "locked@example.com" });
+        var locks = new Mock<ILockProvider>(MockBehavior.Strict);
+        locks.Setup(provider => provider.TryAcquireAsync(It.IsAny<string>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((ILock?)null);
+        locks.Setup(provider => provider.AcquireAsync(It.IsAny<string>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new LockAcquisitionTimeoutException("Account lock unavailable"));
+        var options = GetService<AppOptions>().AuthOptions;
+        options.GitHubId = "test-client";
+        options.GitHubSecret = "test-secret";
+        var handler = CreateHandler(users.Object, tokens.Object, oauthTokens.Object, providerClient.Object, locks.Object);
+
+        var context = new DefaultHttpContext();
+        var user = new User { Id = TestConstants.UserId, EmailAddress = "locked@example.com", AuthenticationVersion = "initial" };
+        user.AddOAuthAccount("github", "locked-account", user.EmailAddress);
+        context.Request.SetUser(user);
+
+        // Act
+        var result = unlink
+            ? await handler.Handle(new RemoveExternalLogin("github", "locked-account", context))
+            : await handler.Handle(new GitHubLogin(new ExternalAuthInfo(), context));
+
+        // Assert
+        Assert.Equal(ResultStatus.Unauthorized, result.Status);
+        users.VerifyNoOtherCalls();
+        tokens.VerifyNoOtherCalls();
+        oauthTokens.VerifyNoOtherCalls();
+        if (unlink)
+        {
+            providerClient.VerifyNoOtherCalls();
+            Assert.Equal("initial", user.AuthenticationVersion);
+            Assert.Single(user.OAuthAccounts);
+        }
+        else
+        {
+            providerClient.VerifyAll();
+        }
+    }
+
+
+    [Theory]
     [InlineData(false, false, false)]
     [InlineData(true, false, false)]
     [InlineData(false, true, false)]
@@ -56,7 +106,7 @@ public sealed class AuthHandlerTests : TestWithServices
         var calls = new List<string>();
         string? persistedVersion = null;
         var users = new Mock<IUserRepository>(MockBehavior.Strict);
-        users.Setup(repository => repository.GetUserByOAuthProviderAsync(provider, providerId, It.IsAny<CancellationToken>())).ReturnsAsync(displaced);
+        users.Setup(repository => repository.GetUsersByOAuthProviderAsync(provider, providerId, It.IsAny<CancellationToken>())).ReturnsAsync(new[] { displaced });
         users.Setup(repository => repository.GetByIdAsync(displaced.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(displaced);
         users.Setup(repository => repository.GetByIdAsync(current.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(current);
         users.Setup(repository => repository.SaveAsync(displaced, It.IsAny<CommandOptionsDescriptor<User>>()))
@@ -158,7 +208,7 @@ public sealed class AuthHandlerTests : TestWithServices
     {
         // Arrange
         var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
-        userRepository.Setup(repository => repository.GetByEmailAddressAsync("test@example.com", null))
+        userRepository.Setup(repository => repository.GetByEmailAddressAsync("test@example.com"))
             .ThrowsAsync(exception);
         var handler = CreateHandler(userRepository.Object, GetService<ITokenRepository>(), GetService<IOAuthTokenRepository>(), GetService<IOAuthProviderClient>());
         var message = new LoginMessage(
@@ -171,7 +221,7 @@ public sealed class AuthHandlerTests : TestWithServices
         // Assert
         Assert.Equal(ResultStatus.Unauthorized, result.Status);
         Assert.Equal("Login failed.", result.Message);
-        userRepository.Verify(repository => repository.GetByEmailAddressAsync("test@example.com", null), Times.Once);
+        userRepository.Verify(repository => repository.GetByEmailAddressAsync("test@example.com"), Times.Once);
         userRepository.VerifyNoOtherCalls();
     }
 
@@ -181,7 +231,7 @@ public sealed class AuthHandlerTests : TestWithServices
         new OperationCanceledException("Repository operation was canceled.")
     };
 
-    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient providerClient)
+    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient providerClient, ILockProvider? lockProvider = null)
     {
         var appOptions = GetService<AppOptions>();
 
@@ -194,7 +244,7 @@ public sealed class AuthHandlerTests : TestWithServices
             oauthTokenRepository,
             providerClient,
             GetService<ICacheClient>(),
-            GetService<ILockProvider>(),
+            lockProvider ?? GetService<ILockProvider>(),
             GetService<AuthService>(),
             GetService<IMailer>(),
             GetService<IDomainLoginProvider>(),

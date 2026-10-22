@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Exceptionless.Web.Models;
 
-public sealed class RemoveExternalLoginRequest : IValidatableObject
+public sealed class RemoveExternalLoginRequest
 {
     [FromRoute(Name = "providerName")]
     [Required]
@@ -15,10 +15,4 @@ public sealed class RemoveExternalLoginRequest : IValidatableObject
 
     [FromBody]
     public ValueFromBody<string> ProviderUserId { get; set; } = null!;
-
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        if (String.IsNullOrWhiteSpace(ProviderUserId?.Value))
-            yield return new ValidationResult("The provider user id is required.", [nameof(ProviderUserId)]);
-    }
 }

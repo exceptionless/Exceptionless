@@ -45,7 +45,7 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task GetUserByOAuthProviderAsync_DifferentAccountEntries_RequiresExactIdentityPair()
+    public async Task GetUsersByOAuthProviderAsync_DifferentAccountEntries_RequiresExactIdentityPair()
     {
         // Arrange
         var user = new User { FullName = "Linked User", EmailAddress = "linked@localhost.test" };
@@ -56,25 +56,25 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         await _repository.AddAsync(user, options => options.ImmediateConsistency());
 
         // Act
-        var githubUser = await _repository.GetUserByOAuthProviderAsync("github", "shared-subject", TestCancellationToken);
-        var googleUser = await _repository.GetUserByOAuthProviderAsync("google", "shared-subject", TestCancellationToken);
-        var differentProviderCaseUser = await _repository.GetUserByOAuthProviderAsync("GOOGLE", "shared-subject", TestCancellationToken);
-        var differentCaseUser = await _repository.GetUserByOAuthProviderAsync("google", "SHARED-SUBJECT", TestCancellationToken);
+        var githubUser = await _repository.GetUsersByOAuthProviderAsync("github", "shared-subject", TestCancellationToken);
+        var googleUser = await _repository.GetUsersByOAuthProviderAsync("google", "shared-subject", TestCancellationToken);
+        var differentProviderCaseUser = await _repository.GetUsersByOAuthProviderAsync("GOOGLE", "shared-subject", TestCancellationToken);
+        var differentCaseUser = await _repository.GetUsersByOAuthProviderAsync("google", "SHARED-SUBJECT", TestCancellationToken);
 
         // Assert
-        Assert.Null(githubUser);
-        Assert.NotNull(googleUser);
-        Assert.Equal(user.Id, googleUser.Id);
-        Assert.Equal(2, googleUser.OAuthAccounts.Count);
-        Assert.Null(differentCaseUser);
-        Assert.Null(differentProviderCaseUser);
+        Assert.Empty(githubUser);
+        var owner = Assert.Single(googleUser);
+        Assert.Equal(user.Id, owner.Id);
+        Assert.Equal(2, owner.OAuthAccounts.Count);
+        Assert.Empty(differentCaseUser);
+        Assert.Empty(differentProviderCaseUser);
     }
 
     [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]
-    public async Task GetUserByOAuthProviderAsync_PagedCandidates_ValidatesIdentityAndCancellation(bool hasDuplicateOwner, bool cancelAfterFirstPage)
+    public async Task GetUsersByOAuthProviderAsync_PagedCandidates_ValidatesIdentityAndCancellation(bool hasDuplicateOwner, bool cancelAfterFirstPage)
     {
         // Arrange
         var users = Enumerable.Range(1, 101).Select(index =>
@@ -94,7 +94,7 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         if (hasDuplicateOwner)
             users[0].AddOAuthAccount("github", "shared-subject", users[0].EmailAddress);
         await _repository.AddAsync(users, options => options.ImmediateConsistency());
-        User? matchingUser = null;
+        IReadOnlyCollection<User>? matchingUsers = null;
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
         int queryCount = 0;
         using var queryHandler = _repository.AfterQuery.AddHandler((_, args) =>
@@ -112,25 +112,22 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         // Act
         var exception = await Record.ExceptionAsync(async () =>
         {
-            matchingUser = await _repository.GetUserByOAuthProviderAsync("github", "shared-subject", cancellation.Token);
+            matchingUsers = await _repository.GetUsersByOAuthProviderAsync("github", "shared-subject", cancellation.Token);
         });
 
         // Assert
         if (cancelAfterFirstPage)
         {
             Assert.IsAssignableFrom<OperationCanceledException>(exception);
-            Assert.Null(matchingUser);
+            Assert.Null(matchingUsers);
             Assert.Equal(1, queryCount);
-        }
-        else if (hasDuplicateOwner)
-        {
-            Assert.Null(exception);
         }
         else
         {
             Assert.Null(exception);
-            Assert.NotNull(matchingUser);
-            Assert.Equal(users[^1].Id, matchingUser.Id);
+            Assert.NotNull(matchingUsers);
+            Assert.Equal(hasDuplicateOwner ? 2 : 1, matchingUsers.Count);
+            Assert.Contains(matchingUsers, user => user.Id == users[^1].Id);
         }
     }
 }

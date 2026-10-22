@@ -64,21 +64,25 @@ public static class UserExtensions
 
     public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary? data = null)
     {
-        if (user.OAuthAccounts.Any(account => String.Equals(account.Provider, providerName, StringComparison.Ordinal)
-            && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal)))
-            return;
-
-        var account = new OAuthAccount
+        var account = user.OAuthAccounts.FirstOrDefault(account => String.Equals(account.Provider, providerName, StringComparison.Ordinal)
+            && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal));
+        if (account is null)
         {
-            Provider = providerName,
-            ProviderUserId = providerUserId,
-            Username = username
-        };
+            account = new OAuthAccount
+            {
+                Provider = providerName,
+                ProviderUserId = providerUserId,
+                Username = username
+            };
+            user.OAuthAccounts.Add(account);
+        }
+        else
+        {
+            account.Username = username;
+        }
 
         if (data is not null)
             account.ExtraData.Apply(data);
-
-        user.OAuthAccounts.Add(account);
     }
 
     public static bool RemoveOAuthAccount(this User user, string providerName, string providerUserId)

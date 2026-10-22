@@ -295,6 +295,9 @@ public class AuthHandler(
 
     public async Task<Result<TokenResult>> Handle(RemoveExternalLogin message)
     {
+        if (String.IsNullOrWhiteSpace(message.ProviderUserId))
+            return Result.BadRequest("Invalid Provider Name or Provider User Id.");
+
         var httpContext = message.Context;
         var user = httpContext.Request.GetUser();
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(message.ProviderName).Identity(user.EmailAddress).Property("Provider User Id", message.ProviderUserId).SetHttpContext(httpContext));
@@ -546,9 +549,20 @@ public class AuthHandler(
             ];
             operationCancellation.Token.ThrowIfCancellationRequested();
             await using var accountLock = await lockProvider.AcquireAsync(accountKeys, cancellationToken: operationCancellation.Token);
-            var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id, operationCancellation.Token);
+            var owners = await userRepository.GetUsersByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id, operationCancellation.Token)
+                .WaitAsync(operationCancellation.Token);
+            if (owners.Count > 1)
+            {
+                logger.LogWarning("External login failed for {EmailAddress}: The external account is linked to multiple users", userInfo.Email);
+                return Result.Unauthorized("Login failed.");
+            }
+
+            var existingUser = owners.SingleOrDefault();
             // Admission reads may outlive cancellation; do not read or populate a stale email cache entry.
-            var emailUser = existingUser is null ? await userRepository.GetByEmailAddressAsync(userInfo.Email, options => options.Cache(false)).WaitAsync(operationCancellation.Token) : null;
+            var emailUser = existingUser is null
+                ? (await userRepository.FindOneAsync(query => query.FieldEquals(user => user.EmailAddress, userInfo.Email.Trim().ToLowerInvariant()),
+                    options => options.Cache(false)).WaitAsync(operationCancellation.Token))?.Document
+                : null;
             string? currentUserId = String.IsNullOrWhiteSpace(authInfo.InviteToken) && httpContext.User.IsUserAuthType()
                 ? httpContext.Request.GetUser().Id : null;
             var userKeys = new[] { existingUser?.Id, emailUser?.Id, currentUserId }
@@ -597,6 +611,11 @@ public class AuthHandler(
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
 
+        var accountData = new SettingsDictionary { ["email"] = userInfo.Email };
+        string? fullName = userInfo.GetFullName();
+        if (!String.IsNullOrWhiteSpace(fullName))
+            accountData["name"] = fullName;
+
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(userInfo.ProviderName).Identity(userInfo.Email).SetHttpContext(httpContext));
 
         if (existingUser is not null)
@@ -630,26 +649,18 @@ public class AuthHandler(
                     await userRepository.SaveAsync(existingUser, o => o.Cache());
                     await ResetUserTokensAsync(existingUser, "Link external account to another user", httpContext);
                 }
-                else
-                {
-                    return currentUser;
-                }
             }
 
-            currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+            currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
             return await userRepository.SaveAsync(currentUser, o => o.Cache());
         }
 
         if (existingUser is not null)
         {
             CompleteExternalAccountAdmission(admissionCancellation);
-            if (!existingUser.IsEmailAddressVerified)
-            {
-                existingUser.MarkEmailAddressVerified();
-                await userRepository.SaveAsync(existingUser, o => o.Cache());
-            }
-
-            return existingUser;
+            existingUser.MarkEmailAddressVerified();
+            existingUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
+            return await userRepository.SaveAsync(existingUser, o => o.Cache());
         }
 
         var user = emailUser is not null ? await userRepository.GetByIdAsync(emailUser.Id, options => options.Cache(false)).WaitAsync(cancellationToken) : null;
@@ -667,7 +678,7 @@ public class AuthHandler(
         EnsureUserIsActive(user);
         CompleteExternalAccountAdmission(admissionCancellation);
         user.MarkEmailAddressVerified();
-        user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+        user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
 
         if (String.IsNullOrEmpty(user.Id))
             await userRepository.AddAsync(user, o => o.Cache());

@@ -2193,9 +2193,8 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.NotNull(storedOwner);
         Assert.DoesNotContain(storedOwner.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
         Assert.NotEqual(owner.AuthenticationVersion, storedOwner.AuthenticationVersion);
-        var matchingUser = await _userRepository.GetUserByOAuthProviderAsync("github", code, TestCancellationToken);
-        Assert.NotNull(matchingUser);
-        Assert.Equal(currentUser.Id, matchingUser.Id);
+        var matchingUsers = await _userRepository.GetUsersByOAuthProviderAsync("github", code, TestCancellationToken);
+        Assert.Equal(currentUser.Id, Assert.Single(matchingUsers).Id);
         await SendRequestAsync(request => request.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeUnauthorized());
     }
 
@@ -2241,6 +2240,7 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.Equal(TestOAuthProviderClient.GetEmailAddress(code), account.ExtraData["email"]);
         Assert.Equal("keep", account.ExtraData["retained"]);
         Assert.Equal(owner.EmailAddress, stored.EmailAddress);
+        Assert.Equal(owner.FullName, stored.FullName);
     }
 
     [Theory]

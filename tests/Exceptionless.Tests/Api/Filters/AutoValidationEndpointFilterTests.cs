@@ -3,7 +3,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Results;
-using Exceptionless.Web.Models;
 using Foundatio.Mediator;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,37 +12,6 @@ namespace Exceptionless.Tests.Api.Filters;
 
 public sealed class AutoValidationEndpointFilterTests
 {
-    [Theory]
-    [InlineData("github", null, StatusCodes.Status400BadRequest)]
-    [InlineData("github", "", StatusCodes.Status400BadRequest)]
-    [InlineData("github", " ", StatusCodes.Status400BadRequest)]
-    [InlineData("unknown", "subject", StatusCodes.Status422UnprocessableEntity)]
-    public async Task InvokeAsync_UnlinkValidation_PreservesLegacyBodyStatus(string providerName, string? providerUserId, int expectedStatus)
-    {
-        // Arrange
-        var validationFilter = new AutoValidationEndpointFilter();
-        var responseFilter = new UnlinkValidationResponseFilter();
-        var request = new RemoveExternalLoginRequest { ProviderName = providerName, ProviderUserId = new ValueFromBody<string>(providerUserId!) };
-        var context = new TestEndpointFilterInvocationContext(new DefaultHttpContext(), [request]);
-        bool nextCalled = false;
-
-        // Act
-        var result = await responseFilter.InvokeAsync(context, currentContext => validationFilter.InvokeAsync(currentContext, _ =>
-        {
-            nextCalled = true;
-            return ValueTask.FromResult<object?>("next");
-        }));
-
-        // Assert
-        Assert.False(nextCalled);
-        Assert.Equal(expectedStatus, Assert.IsAssignableFrom<IStatusCodeHttpResult>(result).StatusCode);
-        var problem = Assert.IsAssignableFrom<Microsoft.AspNetCore.Mvc.ProblemDetails>(Assert.IsAssignableFrom<IValueHttpResult>(result).Value);
-        if (expectedStatus == StatusCodes.Status400BadRequest)
-            Assert.Equal("Invalid Provider Name or Provider User Id.", problem.Title);
-        else
-            Assert.Contains("provider_name", Assert.IsType<HttpValidationProblemDetails>(problem).Errors.Keys);
-    }
-
     [Fact]
     public async Task InvokeAsync_InvalidSemanticValue_ReturnsUnprocessableEntityValidationProblem()
     {

@@ -17,7 +17,6 @@ public static class AuthEndpoints
     {
         var group = endpoints.MapGroup("api/v2/auth")
             .RequireAuthorization(AuthorizationRoles.UserPolicy)
-            .AddEndpointFilter<UnlinkValidationResponseFilter>()
             .AddEndpointFilter<AutoValidationEndpointFilter>()
             .WithTags("Auth");
 
@@ -179,7 +178,7 @@ public static class AuthEndpoints
         });
 
         group.MapPost("unlink/{providerName:minlength(1)}", async ([AsParameters] RemoveExternalLoginRequest request, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext)
-            => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.RemoveExternalLogin(request.ProviderName, request.ProviderUserId.Value, httpContext))).ToHttpResult(resultMapper))
+            => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.RemoveExternalLogin(request.ProviderName, request.ProviderUserId?.Value, httpContext))).ToHttpResult(resultMapper))
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
