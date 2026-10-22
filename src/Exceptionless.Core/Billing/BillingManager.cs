@@ -76,12 +76,12 @@ public class BillingManager
     /// <summary>
     /// Applies the trial plan and starts a full-length trial. Also used by admins to extend a trial.
     /// </summary>
-    public void ApplyTrialPlan(Organization organization, User? user = null)
+    public void ApplyTrialPlan(Organization organization, User? user = null, bool updateBillingPrice = true)
     {
         ArgumentNullException.ThrowIfNull(organization);
 
         int trialDays = _billingOptions.TrialDays > 0 ? _billingOptions.TrialDays : 7;
-        ApplyBillingPlan(organization, _plans.TrialPlan, user);
+        ApplyBillingPlan(organization, _plans.TrialPlan, user, updateBillingPrice);
         organization.TrialEndsUtc = _timeProvider.GetUtcNow().UtcDateTime.AddDays(trialDays);
         organization.TrialReminderSentUtc = null;
     }

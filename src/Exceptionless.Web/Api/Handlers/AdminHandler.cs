@@ -278,7 +278,7 @@ public class AdminHandler(
         organization.RemoveSuspension();
         var currentUser = httpContext.Request.GetUser();
         if (plans.IsTrialPlan(plan.Id))
-            billingManager.ApplyTrialPlan(organization, currentUser);
+            billingManager.ApplyTrialPlan(organization, currentUser, updateBillingPrice: false);
         else
             billingManager.ApplyBillingPlan(organization, plan, currentUser, false);
 
