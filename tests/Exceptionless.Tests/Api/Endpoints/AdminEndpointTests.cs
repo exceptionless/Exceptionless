@@ -1287,6 +1287,41 @@ public class AdminEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePlanAsync_TrialPlan_StartsTrialAndPreservesBillingPrice()
+    {
+        // Arrange
+        var plans = GetService<BillingPlans>();
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        organization.BillingPrice = 49;
+        organization.StripeCustomerId = "cus_admin_trial";
+        organization.CardLast4 = "4242";
+        organization.SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime;
+        await organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+
+        // Act
+        var result = await SendRequestAsAsync<ChangePlanResponse>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "change-plan")
+            .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
+            .QueryString("planId", plans.TrialPlan.Id)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success);
+
+        var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organizationAfter);
+        Assert.Equal(plans.TrialPlan.Id, organizationAfter.PlanId);
+        Assert.Equal(49, organizationAfter.BillingPrice);
+        Assert.NotNull(organizationAfter.TrialEndsUtc);
+        Assert.True(organizationAfter.TrialEndsUtc > TimeProvider.GetUtcNow().UtcDateTime.AddDays(6));
+    }
+
+    [Fact]
     public async Task ChangePlanAsync_InvalidPlanId_ReturnsFailure()
     {
         // Arrange
