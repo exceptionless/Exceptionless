@@ -10,7 +10,7 @@
     import { Button } from '#comp/ui/button/index.ts';
     import * as Kbd from '#comp/ui/kbd/index.ts';
     import * as Sidebar from '#comp/ui/sidebar/index.ts';
-    import logoSmall from '#lib/assets/exceptionless-48.png';
+    import logoSmall from '#lib/assets/exceptionless-icon.svg';
 
     interface Props {
         assistantEnabled: boolean;

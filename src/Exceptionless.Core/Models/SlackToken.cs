@@ -79,7 +79,7 @@ public record SlackMessage
         [JsonPropertyName("author_icon")]
         public string? AuthorIcon { get; init; }
         [JsonPropertyName("color")]
-        public string Color { get; set; } = "#5E9A00";
+        public string Color { get; set; } = "#66C02A";
         [JsonPropertyName("fields")]
         public List<SlackAttachmentFields> Fields { get; init; } = [];
         [JsonPropertyName("mrkdwn_in")]
