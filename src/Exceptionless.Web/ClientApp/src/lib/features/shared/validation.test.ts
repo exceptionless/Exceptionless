@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { FieldApi, FormApi } from '@tanstack/form-core';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { getProblemMessage, problemDetailsToFormErrors } from './validation';
+import { getProblemMessage, problemDetailsToFormErrors, submitWhenValidated } from './validation';
 
 describe('getProblemMessage', () => {
     it('GetProblemMessage_NonProblemError_ReturnsFallback', () => {
@@ -92,5 +93,94 @@ describe('problemDetailsToFormErrors', () => {
 
         // Assert
         expect(actual).toEqual({ fields: { version: 'Version is invalid.' } });
+    });
+});
+
+describe('submitWhenValidated', () => {
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    function createEmailForm(onSubmit: (email: string) => void) {
+        const form = new FormApi({
+            defaultValues: { email: '' },
+            onSubmit: ({ value }) => onSubmit(value.email)
+        });
+        form.mount();
+
+        const field = new FieldApi({
+            form,
+            name: 'email',
+            validators: {
+                onChangeAsync: async ({ value }: { value: string }) => (value === 'taken@example.test' ? 'Email already exists.' : undefined),
+                onChangeAsyncDebounceMs: 1000
+            }
+        });
+        field.mount();
+
+        return { field, form };
+    }
+
+    it('SubmitWhenValidated_EmailStillValidating_SubmitsOnceValidationSettles', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        const onSubmit = vi.fn();
+        const { field, form } = createEmailForm(onSubmit);
+        field.handleChange('new@example.test');
+        await vi.advanceTimersByTimeAsync(100);
+
+        // Act
+        const submitting = submitWhenValidated(form);
+        await vi.advanceTimersByTimeAsync(1000);
+        await submitting;
+
+        // Assert
+        expect(onSubmit).toHaveBeenCalledExactlyOnceWith('new@example.test');
+    });
+
+    it('SubmitWhenValidated_EmailStillValidating_PlainHandleSubmitDropsTheFirstAttempt', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        const onSubmit = vi.fn();
+        const { field, form } = createEmailForm(onSubmit);
+        field.handleChange('new@example.test');
+        await vi.advanceTimersByTimeAsync(100);
+
+        // Act
+        await form.handleSubmit();
+        await vi.advanceTimersByTimeAsync(1000);
+
+        // Assert
+        expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('SubmitWhenValidated_EmailAlreadyExists_DoesNotSubmit', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        const onSubmit = vi.fn();
+        const { field, form } = createEmailForm(onSubmit);
+        field.handleChange('taken@example.test');
+        await vi.advanceTimersByTimeAsync(100);
+
+        // Act
+        const submitting = submitWhenValidated(form);
+        await vi.advanceTimersByTimeAsync(1000);
+        await submitting;
+
+        // Assert
+        expect(onSubmit).not.toHaveBeenCalled();
+        expect(field.state.meta.errors).toContain('Email already exists.');
+    });
+
+    it('SubmitWhenValidated_NothingValidating_SubmitsImmediately', async () => {
+        // Arrange
+        const onSubmit = vi.fn();
+        const { form } = createEmailForm(onSubmit);
+
+        // Act
+        await submitWhenValidated(form);
+
+        // Assert
+        expect(onSubmit).toHaveBeenCalledOnce();
     });
 });

@@ -23,7 +23,7 @@
     import { gotoRedirect } from '#features/navigation/redirect.ts';
     import ExieGuide from '#features/onboarding/components/exie-guide.svelte';
     import OnboardingStepper from '#features/onboarding/components/onboarding-stepper.svelte';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors, submitWhenValidated } from '#shared/validation.ts';
 
     const params = getAuthPageParams(page.url.searchParams);
     const inviteToken = params.token;
@@ -105,7 +105,7 @@
                         onsubmit={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            form.handleSubmit();
+                            void submitWhenValidated(form);
                         }}
                     >
                         <Field.Group>

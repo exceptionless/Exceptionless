@@ -8,6 +8,13 @@ export type FieldWithErrors = {
     };
 };
 
+/** The part of a TanStack form that `submitWhenValidated` needs. */
+export type SubmittableForm = {
+    handleSubmit: () => Promise<void>;
+    state: { isFieldsValidating: boolean };
+    store: { subscribe: (listener: () => void) => { unsubscribe: () => void } };
+};
+
 type ProblemDetailsLike = {
     detail?: unknown;
     errors?: Record<string, unknown>;
@@ -241,6 +248,30 @@ export function problemDetailsToFormErrors(problem: null | ProblemDetails): null
     }
 
     return Object.keys(result).length > 0 ? result : null;
+}
+
+/**
+ * Submits the form once any pending field validation has settled.
+ *
+ * TanStack Form treats a form as unsubmittable while a field is validating and silently drops the first
+ * submit attempt. A field with a debounced async validator (such as the email availability check) is
+ * validating for the whole debounce window after each edit, so a click or autofill within that window
+ * would otherwise do nothing. Waiting lets the pending result land and then submits normally, so a
+ * validation error such as "email already exists" still blocks the submit.
+ */
+export async function submitWhenValidated(form: SubmittableForm): Promise<void> {
+    if (form.state.isFieldsValidating) {
+        await new Promise<void>((resolve) => {
+            const subscription = form.store.subscribe(() => {
+                if (!form.state.isFieldsValidating) {
+                    subscription.unsubscribe();
+                    resolve();
+                }
+            });
+        });
+    }
+
+    await form.handleSubmit();
 }
 
 function isNonEmptyString(value: unknown): value is string {
