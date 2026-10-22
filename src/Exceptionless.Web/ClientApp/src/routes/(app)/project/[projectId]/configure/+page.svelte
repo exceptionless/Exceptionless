@@ -517,7 +517,7 @@ public partial class App : Application {
                     queryParams.type = value;
                 }}
             >
-                <Select.Trigger class="w-full" data-tour="project-configure-platform">
+                <Select.Trigger aria-label="Project type" class="w-full" data-tour="project-configure-platform">
                     <span
                         >{#if selectedProjectType}
                             {selectedProjectType.platform}: {selectedProjectType.label}

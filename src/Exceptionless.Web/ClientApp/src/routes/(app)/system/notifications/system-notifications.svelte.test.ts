@@ -27,7 +27,7 @@ describe('system notifications after UI cutover', () => {
     it('publishes new banners without offering a removed application target', async () => {
         render(SystemNotifications);
 
-        expect(screen.getByRole('button', { name: 'Level' })).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: 'Level' })).toBeInTheDocument();
         expect(screen.queryByText('Target')).not.toBeInTheDocument();
         expect(screen.queryByText(/Both UIs|Legacy UI only|New UI only/)).not.toBeInTheDocument();
         await fireEvent.input(screen.getByLabelText('Message'), { target: { value: 'Planned maintenance' } });
