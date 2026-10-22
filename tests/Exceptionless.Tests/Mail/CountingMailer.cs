@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Mail;
+using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Tests.Mail;

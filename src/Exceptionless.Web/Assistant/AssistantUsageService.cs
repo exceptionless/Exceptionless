@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core;
+using Exceptionless.Core;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
@@ -187,7 +187,11 @@ public sealed class AssistantUsageService(
     {
         var reservation = await RecordProviderRequestStartedAsync(organizationId, providerInputCharacters);
         if (planOptions is { SharedDailyCostLimitKey: not null, MaximumSharedDailyCostUsd: > 0 })
+        {
+            // Count the estimate immediately so concurrent turns can't all pass the shared limit before any cost lands.
             reservation = reservation with { SharedDailyCostLimitKey = planOptions.SharedDailyCostLimitKey };
+            await IncrementSharedDailyCostAsync(reservation, reservation.CostInMicrodollars);
+        }
 
         return new AssistantProviderUsageLifecycle(this, organizationId, reservation);
     }
@@ -252,6 +256,8 @@ public sealed class AssistantUsageService(
             costInMicrodollars: 0,
             reservation,
             reverse: false);
+
+        await IncrementSharedDailyCostAsync(reservation, -reservation.CostInMicrodollars);
     }
 
     private async Task RecordProviderUsageAsync(
@@ -311,11 +317,24 @@ public sealed class AssistantUsageService(
             throw;
         }
 
-        if (reservation?.SharedDailyCostLimitKey is { } sharedDailyCostLimitKey && costInMicrodollars > 0)
-        {
-            var day = GetDayWindow(usageDate);
-            await _cache.IncrementAsync(GetSharedDailyCostKey(sharedDailyCostLimitKey, day.Id), costInMicrodollars, day.ResetAtUtc.UtcDateTime);
-        }
+        if (reservation is not null)
+            await IncrementSharedDailyCostAsync(reservation, costInMicrodollars - reservation.CostInMicrodollars);
+    }
+
+    /// <summary>
+    /// Adjusts the shared daily cost counter for a reservation's day. The estimate is added when the provider
+    /// request starts, then replaced by the actual cost or removed when the reservation is released.
+    /// </summary>
+    private Task IncrementSharedDailyCostAsync(AssistantProviderReservation reservation, long costInMicrodollars)
+    {
+        if (reservation.SharedDailyCostLimitKey is not { } sharedDailyCostLimitKey || costInMicrodollars == 0)
+            return Task.CompletedTask;
+
+        var usageDate = reservation.UsageDateUtc is { } date
+            ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
+            : timeProvider.GetUtcNow();
+        var day = GetDayWindow(usageDate);
+        return _cache.IncrementAsync(GetSharedDailyCostKey(sharedDailyCostLimitKey, day.Id), costInMicrodollars, day.ResetAtUtc.UtcDateTime);
     }
 
     private async Task<AssistantUsageDecision?> GetSharedDailyCostDecisionAsync(AssistantPlanOptions planOptions, DateTimeOffset now)

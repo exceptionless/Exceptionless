@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -2793,20 +2793,52 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task PostAsync_UserWithExistingOrganization_GetsFreePlan()
+    public async Task PostAsync_OwnerOfPaidOrganization_GetsFreePlan()
     {
+        // Arrange
+        const string password = "Trial password";
+        var user = await CreateUserAsync("paid-owner@exceptionless.test", password, isEmailAddressVerified: true);
+        var paidOrganization = new Organization { Name = "Paid Organization", StripeCustomerId = "cus_paid", CardLast4 = "4242", SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime };
+        _billingManager.ApplyBillingPlan(paidOrganization, _plans.SmallPlan, user);
+        await AddMemberOrganizationAsync(user, paidOrganization);
+
         // Act
         var organizationView = await WithBillingEnabledAsync<ViewOrganization?>(() => SendRequestAsAsync<ViewOrganization>(r => r
-            .AsTestOrganizationUser()
+            .BasicAuthorization(user.EmailAddress, password)
             .Post()
             .AppendPath("organizations")
-            .Content(new NewOrganization { Name = "Existing Member Organization" })
+            .Content(new NewOrganization { Name = "Existing Owner Organization" })
             .StatusCodeShouldBeCreated()
         ));
 
         // Assert
         Assert.NotNull(organizationView);
         Assert.Equal(_plans.FreePlan.Id, organizationView.PlanId);
+    }
+
+    [Fact]
+    public async Task PostAsync_MemberInvitedToSomeoneElsesTrial_StartsOwnTrial()
+    {
+        // Arrange
+        var owner = await CreateUserAsync("trial-team-owner@exceptionless.test", "Owner password", isEmailAddressVerified: true);
+        var trialOrganization = await CreateTrialOrganizationAsync(owner);
+        const string password = "Member password";
+        var member = await CreateUserAsync("trial-team-member@exceptionless.test", password, isEmailAddressVerified: true);
+        member.OrganizationIds.Add(trialOrganization.Id);
+        await _userRepository.SaveAsync(member, o => o.ImmediateConsistency());
+
+        // Act
+        var organizationView = await WithBillingEnabledAsync<ViewOrganization?>(() => SendRequestAsAsync<ViewOrganization>(r => r
+            .BasicAuthorization(member.EmailAddress, password)
+            .Post()
+            .AppendPath("organizations")
+            .Content(new NewOrganization { Name = "Member Organization" })
+            .StatusCodeShouldBeCreated()
+        ));
+
+        // Assert
+        Assert.NotNull(organizationView);
+        Assert.Equal(_plans.TrialPlan.Id, organizationView.PlanId);
     }
 
     [Fact]
@@ -2930,10 +2962,15 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         return _userRepository.AddAsync(user, o => o.ImmediateConsistency());
     }
 
-    private async Task<Organization> CreateTrialOrganizationAsync(User user)
+    private Task<Organization> CreateTrialOrganizationAsync(User user)
     {
         var organization = new Organization { Name = "Trial Organization" };
         _billingManager.StartTrial(organization, user);
+        return AddMemberOrganizationAsync(user, organization);
+    }
+
+    private async Task<Organization> AddMemberOrganizationAsync(User user, Organization organization)
+    {
         organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency());
 
         user.OrganizationIds.Add(organization.Id);

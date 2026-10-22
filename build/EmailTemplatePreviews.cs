@@ -1,4 +1,4 @@
-﻿#:sdk Microsoft.NET.Sdk
+#:sdk Microsoft.NET.Sdk
 #:property TargetFramework=net10.0
 #:project ../src/Exceptionless.EmailTemplates/Exceptionless.EmailTemplates.csproj
 

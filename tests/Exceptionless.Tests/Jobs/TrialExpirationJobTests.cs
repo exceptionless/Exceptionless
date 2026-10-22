@@ -93,4 +93,23 @@ public class TrialExpirationJobTests : IntegrationTestsBase
         Assert.NotNull(paidOrganization);
         Assert.Equal(BillingPlans.MediumPlan.Id, paidOrganization.PlanId);
     }
+
+    [Fact]
+    public async Task RunAsync_TrialWithoutEndDate_MovesToFreePlan()
+    {
+        // Arrange
+        var organization = await OrganizationRepository.GetByIdAsync(TrialOrganizationId);
+        Assert.NotNull(organization);
+        organization.TrialEndsUtc = null;
+        await OrganizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
+
+        // Act
+        await Job.RunAsync(TestCancellationToken);
+
+        // Assert
+        var expiredOrganization = await OrganizationRepository.GetByIdAsync(TrialOrganizationId);
+        Assert.NotNull(expiredOrganization);
+        Assert.Equal(BillingPlans.FreePlan.Id, expiredOrganization.PlanId);
+        Assert.Empty(Mailer.OrganizationTrialEndingCalls);
+    }
 }

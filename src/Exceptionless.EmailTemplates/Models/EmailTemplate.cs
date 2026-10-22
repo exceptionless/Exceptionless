@@ -1,4 +1,4 @@
-﻿namespace Exceptionless.EmailTemplates.Models;
+namespace Exceptionless.EmailTemplates.Models;
 
 public abstract record EmailTemplate(string Subject, EmailAction? Action = null, string? Preview = null);
 

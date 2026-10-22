@@ -53,6 +53,9 @@
 <Story name="Trial">
     <TrialNotification daysRemaining={5} name="Acme Corporation" organizationId="org1" />
 </Story>
+<Story name="Trial Ended">
+    <TrialNotification daysRemaining={0} name="Acme Corporation" organizationId="org1" />
+</Story>
 <Story name="Trial Ending Soon">
     <TrialNotification daysRemaining={1} name="Acme Corporation" organizationId="org1" />
 </Story>

@@ -1,4 +1,4 @@
-﻿namespace Exceptionless.Web.Assistant;
+namespace Exceptionless.Web.Assistant;
 
 public sealed record AssistantChatRequest(
     IReadOnlyCollection<AssistantChatMessage> Messages,

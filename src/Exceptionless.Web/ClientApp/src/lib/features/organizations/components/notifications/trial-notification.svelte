@@ -18,9 +18,17 @@
 </script>
 
 <Notification variant={isEndingSoon ? 'warning' : 'information'} {...restProps}>
-    <NotificationTitle>{daysLabel} left in the {name} free trial.</NotificationTitle>
-    <NotificationDescription>
-        <A onclick={() => showUpgradeDialog(organizationId, 'Upgrade to keep Exie, alerts, integrations, and 90-day retention.')}>Upgrade now</A>
-        to keep Exie, alerts, integrations, and 90-day retention when your trial ends.
-    </NotificationDescription>
+    {#if daysRemaining > 0}
+        <NotificationTitle>{daysLabel} left in the {name} free trial.</NotificationTitle>
+        <NotificationDescription>
+            <A onclick={() => showUpgradeDialog(organizationId, 'Upgrade to keep Exie, alerts, integrations, and 90-day retention.')}>Upgrade now</A>
+            to keep Exie, alerts, integrations, and 90-day retention when your trial ends.
+        </NotificationDescription>
+    {:else}
+        <NotificationTitle>The {name} free trial has ended.</NotificationTitle>
+        <NotificationDescription>
+            <A onclick={() => showUpgradeDialog(organizationId, 'Upgrade to keep Exie, alerts, integrations, and 90-day retention.')}>Upgrade now</A>
+            to keep Exie, alerts, integrations, and 90-day retention. This organization is moving to the Free plan.
+        </NotificationDescription>
+    {/if}
 </Notification>

@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core.Billing;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;

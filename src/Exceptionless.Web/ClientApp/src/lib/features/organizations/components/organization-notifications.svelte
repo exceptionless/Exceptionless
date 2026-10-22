@@ -142,7 +142,7 @@
         <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
     {:else if requiresPremiumUpgrade}
         <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} {premiumFeatureName} {...restProps} />
-    {:else if isTrialPlan && trialDaysRemaining > 0}
+    {:else if isTrialPlan}
         <TrialNotification daysRemaining={trialDaysRemaining} name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if isFreePlan}
         <FreePlanNotification

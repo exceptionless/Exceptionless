@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+using System.Globalization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
@@ -257,7 +258,7 @@ public class Mailer : IMailer
         var message = new OrganizationTrialEndingEmail(
             subject,
             organization.Name,
-            organization.TrialEndsUtc.Value.ToLongDateString(),
+            organization.TrialEndsUtc.Value.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture),
             _appUrls.OrganizationUpgrade(organization.Id));
 
         await QueueMessageAsync(new MailMessage

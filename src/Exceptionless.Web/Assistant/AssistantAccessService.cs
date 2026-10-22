@@ -1,4 +1,4 @@
-﻿using Exceptionless.Core;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
@@ -13,7 +13,8 @@ public sealed class AssistantAccessService(
     AppOptions appOptions,
     BillingPlans billingPlans,
     IOrganizationRepository organizationRepository,
-    SystemSettingsService systemSettingsService)
+    SystemSettingsService systemSettingsService,
+    TimeProvider? timeProvider = null)
 {
     public async Task<AssistantAccessDecision> GetAccessAsync(HttpRequest request, string? organizationId)
     {
@@ -41,11 +42,18 @@ public sealed class AssistantAccessService(
         if (appOptions.AppMode == AppMode.Development)
             return AssistantAccessDecision.Available(billingPlans.UnlimitedPlan.Assistant!);
 
-        var decision = EvaluatePlan(billingPlans.GetPlan(organization.PlanId)?.Assistant, billingPlans.MediumPlan.Id);
-        if (decision.HasAccess && billingPlans.IsTrialPlan(organization.PlanId) && !request.GetUser().IsEmailAddressVerified)
+        if (!billingPlans.IsTrialPlan(organization.PlanId))
+            return EvaluatePlan(billingPlans.GetPlan(organization.PlanId)?.Assistant, billingPlans.MediumPlan.Id);
+
+        // Don't rely on the expiration job having run: an ended trial no longer includes Exie.
+        var utcNow = (timeProvider ?? TimeProvider.System).GetUtcNow().UtcDateTime;
+        if (organization.TrialEndsUtc is null || organization.TrialEndsUtc <= utcNow)
+            return EvaluatePlan(planOptions: null, billingPlans.MediumPlan.Id);
+
+        if (!request.GetUser().IsEmailAddressVerified)
             return AssistantAccessDecision.EmailVerificationRequired("Verify your email address to use Exie during your trial.");
 
-        return decision;
+        return EvaluatePlan(billingPlans.TrialPlan.Assistant, billingPlans.MediumPlan.Id);
     }
 
     internal static AssistantAccessDecision? EvaluateConfiguration(AppOptions appOptions, bool? enabled = null)
