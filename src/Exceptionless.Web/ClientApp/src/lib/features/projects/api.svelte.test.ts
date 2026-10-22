@@ -3,11 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ViewProject } from './models';
 
-import { getProjectQuery, queryKeys } from './api.svelte';
+import { getProjectQuery, getProjectsQuery, queryKeys } from './api.svelte';
 
 const mocks = vi.hoisted(() => ({
     createQuery: vi.fn<(options: () => QueryObserverOptions<ViewProject>) => void>(),
-    getJSON: vi.fn()
+    getJSON: vi.fn(),
+    queryClient: undefined as QueryClient | undefined
 }));
 vi.mock('#features/auth/index.svelte.ts', () => ({ accessToken: { current: 'test-token' } }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
@@ -16,7 +17,8 @@ vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
 }));
 vi.mock('@tanstack/svelte-query', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@tanstack/svelte-query')>()),
-    createQuery: mocks.createQuery
+    createQuery: mocks.createQuery,
+    useQueryClient: () => mocks.queryClient
 }));
 
 describe('project read lifecycle', () => {
@@ -40,6 +42,7 @@ describe('project read lifecycle', () => {
     beforeEach(() => {
         vi.resetAllMocks();
         client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        mocks.queryClient = client;
     });
 
     afterEach(() => client.clear());
@@ -86,6 +89,25 @@ describe('project read lifecycle', () => {
 
         // Assert
         expect(client.getQueryData(queryKeys.id('project-id'))).toBeUndefined();
+        stop();
+    });
+
+    it('marks the all-projects list stale when the project query type is invalidated', async () => {
+        // Arrange
+        mocks.getJSON.mockResolvedValue({ data: [project] });
+        getProjectsQuery({ params: { mode: 'stats' } });
+        const observer = new QueryObserver(client, mocks.createQuery.mock.calls[0]![0]());
+        const stop = observer.subscribe(() => {});
+        await vi.waitFor(() => expect(observer.getCurrentResult().data?.data).toEqual([project]));
+        const queryKey = observer.getCurrentQuery().queryKey;
+        expect(client.getQueryState(queryKey)?.isInvalidated).toBe(false);
+
+        // Act
+        await client.invalidateQueries({ queryKey: queryKeys.type, refetchType: 'none' });
+
+        // Assert
+        expect(queryKey.slice(0, 2)).toEqual(queryKeys.projects());
+        expect(client.getQueryState(queryKey)?.isInvalidated).toBe(true);
         stop();
     });
 });

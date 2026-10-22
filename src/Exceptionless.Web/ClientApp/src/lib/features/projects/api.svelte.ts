@@ -483,7 +483,7 @@ export function getProjectsQuery(request: GetProjectsRequest) {
             return response;
         },
         queryKey: [
-            queryKeys.projects(),
+            ...queryKeys.projects(),
             {
                 params: request.params
             }
