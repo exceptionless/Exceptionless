@@ -28,6 +28,12 @@ public class BillingManager
     public Task<ILock> AcquireOrganizationLockAsync(string organizationId)
         => _lockProvider.AcquireAsync(GetOrganizationLockKey(organizationId), BillingLockDuration, TimeSpan.FromSeconds(30));
 
+    public Task<ILock> AcquireUserOrganizationCreationLockAsync(string userId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+        return _lockProvider.AcquireAsync($"User:{userId}:create-organization", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+    }
+
     public Task<ILock?> TryAcquireOrganizationLockAsync(string organizationId)
         => _lockProvider.TryAcquireAsync(GetOrganizationLockKey(organizationId), BillingLockDuration, TimeSpan.Zero);
 
@@ -152,8 +158,8 @@ public class BillingManager
     }
 
     /// <summary>
-    /// Organizations the user put on their current plan. Organizations have no owner field, so the user who
-    /// last changed the billing plan (the creator for free and trial organizations) is treated as the owner.
+    /// Organizations the user created. Organizations created before <see cref="Organization.CreatedByUserId"/>
+    /// existed fall back to the user who last changed the billing plan.
     /// </summary>
     private async Task<IReadOnlyCollection<Organization>> GetOwnedOrganizationsAsync(User user)
     {
@@ -161,7 +167,7 @@ public class BillingManager
             return [];
 
         var organizations = await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray());
-        return organizations.Where(o => String.Equals(o.BillingChangedByUserId, user.Id, StringComparison.Ordinal)).ToList();
+        return organizations.Where(o => String.Equals(o.CreatedByUserId ?? o.BillingChangedByUserId, user.Id, StringComparison.Ordinal)).ToList();
     }
 
     private static string GetOrganizationLockKey(string organizationId)

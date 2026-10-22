@@ -110,11 +110,20 @@ public class OrganizationHandler(
             return Result.BadRequest("Organization value is required.");
 
         var model = mapper.MapToOrganization(message.Organization);
-        var error = await CanAddAsync(model, message.Context);
+
+        // Serialize creation per user and reload the user so concurrent requests can't both pass the
+        // one-free-organization and one-trial checks.
+        string userId = GetCurrentUser(message.Context).Id;
+        await using var userLock = await billingManager.AcquireUserOrganizationCreationLockAsync(userId);
+        var user = await userRepository.GetByIdAsync(userId, o => o.Cache(false));
+        if (user is null)
+            return Result.Unauthorized("User not found.");
+
+        var error = await CanAddAsync(model, user);
         if (error is not null)
             return error;
 
-        model = await AddModelAsync(model, message.Context);
+        model = await AddModelAsync(model, user);
         var viewModel = mapper.MapToViewOrganization(model);
         await AfterResultMapAsync([viewModel]);
         string location = linkGenerator.GetUriByName(message.Context, "GetOrganizationById", new { id = model.Id })
@@ -842,20 +851,20 @@ public class OrganizationHandler(
         return viewModel;
     }
 
-    private async Task<Result<ViewOrganization>?> CanAddAsync(Organization value, HttpContext httpContext)
+    private async Task<Result<ViewOrganization>?> CanAddAsync(Organization value, User user)
     {
         if (String.IsNullOrEmpty(value.Name))
             return Result.BadRequest("Organization name is required.");
 
-        if (!await billingManager.CanAddOrganizationAsync(GetCurrentUser(httpContext)))
+        if (!await billingManager.CanAddOrganizationAsync(user))
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add an additional organization."));
 
         return null;
     }
 
-    private async Task<Organization> AddModelAsync(Organization value, HttpContext httpContext)
+    private async Task<Organization> AddModelAsync(Organization value, User user)
     {
-        var user = GetCurrentUser(httpContext);
+        value.CreatedByUserId = user.Id;
         if (!options.StripeOptions.EnableBilling || user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
             billingManager.ApplyBillingPlan(value, plans.UnlimitedPlan, user);
         else if (await billingManager.CanStartTrialAsync(user))
@@ -863,10 +872,10 @@ public class OrganizationHandler(
         else
             billingManager.ApplyBillingPlan(value, plans.FreePlan, user);
 
-        var organization = await repository.AddAsync(value, o => o.Cache());
+        var organization = await repository.AddAsync(value, o => o.ImmediateConsistency().Cache());
 
         user.OrganizationIds.Add(organization.Id);
-        await userRepository.SaveAsync(user, o => o.Cache());
+        await userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
         await messagePublisher.PublishAsync(new UserMembershipChanged
         {
             UserId = user.Id,
