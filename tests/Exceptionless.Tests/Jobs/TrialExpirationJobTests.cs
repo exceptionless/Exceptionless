@@ -95,6 +95,27 @@ public class TrialExpirationJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_TrialWithMoreMembersThanOnePage_RemindsEveryVerifiedMember()
+    {
+        // Arrange
+        var members = Enumerable.Range(0, 101).Select(index =>
+        {
+            var member = UserData.GenerateUser(generateId: true, organizationId: TrialOrganizationId, emailAddress: $"trial-member-{index}@example.org");
+            member.MarkEmailAddressVerified();
+            return member;
+        }).ToList();
+        await UserRepository.AddAsync(members, options => options.ImmediateConsistency());
+        TimeProvider.Advance(TimeSpan.FromDays(5.5));
+
+        // Act
+        await Job.RunAsync(TestCancellationToken);
+
+        // Assert
+        Assert.Equal(members.Count + 1, Mailer.OrganizationTrialEndingCalls.Count);
+        Assert.All(members, member => Assert.Contains(Mailer.OrganizationTrialEndingCalls, call => call.UserId == member.Id));
+    }
+
+    [Fact]
     public async Task RunAsync_TrialWithoutEndDate_MovesToFreePlan()
     {
         // Arrange

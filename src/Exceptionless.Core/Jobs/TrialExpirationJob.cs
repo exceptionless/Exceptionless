@@ -104,13 +104,16 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
         if (organization.TrialReminderSentUtc is not null || organization.TrialEndsUtc.Value.AddDays(-_billingOptions.TrialReminderDays) > utcNow)
             return;
 
-        // Mark the reminder before sending so a failure can't cause repeated emails.
+        var users = await _userRepository.GetByOrganizationIdAsync(organization.Id, o => o.SearchAfterPaging().PageLimit(100));
+        do
+        {
+            foreach (var user in users.Documents.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled))
+                await _mailer.SendOrganizationTrialEndingAsync(user, organization);
+        } while (await users.NextPageAsync());
+
+        // Mark the reminder only after every email is queued, so a failure is retried on the next run.
         organization.TrialReminderSentUtc = utcNow;
         await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
-
-        var users = await _userRepository.GetByOrganizationIdAsync(organization.Id);
-        foreach (var user in users.Documents.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled))
-            await _mailer.SendOrganizationTrialEndingAsync(user, organization);
 
         _logger.LogInformation("Sent trial ending reminder for organization {OrganizationId}", organization.Id);
     }
