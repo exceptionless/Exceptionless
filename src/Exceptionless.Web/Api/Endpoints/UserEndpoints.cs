@@ -200,13 +200,11 @@ public static class UserEndpoints
             => (await mediator.InvokeAsync<Result<ModelActionResults>>(new UserMessages.DeleteCurrentUser())).ToHttpResult(resultMapper))
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Delete current user")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["202"] = "Accepted",
                 ["404"] = "The current user could not be found.",
-                ["409"] = "The account changed while the request was being processed.",
             }
         });
 
@@ -216,7 +214,6 @@ public static class UserEndpoints
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .WithSummary("Remove")
         .WithMetadata(new EndpointDocumentation {
@@ -227,7 +224,6 @@ public static class UserEndpoints
                 ["202"] = "Accepted",
                 ["400"] = "One or more validation errors occurred.",
                 ["404"] = "One or more users were not found.",
-                ["409"] = "An account changed while the request was being processed.",
                 ["500"] = "An error occurred while deleting one or more users.",
             }
         });

@@ -4260,16 +4260,6 @@
                 }
               }
             }
-          },
-          "409": {
-            "description": "The account changed while the request was being processed.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       }
@@ -4861,16 +4851,6 @@
           },
           "404": {
             "description": "One or more users were not found.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "An account changed while the request was being processed.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

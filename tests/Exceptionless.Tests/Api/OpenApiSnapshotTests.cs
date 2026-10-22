@@ -67,8 +67,6 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
             ("/api/v2/auth/signup", "post"),
             ("/api/v2/users/{id}", "patch"),
             ("/api/v2/users/{id}", "put"),
-            ("/api/v2/users/me", "delete"),
-            ("/api/v2/users/{ids}", "delete"),
             ("/api/v2/users/{id}/avatar", "post"),
             ("/api/v2/users/{id}/avatar", "delete"),
             ("/api/v2/users/{id}/email-address/{email}", "post"),
