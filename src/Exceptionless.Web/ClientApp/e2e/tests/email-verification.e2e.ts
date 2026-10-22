@@ -20,7 +20,9 @@ test('new user can verify their email address from the welcome email @signup', a
     await test.step('reopen the used link without an error', async () => {
         await page.goto(verifyLink);
 
-        await expect(page).toHaveURL(/\/account\/manage(?:[?#]|$)/);
-        await expect(page.getByText('Email not verified.')).toBeHidden();
+        // An already-verified user is treated as verified again rather than shown an invalid-link error.
+        await expect(page.getByText('Your email address is verified.')).toBeVisible({ timeout: 30_000 });
+        await expect(page).not.toHaveURL(/\/account\/(?:manage|verify)(?:[?#]|$)/);
+        await expect(page.getByText(/invalid or has already been used/)).toBeHidden();
     });
 });
