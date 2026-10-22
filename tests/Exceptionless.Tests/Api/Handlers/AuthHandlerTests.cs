@@ -136,7 +136,11 @@ public sealed class AuthHandlerTests : TestWithServices
         var oauthProvider = new Mock<IOAuthProviderClient>(MockBehavior.Strict);
         oauthProvider.Setup(provider => provider.GetMicrosoftUserInfoAsync(It.IsAny<ExternalAuthInfo>(), "microsoft-client-id", "microsoft-client-secret"))
             .ThrowsAsync(new InvalidOperationException("Microsoft provider failed."));
-        var handler = CreateHandler(userRepository.Object, oauthProvider: oauthProvider.Object);
+        var handler = CreateHandler(
+            userRepository.Object,
+            GetService<ITokenRepository>(),
+            GetService<IOAuthTokenRepository>(),
+            oauthProvider.Object);
 
         // Act
         var exception = await Record.ExceptionAsync(async () =>
@@ -151,7 +155,7 @@ public sealed class AuthHandlerTests : TestWithServices
         userRepository.VerifyNoOtherCalls();
     }
 
-    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository? tokenRepository = null, IOAuthTokenRepository? oauthTokenRepository = null, IOAuthProviderClient? oauthProvider = null)
+    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient oauthProvider)
     {
         var appOptions = GetService<AppOptions>();
         appOptions.AuthOptions.MicrosoftId = "microsoft-client-id";
@@ -162,9 +166,9 @@ public sealed class AuthHandlerTests : TestWithServices
             appOptions.IntercomOptions,
             GetService<IOrganizationRepository>(),
             userRepository,
-            tokenRepository ?? GetService<ITokenRepository>(),
-            oauthTokenRepository ?? GetService<IOAuthTokenRepository>(),
-            oauthProvider ?? GetService<IOAuthProviderClient>(),
+            tokenRepository,
+            oauthTokenRepository,
+            oauthProvider,
             GetService<ICacheClient>(),
             GetService<AuthService>(),
             GetService<IMailer>(),

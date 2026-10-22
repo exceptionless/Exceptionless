@@ -41,14 +41,6 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         await GetService<SampleDataService>().CreateDataAsync();
     }
 
-    public override ValueTask DisposeAsync()
-    {
-        _authOptions.EnableAccountCreation = _originalEnableAccountCreation;
-        _authOptions.MicrosoftId = _originalMicrosoftId;
-        _authOptions.MicrosoftSecret = _originalMicrosoftSecret;
-        return base.DisposeAsync();
-    }
-
     [Fact]
     public async Task MicrosoftAsync_AuthenticatedLinkWithDifferentEmail_ReplacesLegacyIdentity()
     {
@@ -215,5 +207,13 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
             if (isAuthenticated)
                 request.AsTestOrganizationUser();
         });
+    }
+
+    public override ValueTask DisposeAsync()
+    {
+        _authOptions.EnableAccountCreation = _originalEnableAccountCreation;
+        _authOptions.MicrosoftId = _originalMicrosoftId;
+        _authOptions.MicrosoftSecret = _originalMicrosoftSecret;
+        return base.DisposeAsync();
     }
 }
