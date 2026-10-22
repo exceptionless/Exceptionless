@@ -30,8 +30,16 @@ The scenarios cover:
 - Finding top errors within one project.
 - Finding top errors across an organization’s projects.
 - Providing project client setup instructions.
+- Explaining the cause of an exception from its stack trace and error data.
+- Marking the current stack fixed in a version.
+- Answering a question about today in the user's time zone.
+- Turning each way of asking about a period into the right `time` date math in one search: rolling windows (last hour, last 24 hours, last 2, 7, and 30 days), calendar periods (today, yesterday, this week, last week, this month, since Monday), explicit dates and ranges, no period, a follow-up that changes the period, the current stack today versus in total, and an organization-wide question.
 
-Assertions check tool selection and call limits, expected navigation links, and a completed, nonempty response without streamed errors or raw DSML markup. Passing confirms these scenario assertions; answer quality still needs review when changing the model, system prompt, or tools.
+Assertions check tool selection and call limits, expected navigation links, and a completed, nonempty response without streamed errors. Passing confirms these scenario assertions; answer quality still needs review when changing the model, system prompt, or tools.
+
+Set `ASSISTANT_EVAL_RUNS` to repeat each time-range scenario, for example `3`, and `ASSISTANT_EVAL_SCENARIOS` to a comma-separated list such as `stack_today,stack_all_time` to run only some of them.
+
+To compare models, set `ASSISTANT_EVAL_RESULTS` to a file path. Each turn is appended as one JSON line with the model, answer text, tool calls, failed tool results, duration, time to first text, and reported cost.
 
 These evaluations make billable provider requests and are disabled by default. Configure `EX_Assistant__ApiKey` in your environment using a dedicated key with a spending limit. Optionally set `EX_Assistant__Model` and `EX_Assistant__Endpoint` to test a different model or compatible provider.
 

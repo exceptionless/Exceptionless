@@ -95,6 +95,7 @@ export interface AssistantChatRequest {
   project_id?: null | string;
   path?: null | string;
   conversation_id?: null | string;
+  time_zone?: null | string;
 }
 
 export interface AssistantConversationSharingSettings {

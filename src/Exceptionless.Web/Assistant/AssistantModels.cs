@@ -5,7 +5,9 @@ public sealed record AssistantChatRequest(
     string? OrganizationId = null,
     string? ProjectId = null,
     string? Path = null,
-    string? ConversationId = null);
+    string? ConversationId = null,
+    // The browser's IANA time zone, used to resolve "today" and "this week".
+    string? TimeZone = null);
 
 public sealed record AssistantChatMessage(string Role, string Content)
 {
@@ -14,13 +16,16 @@ public sealed record AssistantChatMessage(string Role, string Content)
     public string? SuggestedActionPath { get; init; }
 }
 
+// ProjectIds are the projects a result came from. A later turn reuses the result only while all of them still exist
+// in the organization; results recorded before this was tracked have none and are not reused.
 public sealed record AssistantConversationToolResult(
     string ToolCallId,
     string ToolName,
     string Arguments,
     string Result,
     string? Path,
-    DateTimeOffset CapturedAtUtc);
+    DateTimeOffset CapturedAtUtc,
+    IReadOnlyCollection<string>? ProjectIds = null);
 
 public sealed record AssistantConversationState(IReadOnlyCollection<AssistantConversationToolResult> ToolResults);
 

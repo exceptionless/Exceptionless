@@ -216,6 +216,10 @@ if (!servicesOnly)
             .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
     }
 
+    // The e2e workflow runs npm ci before starting the AppHost, so a second install would only delay the app.
+    if (ciE2E)
+        app.WithNpm(install: false);
+
     if (includeDevTools)
     {
 #pragma warning disable ASPIREDENO001
