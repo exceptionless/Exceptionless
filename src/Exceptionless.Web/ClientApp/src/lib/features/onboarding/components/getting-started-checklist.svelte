@@ -1,3 +1,8 @@
+<script lang="ts" module>
+    // Remounting on another page can beat the user refetch that carries the finished state; celebrate once per session.
+    const celebratedUserIds: Record<string, true> = {};
+</script>
+
 <script lang="ts">
     import { resolve } from '$app/paths';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -31,6 +36,7 @@
     } from '../checklist';
     import { ChecklistLayoutPreference } from '../checklist-layout.svelte';
     import { useOrganizationOnboarding } from '../onboarding-state.svelte';
+    import Confetti from './confetti.svelte';
     import ExieGuide from './exie-guide.svelte';
 
     const meQuery = getMeQuery();
@@ -57,6 +63,7 @@
     // Visits recorded in this session show as done before the user refetch finishes.
     const visitedItems = new SvelteSet<ChecklistVisitItemId>();
     let dismissed = $state(false);
+    let celebrating = $state(false);
 
     const items = $derived(
         getChecklistItems({
@@ -87,6 +94,24 @@
     );
     const isFreePlan = $derived(organizationQuery.data?.plan_id === FREE_PLAN_ID);
 
+    // Finishing the list retires it for good: celebrate once, then record it like a dismissal.
+    $effect(() => {
+        const userId = meQuery.data?.id;
+        if (!isVisible || !isComplete || !userId || celebratedUserIds[userId]) {
+            return;
+        }
+
+        celebratedUserIds[userId] = true;
+        celebrating = true;
+        toast.success("You finished Exie's checklist!", {
+            description: "That's everything. I'll keep watching for new errors."
+        });
+        void hide(userId).catch(() => {
+            // Leave the finished card up so the user can hide it with the button.
+            dismissed = false;
+        });
+    });
+
     interface ItemCopy {
         description?: string;
         external?: boolean;
@@ -100,19 +125,8 @@
             return;
         }
 
-        dismissed = true;
         try {
-            await recordMutation.mutateAsync({
-                tourName: CHECKLIST_DISMISSED_KEY,
-                userId
-            });
-            // The checklist replaces the generic welcome card; don't show that afterwards.
-            void recordMutation
-                .mutateAsync({
-                    tourName: 'app-welcome',
-                    userId
-                })
-                .catch(() => undefined);
+            await hide(userId);
         } catch {
             dismissed = false;
             toast.error('We could not hide the checklist. Please try again.');
@@ -172,6 +186,22 @@
         }
     }
 
+    /** Hides the checklist now and records it so it stays hidden on every page and device. */
+    async function hide(userId: string): Promise<void> {
+        dismissed = true;
+        await recordMutation.mutateAsync({
+            tourName: CHECKLIST_DISMISSED_KEY,
+            userId
+        });
+        // The checklist replaces the generic welcome card; don't show that afterwards.
+        void recordMutation
+            .mutateAsync({
+                tourName: 'app-welcome',
+                userId
+            })
+            .catch(() => undefined);
+    }
+
     function recordVisit(item: ChecklistItem): void {
         const userId = meQuery.data?.id;
         if (item.kind !== 'visit' || item.complete || !userId) {
@@ -179,7 +209,9 @@
         }
 
         const id = item.id as ChecklistVisitItemId;
-        visitedItems.add(id);
+        // Mark it done after the click is handled: re-rendering now would swap the link's href (or the link
+        // itself) before the router reads it, sending the user to the next item instead.
+        setTimeout(() => visitedItems.add(id));
         void recordMutation
             .mutateAsync({
                 tourName: CHECKLIST_VISIT_KEYS[id],
@@ -199,6 +231,10 @@
         }
     }
 </script>
+
+{#if celebrating}
+    <Confetti />
+{/if}
 
 {#if isVisible}
     <Card.Root aria-labelledby="getting-started-checklist-title" data-getting-started-checklist role="region" size="sm">
