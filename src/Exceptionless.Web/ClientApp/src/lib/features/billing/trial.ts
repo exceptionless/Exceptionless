@@ -16,3 +16,15 @@ export function getTrialDaysRemaining(trialEndsUtc: null | string | undefined, n
 
     return Math.max(0, Math.ceil((endsAt - now.getTime()) / MILLISECONDS_PER_DAY));
 }
+
+/**
+ * Whether a Free organization got there because its trial ended (or was ended early) without ever subscribing.
+ * Organizations that converted to a paid plan and later downgraded keep their trial date, but didn't just leave a trial.
+ */
+export function hasTrialEndedWithoutSubscribing(organization: { subscribe_date?: null | string; trial_ends_utc?: null | string }): boolean {
+    if (!organization.trial_ends_utc) {
+        return false;
+    }
+
+    return !organization.subscribe_date || organization.subscribe_date.startsWith('0001-01-01');
+}

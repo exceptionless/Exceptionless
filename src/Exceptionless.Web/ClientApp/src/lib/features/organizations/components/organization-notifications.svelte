@@ -27,7 +27,7 @@
     import type { NotificationProps } from '#comp/notification/index.ts';
 
     import { FREE_PLAN_ID, TRIAL_PLAN_ID } from '#features/billing/constants.ts';
-    import { getTrialDaysRemaining } from '#features/billing/trial.ts';
+    import { getTrialDaysRemaining, hasTrialEndedWithoutSubscribing } from '#features/billing/trial.ts';
     import { getOrganizationQuery, getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
     import { organization as currentOrganizationId } from '#features/organizations/context.svelte.ts';
     import { SuspensionCode } from '#features/organizations/models.ts';
@@ -150,7 +150,7 @@
             name={organization.name}
             organizationId={organization.id}
             retentionDays={organization.retention_days}
-            trialEnded={!!organization.trial_ends_utc}
+            trialEnded={hasTrialEndedWithoutSubscribing(organization)}
             {...restProps}
         />
     {:else if hasNoProjects}
