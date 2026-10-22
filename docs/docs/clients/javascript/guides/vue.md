@@ -1,5 +1,7 @@
 ---
 title: "Vue"
+metaTitle: "Exceptionless error tracking for Vue"
+description: "Install @exceptionless/vue, start the Exceptionless client with your API key, and set ExceptionlessErrorHandler as the global Vue error handler."
 order: 2
 ---
 

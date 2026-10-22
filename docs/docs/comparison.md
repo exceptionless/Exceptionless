@@ -1,5 +1,7 @@
 ---
 title: "Comparison"
+metaTitle: "Exceptionless vs Application Insights, Elmah, Raygun"
+description: "Compare Exceptionless with Application Insights, Elmah, and Raygun on open source, free self-hosting, stacking, search, sessions, webhooks, and REST API."
 ---
 
 # Comparison

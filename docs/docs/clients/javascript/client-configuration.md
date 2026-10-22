@@ -1,5 +1,7 @@
 ---
 title: "Configuration"
+metaTitle: "Exceptionless JavaScript client configuration"
+description: "Install and configure the Exceptionless JavaScript client for browsers and Node.js: API key, offline storage, default tags and data, GDPR privacy, and version."
 order: 1
 ---
 
@@ -89,8 +91,8 @@ This is the recommended way when configuring multiple settings.
 import { Exceptionless } from "@exceptionless/browser";
 
 await Exceptionless.startup(c => {
-  c.apiKey: 'API_KEY_HERE',
-  c.serverUrl: 'http://localhost:5200'
+  c.apiKey = "API_KEY_HERE";
+  c.serverUrl = "http://localhost:5200";
 });
 ```
 
@@ -179,8 +181,8 @@ The Exceptionless client can also be configured to send data to your [self hoste
 import { Exceptionless } from "@exceptionless/browser";
 
 await Exceptionless.startup(c => {
-  c.apiKey: 'API_KEY_HERE',
-  c.serverUrl: 'http://localhost:5200'
+  c.apiKey = "API_KEY_HERE";
+  c.serverUrl = "http://localhost:5200";
 });
 ```
 

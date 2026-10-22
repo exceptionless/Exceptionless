@@ -1,5 +1,7 @@
 ---
 title: "Troubleshooting"
+metaTitle: "Troubleshooting the .NET client"
+description: "Fix Exceptionless .NET client events that never arrive: flush the queue with ProcessQueueAsync, find the storage folder, set up a proxy, and enable logging."
 order: 10
 ---
 

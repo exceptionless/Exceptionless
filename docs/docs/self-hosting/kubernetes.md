@@ -1,6 +1,10 @@
 ---
 title: "Kubernetes"
+metaTitle: "Self-hosting Exceptionless on Kubernetes"
+description: "Deploy self-hosted Exceptionless on Kubernetes with Helm: EX_ config map values, connection strings, ingress proxy trust, Active Directory, and Slack."
 ---
+
+# Self-hosting Exceptionless on Kubernetes
 
 Please follow this section to set up Exceptionless in a Kubernetes environment. Please note this section is a work in progress, any contributions is greatly appreciated.
 
@@ -122,7 +126,7 @@ The `provider` value determines what implementations to use for the various abst
 
 ## Active Directory Authentication
 
-To enable Active Directory authentication, update the Update the `exceptionless-config` config map to include the `EX_ConnectionStrings__LDAP` connection string. The value should be your domain's LDAP URI (e.g. `LDAP://ad.domain.com/` or `LDAP://ad.domain.com/DC=domain,DC=com`).
+To enable Active Directory authentication, update the `exceptionless-config` config map to include the `EX_ConnectionStrings__LDAP` connection string. The value should be your domain's LDAP URI (e.g. `LDAP://ad.domain.com/` or `LDAP://ad.domain.com/DC=domain,DC=com`).
 
 Please note the following:
 

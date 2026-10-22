@@ -1,5 +1,7 @@
 ---
 title: "API Usage"
+metaTitle: "Exceptionless REST API overview"
+description: "Find the Exceptionless REST API Swagger docs and learn which MCP OAuth scopes allow read and stack write access, token lifetimes, and how to fix scope errors."
 ---
 
 # API Usage

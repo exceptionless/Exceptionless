@@ -1,5 +1,7 @@
 ---
 title: "Sending Events"
+metaTitle: "Sending events from the .NET client"
+description: "Send logs, feature usage, 404s, custom events, and handled exceptions from the Exceptionless .NET client, add extra data, and filter unhandled exceptions."
 order: 4
 ---
 

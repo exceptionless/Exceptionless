@@ -1,5 +1,6 @@
 ---
 title: "Event De-Duplication"
+description: "Learn how Exceptionless de-duplicates identical events within a minute, holding repeats for 60 seconds and counting them so floods do not use up plan limits."
 ---
 
 # Event De-Duplication

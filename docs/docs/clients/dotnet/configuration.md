@@ -1,5 +1,7 @@
 ---
 title: "Configuration"
+metaTitle: "Exceptionless .NET client configuration"
+description: "Configure the Exceptionless .NET client with code, attributes, environment variables, or web.config: API key, server URL, tags, data, and offline storage."
 order: 1
 ---
 
@@ -113,7 +115,7 @@ The `ServerUrl` is used when you are self-hosting Exceptionless and need to poin
 
 ### IncludePrivateInformation
 
-This is a boolean value that will automatically strip private info like credit card numbers and passwords from being sent in event handling. The default is `true`. However, you can set this value like this:
+This boolean value controls whether the client collects potentially private information, such as user names, machine names, IP addresses, cookies, form data, and query strings. The default is `true`, which includes this information. Set it to `false` to exclude it (see [Private Information](/docs/clients/dotnet/private-information) for finer-grained options):
 
 ```cs
 using Exceptionless;

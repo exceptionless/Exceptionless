@@ -1,5 +1,6 @@
 ---
 title: "Client-Scoped Tokens"
+description: "Create a client-scoped Exceptionless API key in project settings or with the REST API: list your projects with a user token, then generate a project token."
 ---
 
 # Client-Scoped Tokens

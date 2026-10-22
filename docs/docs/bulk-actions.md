@@ -1,16 +1,17 @@
 ---
 title: "Bulk Actions"
+description: "Select multiple Exceptionless stacks or event occurrences in the dashboard and apply one action to all of them at once from the Actions menu."
 ---
 
 # Bulk Actions
 
-Bulk Actions is the ability to select multiple exceptions or occurrences of a single exception and do with them as you please, all at once. Simply select multiple occurrences, click the "Bulk Actions" button below the list, and choose your action.
+Bulk Actions is the ability to select multiple stacks or events and do with them as you please, all at once. Check the box next to each row you want, or use the checkbox in the header to select every row on the page. Then click the **Actions** button above the list and choose your action.
 
-![Exceptionless Bulk Actions Demo](img/exceptionless-bulk-actions.gif)
+![Stacks list with three stacks selected and the Actions menu open](/assets/img/docs/bulk-actions-menu-light.webp)
 
-## Watch the Video!
+In a stack list, you can mark the selected stacks Open, Fixed, Snoozed, Ignored, or Discarded, or delete them. See [Managing Stacks](/docs/managing-stacks) for what each status means. In an event list, the **Actions** menu deletes the selected events.
 
-[![Exceptionless Bulk Actions](img/bulk-actions-video-screenshot.png)](http://www.youtube.com/watch?v=pQXk3ayK8P8)
+The **Actions** button stays disabled until you select at least one row.
 
 ---
 

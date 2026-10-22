@@ -1,5 +1,7 @@
 ---
 title: "Private Information"
+metaTitle: "Excluding private data in the .NET client"
+description: "Keep private data out of Exceptionless .NET client events: disable IncludePrivateInformation or turn off user names, machine names, IPs, cookies, and form data."
 order: 9
 ---
 

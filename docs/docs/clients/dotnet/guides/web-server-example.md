@@ -1,5 +1,7 @@
 ---
 title: "Web Server Example"
+metaTitle: "Exceptionless in an ASP.NET Core web app"
+description: "Set up Exceptionless in an ASP.NET Core web app: submit caught exceptions, add AddExceptionless and UseExceptionless, and configure it in appsettings.json."
 ---
 
 # Web Server Example

@@ -1,5 +1,7 @@
 ---
 title: "Docker"
+metaTitle: "Self-hosting Exceptionless with Docker"
+description: "Run self-hosted Exceptionless with Docker: a throwaway test container, a setup with persisted Elasticsearch data, and a setup with SSL and SMTP email."
 ---
 
 # Docker

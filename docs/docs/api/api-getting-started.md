@@ -1,5 +1,7 @@
 ---
 title: "Getting Started"
+metaTitle: "Getting started with the Exceptionless API"
+description: "Authenticate with the Exceptionless REST API: learn the user and client token scopes, log in for a user token, and send it as a Bearer header or query string."
 ---
 
 # Getting Started

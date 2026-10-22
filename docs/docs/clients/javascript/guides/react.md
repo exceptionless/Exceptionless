@@ -1,5 +1,7 @@
 ---
 title: "React"
+metaTitle: "Exceptionless error tracking for React"
+description: "Install @exceptionless/react, start the Exceptionless client with your API key, and wrap your React app in ExceptionlessErrorBoundary to report errors."
 order: 1
 ---
 
@@ -38,7 +40,7 @@ example. To see all the available options, take a look at our
 ```javascript
 import { Exceptionless, ExceptionlessErrorBoundary } from "@exceptionless/react";
 
-class App extends Component {1
+class App extends Component {
   async componentDidMount() {
     await Exceptionless.startup((c) => {
       c.apiKey = "YOUR API KEY";

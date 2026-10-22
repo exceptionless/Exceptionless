@@ -1,10 +1,11 @@
 {
   "url": "https://exceptionless.com",
   "title": "Exceptionless",
-  "description": "Real-time exception reporting for ASP.NET, Web API, WebForms, WPF, Console, and MVC applications. Includes event organization, notifications, and more.",
+  "description": "Open source error monitoring for .NET, JavaScript, and React Native with AI built in. Exceptionless groups errors into stacks, alerts you about new and regressed issues, and lets Exie or your AI coding agent help fix them. Hosted or self-hosted.",
   "author": "Exceptionless Team",
   "twitter": "@Exceptionless",
   "signupUrl": "https://be.exceptionless.io/signup?domain=exceptionless.com&type=organic",
   "appUrl": "https://be.exceptionless.io",
-  "githubUrl": "https://github.com/exceptionless/Exceptionless"
+  "githubUrl": "https://github.com/exceptionless/Exceptionless",
+  "githubStars": "2.5k"
 }

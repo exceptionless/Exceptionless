@@ -1,5 +1,7 @@
 ---
 title: "Getting Started"
+metaTitle: "Getting started with Exceptionless"
+description: "Get started with Exceptionless: create a hosted account and project or self-host, configure a client for your app, and send a first error event with curl."
 ---
 
 # Getting Started
