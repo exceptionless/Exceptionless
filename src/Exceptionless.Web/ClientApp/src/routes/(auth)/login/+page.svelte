@@ -6,7 +6,6 @@
     import { onMount } from 'svelte';
 
     import ErrorMessage from '#comp/error-message.svelte';
-    import FacebookIcon from '#comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
     import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
@@ -22,15 +21,13 @@
         accessToken,
         enableAccountCreation,
         enableOAuthLogin,
-        facebookClientId,
-        facebookLogin,
         gitHubClientId,
         githubLogin,
         googleClientId,
         googleLogin,
-        liveLogin,
         logout,
-        microsoftClientId
+        microsoftClientId,
+        microsoftLogin
     } from '#features/auth/index.svelte.ts';
     import { type LoginFormData, LoginSchema } from '#features/auth/schemas.ts';
     import { gotoRedirect } from '#features/navigation/redirect.ts';
@@ -178,18 +175,13 @@
                 </div>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => microsoftLogin(redirectUrl, inviteToken)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
                         <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google
-                        </Button>
-                    {/if}
-                    {#if facebookClientId}
-                        <Button aria-label="Login with Facebook" tabindex={4} onclick={() => facebookLogin(redirectUrl, inviteToken)}>
-                            <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}

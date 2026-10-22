@@ -13,10 +13,6 @@ public class AuthOptions
 
     public string? MicrosoftSecret { get; internal set; }
 
-    public string? FacebookId { get; internal set; }
-
-    public string? FacebookSecret { get; internal set; }
-
     public string? GitHubId { get; internal set; }
 
     public string? GitHubSecret { get; internal set; }
@@ -41,8 +37,6 @@ public class AuthOptions
         options.GoogleSecret = oAuth.GetString(nameof(options.GoogleSecret));
         options.MicrosoftId = oAuth.GetString(nameof(options.MicrosoftId));
         options.MicrosoftSecret = oAuth.GetString(nameof(options.MicrosoftSecret));
-        options.FacebookId = oAuth.GetString(nameof(options.FacebookId));
-        options.FacebookSecret = oAuth.GetString(nameof(options.FacebookSecret));
         options.GitHubId = oAuth.GetString(nameof(options.GitHubId));
         options.GitHubSecret = oAuth.GetString(nameof(options.GitHubSecret));
 

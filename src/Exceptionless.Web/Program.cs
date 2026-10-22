@@ -442,7 +442,6 @@ public partial class Program
             Environment.SetEnvironmentVariable("PUBLIC_EXCEPTIONLESS_SERVER_URL", options.ExceptionlessServerUrl);
             Environment.SetEnvironmentVariable("PUBLIC_STRIPE_PUBLISHABLE_KEY",
                 options.StripeOptions.StripePublishableApiKey);
-            Environment.SetEnvironmentVariable("PUBLIC_FACEBOOK_APPID", options.AuthOptions.FacebookId);
             Environment.SetEnvironmentVariable("PUBLIC_GITHUB_APPID", options.AuthOptions.GitHubId);
             Environment.SetEnvironmentVariable("PUBLIC_GOOGLE_APPID", options.AuthOptions.GoogleId);
             Environment.SetEnvironmentVariable("PUBLIC_MICROSOFT_APPID", options.AuthOptions.MicrosoftId);
