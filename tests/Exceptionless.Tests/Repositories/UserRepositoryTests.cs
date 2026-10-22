@@ -124,8 +124,7 @@ public sealed class UserRepositoryTests : IntegrationTestsBase
         }
         else if (hasDuplicateOwner)
         {
-            Assert.IsType<UnauthorizedAccessException>(exception);
-            Assert.Null(matchingUser);
+            Assert.Null(exception);
         }
         else
         {

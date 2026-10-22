@@ -2202,6 +2202,50 @@ public class AuthEndpointTests : IntegrationTestsBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task ExternalLogin_ExistingIdentity_RefreshesAccountMetadata(bool isAuthenticated)
+    {
+        // Arrange
+        const string code = "github-refresh-metadata";
+        var owner = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(owner);
+        owner.MarkEmailAddressVerified();
+        owner.AddOAuthAccount("github", code, "outdated@example.test", new SettingsDictionary
+        {
+            ["name"] = "Outdated name", ["email"] = "outdated@example.test", ["retained"] = "keep"
+        });
+        await _userRepository.SaveAsync(owner, options => options.ImmediateConsistency());
+        int originalAccountCount = owner.OAuthAccounts.Count;
+
+        // Act
+        var result = await SendRequestAsAsync<TokenResult>(request =>
+        {
+            if (isAuthenticated)
+                request.AsTestOrganizationUser();
+
+            request.Post().AppendPaths("auth", "github")
+                .Content(new ExternalAuthInfo { ClientId = "client-id", Code = code, RedirectUri = "http://localhost/callback" })
+                .StatusCodeShouldBeOk();
+        });
+        var stored = await _userRepository.GetByIdAsync(owner.Id, options => options.Cache(false));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotNull(stored);
+        var token = await _tokenRepository.GetByIdAsync(result.Token);
+        Assert.NotNull(token);
+        Assert.Equal(owner.Id, token.UserId);
+        Assert.Equal(originalAccountCount, stored.OAuthAccounts.Count);
+        var account = Assert.Single(stored.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
+        Assert.Equal(TestOAuthProviderClient.GetEmailAddress(code), account.Username);
+        Assert.Equal("github User", account.ExtraData["name"]);
+        Assert.Equal(TestOAuthProviderClient.GetEmailAddress(code), account.ExtraData["email"]);
+        Assert.Equal("keep", account.ExtraData["retained"]);
+        Assert.Equal(owner.EmailAddress, stored.EmailAddress);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ExternalLogin_DuplicateProviderOwners_IsRejectedWithoutChangingAccountsOrTokens(bool isAuthenticated)
     {
         // Arrange
