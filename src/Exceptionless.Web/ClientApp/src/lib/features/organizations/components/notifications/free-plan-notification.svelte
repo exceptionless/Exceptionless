@@ -6,14 +6,16 @@
     import { showUpgradeDialog } from '#features/billing/upgrade-required.svelte.ts';
 
     interface Props extends NotificationProps {
-        maxEventsPerMonth: number;
+        maxEventsPerMonth?: number;
         name: string;
         organizationId: string;
-        retentionDays: number;
+        retentionDays?: number;
         trialEnded?: boolean;
     }
 
     let { maxEventsPerMonth, name, organizationId, retentionDays, trialEnded = false, ...restProps }: Props = $props();
+
+    const hasLimits = $derived(typeof maxEventsPerMonth === 'number' && typeof retentionDays === 'number');
 </script>
 
 <Notification variant="success" {...restProps}>
@@ -25,7 +27,11 @@
         {/if}
     </NotificationTitle>
     <NotificationDescription>
-        The Free plan includes {maxEventsPerMonth.toLocaleString()} events per month and {retentionDays} days of data retention, without Exie, alerts, or integrations.
+        {#if hasLimits}
+            The Free plan includes {maxEventsPerMonth?.toLocaleString()} events per month and {retentionDays} days of data retention, without Exie, alerts, or integrations.
+        {:else}
+            The Free plan doesn't include Exie, alerts, or integrations.
+        {/if}
         <A onclick={() => showUpgradeDialog(organizationId, 'Upgrade to enable premium features and extra storage.')}>Upgrade now</A>
         to get them back.
     </NotificationDescription>
