@@ -2852,6 +2852,59 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_CreatorWhoLeftTheirTrialOrganization_CannotCreateAnotherFreeOrganization()
+    {
+        // Arrange
+        const string password = "Owner password";
+        var owner = await CreateUserAsync("departed-trial-owner@exceptionless.test", password, isEmailAddressVerified: true);
+        var trialOrganization = await CreateTrialOrganizationAsync(owner);
+        owner.OrganizationIds.Remove(trialOrganization.Id);
+        await _userRepository.SaveAsync(owner, o => o.ImmediateConsistency());
+
+        // Act & Assert
+        await WithBillingEnabledAsync(() => SendRequestAsync(r => r
+            .BasicAuthorization(owner.EmailAddress, password)
+            .Post()
+            .AppendPath("organizations")
+            .Content(new NewOrganization { Name = "Another Free Organization" })
+            .StatusCodeShouldBeUpgradeRequired()
+        ));
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_MemberDowngradesOwnersSecondOrganizationToFree_ReturnsFailure()
+    {
+        // Arrange
+        var owner = await CreateUserAsync("two-organization-owner@exceptionless.test", "Owner password", isEmailAddressVerified: true);
+        var freeOrganization = new Organization { Name = "Owner Free Organization", CreatedByUserId = owner.Id };
+        _billingManager.ApplyBillingPlan(freeOrganization, _plans.FreePlan, owner);
+        await AddMemberOrganizationAsync(owner, freeOrganization);
+
+        var paidOrganization = new Organization { Name = "Owner Paid Organization", CreatedByUserId = owner.Id, StripeCustomerId = "cus_owner", CardLast4 = "4242", SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime };
+        _billingManager.ApplyBillingPlan(paidOrganization, _plans.SmallPlan, owner);
+        paidOrganization = await AddMemberOrganizationAsync(owner, paidOrganization);
+
+        const string memberPassword = "Member password";
+        var member = await CreateUserAsync("downgrading-paid-member@exceptionless.test", memberPassword, isEmailAddressVerified: true);
+        member.OrganizationIds.Add(paidOrganization.Id);
+        await _userRepository.SaveAsync(member, o => o.ImmediateConsistency());
+
+        // Act
+        var result = await WithBillingEnabledAsync<ChangePlanResult?>(() => SendRequestAsAsync<ChangePlanResult>(r => r
+            .BasicAuthorization(member.EmailAddress, memberPassword)
+            .Post()
+            .AppendPaths("organizations", paidOrganization.Id, "change-plan")
+            .Content(new ChangePlanRequest { PlanId = _plans.FreePlan.Id })
+            .StatusCodeShouldBeOk()
+        ));
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+        Assert.Contains("free account", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task PostAsync_UserWhoAlreadyStartedTrial_GetsFreePlan()
     {
         // Arrange

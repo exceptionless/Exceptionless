@@ -280,8 +280,9 @@ public static class OrganizationEndpoints
         group.MapPost("organizations/{id:objectid}/users/{email:minlength(1)}", async (string id, string email, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
             => (await mediator.InvokeAsync<Result<User>>(new OrganizationMessages.AddOrganizationUser(id, email, httpContext))).ToHttpResult(resultMapper))
         .Produces<User>()
+        .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
+        .ProducesProblem(StatusCodes.Status429TooManyRequests)
         .WithSummary("Add user")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -289,8 +290,9 @@ public static class OrganizationEndpoints
                 ["email"] = "The email address of the user you wish to add to your organization.",
             },
             ResponseDescriptions = new() {
+                ["403"] = "Please verify your email address before inviting users.",
                 ["404"] = "The organization was not found.",
-                ["426"] = "Please upgrade your plan to add an additional user.",
+                ["429"] = "You've sent the maximum number of invites for today.",
             }
         });
 
