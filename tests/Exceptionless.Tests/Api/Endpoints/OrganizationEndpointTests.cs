@@ -2992,7 +2992,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Arrange
         const string password = "Trial password";
         var user = await CreateUserAsync("paid-owner@exceptionless.test", password, isEmailAddressVerified: true);
-        var paidOrganization = new Organization { Name = "Paid Organization", StripeCustomerId = "cus_paid", CardLast4 = "4242", SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime };
+        var paidOrganization = new Organization { Name = "Paid Organization", CreatedByUserId = user.Id, StripeCustomerId = "cus_paid", CardLast4 = "4242", SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime };
         _billingManager.ApplyBillingPlan(paidOrganization, _plans.SmallPlan, user);
         await AddMemberOrganizationAsync(user, paidOrganization);
 

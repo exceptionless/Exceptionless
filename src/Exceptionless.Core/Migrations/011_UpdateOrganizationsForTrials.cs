@@ -10,8 +10,8 @@ namespace Exceptionless.Core.Migrations;
 
 /// <summary>
 /// Prepares organizations for free trials: maps <see cref="Organization.CreatedByUserId"/> so ownership can be
-/// queried, and, because plans no longer limit users or projects, sets the limits stored on existing
-/// organizations to unlimited.
+/// queried and backfills it for existing organizations from the user who last changed the plan (the creator for
+/// free organizations), and, because plans no longer limit users or projects, sets the stored limits to unlimited.
 /// </summary>
 public sealed class UpdateOrganizationsForTrials : MigrationBase
 {
@@ -50,7 +50,8 @@ public sealed class UpdateOrganizationsForTrials : MigrationBase
             context.CancellationToken.ThrowIfCancellationRequested();
 
             var organizationsToMigrate = organizations.Documents
-                .Where(organization => organization.MaxUsers != -1 || organization.MaxProjects != -1)
+                .Where(organization => organization.MaxUsers != -1 || organization.MaxProjects != -1
+                    || (organization.CreatedByUserId is null && organization.BillingChangedByUserId is not null))
                 .ToList();
             if (organizationsToMigrate.Count > 0)
             {
@@ -58,6 +59,7 @@ public sealed class UpdateOrganizationsForTrials : MigrationBase
                 {
                     organization.MaxUsers = -1;
                     organization.MaxProjects = -1;
+                    organization.CreatedByUserId ??= organization.BillingChangedByUserId;
                 }
 
                 await _organizationRepository.SaveAsync(organizationsToMigrate, options => options.Cache().Notifications(false));
@@ -68,6 +70,6 @@ public sealed class UpdateOrganizationsForTrials : MigrationBase
                 break;
         }
 
-        _logger.LogInformation("Removed user and project limits from {OrganizationCount} organizations", migrated);
+        _logger.LogInformation("Updated {OrganizationCount} organizations for free trials", migrated);
     }
 }

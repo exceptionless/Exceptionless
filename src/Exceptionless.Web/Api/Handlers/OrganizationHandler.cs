@@ -398,7 +398,7 @@ public class OrganizationHandler(
 
         // Downgrades to Free share the owner's lock with organization creation so two can't both pass the one-free-organization rule.
         await using var ownerLock = plans.IsFreePlan(plan.Id) && !String.Equals(organization.PlanId, plan.Id)
-            ? await billingManager.AcquireOwnerFreeOrganizationLockAsync(BillingManager.GetOwnerId(organization) ?? GetCurrentUser(message.Context).Id)
+            ? await billingManager.AcquireOwnerFreeOrganizationLockAsync(organization.CreatedByUserId ?? GetCurrentUser(message.Context).Id)
             : null;
 
         if (!String.Equals(organization.PlanId, plan.Id))
