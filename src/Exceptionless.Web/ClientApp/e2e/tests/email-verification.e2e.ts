@@ -9,12 +9,11 @@ test('new user can verify their email address from the welcome email @signup', a
         return await e2eApi.pollForMailLink(e2eScenario.email, 'account/verify');
     });
 
-    await test.step('open the emailed link and see the verified account', async () => {
+    await test.step('open the emailed link and continue into the app', async () => {
         await page.goto(verifyLink);
 
         await expect(page.getByText('Your email address is verified.')).toBeVisible({ timeout: 30_000 });
-        await expect(page).toHaveURL(/\/account\/manage(?:[?#]|$)/);
-        await expect(page.getByText('Email not verified.')).toBeHidden();
+        await expect(page).not.toHaveURL(/\/account\/(?:manage|verify)(?:[?#]|$)/);
         expect((await e2eApi.getCurrentUser(e2eScenario.userToken))?.is_email_address_verified).toBe(true);
     });
 

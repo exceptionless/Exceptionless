@@ -12,6 +12,7 @@
     const queryClient = useQueryClient();
 
     async function verifyAccount() {
+        let isVerified = false;
         const token = page.url.searchParams.get('token')?.trim();
         if (!token) {
             toast.error('This verification link is incomplete. Open the link from your email again, or resend the verification email from your account.');
@@ -19,6 +20,7 @@
             try {
                 const result = await verifyEmailAddress(queryClient, token);
                 if (result === 'verified') {
+                    isVerified = true;
                     toast.success('Your email address is verified.');
                 } else if (result === 'expired') {
                     toast.error('This verification link has expired. Resend the verification email from your account to get a new link.');
@@ -32,7 +34,9 @@
             }
         }
 
-        await goto(resolve('/(app)/account/manage'));
+        // Verified users carry on in the app, where the root route sends first-run users to setup and Exie's checklist ticks
+        // "Verify your email". Failures go to Account settings, where the toast says to resend the verification email.
+        await goto(isVerified ? resolve('/(app)') : resolve('/(app)/account/manage'));
     }
 
     onMount(() => {

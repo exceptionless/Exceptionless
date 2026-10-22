@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('$app/navigation', () => ({ goto: mocks.goto }));
-vi.mock('$app/paths', () => ({ resolve: (path: string) => path.replace('/(app)', '') }));
+vi.mock('$app/paths', () => ({ resolve: (path: string) => path.replace('/(app)', '') || '/' }));
 vi.mock('$app/state', () => ({ page: mocks.page }));
 vi.mock('svelte-sonner', () => ({ toast: mocks.toast }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
@@ -55,7 +55,7 @@ describe('Verify email address page', () => {
         render(VerifyPage);
 
         // Assert
-        await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/account/manage'));
+        await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/'));
         expect(fetch).toHaveBeenCalledOnce();
         const request = fetch.mock.calls[0]![0] as Request;
         expect(request.url).toBe(`http://localhost/api/v2/users/verify-email-address/${token}`);
