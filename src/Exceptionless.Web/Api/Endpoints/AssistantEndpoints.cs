@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
@@ -246,6 +246,9 @@ public static class AssistantEndpoints
         AssistantAccessReason.OrganizationNotAccessible => HttpResults.Forbid(),
         AssistantAccessReason.UpgradeRequired => HttpResults.Problem(
             statusCode: StatusCodes.Status426UpgradeRequired,
+            title: access.Message),
+        AssistantAccessReason.EmailVerificationRequired => HttpResults.Problem(
+            statusCode: StatusCodes.Status403Forbidden,
             title: access.Message),
         _ => HttpResults.NotFound()
     };

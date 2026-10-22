@@ -1,4 +1,4 @@
-using Exceptionless.Core;
+﻿using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
@@ -274,10 +274,13 @@ public class AdminHandler(
         if (plan is null)
             return new ChangePlanResponse(false, "Invalid PlanId.");
 
-        organization.BillingStatus = !String.Equals(plan.Id, plans.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
+        organization.BillingStatus = !plans.IsFreeOrTrialPlan(plan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
         organization.RemoveSuspension();
         var currentUser = httpContext.Request.GetUser();
-        billingManager.ApplyBillingPlan(organization, plan, currentUser, false);
+        if (plans.IsTrialPlan(plan.Id))
+            billingManager.ApplyTrialPlan(organization, currentUser);
+        else
+            billingManager.ApplyBillingPlan(organization, plan, currentUser, false);
 
         await organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
         await messagePublisher.PublishAsync(new PlanChanged

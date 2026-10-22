@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Configuration;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
@@ -11,18 +12,16 @@ public class BillingManager
     private static readonly TimeSpan BillingLockDuration = TimeSpan.FromMinutes(5);
     private readonly ILockProvider _lockProvider;
     private readonly IOrganizationRepository _organizationRepository;
-    private readonly IProjectRepository _projectRepository;
-    private readonly IUserRepository _userRepository;
     private readonly BillingPlans _plans;
+    private readonly BillingOptions _billingOptions;
     private readonly TimeProvider _timeProvider;
 
-    public BillingManager(ILockProvider lockProvider, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingPlans plans, TimeProvider timeProvider)
+    public BillingManager(ILockProvider lockProvider, IOrganizationRepository organizationRepository, BillingPlans plans, AppOptions appOptions, TimeProvider timeProvider)
     {
         _lockProvider = lockProvider;
         _organizationRepository = organizationRepository;
-        _projectRepository = projectRepository;
-        _userRepository = userRepository;
         _plans = plans;
+        _billingOptions = appOptions.BillingOptions;
         _timeProvider = timeProvider;
     }
 
@@ -37,30 +36,45 @@ public class BillingManager
         if (user is null)
             return false;
 
-        var organizations = (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray())).Where(o => o.PlanId == _plans.FreePlan.Id);
-        return !organizations.Any();
+        var organizations = await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray());
+        return !organizations.Any(o => _plans.IsFreeOrTrialPlan(o.PlanId));
     }
 
-    public async Task<bool> CanAddUserAsync(Organization organization)
+    /// <summary>
+    /// A user gets one no-card trial, and only for the first organization they create.
+    /// </summary>
+    public bool CanStartTrial(User user)
     {
-        if (String.IsNullOrWhiteSpace(organization?.Id))
-            return false;
-
-        long numberOfUsers = (await _userRepository.GetByOrganizationIdAsync(organization.Id)).Total + organization.Invites.Count;
-        return organization.MaxUsers <= -1 || numberOfUsers < organization.MaxUsers;
+        ArgumentNullException.ThrowIfNull(user);
+        return _billingOptions.TrialDays > 0 && user.TrialStartedUtc is null && user.OrganizationIds.Count == 0;
     }
 
-    public async Task<bool> CanAddProjectAsync(Project project)
+    public void StartTrial(Organization organization, User user)
     {
-        if (String.IsNullOrWhiteSpace(project?.OrganizationId))
-            return false;
+        ArgumentNullException.ThrowIfNull(organization);
+        ArgumentNullException.ThrowIfNull(user);
 
-        var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId);
-        if (organization is null)
-            return false;
+        ApplyTrialPlan(organization, user);
+        user.TrialStartedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+    }
 
-        long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(project.OrganizationId);
-        return organization.MaxProjects == -1 || projectCount < organization.MaxProjects;
+    /// <summary>
+    /// Applies the trial plan and starts a full-length trial. Also used by admins to extend a trial.
+    /// </summary>
+    public void ApplyTrialPlan(Organization organization, User? user = null)
+    {
+        ArgumentNullException.ThrowIfNull(organization);
+
+        int trialDays = _billingOptions.TrialDays > 0 ? _billingOptions.TrialDays : 7;
+        ApplyBillingPlan(organization, _plans.TrialPlan, user);
+        organization.TrialEndsUtc = _timeProvider.GetUtcNow().UtcDateTime.AddDays(trialDays);
+        organization.TrialReminderSentUtc = null;
+    }
+
+    public void EndTrial(Organization organization)
+    {
+        ArgumentNullException.ThrowIfNull(organization);
+        ApplyBillingPlan(organization, _plans.FreePlan);
     }
 
     public async Task<bool> HasPremiumFeaturesAsync(string organizationId)
@@ -77,18 +91,8 @@ public class BillingManager
         if (String.IsNullOrWhiteSpace(organization?.Id))
             return ChangePlanResult.FailWithMessage("Invalid Organization");
 
-        long currentNumberOfUsers = (await _userRepository.GetByOrganizationIdAsync(organization.Id)).Total + organization.Invites.Count;
-        int maxUsers = plan.MaxUsers != -1 ? plan.MaxUsers : Int32.MaxValue;
-        if (currentNumberOfUsers > maxUsers)
-            return ChangePlanResult.FailWithMessage($"Please remove {currentNumberOfUsers - maxUsers} user{((currentNumberOfUsers - maxUsers) > 0 ? "s" : String.Empty)} and try again.");
-
-        int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : Int32.MaxValue;
-        long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id);
-        if (projectCount > maxProjects)
-            return ChangePlanResult.FailWithMessage($"Please remove {projectCount - maxProjects} project{((projectCount - maxProjects) > 0 ? "s" : String.Empty)} and try again.");
-
-        // Ensure the user can't be apart of more than one free plan.
-        if (String.Equals(plan.Id, _plans.FreePlan.Id) && user is not null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray())).Any(o => String.Equals(o.PlanId, _plans.FreePlan.Id)))
+        // Ensure the user can't be apart of more than one free or trial plan.
+        if (_plans.IsFreePlan(plan.Id) && user is not null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray())).Any(o => !String.Equals(o.Id, organization.Id) && _plans.IsFreeOrTrialPlan(o.PlanId)))
             return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
 
         return new ChangePlanResult { Success = true };

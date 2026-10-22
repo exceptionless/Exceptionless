@@ -6,6 +6,7 @@ import ProjectConfigurationNotification from './project-configuration-notificati
 import RequestLimitNotification from './request-limit-notification.svelte';
 import SetupFirstProjectNotification from './setup-first-project-notification.svelte';
 import SuspendedOrganizationNotification from './suspended-organization-notification.svelte';
+import TrialNotification from './trial-notification.svelte';
 
 export type { NotificationProps } from '#comp/notification/index.ts';
 
@@ -17,5 +18,6 @@ export {
     ProjectConfigurationNotification,
     RequestLimitNotification,
     SetupFirstProjectNotification,
-    SuspendedOrganizationNotification
+    SuspendedOrganizationNotification,
+    TrialNotification
 };

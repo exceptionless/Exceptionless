@@ -1,4 +1,4 @@
-using Exceptionless.Core;
+﻿using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
@@ -41,7 +41,11 @@ public sealed class AssistantAccessService(
         if (appOptions.AppMode == AppMode.Development)
             return AssistantAccessDecision.Available(billingPlans.UnlimitedPlan.Assistant!);
 
-        return EvaluatePlan(billingPlans.GetPlan(organization.PlanId)?.Assistant, billingPlans.MediumPlan.Id);
+        var decision = EvaluatePlan(billingPlans.GetPlan(organization.PlanId)?.Assistant, billingPlans.MediumPlan.Id);
+        if (decision.HasAccess && billingPlans.IsTrialPlan(organization.PlanId) && !request.GetUser().IsEmailAddressVerified)
+            return AssistantAccessDecision.EmailVerificationRequired("Verify your email address to use Exie during your trial.");
+
+        return decision;
     }
 
     internal static AssistantAccessDecision? EvaluateConfiguration(AppOptions appOptions, bool? enabled = null)
@@ -71,7 +75,8 @@ public enum AssistantAccessReason
     NotConfigured,
     OrganizationRequired,
     OrganizationNotAccessible,
-    UpgradeRequired
+    UpgradeRequired,
+    EmailVerificationRequired
 }
 
 public sealed record AssistantAccessDecision(
@@ -85,6 +90,8 @@ public sealed record AssistantAccessDecision(
 {
     public static AssistantAccessDecision Available(AssistantPlanOptions? planOptions) => new(true, true, false, AssistantAccessReason.Available, null, planOptions, null);
 
+    public static AssistantAccessDecision EmailVerificationRequired(string message) => new(true, false, false, AssistantAccessReason.EmailVerificationRequired, message, null, null);
+
     public static AssistantAccessDecision Unavailable(
         AssistantAccessReason reason,
         string message,
@@ -92,5 +99,5 @@ public sealed record AssistantAccessDecision(
         bool upgradeRequired = false,
         string? minimumPlanId = null) => new(enabled, false, upgradeRequired, reason, message, null, minimumPlanId);
 
-    public AssistantAccessResponse ToResponse() => new(Enabled, HasAccess, UpgradeRequired, Message, MinimumPlanId);
+    public AssistantAccessResponse ToResponse() => new(Enabled, HasAccess, UpgradeRequired, Message, MinimumPlanId, Reason == AssistantAccessReason.EmailVerificationRequired);
 }

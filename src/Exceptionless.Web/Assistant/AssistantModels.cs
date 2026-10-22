@@ -1,4 +1,4 @@
-namespace Exceptionless.Web.Assistant;
+﻿namespace Exceptionless.Web.Assistant;
 
 public sealed record AssistantChatRequest(
     IReadOnlyCollection<AssistantChatMessage> Messages,
@@ -34,7 +34,8 @@ public sealed record AssistantAccessResponse(
     bool HasAccess,
     bool UpgradeRequired,
     string? Message = null,
-    string? MinimumPlanId = null);
+    string? MinimumPlanId = null,
+    bool EmailVerificationRequired = false);
 
 public sealed record AssistantSuggestedAction(string Label, string Prompt, string? Href = null);
 

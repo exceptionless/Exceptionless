@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
@@ -188,6 +188,11 @@ public class Program
             services.AddJob<StackStatusJob>(o => o.WaitForStartupActions());
         if (options.StackEventCount)
             services.AddJob<StackEventCountJob>(o => o.WaitForStartupActions());
+        if (options is { TrialExpiration: true, AllJobs: true })
+            services.AddCronJob<TrialExpirationJob>("15 * * * *");
+        if (options is { TrialExpiration: true, AllJobs: false })
+            services.AddJob<TrialExpirationJob>();
+
         if (options.WebHooks)
             services.AddJob<WebHooksJob>(o => o.WaitForStartupActions());
         if (options.WorkItem)

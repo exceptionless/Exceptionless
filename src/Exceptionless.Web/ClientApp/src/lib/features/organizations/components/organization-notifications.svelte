@@ -26,6 +26,8 @@
 
     import type { NotificationProps } from '#comp/notification/index.ts';
 
+    import { FREE_PLAN_ID, TRIAL_PLAN_ID } from '#features/billing/constants.ts';
+    import { getTrialDaysRemaining } from '#features/billing/trial.ts';
     import { getOrganizationQuery, getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
     import { organization as currentOrganizationId } from '#features/organizations/context.svelte.ts';
     import { SuspensionCode } from '#features/organizations/models.ts';
@@ -41,25 +43,17 @@
     import RequestLimitNotification from './notifications/request-limit-notification.svelte';
     import SetupFirstProjectNotification from './notifications/setup-first-project-notification.svelte';
     import SuspendedOrganizationNotification from './notifications/suspended-organization-notification.svelte';
+    import TrialNotification from './notifications/trial-notification.svelte';
 
     interface Props extends NotificationProps {
         ignoreConfigureProjects?: boolean;
-        ignoreFree?: boolean;
         isChatEnabled: boolean;
         openChat: () => void;
         premiumFeatureName?: string;
         requiresPremium?: boolean;
     }
 
-    let {
-        ignoreConfigureProjects = false,
-        ignoreFree = false,
-        isChatEnabled,
-        openChat,
-        premiumFeatureName,
-        requiresPremium = false,
-        ...restProps
-    }: Props = $props();
+    let { ignoreConfigureProjects = false, isChatEnabled, openChat, premiumFeatureName, requiresPremium = false, ...restProps }: Props = $props();
 
     const meQuery = getMeQuery();
     const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));
@@ -109,7 +103,9 @@
     const isMonthlyOverage = $derived(!!organization?.is_over_monthly_limit);
     const isHourlyOverage = $derived(!!organization?.is_throttled);
     const isExceededRequestLimit = $derived(!!organization?.is_over_request_limit);
-    const isFreePlan = $derived(!ignoreFree && /free/i.test(organization?.plan_name ?? ''));
+    const isFreePlan = $derived(organization?.plan_id === FREE_PLAN_ID);
+    const isTrialPlan = $derived(organization?.plan_id === TRIAL_PLAN_ID);
+    const trialDaysRemaining = $derived(getTrialDaysRemaining(organization?.trial_ends_utc));
     const hasNoProjects = $derived(projectsQuery.isSuccess && projects.length === 0);
     const needsProjectConfiguration = $derived(
         projectsQuery.isSuccess && !ignoreConfigureProjects && projects.length > 0 && projectsNeedingConfig.length === projects.length
@@ -146,8 +142,17 @@
         <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
     {:else if requiresPremiumUpgrade}
         <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} {premiumFeatureName} {...restProps} />
+    {:else if isTrialPlan && trialDaysRemaining > 0}
+        <TrialNotification daysRemaining={trialDaysRemaining} name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if isFreePlan}
-        <FreePlanNotification name={organization.name} organizationId={organization.id} {...restProps} />
+        <FreePlanNotification
+            maxEventsPerMonth={organization.max_events_per_month}
+            name={organization.name}
+            organizationId={organization.id}
+            retentionDays={organization.retention_days}
+            trialEnded={!!organization.trial_ends_utc}
+            {...restProps}
+        />
     {:else if hasNoProjects}
         <SetupFirstProjectNotification {...restProps} />
     {/if}

@@ -1,4 +1,4 @@
-namespace Exceptionless.EmailTemplates.Models;
+﻿namespace Exceptionless.EmailTemplates.Models;
 
 public abstract record EmailTemplate(string Subject, EmailAction? Action = null, string? Preview = null);
 
@@ -52,6 +52,13 @@ public sealed record OrganizationPaymentFailedEmail(
     string OrganizationName,
     string BillingUrl)
     : EmailTemplate(Subject, new EmailAction("Update Billing Information", BillingUrl));
+
+public sealed record OrganizationTrialEndingEmail(
+    string Subject,
+    string OrganizationName,
+    string TrialEndsDate,
+    string UpgradeUrl)
+    : EmailTemplate(Subject, new EmailAction("Upgrade Plan", UpgradeUrl));
 
 public sealed record ProjectDailySummaryEmail(
     string Subject,

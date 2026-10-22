@@ -1,4 +1,4 @@
-using Exceptionless.Core;
+﻿using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
@@ -118,6 +118,11 @@ public sealed class ContactHandlerTests : TestWithServices
         }
 
         public Task SendOrganizationPaymentFailedAsync(User owner, Organization organization)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task SendOrganizationTrialEndingAsync(User user, Organization organization)
         {
             return Task.CompletedTask;
         }

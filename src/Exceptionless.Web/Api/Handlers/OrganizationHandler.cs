@@ -1,4 +1,4 @@
-using Exceptionless.Core;
+﻿using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -633,8 +633,9 @@ public class OrganizationHandler(
         if (organization is null)
             return Result.NotFound("Organization not found.");
 
-        if (!await billingManager.CanAddUserAsync(organization))
-            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add an additional user."));
+        var inviteLimitResult = await CheckInviteLimitAsync(organization, message.Context);
+        if (inviteLimitResult is not null)
+            return inviteLimitResult;
 
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
         if (user is not null)
@@ -672,6 +673,29 @@ public class OrganizationHandler(
         }
 
         return new User { EmailAddress = message.Email };
+    }
+
+    private async Task<Result<User>?> CheckInviteLimitAsync(Organization organization, HttpContext httpContext)
+    {
+        if (!options.StripeOptions.EnableBilling || httpContext.Request.IsGlobalAdmin())
+            return null;
+
+        var currentUser = GetCurrentUser(httpContext);
+        if (!currentUser.IsEmailAddressVerified)
+            return Result.Forbidden("Please verify your email address before inviting users.");
+
+        int dailyLimit = plans.IsFreeOrTrialPlan(organization.PlanId)
+            ? options.BillingOptions.FreeInviteDailyLimit
+            : options.BillingOptions.PaidInviteDailyLimit;
+
+        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
+        string cacheKey = $"user:{currentUser.Id}:organization-invites:{utcNow:yyyyMMdd}";
+        long invites = await cacheClient.IncrementAsync(cacheKey, 1, utcNow.Date.AddDays(1));
+        if (invites <= dailyLimit)
+            return null;
+
+        _logger.LogWarning("User {UserId} reached the daily invite limit of {DailyLimit} for organization {OrganizationId}", currentUser.Id, dailyLimit, organization.Id);
+        return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.RateLimit, "You've sent the maximum number of invites for today. Please try again tomorrow or contact support."));
     }
 
     public async Task<Result> Handle(RemoveOrganizationUser message)
@@ -831,10 +855,12 @@ public class OrganizationHandler(
     private async Task<Organization> AddModelAsync(Organization value, HttpContext httpContext)
     {
         var user = GetCurrentUser(httpContext);
-        var plan = !options.StripeOptions.EnableBilling || user.Roles.Contains(AuthorizationRoles.GlobalAdmin)
-            ? plans.UnlimitedPlan
-            : plans.FreePlan;
-        billingManager.ApplyBillingPlan(value, plan, user);
+        if (!options.StripeOptions.EnableBilling || user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+            billingManager.ApplyBillingPlan(value, plans.UnlimitedPlan, user);
+        else if (billingManager.CanStartTrial(user))
+            billingManager.StartTrial(value, user);
+        else
+            billingManager.ApplyBillingPlan(value, plans.FreePlan, user);
 
         var organization = await repository.AddAsync(value, o => o.Cache());
 

@@ -20,6 +20,10 @@ export function resolveAssistantAccessState(
             return 'available';
         }
 
+        if (access.email_verification_required) {
+            return 'verification-required';
+        }
+
         return access.upgrade_required ? 'upgrade-required' : 'disabled';
     }
 

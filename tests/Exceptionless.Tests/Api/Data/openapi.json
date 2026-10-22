@@ -11936,7 +11936,8 @@
         "required": [
           "enabled",
           "has_access",
-          "upgrade_required"
+          "upgrade_required",
+          "email_verification_required"
         ],
         "type": "object",
         "properties": {
@@ -11960,6 +11961,10 @@
               "null",
               "string"
             ]
+          },
+          "email_verification_required": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -14287,6 +14292,14 @@
               "string"
             ]
           },
+          "trial_started_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Date the user started their one no-card trial.",
+            "format": "date-time"
+          },
           "verify_email_address_token_expiration": {
             "type": "string",
             "format": "date-time"
@@ -14680,6 +14693,13 @@
           "billing_price": {
             "type": "number",
             "format": "double"
+          },
+          "trial_ends_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "max_events_per_month": {
             "type": "integer",

@@ -1,4 +1,4 @@
-#:sdk Microsoft.NET.Sdk
+﻿#:sdk Microsoft.NET.Sdk
 #:property TargetFramework=net10.0
 #:project ../src/Exceptionless.EmailTemplates/Exceptionless.EmailTemplates.csproj
 
@@ -201,6 +201,11 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             "[Engineering] Payment failed! Update billing information to avoid service interruption!",
             "Engineering",
             $"{appUrl}/organization/organization-1/billing")),
+        new("organization-trial-ending", "Trial ending", new OrganizationTrialEndingEmail(
+            "[Engineering] Your free trial ends soon",
+            "Engineering",
+            "Friday, October 30, 2026",
+            $"{appUrl}/organization/organization-1/upgrade")),
         new("project-daily-summary", "Daily summary", new ProjectDailySummaryEmail(
             "[Storefront API] Summary for August 24, 2026",
             "Storefront API",

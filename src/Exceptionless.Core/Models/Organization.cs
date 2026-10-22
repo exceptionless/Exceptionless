@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using Exceptionless.Core.Attributes;
@@ -76,6 +76,17 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     /// Date the organization first subscribed to a paid plan.
     /// </summary>
     public DateTime? SubscribeDate { get; set; }
+
+    /// <summary>
+    /// Date the organization's no-card trial ends. Kept after the trial ends so the app can tell the
+    /// organization its trial is over.
+    /// </summary>
+    public DateTime? TrialEndsUtc { get; set; }
+
+    /// <summary>
+    /// Date the trial ending reminder email was sent.
+    /// </summary>
+    public DateTime? TrialReminderSentUtc { get; set; }
 
     /// <summary>
     /// Date the billing information was last changed.

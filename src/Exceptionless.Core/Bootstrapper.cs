@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
@@ -525,6 +525,7 @@ public class Bootstrapper
         services.AddDistributedCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
         services.AddDistributedCronJob<DownloadGeoIPDatabaseJob>(Cron.Daily(1));
         services.AddDistributedCronJob<MaintainIndexesJob>("10 */2 * * *");
+        services.AddDistributedCronJob<TrialExpirationJob>("15 * * * *");
 
         var logger = loggerFactory.CreateLogger<Bootstrapper>();
         logger.LogWarning("Jobs running in process");

@@ -6,6 +6,15 @@ public class BillingPlans
 {
     public BillingPlans(AppOptions options)
     {
+        var trialAssistantOptions = new AssistantPlanOptions
+        {
+            MaximumConcurrentTurns = 1,
+            MaximumTurnsPerMinute = 5,
+            MaximumMonthlyTokens = 5_000_000,
+            MaximumMonthlyCostUsd = 1m,
+            SharedDailyCostLimitKey = "trial",
+            MaximumSharedDailyCostUsd = options.BillingOptions?.TrialAssistantDailyCostLimitUsd ?? 0
+        };
         var mediumAssistantOptions = new AssistantPlanOptions
         {
             MaximumConcurrentTurns = 2,
@@ -48,11 +57,26 @@ public class BillingPlans
             Name = "Free",
             Description = "Free",
             Price = 0,
-            MaxProjects = 1,
-            MaxUsers = 1,
+            MaxProjects = -1,
+            MaxUsers = -1,
             RetentionDays = 3,
             MaxEventsPerMonth = 3000,
             HasPremiumFeatures = false
+        };
+
+        TrialPlan = new BillingPlan
+        {
+            Id = "EX_TRIAL",
+            Name = "Trial",
+            Description = "Free Trial",
+            IsHidden = true,
+            Price = 0,
+            MaxProjects = -1,
+            MaxUsers = -1,
+            RetentionDays = 90,
+            MaxEventsPerMonth = 75000,
+            HasPremiumFeatures = true,
+            Assistant = trialAssistantOptions
         };
 
         SmallPlan = new BillingPlan
@@ -61,8 +85,8 @@ public class BillingPlans
             Name = "Small",
             Description = "Small ($15/month)",
             Price = 15,
-            MaxProjects = 5,
-            MaxUsers = 10,
+            MaxProjects = -1,
+            MaxUsers = -1,
             RetentionDays = 30,
             MaxEventsPerMonth = 15000,
             HasPremiumFeatures = true
@@ -74,8 +98,8 @@ public class BillingPlans
             Name = "Small (Yearly)",
             Description = "Small Yearly ($165/year - Save $15)",
             Price = 165,
-            MaxProjects = 5,
-            MaxUsers = 10,
+            MaxProjects = -1,
+            MaxUsers = -1,
             RetentionDays = 30,
             MaxEventsPerMonth = 15000,
             HasPremiumFeatures = true
@@ -87,8 +111,8 @@ public class BillingPlans
             Name = "Medium",
             Description = "Medium ($49/month)",
             Price = 49,
-            MaxProjects = 15,
-            MaxUsers = 25,
+            MaxProjects = -1,
+            MaxUsers = -1,
             RetentionDays = 90,
             MaxEventsPerMonth = 75000,
             HasPremiumFeatures = true,
@@ -101,8 +125,8 @@ public class BillingPlans
             Name = "Medium (Yearly)",
             Description = "Medium Yearly ($539/year - Save $49)",
             Price = 539,
-            MaxProjects = 15,
-            MaxUsers = 25,
+            MaxProjects = -1,
+            MaxUsers = -1,
             RetentionDays = 90,
             MaxEventsPerMonth = 75000,
             HasPremiumFeatures = true,
@@ -208,10 +232,15 @@ public class BillingPlans
             Assistant = unlimitedAssistantOptions
         };
 
-        Plans = new List<BillingPlan> { FreePlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, ExtraLargeYearlyPlan, EnterpriseYearlyPlan, SmallPlan, MediumPlan, LargePlan, ExtraLargePlan, EnterprisePlan, UnlimitedPlan };
+        Plans = new List<BillingPlan> { FreePlan, TrialPlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, ExtraLargeYearlyPlan, EnterpriseYearlyPlan, SmallPlan, MediumPlan, LargePlan, ExtraLargePlan, EnterprisePlan, UnlimitedPlan };
     }
 
     public BillingPlan FreePlan { get; }
+
+    /// <summary>
+    /// Hidden no-card trial with Medium plan features. Trial organizations move to the free plan when the trial ends.
+    /// </summary>
+    public BillingPlan TrialPlan { get; }
 
     public BillingPlan SmallPlan { get; }
 
@@ -236,6 +265,12 @@ public class BillingPlans
     public BillingPlan UnlimitedPlan { get; }
 
     public List<BillingPlan> Plans { get; }
+
+    public bool IsFreePlan(string? planId) => String.Equals(planId, FreePlan.Id, StringComparison.OrdinalIgnoreCase);
+
+    public bool IsTrialPlan(string? planId) => String.Equals(planId, TrialPlan.Id, StringComparison.OrdinalIgnoreCase);
+
+    public bool IsFreeOrTrialPlan(string? planId) => IsFreePlan(planId) || IsTrialPlan(planId);
 
     public BillingPlan? GetPlan(string? planId) => planId is null
         ? null
