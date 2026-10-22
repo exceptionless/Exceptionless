@@ -45,8 +45,7 @@ public class BillingManager
         if (user is null)
             return false;
 
-        var ownedOrganizations = await GetOwnedOrganizationsAsync(user.Id, user.OrganizationIds);
-        return !ownedOrganizations.Any(o => _plans.IsFreeOrTrialPlan(o.PlanId));
+        return (await GetOwnedFreeOrTrialOrganizationsAsync(user.Id, user.OrganizationIds)).Count == 0;
     }
 
     /// <summary>
@@ -59,7 +58,7 @@ public class BillingManager
         if (_billingOptions.TrialDays <= 0 || user.TrialStartedUtc is not null)
             return false;
 
-        return (await GetOwnedOrganizationsAsync(user.Id, user.OrganizationIds)).Count == 0;
+        return !await OwnsAnyOrganizationAsync(user.Id, user.OrganizationIds);
     }
 
     public void StartTrial(Organization organization, User user)
@@ -167,26 +166,46 @@ public class BillingManager
             ? actingUser.OrganizationIds
             : (await _userRepository.GetByIdAsync(ownerId))?.OrganizationIds ?? new HashSet<string>();
 
-        var ownedOrganizations = await GetOwnedOrganizationsAsync(ownerId, ownerOrganizationIds);
-        return ownedOrganizations.Any(o => !String.Equals(o.Id, organization.Id, StringComparison.Ordinal) && _plans.IsFreeOrTrialPlan(o.PlanId));
+        var ownedOrganizations = await GetOwnedFreeOrTrialOrganizationsAsync(ownerId, ownerOrganizationIds);
+        return ownedOrganizations.Any(o => !String.Equals(o.Id, organization.Id, StringComparison.Ordinal));
+    }
+
+    // Ownership is the organization's creator, including organizations the creator is no longer a member of.
+    // Organizations created before CreatedByUserId existed fall back to the member who last changed the billing plan.
+
+    private async Task<bool> OwnsAnyOrganizationAsync(string userId, ICollection<string> membershipOrganizationIds)
+    {
+        var created = await _organizationRepository.CountAsync(q => q.FieldEquals(o => o.CreatedByUserId, userId));
+        if (created.Total > 0)
+            return true;
+
+        return (await GetLegacyOwnedOrganizationsAsync(userId, membershipOrganizationIds)).Count > 0;
     }
 
     /// <summary>
-    /// Organizations the user created, including ones they're no longer a member of. Organizations created before
-    /// <see cref="Organization.CreatedByUserId"/> existed fall back to the member who last changed the billing plan.
+    /// The user's free and trial organizations. The one-free-organization rule keeps this to a handful, so a single
+    /// page is enough regardless of how many paid organizations the user owns.
     /// </summary>
-    private async Task<IReadOnlyCollection<Organization>> GetOwnedOrganizationsAsync(string userId, ICollection<string> membershipOrganizationIds)
+    private async Task<IReadOnlyCollection<Organization>> GetOwnedFreeOrTrialOrganizationsAsync(string userId, ICollection<string> membershipOrganizationIds)
     {
-        var createdOrganizations = await _organizationRepository.FindAsync(q => q.FieldEquals(o => o.CreatedByUserId, userId), o => o.PageLimit(100));
-        var ownedOrganizations = createdOrganizations.Documents.ToList();
+        var created = await _organizationRepository.FindAsync(q => q
+            .FieldEquals(o => o.CreatedByUserId, userId)
+            .FieldEquals(o => o.PlanId, _plans.FreePlan.Id, _plans.TrialPlan.Id), o => o.PageLimit(100));
+        var legacy = await GetLegacyOwnedOrganizationsAsync(userId, membershipOrganizationIds);
 
-        if (membershipOrganizationIds.Count > 0)
-        {
-            var memberOrganizations = await _organizationRepository.GetByIdsAsync(membershipOrganizationIds.ToArray());
-            ownedOrganizations.AddRange(memberOrganizations.Where(o => o.CreatedByUserId is null && String.Equals(o.BillingChangedByUserId, userId, StringComparison.Ordinal)));
-        }
+        return created.Documents
+            .Concat(legacy.Where(o => _plans.IsFreeOrTrialPlan(o.PlanId)))
+            .DistinctBy(o => o.Id)
+            .ToList();
+    }
 
-        return ownedOrganizations.DistinctBy(o => o.Id).ToList();
+    private async Task<IReadOnlyCollection<Organization>> GetLegacyOwnedOrganizationsAsync(string userId, ICollection<string> membershipOrganizationIds)
+    {
+        if (membershipOrganizationIds.Count == 0)
+            return [];
+
+        var memberOrganizations = await _organizationRepository.GetByIdsAsync(membershipOrganizationIds.ToArray());
+        return memberOrganizations.Where(o => o.CreatedByUserId is null && String.Equals(o.BillingChangedByUserId, userId, StringComparison.Ordinal)).ToList();
     }
 
     private static string GetOrganizationLockKey(string organizationId)
