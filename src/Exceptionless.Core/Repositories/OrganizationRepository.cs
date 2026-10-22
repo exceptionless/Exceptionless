@@ -114,11 +114,18 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         return FindAsync(q => query, options);
     }
 
+    internal const int BillingPlanStatsPageLimit = 250;
+
     public async Task<BillingPlanStats> GetBillingPlanStatsAsync()
     {
-        var results = (await FindAsync(q => q
+        var page = await FindAsync(q => q
             .Include(o => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus, o => o.TrialEndsUtc)
-            .SortDescending(o => o.PlanId))).Documents;
+            .SortAscending(o => o.Id), o => o.SearchAfterPaging().PageLimit(BillingPlanStatsPageLimit));
+        var results = new List<Organization>();
+        do
+        {
+            results.AddRange(page.Documents);
+        } while (await page.NextPageAsync());
         var smallOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.SmallPlan.Id) && o.BillingPrice > 0).ToList();
         var mediumOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.MediumPlan.Id) && o.BillingPrice > 0).ToList();
         var largeOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.LargePlan.Id) && o.BillingPrice > 0).ToList();
