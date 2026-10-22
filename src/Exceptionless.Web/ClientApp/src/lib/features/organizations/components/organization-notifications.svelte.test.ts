@@ -4,13 +4,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ChangeType } from '#features/websockets/models.ts';
 
-import OrganizationNotifications, { recordConfiguredProjectId } from './organization-notifications.svelte';
+import OrganizationNotifications, {
+    FREE_PLAN_NOTIFICATION_GRACE_DAYS,
+    isWithinFreePlanGracePeriod,
+    recordConfiguredProjectId
+} from './organization-notifications.svelte';
 
 const organizationRefetch = vi.hoisted(() => vi.fn());
 const projectsRefetch = vi.hoisted(() => vi.fn());
 const projects = vi.hoisted(() => [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }]);
 const organizationState = vi.hoisted(() => ({
-    current: undefined as undefined | { has_premium_features: boolean; id: string; name: string; plan_name: string }
+    current: undefined as
+        | undefined
+        | {
+              created_utc?: string;
+              has_premium_features: boolean;
+              id: string;
+              is_over_monthly_limit?: boolean;
+              is_suspended?: boolean;
+              name: string;
+              plan_name: string;
+          }
 }));
 
 vi.mock('$app/paths', () => ({
@@ -73,6 +87,62 @@ describe('OrganizationNotifications', () => {
         // Assert
         expect(screen.getByText(title)).toBeInTheDocument();
         expect(screen.getAllByRole('alert')).toHaveLength(1);
+    });
+
+    describe('free plan upsell', () => {
+        const configuredProjects = [{ id: 'project-id', is_configured: true, organization_id: 'organization-id' }];
+        const daysAgo = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
+        function renderFor(organization: Partial<NonNullable<typeof organizationState.current>>) {
+            organizationState.current = {
+                has_premium_features: false,
+                id: 'organization-id',
+                name: 'Free Organization',
+                plan_name: 'Free',
+                ...organization
+            };
+            projects.splice(0, projects.length, ...configuredProjects);
+            render(OrganizationNotifications, { isChatEnabled: false, openChat: vi.fn() });
+        }
+
+        it('hides the upsell for an organization created within the grace period', () => {
+            // Arrange & Act
+            renderFor({ created_utc: daysAgo(FREE_PLAN_NOTIFICATION_GRACE_DAYS - 1) });
+
+            // Assert
+            expect(screen.queryAllByRole('alert')).toHaveLength(0);
+        });
+
+        it('shows the upsell once the grace period has passed', () => {
+            // Arrange & Act
+            renderFor({ created_utc: daysAgo(FREE_PLAN_NOTIFICATION_GRACE_DAYS + 1) });
+
+            // Assert
+            expect(screen.getByText('Free Organization is currently on a free plan.')).toBeInTheDocument();
+        });
+
+        it.each([
+            ['suspension', { is_suspended: true }, 'Free Organization has been suspended.'],
+            ['monthly overage', { is_over_monthly_limit: true }, 'Free Organization has reached its monthly plan limit.']
+        ])('still shows %s for a new organization', (_, state, title) => {
+            // Arrange & Act
+            renderFor({ created_utc: daysAgo(0), ...state });
+
+            // Assert
+            expect(screen.getByText(title)).toBeInTheDocument();
+        });
+
+        it.each([
+            [undefined, false],
+            ['not a date', false],
+            [new Date(Date.now() - 60_000).toISOString(), true]
+        ])('treats created_utc %s as within the grace period: %s', (createdUtc, expected) => {
+            // Arrange & Act
+            const actual = isWithinFreePlanGracePeriod(createdUtc);
+
+            // Assert
+            expect(actual).toBe(expected);
+        });
     });
 
     it.each([

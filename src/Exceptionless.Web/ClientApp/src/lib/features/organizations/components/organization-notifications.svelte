@@ -1,6 +1,18 @@
 <script module lang="ts">
     import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
 
+    /**
+     * New organizations are on the free plan by definition, and the first event arrives within minutes of
+     * signup, so an upgrade prompt that early turns the first reward into a sales pitch. Hold it back
+     * until the organization has had time to settle in.
+     */
+    export const FREE_PLAN_NOTIFICATION_GRACE_DAYS = 7;
+
+    export function isWithinFreePlanGracePeriod(createdUtc: null | string | undefined, now = new Date()): boolean {
+        const createdAt = createdUtc ? Date.parse(createdUtc) : Number.NaN;
+        return !Number.isNaN(createdAt) && now.getTime() - createdAt < FREE_PLAN_NOTIFICATION_GRACE_DAYS * 24 * 60 * 60 * 1000;
+    }
+
     export function recordConfiguredProjectId(
         message: WebSocketMessageValue<'PersistentEventChanged'>,
         organizationId: string | undefined,
@@ -110,7 +122,7 @@
     const isMonthlyOverage = $derived(!!organization?.is_over_monthly_limit);
     const isHourlyOverage = $derived(!!organization?.is_throttled);
     const isExceededRequestLimit = $derived(!!organization?.is_over_request_limit);
-    const isFreePlan = $derived(!ignoreFree && /free/i.test(organization?.plan_name ?? ''));
+    const isFreePlan = $derived(!ignoreFree && /free/i.test(organization?.plan_name ?? '') && !isWithinFreePlanGracePeriod(organization?.created_utc));
     const hasNoProjects = $derived(projectsQuery.isSuccess && projects.length === 0);
     const needsProjectConfiguration = $derived(projectsQuery.isSuccess && projects.length > 0 && projectsNeedingConfig.length === projects.length);
     const requiresPremiumUpgrade = $derived(requiresPremium && !organization?.has_premium_features && !needsProjectConfiguration);
