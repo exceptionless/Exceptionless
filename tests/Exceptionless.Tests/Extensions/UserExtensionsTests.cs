@@ -20,6 +20,11 @@ public sealed class UserExtensionsTests(ITestOutputHelper output) : TestWithLogg
         });
         user.AddOAuthAccount("google", "subject", "other@example.test");
         var account = user.OAuthAccounts.First();
+        user.OAuthAccounts.Add(new OAuthAccount
+        {
+            Provider = "github", ProviderUserId = "subject", Username = "stale-duplicate@example.test",
+            ExtraData = new SettingsDictionary { ["email"] = "stale-duplicate@example.test" }
+        });
         var data = includeData ? new SettingsDictionary { ["name"] = "New name", ["added"] = "new" } : null;
 
         // Act
@@ -32,6 +37,7 @@ public sealed class UserExtensionsTests(ITestOutputHelper output) : TestWithLogg
         Assert.Equal(includeData ? "New name" : "Old name", account.ExtraData["name"]);
         Assert.Equal("keep", account.ExtraData["retained"]);
         Assert.Equal(includeData, account.ExtraData.ContainsKey("added"));
-        Assert.Equal("other@example.test", user.OAuthAccounts.Last().Username);
+        Assert.Equal("other@example.test", Assert.Single(user.OAuthAccounts, account => account.Provider == "google").Username);
+        Assert.DoesNotContain(user.OAuthAccounts, account => account.EmailAddress() == "stale-duplicate@example.test");
     }
 }

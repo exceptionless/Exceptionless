@@ -2246,6 +2246,53 @@ public class AuthEndpointTests : IntegrationTestsBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task ExternalLogin_ConcurrentPasswordChange_DoesNotRestoreOldCredentials(bool isAuthenticated)
+    {
+        // Arrange
+        const string code = "github-concurrent-password-change";
+        const string newPassword = "ChangedPassword2$";
+        var owner = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(owner);
+        owner.AddOAuthAccount("github", code, owner.EmailAddress);
+        await _userRepository.SaveAsync(owner, options => options.ImmediateConsistency());
+        bool passwordChanged = false;
+        TokenResult? replacementToken = null;
+        using var subscription = _userRepository.DocumentsSaving.AddHandler(async (_, args) =>
+        {
+            if (passwordChanged || !args.Documents.Any(document => document.Value.Id == owner.Id))
+                return;
+
+            passwordChanged = true;
+            replacementToken = await SendRequestAsAsync<TokenResult>(request => request.AsTestOrganizationUser()
+                .Post().AppendPath("auth/change-password")
+                .Content(new ChangePasswordModel { CurrentPassword = SampleDataService.TEST_ORG_USER_PASSWORD, Password = newPassword })
+                .StatusCodeShouldBeOk());
+        });
+        using var client = _server.CreateClient();
+        if (isAuthenticated)
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
+                Convert.ToBase64String(Encoding.UTF8.GetBytes($"{SampleDataService.TEST_ORG_USER_EMAIL}:{SampleDataService.TEST_ORG_USER_PASSWORD}")));
+
+        // Act
+        using var response = await client.PostAsJsonAsync("api/v2/auth/github", new ExternalAuthInfo
+        {
+            ClientId = "client-id", Code = code, RedirectUri = "http://localhost/callback"
+        }, TestCancellationToken);
+        var stored = await _userRepository.GetByIdAsync(owner.Id, options => options.Cache(false));
+
+        // Assert
+        Assert.True(passwordChanged);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.NotNull(stored);
+        Assert.True(stored.IsCorrectPassword(newPassword));
+        Assert.False(stored.IsCorrectPassword(SampleDataService.TEST_ORG_USER_PASSWORD));
+        Assert.NotNull(replacementToken);
+        await SendRequestAsync(request => request.BearerToken(replacementToken.Token).AppendPath("users/me").StatusCodeShouldBeOk());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ExternalLogin_DuplicateProviderOwners_IsRejectedWithoutChangingAccountsOrTokens(bool isAuthenticated)
     {
         // Arrange
