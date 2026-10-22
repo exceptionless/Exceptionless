@@ -1057,9 +1057,9 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData(OAuthAccount.KnownProviders.Microsoft)]
-    [InlineData(OAuthAccount.KnownProviders.Google)]
-    public async Task UpdateEmailAddressAsync_LinkedProviderEmail_MarksAddressVerified(string provider)
+    [InlineData(OAuthAccount.KnownProviders.Microsoft, false)]
+    [InlineData(OAuthAccount.KnownProviders.Google, true)]
+    public async Task UpdateEmailAddressAsync_LinkedProviderEmail_RequiresProofForMicrosoft(string provider, bool isVerified)
     {
         // Arrange
         const string email = "linked-provider@exceptionless.test";
@@ -1077,12 +1077,13 @@ public sealed class UserEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.IsVerified);
+        Assert.Equal(isVerified, result.IsVerified);
         var updatedUser = await _userRepository.GetByIdAsync(user.Id);
         Assert.NotNull(updatedUser);
         Assert.Equal(email, updatedUser.EmailAddress);
-        Assert.True(updatedUser.IsEmailAddressVerified);
-        Assert.Null(updatedUser.VerifyEmailAddressToken);
+        Assert.Equal(isVerified, updatedUser.IsEmailAddressVerified);
+        Assert.Equal(isVerified, String.IsNullOrEmpty(updatedUser.VerifyEmailAddressToken));
+        Assert.Equal(!isVerified, updatedUser.HasValidVerifyEmailAddressTokenExpiration(TimeProvider));
     }
 
     [Fact]
