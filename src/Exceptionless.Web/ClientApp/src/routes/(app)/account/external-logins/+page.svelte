@@ -2,7 +2,6 @@
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
 
-    import FacebookIcon from '#comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
     import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
@@ -13,8 +12,6 @@
     import { unlinkOAuthAccount } from '#features/auth/api.svelte.ts';
     import {
         enableOAuthLogin,
-        facebookClientId,
-        facebookLogin,
         gitHubClientId,
         githubLogin,
         googleClientId,
@@ -67,11 +64,6 @@
                         <GoogleIcon class="size-4" /> Google
                     </Button>
                 {/if}
-                {#if facebookClientId}
-                    <Button aria-label="Link Facebook account" onclick={() => facebookLogin()} variant="outline">
-                        <FacebookIcon class="size-4" /> Facebook
-                    </Button>
-                {/if}
                 {#if gitHubClientId}
                     <Button aria-label="Link GitHub account" onclick={() => githubLogin()} variant="outline">
                         <GitHubIcon class="size-4" /> GitHub
@@ -79,42 +71,42 @@
                 {/if}
             </div>
         </div>
-
-        <div class="mt-6">
-            <H4>Existing external logins</H4>
-            {#if oauthAccounts.length > 0}
-                <Table.Root class="mt-2">
-                    <Table.Header>
-                        <Table.Row>
-                            <Table.Head>Provider</Table.Head>
-                            <Table.Head class="w-24 text-right">Actions</Table.Head>
-                        </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                        {#each oauthAccounts as account (account.provider_user_id)}
-                            <Table.Row>
-                                <Table.Cell class="capitalize">{account.provider} ({account.username || account.provider_user_id})</Table.Cell>
-                                <Table.Cell class="text-right">
-                                    <Button
-                                        aria-label="Remove {account.provider} account"
-                                        disabled={!canUnlinkAccount}
-                                        onclick={() => handleUnlinkAccount(account.provider, account.provider_user_id)}
-                                        size="icon"
-                                        title={canUnlinkAccount ? 'Remove' : 'Cannot remove the only login method'}
-                                        variant="ghost"
-                                    >
-                                        <X class="size-4" />
-                                    </Button>
-                                </Table.Cell>
-                            </Table.Row>
-                        {/each}
-                    </Table.Body>
-                </Table.Root>
-            {:else}
-                <P class="text-muted-foreground mt-2">No external logins were found.</P>
-            {/if}
-        </div>
     {:else}
         <P class="text-muted-foreground">External login providers are not configured.</P>
     {/if}
+
+    <div class="mt-6">
+        <H4>Existing external logins</H4>
+        {#if oauthAccounts.length > 0}
+            <Table.Root class="mt-2">
+                <Table.Header>
+                    <Table.Row>
+                        <Table.Head>Provider</Table.Head>
+                        <Table.Head class="w-24 text-right">Actions</Table.Head>
+                    </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                    {#each oauthAccounts as account (account.provider_user_id)}
+                        <Table.Row>
+                            <Table.Cell class="capitalize">{account.provider} ({account.username || account.provider_user_id})</Table.Cell>
+                            <Table.Cell class="text-right">
+                                <Button
+                                    aria-label="Remove {account.provider} account"
+                                    disabled={!canUnlinkAccount}
+                                    onclick={() => handleUnlinkAccount(account.provider, account.provider_user_id)}
+                                    size="icon"
+                                    title={canUnlinkAccount ? 'Remove' : 'Cannot remove the only login method'}
+                                    variant="ghost"
+                                >
+                                    <X class="size-4" />
+                                </Button>
+                            </Table.Cell>
+                        </Table.Row>
+                    {/each}
+                </Table.Body>
+            </Table.Root>
+        {:else}
+            <P class="text-muted-foreground mt-2">No external logins were found.</P>
+        {/if}
+    </div>
 </div>

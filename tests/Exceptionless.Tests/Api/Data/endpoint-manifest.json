@@ -706,20 +706,6 @@
     "authenticationSchemes": []
   },
   {
-    "method": "POST",
-    "route": "/api/v2/auth/facebook",
-    "displayName": "HTTP: POST api/v2/auth/facebook",
-    "tags": [
-      "Auth"
-    ],
-    "allowAnonymous": true,
-    "authorizationPolicies": [
-      "UserPolicy"
-    ],
-    "authorizationRoles": [],
-    "authenticationSchemes": []
-  },
-  {
     "method": "GET",
     "route": "/api/v2/auth/forgot-password/{email:minlength(1)}",
     "displayName": "HTTP: GET api/v2/auth/forgot-password/{email:minlength(1)}",

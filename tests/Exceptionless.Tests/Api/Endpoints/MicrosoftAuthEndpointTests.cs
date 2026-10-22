@@ -195,14 +195,17 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task MicrosoftAsync_UnverifiedAuthenticatedUser_CannotLinkIdentity()
     {
+        // Arrange
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
         user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
         user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
         await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
 
+        // Act
         await AssertMicrosoftLoginForbiddenAsync("unverified-link", isAuthenticated: true);
 
+        // Assert
         var unchangedUser = await _userRepository.GetByIdAsync(user.Id);
         Assert.NotNull(unchangedUser);
         Assert.False(unchangedUser.IsEmailAddressVerified);

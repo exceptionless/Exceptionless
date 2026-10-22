@@ -133,24 +133,6 @@ public static class AuthEndpoints
             }
         });
 
-        group.MapPost("facebook", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
-        {
-            return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.FacebookLogin(value, httpContext))).ToHttpResult(resultMapper);
-        })
-        .AllowAnonymous()
-        .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
-        .Produces<TokenResult>()
-        .ProducesProblem(StatusCodes.Status403Forbidden)
-        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
-        .WithSummary("Sign in with Facebook")
-        .WithMetadata(new EndpointDocumentation {
-            ResponseDescriptions = new() {
-                ["200"] = "User Authentication Token",
-                ["403"] = "Account Creation is currently disabled",
-                ["422"] = "Validation error",
-            }
-        });
-
         group.MapPost("microsoft", async (IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ExternalAuthInfo value) =>
         {
             return (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.MicrosoftLogin(value, httpContext))).ToHttpResult(resultMapper);

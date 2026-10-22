@@ -11,7 +11,14 @@ const { accessToken, goto, postJSON, toastError } = vi.hoisted(() => ({
 vi.mock('$app/navigation', () => ({ goto }));
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 vi.mock('$app/state', () => ({ page: {} }));
-vi.mock('$env/dynamic/public', () => ({ env: { PUBLIC_MICROSOFT_APPID: 'microsoft-client-id' } }));
+vi.mock('$app/env/public', () => ({
+    PUBLIC_ENABLE_ACCOUNT_CREATION: 'true',
+    PUBLIC_GITHUB_APPID: '',
+    PUBLIC_GOOGLE_APPID: '',
+    PUBLIC_MICROSOFT_APPID: 'microsoft-client-id',
+    PUBLIC_SLACK_APPID: ''
+}));
+vi.mock('#features/navigation/redirect.ts', () => ({ gotoRedirect: goto }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({ ...(await importOriginal<object>()), useFetchClient: () => ({ postJSON }) }));
 vi.mock('svelte-sonner', () => ({ toast: { error: toastError } }));
 vi.mock('./api.svelte', () => ({}));

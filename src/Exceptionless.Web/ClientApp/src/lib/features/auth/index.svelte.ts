@@ -1,11 +1,4 @@
-import {
-    PUBLIC_ENABLE_ACCOUNT_CREATION,
-    PUBLIC_FACEBOOK_APPID,
-    PUBLIC_GITHUB_APPID,
-    PUBLIC_GOOGLE_APPID,
-    PUBLIC_MICROSOFT_APPID,
-    PUBLIC_SLACK_APPID
-} from '$app/env/public';
+import { PUBLIC_ENABLE_ACCOUNT_CREATION, PUBLIC_GITHUB_APPID, PUBLIC_GOOGLE_APPID, PUBLIC_MICROSOFT_APPID, PUBLIC_SLACK_APPID } from '$app/env/public';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { useFetchClient } from '@foundatiofx/fetchclient';
@@ -56,32 +49,16 @@ export interface OAuthResponseData {
     state: string;
 }
 
-export type SupportedOAuthProviders = 'facebook' | 'github' | 'google' | 'microsoft' | 'slack';
+export type SupportedOAuthProviders = 'github' | 'google' | 'microsoft' | 'slack';
 
 export const enableAccountCreation = PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
-export const facebookClientId = PUBLIC_FACEBOOK_APPID;
 export const gitHubClientId = PUBLIC_GITHUB_APPID;
 export const googleClientId = PUBLIC_GOOGLE_APPID;
 export const microsoftClientId = PUBLIC_MICROSOFT_APPID;
 export const slackClientId = PUBLIC_SLACK_APPID;
-export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClientId || microsoftClientId;
+export const enableOAuthLogin = gitHubClientId || googleClientId || microsoftClientId;
 
 // OAuth login functions (interactive popup-based, not pure API calls)
-
-export async function facebookLogin(redirectUrl?: string, inviteToken?: null | string) {
-    if (!facebookClientId) {
-        throw new Error('Facebook client id not set');
-    }
-
-    await oauthLogin({
-        authUrl: 'https://www.facebook.com/v2.5/dialog/oauth',
-        clientId: facebookClientId,
-        inviteToken,
-        provider: 'facebook',
-        redirectUrl,
-        scope: 'email'
-    });
-}
 
 export async function githubLogin(redirectUrl?: string, inviteToken?: null | string) {
     if (!gitHubClientId) {

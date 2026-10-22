@@ -5,7 +5,6 @@
     import { onMount } from 'svelte';
 
     import ErrorMessage from '#comp/error-message.svelte';
-    import FacebookIcon from '#comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
     import Logo from '#comp/logo.svelte';
@@ -17,16 +16,7 @@
     import { Input } from '#comp/ui/input/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
     import { signup } from '#features/auth/api.svelte.ts';
-    import {
-        accessToken,
-        facebookClientId,
-        facebookLogin,
-        gitHubClientId,
-        githubLogin,
-        googleClientId,
-        googleLogin,
-        logout
-    } from '#features/auth/index.svelte.ts';
+    import { accessToken, gitHubClientId, githubLogin, googleClientId, googleLogin, logout } from '#features/auth/index.svelte.ts';
     import { type SignupFormData, SignupSchema } from '#features/auth/schemas.ts';
     import { validateEmailAvailability } from '#features/auth/validators.ts';
     import { gotoRedirect } from '#features/navigation/redirect.ts';
@@ -74,17 +64,12 @@
     </Card.Header>
     <Card.Content>
         <div>
-            {#if googleClientId || facebookClientId || gitHubClientId}
+            {#if googleClientId || gitHubClientId}
                 <P class="text-center">Sign up with</P>
-                <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
+                <div class="grid grid-cols-2 gap-4">
                     {#if googleClientId}
                         <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google
-                        </Button>
-                    {/if}
-                    {#if facebookClientId}
-                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl, inviteToken)}>
-                            <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}

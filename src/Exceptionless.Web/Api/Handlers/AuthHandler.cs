@@ -274,15 +274,6 @@ public class AuthHandler(
         );
     }
 
-    public Task<Result<TokenResult>> Handle(FacebookLogin message)
-    {
-        return ExternalLoginAsync(message.AuthInfo, message.Context,
-            authOptions.FacebookId,
-            authOptions.FacebookSecret,
-            oauthProviderClient.GetFacebookUserInfoAsync
-        );
-    }
-
     public Task<Result<TokenResult>> Handle(MicrosoftLogin message)
     {
         return ExternalLoginAsync(message.AuthInfo, message.Context,

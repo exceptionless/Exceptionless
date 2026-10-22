@@ -1841,61 +1841,6 @@
         }
       }
     },
-    "/api/v2/auth/facebook": {
-      "post": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Sign in with Facebook",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExternalAuthInfo"
-              }
-            },
-            "application/*\u002Bjson": {
-              "schema": {
-                "$ref": "#/components/schemas/ExternalAuthInfo"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "User Authentication Token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Account Creation is currently disabled",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation error",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v2/auth/microsoft": {
       "post": {
         "tags": [
