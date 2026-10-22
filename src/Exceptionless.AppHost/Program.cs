@@ -189,7 +189,6 @@ if (!servicesOnly)
 
 #pragma warning disable ASPIREBROWSERLOGS001
     var app = builder.AddViteApp("App", "../Exceptionless.Web/ClientApp")
-        .WithNpm(install: !skipClientDependencyInstall)
         .WithBrowserLogs()
         .WithReference(api)
         .WithEnvironment("PUBLIC_EXCEPTIONLESS_API_KEY", builder.Configuration["PUBLIC_EXCEPTIONLESS_API_KEY"])
@@ -218,8 +217,8 @@ if (!servicesOnly)
             .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
     }
 
-    // The e2e workflow runs npm ci before starting the AppHost, so a second install would only delay the app.
-    if (ciE2E)
+    // The e2e workflow runs npm ci before starting the AppHost, so it skips Aspire's second install.
+    if (skipClientDependencyInstall)
         app.WithNpm(install: false);
 
     if (includeDevTools)
