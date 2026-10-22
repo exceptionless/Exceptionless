@@ -318,14 +318,17 @@
     {/if}
 
     <div class="border-border flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:flex-wrap sm:justify-end">
-        <Button
-            variant="ghost"
-            href={resolve('/(app)/project/[projectId]/manage', {
-                projectId
-            })}
-        >
-            <ArrowLeft data-icon="inline-start" aria-hidden="true" /> Back to Project Settings
-        </Button>
+        <!-- First-run setup (redirect=true) never came from Project Settings. -->
+        {#if !queryParams.redirect}
+            <Button
+                variant="ghost"
+                href={resolve('/(app)/project/[projectId]/manage', {
+                    projectId
+                })}
+            >
+                <ArrowLeft data-icon="inline-start" aria-hidden="true" /> Back to Project Settings
+            </Button>
+        {/if}
         <Button variant="ghost" href={`${resolve('/(app)/account/notifications')}?project=${projectId}`}>
             <NotificationSettings data-icon="inline-start" aria-hidden="true" /> Notifications
         </Button>

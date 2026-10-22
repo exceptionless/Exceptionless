@@ -148,9 +148,9 @@
                 };
             case 'notifications':
                 return {
-                    description: 'Get an email when something new breaks.',
+                    description: 'New errors and a daily summary are on by default. Pick what you want.',
                     href: resolve('/(app)/account/notifications'),
-                    label: 'Turn on notifications'
+                    label: 'Review your notifications'
                 };
             case 'project':
                 return {

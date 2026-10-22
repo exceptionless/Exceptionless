@@ -180,7 +180,7 @@
 
         {#if canSignup}
             <Muted class="px-4 text-center text-xs">
-                By signing up, you agree to our <A href="https://exceptionless.com/privacy" target="_blank">Privacy Policy</A> and
+                By continuing, you agree to our <A href="https://exceptionless.com/privacy" target="_blank">Privacy Policy</A> and
                 <A href="https://exceptionless.com/terms" target="_blank">Terms of Service</A>.
             </Muted>
         {/if}
