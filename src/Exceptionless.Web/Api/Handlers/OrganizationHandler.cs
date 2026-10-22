@@ -114,7 +114,7 @@ public class OrganizationHandler(
         // Serialize creation per user and reload the user so concurrent requests can't both pass the
         // one-free-organization and one-trial checks.
         string userId = GetCurrentUser(message.Context).Id;
-        await using var userLock = await billingManager.AcquireUserOrganizationCreationLockAsync(userId);
+        await using var ownerLock = await billingManager.AcquireOwnerFreeOrganizationLockAsync(userId);
         var user = await userRepository.GetByIdAsync(userId, o => o.Cache(false));
         if (user is null)
             return Result.Unauthorized("User not found.");
@@ -395,6 +395,11 @@ public class OrganizationHandler(
 
         if (String.Equals(organization.PlanId, plan.Id) && String.Equals(plans.FreePlan.Id, plan.Id))
             return ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan.");
+
+        // Downgrades to Free share the owner's lock with organization creation so two can't both pass the one-free-organization rule.
+        await using var ownerLock = plans.IsFreePlan(plan.Id) && !String.Equals(organization.PlanId, plan.Id)
+            ? await billingManager.AcquireOwnerFreeOrganizationLockAsync(BillingManager.GetOwnerId(organization) ?? GetCurrentUser(message.Context).Id)
+            : null;
 
         if (!String.Equals(organization.PlanId, plan.Id))
         {
