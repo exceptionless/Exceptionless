@@ -796,6 +796,9 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [InlineData("[2026-07-01T00:00:00Z TO 2026-07-02T00:00:00Z]", "2026-07-01T00:00:00Z", "2026-07-02T00:00:00Z")]
     [InlineData("[2026-07-01T00:00:00-05:00 TO 2026-07-01T12:00:00-05:00]", "2026-07-01T05:00:00Z", "2026-07-01T17:00:00Z")]
     [InlineData("[2026-11-03T12:00:00Z TO now]", "2026-11-03T12:00:00Z", "2026-11-03T18:00:00Z")]
+    // Braces exclude their boundary, so the range starts or ends one millisecond inside it.
+    [InlineData("{2026-07-01T00:00:00Z TO 2026-07-02T00:00:00Z}", "2026-07-01T00:00:00.001Z", "2026-07-01T23:59:59.999Z")]
+    [InlineData("[2026-07-01T00:00:00Z TO 2026-07-02T00:00:00Z}", "2026-07-01T00:00:00Z", "2026-07-01T23:59:59.999Z")]
     public async Task CountEventsAsync_RangeAcrossDaylightSavingChange_UsesEachDaysOffset(string time, string expectedStart, string expectedEnd)
     {
         try

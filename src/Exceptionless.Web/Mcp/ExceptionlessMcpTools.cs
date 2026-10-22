@@ -1340,8 +1340,9 @@ public sealed class ExceptionlessMcpTools
         if (!match.Success)
             return (null, null, time);
 
-        var start = GetExactInstant(match.Groups["start"].Value);
-        var end = GetExactInstant(match.Groups["end"].Value);
+        // { and } exclude their boundary; queries are inclusive at millisecond precision, so move one millisecond inward.
+        var start = GetExactInstant(match.Groups["start"].Value)?.AddMilliseconds(time[0] == '{' ? 1 : 0);
+        var end = GetExactInstant(match.Groups["end"].Value)?.AddMilliseconds(time[^1] == '}' ? -1 : 0);
         string expression = $"{time[0]}{(start is null ? match.Groups["start"].Value : "*")} TO {(end is null ? match.Groups["end"].Value : "*")}{time[^1]}";
         return (start, end, expression);
     }
