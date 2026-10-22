@@ -800,6 +800,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "deprecated": true
@@ -971,6 +981,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "deprecated": true
@@ -1135,6 +1155,16 @@
           },
           "404": {
             "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1322,6 +1352,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "deprecated": true
@@ -1389,6 +1429,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "deprecated": true
@@ -1449,6 +1499,16 @@
           },
           "404": {
             "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -1525,6 +1585,16 @@
           },
           "404": {
             "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9092,6 +9162,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -9457,6 +9537,16 @@
           },
           "404": {
             "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10944,6 +11034,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -11110,6 +11210,16 @@
           },
           "404": {
             "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11290,6 +11400,16 @@
           },
           "404": {
             "description": "No project was found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11480,6 +11600,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "The events could not be queued. Resend them after the Retry-After delay.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
@@ -11525,6 +11655,16 @@
           },
           "404": {
             "description": "One or more event occurrences were not found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
