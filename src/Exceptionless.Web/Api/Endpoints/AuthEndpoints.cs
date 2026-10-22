@@ -146,7 +146,7 @@ public static class AuthEndpoints
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
-                ["403"] = "Account creation is disabled or Microsoft must be linked from an existing account",
+                ["403"] = "Account Creation is currently disabled",
                 ["422"] = "Validation error",
             }
         });

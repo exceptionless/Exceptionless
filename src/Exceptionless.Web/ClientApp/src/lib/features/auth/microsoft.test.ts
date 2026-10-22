@@ -80,10 +80,7 @@ describe('microsoftLogin', () => {
     });
 
     it.each([
-        [
-            { status: 403, title: 'Sign in to your existing account first, then link Microsoft from your account settings.' },
-            'Sign in to your existing account first, then link Microsoft from your account settings.'
-        ],
+        [{ status: 403, title: 'Account Creation is currently disabled' }, 'Account Creation is currently disabled'],
         [undefined, 'Unable to sign in. Please try again.']
     ])('displays an unsuccessful exchange without changing the session', async (problem, message) => {
         vi.stubGlobal('crypto', { randomUUID: () => 'expected-state' });
@@ -101,7 +98,7 @@ describe('microsoftLogin', () => {
     });
 
     it('displays the 403 with the application error callback enabled', async () => {
-        const message = 'Sign in to your existing account first, then link Microsoft from your account settings.';
+        const message = 'Account Creation is currently disabled';
         const client = new FetchClient({
             baseUrl: 'http://localhost/api/v2',
             defaultRequestOptions: {

@@ -6,10 +6,8 @@ namespace Exceptionless.Tests.Mail;
 public class CountingMailer : IMailer
 {
     private int _organizationNoticeCount;
-    private int _userEmailVerificationCount;
 
     public int OrganizationNoticeCount => _organizationNoticeCount;
-    public int UserEmailVerificationCount => _userEmailVerificationCount;
 
     public List<OrganizationNoticeCall> OrganizationNoticeCalls { get; } = [];
 
@@ -64,7 +62,6 @@ public class CountingMailer : IMailer
 
     public Task SendUserEmailVerifyAsync(User user)
     {
-        Interlocked.Increment(ref _userEmailVerificationCount);
         return Task.CompletedTask;
     }
 
@@ -76,7 +73,6 @@ public class CountingMailer : IMailer
     public void Reset()
     {
         Interlocked.Exchange(ref _organizationNoticeCount, 0);
-        Interlocked.Exchange(ref _userEmailVerificationCount, 0);
         lock (OrganizationNoticeCalls)
         {
             OrganizationNoticeCalls.Clear();

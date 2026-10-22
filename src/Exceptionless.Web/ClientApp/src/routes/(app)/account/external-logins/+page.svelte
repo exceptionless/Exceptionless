@@ -41,11 +41,7 @@
 
     const oauthAccounts = $derived(meQuery.data?.o_auth_accounts ?? []);
     const hasLocalAccount = $derived(meQuery.data?.has_local_account ?? false);
-    const activeOAuthAccountCount = $derived(oauthAccounts.filter((account) => !['facebook', 'windowslive'].includes(account.provider.toLowerCase())).length);
-
-    function canUnlinkAccount(provider: string) {
-        return hasLocalAccount || ['facebook', 'windowslive'].includes(provider.toLowerCase()) || activeOAuthAccountCount > 1;
-    }
+    const activeOAuthAccounts = $derived(oauthAccounts.filter((account) => !['facebook', 'windowslive'].includes(account.provider.toLowerCase())));
 </script>
 
 <div class="space-y-6">
@@ -88,15 +84,16 @@
                     </Table.Header>
                     <Table.Body>
                         {#each oauthAccounts as account (account.provider_user_id)}
+                            {@const canUnlinkAccount = hasLocalAccount || activeOAuthAccounts.length > 1 || !activeOAuthAccounts.includes(account)}
                             <Table.Row>
                                 <Table.Cell class="capitalize">{account.provider} ({account.username || account.provider_user_id})</Table.Cell>
                                 <Table.Cell class="text-right">
                                     <Button
                                         aria-label="Remove {account.provider} account"
-                                        disabled={!canUnlinkAccount(account.provider)}
+                                        disabled={!canUnlinkAccount}
                                         onclick={() => handleUnlinkAccount(account.provider, account.provider_user_id)}
                                         size="icon"
-                                        title={canUnlinkAccount(account.provider) ? 'Remove' : 'Cannot remove the only login method'}
+                                        title={canUnlinkAccount ? 'Remove' : 'Cannot remove the only login method'}
                                         variant="ghost"
                                     >
                                         <X class="size-4" />

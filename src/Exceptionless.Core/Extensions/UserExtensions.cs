@@ -79,17 +79,17 @@ public static class UserExtensions
 
     public static bool RemoveOAuthAccount(this User user, string providerName, string providerUserId)
     {
-        var account = user.OAuthAccounts.FirstOrDefault(o => String.Equals(o.Provider, providerName, StringComparison.OrdinalIgnoreCase) && o.ProviderUserId == providerUserId);
+        var account = user.OAuthAccounts.FirstOrDefault(o =>
+            String.Equals(o.Provider, providerName, StringComparison.OrdinalIgnoreCase)
+            && String.Equals(o.ProviderUserId, providerUserId, StringComparison.Ordinal));
         if (account is null)
             return true;
 
-        // Retired provider records cannot keep a passwordless account accessible.
-        if (String.IsNullOrEmpty(user.Password)
-            && !String.Equals(account.Provider, "facebook", StringComparison.OrdinalIgnoreCase)
-            && !String.Equals(account.Provider, "windowslive", StringComparison.OrdinalIgnoreCase)
-            && !user.OAuthAccounts.Any(other => other != account
-                && !String.Equals(other.Provider, "facebook", StringComparison.OrdinalIgnoreCase)
-                && !String.Equals(other.Provider, "windowslive", StringComparison.OrdinalIgnoreCase)))
+        var activeOAuthAccounts = user.OAuthAccounts
+            .Where(o => !String.Equals(o.Provider, "facebook", StringComparison.OrdinalIgnoreCase)
+                && !String.Equals(o.Provider, "windowslive", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (String.IsNullOrEmpty(user.Password) && activeOAuthAccounts.Length <= 1 && activeOAuthAccounts.Contains(account))
             return false;
 
         return user.OAuthAccounts.Remove(account);
