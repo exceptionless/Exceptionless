@@ -1057,9 +1057,9 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData("Microsoft", false)]
-    [InlineData("Google", true)]
-    public async Task UpdateEmailAddressAsync_LinkedProviderEmail_PreservesProviderTrust(string provider, bool isVerified)
+    [InlineData("Microsoft")]
+    [InlineData("Google")]
+    public async Task UpdateEmailAddressAsync_LinkedProviderEmail_MarksAddressVerified(string provider)
     {
         const string email = "linked-provider@exceptionless.test";
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
@@ -1074,12 +1074,12 @@ public sealed class UserEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeOk());
 
         Assert.NotNull(result);
-        Assert.Equal(isVerified, result.IsVerified);
+        Assert.True(result.IsVerified);
         var updatedUser = await _userRepository.GetByIdAsync(user.Id);
         Assert.NotNull(updatedUser);
         Assert.Equal(email, updatedUser.EmailAddress);
-        Assert.Equal(isVerified, updatedUser.IsEmailAddressVerified);
-        Assert.Equal(!isVerified, !String.IsNullOrEmpty(updatedUser.VerifyEmailAddressToken));
+        Assert.True(updatedUser.IsEmailAddressVerified);
+        Assert.Null(updatedUser.VerifyEmailAddressToken);
     }
 
     [Fact]

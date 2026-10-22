@@ -545,16 +545,12 @@ public class AuthHandler(
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
 
-        bool isMicrosoft = String.Equals(userInfo.ProviderName, MicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase);
         var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(userInfo.ProviderName).Identity(userInfo.Email).SetHttpContext(httpContext));
 
         if (String.IsNullOrWhiteSpace(inviteToken) && httpContext.User.IsUserAuthType())
         {
             var currentUser = httpContext.Request.GetUser();
-            if (isMicrosoft && !currentUser.IsEmailAddressVerified)
-                return Result.Forbidden("Verify your account email address before linking Microsoft from your account settings.");
-
             if (existingUser is not null)
             {
                 if (!String.Equals(existingUser.Id, currentUser.Id, StringComparison.Ordinal))
@@ -583,7 +579,7 @@ public class AuthHandler(
         if (existingUser is not null)
         {
             bool hasChanges = RemoveLegacyMicrosoftOAuthAccounts(existingUser, userInfo.ProviderName);
-            if (!isMicrosoft && !existingUser.IsEmailAddressVerified)
+            if (!existingUser.IsEmailAddressVerified)
             {
                 existingUser.MarkEmailAddressVerified();
                 hasChanges = true;
@@ -594,10 +590,6 @@ public class AuthHandler(
 
             return existingUser;
         }
-
-        // Microsoft Graph mail is editable. Never create or match an account using it.
-        if (isMicrosoft)
-            return Result.Forbidden("Create and verify an account, or sign in to your existing account, then link Microsoft from your account settings.");
 
         var user = !String.IsNullOrEmpty(userInfo.Email) ? await userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
 

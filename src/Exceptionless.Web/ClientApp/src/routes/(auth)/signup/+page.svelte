@@ -7,6 +7,7 @@
     import ErrorMessage from '#comp/error-message.svelte';
     import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
+    import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
     import Logo from '#comp/logo.svelte';
     import { A, P } from '#comp/typography/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
@@ -16,7 +17,17 @@
     import { Input } from '#comp/ui/input/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
     import { signup } from '#features/auth/api.svelte.ts';
-    import { accessToken, gitHubClientId, githubLogin, googleClientId, googleLogin, logout } from '#features/auth/index.svelte.ts';
+    import {
+        accessToken,
+        enableOAuthLogin,
+        gitHubClientId,
+        githubLogin,
+        googleClientId,
+        googleLogin,
+        logout,
+        microsoftClientId,
+        microsoftLogin
+    } from '#features/auth/index.svelte.ts';
     import { type SignupFormData, SignupSchema } from '#features/auth/schemas.ts';
     import { validateEmailAvailability } from '#features/auth/validators.ts';
     import { gotoRedirect } from '#features/navigation/redirect.ts';
@@ -64,9 +75,14 @@
     </Card.Header>
     <Card.Content>
         <div>
-            {#if googleClientId || gitHubClientId}
+            {#if enableOAuthLogin}
                 <P class="text-center">Sign up with</P>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
+                    {#if microsoftClientId}
+                        <Button aria-label="Sign up with Microsoft" onclick={() => microsoftLogin(redirectUrl, inviteToken)}>
+                            <MicrosoftIcon class="size-4" /> Microsoft
+                        </Button>
+                    {/if}
                     {#if googleClientId}
                         <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google

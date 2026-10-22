@@ -128,52 +128,6 @@ public sealed class AuthHandlerTests : TestWithServices
         new OperationCanceledException("Repository operation was canceled.")
     };
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("invitation-token")]
-    public async Task Handle_UnlinkedMicrosoftIdentity_DoesNotLookUpEmailOrModifyAccounts(string? inviteToken)
-    {
-        // Arrange
-        var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
-        userRepository.Setup(repository => repository.GetUserByOAuthProviderAsync("Microsoft", "matching-user"))
-            .ReturnsAsync((User?)null);
-        var handler = CreateHandler(userRepository.Object);
-
-        // Act
-        var result = await handler.Handle(new MicrosoftLogin(
-            new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = "matching-user", RedirectUri = "http://localhost", InviteToken = inviteToken },
-            new DefaultHttpContext()));
-
-        // Assert
-        Assert.Equal(ResultStatus.Forbidden, result.Status);
-        Assert.Contains("link", result.Message, StringComparison.OrdinalIgnoreCase);
-        userRepository.VerifyAll();
-        userRepository.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task Handle_UnverifiedAuthenticatedUser_DoesNotLinkMicrosoft()
-    {
-        // Arrange
-        var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
-        userRepository.Setup(repository => repository.GetUserByOAuthProviderAsync("Microsoft", "unverified-user"))
-            .ReturnsAsync((User?)null);
-        var user = new User { Id = "unverified", EmailAddress = "unverified@exceptionless.test" };
-        var context = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(IdentityUtils.UserAuthenticationType)) };
-        context.Request.SetUser(user);
-
-        // Act
-        var result = await CreateHandler(userRepository.Object).Handle(new MicrosoftLogin(
-            new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = "unverified-user", RedirectUri = "http://localhost" }, context));
-
-        // Assert
-        Assert.Equal(ResultStatus.Forbidden, result.Status);
-        Assert.Contains("Verify", result.Message);
-        Assert.Empty(user.OAuthAccounts);
-        userRepository.VerifyAll();
-        userRepository.VerifyNoOtherCalls();
-    }
-
     [Fact]
     public async Task Handle_MicrosoftProviderFails_DoesNotAccessUserRepository()
     {
