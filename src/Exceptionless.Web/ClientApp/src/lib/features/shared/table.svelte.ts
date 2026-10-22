@@ -26,6 +26,8 @@ export type QueryMeta = FetchClientResponse<unknown>['meta'];
 
 const sharedTableFeatures = tableFeatures(stockFeatures);
 
+export type SharedTableOptions<TData extends RowData> = Omit<TableOptions<StockFeatures, TData>, 'data'> & { data: TData[] };
+
 export interface TableConfiguration<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy> {
     columnPersistenceKey: string;
     columns: ColumnDef<StockFeatures, TData, unknown>[];
@@ -82,7 +84,7 @@ export function createPageSizePreference(key: string) {
 
 export function getSharedTableOptions<TData extends RowData, TPaginationStrategy extends PaginationStrategy = PaginationStrategy>(
     configuration: TableConfiguration<TData, TPaginationStrategy>
-): TableOptions<StockFeatures, TData> {
+): SharedTableOptions<TData> {
     const isCursorPaging = $derived(!configuration.paginationStrategy || configuration.paginationStrategy === 'cursor');
     const isOffsetPaging = $derived(configuration.paginationStrategy === 'offset');
     const isMemoryPaging = $derived(configuration.paginationStrategy === 'memory');
@@ -263,7 +265,7 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         }
     });
 
-    const tableOptions: TableOptions<StockFeatures, TData> = {
+    const tableOptions: SharedTableOptions<TData> = {
         columnResizeMode: 'onChange',
         get columns() {
             return columns();
@@ -326,33 +328,27 @@ export function getSharedTableOptions<TData extends RowData, TPaginationStrategy
         }
     };
 
-    return resolveConfiguredTableOptions(tableOptions, configuration.configureOptions?.(tableOptions));
-}
-
-export function isTableEmpty<TData extends RowData>(table: Table<StockFeatures, TData>): boolean {
-    return table.options.data.length === 0;
+    resolveConfiguredTableOptions(tableOptions, configuration.configureOptions?.(tableOptions));
+    return tableOptions;
 }
 
 /***
- * Removes data from the table.
- * @param table The table to remove data from.
+ * Removes rows through the controlled options that own the table's data.
+ * @param options The original shared table options passed to createTable.
  * @param predicate A function that determines whether a row should be removed.
  * @returns True if data was removed, false otherwise.
  */
 export function removeTableData<TData extends RowData>(
-    table: Table<StockFeatures, TData>,
+    options: SharedTableOptions<TData>,
     predicate: (value: TData, index: number, array: TData[]) => boolean
 ): boolean {
-    if ([...table.options.data].some(predicate)) {
-        table.setOptions((previousOptions) => ({
-            ...previousOptions,
-            data: [...previousOptions.data].filter((value, index, array) => !predicate(value, index, array))
-        }));
-
-        return true;
+    const remaining = options.data.filter((value, index, array) => !predicate(value, index, array));
+    if (remaining.length === options.data.length) {
+        return false;
     }
 
-    return false;
+    options.data = remaining;
+    return true;
 }
 
 /***

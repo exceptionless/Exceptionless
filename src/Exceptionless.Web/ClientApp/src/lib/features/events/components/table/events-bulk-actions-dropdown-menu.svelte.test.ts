@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mutateAsync = vi.hoisted(() => vi.fn());
 const deleteEvent = vi.hoisted(() => vi.fn(() => ({ mutateAsync })));
-const toast = vi.hoisted(() => ({ success: vi.fn() }));
+const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 
 vi.mock('#features/events/api.svelte.ts', () => ({ deleteEvent }));
+vi.mock('#features/organizations/context.svelte.ts', () => ({ organization: { current: 'organization-id' } }));
 vi.mock('svelte-sonner', () => ({ toast }));
 
 import EventsBulkActionsDropdownMenu from './events-bulk-actions-dropdown-menu.svelte';
@@ -14,6 +15,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
     beforeEach(() => {
         mutateAsync.mockResolvedValue(undefined);
         deleteEvent.mockClear();
+        toast.error.mockClear();
         toast.success.mockClear();
     });
 
@@ -76,11 +78,13 @@ describe('EventsBulkActionsDropdownMenu', () => {
 
     it('uses the selected count for the bulk delete confirmation', async () => {
         // Arrange
+        let finishDelete: () => void = () => {};
+        mutateAsync.mockImplementationOnce(() => new Promise<void>((resolve) => (finishDelete = resolve)));
         const table = {
             getSelectedRowModel: () => ({ flatRows: [{ id: 'event-id-1' }, { id: 'event-id-2' }] }),
             resetRowSelection: vi.fn()
         } as never;
-        render(EventsBulkActionsDropdownMenu, { props: { table } });
+        const { rerender } = render(EventsBulkActionsDropdownMenu, { props: { table } });
 
         // Act
         await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
@@ -89,6 +93,47 @@ describe('EventsBulkActionsDropdownMenu', () => {
 
         // Assert
         await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
-        expect(toast.success).toHaveBeenCalledWith('Successfully deleted 2 events.');
+        await rerender({
+            table: { getSelectedRowModel: () => ({ flatRows: [] }), resetRowSelection: vi.fn() } as never
+        });
+        expect(screen.getByRole('heading', { name: 'Delete 2 Events' })).toBeTruthy();
+        finishDelete();
+        await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Successfully deleted 2 events.'));
+        expect(mutateAsync).toHaveBeenCalledWith({ ids: ['event-id-1', 'event-id-2'], organizationId: 'organization-id' });
+    });
+
+    it('keeps failed deletion recoverable and prevents duplicate submissions while pending', async () => {
+        let failDelete: (error: unknown) => void = () => {};
+        mutateAsync.mockImplementationOnce(() => new Promise<void>((_, reject) => (failDelete = reject)));
+        const resetRowSelection = vi.fn();
+        render(EventsBulkActionsDropdownMenu, {
+            props: {
+                table: {
+                    getSelectedRowModel: () => ({ flatRows: [{ id: 'event-id' }] }),
+                    resetRowSelection
+                } as never
+            }
+        });
+        await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+        await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Delete Event' }));
+
+        expect(screen.getByRole('button', { name: 'Delete Event' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+        expect(mutateAsync).toHaveBeenCalledOnce();
+        await fireEvent.keyDown(document, { key: 'Escape' });
+        expect(screen.queryByRole('alertdialog')).toBeTruthy();
+
+        failDelete({ status: 400, title: 'Deletion was rejected' });
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Deletion was rejected'));
+        expect(screen.getByRole('alertdialog')).toBeTruthy();
+        expect(resetRowSelection).not.toHaveBeenCalled();
+        expect(toast.success).not.toHaveBeenCalled();
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Delete Event' }));
+        await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+        expect(mutateAsync).toHaveBeenCalledTimes(2);
+        expect(resetRowSelection).toHaveBeenCalledOnce();
+        expect(toast.success).toHaveBeenCalledWith('Successfully deleted event.');
     });
 });
