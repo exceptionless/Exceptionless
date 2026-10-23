@@ -1,11 +1,12 @@
+import { custom, type infer as Infer, object, string, enum as zodEnum } from 'zod';
+
 import {
     UpdateProjectSchema as GeneratedUpdateProjectSchema,
     type NewProjectFormData,
     NewProjectSchema,
     type NotificationSettingsFormData,
     NotificationSettingsSchema
-} from '$generated/schemas';
-import { custom, type infer as Infer, object, string, enum as zodEnum } from 'zod';
+} from '#generated/schemas.ts';
 
 export { type NewProjectFormData, NewProjectSchema, type NotificationSettingsFormData, NotificationSettingsSchema };
 

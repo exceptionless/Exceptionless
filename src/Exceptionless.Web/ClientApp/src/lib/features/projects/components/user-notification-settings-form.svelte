@@ -1,14 +1,15 @@
 <script lang="ts">
-    import type { NotificationSettings } from '$features/projects/models';
-
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { A, H4, Muted } from '$comp/typography';
-    import * as Alert from '$comp/ui/alert';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { Switch } from '$comp/ui/switch';
     import InfoIcon from '@lucide/svelte/icons/info';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
+
+    import type { NotificationSettings } from '#features/projects/models.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { A, H4, Muted } from '#comp/typography/index.ts';
+    import * as Alert from '#comp/ui/alert/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
 
     interface Props {
         emailNotificationsEnabled?: boolean;

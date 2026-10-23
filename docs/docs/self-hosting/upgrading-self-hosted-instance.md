@@ -4,6 +4,10 @@ title: "Upgrading"
 
 # Upgrading
 
+## Trusted proxy migration
+
+Upgrading from unrestricted forwarding requires [explicit trust for non-loopback reverse proxies](/docs/self-hosting/#reverse-proxies-and-https). Configure and verify the actual ingress peers before rollout, or client-IP limits and HTTPS detection can change. Direct hosting needs no new settings.
+
 **Please ensure that you have created backups before upgrading!**
 
 **If you are upgrading from v1 or [v2](https://github.com/exceptionless/Exceptionless/releases/tag/v2.0.0) you will need to upgrade to [v3.0](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) before upgrading to the latest release.**

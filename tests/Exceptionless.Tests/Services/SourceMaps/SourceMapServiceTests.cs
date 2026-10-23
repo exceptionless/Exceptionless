@@ -498,7 +498,7 @@ public sealed class SourceMapServiceTests : TestWithServices
         Assert.Equal(2, requestCount);
         var entry = Assert.Single(logger.Entries);
         Assert.Equal(LogLevel.Debug, entry.Level);
-        Assert.Null(entry.Exception);
+        Assert.IsAssignableFrom<JsonException>(entry.Exception);
         Assert.Contains("Unable to download a source map", entry.Message);
     }
 

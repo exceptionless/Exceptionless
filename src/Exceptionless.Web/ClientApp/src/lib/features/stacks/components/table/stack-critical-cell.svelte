@@ -1,5 +1,5 @@
 <script lang="ts">
-    import BooleanFormatter from '$comp/formatters/boolean.svelte';
+    import BooleanFormatter from '#comp/formatters/boolean.svelte';
 
     interface Props {
         isCritical: boolean;

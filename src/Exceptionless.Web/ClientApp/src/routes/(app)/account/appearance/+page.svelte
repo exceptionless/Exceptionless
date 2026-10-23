@@ -1,8 +1,9 @@
 <script lang="ts">
-    import { Muted } from '$comp/typography';
-    import { Label } from '$comp/ui/label';
-    import * as RadioGroup from '$comp/ui/radio-group';
     import { setMode, userPrefersMode } from 'mode-watcher';
+
+    import { Muted } from '#comp/typography/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
+    import * as RadioGroup from '#comp/ui/radio-group/index.ts';
 
     import ThemePreview from './(components)/theme-preview.svelte';
 

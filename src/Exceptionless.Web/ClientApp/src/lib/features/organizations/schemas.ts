@@ -2,7 +2,7 @@ import { boolean, date, type infer as Infer, number, object, string, enum as zod
 
 import { SuspensionCode } from './models';
 
-export { type NewOrganizationFormData, NewOrganizationSchema } from '$generated/schemas';
+export { type NewOrganizationFormData, NewOrganizationSchema } from '#generated/schemas.ts';
 
 export const BudgetAlertCardSchema = object({
     enabled: boolean(),

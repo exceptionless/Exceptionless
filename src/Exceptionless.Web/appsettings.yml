@@ -33,9 +33,17 @@ Serilog:
 # Optional public API URL for OAuth discovery and resource validation; defaults to BaseURL.
 ApiUrl:
 
+# Reverse proxy trust: see docs/docs/self-hosting/index.md#reverse-proxies-and-https.
+# Configure only verified API-visible peers; loopback is trusted by default.
+ForwardedHeaders:
+  Enabled: true
+  ForwardLimit: 1
+  KnownProxies: []
+  KnownNetworks: []
+
 Assistant:
   Endpoint: https://openrouter.ai/api/v1/chat/completions
-  Model: "~deepseek/deepseek-v4-flash-latest"
+  Model: "openai/gpt-6.1-sol"
   ApiKey:
 
 Apm:

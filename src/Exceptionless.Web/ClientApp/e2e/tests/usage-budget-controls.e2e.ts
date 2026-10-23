@@ -119,7 +119,7 @@ for (const width of [1280, 390]) {
                 );
 
                 if (resource === 'project') {
-                    await page.getByRole('button', { exact: true, name: 'Limit type' }).click();
+                    await page.getByRole('combobox', { exact: true, name: 'Limit type' }).click();
                     await page.getByRole('option', { exact: true, name: 'No project limit' }).click();
                     await save.click();
                     await expect.poll(() => updates.at(-1)).toEqual({ ingest_limit: null });

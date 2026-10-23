@@ -1,4 +1,4 @@
-import { submitFeatureUsage } from '$features/auth/exceptionless-session';
+import { submitFeatureUsage } from '#features/auth/exceptionless-session.ts';
 
 import type { ProductTourKey } from './models';
 

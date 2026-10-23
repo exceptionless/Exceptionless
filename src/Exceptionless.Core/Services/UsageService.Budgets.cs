@@ -243,7 +243,7 @@ public partial class UsageService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to record smart throttle state for project {ProjectId}", project.Id);
+            _logger.LogError(ex, "Failed to record smart throttle state for project {ProjectId}: {Message}", project.Id, ex.Message);
             return;
         }
 
@@ -286,7 +286,7 @@ public partial class UsageService
                 }
             }
 
-            _logger.LogError(ex, "Failed to publish smart throttle notification for project {ProjectId}", project.Id);
+            _logger.LogError(ex, "Failed to publish smart throttle notification for project {ProjectId}: {Message}", project.Id, ex.Message);
         }
     }
 
@@ -382,11 +382,11 @@ public partial class UsageService
                     }
                     catch (Exception cleanupException)
                     {
-                        _logger.LogWarning(cleanupException, "Failed to release budget alert {Threshold}% claim for organization {OrganizationId}", threshold, organization.Id);
+                        _logger.LogWarning(cleanupException, "Failed to release budget alert {Threshold}% claim for organization {OrganizationId}: {Message}", threshold, organization.Id, ex.Message);
                     }
                 }
 
-                _logger.LogError(ex, "Failed to publish budget alert {Threshold}% for organization {OrganizationId}", threshold, organization.Id);
+                _logger.LogError(ex, "Failed to publish budget alert {Threshold}% for organization {OrganizationId}: {Message}", threshold, organization.Id, ex.Message);
             }
         }
     }

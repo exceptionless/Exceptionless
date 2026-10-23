@@ -1,12 +1,15 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
-
     import { resolve } from '$app/paths';
-    import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import { A, H3 } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Table from '$comp/ui/table';
-    import * as EventsFacetedFilter from '$features/events/components/filters';
+    import ExternalLink from '@lucide/svelte/icons/external-link';
+    import Email from '@lucide/svelte/icons/mail';
+
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+
+    import CopyToClipboardButton from '#comp/copy-to-clipboard-button.svelte';
+    import { A, H3 } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import * as EventsFacetedFilter from '#features/events/components/filters/index.ts';
     import {
         getErrorType,
         getLocation,
@@ -15,10 +18,8 @@
         getRequestInfoUrl,
         getStackTrace,
         hasErrorOrSimpleError
-    } from '$features/events/persistent-event';
-    import TagList from '$features/shared/components/tag-list.svelte';
-    import ExternalLink from '@lucide/svelte/icons/external-link';
-    import Email from '@lucide/svelte/icons/mail';
+    } from '#features/events/persistent-event.ts';
+    import TagList from '#features/shared/components/tag-list.svelte';
 
     import type { PersistentEvent } from '../../models/index';
 
@@ -73,6 +74,13 @@
 
 <Table.Root>
     <Table.Body>
+        {#if event.environment}
+            <Table.Row>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Environment</Table.Head>
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.EnvironmentTrigger changed={filterChanged} value={event.environment} /></Table.Cell>
+                <Table.Cell>{event.environment}</Table.Cell>
+            </Table.Row>
+        {/if}
         {#if isSessionStart}
             <Table.Row>
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Duration</Table.Head>

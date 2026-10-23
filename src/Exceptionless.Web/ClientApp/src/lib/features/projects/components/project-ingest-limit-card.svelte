@@ -1,22 +1,23 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
-    import NumberFormatter from '$comp/formatters/number.svelte';
-    import * as Alert from '$comp/ui/alert';
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import * as Select from '$comp/ui/select';
-    import { Spinner } from '$comp/ui/spinner';
-    import { updateProject } from '$features/projects/api.svelte';
-    import { createProjectIngestLimit, getEffectiveProjectLimit, type ProjectBudgetType } from '$features/projects/budget-utils';
-    import { ProjectIngestLimitType, type ViewProject } from '$features/projects/models';
-    import { type ProjectBudgetCardFormData, ProjectBudgetCardSchema } from '$features/projects/schemas';
-    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '$features/shared/validation';
     import { createForm } from '@tanstack/svelte-form';
     import { untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import NumberFormatter from '#comp/formatters/number.svelte';
+    import * as Alert from '#comp/ui/alert/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import * as Select from '#comp/ui/select/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { updateProject } from '#features/projects/api.svelte.ts';
+    import { createProjectIngestLimit, getEffectiveProjectLimit, type ProjectBudgetType } from '#features/projects/budget-utils.ts';
+    import { ProjectIngestLimitType, type ViewProject } from '#features/projects/models.ts';
+    import { type ProjectBudgetCardFormData, ProjectBudgetCardSchema } from '#features/projects/schemas.ts';
+    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '#features/shared/validation.ts';
 
     let { organizationLimit, project }: { organizationLimit: number; project: ViewProject } = $props();
 

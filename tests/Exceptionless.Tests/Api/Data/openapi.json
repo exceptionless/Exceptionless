@@ -650,6 +650,14 @@
         ],
         "parameters": [
           {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "source",
             "in": "query",
             "description": "The event source (ie. machine name, log name, feature name).",
@@ -813,6 +821,14 @@
             }
           },
           {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "source",
             "in": "query",
             "description": "The event source (ie. machine name, log name, feature name).",
@@ -972,6 +988,14 @@
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
               "type": "string"
             }
           },
@@ -1144,6 +1168,14 @@
             "required": true,
             "schema": {
               "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
               "type": "string"
             }
           },
@@ -1809,62 +1841,7 @@
         }
       }
     },
-    "/api/v2/auth/facebook": {
-      "post": {
-        "tags": [
-          "Auth"
-        ],
-        "summary": "Sign in with Facebook",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ExternalAuthInfo"
-              }
-            },
-            "application/*\u002Bjson": {
-              "schema": {
-                "$ref": "#/components/schemas/ExternalAuthInfo"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "User Authentication Token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenResult"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Account Creation is currently disabled",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation error",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v2/auth/live": {
+    "/api/v2/auth/microsoft": {
       "post": {
         "tags": [
           "Auth"
@@ -10817,6 +10794,14 @@
             }
           },
           {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "source",
             "in": "query",
             "description": "The event source (ie. machine name, log name, feature name).",
@@ -10978,6 +10963,14 @@
             "required": true,
             "schema": {
               "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
               "type": "string"
             }
           },
@@ -11154,6 +11147,14 @@
             }
           },
           {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "source",
             "in": "query",
             "description": "The event source (ie. machine name, log name, feature name).",
@@ -11325,6 +11326,14 @@
             "required": true,
             "schema": {
               "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "schema": {
               "type": "string"
             }
           },
@@ -11963,6 +11972,12 @@
             ]
           },
           "conversation_id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "time_zone": {
             "type": [
               "null",
               "string"
@@ -13264,6 +13279,15 @@
             "additionalProperties": {},
             "description": "Used to store primitive data type custom data values for searching the event."
           },
+          "environment": {
+            "maxLength": 64,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The deployment environment, such as production, staging, or development.\nMissing or invalid names remain unspecified. Machine and runtime information is stored separately in data.@environment."
+          },
           "type": {
             "maxLength": 100,
             "minLength": 1,
@@ -14223,6 +14247,13 @@
               "type": "string"
             },
             "description": "The organizations that the user has access to."
+          },
+          "authentication_version": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Session revocation generation, rotated when a password changes or resets, or an external login is removed or transferred away.\nRemains null until rotation; active users with a null generation accept only matching legacy null token generations.\nThis value does not describe the password hashing format."
           },
           "password": {
             "type": [

@@ -1,4 +1,4 @@
-import { isSameUtcMonth } from '$features/shared/dates';
+import { isSameUtcMonth } from '#features/shared/dates.ts';
 
 import type { ViewOrganization } from './models';
 

@@ -1,10 +1,12 @@
-import type { ViewOrganization } from '$features/organizations/models';
 import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
-import NumberFormatter from '$comp/formatters/number.svelte';
-import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { ViewOrganization } from '#features/organizations/models.ts';
+
+import NumberFormatter from '#comp/formatters/number.svelte';
+import { getSharedTableOptions, type TableMemoryPagingParameters } from '#features/shared/table.svelte.ts';
 
 import type { GetOrganizationsMode, GetOrganizationsParams } from '../../api.svelte';
 

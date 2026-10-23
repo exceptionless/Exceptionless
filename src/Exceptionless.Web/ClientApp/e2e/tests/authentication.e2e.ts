@@ -71,7 +71,7 @@ test('login restores the full notification settings link and selected project', 
 
             await expect(page).toHaveURL(new URL(destination, e2eApi.environment.appUrl).href);
             await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
-            await expect(page.getByRole('button', { exact: true, name: e2eSecondaryProject.projectName })).toBeVisible();
+            await expect(page.getByRole('combobox', { exact: true, name: 'Project' })).toHaveText(e2eSecondaryProject.projectName);
         });
 
         await test.step('preserve the same destination after the session expires', async () => {

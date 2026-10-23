@@ -1,6 +1,6 @@
-import type { UpdateOrganization as GeneratedUpdateOrganization } from '$generated/api';
+import type { UpdateOrganization as GeneratedUpdateOrganization } from '#generated/api.ts';
 
-export type { Invoice, InvoiceGridModel, NewOrganization, OrganizationBudgetAlertSettings, ViewOrganization } from '$generated/api';
+export type { Invoice, InvoiceGridModel, NewOrganization, OrganizationBudgetAlertSettings, ViewOrganization } from '#generated/api.ts';
 
 // TODO: This should be generated from the backend enum - investigate why it wasn't included in the generated API
 export enum SuspensionCode {

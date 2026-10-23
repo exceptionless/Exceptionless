@@ -1,12 +1,13 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { P } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { P } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     import { type InviteUserFormData, InviteUserSchema } from '../schemas';
 

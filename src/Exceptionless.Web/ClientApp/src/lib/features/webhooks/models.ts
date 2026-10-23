@@ -1,4 +1,4 @@
-import type { NewWebHook as NewWebhookBase, WebHook as WebhookBase } from '$generated/api';
+import type { NewWebHook as NewWebhookBase, WebHook as WebhookBase } from '#generated/api.ts';
 
 export interface NewWebhook extends NewWebhookBase {
     event_types: WebhookKnownEventTypes[];

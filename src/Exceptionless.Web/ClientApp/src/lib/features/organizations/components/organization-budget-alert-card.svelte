@@ -1,21 +1,22 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
-
-    import ErrorMessage from '$comp/error-message.svelte';
-    import NumberFormatter from '$comp/formatters/number.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Spinner } from '$comp/ui/spinner';
-    import { Switch } from '$comp/ui/switch';
-    import { patchOrganization } from '$features/organizations/api.svelte';
-    import { getBudgetThresholdEventCount, parseBudgetThresholds } from '$features/organizations/budget-utils';
-    import { type BudgetAlertCardFormData, BudgetAlertCardSchema } from '$features/organizations/schemas';
-    import { getEffectiveEventLimit } from '$features/organizations/utils';
-    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '$features/shared/validation';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
+
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import NumberFormatter from '#comp/formatters/number.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { patchOrganization } from '#features/organizations/api.svelte.ts';
+    import { getBudgetThresholdEventCount, parseBudgetThresholds } from '#features/organizations/budget-utils.ts';
+    import { type BudgetAlertCardFormData, BudgetAlertCardSchema } from '#features/organizations/schemas.ts';
+    import { getEffectiveEventLimit } from '#features/organizations/utils.ts';
+    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '#features/shared/validation.ts';
 
     let { organization }: { organization: ViewOrganization } = $props();
 

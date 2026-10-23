@@ -1,7 +1,7 @@
-import type { UpdateProject as GeneratedUpdateProject } from '$generated/api';
+import type { UpdateProject as GeneratedUpdateProject } from '#generated/api.ts';
 
-export { ProjectIngestLimitType } from '$generated/api';
-export type { ClientConfiguration, NewProject, NotificationSettings, ProjectIngestLimit, ViewProject } from '$generated/api';
+export { ProjectIngestLimitType } from '#generated/api.ts';
+export type { ClientConfiguration, NewProject, NotificationSettings, ProjectIngestLimit, ViewProject } from '#generated/api.ts';
 export interface ClientConfigurationSetting {
     key: string;
     value: string;

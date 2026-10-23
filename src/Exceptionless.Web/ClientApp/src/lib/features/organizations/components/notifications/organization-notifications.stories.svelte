@@ -1,9 +1,10 @@
 <script module lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
-    import type { ViewProject } from '$features/projects/models';
-
-    import { SuspensionCode } from '$features/organizations/models';
     import { defineMeta } from '@storybook/addon-svelte-csf';
+
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+    import type { ViewProject } from '#features/projects/models.ts';
+
+    import { SuspensionCode } from '#features/organizations/models.ts';
 
     import FreePlanNotification from './free-plan-notification.svelte';
     import HourlyOverageNotification from './hourly-overage-notification.svelte';

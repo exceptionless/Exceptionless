@@ -1,26 +1,27 @@
 <script lang="ts">
-    import type { NewProject } from '$features/projects/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { H3, Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Spinner } from '$comp/ui/spinner';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
-    import { organization } from '$features/organizations/context.svelte';
-    import { createProductTourActions } from '$features/product-tours/actions.svelte';
-    import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
-    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
-    import { postProject } from '$features/projects/api.svelte';
-    import { type NewProjectFormData, NewProjectSchema } from '$features/projects/schemas';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
     import { untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
+
+    import type { NewProject } from '#features/projects/models.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { H3, Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { createProductTourActions } from '#features/product-tours/actions.svelte.ts';
+    import ProductTourSpotlight from '#features/product-tours/components/product-tour-spotlight.svelte';
+    import { productTourCheckpoint } from '#features/product-tours/state.svelte.ts';
+    import { postProject } from '#features/projects/api.svelte.ts';
+    import { type NewProjectFormData, NewProjectSchema } from '#features/projects/schemas.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     let toastId = $state<number | string>();
     const createProject = postProject();

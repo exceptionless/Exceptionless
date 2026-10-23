@@ -1,10 +1,11 @@
 <script lang="ts">
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import { H3, Muted, P } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Separator } from '$comp/ui/separator';
     import Laptop from '@lucide/svelte/icons/laptop';
     import Smartphone from '@lucide/svelte/icons/smartphone';
+
+    import DateTime from '#comp/formatters/date-time.svelte';
+    import { H3, Muted, P } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Separator } from '#comp/ui/separator/index.ts';
 </script>
 
 <div class="space-y-6">

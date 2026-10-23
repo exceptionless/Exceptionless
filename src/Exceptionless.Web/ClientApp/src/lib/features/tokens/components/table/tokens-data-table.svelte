@@ -1,10 +1,12 @@
 <script lang="ts">
-    import type { ViewToken } from '$features/tokens/models';
     import type { Snippet } from 'svelte';
 
-    import * as DataTable from '$comp/data-table';
-    import DelayedRender from '$comp/delayed-render.svelte';
     import { type StockFeatures, type Table } from '@tanstack/svelte-table';
+
+    import type { ViewToken } from '#features/tokens/models.ts';
+
+    import * as DataTable from '#comp/data-table/index.ts';
+    import DelayedRender from '#comp/delayed-render.svelte';
 
     interface Props {
         bodyChildren?: Snippet;

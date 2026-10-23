@@ -1,10 +1,12 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
-    import DetailSheet from '$comp/detail-sheet.svelte';
-    import { assistantPageContext } from '$features/assistant/page-context.svelte';
     import { onDestroy } from 'svelte';
+
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+
+    import DetailSheet from '#comp/detail-sheet.svelte';
+    import { assistantPageContext } from '#features/assistant/page-context.svelte.ts';
 
     import type { PersistentEvent } from '../models';
 

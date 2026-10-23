@@ -1,6 +1,6 @@
 <script lang="ts">
-    import * as FacetedFilter from '$features/events/components/filters';
-    import { STACK_CRITICAL_TERM } from '$features/stacks/stack-filter-support';
+    import * as FacetedFilter from '#features/events/components/filters/index.ts';
+    import { STACK_CRITICAL_TERM } from '#features/stacks/stack-filter-support.ts';
 
     interface Props {
         includeProject?: boolean;

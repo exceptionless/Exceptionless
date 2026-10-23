@@ -50,9 +50,11 @@ public class TokenSerializerTests : TestWithServices
     public void RoundTrip_WithUserScopedToken_PreservesValues()
     {
         // Arrange
+        const string authenticationVersion = "current-version";
         var token = new Token
         {
             Id = "650000000000000000000002",
+            AuthenticationVersion = authenticationVersion,
             OrganizationId = "",
             ProjectId = "",
             UserId = "660000000000000000000001",
@@ -72,6 +74,7 @@ public class TokenSerializerTests : TestWithServices
         // Assert
         Assert.NotNull(result);
         Assert.Equal("660000000000000000000001", result.UserId);
+        Assert.Equal(authenticationVersion, result.AuthenticationVersion);
         Assert.Equal("540000000000000000000001", result.DefaultProjectId);
         Assert.Equal(TokenType.Authentication, result.Type);
         Assert.Equal("refresh_token_abc", result.Refresh);
@@ -118,6 +121,7 @@ public class TokenSerializerTests : TestWithServices
         // Assert
         Assert.NotNull(result);
         Assert.Equal("650000000000000000000004", result.Id);
+        Assert.Null(result.AuthenticationVersion);
         Assert.Equal("550000000000000000000001", result.OrganizationId);
         Assert.Equal(TokenType.Access, result.Type);
         Assert.Equal(2, result.Scopes.Count);
