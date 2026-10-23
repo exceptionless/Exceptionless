@@ -6,6 +6,13 @@ namespace Exceptionless.Core.Extensions;
 
 public static class OrganizationExtensions
 {
+    public const string RateNotificationsFeature = "rate-notifications";
+
+    public static bool HasRateNotifications(this Organization organization)
+    {
+        return organization.HasPremiumFeatures && organization.Features.Contains(RateNotificationsFeature);
+    }
+
     public static Invite? GetInvite(this Organization organization, string token)
     {
         if (String.IsNullOrEmpty(token))

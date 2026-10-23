@@ -8,6 +8,19 @@ namespace Exceptionless.Tests;
 public sealed class AppWebHostFactoryTests
 {
     [Fact]
+    public async Task DisposeAsync_ReleasesConfiguredIndexStateForRecycledScope()
+    {
+        var factory = new AppWebHostFactory
+        {
+            IndexesHaveBeenConfigured = true
+        };
+
+        await factory.DisposeAsync();
+
+        Assert.False(factory.IndexesHaveBeenConfigured);
+    }
+
+    [Fact]
     public async Task ConfigureWebHost_MultipleFactories_IsolatesFileStorageByAppScope()
     {
         // Arrange

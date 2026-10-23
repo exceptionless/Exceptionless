@@ -193,7 +193,7 @@ const typeToZod = (rawType, isRequired, nullable, field) => {
 const buildZodField = (field) => {
     const rawType = field.value || 'unknown';
     const type = rawType.replace(/\bany\b/g, 'unknown');
-    const cleanedType = cleanType(type);
+    const cleanedType = cleanType(type).replace(/^\((.*)\)$/, '$1');
     const readableName = toReadableName(field.name);
     const fieldNameLower = field.name.toLowerCase();
 
@@ -344,7 +344,7 @@ const buildZodField = (field) => {
     }
 
     // Handle nullable (adds .nullable())
-    if (isNullableUnion && !zodType.includes('.nullable()')) {
+    if ((isNullableUnion || field.nullable) && !zodType.includes('.nullable()')) {
         zodType = zodType + '.nullable()';
     }
 
