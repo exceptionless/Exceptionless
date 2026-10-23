@@ -1,4 +1,5 @@
 using Exceptionless.Core.Jobs;
+using Foundatio.Xunit;
 using Xunit;
 using BulkIndexByScrollFailure = Elastic.Clients.Elasticsearch.BulkIndexByScrollFailure;
 using DeleteByQueryResponse = Elastic.Clients.Elasticsearch.DeleteByQueryResponse;
@@ -8,7 +9,7 @@ using ShardStatistics = Elastic.Clients.Elasticsearch.ShardStatistics;
 
 namespace Exceptionless.Tests.Jobs;
 
-public class CleanupOrphanedDataResponseTests
+public class CleanupOrphanedDataResponseTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
     [Fact]
     public void EnsureValidDeleteResponse_UnrecoverableFailure_Throws()
