@@ -1,14 +1,15 @@
 <script lang="ts">
-    import type { ViewUser } from '$features/users/models';
-
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { addOrganizationUser, deleteOrganizationUser } from '$features/organizations/api.svelte';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import Mail from '@lucide/svelte/icons/mail';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
+
+    import type { ViewUser } from '#features/users/models.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { addOrganizationUser, deleteOrganizationUser } from '#features/organizations/api.svelte.ts';
 
     import RemoveUserDialog from '../dialogs/remove-user-dialog.svelte';
 

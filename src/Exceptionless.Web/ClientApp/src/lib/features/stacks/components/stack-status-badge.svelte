@@ -2,7 +2,7 @@
     import type { WithElementRef } from 'bits-ui';
     import type { HTMLAnchorAttributes } from 'svelte/elements';
 
-    import { Badge, type BadgeVariant } from '$comp/ui/badge';
+    import { Badge, type BadgeVariant } from '#comp/ui/badge/index.ts';
 
     import { StackStatus } from '../models';
     import { stackStatuses } from '../options';

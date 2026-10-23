@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { submitProductTourActivity } from './activity';
 
 const submitFeatureUsage = vi.hoisted(() => vi.fn());
-vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage }));
+vi.mock('#features/auth/exceptionless-session.ts', () => ({ submitFeatureUsage }));
 
 describe('product-tour activity', () => {
     beforeEach(() => vi.resetAllMocks());

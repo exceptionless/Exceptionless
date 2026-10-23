@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { type QuickRangeOption, quickRanges } from '$features/shared/components/date-range-picker/quick-ranges';
-    import { formatDateLabel, formatDateRangeLabel } from '$features/shared/dates';
-    import { extractRangeExpressions, TIME_UNIT_NAMES } from '$features/shared/utils/datemath';
-    import { parseDateMathRange } from '$features/shared/utils/datemath';
+    import { type QuickRangeOption, quickRanges } from '#features/shared/components/date-range-picker/quick-ranges.ts';
+    import { formatDateLabel, formatDateRangeLabel } from '#features/shared/dates.ts';
+    import { extractRangeExpressions, TIME_UNIT_NAMES } from '#features/shared/utils/datemath.ts';
+    import { parseDateMathRange } from '#features/shared/utils/datemath.ts';
 
     interface Props {
         value?: Date | null | string | undefined;

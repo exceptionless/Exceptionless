@@ -1,15 +1,16 @@
 <script lang="ts">
-    import Duration from '$comp/formatters/duration.svelte';
-    import Number from '$comp/formatters/number.svelte';
-    import * as Card from '$comp/ui/card';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Tooltip from '$comp/ui/tooltip';
     import AreaChart from '@lucide/svelte/icons/area-chart';
     import Clock from '@lucide/svelte/icons/clock';
     import Info from '@lucide/svelte/icons/info';
     import LineChart from '@lucide/svelte/icons/trending-up';
     import Users from '@lucide/svelte/icons/users';
     import prettyMilliseconds from 'pretty-ms';
+
+    import Duration from '#comp/formatters/duration.svelte';
+    import Number from '#comp/formatters/number.svelte';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
 
     interface Props {
         avgDuration?: number;

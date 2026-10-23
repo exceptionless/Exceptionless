@@ -1,23 +1,24 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Separator } from '$comp/ui/separator';
-    import { Spinner } from '$comp/ui/spinner';
-    import { Switch } from '$comp/ui/switch';
-    import { Textarea } from '$comp/ui/textarea';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
+    import { createForm } from '@tanstack/svelte-form';
+    import { toast } from 'svelte-sonner';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Separator } from '#comp/ui/separator/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { Textarea } from '#comp/ui/textarea/index.ts';
     import {
         getAdminAssistantSettingsQuery,
         putAdminAssistantConversationSharingSettingsMutation,
         putAdminAssistantEnabledSettingsMutation,
         putAdminAssistantSettingsMutation
-    } from '$features/admin/api.svelte';
-    import { type AssistantSettingsFormData, AssistantSettingsSchema } from '$features/admin/schemas';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { ProblemDetails } from '@foundatiofx/fetchclient';
-    import { createForm } from '@tanstack/svelte-form';
-    import { toast } from 'svelte-sonner';
+    } from '#features/admin/api.svelte.ts';
+    import { type AssistantSettingsFormData, AssistantSettingsSchema } from '#features/admin/schemas.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     const settingsQuery = getAdminAssistantSettingsQuery();
     const updateEnabledSettings = putAdminAssistantEnabledSettingsMutation();

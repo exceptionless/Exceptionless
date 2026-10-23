@@ -1,23 +1,24 @@
 <script lang="ts">
-    import type { PostSetBonusOrganizationParams } from '$features/organizations/api.svelte';
-    import type { ViewOrganization } from '$features/organizations/models';
-
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Muted, P } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { Button, buttonVariants } from '$comp/ui/button';
-    import * as Calendar from '$comp/ui/calendar';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import * as Popover from '$comp/ui/popover';
-    import { SetBonusOrganizationSchema } from '$features/organizations/schemas';
-    import Number from '$features/shared/components/formatters/number.svelte';
-    import { formatDateLabel } from '$features/shared/dates';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { CalendarDate, type DateValue } from '@internationalized/date';
     import CalendarIcon from '@lucide/svelte/icons/calendar';
     import { createForm } from '@tanstack/svelte-form';
+
+    import type { PostSetBonusOrganizationParams } from '#features/organizations/api.svelte.ts';
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Muted, P } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { Button, buttonVariants } from '#comp/ui/button/index.ts';
+    import * as Calendar from '#comp/ui/calendar/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import * as Popover from '#comp/ui/popover/index.ts';
+    import { SetBonusOrganizationSchema } from '#features/organizations/schemas.ts';
+    import Number from '#features/shared/components/formatters/number.svelte';
+    import { formatDateLabel } from '#features/shared/dates.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
 
     interface Props {
         open: boolean;

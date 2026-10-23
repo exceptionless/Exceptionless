@@ -1,13 +1,14 @@
-import type { ClientConfiguration, NewProject, NotificationSettings, SourceMapArtifact, UpdateProject, ViewProject } from '$features/projects/models';
-import type { StringValueFromBody, WorkInProgressResult } from '$features/shared/models';
-import type { WebSocketMessageValue } from '$features/websockets/models';
-
-import { accessToken } from '$features/auth/index.svelte';
-import { queryKeys as eventQueryKeys } from '$features/events/api.svelte';
-import { fetchApiJson } from '$features/shared/api/api.svelte';
-import { queryKeys as stackQueryKeys } from '$features/stacks/api.svelte';
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+
+import type { ClientConfiguration, NewProject, NotificationSettings, SourceMapArtifact, UpdateProject, ViewProject } from '#features/projects/models.ts';
+import type { StringValueFromBody, WorkInProgressResult } from '#features/shared/models/index.ts';
+import type { WebSocketMessageValue } from '#features/websockets/models.ts';
+
+import { accessToken } from '#features/auth/index.svelte.ts';
+import { queryKeys as eventQueryKeys } from '#features/events/api.svelte.ts';
+import { fetchApiJson } from '#features/shared/api/api.svelte.ts';
+import { queryKeys as stackQueryKeys } from '#features/stacks/api.svelte.ts';
 
 export async function invalidateProjectQueries(queryClient: QueryClient, message: WebSocketMessageValue<'ProjectChanged'>) {
     const { id, organization_id } = message;

@@ -12,6 +12,7 @@ export interface AssistantChatRequestPayload {
     organization_id?: string;
     path: string;
     project_id?: string;
+    time_zone?: string;
 }
 
 export function createAssistantChatRequest(
@@ -32,6 +33,15 @@ export function createAssistantChatRequest(
         })),
         organization_id: organizationId,
         path,
-        project_id: projectId
+        project_id: projectId,
+        time_zone: getTimeZone()
     };
+}
+
+function getTimeZone(): string | undefined {
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+    } catch {
+        return undefined;
+    }
 }

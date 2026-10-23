@@ -1,9 +1,10 @@
 <script lang="ts">
     import { page } from '$app/state';
-    import { A, H3 } from '$comp/typography';
-    import { accessToken } from '$features/auth/index.svelte';
-    import { useHideOrganizationNotifications } from '$features/organizations/hooks/use-hide-organization-notifications.svelte';
-    import { getMeQuery } from '$features/users/api.svelte';
+
+    import { A, H3 } from '#comp/typography/index.ts';
+    import { accessToken } from '#features/auth/index.svelte.ts';
+    import { useHideOrganizationNotifications } from '#features/organizations/hooks/use-hide-organization-notifications.svelte.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
 
     import type { NavigationItemContext } from '../../routes.svelte';
 
@@ -34,7 +35,7 @@
                 <A
                     variant="ghost"
                     href={route.href}
-                    data-sveltekit-noscroll
+                    data-sveltekit-reset={false}
                     class="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive
                         ? 'bg-background text-foreground shadow-xs'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"

@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import './ai-elements.css';
 @source '../node_modules/streamdown-svelte/dist/**/*.{js,svelte,ts}';
 
 @custom-variant dark (&:is(.dark *));

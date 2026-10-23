@@ -1,7 +1,7 @@
-import type { ErrorInfo } from '$features/events/models/event-data';
-
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
+
+import type { ErrorInfo } from '#features/events/models/event-data.ts';
 
 import SourceMapStatus from './source-map-status.svelte';
 

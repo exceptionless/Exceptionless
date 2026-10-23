@@ -248,7 +248,8 @@ public class AdminHandler(
         return Task.FromResult<Result<object>>(new
         {
             httpContext.Request.Headers,
-            IpAddress = httpContext.Request.GetClientIpAddress()
+            IpAddress = httpContext.Request.GetClientIpAddress(),
+            httpContext.Request.Scheme
         });
     }
 

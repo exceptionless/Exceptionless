@@ -1,8 +1,8 @@
 <script lang="ts">
-    import type { OAuthGrant } from '$features/users/models';
+    import type { OAuthGrant } from '#features/users/models.ts';
 
-    import { Badge } from '$comp/ui/badge';
-    import * as Tooltip from '$comp/ui/tooltip';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
 
     interface Props {
         grant: OAuthGrant;

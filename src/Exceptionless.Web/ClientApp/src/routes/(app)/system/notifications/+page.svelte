@@ -1,14 +1,4 @@
 <script lang="ts">
-    // System notification messages are admin-authored HTML and sanitized before rendering.
-    /* eslint svelte/no-at-html-tags: "off" */
-    import { Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
-    import { Label } from '$comp/ui/label';
-    import * as Select from '$comp/ui/select';
-    import { Textarea } from '$comp/ui/textarea';
-    import { clearSystemNotificationMutation, getCurrentSystemNotificationQuery, setSystemNotificationMutation } from '$features/notifications/api.svelte';
-    import { Notification, NotificationDescription } from '$features/shared/components/notification';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Info from '@lucide/svelte/icons/info';
     import Trash2 from '@lucide/svelte/icons/trash-2';
@@ -16,6 +6,17 @@
     import XCircle from '@lucide/svelte/icons/x-circle';
     import DOMPurify from 'dompurify';
     import { toast } from 'svelte-sonner';
+
+    // System notification messages are admin-authored HTML and sanitized before rendering.
+    /* eslint svelte/no-at-html-tags: "off" */
+    import { Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
+    import * as Select from '#comp/ui/select/index.ts';
+    import { Textarea } from '#comp/ui/textarea/index.ts';
+    import { clearSystemNotificationMutation, getCurrentSystemNotificationQuery, setSystemNotificationMutation } from '#features/notifications/api.svelte.ts';
+    import { Notification, NotificationDescription } from '#features/shared/components/notification/index.ts';
 
     const currentNotificationQuery = getCurrentSystemNotificationQuery();
     const setSystemNotification = setSystemNotificationMutation();

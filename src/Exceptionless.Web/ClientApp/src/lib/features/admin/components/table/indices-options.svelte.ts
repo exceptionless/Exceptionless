@@ -1,9 +1,10 @@
-import type { ElasticsearchIndexDetail } from '$features/admin/models';
-
-import Bytes from '$comp/formatters/bytes.svelte';
-import Number from '$comp/formatters/number.svelte';
-import { getSharedTableOptions, type TableMemoryPagingParameters, withClientSortedRowModel } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { ElasticsearchIndexDetail } from '#features/admin/models.ts';
+
+import Bytes from '#comp/formatters/bytes.svelte';
+import Number from '#comp/formatters/number.svelte';
+import { getSharedTableOptions, type TableMemoryPagingParameters, withClientSortedRowModel } from '#features/shared/table.svelte.ts';
 
 import HealthBadgeCell from './health-badge-cell.svelte';
 import UnassignedShardsCell from './unassigned-shards-cell.svelte';

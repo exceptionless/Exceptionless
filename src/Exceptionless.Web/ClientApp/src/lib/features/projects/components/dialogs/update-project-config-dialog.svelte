@@ -1,13 +1,14 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { A, P } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { ClientConfigurationSettingSchema } from '$features/projects/schemas';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { A, P } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { ClientConfigurationSettingSchema } from '#features/projects/schemas.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
 
     import type { ClientConfigurationSetting } from '../../models';
 
