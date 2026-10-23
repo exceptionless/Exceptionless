@@ -294,6 +294,24 @@ export function resendVerificationEmail(request: ResendVerificationEmailRequest)
     }));
 }
 
+/**
+ * Records a product tour entry on the cached current user before the API call finishes,
+ * using the same underscore key the API stores, so the UI doesn't wait on a refetch.
+ */
+export function setCurrentUserProductTourRecorded(queryClient: QueryClient, tourName: ProductTourKey | TrialEndedNoticeKey, recordedUtc: string): void {
+    const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+    if (!currentUser) {
+        return;
+    }
+
+    setCurrentUser(queryClient, currentUser, {
+        product_tours: {
+            ...currentUser.product_tours,
+            [tourName.replaceAll('-', '_')]: recordedUtc
+        }
+    });
+}
+
 export function setCurrentUserSavedViewDefault(queryClient: QueryClient, organizationId: string, savedViewId: null | string) {
     const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
     if (!currentUser) {
