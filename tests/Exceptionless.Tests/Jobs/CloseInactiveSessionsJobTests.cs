@@ -89,6 +89,159 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task WillNotCloseIdentitySessionsInDifferentEnvironmentsAsDuplicates()
+    {
+        // Arrange
+        const string userId = "blake@exceptionless.io";
+        var event1 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+        event1.Environment = "Production";
+        var event2 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+        event2.Environment = "staging";
+        var event3 = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+        event3.Environment = "production";
+
+        var contexts = await _pipeline.RunAsync(new[] { event1, event2, event3 }, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+        Assert.True(contexts.All(c => !c.HasError));
+        Assert.True(contexts.All(c => !c.IsCancelled));
+        Assert.True(contexts.All(c => c.IsProcessed));
+
+        await RefreshDataAsync();
+        var events = await _eventRepository.GetAllAsync();
+        var initialSessionStarts = events.Documents.Where(e => e.IsSessionStart()).ToList();
+        Assert.Equal(2, initialSessionStarts.Count);
+        Assert.DoesNotContain(initialSessionStarts, e => e.HasSessionEndTime());
+
+        await _cache.SetAsync($"Project:{initialSessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}", DateTime.UtcNow.SubtractMinutes(1));
+        _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+        var sessionStarts = (await _eventRepository.GetAllAsync()).Documents.Where(e => e.IsSessionStart()).ToList();
+
+        // Assert
+        Assert.Equal(JobResult.Success, result);
+        Assert.Equal(2, sessionStarts.Count);
+        Assert.DoesNotContain(sessionStarts, e => e.HasSessionEndTime());
+    }
+
+    [Fact]
+    public async Task WillApplyIdentityHeartbeatToEnvironmentSessionsOnDifferentPages()
+    {
+        // Arrange
+        const string userId = "blake@exceptionless.io";
+        var production = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
+        production.Environment = "production";
+        var staging = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(10), userId);
+        staging.Environment = "staging";
+
+        // Open sessions are paged newest first, 100 at a time, so these place the staging session on the second page.
+        var events = new List<PersistentEvent> { production, staging };
+        for (int i = 0; i < 100; i++)
+            events.Add(GenerateEvent(DateTimeOffset.Now.SubtractMinutes(6).SubtractSeconds(i), $"user-{i}@exceptionless.io"));
+
+        var contexts = await _pipeline.RunAsync(events, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+        Assert.True(contexts.All(c => !c.HasError));
+
+        await RefreshDataAsync();
+        var initialSessionStarts = (await _eventRepository.GetAllAsync(o => o.PageLimit(500))).Documents.Where(e => e.IsSessionStart()).ToList();
+        Assert.Equal(102, initialSessionStarts.Count);
+
+        string heartbeatKey = $"Project:{initialSessionStarts.First().ProjectId}:heartbeat:{userId.ToSHA1()}";
+        await _cache.SetAsync(heartbeatKey, DateTime.UtcNow.SubtractMinutes(1));
+        _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+
+        // A newer heartbeat arrives after the first page applied the original one, so the second page reads it.
+        var latestHeartbeatUtc = DateTime.UtcNow;
+        bool isFirstPage = true;
+        using var handler = _eventRepository.DocumentsSaved.AddHandler(async (_, _) =>
+        {
+            if (isFirstPage)
+            {
+                isFirstPage = false;
+                await _cache.SetAsync(heartbeatKey, latestHeartbeatUtc);
+            }
+        });
+
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+        var sessionStarts = (await _eventRepository.GetAllAsync(o => o.PageLimit(500))).Documents.Where(e => e.IsSessionStart()).ToList();
+        var heartbeat = await _cache.GetAsync<DateTime>(heartbeatKey);
+
+        // Assert
+        Assert.Equal(JobResult.Success, result);
+        Assert.False(isFirstPage);
+        var openSessions = sessionStarts.Where(e => !e.HasSessionEndTime()).ToList();
+        Assert.Equal(2, openSessions.Count);
+        Assert.Equal(["production", "staging"], openSessions.Select(e => e.Environment).Order());
+        // The production session has not applied the newer heartbeat yet, so it is left for the next run.
+        Assert.True(heartbeat.HasValue);
+        Assert.Equal(latestHeartbeatUtc, heartbeat.Value);
+    }
+
+    [Fact]
+    public async Task WillKeepHeartbeatsWhenRunIsCancelledBeforeEveryPageIsProcessed()
+    {
+        // Arrange
+        string heartbeatKey = await CreateSessionWithHeartbeatAsync();
+
+        // Cancels after the job saves its first page, before it checks for another page.
+        using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        int savedSessions = 0;
+        using var handler = _eventRepository.DocumentsSaved.AddHandler((_, args) =>
+        {
+            savedSessions += args.Documents.Count;
+            cancellationTokenSource.Cancel();
+            return Task.CompletedTask;
+        });
+
+        _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+
+        // Act
+        await _job.RunAsync(cancellationTokenSource.Token);
+        bool heartbeatExists = await _cache.ExistsAsync(heartbeatKey);
+
+        // Assert
+        Assert.Equal(1, savedSessions);
+        Assert.True(heartbeatExists);
+    }
+
+    [Fact]
+    public async Task WillKeepHeartbeatsWrittenWhileSessionPagesAreProcessed()
+    {
+        // Arrange
+        string heartbeatKey = await CreateSessionWithHeartbeatAsync();
+
+        // A heartbeat arrives after the job has applied the one it read.
+        var latestHeartbeatUtc = DateTime.UtcNow;
+        using var handler = _eventRepository.DocumentsSaved.AddHandler(async (_, _) => await _cache.SetAsync(heartbeatKey, latestHeartbeatUtc));
+
+        _job.DefaultInactivePeriod = TimeSpan.FromMinutes(3);
+
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
+        var heartbeat = await _cache.GetAsync<DateTime>(heartbeatKey);
+
+        // Assert
+        Assert.Equal(JobResult.Success, result);
+        Assert.True(heartbeat.HasValue);
+        Assert.Equal(latestHeartbeatUtc, heartbeat.Value);
+    }
+
+    private async Task<string> CreateSessionWithHeartbeatAsync()
+    {
+        const string userId = "blake@exceptionless.io";
+        var contexts = await _pipeline.RunAsync(new[] { GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId) }, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+        Assert.True(contexts.All(c => !c.HasError));
+        await RefreshDataAsync();
+
+        string heartbeatKey = $"Project:{TestConstants.ProjectId}:heartbeat:{userId.ToSHA1()}";
+        await _cache.SetAsync(heartbeatKey, DateTime.UtcNow.SubtractMinutes(1));
+        return heartbeatKey;
+    }
+
+    [Fact]
     public async Task WillNotCloseDuplicateIdentitySessionsWithSessionIdHeartbeat()
     {
         const string userId = "blake@exceptionless.io";

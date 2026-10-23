@@ -1,8 +1,21 @@
-// Mock for $env/dynamic/public in Storybook
-export const env = {
-    // Filter to only include PUBLIC_ prefixed environment variables
-    ...Object.fromEntries(Object.entries(import.meta.env).filter(([key]) => key.startsWith('PUBLIC_'))),
-    // Provide a Stripe publishable key so isStripeEnabled() returns true in
-    // billing stories. The StripeProvider will fail to init (expected).
-    PUBLIC_STRIPE_PUBLISHABLE_KEY: import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_storybook_placeholder'
-};
+// Mock for SvelteKit's $app/env/public in Storybook, which has no SvelteKit server to provide it.
+const env = import.meta.env;
+
+export const PUBLIC_APP_VERSION = env.PUBLIC_APP_VERSION;
+export const PUBLIC_BASE_URL = env.PUBLIC_BASE_URL;
+export const PUBLIC_ENABLE_ACCOUNT_CREATION = env.PUBLIC_ENABLE_ACCOUNT_CREATION;
+export const PUBLIC_ENABLE_SSL = env.PUBLIC_ENABLE_SSL;
+export const PUBLIC_EXCEPTIONLESS_API_KEY = env.PUBLIC_EXCEPTIONLESS_API_KEY;
+export const PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL = env.PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL;
+export const PUBLIC_EXCEPTIONLESS_SERVER_URL = env.PUBLIC_EXCEPTIONLESS_SERVER_URL;
+export const PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL = env.PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL;
+export const PUBLIC_FACEBOOK_APPID = env.PUBLIC_FACEBOOK_APPID;
+export const PUBLIC_GITHUB_APPID = env.PUBLIC_GITHUB_APPID;
+export const PUBLIC_GOOGLE_APPID = env.PUBLIC_GOOGLE_APPID;
+export const PUBLIC_INTERCOM_APPID = env.PUBLIC_INTERCOM_APPID;
+export const PUBLIC_MICROSOFT_APPID = env.PUBLIC_MICROSOFT_APPID;
+export const PUBLIC_SLACK_APPID = env.PUBLIC_SLACK_APPID;
+// Provide a Stripe publishable key so isStripeEnabled() returns true in
+// billing stories. The StripeProvider will fail to init (expected).
+export const PUBLIC_STRIPE_PUBLISHABLE_KEY = env.PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_storybook_placeholder';
+export const PUBLIC_SYSTEM_NOTIFICATION_MESSAGE = env.PUBLIC_SYSTEM_NOTIFICATION_MESSAGE;

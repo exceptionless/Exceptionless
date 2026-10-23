@@ -1,7 +1,8 @@
-import { ChangeType } from '$features/websockets/models';
 import { render } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { ChangeType } from '#features/websockets/models.ts';
 
 import OrganizationNotifications, { recordConfiguredProjectId } from './organization-notifications.svelte';
 
@@ -9,20 +10,20 @@ const organizationRefetch = vi.hoisted(() => vi.fn());
 const projectsRefetch = vi.hoisted(() => vi.fn());
 const projects = vi.hoisted(() => [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }]);
 
-vi.mock('$features/organizations/api.svelte', () => ({
+vi.mock('#features/organizations/api.svelte.ts', () => ({
     getOrganizationQuery: () => ({ data: undefined, refetch: organizationRefetch }),
     getOrganizationsQuery: () => ({ data: { data: [] } })
 }));
 
-vi.mock('$features/organizations/context.svelte', () => ({
+vi.mock('#features/organizations/context.svelte.ts', () => ({
     organization: { current: 'organization-id' }
 }));
 
-vi.mock('$features/projects/api.svelte', () => ({
+vi.mock('#features/projects/api.svelte.ts', () => ({
     getOrganizationProjectsQuery: () => ({ data: { data: projects }, isSuccess: true, refetch: projectsRefetch })
 }));
 
-vi.mock('$features/users/api.svelte', () => ({
+vi.mock('#features/users/api.svelte.ts', () => ({
     getMeQuery: () => ({ data: { organization_ids: ['organization-id'], roles: [] } })
 }));
 

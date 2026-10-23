@@ -1,16 +1,17 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
-    import Number from '$comp/formatters/number.svelte';
-    import { A, P } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Documentation from '@lucide/svelte/icons/help-circle';
     import { createForm } from '@tanstack/svelte-form';
     import { debounce } from 'throttle-debounce';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import Number from '#comp/formatters/number.svelte';
+    import { A, P } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
 
     import { type FixedInVersionFormData, FixedInVersionSchema } from '../../schemas';
 

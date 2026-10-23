@@ -1,6 +1,7 @@
-import { ChangeType } from '$features/websockets/models';
 import { QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { ChangeType } from '#features/websockets/models.ts';
 
 import type { PersistentEvent } from './models';
 

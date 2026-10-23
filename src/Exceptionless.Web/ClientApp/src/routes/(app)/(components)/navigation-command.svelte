@@ -1,26 +1,10 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
-    import type { ViewProject } from '$features/projects/models';
     import type { FetchClientResponse } from '@foundatiofx/fetchclient';
 
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import * as Command from '$comp/ui/command';
-    import { logout } from '$features/auth/api.svelte';
-    import { accessToken } from '$features/auth/index.svelte';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
-    import { buildEventDetailsHref, type EventSummaryModel, type StackSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
-    import { addOrganizationUser } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { resetData } from '$features/projects/api.svelte';
-    import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
-    import ProjectCommandActions, { type ProjectActionId } from '$features/projects/components/project-command-actions.svelte';
-    import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '$features/shared/keyboard-shortcuts';
-    import InviteUserDialog from '$features/users/components/invite-user-dialog.svelte';
-    import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
     import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import Activity from '@lucide/svelte/icons/activity';
-    import Bot from '@lucide/svelte/icons/bot';
     import Building2 from '@lucide/svelte/icons/building-2';
     import CircleHelp from '@lucide/svelte/icons/circle-help';
     import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
@@ -40,6 +24,29 @@
     import { toggleMode } from 'mode-watcher';
     import { tick } from 'svelte';
     import { toast } from 'svelte-sonner';
+
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+    import type { ViewProject } from '#features/projects/models.ts';
+
+    import ExieIcon from '#comp/icons/ExieIcon.svelte';
+    import * as Command from '#comp/ui/command/index.ts';
+    import { logout } from '#features/auth/api.svelte.ts';
+    import { accessToken } from '#features/auth/index.svelte.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
+    import {
+        buildEventDetailsHref,
+        type EventSummaryModel,
+        type StackSummaryModel,
+        type SummaryTemplateKeys
+    } from '#features/events/components/summary/index.ts';
+    import { addOrganizationUser } from '#features/organizations/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { resetData } from '#features/projects/api.svelte.ts';
+    import ResetProjectDataDialog from '#features/projects/components/dialogs/reset-project-data-dialog.svelte';
+    import ProjectCommandActions, { type ProjectActionId } from '#features/projects/components/project-command-actions.svelte';
+    import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '#features/shared/keyboard-shortcuts.ts';
+    import InviteUserDialog from '#features/users/components/invite-user-dialog.svelte';
+    import { DEFAULT_OFFSET } from '#shared/api/api.svelte.ts';
 
     import type { NavigationItem } from '../../routes.svelte';
 
@@ -420,7 +427,7 @@
     async function switchToOrganization(organizationItem: ViewOrganization): Promise<void> {
         closeCommandWindow();
         organization.current = organizationItem.id;
-        await goto(resolve('/'));
+        await goto(resolve('/(app)'));
     }
 
     function toggleTheme(): void {
@@ -574,7 +581,7 @@
                 {#if isExieEnabled}
                     <Command.Group heading="Exie" value="Exie Assistant">
                         <Command.Item value="Ask Exie open assistant AI chat" onSelect={() => void openExieAssistant()}>
-                            <Bot />
+                            <ExieIcon />
                             <span>Ask Exie</span>
                         </Command.Item>
                         <Command.Item value="Exie Triage Recent Errors investigate issues stacks" onSelect={() => void askExieAssistant(EXIE_TRIAGE_PROMPT)}>

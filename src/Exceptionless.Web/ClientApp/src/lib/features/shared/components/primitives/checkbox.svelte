@@ -1,8 +1,8 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { Checkbox } from '$comp/ui/checkbox';
-    import Label from '$comp/ui/label/label.svelte';
+    import { Checkbox } from '#comp/ui/checkbox/index.ts';
+    import Label from '#comp/ui/label/label.svelte';
 
     interface Props {
         checked?: boolean;

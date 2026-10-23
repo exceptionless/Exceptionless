@@ -202,21 +202,36 @@ public class Bootstrapper
         services.AddSingleton<OrganizationService>();
         services.AddStartupAction<OrganizationService>();
         services.AddHttpClient<IOAuthClientMetadataService, OAuthClientMetadataService>()
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            .ConfigurePrimaryHttpMessageHandler(s =>
             {
-                AllowAutoRedirect = false,
-                ConnectCallback = ConnectToPublicAddressAsync
+                var logger = s.GetRequiredService<ILogger<OAuthClientMetadataService>>();
+                return new SocketsHttpHandler
+                {
+                    // Disable the cookie and proxy defaults: downloads are anonymous and proxies bypass destination address validation.
+                    AllowAutoRedirect = false,
+                    UseCookies = false,
+                    UseProxy = false,
+                    ConnectCallback = (context, cancellationToken) => ConnectToPublicAddressAsync(context, cancellationToken, logger)
+                };
             });
         services.AddSingleton<SourceMapRequestThrottle>();
         services.AddHttpClient(SourceMapService.HttpClientName)
-            .ConfigurePrimaryHttpMessageHandler(serviceProvider => CreateSourceMapHttpMessageHandler(
-                serviceProvider.GetRequiredService<SourceMapRequestThrottle>(),
+            .ConfigurePrimaryHttpMessageHandler(s => CreateSourceMapHttpMessageHandler(
+                s.GetRequiredService<SourceMapRequestThrottle>(),
                 DecompressionMethods.All));
         services.AddHttpClient(SourceMapService.GeneratedFileHttpClientName)
-            .ConfigurePrimaryHttpMessageHandler(serviceProvider => CreateSourceMapHttpMessageHandler(
-                serviceProvider.GetRequiredService<SourceMapRequestThrottle>(),
+            .ConfigurePrimaryHttpMessageHandler(s => CreateSourceMapHttpMessageHandler(
+                s.GetRequiredService<SourceMapRequestThrottle>(),
                 DecompressionMethods.None));
         services.AddSingleton<SourceMapService>();
+        services.AddHttpClient(WebHookDelivery.HttpClientName)
+            // Job logs retain delivery diagnostics without logging credential-bearing URL paths.
+            .RemoveAllLoggers()
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                UseCookies = false,
+                ActivityHeadersPropagator = WebHookDelivery.ContextPropagator
+            });
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<IAssistantUsageRecorder>(provider => provider.GetRequiredService<UsageService>());
@@ -226,13 +241,13 @@ public class Bootstrapper
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
     }
 
-    private static async ValueTask<Stream> ConnectToPublicAddressAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken)
+    private static async ValueTask<Stream> ConnectToPublicAddressAsync(SocketsHttpConnectionContext context, CancellationToken cancellationToken, ILogger logger)
     {
         var addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, cancellationToken);
         Exception? lastException = null;
         foreach (var address in addresses)
         {
-            if (!OAuthClientMetadataService.IsPublicAddress(address))
+            if (!PublicAddressPolicy.IsPublic(address))
                 continue;
 
             var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
@@ -244,7 +259,12 @@ public class Bootstrapper
             catch (SocketException ex)
             {
                 lastException = ex;
-                socket.Dispose();
+                OutboundSocketCleanup.Dispose(socket, logger);
+            }
+            catch
+            {
+                OutboundSocketCleanup.Dispose(socket, logger);
+                throw;
             }
         }
 
@@ -360,8 +380,6 @@ public class Bootstrapper
             integrations.Add("Google OAuth");
         if (!String.IsNullOrWhiteSpace(options.AuthOptions.MicrosoftId))
             integrations.Add("Microsoft OAuth");
-        if (!String.IsNullOrWhiteSpace(options.AuthOptions.FacebookId))
-            integrations.Add("Facebook OAuth");
         if (!String.IsNullOrWhiteSpace(options.AuthOptions.GitHubId))
             integrations.Add("GitHub OAuth");
         if (options.AuthOptions.EnableActiveDirectoryAuth)

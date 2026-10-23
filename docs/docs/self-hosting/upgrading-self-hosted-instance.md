@@ -4,6 +4,10 @@ title: "Upgrading"
 
 # Upgrading
 
+## Trusted proxy migration
+
+Upgrading from unrestricted forwarding requires [explicit trust for non-loopback reverse proxies](/docs/self-hosting/#reverse-proxies-and-https). Configure and verify the actual ingress peers before rollout, or client-IP limits and HTTPS detection can change. Direct hosting needs no new settings.
+
 **Please ensure that you have created backups before upgrading!**
 
 ## Layered infrastructure connection strings

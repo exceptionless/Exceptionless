@@ -59,6 +59,8 @@ public class AppOptions
 
     public bool EnableWebSockets { get; internal set; }
 
+    public bool EnableSsl { get; internal set; }
+
     public string? Version { get; internal set; }
 
     public string? InformationalVersion { get; internal set; }
@@ -123,6 +125,7 @@ public class AppOptions
 
         options.EnableRepositoryNotifications = config.GetValue(nameof(options.EnableRepositoryNotifications), true);
         options.EnableWebSockets = config.GetValue(nameof(options.EnableWebSockets), true);
+        options.EnableSsl = config.GetValue(nameof(options.EnableSsl), false);
 
         try
         {

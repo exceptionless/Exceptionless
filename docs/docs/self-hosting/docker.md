@@ -4,6 +4,8 @@ title: "Docker"
 
 # Docker
 
+If you place a reverse proxy in front of the container, configure its [trusted forwarding peers](/docs/self-hosting/#reverse-proxies-and-https) before upgrading. The direct-port examples below do not require proxy trust settings.
+
 If you would like to test Exceptionless locally, please follow this section.
 
 See [Infrastructure Configuration](/docs/self-hosting/configuration) for technology-named Redis, RabbitMQ, queue, and storage connection strings. Existing Docker Compose selectors remain supported as compatibility settings.

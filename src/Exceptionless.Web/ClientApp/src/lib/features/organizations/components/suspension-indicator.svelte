@@ -1,7 +1,7 @@
 <script lang="ts">
-    import Badge from '$comp/ui/badge/badge.svelte';
-    import * as Tooltip from '$comp/ui/tooltip';
-    import { getSuspensionDescription } from '$features/organizations/suspension-utils';
+    import Badge from '#comp/ui/badge/badge.svelte';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
+    import { getSuspensionDescription } from '#features/organizations/suspension-utils.ts';
 
     interface Props {
         code?: null | string;

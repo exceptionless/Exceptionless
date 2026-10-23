@@ -1,7 +1,7 @@
 <script lang="ts">
-    import type { FacetedFilterProps } from '$comp/faceted-filter';
+    import type { FacetedFilterProps } from '#comp/faceted-filter/index.ts';
 
-    import * as FacetedFilter from '$comp/faceted-filter';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
 
     import type { VersionFilter } from './models.svelte';
 

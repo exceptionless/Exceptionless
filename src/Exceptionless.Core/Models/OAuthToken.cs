@@ -30,6 +30,12 @@ public class OAuthToken : IIdentity, IHaveDates, IValidatableObject
     [MaxLength(100)]
     public string AccessTokenHash { get; set; } = null!;
 
+    /// <summary>
+    /// The user session generation captured when this OAuth token is issued.
+    /// A legacy null value matches only an active user whose generation is also null; it does not describe a password format.
+    /// </summary>
+    public string? AuthenticationVersion { get; set; }
+
     [MaxLength(100)]
     public string? RefreshTokenHash { get; set; }
 

@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import * as Popover from '$comp/ui/popover';
-    import { Switch } from '$comp/ui/switch';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import * as Popover from '#comp/ui/popover/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
 
     import type { AssistantConversationSharingSettings } from '../models';
 

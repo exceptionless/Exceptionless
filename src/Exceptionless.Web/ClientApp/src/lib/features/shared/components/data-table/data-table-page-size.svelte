@@ -5,8 +5,8 @@
 <script generics="TData extends RowData" lang="ts">
     import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
 
-    import * as Select from '$comp/ui/select';
-    import { cn } from '$lib/utils';
+    import * as Select from '#comp/ui/select/index.ts';
+    import { cn } from '#lib/utils.ts';
 
     interface Props {
         joined?: boolean;

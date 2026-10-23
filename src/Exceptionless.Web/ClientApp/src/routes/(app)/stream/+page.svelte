@@ -1,19 +1,25 @@
 <script lang="ts">
-    import type { GetEventsParams } from '$features/events/api.svelte';
-
     import { page } from '$app/state';
-    import * as DataTable from '$comp/data-table';
-    import DelayedRender from '$comp/delayed-render.svelte';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import StreamingIndicatorButton from '$comp/streaming-indicator-button.svelte';
-    import { H3 } from '$comp/typography';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
-    import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
-    import { ProjectFilter, StatusFilter, TagFilter } from '$features/events/components/filters';
+    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
+    import { createTable } from '@tanstack/svelte-table';
+    import { useEventListener, watch } from 'runed';
+    import { onDestroy } from 'svelte';
+    import { debounce } from 'throttle-debounce';
+
+    import type { GetEventsParams } from '#features/events/api.svelte.ts';
+
+    import * as DataTable from '#comp/data-table/index.ts';
+    import DelayedRender from '#comp/delayed-render.svelte';
+    import ErrorMessage from '#comp/error-message.svelte';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import StreamingIndicatorButton from '#comp/streaming-indicator-button.svelte';
+    import { H3 } from '#comp/typography/index.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/upgrade-required.svelte.ts';
+    import { PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '#features/events/api.svelte.ts';
+    import EventDetailSheet from '#features/events/components/event-detail-sheet.svelte';
     import {
         buildFilterCacheKey,
+        deserializeFilters,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
@@ -22,23 +28,19 @@
         shouldRefreshPersistentEventChanged,
         toFilter,
         updateFilterCache
-    } from '$features/events/components/filters/helpers.svelte';
-    import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
-    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
-    import { defaultEventColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
-    import { getSharedTableOptions, isTableEmpty, removeTableData } from '$features/shared/table.svelte';
-    import { StackStatus } from '$features/stacks/models';
-    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '$shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
-    import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
-    import { createTable } from '@tanstack/svelte-table';
-    import { useEventListener, watch } from 'runed';
-    import { onDestroy } from 'svelte';
-    import { debounce } from 'throttle-debounce';
+    } from '#features/events/components/filters/helpers.svelte.ts';
+    import { EnvironmentFilter, ProjectFilter, StatusFilter, TagFilter } from '#features/events/components/filters/index.ts';
+    import OrganizationDefaultsFacetedFilterBuilder from '#features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
+    import { defaultEventColumnVisibility, getColumns } from '#features/events/components/table/options.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '#features/saved-views/use-saved-views.svelte.ts';
+    import { getSharedTableOptions, isTableEmpty, removeTableData } from '#features/shared/table.svelte.ts';
+    import { StackStatus } from '#features/stacks/models.ts';
+    import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
+    import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '#shared/api/api.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../redirect-to-events.svelte';
 
@@ -60,6 +62,7 @@
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
+        filters: undefined as string | undefined,
         limit: DEFAULT_LIMIT,
         saved: undefined as string | undefined
     };
@@ -74,6 +77,7 @@
         history: 'push',
         schema: {
             filter: 'string',
+            filters: 'string',
             limit: 'number',
             saved: 'string'
         }
@@ -121,7 +125,10 @@
 
     watch(
         () => organization.current,
-        () => {
+        (_currentOrganizationId, previousOrganizationId) => {
+            if (previousOrganizationId === undefined) {
+                return;
+            }
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             queryParams.update(DEFAULT_PARAMS);
             paused = false;
@@ -131,11 +138,23 @@
         }
     );
 
-    let filters = $state(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter));
+    function getQueryFilters() {
+        const cached = getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter);
+        if (queryParams.filters && serializeFilters(cached) !== queryParams.filters) {
+            const restored = deserializeFilters(queryParams.filters);
+            if (toFilter(restored) === queryParams.filter) {
+                return restored;
+            }
+        }
+
+        return cached;
+    }
+
+    let filters = $state(getQueryFilters());
     watch(
-        [() => queryParams.filter],
-        ([filter]) => {
-            filters = getFiltersFromCache(filterCacheKey(filter), filter);
+        [() => queryParams.filter, () => queryParams.filters],
+        () => {
+            filters = getQueryFilters();
         },
         {
             lazy: true
@@ -173,7 +192,8 @@
         updateFilterCache(filterCacheKey(filter), updatedFilters);
         queryParams.update(
             {
-                filter
+                filter,
+                filters: updatedFilters.some((filter) => filter.type === 'environment') ? serializeFilters(updatedFilters) : null
             },
             {
                 history: options.history
@@ -209,6 +229,7 @@
             columnPersistenceKey: 'stream-column-visibility',
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    onEnvironmentClick: (environment) => onFilterChanged(new EnvironmentFilter([environment])),
                     onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
                 })

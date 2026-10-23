@@ -1,8 +1,9 @@
-import type { MigrationState, MigrationStatus } from '$features/admin/models';
-
-import DateTime from '$comp/formatters/date-time.svelte';
-import { getSharedTableOptions, type TableMemoryPagingParameters, withClientSortedRowModel } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { MigrationState, MigrationStatus } from '#features/admin/models.ts';
+
+import DateTime from '#comp/formatters/date-time.svelte';
+import { getSharedTableOptions, type TableMemoryPagingParameters, withClientSortedRowModel } from '#features/shared/table.svelte.ts';
 
 import MigrationActionsCell from './migration-actions-cell.svelte';
 import MigrationDurationCell from './migration-duration-cell.svelte';

@@ -3,7 +3,10 @@
 
 declare global {
     namespace App {
-        // interface Error {}
+        interface Error {
+            /** Exceptionless reference ID for errors reported by the client error hook. */
+            errorId?: string;
+        }
         // interface Locals {}
         // interface PageData {}
         // interface PageState {}

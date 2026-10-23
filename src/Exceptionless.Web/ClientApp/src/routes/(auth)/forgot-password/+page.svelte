@@ -1,19 +1,20 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import Logo from '$comp/logo.svelte';
-    import { A, P } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Spinner } from '$comp/ui/spinner';
-    import { forgotPassword } from '$features/auth/api.svelte';
-    import { type ForgotPasswordFormData, ForgotPasswordSchema } from '$features/auth/schemas';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import Logo from '#comp/logo.svelte';
+    import { A, P } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { forgotPassword } from '#features/auth/api.svelte.ts';
+    import { type ForgotPasswordFormData, ForgotPasswordSchema } from '#features/auth/schemas.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
 
     const form = createForm(() => ({
         defaultValues: {

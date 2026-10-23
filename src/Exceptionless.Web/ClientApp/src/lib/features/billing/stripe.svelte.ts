@@ -1,6 +1,6 @@
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
-import { env } from '$env/dynamic/public';
+import { PUBLIC_STRIPE_PUBLISHABLE_KEY } from '$app/env/public';
 import { loadStripe } from '@stripe/stripe-js/pure';
 import { getContext, setContext } from 'svelte';
 
@@ -14,11 +14,11 @@ export interface StripeContext {
 }
 
 export function getStripePublishableKey(): string | undefined {
-    return env.PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    return PUBLIC_STRIPE_PUBLISHABLE_KEY;
 }
 
 export function isStripeEnabled(): boolean {
-    return !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    return !!PUBLIC_STRIPE_PUBLISHABLE_KEY;
 }
 
 let _stripePromise: null | Promise<null | Stripe> = null;
@@ -34,7 +34,7 @@ export async function loadStripeOnce(): Promise<null | Stripe> {
     }
 
     if (!_stripePromise) {
-        _stripePromise = loadStripe(env.PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+        _stripePromise = loadStripe(PUBLIC_STRIPE_PUBLISHABLE_KEY!);
     }
 
     try {

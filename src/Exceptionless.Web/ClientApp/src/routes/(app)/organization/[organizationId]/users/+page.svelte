@@ -1,22 +1,23 @@
 <script lang="ts">
-    import type { ViewUser } from '$features/users/models';
-
     import { page } from '$app/state';
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import { Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
-    import { addOrganizationUser } from '$features/organizations/api.svelte';
-    import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-    import { type GetOrganizationUsersParams, getOrganizationUsersQuery } from '$features/users/api.svelte';
-    import InviteUserDialog from '$features/users/components/invite-user-dialog.svelte';
-    import { getTableOptions } from '$features/users/components/table/options.svelte';
-    import UsersDataTable from '$features/users/components/table/users-data-table.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
+
+    import type { ViewUser } from '#features/users/models.ts';
+
+    import DataTableViewOptions from '#comp/data-table/data-table-view-options.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
+    import { addOrganizationUser } from '#features/organizations/api.svelte.ts';
+    import { DEFAULT_LIMIT } from '#features/shared/api/api.svelte.ts';
+    import { type GetOrganizationUsersParams, getOrganizationUsersQuery } from '#features/users/api.svelte.ts';
+    import InviteUserDialog from '#features/users/components/invite-user-dialog.svelte';
+    import { getTableOptions } from '#features/users/components/table/options.svelte.ts';
+    import UsersDataTable from '#features/users/components/table/users-data-table.svelte';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     const organizationId = $derived(page.params.organizationId || '');
 
