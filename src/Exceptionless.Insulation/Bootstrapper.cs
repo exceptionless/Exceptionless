@@ -62,6 +62,12 @@ public class Bootstrapper
         if (!String.IsNullOrEmpty(appOptions.MaxMindGeoIpKey))
             services.ReplaceSingleton<IGeoIpService, MaxMindGeoIpService>();
 
+        if (appOptions.UsesRedis())
+        {
+            ValidateRedisConnectionStrings(appOptions);
+            services.AddSingleton<RedisConnectionRegistry>();
+        }
+
         RegisterCache(services, appOptions.CacheOptions);
         RegisterMessageBus(services, appOptions.MessageBusOptions);
         RegisterQueue(services, appOptions.QueueOptions, runMaintenanceTasks);
@@ -72,6 +78,43 @@ public class Bootstrapper
         if (!String.IsNullOrEmpty(appOptions.EmailOptions.SmtpHost))
             services.ReplaceSingleton<IMailSender, MailKitMailSender>();
     }
+
+    private static void ValidateRedisConnectionStrings(AppOptions options)
+    {
+        var roles = new (string Name, string? Provider, string? ConnectionString)[]
+        {
+            ("Cache", options.CacheOptions.Provider, options.CacheOptions.ConnectionString),
+            ("MessageBus", options.MessageBusOptions.Provider, options.MessageBusOptions.ConnectionString),
+            ("Queue", options.QueueOptions.Provider, options.QueueOptions.ConnectionString)
+        };
+        var validated = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach ((string name, string? provider, string? connectionString) in roles)
+        {
+            if (!String.Equals(provider, "redis", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (String.IsNullOrWhiteSpace(connectionString))
+                throw CreateInvalidRedisConfigurationException(name);
+
+            if (!validated.Add(connectionString))
+                continue;
+
+            try
+            {
+                ConfigurationOptions configuration = ConfigurationOptions.Parse(connectionString);
+                if (configuration.EndPoints.Count == 0)
+                    throw CreateInvalidRedisConfigurationException(name);
+            }
+            catch (ArgumentException)
+            {
+                throw CreateInvalidRedisConfigurationException(name);
+            }
+        }
+    }
+
+    private static InvalidOperationException CreateInvalidRedisConfigurationException(string role)
+        => new($"The Redis connection string selected for {role} is invalid.");
 
     private static IHealthChecksBuilder RegisterHealthChecks(IServiceCollection services)
     {
@@ -104,14 +147,16 @@ public class Bootstrapper
     {
         if (String.Equals(options.Provider, "redis"))
         {
-            container.ReplaceSingleton(s => GetRedisConnection(options.ConnectionString!, s.GetRequiredService<ILoggerFactory>()));
+            container.ReplaceSingleton<IConnectionMultiplexer>(s =>
+                s.GetRequiredService<RedisConnectionRegistry>().GetCacheConnection(options.ConnectionString!));
 
             if (!String.IsNullOrEmpty(options.Scope))
                 container.ReplaceSingleton<ICacheClient>(s => new ScopedCacheClient(CreateRedisCacheClient(s), options.Scope));
             else
                 container.ReplaceSingleton<ICacheClient>(CreateRedisCacheClient);
 
-            container.ReplaceSingleton<IConnectionMapping, RedisConnectionMapping>();
+            container.ReplaceSingleton<IConnectionMapping>(s => new RedisConnectionMapping(
+                s.GetRequiredService<RedisConnectionRegistry>().GetConnection(options.ConnectionString!)));
         }
     }
 
@@ -119,11 +164,9 @@ public class Bootstrapper
     {
         if (String.Equals(options.Provider, "redis"))
         {
-            container.ReplaceSingleton(s => GetRedisConnection(options.ConnectionString!, s.GetRequiredService<ILoggerFactory>()));
-
             container.ReplaceSingleton<IMessageBus>(s => new RedisMessageBus(new RedisMessageBusOptions
             {
-                Subscriber = s.GetRequiredService<IConnectionMultiplexer>().GetSubscriber(),
+                Subscriber = s.GetRequiredService<RedisConnectionRegistry>().GetConnection(options.ConnectionString!).GetSubscriber(),
                 Topic = options.Topic,
                 Serializer = s.GetRequiredService<ISerializer>(),
                 TimeProvider = s.GetRequiredService<TimeProvider>(),
@@ -143,11 +186,6 @@ public class Bootstrapper
                 LoggerFactory = s.GetRequiredService<ILoggerFactory>()
             }));
         }
-    }
-
-    private static IConnectionMultiplexer GetRedisConnection(string connectionString, ILoggerFactory loggerFactory)
-    {
-        return ConnectionMultiplexer.Connect(connectionString, o => o.LoggerFactory = loggerFactory);
     }
 
     private static void RegisterQueue(IServiceCollection container, QueueOptions options, bool runMaintenanceTasks)
@@ -262,7 +300,7 @@ public class Bootstrapper
     {
         return new RedisQueue<T>(new RedisQueueOptions<T>
         {
-            ConnectionMultiplexer = container.GetRequiredService<IConnectionMultiplexer>(),
+            ConnectionMultiplexer = container.GetRequiredService<RedisConnectionRegistry>().GetConnection(options.ConnectionString!),
             Name = GetQueueName<T>(options),
             Retries = retries,
             Behaviors = container.GetServices<IQueueBehavior<T>>().ToList(),
