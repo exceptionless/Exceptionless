@@ -1,16 +1,17 @@
 <script lang="ts">
-    import { Muted } from '$comp/typography';
-    import * as Alert from '$comp/ui/alert';
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Separator } from '$comp/ui/separator';
-    import { Spinner } from '$comp/ui/spinner';
-    import { Switch } from '$comp/ui/switch';
-    import { getEventSubmissionSettingsQuery, putEventSubmissionSettingsMutation } from '$features/admin/api.svelte';
-    import AssistantSettings from '$features/admin/components/assistant-settings.svelte';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import { toast } from 'svelte-sonner';
+
+    import { Muted } from '#comp/typography/index.ts';
+    import * as Alert from '#comp/ui/alert/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Separator } from '#comp/ui/separator/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { getEventSubmissionSettingsQuery, putEventSubmissionSettingsMutation } from '#features/admin/api.svelte.ts';
+    import AssistantSettings from '#features/admin/components/assistant-settings.svelte';
 
     const settingsQuery = getEventSubmissionSettingsQuery();
     const updateSettings = putEventSubmissionSettingsMutation();

@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { Button, type ButtonProps } from '$comp/ui/button';
     import Filter from '@lucide/svelte/icons/filter';
+
+    import { Button, type ButtonProps } from '#comp/ui/button/index.ts';
 
     import { StringFilter } from './models.svelte';
 

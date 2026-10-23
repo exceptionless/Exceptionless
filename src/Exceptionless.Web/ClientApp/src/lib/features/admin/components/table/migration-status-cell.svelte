@@ -1,10 +1,10 @@
 <script lang="ts">
-    import type { MigrationStatus } from '$features/admin/models';
-
     import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
     import Clock from '@lucide/svelte/icons/clock';
     import Loader from '@lucide/svelte/icons/loader';
     import XCircle from '@lucide/svelte/icons/x-circle';
+
+    import type { MigrationStatus } from '#features/admin/models.ts';
 
     interface Props {
         status: MigrationStatus;

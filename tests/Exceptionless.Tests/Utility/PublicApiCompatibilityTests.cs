@@ -4,11 +4,12 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
+using Foundatio.Xunit;
 using Xunit;
 
 namespace Exceptionless.Tests.Utility;
 
-public class PublicApiCompatibilityTests
+public class PublicApiCompatibilityTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
     [Fact]
     public void IExtensibleObject_GetProperty_PreservesOriginalSignature()
@@ -63,6 +64,7 @@ public class PublicApiCompatibilityTests
     [Fact]
     public void ConfigureExceptionlessApiDefaults_StackWithInternalState_OmitsInternalProperties()
     {
+        // Arrange
         var stack = new Stack
         {
             RedirectToStackId = "target-stack",
@@ -71,9 +73,11 @@ public class PublicApiCompatibilityTests
             ElasticVersion = "42"
         };
 
+        // Act
         string apiJson = JsonSerializer.Serialize(stack, new JsonSerializerOptions().ConfigureExceptionlessApiDefaults());
         string storageJson = JsonSerializer.Serialize(stack, new JsonSerializerOptions().ConfigureExceptionlessDefaults());
 
+        // Assert
         Assert.DoesNotContain("redirect_to_stack_id", apiJson);
         Assert.DoesNotContain("merged_duplicate_stack_totals", apiJson);
         Assert.DoesNotContain("needs_redirect_reconciliation", apiJson);

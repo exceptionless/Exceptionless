@@ -1,6 +1,6 @@
-import type { ViewCurrentUser, ViewOrganization } from '$lib/generated/api';
-
 import { describe, expect, it } from 'vitest';
+
+import type { ViewCurrentUser, ViewOrganization } from '#lib/generated/api.ts';
 
 import { buildIntercomBootOptions } from './context.svelte';
 

@@ -1,8 +1,8 @@
 <script lang="ts">
-    import type { OAuthGrant } from '$features/users/models';
+    import type { OAuthGrant } from '#features/users/models.ts';
 
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { Badge } from '$comp/ui/badge';
+    import TimeAgo from '#comp/formatters/time-ago.svelte';
+    import { Badge } from '#comp/ui/badge/index.ts';
 
     interface Props {
         grant: OAuthGrant;

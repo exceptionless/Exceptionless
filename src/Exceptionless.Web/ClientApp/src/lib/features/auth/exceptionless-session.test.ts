@@ -1,7 +1,7 @@
 import { Exceptionless } from '@exceptionless/browser';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 vi.mock('@exceptionless/browser', async () => {
     const { Configuration, ExceptionlessClient } = await import('@exceptionless/core');
     const config = new Configuration();

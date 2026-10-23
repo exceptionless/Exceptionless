@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { List } from '$comp/typography';
+    import { List } from '#comp/typography/index.ts';
 
     interface Props {
         logs?: string[];

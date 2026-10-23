@@ -1,8 +1,8 @@
 <script lang="ts">
-    import { createProductTourActions } from '$features/product-tours/actions.svelte';
-    import ProductTourSpotlight from '$features/product-tours/components/product-tour-spotlight.svelte';
-    import { PRODUCT_TOUR_CHECKPOINTS } from '$features/product-tours/models';
-    import { productTourCheckpoint } from '$features/product-tours/state.svelte';
+    import { createProductTourActions } from '#features/product-tours/actions.svelte.ts';
+    import ProductTourSpotlight from '#features/product-tours/components/product-tour-spotlight.svelte';
+    import { PRODUCT_TOUR_CHECKPOINTS } from '#features/product-tours/models.ts';
+    import { productTourCheckpoint } from '#features/product-tours/state.svelte.ts';
 
     import type { PersistentEvent } from '../../models';
 

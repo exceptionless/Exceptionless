@@ -403,9 +403,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             {
                 _logger.LogError(
                     ex,
-                    "Unable to resolve redirected stack {SourceStackId} to target {TargetStackId}",
+                    "Unable to resolve redirected stack {SourceStackId} to target {TargetStackId}: {Message}",
                     sourceStack.Id,
-                    sourceStack.RedirectToStackId);
+                    sourceStack.RedirectToStackId,
+                    ex.Message);
             }
         }
 

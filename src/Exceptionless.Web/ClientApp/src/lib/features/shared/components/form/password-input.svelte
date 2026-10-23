@@ -3,8 +3,8 @@
     import type { Snippet } from 'svelte';
     import type { FullAutoFill } from 'svelte/elements';
 
-    import Input from '$comp/ui/input/input.svelte';
-    import { Label } from '$comp/ui/label';
+    import Input from '#comp/ui/input/input.svelte';
+    import { Label } from '#comp/ui/label/index.ts';
 
     interface Props {
         autocomplete?: FullAutoFill | null | undefined;
