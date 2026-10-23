@@ -1,6 +1,7 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type Request } from '@playwright/test';
 
 interface TrackedWebSocketWindow extends Window {
+    __exceptionlessE2ESseControllers?: ReadableStreamDefaultController<Uint8Array>[];
     __exceptionlessE2EWebSocketConnections?: number;
     __exceptionlessE2EWebSockets?: WebSocket[];
 }
@@ -26,19 +27,30 @@ export async function churnDocumentVisibility(page: Page): Promise<number> {
 
 export async function dispatchWebSocketMessages(page: Page, messages: unknown[]): Promise<void> {
     await page.evaluate((messages) => {
-        const sockets = (window as TrackedWebSocketWindow).__exceptionlessE2EWebSockets ?? [];
+        const trackedWindow = window as TrackedWebSocketWindow;
+        const sockets = trackedWindow.__exceptionlessE2EWebSockets ?? [];
         const socket = sockets.find((candidate) => candidate.readyState === WebSocket.OPEN && candidate.url.includes('/api/v2/push'));
-        if (!socket) {
-            throw new Error('No open Exceptionless WebSocket was captured');
+        if (socket) {
+            for (const message of messages) {
+                socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(message) }));
+            }
+            return;
         }
 
+        const controllers = trackedWindow.__exceptionlessE2ESseControllers ?? [];
+        const controller = controllers.at(-1);
+        if (!controller) {
+            throw new Error('No open Exceptionless push connection was captured');
+        }
+
+        const encoder = new TextEncoder();
         for (const message of messages) {
-            socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify(message) }));
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(message)}\n\n`));
         }
     }, messages);
 }
 
-export async function installWebSocketTestHarness(page: Page, options: { ignoreServerMessages?: boolean } = {}): Promise<void> {
+export async function installWebSocketTestHarness(page: Page, options: { ignoreServerMessages?: boolean; synthetic?: boolean } = {}): Promise<void> {
     if (options.ignoreServerMessages) {
         // Keep real connection/reconnection behavior, but let request-budget tests
         // inject their own notifications without late background-job broadcasts.
@@ -51,7 +63,7 @@ export async function installWebSocketTestHarness(page: Page, options: { ignoreS
         );
     }
 
-    await page.addInitScript(() => {
+    await page.addInitScript((options) => {
         const trackedWindow = window as TrackedWebSocketWindow;
         if (trackedWindow.__exceptionlessE2EWebSockets) {
             return;
@@ -82,7 +94,102 @@ export async function installWebSocketTestHarness(page: Page, options: { ignoreS
 
         trackedWindow.__exceptionlessE2EWebSockets = sockets;
         window.WebSocket = TrackedWebSocket;
-    });
+
+        const NativeFetch = window.fetch.bind(window);
+        const controllers: ReadableStreamDefaultController<Uint8Array>[] = [];
+        trackedWindow.__exceptionlessE2ESseControllers = controllers;
+        window.fetch = async (input, init) => {
+            const requestUrl = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
+            const pathname = new URL(requestUrl, window.location.href).pathname;
+            if (pathname !== '/api/v2/push') {
+                return NativeFetch(input, init);
+            }
+
+            const response = options.synthetic ? undefined : await NativeFetch(input, init);
+            if (response && (!response.ok || !response.body || !response.headers.get('Content-Type')?.startsWith('text/event-stream'))) {
+                return response;
+            }
+            const reader = response?.body?.getReader();
+            let activeController: ReadableStreamDefaultController<Uint8Array> | undefined;
+            const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);
+            let abortHandler: (() => void) | undefined;
+
+            const removeController = () => {
+                if (abortHandler) {
+                    signal?.removeEventListener('abort', abortHandler);
+                    abortHandler = undefined;
+                }
+
+                if (activeController) {
+                    const index = controllers.indexOf(activeController);
+                    if (index >= 0) {
+                        controllers.splice(index, 1);
+                    }
+                    activeController = undefined;
+                }
+            };
+
+            const stream = new ReadableStream<Uint8Array>({
+                async cancel() {
+                    removeController();
+                    await reader?.cancel();
+                },
+                start(controller) {
+                    activeController = controller;
+                    controllers.push(controller);
+                    trackedWindow.__exceptionlessE2EWebSocketConnections!++;
+
+                    abortHandler = () => {
+                        try {
+                            controller.error(new DOMException('The operation was aborted', 'AbortError'));
+                        } finally {
+                            removeController();
+                        }
+                    };
+
+                    if (signal?.aborted) {
+                        abortHandler();
+                    } else {
+                        signal?.addEventListener('abort', abortHandler, { once: true });
+                    }
+
+                    if (reader) {
+                        void (async () => {
+                            try {
+                                while (true) {
+                                    const { done, value } = await reader.read();
+                                    if (done) {
+                                        activeController?.close();
+                                        break;
+                                    }
+                                    if (!options.ignoreServerMessages) {
+                                        activeController?.enqueue(value);
+                                    }
+                                }
+                            } catch (error) {
+                                activeController?.error(error);
+                            } finally {
+                                removeController();
+                                reader.releaseLock();
+                            }
+                        })();
+                    }
+                }
+            });
+
+            return new Response(stream, {
+                headers: response?.headers ?? {
+                    'Content-Type': 'text/event-stream'
+                },
+                status: response?.status ?? 200,
+                statusText: response?.statusText
+            });
+        };
+    }, options);
+}
+
+export function isSseCancellation(request: Pick<Request, 'failure' | 'method' | 'url'>): boolean {
+    return request.method() === 'GET' && new URL(request.url()).pathname === '/api/v2/push' && request.failure()?.errorText === 'net::ERR_ABORTED';
 }
 
 export async function setDocumentHidden(page: Page, hidden: boolean): Promise<void> {
@@ -96,9 +203,10 @@ export async function setDocumentHidden(page: Page, hidden: boolean): Promise<vo
 
 export async function waitForWebSocketConnection(page: Page): Promise<void> {
     await page.waitForFunction(() => {
-        const sockets = ((window as TrackedWebSocketWindow).__exceptionlessE2EWebSockets ?? []).filter((socket) => socket.url.includes('/api/v2/push'));
+        const trackedWindow = window as TrackedWebSocketWindow;
+        const sockets = (trackedWindow.__exceptionlessE2EWebSockets ?? []).filter((socket) => socket.url.includes('/api/v2/push'));
         return (
-            sockets.filter((socket) => socket.readyState === WebSocket.OPEN).length === 1 &&
+            sockets.filter((socket) => socket.readyState === WebSocket.OPEN).length + (trackedWindow.__exceptionlessE2ESseControllers?.length ?? 0) === 1 &&
             sockets.every((socket) => socket.readyState !== WebSocket.CONNECTING)
         );
     });
