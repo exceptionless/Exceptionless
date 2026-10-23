@@ -176,7 +176,7 @@ async function oauthLogin(options: OAuthLoginOptions) {
             state: data.state
         },
         {
-            expectedStatusCodes: [401, 403, 422]
+            expectedStatusCodes: [401, 403, 409, 422]
         }
     );
 

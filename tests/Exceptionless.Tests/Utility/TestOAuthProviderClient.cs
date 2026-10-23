@@ -9,17 +9,17 @@ public sealed class TestOAuthProviderClient : IOAuthProviderClient
 {
     public Task<UserInfo> GetGitHubUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        return GetUserInfoAsync("GitHub", authInfo);
+        return GetUserInfoAsync(OAuthAccount.KnownProviders.GitHub, authInfo);
     }
 
     public Task<UserInfo> GetGoogleUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        return GetUserInfoAsync("Google", authInfo);
+        return GetUserInfoAsync(OAuthAccount.KnownProviders.Google, authInfo);
     }
 
     public Task<UserInfo> GetMicrosoftUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        return GetUserInfoAsync("Microsoft", authInfo);
+        return GetUserInfoAsync(OAuthAccount.KnownProviders.Microsoft, authInfo);
     }
 
     public Task<SlackToken?> GetSlackAccessTokenAsync(string code)

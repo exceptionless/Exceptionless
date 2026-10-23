@@ -13,6 +13,39 @@ public sealed class UserValidatorTests : TestWithServices
         _validator = GetService<MiniValidationValidator>();
     }
 
+    [Theory]
+    [InlineData("github", "subject", true)]
+    [InlineData("google", "subject", true)]
+    [InlineData("microsoft", "subject", true)]
+    [InlineData("facebook", "subject", true)]
+    [InlineData("windowslive", "subject", true)]
+    [InlineData("unknown", "subject", false)]
+    [InlineData("GitHub", "subject", false)]
+    [InlineData("", "subject", false)]
+    [InlineData(null, "subject", false)]
+    [InlineData("github", null, false)]
+    [InlineData("github", "", false)]
+    [InlineData("github", " ", false)]
+    public async Task ValidateAsync_OAuthAccount_RequiresValidIdentity(string? providerName, string? providerUserId, bool expectedIsValid)
+    {
+        // Arrange
+        var user = new User
+        {
+            FullName = "Linked user",
+            EmailAddress = "linked@localhost.test",
+            IsEmailAddressVerified = true,
+            OAuthAccounts = [new OAuthAccount { Provider = providerName!, ProviderUserId = providerUserId!, Username = "linked@localhost.test" }]
+        };
+
+        // Act
+        var result = await _validator.ValidateAsync(user);
+
+        // Assert
+        Assert.Equal(expectedIsValid, result.IsValid);
+        if (!expectedIsValid)
+            Assert.Contains(result.Errors.Keys, key => key.EndsWith(String.IsNullOrWhiteSpace(providerUserId) ? nameof(OAuthAccount.ProviderUserId) : nameof(OAuthAccount.Provider), StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task ValidateAsync_WhenFullNameIsValid_ReturnsSuccess()
     {
