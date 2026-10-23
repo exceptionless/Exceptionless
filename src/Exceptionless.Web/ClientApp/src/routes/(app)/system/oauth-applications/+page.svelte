@@ -1,16 +1,17 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
-    import { Muted, P } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Input } from '$comp/ui/input';
-    import * as Select from '$comp/ui/select';
-    import { type GetOAuthApplicationsParams, getOAuthApplicationsQuery } from '$features/admin/api.svelte';
-    import OAuthApplicationsDataTable from '$features/admin/components/oauth-applications/table/oauth-applications-data-table.svelte';
-    import { getTableOptions } from '$features/admin/components/oauth-applications/table/options.svelte';
-    import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
+
+    import { Muted, P } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import * as Select from '#comp/ui/select/index.ts';
+    import { type GetOAuthApplicationsParams, getOAuthApplicationsQuery } from '#features/admin/api.svelte.ts';
+    import OAuthApplicationsDataTable from '#features/admin/components/oauth-applications/table/oauth-applications-data-table.svelte';
+    import { getTableOptions } from '#features/admin/components/oauth-applications/table/options.svelte.ts';
+    import { DEFAULT_LIMIT } from '#features/shared/api/api.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     const DEFAULT_PARAMS = {
         authorization: 'authorized',

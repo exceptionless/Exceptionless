@@ -3,9 +3,10 @@
 </script>
 
 <script lang="ts">
-    import { getAssistantConversationSharingQuery } from '$features/assistant/api.svelte';
-    import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
     import { untrack } from 'svelte';
+
+    import { getAssistantConversationSharingQuery } from '#features/assistant/api.svelte.ts';
+    import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
 
     let { enabled, gate }: { enabled: boolean; gate: QueryGate } = $props();
     const query =

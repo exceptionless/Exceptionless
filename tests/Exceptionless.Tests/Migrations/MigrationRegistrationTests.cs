@@ -6,6 +6,21 @@ namespace Exceptionless.Tests.Migrations;
 
 public sealed class MigrationRegistrationTests : TestWithServices
 {
+    [Fact]
+    public void MigrationRegistration_EventEnvironment_IsVersionedAndResumable()
+    {
+        // Arrange
+        var migrations = GetService<IEnumerable<IMigration>>();
+
+        // Act
+        var registeredMigrations = migrations.OfType<AddEventEnvironment>().DistinctBy(migration => migration.GetType()).ToList();
+
+        // Assert
+        var migration = Assert.Single(registeredMigrations);
+        Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
+        Assert.Equal(10, migration.Version);
+    }
+
     public MigrationRegistrationTests(ITestOutputHelper output) : base(output)
     {
     }
@@ -73,6 +88,6 @@ public sealed class MigrationRegistrationTests : TestWithServices
 
         Assert.NotNull(migration);
         Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
-        Assert.Equal(10, migration.Version);
+        Assert.Equal(11, migration.Version);
     }
 }

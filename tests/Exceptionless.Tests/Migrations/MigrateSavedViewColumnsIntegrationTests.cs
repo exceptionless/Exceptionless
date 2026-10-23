@@ -95,12 +95,16 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
     {
         // Arrange
         // Mark all current versioned migrations complete so this test isolates repeatable data seeding.
+        var latestMigration = GetService<IEnumerable<IMigration>>()
+            .Where(migration => migration.MigrationType is MigrationType.Versioned or MigrationType.VersionedAndResumable)
+            .MaxBy(migration => migration.Version)!;
+        int latestVersion = latestMigration.Version!.Value;
         var migrationStateRepository = GetService<IMigrationStateRepository>();
         await migrationStateRepository.AddAsync(new MigrationState
         {
-            Id = "10",
-            Version = 10,
-            MigrationType = MigrationType.VersionedAndResumable,
+            Id = latestVersion.ToString(),
+            Version = latestVersion,
+            MigrationType = latestMigration.MigrationType,
             StartedUtc = DateTime.UtcNow,
             CompletedUtc = DateTime.UtcNow
         });
@@ -151,8 +155,8 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         });
         await migrationStateRepository.AddAsync(new MigrationState
         {
-            Id = "10",
-            Version = 10,
+            Id = "9",
+            Version = 9,
             MigrationType = MigrationType.VersionedAndResumable,
             StartedUtc = completedUtc,
             CompletedUtc = completedUtc
@@ -203,8 +207,8 @@ public sealed class MigrateSavedViewColumnsIntegrationTests : IntegrationTestsBa
         });
         await migrationStateRepository.AddAsync(new MigrationState
         {
-            Id = "10",
-            Version = 10,
+            Id = "9",
+            Version = 9,
             MigrationType = MigrationType.VersionedAndResumable,
             StartedUtc = completedUtc,
             CompletedUtc = completedUtc

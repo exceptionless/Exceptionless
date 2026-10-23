@@ -1,13 +1,14 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { P } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import * as Field from '$comp/ui/field';
-    import { Textarea } from '$comp/ui/textarea';
-    import { type UpdateTokenFormData, UpdateTokenSchema } from '$features/tokens/schemas';
-    import { getFormErrorMessages, problemDetailsToFormErrors } from '$shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import { createForm } from '@tanstack/svelte-form';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { P } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Textarea } from '#comp/ui/textarea/index.ts';
+    import { type UpdateTokenFormData, UpdateTokenSchema } from '#features/tokens/schemas.ts';
+    import { getFormErrorMessages, problemDetailsToFormErrors } from '#shared/validation.ts';
 
     interface Props {
         notes?: string;

@@ -1,29 +1,23 @@
 <script lang="ts">
-    import type { GetEventsParams } from '$features/events/api.svelte';
-
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import * as DataTable from '$comp/data-table';
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import RefreshButton from '$comp/refresh-button.svelte';
-    import { H3 } from '$comp/typography';
-    import { Label } from '$comp/ui/label';
-    import { Switch } from '$comp/ui/switch';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
-    import { getOrganizationSessionsCountQuery, getOrganizationSessionsQuery, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '$features/events/api.svelte';
-    import EventDetailSheet from '$features/events/components/event-detail-sheet.svelte';
-    import {
-        BooleanFilter,
-        DateFilter,
-        LevelFilter,
-        ProjectFilter,
-        ReferenceFilter,
-        SessionFilter,
-        StatusFilter,
-        StringFilter,
-        TagFilter,
-        VersionFilter
-    } from '$features/events/components/filters';
+    import { error } from '@sveltejs/kit';
+    import { createTable } from '@tanstack/svelte-table';
+    import { useEventListener, watch } from 'runed';
+    import { onDestroy, untrack } from 'svelte';
+    import { debounce } from 'throttle-debounce';
+
+    import type { GetEventsParams } from '#features/events/api.svelte.ts';
+
+    import * as DataTable from '#comp/data-table/index.ts';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import RefreshButton from '#comp/refresh-button.svelte';
+    import { H3 } from '#comp/typography/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/upgrade-required.svelte.ts';
+    import { getOrganizationSessionsCountQuery, getOrganizationSessionsQuery, PERSISTENT_EVENT_DELETE_RECONCILE_EVENT } from '#features/events/api.svelte.ts';
+    import EventDetailSheet from '#features/events/components/event-detail-sheet.svelte';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
@@ -34,34 +28,43 @@
         serializeFilters,
         toFilter,
         updateFilterCache
-    } from '$features/events/components/filters/helpers.svelte';
-    import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
-    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '$features/events/components/summary/index';
-    import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { premiumPage } from '$features/organizations/premium-page.svelte';
-    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
-    import { defaultSessionColumnVisibility, getSessionColumns } from '$features/sessions/components/session-table-columns';
-    import SessionsDashboardChart from '$features/sessions/components/sessions-dashboard-chart.svelte';
-    import SessionsStatsDashboard from '$features/sessions/components/sessions-stats-dashboard.svelte';
-    import { getSessionQueryFilter, getSessionViewFilters, normalizeSessionSavedView } from '$features/sessions/saved-view-invariants';
-    import * as agg from '$features/shared/api/aggregations';
-    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
-    import { fillDateSeries } from '$features/shared/utils/charts.js';
-    import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
-    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
-    import { error } from '@sveltejs/kit';
-    import { createTable } from '@tanstack/svelte-table';
-    import { useEventListener, watch } from 'runed';
-    import { onDestroy, untrack } from 'svelte';
-    import { debounce } from 'throttle-debounce';
+    } from '#features/events/components/filters/helpers.svelte.ts';
+    import {
+        BooleanFilter,
+        DateFilter,
+        EnvironmentFilter,
+        LevelFilter,
+        ProjectFilter,
+        ReferenceFilter,
+        SessionFilter,
+        StatusFilter,
+        StringFilter,
+        TagFilter,
+        VersionFilter
+    } from '#features/events/components/filters/index.ts';
+    import OrganizationDefaultsFacetedFilterBuilder from '#features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
+    import EventsDataTable from '#features/events/components/table/events-data-table.svelte';
+    import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { premiumPage } from '#features/organizations/premium-page.svelte.ts';
+    import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '#features/saved-views/use-saved-views.svelte.ts';
+    import { defaultSessionColumnVisibility, getSessionColumns } from '#features/sessions/components/session-table-columns.ts';
+    import SessionsDashboardChart from '#features/sessions/components/sessions-dashboard-chart.svelte';
+    import SessionsStatsDashboard from '#features/sessions/components/sessions-stats-dashboard.svelte';
+    import { getSessionQueryFilter, getSessionViewFilters, normalizeSessionSavedView } from '#features/sessions/saved-view-invariants.ts';
+    import * as agg from '#features/shared/api/aggregations.ts';
+    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '#features/shared/table.svelte.ts';
+    import { fillDateSeries } from '#features/shared/utils/charts.ts';
+    import { parseDateMathRange, toDateMathRange } from '#features/shared/utils/datemath.ts';
+    import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
+    import { DEFAULT_OFFSET } from '#shared/api/api.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     import {
         ALL_TIME_QUERY_VALUE,
+        deserializeEnvironmentQueryParam,
         deserializeTimeQueryParam,
         getListFilterQueryParams,
         LIST_FILTER_QUERY_PARAM_RESET,
@@ -82,6 +85,7 @@
         after: undefined as string | undefined,
         before: undefined as string | undefined,
         bot: undefined as string | undefined,
+        environment: undefined as string | undefined,
         filter: undefined as string | undefined,
         filters: undefined as string | undefined,
         first: undefined as string | undefined,
@@ -159,6 +163,10 @@
             queryFilters.push(new BooleanFilter('first', first));
         }
 
+        if (params.environment) {
+            queryFilters.push(new EnvironmentFilter(deserializeEnvironmentQueryParam(params.environment)));
+        }
+
         if (params.level) {
             queryFilters.push(new LevelFilter(splitQueryParam(params.level) as never[]));
         }
@@ -225,6 +233,7 @@
             after: 'string',
             before: 'string',
             bot: 'string',
+            environment: 'string',
             filter: 'string',
             filters: 'string',
             first: 'string',
@@ -362,6 +371,10 @@
 
         if (params.first === '') {
             removedKeys.push('boolean-first');
+        }
+
+        if (params.environment === '') {
+            removedKeys.push('environment');
         }
 
         if (params.level === '') {
@@ -520,6 +533,7 @@
             newTimeParam !== queryParams.time ||
             queryFilterParams.bot !== queryParams.bot ||
             queryFilterParams.first !== queryParams.first ||
+            queryFilterParams.environment !== queryParams.environment ||
             queryFilterParams.level !== queryParams.level ||
             queryFilterParams.project !== queryParams.project ||
             queryFilterParams.reference !== queryParams.reference ||
@@ -546,6 +560,7 @@
                 after: shouldClearPaginationForFilter ? null : queryParams.after,
                 before: shouldClearPaginationForFilter ? null : queryParams.before,
                 bot: queryFilterParams.bot,
+                environment: queryFilterParams.environment,
                 filter: null,
                 filters: newFiltersParam,
                 first: queryFilterParams.first,
@@ -594,6 +609,7 @@
 
         return {
             bot: getDelta(currentParams.bot, baseParams.bot),
+            environment: getDelta(currentParams.environment, baseParams.environment),
             first: getDelta(currentParams.first, baseParams.first),
             level: getDelta(currentParams.level, baseParams.level),
             project: getDelta(currentParams.project, baseParams.project),
@@ -609,6 +625,7 @@
     function getQueryFilterParams(currentFilters: FacetedFilter.IFilter[]) {
         const botFilter = currentFilters.find((filter): filter is BooleanFilter => filter instanceof BooleanFilter && filter.term === 'bot');
         const firstFilter = currentFilters.find((filter): filter is BooleanFilter => filter instanceof BooleanFilter && filter.term === 'first');
+        const environmentFilter = currentFilters.find((filter): filter is EnvironmentFilter => filter.type === 'environment');
         const levelFilter = currentFilters.find((filter): filter is LevelFilter => filter.type === 'level');
         const projectFilter = currentFilters.find((filter): filter is ProjectFilter => filter.type === 'project');
         const referenceFilter = currentFilters.find((filter): filter is ReferenceFilter => filter.type === 'reference');
@@ -620,6 +637,7 @@
 
         return {
             bot: botFilter?.value === undefined ? null : String(botFilter.value),
+            environment: environmentFilter?.value.length ? JSON.stringify(environmentFilter.value) : null,
             first: firstFilter?.value === undefined ? null : String(firstFilter.value),
             level: levelFilter?.value.length ? levelFilter.value.join(',') : null,
             project: projectFilter?.value.length ? projectFilter.value.join(',') : null,
@@ -645,7 +663,7 @@
             return false;
         }
 
-        return ['level', 'project', 'reference', 'session', 'status', 'tag', 'version'].includes(filter.type);
+        return ['environment', 'level', 'project', 'reference', 'session', 'status', 'tag', 'version'].includes(filter.type);
     }
 
     const viewActive = $derived(
@@ -901,7 +919,7 @@
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">{pageTitle}</H3>
         <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
-            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved} time={getQueryTime()}>
                 <OrganizationDefaultsFacetedFilterBuilder includeTypeFacet={false} />
             </FacetedFilter.Root>
         </div>

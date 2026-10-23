@@ -9,6 +9,7 @@ public static class McpErrorCodes
     public const string ContextMismatch = "context_mismatch";
     public const string ContextRequired = "context_required";
     public const string Forbidden = "forbidden";
+    public const string InvalidArgument = "invalid_argument";
     public const string InvalidClientPlatform = "invalid_client_platform";
     public const string InvalidCursor = "invalid_cursor";
     public const string InvalidDetailSize = "invalid_detail_size";
@@ -178,13 +179,21 @@ public static class McpErrors
         });
     }
 
-    public static McpErrorInfo InvalidTimeRange(string message, string? last, string? startUtc, string? endUtc)
+    public static McpErrorInfo InvalidArgument(string message, IReadOnlyCollection<string> unknownArguments, IReadOnlyCollection<string> allowedArguments)
+    {
+        return new McpErrorInfo(McpErrorCodes.InvalidArgument, message, new Dictionary<string, object?>
+        {
+            ["unknownArguments"] = unknownArguments,
+            ["allowedArguments"] = allowedArguments
+        });
+    }
+
+    public static McpErrorInfo InvalidTimeRange(string message, string? time, string? timeZone)
     {
         return new McpErrorInfo(McpErrorCodes.InvalidTimeRange, message, new Dictionary<string, object?>
         {
-            ["last"] = last,
-            ["startUtc"] = startUtc,
-            ["endUtc"] = endUtc
+            ["time"] = time,
+            ["timeZone"] = timeZone
         });
     }
 

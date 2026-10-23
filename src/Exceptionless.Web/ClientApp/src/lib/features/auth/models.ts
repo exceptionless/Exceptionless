@@ -1,1 +1,1 @@
-export type { Login, TokenResult } from '$generated/api';
+export type { Login, TokenResult } from '#generated/api.ts';

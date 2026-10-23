@@ -1,7 +1,8 @@
 <script lang="ts" module>
-    import { StackStatus } from '$features/stacks/models';
     import Filter from '@lucide/svelte/icons/filter';
     import { defineMeta } from '@storybook/addon-svelte-csf';
+
+    import { StackStatus } from '#features/stacks/models.ts';
 
     import StatusTrigger from './status-faceted-filter-trigger.svelte';
 

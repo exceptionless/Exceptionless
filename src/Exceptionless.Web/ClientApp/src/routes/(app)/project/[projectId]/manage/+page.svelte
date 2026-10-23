@@ -1,21 +1,7 @@
 <script lang="ts">
-    import type { UpdateProject } from '$features/projects/models';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Spinner } from '$comp/ui/spinner';
-    import * as Tooltip from '$comp/ui/tooltip';
-    import { deleteProject, generateSampleData, getProjectQuery, resetData, updateProject } from '$features/projects/api.svelte';
-    import RemoveProjectDialog from '$features/projects/components/dialogs/remove-project-dialog.svelte';
-    import ResetProjectDataDialog from '$features/projects/components/dialogs/reset-project-data-dialog.svelte';
-    import { type UpdateProjectFormData, UpdateProjectSchema } from '$features/projects/schemas';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import CloudDownload from '@lucide/svelte/icons/cloud-download';
@@ -26,6 +12,21 @@
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
+
+    import type { UpdateProject } from '#features/projects/models.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
+    import { deleteProject, generateSampleData, getProjectQuery, resetData, updateProject } from '#features/projects/api.svelte.ts';
+    import RemoveProjectDialog from '#features/projects/components/dialogs/remove-project-dialog.svelte';
+    import ResetProjectDataDialog from '#features/projects/components/dialogs/reset-project-data-dialog.svelte';
+    import { type UpdateProjectFormData, UpdateProjectSchema } from '#features/projects/schemas.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     let toastId = $state<number | string>();
 

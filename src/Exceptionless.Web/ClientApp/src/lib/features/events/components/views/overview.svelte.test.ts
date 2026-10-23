@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('$env/dynamic/public', () => ({ env: {} }));
 
-import { ReferenceFilter, SessionFilter } from '$features/events/components/filters';
+import { ReferenceFilter, SessionFilter } from '#features/events/components/filters/index.ts';
 
-import type { PersistentEvent } from '../../models';
+import type { PersistentEvent } from '../../models/index.ts';
 
 import Overview from './overview.svelte';
 

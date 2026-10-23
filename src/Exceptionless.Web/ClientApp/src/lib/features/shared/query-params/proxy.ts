@@ -1,4 +1,4 @@
-import type { QueryParameterInput, QueryParameters, QueryParameterSchema, QueryParameterState, QueryParameterUpdateOptions } from './types.js';
+import type { QueryParameterInput, QueryParameters, QueryParameterSchema, QueryParameterState, QueryParameterUpdateOptions } from './types.ts';
 
 interface QueryParameterActions<T extends QueryParameterSchema> {
     update: (values: Partial<QueryParameterInput<T>>, options?: QueryParameterUpdateOptions) => void;

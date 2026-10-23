@@ -5,30 +5,34 @@
 
     import { createQueryParameters } from './query-params.svelte';
 
-    let { history = 'push' }: { history?: CreateQueryParametersOptions<{ filter: 'string' }>['history'] } = $props();
+    type Schema = { filter: 'string' };
+
+    let { history = 'push', parameter = 'filter' }: { history?: CreateQueryParametersOptions<Schema>['history']; parameter?: 'filter' | 'project' } = $props();
+    // Each harness owns one key so several can share a page, as independent components do.
+    const key = untrack(() => parameter) as keyof Schema;
     const queryParameters = createQueryParameters({
         debounceMilliseconds: 200,
         history: untrack(() => history),
         schema: {
-            filter: 'string'
-        }
+            [key]: 'string'
+        } as Schema
     });
 </script>
 
-<button onclick={() => (queryParameters.filter = 'first')}>First</button>
-<button onclick={() => (queryParameters.filter = 'second')}>Second</button>
-<button onclick={() => (queryParameters.filter = 'a')}>Alpha</button>
-<button onclick={() => (queryParameters.filter = 'a b')}>Spaced</button>
-<button onclick={() => (queryParameters.filter = null)}>Clear</button>
+<button onclick={() => (queryParameters[key] = 'first')}>First</button>
+<button onclick={() => (queryParameters[key] = 'second')}>Second</button>
+<button onclick={() => (queryParameters[key] = 'a')}>Alpha</button>
+<button onclick={() => (queryParameters[key] = 'a b')}>Spaced</button>
+<button onclick={() => (queryParameters[key] = null)}>Clear</button>
 <button
     onclick={() =>
         queryParameters.update(
             {
-                filter: 'hydrated'
+                [key]: 'hydrated'
             },
             {
                 history: 'replace'
             }
         )}>Hydrate</button
 >
-<output>{queryParameters.filter}</output>
+<output>{queryParameters[key]}</output>

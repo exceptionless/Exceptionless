@@ -8,18 +8,18 @@ const mocks = vi.hoisted(() => ({
 vi.mock('$app/navigation', () => ({ goto: vi.fn() }));
 vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
 vi.mock('$app/state', () => ({ page: { params: { referenceId: 'reference-id' } } }));
-vi.mock('$features/events/api.svelte', () => ({
+vi.mock('#features/events/api.svelte.ts', () => ({
     getEventsByReferenceQuery: () => ({
         data: { data: mocks.events, meta: { total: 25 } },
         error: undefined,
         isPending: false
     })
 }));
-vi.mock('$features/events/components/filters', async () => {
-    const { ReferenceFilter } = await import('$features/events/components/filters/models.svelte');
+vi.mock('#features/events/components/filters/index.ts', async () => {
+    const { ReferenceFilter } = await import('#features/events/components/filters/models.svelte.ts');
     return { ReferenceFilter };
 });
-vi.mock('$features/events/components/summary/summary.svelte', () => ({ default: () => undefined }));
+vi.mock('#features/events/components/summary/summary.svelte', () => ({ default: () => undefined }));
 
 import EventReferencePage, { formatReferenceResultCount } from './+page.svelte';
 

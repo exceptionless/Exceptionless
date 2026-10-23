@@ -1,28 +1,29 @@
 <script lang="ts">
-    import type { SourceMapArtifact } from '$features/projects/models';
-
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import Bytes from '$comp/formatters/bytes.svelte';
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import { A, H4, Muted } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { Badge } from '$comp/ui/badge';
-    import { Button, buttonVariants } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Spinner } from '$comp/ui/spinner';
-    import * as Table from '$comp/ui/table';
-    import { deleteSourceMapMutation, getSourceMapsQuery, postSourceMapMutation } from '$features/projects/api.svelte';
-    import { type SourceMapUploadFormData, SourceMapUploadSchema } from '$features/projects/schemas';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import Trash from '@lucide/svelte/icons/trash-2';
     import Upload from '@lucide/svelte/icons/upload';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
+
+    import type { SourceMapArtifact } from '#features/projects/models.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import Bytes from '#comp/formatters/bytes.svelte';
+    import DateTime from '#comp/formatters/date-time.svelte';
+    import { A, H4, Muted } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button, buttonVariants } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import { deleteSourceMapMutation, getSourceMapsQuery, postSourceMapMutation } from '#features/projects/api.svelte.ts';
+    import { type SourceMapUploadFormData, SourceMapUploadSchema } from '#features/projects/schemas.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     const projectId = $derived(page.params.projectId || '');
     const request = {

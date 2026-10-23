@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { ErrorInfo } from '$features/events/models/event-data';
+    import type { ErrorInfo } from '#features/events/models/event-data.ts';
 
     interface Props {
         error: ErrorInfo;

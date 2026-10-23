@@ -1,5 +1,5 @@
 <script lang="ts">
-    import * as Command from '$comp/ui/command';
+    import * as Command from '#comp/ui/command/index.ts';
 
     import { quickRanges as defaultQuickRanges, type QuickRangeOption, type QuickRangeSection } from './quick-ranges';
 

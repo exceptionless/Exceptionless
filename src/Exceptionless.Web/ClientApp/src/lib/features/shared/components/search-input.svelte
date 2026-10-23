@@ -1,9 +1,10 @@
 <script lang="ts">
     import type { HTMLInputAttributes, HTMLInputTypeAttribute } from 'svelte/elements';
 
-    import * as InputGroup from '$comp/ui/input-group';
-    import { type WithElementRef } from '$lib/utils';
     import Search from '@lucide/svelte/icons/search';
+
+    import * as InputGroup from '#comp/ui/input-group/index.ts';
+    import { type WithElementRef } from '#lib/utils.ts';
 
     type BaseProps = WithElementRef<Omit<HTMLInputAttributes, 'type'> & ({ files?: FileList; type: 'file' } | { files?: undefined; type?: InputType })>;
 
