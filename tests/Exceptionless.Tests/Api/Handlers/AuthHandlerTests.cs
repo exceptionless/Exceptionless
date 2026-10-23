@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Exceptionless.Core;
 using Exceptionless.Core.Authentication;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -287,6 +288,62 @@ public sealed class AuthHandlerTests : TestWithServices
         new Exception("Repository failed."),
         new OperationCanceledException("Repository operation was canceled.")
     };
+
+    [Fact]
+    public async Task Handle_FirstOAuthSignupCanceledAfterCount_RetryCreatesGlobalAdmin()
+    {
+        // Arrange
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        var users = new Mock<IUserRepository>(MockBehavior.Strict);
+        users.Setup(repository => repository.GetUsersByOAuthProviderAsync("github", "first-user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<User>());
+        users.Setup(repository => repository.FindOneAsync(It.IsAny<RepositoryQueryDescriptor<User>>(), It.IsAny<CommandOptionsDescriptor<User>>()))
+            .ReturnsAsync(FindHit<User>.Empty);
+        int countCalls = 0;
+        users.Setup(repository => repository.CountAsync(It.IsAny<ICommandOptions>())).Returns(() =>
+        {
+            if (++countCalls is 1)
+                cancellation.Cancel();
+
+            return Task.FromResult(CountResult.Empty);
+        });
+        User? storedUser = null;
+        users.Setup(repository => repository.AddAsync(It.IsAny<User>(), It.IsAny<CommandOptionsDescriptor<User>>()))
+            .ReturnsAsync((User user, CommandOptionsDescriptor<User> _) =>
+            {
+                user.Id = TestConstants.UserId;
+                storedUser = user;
+                return user;
+            });
+        var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
+        tokens.Setup(repository => repository.GetByTypeAndUserIdAsync(TokenType.Authentication, TestConstants.UserId, null))
+            .ReturnsAsync(FindResults<Token>.Empty);
+        tokens.Setup(repository => repository.AddAsync(It.IsAny<Token>(), It.IsAny<CommandOptionsDescriptor<Token>>()))
+            .ReturnsAsync((Token token, CommandOptionsDescriptor<Token> _) => token);
+        var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
+        var providerClient = new Mock<IOAuthProviderClient>(MockBehavior.Strict);
+        providerClient.Setup(client => client.GetGitHubUserInfoAsync(It.IsAny<ExternalAuthInfo>(), "test-client", "test-secret"))
+            .ReturnsAsync(new OAuth2.Models.UserInfo { ProviderName = "github", Id = "first-user", Email = "first@example.test", FirstName = "First", LastName = "User" });
+        var options = GetService<AppOptions>().AuthOptions;
+        options.EnableAccountCreation = true;
+        options.GitHubId = "test-client";
+        options.GitHubSecret = "test-secret";
+        var handler = CreateHandler(users.Object, tokens.Object, oauthTokens.Object, providerClient.Object);
+
+        // Act
+        var canceled = await handler.Handle(new GitHubLogin(new ExternalAuthInfo(), new DefaultHttpContext { RequestAborted = cancellation.Token }));
+        var userAfterCancellation = storedUser;
+        var retry = await handler.Handle(new GitHubLogin(new ExternalAuthInfo(), new DefaultHttpContext { RequestAborted = TestCancellationToken }));
+
+        // Assert
+        Assert.Equal(ResultStatus.Unauthorized, canceled.Status);
+        Assert.Null(userAfterCancellation);
+        Assert.Equal(ResultStatus.Success, retry.Status);
+        Assert.NotNull(storedUser);
+        Assert.Contains(AuthorizationRoles.GlobalAdmin, storedUser.Roles);
+        users.Verify(repository => repository.CountAsync(It.IsAny<ICommandOptions>()), Times.Exactly(2));
+        users.Verify(repository => repository.AddAsync(It.IsAny<User>(), It.IsAny<CommandOptionsDescriptor<User>>()), Times.Once);
+    }
 
     [Fact]
     public async Task Handle_ExternalLoginEmailChangesAfterLookup_ReturnsUnauthorized()

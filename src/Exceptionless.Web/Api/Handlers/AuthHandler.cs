@@ -42,7 +42,6 @@ public class AuthHandler(
     ILogger<AuthHandler> logger)
 {
     private readonly ScopedCacheClient _cache = new(cacheClient, "Auth");
-    private static bool _isFirstUserChecked;
     private static readonly TimeSpan IntercomJwtLifetime = TimeSpan.FromMinutes(60);
     private static readonly TimeSpan ExternalAccountAdmissionTimeout = TimeSpan.FromSeconds(15);
 
@@ -505,14 +504,9 @@ public class AuthHandler(
 
     private async Task AddGlobalAdminRoleIfFirstUserAsync(User user, CancellationToken cancellationToken = default)
     {
-        if (_isFirstUserChecked)
-            return;
-
         bool isFirstUser = await userRepository.CountAsync().WaitAsync(cancellationToken) == 0;
         if (isFirstUser)
             user.Roles.Add(AuthorizationRoles.GlobalAdmin);
-
-        _isFirstUserChecked = true;
     }
 
     private async Task<Result<TokenResult>> ExternalLoginAsync(ExternalAuthInfo authInfo, HttpContext httpContext, string? appId, string? appSecret, Func<ExternalAuthInfo, string, string, Task<UserInfo>> getUserInfoAsync)
