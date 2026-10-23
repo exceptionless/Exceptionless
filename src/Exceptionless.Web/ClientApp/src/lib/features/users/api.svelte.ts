@@ -1,6 +1,7 @@
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
+import type { TrialEndedNoticeKey } from '#features/billing/trial.ts';
 import type { ProductTourKey } from '#features/product-tours/models.ts';
 import type { WebSocketMessageValue } from '#features/websockets/models.ts';
 import type { WorkInProgressResult } from '#shared/models/index.ts';
@@ -263,7 +264,7 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
 
 export function putCurrentUserProductTour() {
     const queryClient = useQueryClient();
-    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey; userId: string }>(() => ({
+    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey | TrialEndedNoticeKey; userId: string }>(() => ({
         enabled: () => !!accessToken.current,
         mutationFn: async ({ tourName, userId }) => {
             if (queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.id !== userId) {
