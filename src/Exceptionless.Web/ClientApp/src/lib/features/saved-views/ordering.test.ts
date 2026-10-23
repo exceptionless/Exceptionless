@@ -1,6 +1,6 @@
-import type { UserSavedViewOrderPreference } from '$generated/api';
-
 import { describe, expect, it } from 'vitest';
+
+import type { UserSavedViewOrderPreference } from '#generated/api.ts';
 
 import type { SavedView } from './models';
 

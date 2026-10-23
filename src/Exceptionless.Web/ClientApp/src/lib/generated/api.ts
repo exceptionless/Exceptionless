@@ -95,6 +95,7 @@ export interface AssistantChatRequest {
   project_id?: null | string;
   path?: null | string;
   conversation_id?: null | string;
+  time_zone?: null | string;
 }
 
 export interface AssistantConversationSharingSettings {
@@ -444,6 +445,11 @@ export interface PersistentEvent {
   created_utc: string;
   /** Used to store primitive data type custom data values for searching the event. */
   idx?: null | Record<string, unknown>;
+  /**
+   * The deployment environment, such as production, staging, or development.
+   * Missing or invalid names remain unspecified. Machine and runtime information is stored separately in data.@environment.
+   */
+  environment?: null | string;
   /**
    * The event type (ie. error, log message, feature usage). Check KnownTypes for standard event types.
    * Nullable in transit; the pipeline infers a default before save. Validated as required on repository save.

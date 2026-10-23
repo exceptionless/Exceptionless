@@ -5,7 +5,7 @@
 
     onMount(() => {
         goto(resolve('/(app)/system/elasticsearch/overview'), {
-            replaceState: true
+            replace: true
         });
     });
 </script>

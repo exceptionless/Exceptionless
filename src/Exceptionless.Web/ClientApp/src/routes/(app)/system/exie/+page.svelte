@@ -1,24 +1,25 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
-    import Currency from '$comp/formatters/currency.svelte';
-    import NumberCompact from '$comp/formatters/number-compact.svelte';
-    import Number from '$comp/formatters/number.svelte';
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { Muted } from '$comp/typography';
-    import { Badge } from '$comp/ui/badge';
-    import * as Card from '$comp/ui/card';
-    import { Input } from '$comp/ui/input';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Table from '$comp/ui/table';
-    import * as Tooltip from '$comp/ui/tooltip';
-    import { getAdminAssistantUsageQuery } from '$features/admin/api.svelte';
-    import { getBlockedCount, getTotalTokens, getUsageRisk, getUtcMonthKey, type UsageRisk } from '$features/admin/assistant-usage';
     import Bot from '@lucide/svelte/icons/bot';
     import Building2 from '@lucide/svelte/icons/building-2';
     import Coins from '@lucide/svelte/icons/coins';
     import Gauge from '@lucide/svelte/icons/gauge';
     import MessagesSquare from '@lucide/svelte/icons/messages-square';
     import Wrench from '@lucide/svelte/icons/wrench';
+
+    import Currency from '#comp/formatters/currency.svelte';
+    import NumberCompact from '#comp/formatters/number-compact.svelte';
+    import Number from '#comp/formatters/number.svelte';
+    import TimeAgo from '#comp/formatters/time-ago.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
+    import { getAdminAssistantUsageQuery } from '#features/admin/api.svelte.ts';
+    import { getBlockedCount, getTotalTokens, getUsageRisk, getUtcMonthKey, type UsageRisk } from '#features/admin/assistant-usage.ts';
 
     function riskBadgeVariant(risk: UsageRisk): 'destructive' | 'outline' | 'yellow' {
         if (risk === 'critical') {

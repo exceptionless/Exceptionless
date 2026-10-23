@@ -1,5 +1,4 @@
 import { resolve } from '$app/paths';
-import { enableOAuthLogin } from '$features/auth/index.svelte';
 import Notifications from '@lucide/svelte/icons/bell';
 import Bot from '@lucide/svelte/icons/bot';
 import Password from '@lucide/svelte/icons/key-round';
@@ -8,6 +7,8 @@ import Verify from '@lucide/svelte/icons/shield-check';
 import Appearance from '@lucide/svelte/icons/sun-moon';
 import Account from '@lucide/svelte/icons/user';
 import Sessions from '@lucide/svelte/icons/users';
+
+import { enableOAuthLogin } from '#features/auth/index.svelte.ts';
 
 import type { NavigationItem } from '../../routes.svelte';
 

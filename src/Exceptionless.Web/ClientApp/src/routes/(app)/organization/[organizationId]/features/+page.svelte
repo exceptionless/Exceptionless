@@ -1,17 +1,18 @@
 <script lang="ts">
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { Spinner } from '$comp/ui/spinner';
-    import { Switch } from '$comp/ui/switch';
-    import { getOrganizationQuery, removeOrganizationFeature, setOrganizationFeature } from '$features/organizations/api.svelte';
-    import { postPredefinedSavedViews } from '$features/saved-views/api.svelte';
-    import { getMeQuery } from '$features/users/api.svelte';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
     import { toast } from 'svelte-sonner';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { getOrganizationQuery, removeOrganizationFeature, setOrganizationFeature } from '#features/organizations/api.svelte.ts';
+    import { postPredefinedSavedViews } from '#features/saved-views/api.svelte.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
 
     let toastId = $state<number | string>();
 

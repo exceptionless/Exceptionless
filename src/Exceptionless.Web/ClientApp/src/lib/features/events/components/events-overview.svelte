@@ -1,31 +1,33 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
-    import type { AssistantFixResource } from '$features/assistant/controls.svelte';
-    import type { UpdateProject, ViewProject } from '$features/projects/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
-    import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { CodeBlock } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Table from '$comp/ui/table';
-    import * as Tabs from '$comp/ui/tabs';
-    import { assistantPageContext } from '$features/assistant/page-context.svelte';
-    import { getEventWithNavigationQuery } from '$features/events/api.svelte';
-    import * as EventsFacetedFilter from '$features/events/components/filters';
-    import { getExtendedDataItems, hasErrorOrSimpleError } from '$features/events/persistent-event';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
-    import { getProjectQuery, updateProject } from '$features/projects/api.svelte';
-    import StackCard from '$features/stacks/components/stack-card.svelte';
     import Braces from '@lucide/svelte/icons/braces';
     import EventsIcon from '@lucide/svelte/icons/calendar-days';
     import ChevronLeft from '@lucide/svelte/icons/chevron-left';
     import ChevronRight from '@lucide/svelte/icons/chevron-right';
     import { onMount, tick } from 'svelte';
     import { toast } from 'svelte-sonner';
+
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+    import type { AssistantFixResource } from '#features/assistant/controls.svelte.ts';
+    import type { UpdateProject, ViewProject } from '#features/projects/models.ts';
+
+    import CopyToClipboardButton from '#comp/copy-to-clipboard-button.svelte';
+    import DateTime from '#comp/formatters/date-time.svelte';
+    import TimeAgo from '#comp/formatters/time-ago.svelte';
+    import { CodeBlock } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import * as Tabs from '#comp/ui/tabs/index.ts';
+    import { assistantPageContext } from '#features/assistant/page-context.svelte.ts';
+    import { getEventWithNavigationQuery } from '#features/events/api.svelte.ts';
+    import * as EventsFacetedFilter from '#features/events/components/filters/index.ts';
+    import { getExtendedDataItems, hasErrorOrSimpleError } from '#features/events/persistent-event.ts';
+    import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import { getProjectQuery, updateProject } from '#features/projects/api.svelte.ts';
+    import StackCard from '#features/stacks/components/stack-card.svelte';
 
     import type { PersistentEvent } from '../models/index';
 
@@ -436,7 +438,7 @@
                             ondrop={(event) => handlePromotedTabDrop(event, tab)}
                             ondragend={handlePromotedTabDragEnd}
                             title={isPromotedTab(tab) ? 'Drag to reorder custom tab' : undefined}
-                            value={tab}>{tab}</Tabs.Trigger
+                            value={tab}>{tab === 'Environment' ? 'Machine & runtime' : tab}</Tabs.Trigger
                         >
                     {/each}
                 </Tabs.List>

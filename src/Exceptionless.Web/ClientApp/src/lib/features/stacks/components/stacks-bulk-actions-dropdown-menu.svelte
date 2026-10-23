@@ -3,13 +3,14 @@
 </script>
 
 <script generics="TData extends RowData" lang="ts">
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { getProblemMessage } from '$shared/validation';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import { type RowData, type StockFeatures, type Table } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
     import { SvelteDate } from 'svelte/reactivity';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { getProblemMessage } from '#shared/validation.ts';
 
     import { deleteStack, postChangeStatus, postMarkFixed, postMarkSnoozed } from '../api.svelte';
     import { StackStatus } from '../models';

@@ -1,10 +1,10 @@
 <script lang="ts">
-    import type { PersistentEvent } from '$features/events/models';
+    import type { PersistentEvent } from '#features/events/models/index.ts';
 
-    import Duration from '$comp/formatters/duration.svelte';
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import Live from '$comp/live.svelte';
-    import { getSessionStartDuration } from '$features/events/utils';
+    import Duration from '#comp/formatters/duration.svelte';
+    import TimeAgo from '#comp/formatters/time-ago.svelte';
+    import Live from '#comp/live.svelte';
+    import { getSessionStartDuration } from '#features/events/utils/index.ts';
 
     interface Props {
         event: PersistentEvent;

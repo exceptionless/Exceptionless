@@ -1,7 +1,7 @@
 <script lang="ts">
-    import type { StackStatus } from '$features/stacks/models';
+    import type { StackStatus } from '#features/stacks/models.ts';
 
-    import { stackStatuses } from '$features/stacks/options';
+    import { stackStatuses } from '#features/stacks/options.ts';
 
     interface Props {
         value: StackStatus;

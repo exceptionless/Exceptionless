@@ -1,5 +1,5 @@
 <script lang="ts">
-    import TagList from '$features/shared/components/tag-list.svelte';
+    import TagList from '#features/shared/components/tag-list.svelte';
 
     interface Props {
         onTagClick?: (tag: string) => Promise<void> | void;

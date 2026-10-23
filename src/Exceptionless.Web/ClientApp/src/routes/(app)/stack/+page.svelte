@@ -1,35 +1,29 @@
 <script lang="ts">
-    import type { EventSummaryModel, SummaryTemplateKeys } from '$features/events/components/summary/index';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import * as DataTable from '$comp/data-table';
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import RefreshButton from '$comp/refresh-button.svelte';
-    import { H3 } from '$comp/typography';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing/upgrade-required.svelte';
+    import { error } from '@sveltejs/kit';
+    import { createTable } from '@tanstack/svelte-table';
+    import { useEventListener, watch } from 'runed';
+    import { onDestroy, untrack } from 'svelte';
+    import { debounce } from 'throttle-debounce';
+
+    import type { EventSummaryModel, SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
+
+    import * as DataTable from '#comp/data-table/index.ts';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import RefreshButton from '#comp/refresh-button.svelte';
+    import { H3 } from '#comp/typography/index.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/upgrade-required.svelte.ts';
     import {
         type GetEventsParams,
         getOrganizationCountQuery,
         getOrganizationEventsQuery,
         PERSISTENT_EVENT_DELETE_RECONCILE_EVENT
-    } from '$features/events/api.svelte';
-    import EventsDashboardChart from '$features/events/components/events-dashboard-chart.svelte';
-    import EventsStatsDashboard from '$features/events/components/events-stats-dashboard.svelte';
-    import {
-        BooleanFilter,
-        DateFilter,
-        LevelFilter,
-        ProjectFilter,
-        ReferenceFilter,
-        SessionFilter,
-        StatusFilter,
-        StringFilter,
-        TagFilter,
-        TypeFilter,
-        VersionFilter
-    } from '$features/events/components/filters';
+    } from '#features/events/api.svelte.ts';
+    import EventsDashboardChart from '#features/events/components/events-dashboard-chart.svelte';
+    import EventsStatsDashboard from '#features/events/components/events-stats-dashboard.svelte';
     import {
         applyTimeFilter,
         buildFilterCacheKey,
@@ -41,33 +35,43 @@
         serializeFilters,
         toFilter,
         updateFilterCache
-    } from '$features/events/components/filters/helpers.svelte';
-    import OrganizationDefaultsFacetedFilterBuilder from '$features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
-    import EventsDataTable from '$features/events/components/table/events-data-table.svelte';
-    import { defaultStackColumnVisibility, getColumns } from '$features/events/components/table/options.svelte';
-    import { filterUsesPremiumFeatures } from '$features/events/premium-filter';
-    import { organization } from '$features/organizations/context.svelte';
-    import { premiumPage } from '$features/organizations/premium-page.svelte';
-    import SavedViewPicker from '$features/saved-views/components/saved-view-picker.svelte';
-    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '$features/saved-views/use-saved-views.svelte';
-    import * as agg from '$features/shared/api/aggregations';
-    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '$features/shared/table.svelte';
-    import { fillDateSeries } from '$features/shared/utils/charts';
-    import { parseDateMathRange, toDateMathRange } from '$features/shared/utils/datemath';
-    import StackDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
-    import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
-    import { StackStatus } from '$features/stacks/models';
-    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_OFFSET } from '$shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
-    import { error } from '@sveltejs/kit';
-    import { createTable } from '@tanstack/svelte-table';
-    import { useEventListener, watch } from 'runed';
-    import { onDestroy, untrack } from 'svelte';
-    import { debounce } from 'throttle-debounce';
+    } from '#features/events/components/filters/helpers.svelte.ts';
+    import {
+        BooleanFilter,
+        DateFilter,
+        EnvironmentFilter,
+        LevelFilter,
+        ProjectFilter,
+        ReferenceFilter,
+        SessionFilter,
+        StatusFilter,
+        StringFilter,
+        TagFilter,
+        TypeFilter,
+        VersionFilter
+    } from '#features/events/components/filters/index.ts';
+    import OrganizationDefaultsFacetedFilterBuilder from '#features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
+    import EventsDataTable from '#features/events/components/table/events-data-table.svelte';
+    import { defaultStackColumnVisibility, getColumns } from '#features/events/components/table/options.svelte.ts';
+    import { filterUsesPremiumFeatures } from '#features/events/premium-filter.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { premiumPage } from '#features/organizations/premium-page.svelte.ts';
+    import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
+    import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '#features/saved-views/use-saved-views.svelte.ts';
+    import * as agg from '#features/shared/api/aggregations.ts';
+    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '#features/shared/table.svelte.ts';
+    import { fillDateSeries } from '#features/shared/utils/charts.ts';
+    import { parseDateMathRange, toDateMathRange } from '#features/shared/utils/datemath.ts';
+    import StackDetailSheet from '#features/stacks/components/stack-detail-sheet.svelte';
+    import TableStacksBulkActionsDropdownMenu from '#features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
+    import { StackStatus } from '#features/stacks/models.ts';
+    import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
+    import { DEFAULT_OFFSET } from '#shared/api/api.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     import {
         ALL_TIME_QUERY_VALUE,
+        deserializeEnvironmentQueryParam,
         deserializeTimeQueryParam,
         getEventsNavigationOptionsForFilter,
         getListFilterQueryParams,
@@ -107,6 +111,7 @@
     const pageSizePreference = createPageSizePreference(PAGE_SIZE_PREFERENCE_KEY);
     const DEFAULT_PARAMS = {
         bot: undefined as string | undefined,
+        environment: undefined as string | undefined,
         filter: undefined as string | undefined,
         first: undefined as string | undefined,
         level: undefined as string | undefined,
@@ -151,6 +156,10 @@
         const first = parseBooleanQueryParam(params.first);
         if (first !== undefined) {
             filters.push(new BooleanFilter('first', first));
+        }
+
+        if (params.environment) {
+            filters.push(new EnvironmentFilter(deserializeEnvironmentQueryParam(params.environment)));
         }
 
         if (params.level) {
@@ -221,6 +230,7 @@
         history: 'push',
         schema: {
             bot: 'string',
+            environment: 'string',
             filter: 'string',
             first: 'string',
             level: 'string',
@@ -355,6 +365,10 @@
 
         if (params.filter === '') {
             removedKeys.push(...savedViewFilters.filter((filter) => filter.type !== 'date' && !isQueryParamFilter(filter)).map((filter) => filter.key));
+        }
+
+        if (params.environment === '') {
+            removedKeys.push('environment');
         }
 
         if (params.level === '') {
@@ -499,6 +513,7 @@
             newTimeParam !== queryParams.time ||
             queryFilterParams.bot !== queryParams.bot ||
             queryFilterParams.first !== queryParams.first ||
+            queryFilterParams.environment !== queryParams.environment ||
             queryFilterParams.level !== queryParams.level ||
             queryFilterParams.project !== queryParams.project ||
             queryFilterParams.reference !== queryParams.reference ||
@@ -527,6 +542,7 @@
         queryParams.update(
             {
                 bot: queryFilterParams.bot,
+                environment: queryFilterParams.environment,
                 filter: newFilterParam,
                 first: queryFilterParams.first,
                 level: queryFilterParams.level,
@@ -578,6 +594,7 @@
 
         return {
             bot: getDelta(currentParams.bot, baseParams.bot),
+            environment: getDelta(currentParams.environment, baseParams.environment),
             first: getDelta(currentParams.first, baseParams.first),
             level: getDelta(currentParams.level, baseParams.level),
             project: getDelta(currentParams.project, baseParams.project),
@@ -594,6 +611,7 @@
     function getQueryFilterParams(filters: FacetedFilter.IFilter[]) {
         const botFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'bot');
         const firstFilter = filters.find((f): f is BooleanFilter => f instanceof BooleanFilter && f.term === 'first');
+        const environmentFilter = filters.find((filter): filter is EnvironmentFilter => filter.type === 'environment');
         const levelFilter = filters.find((f): f is LevelFilter => f.type === 'level');
         const projectFilter = filters.find((f): f is ProjectFilter => f.type === 'project');
         const referenceFilter = filters.find((f): f is ReferenceFilter => f.type === 'reference');
@@ -606,6 +624,7 @@
 
         return {
             bot: botFilter?.value === undefined ? null : String(botFilter.value),
+            environment: environmentFilter?.value.length ? JSON.stringify(environmentFilter.value) : null,
             first: firstFilter?.value === undefined ? null : String(firstFilter.value),
             level: levelFilter?.value.length ? levelFilter.value.join(',') : null,
             project: projectFilter?.value.length ? projectFilter.value.join(',') : null,
@@ -632,7 +651,7 @@
             return false;
         }
 
-        return ['level', 'project', 'reference', 'session', 'status', 'tag', 'type', 'version'].includes(filter.type);
+        return ['environment', 'level', 'project', 'reference', 'session', 'status', 'tag', 'type', 'version'].includes(filter.type);
     }
 
     function setPageSize(value: number): void {
@@ -864,7 +883,7 @@
     <div class="mb-4 flex flex-wrap items-start gap-2">
         <H3 class="my-0 shrink-0">{pageTitle}</H3>
         <div class="order-3 flex w-full flex-wrap items-start gap-1.5 md:order-none md:w-auto md:min-w-0 md:flex-1">
-            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved}>
+            <FacetedFilter.Root changed={onFilterChanged} {filters} remove={onFilterRemoved} time={getQueryTime()}>
                 <OrganizationDefaultsFacetedFilterBuilder />
             </FacetedFilter.Root>
         </div>

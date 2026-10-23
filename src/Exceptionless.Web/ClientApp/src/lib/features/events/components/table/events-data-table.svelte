@@ -1,9 +1,10 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import * as DataTable from '$comp/data-table';
-    import DelayedRender from '$comp/delayed-render.svelte';
     import { type StockFeatures, type Table } from '@tanstack/svelte-table';
+
+    import * as DataTable from '#comp/data-table/index.ts';
+    import DelayedRender from '#comp/delayed-render.svelte';
 
     import type { EventSummaryModel, SummaryTemplateKeys } from '../summary/index';
 

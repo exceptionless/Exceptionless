@@ -1,12 +1,13 @@
-import type { WorkInProgressResult } from '$features/shared/models';
-import type { WebSocketMessageValue } from '$features/websockets/models';
-
-import { accessToken } from '$features/auth/index.svelte';
-import { setOrganizationDefaultSavedView } from '$features/organizations/api.svelte';
-import { setCurrentUserSavedViewDefault, setCurrentUserSavedViewOrder } from '$features/users/api.svelte';
-import { ChangeType } from '$features/websockets/models';
 import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, type QueryClient, useQueryClient } from '@tanstack/svelte-query';
+
+import type { WorkInProgressResult } from '#features/shared/models/index.ts';
+import type { WebSocketMessageValue } from '#features/websockets/models.ts';
+
+import { accessToken } from '#features/auth/index.svelte.ts';
+import { setOrganizationDefaultSavedView } from '#features/organizations/api.svelte.ts';
+import { setCurrentUserSavedViewDefault, setCurrentUserSavedViewOrder } from '#features/users/api.svelte.ts';
+import { ChangeType } from '#features/websockets/models.ts';
 
 import type { NewSavedView, SavedView, UpdateSavedView, UpdateSavedViewDefault, UpdateSavedViewOrder } from './models';
 

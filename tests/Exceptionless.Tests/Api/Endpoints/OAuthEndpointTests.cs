@@ -1194,6 +1194,41 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task OAuthBearer_McpClientSendsRemovedArgument_ReturnsInvalidArgument()
+    {
+        var token = await IssueTokenAsync();
+        using var httpClient = _server.CreateClient();
+        var transport = new HttpClientTransport(
+            new HttpClientTransportOptions
+            {
+                Endpoint = new Uri(_server.BaseAddress, "/mcp"),
+                AdditionalHeaders = new Dictionary<string, string>
+                {
+                    ["Authorization"] = $"Bearer {token.AccessToken}"
+                }
+            },
+            httpClient,
+            GetService<ILoggerFactory>(),
+            ownsHttpClient: false);
+        await using var client = await McpClient.CreateAsync(transport, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Binding drops unknown arguments, so without this check an old client's last would silently search all time.
+        var result = await client.CallToolAsync(
+            "search_stacks",
+            new Dictionary<string, object?>
+            {
+                ["projectId"] = TestConstants.ProjectId,
+                ["last"] = "24h"
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsError);
+        var error = result.StructuredContent!.Value.GetProperty("error");
+        Assert.Equal("invalid_argument", error.GetProperty("code").GetString());
+        Assert.Contains("search_stacks does not accept last.", error.GetProperty("message").GetString());
+    }
+
+    [Fact]
     public async Task OAuthBearer_RestApiResourceMissingScope_ReturnsForbidden()
     {
         var token = await IssueTokenAsync(resource: RestApiResource, scope: AuthorizationRoles.ProjectsRead);
@@ -1833,6 +1868,41 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         var error = await failedResponse.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
         Assert.NotNull(error);
         Assert.Equal("invalid_grant", error.Error);
+    }
+
+    [Fact]
+    public async Task TokenAsync_AccountGenerationChanged_RejectsExistingCodesAndRefreshTokens()
+    {
+        // Arrange
+        var issued = await IssueTokenAsync(resource: RestApiResource, scope: $"{AuthorizationRoles.ProjectsRead} {AuthorizationRoles.OfflineAccess}");
+        string code = await CreateAuthorizationCodeAsync(PkceVerifier);
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.AuthenticationVersion = StringExtensions.GetNewToken();
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency());
+        using var client = CreateHttpClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "projects");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", issued.AccessToken);
+        using var exchange = CreateTokenExchangeContent(code, PkceVerifier);
+        using var refresh = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["grant_type"] = OAuthGrantTypes.RefreshToken,
+            ["client_id"] = ClientId,
+            ["refresh_token"] = issued.RefreshToken!
+        });
+
+        // Act
+        using var accessResponse = await client.SendAsync(request, TestCancellationToken);
+        using var codeResponse = await client.PostAsync("oauth/token", exchange, TestCancellationToken);
+        using var refreshResponse = await client.PostAsync("oauth/token", refresh, TestCancellationToken);
+        var stored = await GetStoredOAuthTokenAsync(issued.AccessToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, accessResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, codeResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, refreshResponse.StatusCode);
+        Assert.NotNull(stored);
+        Assert.True(stored.IsDisabled);
     }
 
     private async Task RemoveTestUserFromOrganizationAsync(string organizationId)

@@ -1,9 +1,10 @@
-import type { ElasticsearchSnapshot } from '$features/admin/models';
-
-import DateTime from '$comp/formatters/date-time.svelte';
-import Number from '$comp/formatters/number.svelte';
-import { getSharedTableOptions, type TableMemoryPagingParameters, withClientSortedRowModel } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { ElasticsearchSnapshot } from '#features/admin/models.ts';
+
+import DateTime from '#comp/formatters/date-time.svelte';
+import Number from '#comp/formatters/number.svelte';
+import { getSharedTableOptions, type TableMemoryPagingParameters, withClientSortedRowModel } from '#features/shared/table.svelte.ts';
 
 import ShardsCell from './shards-cell.svelte';
 import SnapshotStatusCell from './snapshot-status-cell.svelte';

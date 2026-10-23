@@ -1,7 +1,7 @@
-import type { IFilter } from '$comp/faceted-filter';
-import type { SavedView } from '$features/saved-views/models';
+import type { IFilter } from '#comp/faceted-filter/index.ts';
+import type { SavedView } from '#features/saved-views/models.ts';
 
-import { deserializeFilters, serializeFilters, toFilter } from '$features/events/components/filters/helpers.svelte';
+import { deserializeFilters, serializeFilters, toFilter } from '#features/events/components/filters/helpers.svelte.ts';
 
 export const SESSION_EVENT_FILTER = 'type:session';
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { builderContext, type FacetFilterBuilder, type IFilter } from '$comp/faceted-filter';
+    import { builderContext, type FacetFilterBuilder, type IFilter } from '#comp/faceted-filter/index.ts';
 
     import DateFacetedFilter from './date-faceted-filter.svelte';
     import { DateFilter } from './models.svelte';

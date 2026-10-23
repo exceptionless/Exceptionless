@@ -1,8 +1,8 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import Label from '$comp/ui/label/label.svelte';
-    import { Switch } from '$comp/ui/switch';
+    import Label from '#comp/ui/label/label.svelte';
+    import { Switch } from '#comp/ui/switch/index.ts';
 
     interface Props {
         checked?: boolean;

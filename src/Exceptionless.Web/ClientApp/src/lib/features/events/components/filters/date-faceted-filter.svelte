@@ -1,13 +1,13 @@
 <script lang="ts">
-    import type { DateRangePicker as DateRangePickerType } from '$comp/date-range-picker';
-    import type { FacetedFilterProps } from '$comp/faceted-filter';
+    import type { DateRangePicker as DateRangePickerType } from '#comp/date-range-picker/index.ts';
+    import type { FacetedFilterProps } from '#comp/faceted-filter/index.ts';
 
-    import { DateRangePicker } from '$comp/date-range-picker';
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import DateMath from '$comp/formatters/date-math.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as Popover from '$comp/ui/popover';
-    import Separator from '$comp/ui/separator/separator.svelte';
+    import { DateRangePicker } from '#comp/date-range-picker/index.ts';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import DateMath from '#comp/formatters/date-math.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Popover from '#comp/ui/popover/index.ts';
+    import Separator from '#comp/ui/separator/separator.svelte';
 
     import { DateFilter } from './models.svelte';
 
@@ -68,7 +68,7 @@
             </Button>
         {/snippet}
     </Popover.Trigger>
-    <Popover.Content align="start" class="p-0" side="bottom" onkeydown={handleKeyDown}>
+    <Popover.Content align="start" class="max-h-(--bits-popover-content-available-height) w-auto overflow-y-auto p-0" side="bottom" onkeydown={handleKeyDown}>
         <div id={`${title}-help`} class="sr-only">Press Enter to apply filter, Escape to cancel</div>
         <DateRangePicker bind:this={dateRangePickerRef} value={filter.value} onselect={handleSelect} />
         <FacetedFilter.Actions clear={onClearFilter} hidden={filter.hidden} remove={onRemoveFilter} showClear={filter.value !== undefined} {toggleHidden} />

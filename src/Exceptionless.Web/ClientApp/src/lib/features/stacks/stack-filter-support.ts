@@ -1,4 +1,4 @@
-import type { IFilter } from '$comp/faceted-filter';
+import type { IFilter } from '#comp/faceted-filter/index.ts';
 
 export const STACK_CRITICAL_TERM = 'critical';
 const STACK_BOOLEAN_TERMS = new Set(['occurrences_are_critical', STACK_CRITICAL_TERM]);

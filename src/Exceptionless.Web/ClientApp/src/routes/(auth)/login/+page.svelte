@@ -1,42 +1,40 @@
 <script lang="ts">
-    import { dev } from '$app/environment';
-    import { goto } from '$app/navigation';
+    import { dev } from '$app/env';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
-    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
-    import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
-    import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
-    import Logo from '$comp/logo.svelte';
-    import { A, Muted, P } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Card from '$comp/ui/card';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Spinner } from '$comp/ui/spinner';
-    import { login } from '$features/auth/api.svelte';
+    import { createForm } from '@tanstack/svelte-form';
+    import { onMount } from 'svelte';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
+    import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
+    import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
+    import Logo from '#comp/logo.svelte';
+    import { A, Muted, P } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { login } from '#features/auth/api.svelte.ts';
     import {
         accessToken,
         enableAccountCreation,
         enableOAuthLogin,
-        facebookClientId,
-        facebookLogin,
         gitHubClientId,
         githubLogin,
         googleClientId,
         googleLogin,
-        liveLogin,
         logout,
-        microsoftClientId
-    } from '$features/auth/index.svelte';
-    import { type LoginFormData, LoginSchema } from '$features/auth/schemas';
-    import { getSafeRedirectUrl } from '$features/shared/url';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
-    import { createForm } from '@tanstack/svelte-form';
-    import { onMount } from 'svelte';
+        microsoftClientId,
+        microsoftLogin
+    } from '#features/auth/index.svelte.ts';
+    import { type LoginFormData, LoginSchema } from '#features/auth/schemas.ts';
+    import { gotoRedirect } from '#features/navigation/redirect.ts';
+    import { getSafeRedirectUrl } from '#features/shared/url.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
 
-    const defaultRedirect = resolve('/');
+    const defaultRedirect = resolve('/(app)');
     const redirectUrl = getSafeRedirectUrl(page.url.searchParams.get('redirect'), defaultRedirect);
     const inviteToken = page.url.searchParams.get('token');
     const canSignup = enableAccountCreation || !!inviteToken;
@@ -63,7 +61,7 @@
             onSubmitAsync: async ({ value }) => {
                 const response = await login(value.email, value.password, value.invite_token);
                 if (response.ok) {
-                    await goto(redirectUrl);
+                    await gotoRedirect(redirectUrl);
                     return null;
                 }
 
@@ -177,18 +175,13 @@
                 </div>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => microsoftLogin(redirectUrl, inviteToken)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
                         <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google
-                        </Button>
-                    {/if}
-                    {#if facebookClientId}
-                        <Button aria-label="Login with Facebook" tabindex={4} onclick={() => facebookLogin(redirectUrl, inviteToken)}>
-                            <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}

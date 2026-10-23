@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -86,8 +87,8 @@ public class WebHookHandler(
 
     public async Task<Result<Exceptionless.Core.Models.WebHook>> Handle(SubscribeWebHook message)
     {
-        string? eventType = message.Data.RootElement.TryGetProperty("event", out var eventProp) ? eventProp.GetString() : null;
-        string? url = message.Data.RootElement.TryGetProperty("target_url", out var urlProp) ? urlProp.GetString() : null;
+        string? eventType = message.Data.RootElement.GetStringProperty("event");
+        string? url = message.Data.RootElement.GetStringProperty("target_url");
         if (String.IsNullOrEmpty(eventType) || String.IsNullOrEmpty(url))
             return Result.BadRequest("Webhook subscription event and target_url are required.");
 
@@ -108,7 +109,7 @@ public class WebHookHandler(
             Version = new Version(message.ApiVersion >= 0 ? message.ApiVersion : 0, 0)
         };
 
-        if (!webHook.Url.StartsWith("https://hooks.zapier.com"))
+        if (!IsZapierTarget(webHook.Url))
             return Result.NotFound("Webhook target not found.");
 
         return await PostImplAsync(webHook);
@@ -116,8 +117,8 @@ public class WebHookHandler(
 
     public async Task<Result> Handle(UnsubscribeWebHook message)
     {
-        string? targetUrl = message.Data.RootElement.TryGetProperty("target_url", out var urlProp) ? urlProp.GetString() : null;
-        if (targetUrl is null || !targetUrl.StartsWith("https://hooks.zapier.com"))
+        string? targetUrl = message.Data.RootElement.GetStringProperty("target_url");
+        if (!IsZapierTarget(targetUrl))
             return Result.NotFound("Webhook target not found.");
 
         var results = await repository.GetByUrlAsync(targetUrl);
@@ -127,11 +128,22 @@ public class WebHookHandler(
             if (results.Documents.Any(h => h.OrganizationId != organizationId))
                 throw new ArgumentException("All OrganizationIds must be the same.");
 
-            _logger.RemovingZapierUrls(results.Documents.Count, targetUrl);
+            _logger.RemovingZapierUrls(results.Documents.Count, organizationId);
             await repository.RemoveAsync(results.Documents);
         }
 
         return Result.Success();
+    }
+
+    private static bool IsZapierTarget([NotNullWhen(true)] string? url)
+    {
+        return url is not null
+            && url.StartsWith("https://hooks.zapier.com", StringComparison.Ordinal)
+            && Uri.TryCreate(url, UriKind.Absolute, out var uri)
+            && String.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal)
+            && String.Equals(uri.Host, "hooks.zapier.com", StringComparison.Ordinal)
+            && uri.IsDefaultPort
+            && String.IsNullOrEmpty(uri.UserInfo);
     }
 
     public Result<object[]> Handle(TestWebHook message)

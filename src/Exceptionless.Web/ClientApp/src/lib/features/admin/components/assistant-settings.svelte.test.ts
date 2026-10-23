@@ -9,7 +9,7 @@ const state = vi.hoisted(() => ({
     updateModel: vi.fn()
 }));
 vi.mock('svelte-sonner', () => ({ toast: { error: state.error, success: state.success } }));
-vi.mock('$features/admin/api.svelte', () => ({
+vi.mock('#features/admin/api.svelte.ts', () => ({
     getAdminAssistantSettingsQuery: () => ({
         data: {
             configured_enabled: true,

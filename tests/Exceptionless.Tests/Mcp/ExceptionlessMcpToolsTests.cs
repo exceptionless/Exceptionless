@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using System.Text.Json;
 using Exceptionless.Core.Authorization;
@@ -10,6 +11,7 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Assistant;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Mcp;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
@@ -133,6 +135,33 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP explicit project stack"));
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead);
         var result = await tools.SearchStacksAsync(TestConstants.ProjectId, limit: 50);
+
+        Assert.True(result.Ok);
+        Assert.Contains(Items(result), stack => stack.Id == stacks[0].Id);
+    }
+
+    [Theory]
+    [InlineData("title:*database*")]
+    [InlineData("*timeout*")]
+    [InlineData("type:error (?imeout)")]
+    public async Task SearchStacksAsync_LeadingWildcardFilter_ReturnsInvalidFilter(string filter)
+    {
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, filter, time: "[now-24h TO now]");
+
+        Assert.False(result.Ok);
+        Assert.Equal(McpErrorCodes.InvalidFilter, result.Error?.Code);
+        Assert.Contains("leading wildcards", result.Error?.Message);
+    }
+
+    [Fact]
+    public async Task SearchStacksAsync_TrailingWildcardFilter_ReturnsMatchingStacks()
+    {
+        var (stacks, _) = await CreateDataAsync(d => d.Event().TestProject().Message("MCP database timeout"));
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead);
+
+        var result = await tools.SearchStacksAsync(TestConstants.ProjectId, "title:datab*", limit: 50);
 
         Assert.True(result.Ok);
         Assert.Contains(Items(result), stack => stack.Id == stacks[0].Id);
@@ -465,6 +494,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             Path = "/broken"
         };
         ev.Data!["custom"] = "custom-value";
+        ev.Environment = "production";
         await _eventRepository.SaveAsync(ev, o => o.ImmediateConsistency());
         await RefreshDataAsync();
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
@@ -481,6 +511,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Equal("at Test.Throw() in Test.cs:line 42", error.StackTrace);
         Assert.Equal("/broken", item.Details.Request?.Path);
         Assert.Equal("custom-value", item.Details.Data?["custom"]);
+        Assert.Equal("production", item.Environment);
     }
 
     [Fact]
@@ -652,16 +683,140 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         Assert.Equal("Limit was capped at 100.", result.Warning);
     }
 
-    [Fact]
-    public async Task SearchEventsAsync_InvalidTimeRange_ReturnsError()
+    [Theory]
+    [InlineData("24h", null)]
+    [InlineData("not a date", null)]
+    [InlineData("[now/d TO now-1d/d]", null)]
+    [InlineData("[2026-07-02T00:00:00Z TO 2026-07-01T00:00:00Z]", null)]
+    [InlineData("[now/d TO now/d]", "Not/A_Zone")]
+    public async Task SearchEventsAsync_InvalidTimeRange_ReturnsError(string time, string? timeZone)
     {
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
-        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, last: "24h", startUtc: "2026-06-25T00:00:00Z");
+        var result = await tools.SearchEventsAsync(TestConstants.ProjectId, time: time, timeZone: timeZone);
 
         Assert.False(result.Ok);
         Assert.Equal(McpErrorCodes.InvalidTimeRange, result.Error?.Code);
         Assert.Null(result.Data);
+    }
+
+    [Theory]
+    // 01:15 UTC on Tuesday is still Monday evening in Chicago (UTC-5 during daylight saving time).
+    [InlineData("[now/d TO now/d]", "America/Chicago", "2026-10-19T05:00:00Z", "2026-10-20T04:59:59.999Z")]
+    [InlineData("[now/d TO now/d]", null, "2026-10-20T00:00:00Z", "2026-10-20T23:59:59.999Z")]
+    [InlineData("[now-1d/d TO now-1d/d]", "America/Chicago", "2026-10-18T05:00:00Z", "2026-10-19T04:59:59.999Z")]
+    [InlineData("[now-24h TO now]", "America/Chicago", "2026-10-19T01:15:30Z", "2026-10-20T01:15:30Z")]
+    [InlineData("[2026-10-01 TO 2026-10-01]", "Asia/Tokyo", "2026-09-30T15:00:00Z", "2026-10-01T14:59:59.999Z")]
+    public async Task CountEventsAsync_DateMathTime_ResolvesInTimeZone(string time, string? timeZone, string expectedStart, string expectedEnd)
+    {
+        try
+        {
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 10, 20, 1, 15, 30, TimeSpan.Zero));
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+            var result = await tools.CountEventsAsync(TestConstants.ProjectId, time: time, timeZone: timeZone);
+            var data = Data(result);
+
+            Assert.True(result.Ok, result.Error?.Message);
+            Assert.Equal(DateTimeOffset.Parse(expectedStart, CultureInfo.InvariantCulture).UtcDateTime, data.StartUtc);
+            Assert.Equal(DateTimeOffset.Parse(expectedEnd, CultureInfo.InvariantCulture).UtcDateTime, data.EndUtc);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
+    }
+
+    [Theory]
+    [InlineData("last 7 days")]
+    [InlineData("last 2 weeks")]
+    [InlineData("last 24 hours")]
+    public async Task CountEventsAsync_NaturalDurationAcrossDaylightSavingChange_KeepsElapsedTime(string time)
+    {
+        try
+        {
+            // Chicago fell back on 2026-11-01, so a week ago was UTC-5 and now is UTC-6.
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 11, 3, 18, 0, 0, TimeSpan.Zero));
+            var expected = TimeRangeParser.GetTimeInfo(time, TimeSpan.FromHours(-6), TimeProvider);
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+            var result = await tools.CountEventsAsync(TestConstants.ProjectId, time: time, timeZone: "America/Chicago");
+            var data = Data(result);
+
+            // A duration keeps the parser's elapsed time instead of moving its start to the older offset.
+            Assert.True(result.Ok, result.Error?.Message);
+            Assert.Equal(expected.Range.UtcStart, data.StartUtc);
+            Assert.Equal(expected.Range.UtcEnd, data.EndUtc);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
+    }
+
+    [Fact]
+    public async Task CountEventsAsync_GroupByStack_RanksByOccurrencesAndNamesStacks()
+    {
+        const string tag = "mcp-rank-stacks";
+        await CreateDataAsync(d =>
+        {
+            // One event that stands for 10 merged occurrences outranks three single occurrences.
+            d.Event().TestProject().Type(Event.KnownTypes.Error).Tag(tag).Message("MCP rare but repeated").Mutate(ev => ev.Count = 10);
+            var frequent = d.Event().TestProject().Type(Event.KnownTypes.Error).Tag(tag).Message("MCP frequent single");
+            d.Event().TestProject().Type(Event.KnownTypes.Error).Tag(tag).Message("MCP frequent single").Stack(frequent);
+            d.Event().TestProject().Type(Event.KnownTypes.Error).Tag(tag).Message("MCP frequent single").Stack(frequent);
+        });
+        await RefreshDataAsync();
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"tag:{tag}", time: "[now-1d TO now]", groupBy: "stack");
+        var groups = Data(result).Groups!.ToArray();
+
+        Assert.True(result.Ok, result.Error?.Message);
+        Assert.Equal(2, groups.Length);
+        Assert.Equal("MCP rare but repeated", groups[0].Title);
+        Assert.Equal(10, groups[0].Occurrences);
+        Assert.Equal(1, groups[0].Events);
+        Assert.Equal("MCP frequent single", groups[1].Title);
+        Assert.Equal(3, groups[1].Occurrences);
+        Assert.All(groups, group => Assert.Equal("open", group.Status));
+        Assert.All(groups, group => Assert.NotNull(group.FirstOccurrence));
+        Assert.All(groups, group => Assert.NotNull(group.LastOccurrence));
+    }
+
+    [Theory]
+    // Chicago left daylight saving time on 2026-11-01, so now (Tuesday 2026-11-03) is UTC-6 but October was UTC-5.
+    // Weeks start on Sunday, as in the app's time filter, so last week is Sunday 2026-10-25 through Saturday 2026-10-31.
+    [InlineData("[now-1w/w TO now-1w/w]", "2026-10-25T05:00:00Z", "2026-11-01T04:59:59.999Z")]
+    [InlineData("[2026-10-01 TO 2026-10-01]", "2026-10-01T05:00:00Z", "2026-10-02T04:59:59.999Z")]
+    [InlineData("[now-1w/w TO now]", "2026-10-25T05:00:00Z", "2026-11-03T18:00:00Z")]
+    // A duration from now is exact, whatever the offset was a week ago.
+    [InlineData("[now-7d TO now]", "2026-10-27T18:00:00Z", "2026-11-03T18:00:00Z")]
+    // Timestamps with Z or an offset are exact instants, even in July when Chicago was on daylight saving time.
+    [InlineData("[2026-07-01T00:00:00Z TO 2026-07-02T00:00:00Z]", "2026-07-01T00:00:00Z", "2026-07-02T00:00:00Z")]
+    [InlineData("[2026-07-01T00:00:00-05:00 TO 2026-07-01T12:00:00-05:00]", "2026-07-01T05:00:00Z", "2026-07-01T17:00:00Z")]
+    [InlineData("[2026-11-03T12:00:00Z TO now]", "2026-11-03T12:00:00Z", "2026-11-03T18:00:00Z")]
+    // Braces exclude their boundary, so the range starts or ends one millisecond inside it.
+    [InlineData("{2026-07-01T00:00:00Z TO 2026-07-02T00:00:00Z}", "2026-07-01T00:00:00.001Z", "2026-07-01T23:59:59.999Z")]
+    [InlineData("[2026-07-01T00:00:00Z TO 2026-07-02T00:00:00Z}", "2026-07-01T00:00:00Z", "2026-07-01T23:59:59.999Z")]
+    public async Task CountEventsAsync_RangeAcrossDaylightSavingChange_UsesEachDaysOffset(string time, string expectedStart, string expectedEnd)
+    {
+        try
+        {
+            TimeProvider.SetUtcNow(new DateTimeOffset(2026, 11, 3, 18, 0, 0, TimeSpan.Zero));
+            var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+            var result = await tools.CountEventsAsync(TestConstants.ProjectId, time: time, timeZone: "America/Chicago");
+            var data = Data(result);
+
+            Assert.True(result.Ok, result.Error?.Message);
+            Assert.Equal(DateTimeOffset.Parse(expectedStart, CultureInfo.InvariantCulture).UtcDateTime, data.StartUtc);
+            Assert.Equal(DateTimeOffset.Parse(expectedEnd, CultureInfo.InvariantCulture).UtcDateTime, data.EndUtc);
+        }
+        finally
+        {
+            TimeProvider.Restore();
+        }
     }
 
     [Fact]
@@ -672,7 +827,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         await RefreshDataAsync();
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
-        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", last: "24h", interval: "1h");
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", time: "[now-24h TO now]", interval: "1h");
         var data = Data(result);
 
         Assert.True(result.Ok);
@@ -704,6 +859,28 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CountEventsAsync_GroupByEnvironment_ReturnsFilteredDeploymentCounts()
+    {
+        // Arrange
+        const string referenceId = "mcp-count-environments";
+        await CreateDataAsync(data =>
+        {
+            data.Event().TestProject().ReferenceId(referenceId).Mutate(ev => ev.Environment = "production");
+            data.Event().TestProject().ReferenceId(referenceId).Mutate(ev => ev.Environment = "staging");
+        });
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
+
+        // Act
+        var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId} environment:production", groupBy: "environment");
+
+        // Assert
+        Assert.True(result.Ok);
+        var group = Assert.Single(Data(result).Groups!);
+        Assert.Equal("production", group.Key);
+        Assert.Equal(1, group.Events);
+    }
+
+    [Fact]
     public async Task CountEventsAsync_GroupByVersionAndInterval_ReturnsGroupedTrend()
     {
         try
@@ -716,7 +893,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             await RefreshDataAsync();
             var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.EventsRead);
 
-            var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", last: "7d", interval: "1d", groupBy: "version");
+            var result = await tools.CountEventsAsync(TestConstants.ProjectId, filter: $"reference:{referenceId}", time: "[now-7d TO now]", interval: "1d", groupBy: "version");
             var data = Data(result);
 
             Assert.True(result.Ok);
@@ -1427,12 +1604,13 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
         var tool = McpServerTool.Create(method, tools, new McpServerToolCreateOptions());
         var properties = tool.ProtocolTool.InputSchema.GetProperty("properties");
 
-        Assert.True(properties.TryGetProperty("last", out var last), "The last time range must be advertised in the MCP tool schema.");
-        Assert.True(properties.TryGetProperty("startUtc", out var startUtc), "The startUtc time range must be advertised in the MCP tool schema.");
-        Assert.True(properties.TryGetProperty("endUtc", out var endUtc), "The endUtc time range must be advertised in the MCP tool schema.");
-        Assert.Contains("24h", last.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("UTC", startUtc.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("UTC", endUtc.GetProperty("description").GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.True(properties.TryGetProperty("time", out var time), "The time range must be advertised in the MCP tool schema.");
+        Assert.True(properties.TryGetProperty("timeZone", out var timeZone), "The time zone must be advertised in the MCP tool schema.");
+        Assert.Contains("[now/d TO now/d]", time.GetProperty("description").GetString(), StringComparison.Ordinal);
+        Assert.Contains("IANA", timeZone.GetProperty("description").GetString(), StringComparison.Ordinal);
+        Assert.False(properties.TryGetProperty("last", out _));
+        Assert.False(properties.TryGetProperty("startUtc", out _));
+        Assert.False(properties.TryGetProperty("endUtc", out _));
     }
 
     [Fact]
