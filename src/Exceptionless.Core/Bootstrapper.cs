@@ -374,8 +374,6 @@ public class Bootstrapper
             integrations.Add("Google OAuth");
         if (!String.IsNullOrWhiteSpace(options.AuthOptions.MicrosoftId))
             integrations.Add("Microsoft OAuth");
-        if (!String.IsNullOrWhiteSpace(options.AuthOptions.FacebookId))
-            integrations.Add("Facebook OAuth");
         if (!String.IsNullOrWhiteSpace(options.AuthOptions.GitHubId))
             integrations.Add("GitHub OAuth");
         if (options.AuthOptions.EnableActiveDirectoryAuth)

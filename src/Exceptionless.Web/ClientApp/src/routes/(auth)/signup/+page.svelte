@@ -5,7 +5,6 @@
     import { onMount } from 'svelte';
 
     import ErrorMessage from '#comp/error-message.svelte';
-    import FacebookIcon from '#comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
     import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
@@ -21,15 +20,13 @@
     import {
         accessToken,
         enableOAuthLogin,
-        facebookClientId,
-        facebookLogin,
         gitHubClientId,
         githubLogin,
         googleClientId,
         googleLogin,
-        liveLogin,
         logout,
-        microsoftClientId
+        microsoftClientId,
+        microsoftLogin
     } from '#features/auth/index.svelte.ts';
     import { type SignupFormData, SignupSchema } from '#features/auth/schemas.ts';
     import { validateEmailAvailability } from '#features/auth/validators.ts';
@@ -82,18 +79,13 @@
                 <P class="text-center">Sign up with</P>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with Microsoft" onclick={() => microsoftLogin(redirectUrl, inviteToken)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
                         <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
                             <GoogleIcon class="size-4" /> Google
-                        </Button>
-                    {/if}
-                    {#if facebookClientId}
-                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl, inviteToken)}>
-                            <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}

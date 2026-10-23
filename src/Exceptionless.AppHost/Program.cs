@@ -216,7 +216,7 @@ if (!servicesOnly)
             .WithEnvironment("API_HTTPS", worktreePorts.ApiHttpsUrl);
     }
 
-    // The e2e workflow runs npm ci before starting the AppHost, so a second install would only delay the app.
+    // The e2e workflow runs npm ci before starting the AppHost, so it skips Aspire's second install.
     if (ciE2E)
         app.WithNpm(install: false);
 
