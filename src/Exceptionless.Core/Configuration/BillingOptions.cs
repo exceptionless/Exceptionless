@@ -12,7 +12,7 @@ public class BillingOptions
     /// <summary>
     /// Days before a trial ends to send the trial ending reminder email.
     /// </summary>
-    public int TrialReminderDays { get; internal set; } = 2;
+    public int TrialReminderDays { get; internal set; } = 3;
 
     /// <summary>
     /// Combined daily Exie cost limit across all trial organizations. Zero or less disables the limit.
@@ -33,7 +33,7 @@ public class BillingOptions
     {
         var options = new BillingOptions();
         options.TrialDays = Math.Max(0, config.GetValue("Billing:TrialDays", 14));
-        options.TrialReminderDays = Math.Max(0, config.GetValue("Billing:TrialReminderDays", 2));
+        options.TrialReminderDays = Math.Max(0, config.GetValue("Billing:TrialReminderDays", 3));
         options.TrialAssistantDailyCostLimitUsd = config.GetValue("Billing:TrialAssistantDailyCostLimitUsd", 25m);
         options.FreeInviteDailyLimit = Math.Max(0, config.GetValue("Billing:FreeInviteDailyLimit", 10));
         options.PaidInviteDailyLimit = Math.Max(0, config.GetValue("Billing:PaidInviteDailyLimit", 50));

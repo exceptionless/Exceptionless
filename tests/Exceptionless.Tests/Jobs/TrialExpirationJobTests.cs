@@ -79,7 +79,7 @@ public class TrialExpirationJobTests : IntegrationTestsBase
         Assert.Equal(new OrganizationTrialEndingCall(VerifiedUserId, TrialOrganizationId), reminder);
 
         // Arrange
-        TimeProvider.Advance(TimeSpan.FromDays(2));
+        TimeProvider.Advance(TimeSpan.FromDays(BillingOptions.TrialReminderDays));
 
         // Act
         await Job.RunAsync(TestCancellationToken);

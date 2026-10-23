@@ -5,19 +5,26 @@
     import { A } from '#comp/typography/index.ts';
     import { showUpgradeDialog } from '#features/billing/upgrade-required.svelte.ts';
 
+    import NotificationDismissButton from './notification-dismiss-button.svelte';
+
     interface Props extends NotificationProps {
         daysRemaining: number;
         name: string;
+        onDismiss?: () => void;
         organizationId: string;
     }
 
-    let { daysRemaining, name, organizationId, ...restProps }: Props = $props();
+    let { daysRemaining, name, onDismiss, organizationId, ...restProps }: Props = $props();
 
-    const isEndingSoon = $derived(daysRemaining <= 2);
     const daysLabel = $derived(daysRemaining === 1 ? '1 day' : `${daysRemaining} days`);
 </script>
 
-<Notification variant={isEndingSoon ? 'warning' : 'information'} {...restProps}>
+<Notification variant="warning" {...restProps}>
+    {#snippet action()}
+        {#if onDismiss}
+            <NotificationDismissButton {onDismiss} />
+        {/if}
+    {/snippet}
     {#if daysRemaining > 0}
         <NotificationTitle>{daysLabel} left in the {name} free trial.</NotificationTitle>
         <NotificationDescription>

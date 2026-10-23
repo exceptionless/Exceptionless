@@ -6,7 +6,6 @@
 
     import { SuspensionCode } from '#features/organizations/models.ts';
 
-    import FreePlanNotification from './free-plan-notification.svelte';
     import HourlyOverageNotification from './hourly-overage-notification.svelte';
     import ImpersonationNotification from './impersonation-notification.svelte';
     import MonthlyOverageNotification from './monthly-overage-notification.svelte';
@@ -15,7 +14,9 @@
     import RequestLimitNotification from './request-limit-notification.svelte';
     import SetupFirstProjectNotification from './setup-first-project-notification.svelte';
     import SuspendedOrganizationNotification from './suspended-organization-notification.svelte';
+    import TrialEndedNotification from './trial-ended-notification.svelte';
     import TrialNotification from './trial-notification.svelte';
+    import UsageWarningNotification from './usage-warning-notification.svelte';
 
     const mockProjects: ViewProject[] = [
         {
@@ -50,20 +51,20 @@
     });
 </script>
 
-<Story name="Trial">
-    <TrialNotification daysRemaining={5} name="Acme Corporation" organizationId="org1" />
+<Story name="Trial Ending Soon">
+    <TrialNotification daysRemaining={3} name="Acme Corporation" onDismiss={() => {}} organizationId="org1" />
+</Story>
+<Story name="Trial Last Day">
+    <TrialNotification daysRemaining={1} name="Acme Corporation" onDismiss={() => {}} organizationId="org1" />
+</Story>
+<Story name="Trial Ending Today">
+    <TrialNotification daysRemaining={0} name="Acme Corporation" onDismiss={() => {}} organizationId="org1" />
 </Story>
 <Story name="Trial Ended">
-    <TrialNotification daysRemaining={0} name="Acme Corporation" organizationId="org1" />
+    <TrialEndedNotification maxEventsPerMonth={3000} name="Acme Corporation" onDismiss={() => {}} organizationId="org1" retentionDays={3} />
 </Story>
-<Story name="Trial Ending Soon">
-    <TrialNotification daysRemaining={1} name="Acme Corporation" organizationId="org1" />
-</Story>
-<Story name="Free Plan">
-    <FreePlanNotification maxEventsPerMonth={3000} name="Acme Corporation" organizationId="org1" retentionDays={3} />
-</Story>
-<Story name="Free Plan After Trial">
-    <FreePlanNotification maxEventsPerMonth={3000} name="Acme Corporation" organizationId="org1" retentionDays={3} trialEnded />
+<Story name="Usage Warning">
+    <UsageWarningNotification limit={3000} name="Acme Corporation" onDismiss={() => {}} organizationId="org1" total={2550} />
 </Story>
 <Story name="Monthly Overage">
     <MonthlyOverageNotification name="Tech Startup Inc" organizationId="org1" />
