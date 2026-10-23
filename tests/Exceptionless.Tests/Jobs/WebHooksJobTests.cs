@@ -25,6 +25,10 @@ using Xunit;
 
 namespace Exceptionless.Tests.Jobs;
 
+[CollectionDefinition("Webhook telemetry", DisableParallelization = true)]
+public sealed class WebHookTelemetryCollection;
+
+[Collection("Webhook telemetry")]
 public sealed class WebHooksJobTests : TestWithServices
 {
     private const string DestinationUrl = "https://example.com/webhook";

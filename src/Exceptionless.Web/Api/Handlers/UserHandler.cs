@@ -5,6 +5,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
@@ -25,6 +26,7 @@ namespace Exceptionless.Web.Api.Handlers;
 
 public class UserHandler(
     IUserRepository repository,
+    OrganizationService organizationService,
     IOrganizationRepository organizationRepository,
     ITokenRepository tokenRepository,
     IOAuthTokenRepository oauthTokenRepository,
@@ -365,6 +367,7 @@ public class UserHandler(
 
     public async Task<Result> Handle(AddAdminRole message)
     {
+        await using var membershipLock = await organizationService.AcquireUserMembershipLockAsync(message.Id, HttpContext.RequestAborted);
         var user = await GetModelAsync(message.Id, false);
         if (user is null)
             return Result.NotFound("User not found.");
