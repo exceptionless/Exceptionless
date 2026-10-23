@@ -14,7 +14,13 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
     Task<long> RemoveAllByOrganizationAndClientIpAsync(string organizationId, string? clientIpAddress, DateTime? startUtc, DateTime? endUtc, CommandOptionsDescriptor<PersistentEvent>? options = null);
     Task<long> RemoveAllByProjectAndClientIpAsync(string organizationId, string projectId, string clientIpAddress, DateTime? startUtc, DateTime? endUtc, CommandOptionsDescriptor<PersistentEvent>? options = null);
     Task<long> RemoveAllByStackIdsAsync(string[] stackIds);
+    Task<long> ReassignStackAsync(IEnumerable<string> sourceStackIds, string targetStackId, CancellationToken cancellationToken = default);
+    Task<DistinctValuePage> GetDistinctStackIdsAsync(int batchSize, string? afterValue = null, CancellationToken cancellationToken = default);
+    Task<DistinctValuePage> GetDistinctProjectIdsAsync(int batchSize, string? afterValue = null, CancellationToken cancellationToken = default);
+    Task<DistinctValuePage> GetDistinctOrganizationIdsAsync(int batchSize, string? afterValue = null, CancellationToken cancellationToken = default);
 }
+
+public sealed record DistinctValuePage(IReadOnlyCollection<string> Values, string? NextValue);
 
 public static class EventRepositoryExtensions
 {
