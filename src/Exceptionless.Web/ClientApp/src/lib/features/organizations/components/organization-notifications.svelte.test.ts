@@ -8,25 +8,32 @@ import { dismissOrganizationNotification } from '#features/organizations/notific
 import { ChangeType } from '#features/websockets/models.ts';
 
 import OrganizationNotifications, { recordConfiguredProjectId } from './organization-notifications.svelte';
+import { notificationTestState } from './organization-notifications.test-fake.svelte';
 
 const organizationRefetch = vi.hoisted(() => vi.fn());
 const projectsRefetch = vi.hoisted(() => vi.fn());
 const projects = vi.hoisted(() => [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }]);
 const recordProductTour = vi.hoisted(() => vi.fn());
-const state = vi.hoisted(() => ({
-    me: { id: 'user-id', organization_ids: ['organization-id'], product_tours: {} as Record<string, string>, roles: [] as string[] },
-    organization: undefined as undefined | ViewOrganization
+const invalidateQueries = vi.hoisted(() => vi.fn());
+const state = notificationTestState;
+
+vi.mock('@tanstack/svelte-query', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@tanstack/svelte-query')>()),
+    useQueryClient: () => ({ invalidateQueries })
 }));
 
-vi.mock('#features/organizations/api.svelte.ts', () => ({
-    getOrganizationQuery: () => ({
-        get data() {
-            return state.organization;
-        },
-        refetch: organizationRefetch
-    }),
-    getOrganizationsQuery: () => ({ data: { data: [] } })
-}));
+vi.mock('#features/organizations/api.svelte.ts', async () => {
+    const { notificationTestState } = await import('./organization-notifications.test-fake.svelte');
+    return {
+        getOrganizationQuery: () => ({
+            get data() {
+                return notificationTestState.organization;
+            },
+            refetch: organizationRefetch
+        }),
+        getOrganizationsQuery: () => ({ data: { data: [] } })
+    };
+});
 
 vi.mock('#features/organizations/context.svelte.ts', () => ({
     organization: { current: 'organization-id' }
@@ -36,14 +43,21 @@ vi.mock('#features/projects/api.svelte.ts', () => ({
     getOrganizationProjectsQuery: () => ({ data: { data: projects }, isSuccess: true, refetch: projectsRefetch })
 }));
 
-vi.mock('#features/users/api.svelte.ts', () => ({
-    getMeQuery: () => ({
-        get data() {
-            return state.me;
+vi.mock('#features/users/api.svelte.ts', async () => {
+    const { notificationTestState } = await import('./organization-notifications.test-fake.svelte');
+    return {
+        getMeQuery: () => ({
+            get data() {
+                return notificationTestState.me;
+            }
+        }),
+        putCurrentUserProductTour: () => ({ mutate: recordProductTour }),
+        queryKeys: { me: () => ['User', 'me'] },
+        setCurrentUserProductTourRecorded: (_: unknown, tourName: string) => {
+            notificationTestState.me.product_tours = { ...notificationTestState.me.product_tours, [tourName.replaceAll('-', '_')]: '2026-10-23T00:00:00Z' };
         }
-    }),
-    putCurrentUserProductTour: () => ({ mutate: recordProductTour })
-}));
+    };
+});
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -93,8 +107,11 @@ describe('OrganizationNotifications', () => {
         organizationRefetch.mockReset();
         projectsRefetch.mockReset();
         recordProductTour.mockReset();
+        invalidateQueries.mockReset();
         projects[0]!.is_configured = false;
+        state.me.organization_ids = ['organization-id'];
         state.me.product_tours = {};
+        state.me.roles = [];
         state.organization = undefined;
         localStorage.clear();
         // Dismissing for a long-past day prunes every stored dismissal.
@@ -210,7 +227,27 @@ describe('OrganizationNotifications', () => {
 
             await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
 
-            expect(recordProductTour).toHaveBeenCalledWith({ tourName: 'trial-ended-organization-id', userId: 'user-id' });
+            expect(recordProductTour).toHaveBeenCalledWith({ tourName: 'trial-ended-organization-id', userId: 'user-id' }, expect.anything());
+            expect(screen.queryByText(/Your trial has ended/)).toBeNull();
+        });
+
+        it('reloads the current user when the trial-ended dismissal fails to save', async () => {
+            state.organization = createOrganization({ plan_id: 'EX_FREE', trial_ends_utc: new Date(Date.now() - DAY).toISOString() });
+
+            renderNotifications();
+            await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
+            recordProductTour.mock.calls[0]![1].onError();
+
+            expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['User', 'me'] });
+        });
+
+        it('does not show the trial-ended notice to a global admin impersonating the organization', () => {
+            state.me.organization_ids = ['admin-organization-id'];
+            state.me.roles = ['global'];
+            state.organization = createOrganization({ plan_id: 'EX_FREE', trial_ends_utc: new Date(Date.now() - DAY).toISOString() });
+
+            renderNotifications();
+
             expect(screen.queryByText(/Your trial has ended/)).toBeNull();
         });
 

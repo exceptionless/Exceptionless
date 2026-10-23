@@ -21,7 +21,8 @@
 </script>
 
 <script lang="ts">
-    import { useEventListener } from 'runed';
+    import { useQueryClient } from '@tanstack/svelte-query';
+    import { useEventListener, useInterval } from 'runed';
     import { SvelteSet } from 'svelte/reactivity';
 
     import type { NotificationProps } from '#comp/notification/index.ts';
@@ -35,7 +36,7 @@
     import { getMonthlyEventUsage, isApproachingMonthlyEventLimit } from '#features/organizations/utils.ts';
     import { getProductTourRecordedAt } from '#features/product-tours/eligibility.ts';
     import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
-    import { getMeQuery, putCurrentUserProductTour } from '#features/users/api.svelte.ts';
+    import { getMeQuery, putCurrentUserProductTour, setCurrentUserProductTourRecorded, queryKeys as userQueryKeys } from '#features/users/api.svelte.ts';
 
     import HourlyOverageNotification from './notifications/hourly-overage-notification.svelte';
     import ImpersonationNotification from './notifications/impersonation-notification.svelte';
@@ -109,26 +110,30 @@
     const isExceededRequestLimit = $derived(!!organization?.is_over_request_limit);
     const isFreePlan = $derived(organization?.plan_id === FREE_PLAN_ID);
     const isTrialPlan = $derived(organization?.plan_id === TRIAL_PLAN_ID);
-    const trialDaysRemaining = $derived(getTrialDaysRemaining(organization?.trial_ends_utc));
-    const monthlyEventUsage = $derived(getMonthlyEventUsage(organization));
+    // Re-checks time-based notices each minute so day and month dismissals expire in a tab left open.
+    let now = $state(new Date());
+    useInterval(60 * 1000, {
+        callback: () => (now = new Date())
+    });
 
+    const trialDaysRemaining = $derived(getTrialDaysRemaining(organization?.trial_ends_utc, now));
+    const monthlyEventUsage = $derived(getMonthlyEventUsage(organization, now));
+
+    const queryClient = useQueryClient();
     const recordProductTour = putCurrentUserProductTour();
-    // Hides the trial-ended notice right away while the dismissal is saved to the user's product tour records.
-    const dismissedTrialEndedOrganizationIds = new SvelteSet<string>();
-    const trialEndedNoticeKey = $derived(organization?.id ? getTrialEndedNoticeKey(organization.id) : undefined);
     const isTrialEndedNoticeDismissed = $derived(
-        !!organization?.id &&
-            !!trialEndedNoticeKey &&
-            (dismissedTrialEndedOrganizationIds.has(organization.id) ||
-                !!getProductTourRecordedAt(meQuery.data?.product_tours, trialEndedNoticeKey.replaceAll('-', '_')))
+        !!organization?.id && !!getProductTourRecordedAt(meQuery.data?.product_tours, getTrialEndedNoticeKey(organization.id).replaceAll('-', '_'))
     );
 
-    const showUsageWarning = $derived(isApproachingMonthlyEventLimit(organization) && !isOrganizationNotificationDismissed('usage-warning', organization?.id));
-    const showTrialEndingSoon = $derived(
-        isTrialPlan && isTrialEndingSoon(trialDaysRemaining) && !isOrganizationNotificationDismissed('trial-ending', organization?.id)
+    const showUsageWarning = $derived(
+        isApproachingMonthlyEventLimit(organization, now) && !isOrganizationNotificationDismissed('usage-warning', organization?.id, now)
     );
+    const showTrialEndingSoon = $derived(
+        isTrialPlan && isTrialEndingSoon(trialDaysRemaining) && !isOrganizationNotificationDismissed('trial-ending', organization?.id, now)
+    );
+    // Admins impersonating an organization would otherwise fill their own product tour records with other organizations' notices.
     const showTrialEnded = $derived(
-        isFreePlan && !!organization && hasTrialEndedWithoutSubscribing(organization) && !!meQuery.data && !isTrialEndedNoticeDismissed
+        isFreePlan && !isImpersonating && !!organization && hasTrialEndedWithoutSubscribing(organization) && !!meQuery.data && !isTrialEndedNoticeDismissed
     );
     const hasNoProjects = $derived(projectsQuery.isSuccess && projects.length === 0);
     const needsProjectConfiguration = $derived(
@@ -143,11 +148,21 @@
             return;
         }
 
-        dismissedTrialEndedOrganizationIds.add(organizationId);
-        recordProductTour.mutate({
-            tourName: getTrialEndedNoticeKey(organizationId),
-            userId
-        });
+        const tourName = getTrialEndedNoticeKey(organizationId);
+        setCurrentUserProductTourRecorded(queryClient, tourName, new Date().toISOString());
+        recordProductTour.mutate(
+            {
+                tourName,
+                userId
+            },
+            {
+                // Put the notice back if the dismissal wasn't saved, rather than pretending it was.
+                onError: () =>
+                    queryClient.invalidateQueries({
+                        queryKey: userQueryKeys.me()
+                    })
+            }
+        );
     }
 
     useEventListener(document, 'PersistentEventChanged', (event) => {
