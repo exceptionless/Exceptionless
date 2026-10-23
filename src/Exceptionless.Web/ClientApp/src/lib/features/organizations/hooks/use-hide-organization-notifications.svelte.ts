@@ -1,5 +1,6 @@
-import { showOrganizationNotifications } from '$features/organizations/context.svelte';
 import { onDestroy } from 'svelte';
+
+import { showOrganizationNotifications } from '#features/organizations/context.svelte.ts';
 
 /**
  * Reference counter to track how many components are actively hiding organization notifications.

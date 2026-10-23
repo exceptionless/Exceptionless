@@ -1,10 +1,11 @@
 <script lang="ts">
-    import * as Chart from '$comp/ui/chart/index';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { formatDateLabel } from '$features/shared/dates';
     import { scaleUtc } from 'd3-scale';
     import { curveLinear } from 'd3-shape';
     import { AreaChart } from 'layerchart';
+
+    import * as Chart from '#comp/ui/chart/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { formatDateLabel } from '#features/shared/dates.ts';
 
     type ChartDataPoint = {
         date: Date;

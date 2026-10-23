@@ -1,16 +1,17 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import ErrorMessage from '$comp/error-message.svelte';
-    import Currency from '$comp/formatters/currency.svelte';
-    import DateTime from '$comp/formatters/date-time.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import * as Table from '$comp/ui/table';
-    import { getInvoiceStatusLabel } from '$features/billing/invoice';
     import File from '@lucide/svelte/icons/file';
     import MoreHorizontal from '@lucide/svelte/icons/more-horizontal';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import Currency from '#comp/formatters/currency.svelte';
+    import DateTime from '#comp/formatters/date-time.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import { getInvoiceStatusLabel } from '#features/billing/invoice.ts';
 
     import type { InvoiceGridModel } from '../models';
 

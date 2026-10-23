@@ -1,9 +1,9 @@
 <script lang="ts">
     import type { HTMLAttributes } from 'svelte/elements';
 
-    import logoDark from '$lib/assets/logo-dark.svg';
-    import logo from '$lib/assets/logo.svg';
-    import { cn } from '$lib/utils';
+    import logoDark from '#lib/assets/logo-dark.svg';
+    import logo from '#lib/assets/logo.svg';
+    import { cn } from '#lib/utils.ts';
 
     let { class: className, ...props }: HTMLAttributes<HTMLImageElement> = $props();
 </script>

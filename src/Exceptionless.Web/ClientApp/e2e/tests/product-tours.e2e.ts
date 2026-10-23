@@ -366,7 +366,7 @@ for (const title of ['Explore Exceptionless', 'Create a saved view', 'Meet Exie'
 
         // Act
         await page.keyboard.press('/');
-        await expect(page.getByRole('combobox')).toBeVisible();
+        await expect(page.getByPlaceholder('Search or jump to...')).toBeVisible();
 
         // Assert: the active guide must not compete with either dialog.
         await expect(page.locator('.driver-popover')).toHaveCount(0);
@@ -760,12 +760,12 @@ for (const [stepTitle, advances] of [
 
         await test.step('restore the checkpoint after navigating with Search open', async () => {
             await page.keyboard.press('/');
-            await expect(page.getByRole('combobox')).toBeVisible();
+            await expect(page.getByPlaceholder('Search or jump to...')).toBeVisible();
             await expect(guide).toBeHidden();
             await page.goBack();
             await expect(page).toHaveURL(/\/manage$/);
             await expect(guide).toBeHidden();
-            if (await page.getByRole('combobox').isVisible()) {
+            if (await page.getByPlaceholder('Search or jump to...').isVisible()) {
                 await page.keyboard.press('Escape');
             }
             await page.goForward();

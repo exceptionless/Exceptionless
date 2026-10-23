@@ -1,19 +1,20 @@
 <script lang="ts">
-    import type { ClientConfigurationSetting } from '$features/projects/models';
-
     import { page } from '$app/state';
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import { A, Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { getProjectConfig, postProjectConfig } from '$features/projects/api.svelte';
-    import AddProjectConfigDialog from '$features/projects/components/dialogs/add-project-config-dialog.svelte';
-    import { getTableOptions } from '$features/projects/components/table/config-options.svelte';
-    import ProjectsConfigDataTable from '$features/projects/components/table/projects-config-data-table.svelte';
-    import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import Plus from '@lucide/svelte/icons/plus';
     import { createTable } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
+
+    import type { ClientConfigurationSetting } from '#features/projects/models.ts';
+
+    import DataTableViewOptions from '#comp/data-table/data-table-view-options.svelte';
+    import { A, Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { getProjectConfig, postProjectConfig } from '#features/projects/api.svelte.ts';
+    import AddProjectConfigDialog from '#features/projects/components/dialogs/add-project-config-dialog.svelte';
+    import { getTableOptions } from '#features/projects/components/table/config-options.svelte.ts';
+    import ProjectsConfigDataTable from '#features/projects/components/table/projects-config-data-table.svelte';
+    import { DEFAULT_LIMIT } from '#features/shared/api/api.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     const projectId = $derived(page.params.projectId || '');
     const projectConfigQuery = getProjectConfig({

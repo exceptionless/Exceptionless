@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Time.Testing;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Net;
@@ -8,6 +7,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Endpoints;
@@ -16,12 +16,16 @@ using Exceptionless.Web.Mcp;
 using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Messaging;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Options;
 using Foundatio.Resilience;
 using Foundatio.Serializer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Time.Testing;
+using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Assistant;
@@ -41,6 +45,65 @@ public sealed class AssistantServiceTests
         Assert.Equal(
             expectedProjectId,
             AssistantService.GetProjectSetupProjectId(requestedProjectId, requestedProjectName, currentProjectId));
+    }
+
+    [Fact]
+    public void BuildMessages_SystemPrompt_IncludesCurrentTimeAndTimeRangeRule()
+    {
+        var request = new AssistantChatRequest([new AssistantChatMessage("user", "What are my top errors in the last 24 hours?")], OrganizationId: "organization-id", Path: "/stack/all");
+
+        var messages = AssistantService.BuildMessages(request, null, new DateTimeOffset(2026, 10, 20, 6, 15, 30, TimeSpan.Zero));
+
+        using var document = JsonDocument.Parse(JsonSerializer.Serialize(messages[0]));
+        string systemPrompt = document.RootElement.GetProperty("content").GetString()!;
+        Assert.Contains("Current UTC time: 2026-10-20T06:15:30Z.", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("Current project id: not selected.", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("[now/d TO now/d] for today", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("Never convert a period to UTC timestamps yourself.", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("There is no organization-wide search", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("never retry by removing them", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("I searched 5 of 12 projects", systemPrompt, StringComparison.Ordinal);
+        Assert.Contains("User time zone: UTC. User local time: 2026-10-20T06:15:30+00:00.", systemPrompt, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    // 01:15 UTC on Tuesday is still Monday evening in Chicago (UTC-5 during daylight saving time).
+    [InlineData("America/Chicago", "User time zone: America/Chicago. User local time: 2026-10-19T20:15:30-05:00.")]
+    [InlineData("Asia/Tokyo", "User time zone: Asia/Tokyo. User local time: 2026-10-20T10:15:30+09:00.")]
+    [InlineData("Not/A_Zone", "User time zone: UTC. User local time: 2026-10-20T01:15:30+00:00.")]
+    [InlineData(null, "User time zone: UTC. User local time: 2026-10-20T01:15:30+00:00.")]
+    public void GetUserCalendarContext_TimeZone_ReturnsLocalTime(string? timeZone, string expected)
+    {
+        Assert.Equal(expected, AssistantService.GetUserCalendarContext(timeZone, new DateTimeOffset(2026, 10, 20, 1, 15, 30, TimeSpan.Zero)));
+    }
+
+    [Theory]
+    [InlineData("America/Chicago", "America/Chicago")]
+    [InlineData("Not/A_Zone", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void GetUserTimeZoneId_BrowserTimeZone_ReturnsOnlyRecognizedZones(string? timeZone, string? expected)
+    {
+        // Tools reject an unknown zone, so Exie falls back to UTC rather than failing the search.
+        Assert.Equal(expected, AssistantService.GetUserTimeZoneId(timeZone));
+    }
+
+    [Fact]
+    public void BuildMessages_EarlierTurnsWithoutToolResults_TellsModelToRefreshToolContext()
+    {
+        var request = new AssistantChatRequest(
+            [
+                new AssistantChatMessage("user", "What broke?"),
+                new AssistantChatMessage("assistant", "The checkout stack failed 12 times."),
+                new AssistantChatMessage("user", "Which browsers were affected?")
+            ],
+            OrganizationId: "organization-id");
+
+        var restoredMessages = JsonSerializer.Serialize(AssistantService.BuildMessages(request, null, DateTimeOffset.UtcNow));
+        var firstTurnMessages = JsonSerializer.Serialize(AssistantService.BuildMessages(request with { Messages = [request.Messages.First()] }, null, DateTimeOffset.UtcNow));
+
+        Assert.Contains("no longer available", restoredMessages, StringComparison.Ordinal);
+        Assert.DoesNotContain("no longer available", firstTurnMessages, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -116,7 +179,7 @@ public sealed class AssistantServiceTests
             item => Assert.Equal("done", item.Type));
         Assert.Equal("Bearer", handler.AuthorizationScheme);
         using var providerRequest = JsonDocument.Parse(handler.RequestBody);
-        Assert.Equal("~deepseek/deepseek-v4-flash-latest", providerRequest.RootElement.GetProperty("model").GetString());
+        Assert.Equal("openai/gpt-6.1-sol", providerRequest.RootElement.GetProperty("model").GetString());
         Assert.Contains($"\"max_tokens\":{AssistantLimits.MaximumOutputTokens}", handler.RequestBody);
         Assert.Contains("get_event", handler.RequestBody);
         Assert.Contains("get_stack", handler.RequestBody);
@@ -138,7 +201,7 @@ public sealed class AssistantServiceTests
         Assert.Contains("CURRENT PROJECT RULE", handler.RequestBody);
         Assert.Contains("CLIENT SETUP RULE", handler.RequestBody);
         Assert.Contains("pass that exact projectName to get_project_setup", handler.RequestBody);
-        Assert.Contains("Do not call get_stack or list_projects for setup", handler.RequestBody);
+        Assert.Contains("Do not call get_stack for setup, and call list_projects only when no project is identified", handler.RequestBody);
         Assert.Contains("Never invent packages or advertise Python, Java, Ruby, or PHP clients", handler.RequestBody);
         Assert.Contains("describe React Native and Expo as supported only when returned by the tool", handler.RequestBody);
         Assert.Contains("do not call list_projects, call each needed project-scoped tool only once", handler.RequestBody);
@@ -146,7 +209,10 @@ public sealed class AssistantServiceTests
         Assert.Contains("This tool has no stack id filter", handler.RequestBody);
         Assert.Contains("Never pass a stackId as eventId", handler.RequestBody);
         Assert.Contains("\"eventId\"", handler.RequestBody);
-        Assert.Contains("\"startUtc\"", handler.RequestBody);
+        Assert.Contains("\"time\"", handler.RequestBody);
+        // Exie supplies the browser's time zone itself, so the model never sees the parameter.
+        Assert.DoesNotContain("\"timeZone\"", handler.RequestBody);
+        Assert.DoesNotContain("\"startUtc\"", handler.RequestBody);
         Assert.Contains("\"after\"", handler.RequestBody);
         Assert.Contains("\"maximum\":10", handler.RequestBody);
         Assert.Contains("\"maximum\":16384", handler.RequestBody);
@@ -511,6 +577,72 @@ public sealed class AssistantServiceTests
     }
 
     [Fact]
+    public async Task StreamAsync_EmptyToolIdArgument_UsesCurrentPageId()
+    {
+        // Strict tool calling (OpenAI models) fills optional ids with "" instead of omitting them.
+        const string currentStackId = "537650f3b77efe23a47914aa";
+        string toolCallPayload = JsonSerializer.Serialize(new
+        {
+            choices = new[]
+            {
+                new
+                {
+                    delta = new
+                    {
+                        tool_calls = new[]
+                        {
+                            new
+                            {
+                                index = 0,
+                                id = "status-1",
+                                function = new
+                                {
+                                    name = "update_stack_status",
+                                    // The unsupported status stops the tool after id validation, before any repository lookup.
+                                    arguments = JsonSerializer.Serialize(new { stackId = "", status = "resolved" })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        var handler = new StubHttpMessageHandler(
+            $"data: {toolCallPayload}\n\ndata: [DONE]\n",
+            """
+            data: {"choices":[{"delta":{"content":"Done."}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["BaseURL"] = "https://localhost",
+                ["Assistant:ApiKey"] = "test-key"
+            })
+            .Build());
+        var service = CreateAssistantService(handler, appOptions);
+        var events = new List<AssistantStreamEvent>();
+
+        await foreach (var item in service.StreamAsync(
+            new AssistantChatRequest(
+                [new AssistantChatMessage("user", "Resolve this.")],
+                OrganizationId: "organization-id",
+                Path: $"/stack/{currentStackId}"),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+            events.Add(item);
+        }
+
+        var toolResult = Assert.Single(events, item => item.Type == "tool_result");
+        Assert.DoesNotContain($"\"code\":\"{McpErrorCodes.InvalidId}\"", toolResult.Result);
+        Assert.Contains($"\"code\":\"{McpErrorCodes.InvalidStatus}\"", toolResult.Result);
+    }
+
+    [Fact]
     public async Task StreamAsync_SuggestedActionsWithAnswer_EmitsValidatedActionsWithoutToolActivity()
     {
         string providerPayload = JsonSerializer.Serialize(new
@@ -747,6 +879,7 @@ public sealed class AssistantServiceTests
         Assert.Equal(initialRequest.RootElement.GetProperty("tools").GetRawText(), finalRequest.RootElement.GetProperty("tools").GetRawText());
         Assert.Equal("none", finalRequest.RootElement.GetProperty("tool_choice").GetString());
         Assert.Contains("Suggestions captured", handler.RequestBodies[1]);
+        Assert.Contains("the user has not seen an answer yet", handler.RequestBodies[1]);
         var suggestions = Assert.Single(events, item => item.Type == "suggested_actions").SuggestedActions!;
         Assert.Equal(AssistantLimits.MaximumSuggestedActions, suggestions.Count);
         Assert.DoesNotContain(suggestions, action => action.Label == "Ignored by cap");
@@ -904,6 +1037,64 @@ public sealed class AssistantServiceTests
         }
 
         Assert.DoesNotContain("server-recorded tool results from earlier turns", isolatedHandler.RequestBody);
+    }
+
+    [Fact]
+    public async Task StreamAsync_CachedResultsFromMissingProjects_AreNotReused()
+    {
+        var handler = new StubHttpMessageHandler(
+            """
+            data: {"choices":[{"delta":{"content":"Answer."}}]}
+
+            data: [DONE]
+
+            """);
+        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
+            .Build());
+        using var cache = new InMemoryCacheClient(new InMemoryCacheClientOptions { CloneValues = true, LoggerFactory = NullLoggerFactory.Instance, TimeProvider = TimeProvider.System });
+        var lockProvider = CreateLockProvider(cache, TimeProvider.System);
+        const string conversationId = "1d4f0c6a1a6b4d61a0f7a2b4c1e9d8f3";
+        var conversations = new AssistantConversationService(cache, lockProvider, NullLogger<AssistantConversationService>.Instance);
+        await conversations.AppendToolResultsAsync("user-id", "organization-id", conversationId,
+        [
+            new AssistantConversationToolResult("call-kept", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Kept stack"}]}}""", null, DateTimeOffset.UtcNow, ["project-1"]),
+            new AssistantConversationToolResult("call-deleted", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Deleted project stack"}]}}""", null, DateTimeOffset.UtcNow, ["project-1", "deleted-project"]),
+            new AssistantConversationToolResult("call-legacy", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Untracked stack"}]}}""", null, DateTimeOffset.UtcNow),
+            // count_events can resolve an organization's only project without naming it, so the result records none.
+            new AssistantConversationToolResult("call-implicit", "count_events", "{}", """{"ok":true,"data":{"events":3,"groups":[{"title":"Implicit project stack"}]}}""", null, DateTimeOffset.UtcNow, []),
+            new AssistantConversationToolResult("call-failed", "search_stacks", "{}", """{"ok":false,"error":{"code":"invalid_filter","message":"Failed lookup kept"}}""", null, DateTimeOffset.UtcNow, [])
+        ], TestContext.Current.CancellationToken);
+        var projects = new Mock<IProjectRepository>();
+        projects.Setup(repository => repository.GetByIdsAsync(It.IsAny<Ids>(), It.IsAny<CommandOptionsDescriptor<Project>>()))
+            .ReturnsAsync([new Project { Id = "project-1", OrganizationId = "organization-id", Name = "Storefront" }]);
+        var service = CreateAssistantService(handler, appOptions, cache, lockProvider, projectRepository: projects.Object);
+
+        await foreach (var _ in service.StreamAsync(
+            new AssistantChatRequest([new AssistantChatMessage("user", "What happened?")], OrganizationId: "organization-id", ConversationId: conversationId),
+            "user-id",
+            CreatePlanOptions(),
+            TestContext.Current.CancellationToken))
+        {
+        }
+
+        // A deleted project's results, and results recorded before projects were tracked, never reach the model.
+        Assert.Contains("Kept stack", handler.RequestBody);
+        Assert.DoesNotContain("Deleted project stack", handler.RequestBody);
+        Assert.DoesNotContain("Untracked stack", handler.RequestBody);
+        Assert.DoesNotContain("Implicit project stack", handler.RequestBody);
+        Assert.Contains("Failed lookup kept", handler.RequestBody);
+    }
+
+    [Fact]
+    public void GetReferencedProjectIds_ToolResult_IncludesArgumentPageAndResultProjects()
+    {
+        var projectIds = AssistantService.GetReferencedProjectIds(
+            """{"projectId":"project-arg"}""",
+            """{"ok":true,"data":{"items":[{"id":"stack-1","project_id":"project-result"},{"id":"stack-2","project_id":"project-arg"}]}}""",
+            "project-page");
+
+        Assert.Equal(["project-arg", "project-page", "project-result"], projectIds.Order(StringComparer.Ordinal));
     }
 
     [Theory]
@@ -1527,7 +1718,6 @@ public sealed class AssistantServiceTests
     [InlineData("turn", "private partial answer", false, "private partial answer", "failed", "turn_timeout")]
     [InlineData("provider", "private partial answer", false, "private partial answer", "failed", "provider_timeout")]
     [InlineData("client", "private partial answer", false, "", "cancelled", "client_disconnected")]
-    [InlineData("turn", "private partial answer <｜DSML｜invoke>", false, "", "failed", "turn_timeout")]
     [InlineData("turn", "", false, "", "failed", "turn_timeout")]
     [InlineData("turn", "I marked the private stack critical.", true, "", "failed", "turn_timeout")]
     [InlineData("provider", "I marked the private stack critical.", true, "", "failed", "provider_timeout")]
@@ -1592,7 +1782,6 @@ public sealed class AssistantServiceTests
             .Select(line => JsonSerializer.Deserialize<AssistantStreamEvent>(line, new JsonSerializerOptions(JsonSerializerDefaults.Web))!).ToArray();
         Assert.Equal(expectedText, String.Concat(events.Where(item => item.Type == "text_delta").Select(item => item.Text)));
         Assert.DoesNotContain("private reasoning", body);
-        Assert.DoesNotContain("DSML", body);
         Assert.DoesNotContain(events, item => item.Type is "tool_call" or "tool_result" or "done");
         if (cancellationSource == "client")
             Assert.Empty(events);
@@ -1731,132 +1920,6 @@ public sealed class AssistantServiceTests
         });
     }
 
-    [Fact]
-    public async Task StreamAsync_RawDsmlResponse_RetriesWithoutEmittingMarkup()
-    {
-        string recoveredPayload = JsonSerializer.Serialize(new
-        {
-            choices = new[]
-            {
-                new
-                {
-                    delta = new
-                    {
-                        content = "I found no errors in the selected time range.",
-                        tool_calls = new[]
-                        {
-                            new
-                            {
-                                index = 0,
-                                id = "suggestions-1",
-                                function = new
-                                {
-                                    name = "suggest_followups",
-                                    arguments = JsonSerializer.Serialize(new
-                                    {
-                                        actions = new[]
-                                        {
-                                            new { label = "Search seven days", prompt = "Search for errors in the last 7 days." }
-                                        }
-                                    })
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        var handler = new StubHttpMessageHandler(
-            """
-            data: {"choices":[{"delta":{"content":"I found no errors. "}}]}
-
-            data: {"choices":[{"delta":{"content":"<｜DS"}}]}
-
-            data: {"choices":[{"delta":{"content":"ML｜tool_calls><｜DSML｜invoke name=\"suggest_followups\">"}}]}
-
-            data: [DONE]
-
-            """,
-            $"data: {recoveredPayload}\n\ndata: [DONE]\n");
-        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["BaseURL"] = "https://localhost",
-                ["Assistant:ApiKey"] = "test-key"
-            })
-            .Build());
-        var service = CreateAssistantService(handler, appOptions);
-        var events = new List<AssistantStreamEvent>();
-
-        await foreach (var item in service.StreamAsync(
-            new AssistantChatRequest([new AssistantChatMessage("user", "Find recent errors")]),
-            "user-id",
-            CreatePlanOptions(),
-            TestContext.Current.CancellationToken))
-        {
-            events.Add(item);
-        }
-
-        Assert.Equal(2, handler.RequestBodies.Count);
-        Assert.Contains("The previous provider response exposed internal DSML tool-call markup as text", handler.RequestBodies[1]);
-        Assert.Collection(events,
-            item => Assert.Equal("I found no errors in the selected time range.", item.Text),
-            item =>
-            {
-                Assert.Equal("suggested_actions", item.Type);
-                Assert.Equal("Search seven days", Assert.Single(item.SuggestedActions!).Label);
-            },
-            item => Assert.Equal("done", item.Type));
-        Assert.DoesNotContain("DSML", String.Concat(events.Select(item => item.Text)), StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("I found no errors. ", String.Concat(events.Select(item => item.Text)), StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task StreamAsync_RepeatedRawDsmlResponse_EmitsClearErrorAndCompletion()
-    {
-        const string malformedResponse = """
-            data: {"choices":[{"delta":{"content":"<|DSML|tool_calls>"}}]}
-
-            data: [DONE]
-
-            """;
-        var handler = new StubHttpMessageHandler(malformedResponse, malformedResponse);
-        var appOptions = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["BaseURL"] = "https://localhost",
-                ["Assistant:ApiKey"] = "test-key"
-            })
-            .Build());
-        var service = CreateAssistantService(handler, appOptions);
-        var events = new List<AssistantStreamEvent>();
-        var logger = new RecordingAssistantLogger();
-        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
-
-        await foreach (var item in service.StreamAsync(
-            new AssistantChatRequest([new AssistantChatMessage("user", "Find recent errors")]),
-            "user-id",
-            CreatePlanOptions(),
-            diagnostics,
-            TestContext.Current.CancellationToken))
-        {
-            events.Add(item);
-        }
-
-        Assert.Equal(2, handler.RequestBodies.Count);
-        Assert.Collection(events,
-            item =>
-            {
-                Assert.Equal("error", item.Type);
-                Assert.Equal("Exie received a malformed response from the AI provider. Please try again.", item.Message);
-            },
-            item => Assert.Equal("done", item.Type));
-        Assert.DoesNotContain(events, item => item.Type == "text_delta");
-        var providerEntries = logger.Entries.Where(entry => entry.Properties.ContainsKey("ProviderOutcome")).ToArray();
-        Assert.Equal(2, providerEntries.Length);
-        Assert.All(providerEntries, entry => Assert.Equal("malformed_response", entry.Properties["ProviderOutcome"]));
-    }
-
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -1975,10 +2038,10 @@ public sealed class AssistantServiceTests
         public HttpClient CreateClient(string name) => new(handler, disposeHandler: false);
     }
 
-    private static ExceptionlessMcpTools CreateMcpTools(AssistantToolContext assistantToolContext) => new(
+    private static ExceptionlessMcpTools CreateMcpTools(AssistantToolContext assistantToolContext, IProjectRepository? projectRepository = null) => new(
         new HttpContextAccessor { HttpContext = new DefaultHttpContext() },
         null!,
-        null!,
+        projectRepository!,
         null!,
         null!,
         null!,
@@ -1999,7 +2062,8 @@ public sealed class AssistantServiceTests
         AssistantUsageService? usageService = null,
         AssistantModelSettingsService? modelSettingsService = null,
         ILogger<AssistantService>? logger = null,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        IProjectRepository? projectRepository = null)
     {
         cache ??= new InMemoryCacheClient(new InMemoryCacheClientOptions
         {
@@ -2020,7 +2084,7 @@ public sealed class AssistantServiceTests
         return new AssistantService(
             new StubHttpClientFactory(handler),
             appOptions,
-            CreateMcpTools(assistantToolContext),
+            CreateMcpTools(assistantToolContext, projectRepository),
             assistantToolContext,
             new AssistantConversationService(cache, lockProvider, NullLogger<AssistantConversationService>.Instance),
             modelSettingsService,

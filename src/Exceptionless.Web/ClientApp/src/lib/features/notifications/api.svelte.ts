@@ -1,7 +1,7 @@
-import type { SystemNotification } from '$features/websockets/models';
-
 import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
+
+import type { SystemNotification } from '#features/websockets/models.ts';
 
 export const queryKeys = {
     current: ['notifications', 'system'] as const

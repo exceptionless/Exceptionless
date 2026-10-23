@@ -8,6 +8,7 @@ namespace Exceptionless.Tests.Serializer.Models;
 
 public class OAuthTokenSerializerTests : TestWithServices
 {
+    private const string AuthenticationVersion = "current-version";
     private readonly ITextSerializer _serializer;
 
     public OAuthTokenSerializerTests(ITestOutputHelper output) : base(output)
@@ -15,13 +16,17 @@ public class OAuthTokenSerializerTests : TestWithServices
         _serializer = GetService<ITextSerializer>();
     }
 
-    [Fact]
-    public void RoundTrip_WithOAuthAccessToken_PreservesValues()
+    [Theory]
+    [InlineData(null)]
+    [InlineData(AuthenticationVersion)]
+    public void RoundTrip_WithOAuthAccessToken_PreservesValues(string? authenticationVersion)
     {
+        // Arrange
         var token = new OAuthToken
         {
             Id = "650000000000000000000005",
             UserId = "660000000000000000000001",
+            AuthenticationVersion = authenticationVersion,
             ClientId = "test-oauth-client",
             GrantId = "test-grant-id",
             Resource = "http://localhost:7110/api/v2",
@@ -36,11 +41,16 @@ public class OAuthTokenSerializerTests : TestWithServices
             UpdatedUtc = DateTime.UtcNow
         };
 
+        // Act
         string? json = _serializer.SerializeToString(token);
         var result = _serializer.Deserialize<OAuthToken>(json);
 
+        // Assert
         Assert.NotNull(result);
+        if (authenticationVersion is null)
+            Assert.DoesNotContain("authentication_version", json);
         Assert.Equal("test-oauth-client", result.ClientId);
+        Assert.Equal(authenticationVersion, result.AuthenticationVersion);
         Assert.Equal("test-grant-id", result.GrantId);
         Assert.Equal("http://localhost:7110/api/v2", result.Resource);
         Assert.Equal(OAuthService.CreateTokenHash("serializer-access-token"), result.AccessTokenHash);

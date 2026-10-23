@@ -19,11 +19,19 @@ vi.mock('$app/state', () => ({
     page: { params: { organizationId: 'organization-id' } }
 }));
 
-vi.mock('$env/dynamic/public', () => ({
-    env: { PUBLIC_STRIPE_PUBLISHABLE_KEY: '' }
+vi.mock('$app/env/public', () => ({
+    PUBLIC_BASE_URL: 'http://localhost',
+    PUBLIC_ENABLE_ACCOUNT_CREATION: 'false',
+    PUBLIC_EXCEPTIONLESS_API_KEY: '',
+    PUBLIC_EXCEPTIONLESS_SERVER_URL: '',
+    PUBLIC_GITHUB_APPID: '',
+    PUBLIC_GOOGLE_APPID: '',
+    PUBLIC_MICROSOFT_APPID: '',
+    PUBLIC_SLACK_APPID: '',
+    PUBLIC_STRIPE_PUBLISHABLE_KEY: ''
 }));
 
-vi.mock('$features/organizations/api.svelte', () => ({
+vi.mock('#features/organizations/api.svelte.ts', () => ({
     deleteOrganizationDataMutation: () => ({ mutateAsync: deleteOrganizationData }),
     getInvoicesQuery: () => ({ data: { data: [] }, error: null, isLoading: false }),
     getOrganizationQuery: () => ({
@@ -35,7 +43,7 @@ vi.mock('$features/organizations/api.svelte', () => ({
     postOrganizationDataMutation: () => ({ mutateAsync: postOrganizationData })
 }));
 
-vi.mock('$shared/query-params', () => ({
+vi.mock('#shared/query-params/index.ts', () => ({
     createQueryParameters: () => ({ changePlan: false })
 }));
 

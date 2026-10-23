@@ -1,11 +1,13 @@
-import type { ViewProject } from '$features/projects/models';
 import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
-import NumberFormatter from '$comp/formatters/number.svelte';
-import ProjectActionsCell from '$features/projects/components/table/project-actions-cell.svelte';
-import { getSharedTableOptions } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { ViewProject } from '#features/projects/models.ts';
+
+import NumberFormatter from '#comp/formatters/number.svelte';
+import ProjectActionsCell from '#features/projects/components/table/project-actions-cell.svelte';
+import { getSharedTableOptions } from '#features/shared/table.svelte.ts';
 
 import type { GetOrganizationProjectsParams, GetProjectsMode } from '../../api.svelte';
 

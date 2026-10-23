@@ -1,11 +1,4 @@
 <script lang="ts">
-    import Number from '$comp/formatters/number.svelte';
-    import { Muted } from '$comp/typography';
-    import * as Card from '$comp/ui/card';
-    import * as Chart from '$comp/ui/chart/index';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { getAdminStatsQuery } from '$features/admin/api.svelte';
-    import { dateHistogram, terms } from '$features/shared/api/aggregations';
     import Activity from '@lucide/svelte/icons/activity';
     import Building2 from '@lucide/svelte/icons/building-2';
     import FolderOpen from '@lucide/svelte/icons/folder-open';
@@ -15,6 +8,14 @@
     import { scaleUtc } from 'd3-scale';
     import { curveLinear } from 'd3-shape';
     import { AreaChart, BarChart } from 'layerchart';
+
+    import Number from '#comp/formatters/number.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import * as Chart from '#comp/ui/chart/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { getAdminStatsQuery } from '#features/admin/api.svelte.ts';
+    import { dateHistogram, terms } from '#features/shared/api/aggregations.ts';
 
     const statsQuery = getAdminStatsQuery();
     const stats = $derived(statsQuery.data);

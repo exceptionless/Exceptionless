@@ -1,14 +1,15 @@
 <script lang="ts">
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { Button, buttonVariants } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { Input } from '$comp/ui/input';
-    import { getMigrationRerunQuery, postMigrationRerunMutation, queryKeys } from '$features/admin/api.svelte';
-    import { getProblemMessage } from '$features/shared/validation';
     import EllipsisIcon from '@lucide/svelte/icons/ellipsis';
     import RefreshCcw from '@lucide/svelte/icons/refresh-ccw';
     import { useQueryClient } from '@tanstack/svelte-query';
     import { toast } from 'svelte-sonner';
+
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { Button, buttonVariants } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { getMigrationRerunQuery, postMigrationRerunMutation, queryKeys } from '#features/admin/api.svelte.ts';
+    import { getProblemMessage } from '#features/shared/validation.ts';
 
     import type { MigrationStateRow } from './migrations-options.svelte';
 

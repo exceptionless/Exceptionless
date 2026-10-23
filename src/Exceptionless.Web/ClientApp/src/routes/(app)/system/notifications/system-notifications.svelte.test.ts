@@ -1,7 +1,7 @@
-import type { SystemNotification } from '$features/websockets/models';
-
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { SystemNotification } from '#features/websockets/models.ts';
 
 import SystemNotifications from './+page.svelte';
 
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
     save: vi.fn()
 }));
 
-vi.mock('$features/notifications/api.svelte', () => ({
+vi.mock('#features/notifications/api.svelte.ts', () => ({
     clearSystemNotificationMutation: () => ({ isPending: false, mutateAsync: mocks.clear }),
     getCurrentSystemNotificationQuery: () => mocks.notification,
     setSystemNotificationMutation: () => ({ isPending: false, mutateAsync: mocks.save })
@@ -27,7 +27,7 @@ describe('system notifications after UI cutover', () => {
     it('publishes new banners without offering a removed application target', async () => {
         render(SystemNotifications);
 
-        expect(screen.getByRole('button', { name: 'Level' })).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: 'Level' })).toBeInTheDocument();
         expect(screen.queryByText('Target')).not.toBeInTheDocument();
         expect(screen.queryByText(/Both UIs|Legacy UI only|New UI only/)).not.toBeInTheDocument();
         await fireEvent.input(screen.getByLabelText('Message'), { target: { value: 'Planned maintenance' } });

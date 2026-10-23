@@ -1,6 +1,6 @@
-import type { UserOrganizationPreference } from '$generated/api';
-
 import { resolve } from '$app/paths';
+
+import type { UserOrganizationPreference } from '#generated/api.ts';
 
 import type { SavedView } from './models';
 

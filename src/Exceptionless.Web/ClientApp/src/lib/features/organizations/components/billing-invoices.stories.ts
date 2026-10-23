@@ -1,5 +1,6 @@
-import type { InvoiceGridModel } from '$features/organizations/models';
 import type { Meta, StoryObj } from '@storybook/sveltekit';
+
+import type { InvoiceGridModel } from '#features/organizations/models.ts';
 
 import BillingInvoices from './billing-invoices.svelte';
 

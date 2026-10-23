@@ -45,15 +45,26 @@ export default ts.config(
         }
     },
     {
-        files: ['**/*.svelte', '**/*.svelte.ts'],
+        files: ['**/*.svelte', '**/*.svelte.ts', '**/scripts/**/*.js', 'tests/ci/**/*.js'],
         plugins: {
             '@stylistic': stylistic
         },
         rules: {
             '@stylistic/brace-style': ['error', '1tbs', { allowSingleLine: false }],
-            '@stylistic/object-curly-newline': ['error', { ObjectExpression: { minProperties: 1 } }],
             curly: ['error', 'all'],
             'padding-line-between-statements': ['error', { blankLine: 'always', next: ['if', 'while', 'for', 'do', 'return'], prev: 'block-like' }]
+        }
+    },
+    {
+        files: ['**/scripts/**/*.js', 'tests/ci/**/*.js'],
+        rules: {
+            'padding-line-between-statements': ['error', { blankLine: 'always', next: '*', prev: 'block-like' }]
+        }
+    },
+    {
+        files: ['**/*.svelte', '**/*.svelte.ts'],
+        rules: {
+            '@stylistic/object-curly-newline': ['error', { ObjectExpression: { minProperties: 1 } }]
         }
     },
     {

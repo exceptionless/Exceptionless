@@ -10,10 +10,9 @@ const organizationQuery = vi.hoisted(() => ({
     refetch: vi.fn(() => Promise.resolve())
 }));
 
-vi.mock('$features/organizations/api.svelte', () => ({
+vi.mock('#features/organizations/api.svelte.ts', () => ({
     getOrganizationQuery: () => organizationQuery
 }));
-vi.mock('$env/dynamic/public', () => ({ env: {} }));
 
 import ChangePlanDialogHost from './change-plan-dialog-host.svelte';
 

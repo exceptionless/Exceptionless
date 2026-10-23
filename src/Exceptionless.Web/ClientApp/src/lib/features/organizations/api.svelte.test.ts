@@ -10,15 +10,15 @@ const { mutationOptions } = vi.hoisted(() => ({
     }[]
 }));
 
-vi.mock('$features/auth/index.svelte', () => ({
+vi.mock('#features/auth/index.svelte.ts', () => ({
     accessToken: { current: 'token' }
 }));
 
-vi.mock('$features/shared/api/api.svelte', () => ({
+vi.mock('#features/shared/api/api.svelte.ts', () => ({
     fetchApiJson: vi.fn()
 }));
 
-vi.mock('$features/users/api.svelte', () => ({
+vi.mock('#features/users/api.svelte.ts', () => ({
     queryKeys: { me: () => ['User', 'me'] }
 }));
 

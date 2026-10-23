@@ -1,6 +1,6 @@
 <script lang="ts">
-    import * as Dialog from '$comp/ui/dialog';
-    import * as Table from '$comp/ui/table';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
 
     import type { Stack } from '../../models';
 

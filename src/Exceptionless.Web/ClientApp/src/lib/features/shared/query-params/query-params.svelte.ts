@@ -1,21 +1,36 @@
-import { browser, building } from '$app/environment';
-import { afterNavigate, beforeNavigate, pushState, replaceState } from '$app/navigation';
+import type { BeforeNavigate } from '$app/navigation';
+
+import { browser, building } from '$app/env';
+import { afterNavigate, beforeNavigate } from '$app/navigation';
 import { page } from '$app/state';
-import { onDestroy } from 'svelte';
+import { onDestroy, untrack } from 'svelte';
 import { SvelteURL } from 'svelte/reactivity';
 
-import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameterState, QueryParameterUpdateOptions } from './types.js';
+import type { CreateQueryParametersOptions, QueryParameterSchema, QueryParameterState, QueryParameterUpdateOptions } from './types.ts';
 
-import { hasDetailSheetHistoryEntry, withoutDetailSheetHistoryEntry } from '../history-state.js';
-import { createQueryParameterProxy } from './proxy.js';
-import { applyQueryParameterUpdates, createDebouncedFunction, createSearchParams, parseQueryParameters, searchParamsEqual } from './query-params.js';
+import { hasDetailSheetHistoryEntry, updateShallowHistory, waitForShallowHistory, withoutDetailSheetHistoryEntry } from '../history-state.ts';
+import { getHistoryTraversalCount } from '../history-traversal.ts';
+import { createQueryParameterProxy } from './proxy.ts';
+import {
+    applyQueryParameterUpdates,
+    createDebouncedFunction,
+    createSearchParams,
+    mergeQueryParameters,
+    parseQueryParameters,
+    queryParameterValuesEqual,
+    searchParamsEqual
+} from './query-params.ts';
 
 const queryHistoryEntryIdKey = '__exceptionlessQueryHistoryEntryId';
 const pendingReplacementStoragePrefix = 'exceptionless:query-history:';
-const svelteKitPageStateKey = 'sveltekit:states';
 
 type QueryHistoryPageState = App.PageState & { [queryHistoryEntryIdKey]?: string };
-type SvelteKitHistoryState = { [svelteKitPageStateKey]?: QueryHistoryPageState };
+
+interface QueryHistoryWrite {
+    entryId?: string;
+    replace?: boolean;
+    withoutDetailSheet?: boolean;
+}
 
 export function createQueryParameters<T extends QueryParameterSchema>({
     debounceMilliseconds = 200,
@@ -23,15 +38,19 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     history = 'replace',
     schema
 }: CreateQueryParametersOptions<T>) {
-    let searchParams = createSearchParams(building ? '' : page.url.search);
-    const current = $state<QueryParameterState<T>>(parseQueryParameters(searchParams, schema, defaults));
+    // `page.url` is not updated by shallow history writes, so it can be older than the visible URL.
+    let searchParams = createSearchParams(browser ? window.location.search : building ? '' : page.url.search);
+    const current = createQueryParameterState(parseQueryParameters(searchParams, schema, defaults));
     // Create the Back target synchronously, then replace it while rapid updates still
     // belong to the same user interaction. Deferring the first push leaves no target
     // for an immediate Back action and can navigate a newly opened tab to about:blank.
     let isCoalescingPushHistoryEntry = false;
+    let isWritingCoalescingEntry = false;
     let coalescingStartUrl: string | undefined;
     let coalescingEntryId: string | undefined;
     let pendingReplacementUrl: string | undefined;
+    // Back and Forward are handled once SvelteKit has applied the destination's page state.
+    let handledHistoryTraversals = getHistoryTraversalCount();
     const normalizeUrl = (url: string) => {
         const value = new SvelteURL(url, window.location.origin);
         value.searchParams.sort();
@@ -42,17 +61,36 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const getCurrentUrl = () => normalizeUrl(`${window.location.pathname}${window.location.search}${window.location.hash}`);
 
-    const getCurrentHistoryEntryId = () => (window.history.state as null | SvelteKitHistoryState)?.[svelteKitPageStateKey]?.[queryHistoryEntryIdKey];
+    // Other query-parameter instances and unrelated code can write the URL between this
+    // instance's updates, so writes apply this instance's keys onto the live URL.
+    const createLocationSearchParams = (ownSearchParams: URLSearchParams) => mergeQueryParameters(window.location.search, ownSearchParams, schema);
 
-    const createHistoryState = (entryId: string | undefined, state: App.PageState = page.state) =>
-        ({
-            ...state,
-            ...(entryId
-                ? {
-                      [queryHistoryEntryIdKey]: entryId
-                  }
-                : {})
-        }) as App.PageState;
+    const createLocationUrl = (ownSearchParams: URLSearchParams) => {
+        const query = createLocationSearchParams(ownSearchParams).toString();
+        return `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+    };
+
+    const rebaseUrl = (url: string) => createLocationUrl(new SvelteURL(url, window.location.origin).searchParams);
+
+    const getCurrentHistoryEntryId = () => (page.state as QueryHistoryPageState)[queryHistoryEntryIdKey];
+
+    // The burst's first push is asynchronous, so the entry it creates may not be current yet.
+    const isOnCoalescingEntry = () => !!coalescingEntryId && (isWritingCoalescingEntry || getCurrentHistoryEntryId() === coalescingEntryId);
+
+    const writeHistory = (url: () => string, { entryId, replace = false, withoutDetailSheet = false }: QueryHistoryWrite = {}) =>
+        updateShallowHistory({
+            replace,
+            state: (state) => {
+                const nextState = withoutDetailSheet ? withoutDetailSheetHistoryEntry(state) : state;
+                return entryId
+                    ? ({
+                          ...nextState,
+                          [queryHistoryEntryIdKey]: entryId
+                      } as App.PageState)
+                    : nextState;
+            },
+            url
+        });
 
     const getPendingReplacementStorageKey = (entryId: string) => `${pendingReplacementStoragePrefix}${entryId}`;
     const getStoredPendingReplacement = (entryId: string) => {
@@ -84,9 +122,14 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         const retainedReplacementUrl = currentHistoryEntryId ? getStoredPendingReplacement(currentHistoryEntryId) : undefined;
         if (currentHistoryEntryId && retainedReplacementUrl) {
             removeStoredPendingReplacement(currentHistoryEntryId);
-            replaceState(retainedReplacementUrl, createHistoryState(currentHistoryEntryId));
-            searchParams = createSearchParams(window.location.search);
-            Object.assign(current, parseQueryParameters(searchParams, schema, defaults));
+            // Render the retained value now; the URL is written once the navigation that created
+            // this component has finished.
+            searchParams = createSearchParams(new SvelteURL(rebaseUrl(retainedReplacementUrl), window.location.origin).search);
+            assignChangedValues(parseQueryParameters(searchParams, schema, defaults));
+            void writeHistory(() => createLocationUrl(searchParams), {
+                entryId: currentHistoryEntryId,
+                replace: true
+            });
         }
     }
 
@@ -106,13 +149,17 @@ export function createQueryParameters<T extends QueryParameterSchema>({
 
     const flushPendingReplacement = () => {
         if (pendingReplacementUrl) {
-            replaceState(pendingReplacementUrl, createHistoryState(coalescingEntryId));
+            const url = pendingReplacementUrl;
+            void writeHistory(() => rebaseUrl(url), {
+                entryId: coalescingEntryId,
+                replace: true
+            });
             discardPendingReplacement();
         }
     };
 
     const finalizePushHistoryEntry = () => {
-        if (!coalescingEntryId || getCurrentHistoryEntryId() === coalescingEntryId) {
+        if (!coalescingEntryId || isOnCoalescingEntry()) {
             flushPendingReplacement();
             settlePushHistoryEntry();
         }
@@ -121,7 +168,8 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     const schedulePushHistoryEntryFinalization = createDebouncedFunction(finalizePushHistoryEntry, debounceMilliseconds);
 
     const synchronizeURL = (updateHistory = history) => {
-        if (searchParamsEqual(searchParams, window.location.search)) {
+        handledHistoryTraversals = getHistoryTraversalCount();
+        if (searchParamsEqual(createLocationSearchParams(searchParams), window.location.search)) {
             discardPendingReplacement();
             return;
         }
@@ -130,7 +178,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             schedulePushHistoryEntryFinalization.cancel();
             discardPendingReplacement();
             settlePushHistoryEntry();
-        } else if (isCoalescingPushHistoryEntry && getCurrentHistoryEntryId() !== coalescingEntryId) {
+        } else if (isCoalescingPushHistoryEntry && !isOnCoalescingEntry()) {
             // A popstate traversal may retain a pending replacement for the entry
             // we left. Editing this destination discards that Forward entry, so
             // start a fresh burst here instead of mutating the retained source.
@@ -139,21 +187,27 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             settlePushHistoryEntry();
         }
 
-        const query = searchParams.toString();
-        const url = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+        const url = createLocationUrl(searchParams);
+        const writeCurrentUrl = () => createLocationUrl(searchParams);
         if (updateHistory === 'replace') {
-            replaceState(url, page.state);
+            void writeHistory(writeCurrentUrl, {
+                replace: true
+            });
         } else if (!isCoalescingPushHistoryEntry) {
             coalescingStartUrl = getCurrentUrl();
             coalescingEntryId = crypto.randomUUID();
-            if (hasDetailSheetHistoryEntry(page.state)) {
-                // The detail sheet already pushed a same-URL entry. Replace that
-                // transient entry so a filter applied from the sheet has the
-                // original list as its direct Back target.
-                replaceState(url, createHistoryState(coalescingEntryId, withoutDetailSheetHistoryEntry(page.state)));
-            } else {
-                pushState(url, createHistoryState(coalescingEntryId));
-            }
+            isWritingCoalescingEntry = true;
+            // The detail sheet already pushed a same-URL entry. Replace that transient
+            // entry so a filter applied from the sheet has the original list as its
+            // direct Back target.
+            const replaceDetailSheetEntry = hasDetailSheetHistoryEntry(page.state);
+            void writeHistory(writeCurrentUrl, {
+                entryId: coalescingEntryId,
+                replace: replaceDetailSheetEntry,
+                withoutDetailSheet: replaceDetailSheetEntry
+            }).finally(() => {
+                isWritingCoalescingEntry = false;
+            });
 
             isCoalescingPushHistoryEntry = true;
         } else if (normalizeUrl(url) === coalescingStartUrl) {
@@ -161,7 +215,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
             // replacing it with a duplicate of the entry behind it.
             schedulePushHistoryEntryFinalization.cancel();
             discardPendingReplacement();
-            pushState(url, page.state);
+            void writeHistory(writeCurrentUrl);
             settlePushHistoryEntry();
         } else {
             // Avoid exhausting browser History API mutation quotas during sustained input.
@@ -176,19 +230,26 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         }
     };
 
-    const handleBeforeNavigate = ({ type }: { type: string }) => {
-        schedulePushHistoryEntryFinalization.cancel();
-        if (type === 'popstate') {
-            if (coalescingEntryId && getCurrentHistoryEntryId() === coalescingEntryId) {
-                flushPendingReplacement();
-                settlePushHistoryEntry();
-            }
-
+    const handleBeforeNavigate = ({ shallow, type, willUnload }: BeforeNavigate) => {
+        if (shallow && type === 'goto') {
             return;
         }
 
-        if (getCurrentHistoryEntryId() === coalescingEntryId) {
-            flushPendingReplacement();
+        schedulePushHistoryEntryFinalization.cancel();
+        if (type === 'popstate') {
+            return;
+        }
+
+        if (willUnload) {
+            finalizePushHistoryEntry();
+            return;
+        }
+
+        // Writing history now would abort the client-side navigation that is starting, so a
+        // pending replacement stays retained for its entry and is applied if that entry is
+        // revisited.
+        if (isOnCoalescingEntry()) {
+            pendingReplacementUrl = undefined;
         } else {
             discardPendingReplacement();
         }
@@ -211,7 +272,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     const commit = (result: ReturnType<typeof applyQueryParameterUpdates<T>>, options?: QueryParameterUpdateOptions) => {
         searchParams = result.searchParams;
         if (result.stateChanged) {
-            Object.assign(current, result.state);
+            assignChangedValues(result.state);
         }
 
         if (result.urlChanged) {
@@ -220,7 +281,7 @@ export function createQueryParameters<T extends QueryParameterSchema>({
     };
 
     const update = (values: Parameters<typeof applyQueryParameterUpdates<T>>[2], options?: QueryParameterUpdateOptions) => {
-        commit(applyQueryParameterUpdates(current, searchParams, values, schema), options);
+        commit(applyQueryParameterUpdates(current, searchParams, values, schema, defaults), options);
     };
 
     const synchronizeState = (search: string) => {
@@ -230,37 +291,80 @@ export function createQueryParameters<T extends QueryParameterSchema>({
         }
 
         searchParams = nextSearchParams;
-        Object.assign(current, parseQueryParameters(searchParams, schema, defaults));
+        assignChangedValues(parseQueryParameters(searchParams, schema, defaults));
     };
 
     const synchronizeStateFromLocation = () => {
         schedulePushHistoryEntryFinalization.cancel();
-        if (coalescingEntryId && getCurrentHistoryEntryId() === coalescingEntryId) {
+        // The flushed replacement is written asynchronously, so read state from it directly.
+        const flushedUrl = isOnCoalescingEntry() ? pendingReplacementUrl : undefined;
+        if (isOnCoalescingEntry()) {
             flushPendingReplacement();
             settlePushHistoryEntry();
         }
 
-        synchronizeState(window.location.search);
+        synchronizeState(flushedUrl ? new SvelteURL(rebaseUrl(flushedUrl), window.location.origin).search : window.location.search);
     };
 
-    if (browser) {
-        window.addEventListener('popstate', synchronizeStateFromLocation);
-    }
+    $effect(() => {
+        // Tracks the entry's page state, which SvelteKit applies when Back or Forward traverses history.
+        void getCurrentHistoryEntryId();
+        untrack(() => {
+            const traversals = getHistoryTraversalCount();
+            if (traversals !== handledHistoryTraversals) {
+                handledHistoryTraversals = traversals;
+                synchronizeStateFromLocation();
+            }
+        });
+    });
 
     onDestroy(() => {
         if (browser) {
-            window.removeEventListener('popstate', synchronizeStateFromLocation);
             window.removeEventListener('beforeunload', handleBeforeUnload);
         }
     });
 
-    afterNavigate(() => {
+    afterNavigate(({ shallow, type }) => {
+        if (shallow && type === 'goto') {
+            return;
+        }
+
+        // Writes made while the page rendered, such as hydrating saved-view filters, wait for the
+        // navigation to finish, so read the URL once they are applied.
         if (browser) {
-            synchronizeStateFromLocation();
+            void waitForShallowHistory().then(synchronizeStateFromLocation);
         }
     });
 
     return createQueryParameterProxy(current, schema, {
         update
     });
+
+    function assignChangedValues(next: QueryParameterState<T>) {
+        for (const key of Object.keys(schema) as (keyof T)[]) {
+            if (!queryParameterValuesEqual(current[key], next[key])) {
+                current[key] = next[key];
+            }
+        }
+    }
+}
+
+/**
+ * Backs each parameter with its own raw signal: readers stay fine-grained, and frozen
+ * list values are stored as-is instead of being wrapped in a deep state proxy.
+ */
+function createQueryParameterState<T extends QueryParameterSchema>(initial: QueryParameterState<T>): QueryParameterState<T> {
+    const state = {} as QueryParameterState<T>;
+    for (const key of Object.keys(initial) as (keyof T)[]) {
+        let value = $state.raw(initial[key]);
+        Object.defineProperty(state, key, {
+            enumerable: true,
+            get: () => value,
+            set: (next: QueryParameterState<T>[keyof T]) => {
+                value = next;
+            }
+        });
+    }
+
+    return state;
 }

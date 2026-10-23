@@ -19,6 +19,13 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     /// </summary>
     public ISet<string> OrganizationIds { get; init; } = new HashSet<string>();
 
+    /// <summary>
+    /// Session revocation generation, rotated when a password changes or resets, or an external login is removed or transferred away.
+    /// Remains null until rotation; active users with a null generation accept only matching legacy null token generations.
+    /// This value does not describe the password hashing format.
+    /// </summary>
+    public string? AuthenticationVersion { get; set; }
+
     public string? Password { get; set; }
     public string? Salt { get; set; }
     public string? PasswordResetToken { get; set; }

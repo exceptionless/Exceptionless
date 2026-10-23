@@ -1,4 +1,4 @@
-import type { DropdownItem } from '$features/shared/options';
+import type { DropdownItem } from '#features/shared/options.ts';
 
 import type { LogLevel } from './models/event-data';
 import type { PersistentEventKnownTypes } from './models/index';

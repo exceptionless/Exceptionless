@@ -1,9 +1,9 @@
 <script lang="ts">
-    import type { FacetedFilterProps } from '$comp/faceted-filter';
+    import type { FacetedFilterProps } from '#comp/faceted-filter/index.ts';
 
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import { organization } from '$features/organizations/context.svelte';
-    import { getOrganizationProjectsQuery } from '$features/projects/api.svelte';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
 
     import { ProjectFilter } from './models.svelte';
 

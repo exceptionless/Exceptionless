@@ -1,13 +1,13 @@
-import { accessToken } from '$features/auth/state.svelte';
 import { QueryClient } from '@tanstack/svelte-query';
 import { cleanup, render } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
+import { accessToken } from '#features/auth/state.svelte.ts';
+
 import QueryGateTestHarness from './query-gating.test-harness.svelte';
 
 const mocks = vi.hoisted(() => ({ getJSON: vi.fn() }));
-vi.mock('$env/dynamic/public', () => ({ env: {} }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@foundatiofx/fetchclient')>()),
     useFetchClient: () => ({ getJSON: mocks.getJSON })

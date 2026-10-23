@@ -2,7 +2,7 @@ import { date, type infer as Infer, number, object, string, enum as zodEnum } fr
 
 import { SuspensionCode } from './models';
 
-export { type NewOrganizationFormData, NewOrganizationSchema } from '$generated/schemas';
+export { type NewOrganizationFormData, NewOrganizationSchema } from '#generated/schemas.ts';
 
 export const OrganizationBillingInformationSchema = object({
     address: string(),

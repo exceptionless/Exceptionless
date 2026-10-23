@@ -1,35 +1,41 @@
 <script lang="ts">
-    import type { InvoiceGridModel } from '$features/organizations/models';
-
+    import { PUBLIC_STRIPE_PUBLISHABLE_KEY } from '$app/env/public';
     import { beforeNavigate } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { A, Muted } from '$comp/typography';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { Textarea } from '$comp/ui/textarea';
-    import { env } from '$env/dynamic/public';
-    import { ChangePlanDialog } from '$features/billing';
-    import { deleteOrganizationDataMutation, getInvoicesQuery, getOrganizationQuery, postOrganizationDataMutation } from '$features/organizations/api.svelte';
-    import {
-        createSerializedBillingInformationSave,
-        getOrganizationBillingInformation,
-        getOrganizationBillingInformationChanges,
-        saveOrganizationBillingInformationChanges
-    } from '$features/organizations/billing-information';
-    import BillingInvoices from '$features/organizations/components/billing-invoices.svelte';
-    import { type OrganizationBillingInformationFormData, OrganizationBillingInformationSchema } from '$features/organizations/schemas';
-    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '$features/shared/validation';
-    import GlobalUser from '$features/users/components/global-user.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import CreditCard from '@lucide/svelte/icons/credit-card';
     import { createForm } from '@tanstack/svelte-form';
     import { onDestroy } from 'svelte';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
+
+    import type { InvoiceGridModel } from '#features/organizations/models.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { A, Muted } from '#comp/typography/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { Textarea } from '#comp/ui/textarea/index.ts';
+    import { ChangePlanDialog } from '#features/billing/index.ts';
+    import {
+        deleteOrganizationDataMutation,
+        getInvoicesQuery,
+        getOrganizationQuery,
+        postOrganizationDataMutation
+    } from '#features/organizations/api.svelte.ts';
+    import {
+        createSerializedBillingInformationSave,
+        getOrganizationBillingInformation,
+        getOrganizationBillingInformationChanges,
+        saveOrganizationBillingInformationChanges
+    } from '#features/organizations/billing-information.ts';
+    import BillingInvoices from '#features/organizations/components/billing-invoices.svelte';
+    import { type OrganizationBillingInformationFormData, OrganizationBillingInformationSchema } from '#features/organizations/schemas.ts';
+    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors } from '#features/shared/validation.ts';
+    import GlobalUser from '#features/users/components/global-user.svelte';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     const organizationId = $derived(page.params.organizationId || '');
     const organizationQuery = getOrganizationQuery({
@@ -51,7 +57,7 @@
     const updateOrganizationData = postOrganizationDataMutation();
     const removeOrganizationData = deleteOrganizationDataMutation();
 
-    const canChangePlan = $derived(organizationQuery.isSuccess && !!env.PUBLIC_STRIPE_PUBLISHABLE_KEY);
+    const canChangePlan = $derived(organizationQuery.isSuccess && !!PUBLIC_STRIPE_PUBLISHABLE_KEY);
     const billingInformation = $derived(getOrganizationBillingInformation(organizationQuery.data));
 
     const params = createQueryParameters({

@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { Badge } from '$comp/ui/badge';
-    import { snapshotBadgeClass, snapshotVariant } from '$features/admin/elasticsearch-utils';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { snapshotBadgeClass, snapshotVariant } from '#features/admin/elasticsearch-utils.ts';
 
     interface Props {
         value: string | undefined;
