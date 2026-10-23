@@ -19,6 +19,7 @@ using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
+using Foundatio.Repositories.Models;
 using Microsoft.IdentityModel.Tokens;
 using OAuth2.Models;
 
@@ -637,10 +638,14 @@ public class AuthHandler(
             if (!String.Equals(authenticatedUser.AuthenticationVersion, currentUser.AuthenticationVersion, StringComparison.Ordinal))
                 throw new UnauthorizedAccessException("The user session has been revoked.");
             CompleteExternalAccountAdmission(admissionCancellation);
+            OAuthAccount? transferredAccount = null;
             if (existingUser is not null)
             {
                 if (!String.Equals(existingUser.Id, currentUser.Id, StringComparison.Ordinal))
                 {
+                    transferredAccount = existingUser.OAuthAccounts.First(account =>
+                        String.Equals(account.Provider, userInfo.ProviderName, StringComparison.Ordinal)
+                        && String.Equals(account.ProviderUserId, userInfo.Id, StringComparison.Ordinal));
                     if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
                         throw new Exception($"Unable to remove existing oauth account for existing user: {existingUser.EmailAddress}");
 
@@ -652,7 +657,20 @@ public class AuthHandler(
 
             currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
             RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName);
-            return await userRepository.SaveAsync(currentUser, o => o.Cache());
+            try
+            {
+                return await userRepository.SaveAsync(currentUser, o => o.Cache());
+            }
+            catch (VersionConflictDocumentException) when (existingUser is not null && transferredAccount is not null)
+            {
+                // The destination write did not commit. Restore the link on fresh state, retaining session revocation.
+                bool restored = await userRepository.PatchAsync(existingUser.Id, new ActionPatch<User>(user =>
+                    user.AddOAuthAccount(transferredAccount.Provider, transferredAccount.ProviderUserId, transferredAccount.Username, transferredAccount.ExtraData)));
+                if (!restored)
+                    throw new InvalidOperationException("Unable to restore the previous external account owner.");
+
+                throw;
+            }
         }
 
         if (existingUser is not null)
