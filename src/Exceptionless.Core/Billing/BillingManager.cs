@@ -80,7 +80,7 @@ public class BillingManager
     {
         ArgumentNullException.ThrowIfNull(organization);
 
-        int trialDays = _billingOptions.TrialDays > 0 ? _billingOptions.TrialDays : 7;
+        int trialDays = _billingOptions.TrialDays > 0 ? _billingOptions.TrialDays : 14;
         ApplyBillingPlan(organization, _plans.TrialPlan, user);
         organization.TrialEndsUtc = _timeProvider.GetUtcNow().UtcDateTime.AddDays(trialDays);
         organization.TrialReminderSentUtc = null;

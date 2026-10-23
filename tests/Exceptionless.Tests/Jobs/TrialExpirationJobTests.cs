@@ -1,4 +1,6 @@
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
@@ -30,6 +32,8 @@ public class TrialExpirationJobTests : IntegrationTestsBase
     private BillingPlans BillingPlans => GetService<BillingPlans>();
     private OrganizationData OrganizationData => GetService<OrganizationData>();
     private UserData UserData => GetService<UserData>();
+    private BillingOptions BillingOptions => GetService<AppOptions>().BillingOptions;
+    private TimeSpan TimeUntilReminder => TimeSpan.FromDays(BillingOptions.TrialDays - BillingOptions.TrialReminderDays + 0.5);
 
     protected override void RegisterServices(IServiceCollection services)
     {
@@ -59,7 +63,7 @@ public class TrialExpirationJobTests : IntegrationTestsBase
     public async Task RunAsync_TrialLifecycle_SendsOneReminderThenMovesToFreePlan()
     {
         // Arrange
-        TimeProvider.Advance(TimeSpan.FromDays(5.5));
+        TimeProvider.Advance(TimeUntilReminder);
 
         // Act
         await Job.RunAsync(TestCancellationToken);
@@ -105,7 +109,7 @@ public class TrialExpirationJobTests : IntegrationTestsBase
             return member;
         }).ToList();
         await UserRepository.AddAsync(members, options => options.ImmediateConsistency());
-        TimeProvider.Advance(TimeSpan.FromDays(5.5));
+        TimeProvider.Advance(TimeUntilReminder);
 
         // Act
         await Job.RunAsync(TestCancellationToken);
