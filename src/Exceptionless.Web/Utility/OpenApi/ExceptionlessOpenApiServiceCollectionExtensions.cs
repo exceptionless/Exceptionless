@@ -26,6 +26,7 @@ internal static class ExceptionlessOpenApiServiceCollectionExtensions
             options.AddSchemaTransformer<NumericTypeSchemaTransformer>();
             options.AddSchemaTransformer<ReadOnlyPropertySchemaTransformer>();
             options.AddSchemaTransformer<RequiredPropertySchemaTransformer>();
+            options.AddSchemaTransformer<EventEnvironmentSchemaTransformer>();
             options.AddSchemaTransformer<UniqueItemsSchemaTransformer>();
             options.AddSchemaTransformer<XEnumNamesSchemaTransformer>();
         });

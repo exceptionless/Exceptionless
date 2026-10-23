@@ -1,10 +1,12 @@
-import type { GetOAuthApplicationsParams } from '$features/admin/api.svelte';
-import type { OAuthApplication } from '$features/admin/models';
 import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
-import { getSharedTableOptions } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { GetOAuthApplicationsParams } from '#features/admin/api.svelte.ts';
+import type { OAuthApplication } from '#features/admin/models.ts';
+
+import { getSharedTableOptions } from '#features/shared/table.svelte.ts';
 
 import OAuthApplicationActionsCell from './oauth-application-actions-cell.svelte';
 import OAuthApplicationExpandCell from './oauth-application-expand-cell.svelte';

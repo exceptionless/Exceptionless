@@ -5,6 +5,8 @@ order: 1
 
 # Configuration
 
+Set a deployment environment once at startup, with optional per-event overrides. See [Environments](/docs/environments/) for configuration examples.
+
 - [Installation](#installation)
   - [Browser](#browser)
   - [Node.js](#nodejs)

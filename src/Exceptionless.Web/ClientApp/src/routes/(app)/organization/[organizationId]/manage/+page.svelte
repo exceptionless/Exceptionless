@@ -2,26 +2,6 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Muted } from '$comp/typography';
-    import * as Avatar from '$comp/ui/avatar';
-    import { Button, buttonVariants } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { Spinner } from '$comp/ui/spinner';
-    import {
-        deleteOrganization,
-        deleteOrganizationIcon,
-        getOrganizationQuery,
-        patchOrganization,
-        uploadOrganizationIcon
-    } from '$features/organizations/api.svelte';
-    import RemoveOrganizationDialog from '$features/organizations/components/dialogs/remove-organization-dialog.svelte';
-    import { type NewOrganizationFormData, NewOrganizationSchema } from '$features/organizations/schemas';
-    import { getProfileImageFileError } from '$features/shared/profile-images';
-    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { getInitials } from '$shared/strings';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Events from '@lucide/svelte/icons/calendar-days';
     import Camera from '@lucide/svelte/icons/camera';
@@ -30,6 +10,27 @@
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import * as Avatar from '#comp/ui/avatar/index.ts';
+    import { Button, buttonVariants } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import {
+        deleteOrganization,
+        deleteOrganizationIcon,
+        getOrganizationQuery,
+        patchOrganization,
+        uploadOrganizationIcon
+    } from '#features/organizations/api.svelte.ts';
+    import RemoveOrganizationDialog from '#features/organizations/components/dialogs/remove-organization-dialog.svelte';
+    import { type NewOrganizationFormData, NewOrganizationSchema } from '#features/organizations/schemas.ts';
+    import { getProfileImageFileError } from '#features/shared/profile-images.ts';
+    import { ariaInvalid, getFormErrorMessages, getProblemMessage, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
+    import { getInitials } from '#shared/strings.ts';
 
     let toastId = $state<number | string>();
     let iconInput = $state<HTMLInputElement | null>(null);

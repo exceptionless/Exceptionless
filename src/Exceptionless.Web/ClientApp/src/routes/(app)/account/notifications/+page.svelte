@@ -1,22 +1,23 @@
 <script lang="ts">
-    import type { NotificationSettings } from '$features/projects/models';
-
-    import { A, H3, Muted } from '$comp/typography';
-    import { Badge } from '$comp/ui/badge';
-    import * as Select from '$comp/ui/select';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { Switch } from '$comp/ui/switch';
-    import { showUpgradeDialog } from '$features/billing/upgrade-required.svelte';
-    import { getProjectsQuery, getProjectUserNotificationSettings, postProjectUserNotificationSettings } from '$features/projects/api.svelte';
-    import UserNotificationSettingsForm from '$features/projects/components/user-notification-settings-form.svelte';
-    import AlertDescription from '$features/shared/components/ui/alert/alert-description.svelte';
-    import AlertTitle from '$features/shared/components/ui/alert/alert-title.svelte';
-    import Alert from '$features/shared/components/ui/alert/alert.svelte';
-    import { getMeQuery, patchUser, resendVerificationEmail } from '$features/users/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import AlertCircleIcon from '@lucide/svelte/icons/alert-circle';
     import { toast } from 'svelte-sonner';
     import { debounce } from 'throttle-debounce';
+
+    import type { NotificationSettings } from '#features/projects/models.ts';
+
+    import { A, H3, Muted } from '#comp/typography/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import * as Select from '#comp/ui/select/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { showUpgradeDialog } from '#features/billing/upgrade-required.svelte.ts';
+    import { getProjectsQuery, getProjectUserNotificationSettings, postProjectUserNotificationSettings } from '#features/projects/api.svelte.ts';
+    import UserNotificationSettingsForm from '#features/projects/components/user-notification-settings-form.svelte';
+    import AlertDescription from '#features/shared/components/ui/alert/alert-description.svelte';
+    import AlertTitle from '#features/shared/components/ui/alert/alert-title.svelte';
+    import Alert from '#features/shared/components/ui/alert/alert.svelte';
+    import { getMeQuery, patchUser, resendVerificationEmail } from '#features/users/api.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     let toastId = $state<number | string>();
 
@@ -184,7 +185,7 @@
             <H3>Project Notifications</H3>
             <Muted>Choose how often you want to receive notifications for event occurrences in this project.</Muted>
             <Select.Root bind:value={queryParams.project!} type="single">
-                <Select.Trigger class="w-full">
+                <Select.Trigger aria-label="Project" class="w-full">
                     {selectedProject.name}
                 </Select.Trigger>
                 <Select.Content>

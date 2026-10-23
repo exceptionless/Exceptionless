@@ -1,2 +1,2 @@
-export { createQueryParameters } from './query-params.svelte.js';
-export type { QueryParameters } from './types.js';
+export { createQueryParameters } from './query-params.svelte.ts';
+export type { QueryParameters } from './types.ts';

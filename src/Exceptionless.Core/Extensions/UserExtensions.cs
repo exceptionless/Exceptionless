@@ -1,10 +1,22 @@
-﻿using Exceptionless.Core.Models;
+﻿using System.Diagnostics.CodeAnalysis;
+using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Core.Extensions;
 
 public static class UserExtensions
 {
+    /// <summary>
+    /// Checks whether an active user's session generation matches the presented credential.
+    /// A missing generation matches only another missing generation for legacy credentials.
+    /// This method does not load or refresh the user.
+    /// </summary>
+    public static bool HasValidAuthenticationVersion([NotNullWhen(true)] this User? user, string? authenticationVersion)
+    {
+        return user is { IsActive: true }
+            && String.Equals(user.AuthenticationVersion, authenticationVersion, StringComparison.Ordinal);
+    }
+
     public static bool IsCorrectPassword(this User user, string password)
     {
         if (String.IsNullOrEmpty(user.Salt) || String.IsNullOrEmpty(user.Password))
@@ -67,12 +79,18 @@ public static class UserExtensions
 
     public static bool RemoveOAuthAccount(this User user, string providerName, string providerUserId)
     {
-        if (user.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(user.Password))
-            return false;
-
-        var account = user.OAuthAccounts.FirstOrDefault(o => o.Provider == providerName.ToLowerInvariant() && o.ProviderUserId == providerUserId);
+        var account = user.OAuthAccounts.FirstOrDefault(o =>
+            String.Equals(o.Provider, providerName, StringComparison.OrdinalIgnoreCase)
+            && String.Equals(o.ProviderUserId, providerUserId, StringComparison.Ordinal));
         if (account is null)
             return true;
+
+        var activeOAuthAccounts = user.OAuthAccounts
+            .Where(o => !String.Equals(o.Provider, "facebook", StringComparison.OrdinalIgnoreCase)
+                && !String.Equals(o.Provider, "windowslive", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (String.IsNullOrEmpty(user.Password) && activeOAuthAccounts.Length <= 1 && activeOAuthAccounts.Contains(account))
+            return false;
 
         return user.OAuthAccounts.Remove(account);
     }

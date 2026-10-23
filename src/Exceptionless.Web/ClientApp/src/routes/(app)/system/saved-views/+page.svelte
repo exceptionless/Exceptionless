@@ -1,23 +1,24 @@
 <script lang="ts">
-    import CopyToClipboardButton from '$comp/copy-to-clipboard-button.svelte';
-    import { CodeBlock } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { Button, buttonVariants } from '$comp/ui/button';
-    import { Spinner } from '$comp/ui/spinner';
-    import * as Tabs from '$comp/ui/tabs';
-    import { Textarea } from '$comp/ui/textarea';
-    import {
-        getOrgSavedViewsExportMutation,
-        getPredefinedSavedViewsMutation,
-        postForceUpdatePredefinedSavedViewsMutation,
-        putPredefinedSavedViewsMutation
-    } from '$features/admin/api.svelte';
-    import { organization } from '$features/organizations/context.svelte';
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Pencil from '@lucide/svelte/icons/pencil';
     import Save from '@lucide/svelte/icons/save';
     import { onMount } from 'svelte';
     import { toast } from 'svelte-sonner';
+
+    import CopyToClipboardButton from '#comp/copy-to-clipboard-button.svelte';
+    import { CodeBlock } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { Button, buttonVariants } from '#comp/ui/button/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import * as Tabs from '#comp/ui/tabs/index.ts';
+    import { Textarea } from '#comp/ui/textarea/index.ts';
+    import {
+        getOrgSavedViewsExportMutation,
+        getPredefinedSavedViewsMutation,
+        postForceUpdatePredefinedSavedViewsMutation,
+        putPredefinedSavedViewsMutation
+    } from '#features/admin/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
 
     let predefinedJson = $state('');
     let predefinedTab = $state('config');

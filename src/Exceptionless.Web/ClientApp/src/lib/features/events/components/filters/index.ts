@@ -4,6 +4,8 @@ import BooleanFacetedFilter from './boolean-faceted-filter.svelte';
 import DateFacetedFilterBuilder from './date-faceted-filter-builder.svelte';
 import DateFacetedFilterTrigger from './date-faceted-filter-trigger.svelte';
 import DateFacetedFilter from './date-faceted-filter.svelte';
+import EnvironmentFacetedFilterBuilder from './environment-faceted-filter-builder.svelte';
+import EnvironmentFacetedFilterTrigger from './environment-faceted-filter-trigger.svelte';
 import KeywordFacetedFilterBuilder from './keyword-faceted-filter-builder.svelte';
 import KeywordFacetedFilter from './keyword-faceted-filter.svelte';
 import LevelFacetedFilterBuilder from './level-faceted-filter-builder.svelte';
@@ -50,6 +52,8 @@ export {
     DateFacetedFilterBuilder,
     DateFacetedFilterTrigger,
     DateFacetedFilterTrigger as DateTrigger,
+    EnvironmentFacetedFilterBuilder as EnvironmentBuilder,
+    EnvironmentFacetedFilterTrigger as EnvironmentTrigger,
     KeywordFacetedFilter as Keyword,
     KeywordFacetedFilterBuilder as KeywordBuilder,
     KeywordFacetedFilter,
@@ -119,6 +123,7 @@ export {
 export {
     BooleanFilter,
     DateFilter,
+    EnvironmentFilter,
     KeywordFilter,
     LevelFilter,
     NumberFilter,

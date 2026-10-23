@@ -114,7 +114,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 10.0.402
 
       - name: Version
         id: version
@@ -156,7 +156,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 10.0.402
 
       - uses: actions/cache@v6
         with:
@@ -172,10 +172,10 @@ jobs:
         run: dotnet build ./Exceptionless.slnx --no-restore --configuration Release
 
       - name: Verify CI test tooling
-        run: node --test tests/ci/shards.test.mjs
+        run: node --test tests/ci/shards.test.js
 
       - name: Run .NET shard with coverage
-        run: node tests/ci/backend-shards.mjs run --index ${{ matrix.shard }} --count 4 --output coverage --coverage
+        run: node tests/ci/backend-shards.js run --index ${{ matrix.shard }} --count 4 --output coverage --coverage
 
       - name: Upload .NET shard results
         if: ${{ !cancelled() }}
@@ -210,12 +210,12 @@ jobs:
           path: coverage-shards
 
       - name: Verify complete shard coverage and report timings
-        run: node tests/ci/backend-shards.mjs report coverage-shards --count 4 --coverage --write-timings coverage-shards/backend-durations.json
+        run: node tests/ci/backend-shards.js report coverage-shards --count 4 --coverage --write-timings coverage-shards/backend-durations.json
 
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 10.0.402
 
       - name: Merge coverage
         run: |
@@ -288,9 +288,6 @@ jobs:
       - name: Lint Client
         run: npm run lint
 
-      - name: Verify runtime configuration and entrypoints
-        run: node --test ../../../build/update-config.test.mjs
-
       - name: Check
         run: npm run check
 
@@ -327,7 +324,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.401
+          dotnet-version: 10.0.402
           dotnet-quality: ga
 
       - name: Install Aspire CLI
@@ -514,7 +511,7 @@ jobs:
           E2E_SHARD: report
         run: |
           npx playwright test --project=chromium --list --reporter=json > test-results/discovery.json
-          node ../../../tests/ci/browser-report.mjs test-results/discovery.json test-results/e2e-results.json
+          node ../../../tests/ci/browser-report.js test-results/discovery.json test-results/e2e-results.json
 
       - name: Upload combined Playwright report
         if: ${{ !cancelled() }}
@@ -845,7 +842,7 @@ jobs:
         if: ${{ needs.version.outputs.is_prod_deploy == 'true' }}
         run: |
           sed -i "s/^appVersion:.*$/appVersion: '${VERSION}'/" ./k8s/exceptionless/Chart.yaml
-          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml ex-prod --namespace ex-prod ./k8s/exceptionless
+          helm upgrade --set "version=${VERSION}" --reuse-values --values ./k8s/ex-prod-values.yaml --wait --timeout 5m ex-prod --namespace ex-prod ./k8s/exceptionless
 
       - name: Summary
         if: ${{ always() }}

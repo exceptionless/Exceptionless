@@ -1,5 +1,6 @@
-import { type QuickRangeOption, quickRanges } from '$features/shared/components/date-range-picker/quick-ranges';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { type QuickRangeOption, quickRanges } from '#features/shared/components/date-range-picker/quick-ranges.ts';
 
 import {
     extractRangeExpressions,

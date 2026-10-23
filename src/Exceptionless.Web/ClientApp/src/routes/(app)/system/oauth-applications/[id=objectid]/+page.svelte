@@ -1,10 +1,11 @@
 <script lang="ts">
     import { page } from '$app/state';
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Muted } from '$comp/typography';
-    import { Spinner } from '$comp/ui/spinner';
-    import { getOAuthApplicationQuery } from '$features/admin/api.svelte';
-    import OAuthApplicationForm from '$features/admin/components/oauth-applications/oauth-application-form.svelte';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { getOAuthApplicationQuery } from '#features/admin/api.svelte.ts';
+    import OAuthApplicationForm from '#features/admin/components/oauth-applications/oauth-application-form.svelte';
 
     const applicationId = $derived(page.params.id);
     const applicationQuery = getOAuthApplicationQuery(() => applicationId);

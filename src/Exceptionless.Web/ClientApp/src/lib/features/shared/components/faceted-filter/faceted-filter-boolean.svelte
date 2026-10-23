@@ -1,11 +1,11 @@
 <script lang="ts">
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import Boolean from '$comp/formatters/boolean.svelte';
-    import { Button } from '$comp/ui/button';
-    import { Label } from '$comp/ui/label';
-    import * as Popover from '$comp/ui/popover';
-    import * as RadioGroup from '$comp/ui/radio-group';
-    import Separator from '$comp/ui/separator/separator.svelte';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import Boolean from '#comp/formatters/boolean.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
+    import * as Popover from '#comp/ui/popover/index.ts';
+    import * as RadioGroup from '#comp/ui/radio-group/index.ts';
+    import Separator from '#comp/ui/separator/separator.svelte';
 
     interface Props {
         changed: (value?: boolean) => void;

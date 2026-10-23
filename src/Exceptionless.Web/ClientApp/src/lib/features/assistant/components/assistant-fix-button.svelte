@@ -1,6 +1,6 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
-    import Bot from '@lucide/svelte/icons/bot';
+    import ExieIcon from '#comp/icons/ExieIcon.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
 
     import { type AssistantFixResource, tryUseAssistantControls } from '../controls.svelte';
 
@@ -26,7 +26,7 @@
 
 {#if assistant?.enabled()}
     <Button aria-label="Fix with Exie" data-assistant-trigger onclick={askExie} title="Fix with Exie" variant="outline">
-        <Bot aria-hidden="true" />
+        <ExieIcon aria-hidden="true" class="text-primary" />
         <span>Fix</span>
     </Button>
 {/if}
