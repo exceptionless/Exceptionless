@@ -33,10 +33,14 @@ public class BillingManager
     /// Serializes changes that can give an owner a free or trial organization (creating one, or downgrading to Free),
     /// so concurrent requests can't both pass the one-free-organization rule.
     /// </summary>
+    /// <summary>
+    /// Serializes creating Free or trial organizations and downgrades to Free for one owner. It lasts as long as the
+    /// billing lock because a downgrade holds it across the same Stripe calls.
+    /// </summary>
     public Task<ILock> AcquireOwnerFreeOrganizationLockAsync(string userId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
-        return _lockProvider.AcquireAsync($"User:{userId}:free-organization", TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30));
+        return _lockProvider.AcquireAsync($"User:{userId}:free-organization", BillingLockDuration, TimeSpan.FromSeconds(30));
     }
 
     public Task<ILock?> TryAcquireOrganizationLockAsync(string organizationId)
