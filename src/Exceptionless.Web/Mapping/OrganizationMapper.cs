@@ -20,6 +20,7 @@ public partial class OrganizationMapper
     }
 
     public partial Organization MapToOrganization(NewOrganization source);
+    public partial Organization MapToOrganization(UpdateOrganization source);
 
     [MapperIgnoreTarget(nameof(ViewOrganization.IsOverMonthlyLimit))]
     [MapperIgnoreTarget(nameof(ViewOrganization.IsOverRequestLimit))]

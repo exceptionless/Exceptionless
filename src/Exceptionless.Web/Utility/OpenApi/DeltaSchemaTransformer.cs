@@ -44,12 +44,30 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
             .Where(p => p.CanRead && p.CanWrite))
         {
             bool isNullable = IsPropertyNullable(property);
-            var propertySchema = CreateSchemaForType(property.PropertyType, isNullable);
-            await PopulateNestedSchemaAsync(propertySchema, property.PropertyType, context, cancellationToken);
+            var generatedSchema = await context.GetOrCreateSchemaAsync(property.PropertyType, cancellationToken: cancellationToken);
+            DataAnnotationHelper.ApplyToSchema(generatedSchema, property);
+            ApplyArrayAnnotations(generatedSchema, property);
+            await PopulateNestedSchemaAsync(generatedSchema, property.PropertyType, context, cancellationToken);
 
-            // Apply data annotations from the inner type's property
-            DataAnnotationHelper.ApplyToSchema(propertySchema, property);
-            ApplyArrayAnnotations(propertySchema, property);
+            OpenApiSchema propertySchema;
+
+            if (isNullable && RequiresNullableWrapper(property.PropertyType))
+            {
+                propertySchema = new OpenApiSchema
+                {
+                    OneOf =
+                    [
+                        new OpenApiSchema { Type = JsonSchemaType.Null },
+                        generatedSchema
+                    ]
+                };
+            }
+            else
+            {
+                propertySchema = generatedSchema;
+                if (isNullable)
+                    propertySchema.Type = propertySchema.Type.GetValueOrDefault() | JsonSchemaType.Null;
+            }
 
             string propertyName = property.Name.ToLowerUnderscoredWords();
             schema.Properties[propertyName] = propertySchema;
@@ -57,7 +75,6 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
 
         // Ensure no required array - all properties are optional for PATCH
         schema.Required = null;
-
     }
 
     private static async Task PopulateNestedSchemaAsync(
@@ -99,6 +116,28 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
             && !type.IsEnum;
     }
 
+    private static bool TryGetEnumerableElementType(Type type, out Type elementType)
+    {
+        if (type.IsArray)
+        {
+            elementType = type.GetElementType() ?? typeof(object);
+            return true;
+        }
+
+        if (type == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
+        {
+            elementType = typeof(object);
+            return false;
+        }
+
+        var enumerableType = type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+            ? type
+            : type.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+
+        elementType = enumerableType?.GetGenericArguments()[0] ?? typeof(object);
+        return true;
+    }
+
     private static bool IsDeltaType(Type type)
     {
         return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Delta<>);
@@ -123,76 +162,16 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
         }
     }
 
-    private static OpenApiSchema CreateSchemaForType(Type type, bool isNullable)
+    private static bool RequiresNullableWrapper(Type type)
     {
-        var schema = new OpenApiSchema();
-        JsonSchemaType schemaType = default;
+        type = Nullable.GetUnderlyingType(type) ?? type;
+        return type != typeof(string) && !type.IsValueType && !IsDictionaryType(type);
+    }
 
-        // Handle nullable value types (int?, DateTime?, etc.)
-        var underlyingType = Nullable.GetUnderlyingType(type);
-        if (underlyingType is not null)
-        {
-            type = underlyingType;
-            isNullable = true;
-        }
-
-        // Add null type if nullable
-        if (isNullable)
-        {
-            schemaType |= JsonSchemaType.Null;
-        }
-
-        if (type == typeof(string))
-        {
-            schemaType |= JsonSchemaType.String;
-        }
-        else if (type == typeof(bool))
-        {
-            schemaType |= JsonSchemaType.Boolean;
-        }
-        else if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(byte))
-        {
-            schemaType |= JsonSchemaType.Integer;
-        }
-        else if (type == typeof(double) || type == typeof(float) || type == typeof(decimal))
-        {
-            schemaType |= JsonSchemaType.Number;
-        }
-        else if (type == typeof(DateTime) || type == typeof(DateTimeOffset))
-        {
-            schemaType |= JsonSchemaType.String;
-            schema.Format = "date-time";
-        }
-        else if (type == typeof(Guid))
-        {
-            schemaType |= JsonSchemaType.String;
-            schema.Format = "uuid";
-        }
-        else if (type.IsEnum)
-        {
-            schemaType |= JsonSchemaType.String;
-        }
-        else if (type.IsGenericType && type.GetInterfaces().Concat([type]).Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>)))
-        {
-            schemaType |= JsonSchemaType.Object;
-            var valueType = type.GetGenericArguments().ElementAtOrDefault(1);
-            if (valueType is not null)
-            {
-                schema.AdditionalProperties = CreateSchemaForType(valueType, false);
-            }
-        }
-        else if (TryGetEnumerableElementType(type, out var elementType))
-        {
-            schemaType |= JsonSchemaType.Array;
-            schema.Items = CreateSchemaForType(elementType, false);
-        }
-        else
-        {
-            schemaType = JsonSchemaType.Object;
-        }
-
-        schema.Type = schemaType;
-        return schema;
+    private static bool IsDictionaryType(Type type)
+    {
+        return type.IsGenericType
+            && type.GetInterfaces().Concat([type]).Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
     }
 
     private static void ApplyArrayAnnotations(OpenApiSchema schema, PropertyInfo property)
@@ -207,27 +186,5 @@ public class DeltaSchemaTransformer : IOpenApiSchemaTransformer
         {
             schema.MaxItems = maxLength.Length;
         }
-    }
-
-    private static bool TryGetEnumerableElementType(Type type, out Type elementType)
-    {
-        if (type.IsArray)
-        {
-            elementType = type.GetElementType() ?? typeof(object);
-            return true;
-        }
-
-        if (type == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
-        {
-            elementType = typeof(object);
-            return false;
-        }
-
-        var enumerableType = type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
-            ? type
-            : type.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-
-        elementType = enumerableType?.GetGenericArguments()[0] ?? typeof(object);
-        return true;
     }
 }

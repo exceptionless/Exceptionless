@@ -18,7 +18,7 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Exceptionless.Tests.Services;
 
-public sealed class UsageServiceTests : IntegrationTestsBase
+public sealed partial class UsageServiceTests : IntegrationTestsBase
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
@@ -375,8 +375,11 @@ public sealed class UsageServiceTests : IntegrationTestsBase
             repository.Object,
             _projectRepository,
             GetService<ICacheClient>(),
+            GetService<Foundatio.Lock.ILockProvider>(),
+            GetService<IAtomicCacheBatch>(),
             GetService<IMessagePublisher>(),
             _notificationService,
+            GetService<Exceptionless.Core.AppOptions>(),
             TimeProvider,
             GetService<ILoggerFactory>());
         await usageService.RecordAssistantUsageAsync(organization.Id, new AssistantUsageIncrement
@@ -588,8 +591,11 @@ public sealed class UsageServiceTests : IntegrationTestsBase
             _organizationRepository,
             _projectRepository,
             cache,
+            GetService<Foundatio.Lock.ILockProvider>(),
+            GetService<IAtomicCacheBatch>(),
             publisher,
             _notificationService,
+            GetService<Exceptionless.Core.AppOptions>(),
             TimeProvider,
             GetService<ILoggerFactory>());
         var published = new AsyncCountdownEvent(1);

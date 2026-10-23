@@ -53,6 +53,18 @@ public sealed record OrganizationPaymentFailedEmail(
     string BillingUrl)
     : EmailTemplate(Subject, new EmailAction("Update Billing Information", BillingUrl));
 
+public sealed record OrganizationBudgetAlertEmail(
+    string Subject,
+    string OrganizationName,
+    int Threshold,
+    int ThresholdEventCount,
+    int CurrentEventCount,
+    int EventLimit,
+    int RemainingEventCount,
+    string UsageUrl,
+    string NotificationSettingsUrl)
+    : EmailTemplate(Subject, new EmailAction("View Usage", UsageUrl));
+
 public sealed record ProjectDailySummaryEmail(
     string Subject,
     string ProjectName,
@@ -75,6 +87,17 @@ public sealed record ProjectDailySummaryEmail(
     : EmailTemplate(
         Subject,
         HasSubmittedEvents ? new EmailAction("View Timeline", TimelineUrl) : new EmailAction("Configure Project", ConfigureUrl));
+
+public sealed record ProjectSmartThrottleEmail(
+    string Subject,
+    string OrganizationName,
+    string ProjectName,
+    int SamplePercent,
+    int CurrentEventCount,
+    int EventLimit,
+    string UsageUrl,
+    string NotificationSettingsUrl)
+    : EmailTemplate(Subject, new EmailAction("View Project Usage", UsageUrl));
 
 public sealed record StackSummary(string Title, string? TypeName, bool IsRegressed, string Url);
 

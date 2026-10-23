@@ -14,6 +14,7 @@
     import { Skeleton } from '#comp/ui/skeleton/index.ts';
     import { ChangePlanDialog } from '#features/billing/index.ts';
     import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import OrganizationBudgetAlertCard from '#features/organizations/components/organization-budget-alert-card.svelte';
     import { getNextBillingDateUtc, getRemainingEventLimit, ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '#features/organizations/utils.ts';
     import { formatDateLabel, formatLongDate } from '#shared/dates.ts';
 
@@ -177,6 +178,12 @@
         </div>
     {/if}
 </div>
+
+{#if organizationQuery.data}
+    {#key organizationQuery.data.id}
+        <OrganizationBudgetAlertCard organization={organizationQuery.data} />
+    {/key}
+{/if}
 
 {#if changePlanDialogOpen && organizationQuery.data}
     <ChangePlanDialog organization={organizationQuery.data} onclose={() => (changePlanDialogOpen = false)} />

@@ -62,6 +62,27 @@ Authorization: Bearer {{token}}
 POST {{apiUrl}}/projects/{{projectId}}/reset-data
 Authorization: Bearer {{token}}
 
+### Set Fixed Project Event Budget
+PATCH {{apiUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ingest_limit": { "type": 0, "fixed_limit": 20000 } }
+
+### Set Percentage Project Event Budget
+PATCH {{apiUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ingest_limit": { "type": 1, "percent_of_organization_limit": 50 } }
+
+### Clear Project Event Budget
+PATCH {{apiUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "ingest_limit": null }
+
 ### Delete the sample project
 DELETE {{apiUrl}}/projects/{{projectId}}
 Authorization: Bearer {{token}}

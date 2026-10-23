@@ -46,6 +46,20 @@ Content-Type: application/json
 
 { "plan_id": "EX_FREE" }
 
+### Enable Budget Alerts
+PATCH {{apiUrl}}/organizations/{{organizationId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "budget_alert_settings": { "enabled": true, "thresholds": [50, 80, 90] } }
+
+### Clear Budget Alert Settings
+PATCH {{apiUrl}}/organizations/{{organizationId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "budget_alert_settings": null }
+
 ### Delete the sample organization
 DELETE {{apiUrl}}/organizations/{{organizationId}}
 Authorization: Bearer {{token}}
