@@ -130,7 +130,7 @@ public sealed class AssistantService(
 
             if (diagnostics is not null)
                 diagnostics.Stage = "usage_reservation";
-            await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters);
+            await using var providerRequest = await assistantUsageService.StartProviderRequestAsync(request.OrganizationId, providerInputCharacters, planOptions);
             using var providerDiagnostics = diagnostics?.StartProviderRequest(cancellationToken);
             bool receivedDone = false;
             bool receivedFinishReason = false;

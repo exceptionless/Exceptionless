@@ -79,6 +79,7 @@ export interface AssistantAccessResponse {
   upgrade_required: boolean;
   message?: null | string;
   minimum_plan_id?: null | string;
+  email_verification_required: boolean;
 }
 
 export interface AssistantChatMessage {
@@ -755,6 +756,12 @@ export interface User {
   id: string;
   /** The organizations that the user has access to. */
   organization_ids: string[];
+  /**
+   * Session revocation generation, rotated when a password changes or resets, or an external login is removed or transferred away.
+   * Remains null until rotation; active users with a null generation accept only matching legacy null token generations.
+   * This value does not describe the password hashing format.
+   */
+  authentication_version?: null | string;
   password?: null | string;
   salt?: null | string;
   password_reset_token?: null | string;
@@ -773,6 +780,11 @@ export interface User {
   assistant_conversation_sharing_enabled?: null | boolean;
   is_email_address_verified: boolean;
   verify_email_address_token?: null | string;
+  /**
+   * Date the user started their one no-card trial.
+   * @format date-time
+   */
+  trial_started_utc?: null | string;
   /** @format date-time */
   verify_email_address_token_expiration: string;
   /** Gets or sets the users active state. */
@@ -875,6 +887,8 @@ export interface ViewOrganization {
   billing_status: BillingStatus;
   /** @format double */
   billing_price: number;
+  /** @format date-time */
+  trial_ends_utc?: null | string;
   /** @format int32 */
   max_events_per_month: number;
   /** @format int32 */

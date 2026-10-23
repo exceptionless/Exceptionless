@@ -1287,6 +1287,61 @@ public class AdminEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ChangePlanAsync_TrialPlanOnFreeOrganization_StartsTrial()
+    {
+        // Arrange
+        var plans = GetService<BillingPlans>();
+        var organizationRepository = GetService<IOrganizationRepository>();
+
+        // Act
+        var result = await SendRequestAsAsync<ChangePlanResponse>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "change-plan")
+            .QueryString("organizationId", SampleDataService.FREE_ORG_ID)
+            .QueryString("planId", plans.TrialPlan.Id)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success, result.Message);
+
+        var organization = await organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal(plans.TrialPlan.Id, organization.PlanId);
+        Assert.NotNull(organization.TrialEndsUtc);
+        Assert.True(organization.TrialEndsUtc > TimeProvider.GetUtcNow().UtcDateTime.AddDays(6));
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_TrialPlanOnPaidOrganization_ReturnsFailure()
+    {
+        // Arrange
+        var plans = GetService<BillingPlans>();
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        string originalPlanId = organization.PlanId;
+
+        // Act
+        var result = await SendRequestAsAsync<ChangePlanResponse>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "change-plan")
+            .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
+            .QueryString("planId", plans.TrialPlan.Id)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+
+        var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organizationAfter);
+        Assert.Equal(originalPlanId, organizationAfter.PlanId);
+    }
+
+    [Fact]
     public async Task ChangePlanAsync_InvalidPlanId_ReturnsFailure()
     {
         // Arrange

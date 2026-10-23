@@ -1,6 +1,5 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
@@ -33,7 +32,6 @@ public class ProjectHandler(
     IEventRepository eventRepository,
     ITokenRepository tokenRepository,
     IQueue<WorkItemData> workItemQueue,
-    BillingManager billingManager,
     SlackService slackService,
     IOAuthProviderClient oauthProviderClient,
     SampleDataService sampleDataService,
@@ -543,9 +541,6 @@ public class ProjectHandler(
 
         if (!await IsProjectNameAvailableInternalAsync(value.OrganizationId, value.Name, null, httpContext))
             return Result.BadRequest("A project with this name already exists.");
-
-        if (!await billingManager.CanAddProjectAsync(value))
-            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add additional projects."));
 
         return null;
     }

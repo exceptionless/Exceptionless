@@ -1,3 +1,4 @@
+using System.Globalization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -243,6 +244,26 @@ public class Mailer : IMailer
         await QueueMessageAsync(new MailMessage
         {
             To = owner.EmailAddress,
+            Subject = subject,
+            Body = await _templateRenderer.RenderAsync(message)
+        }, template);
+    }
+
+    public async Task SendOrganizationTrialEndingAsync(User user, Organization organization)
+    {
+        ArgumentNullException.ThrowIfNull(organization.TrialEndsUtc);
+
+        const string template = "organization-trial-ending";
+        string subject = $"[{organization.Name}] Your free trial ends soon";
+        var message = new OrganizationTrialEndingEmail(
+            subject,
+            organization.Name,
+            organization.TrialEndsUtc.Value.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture),
+            _appUrls.OrganizationUpgrade(organization.Id));
+
+        await QueueMessageAsync(new MailMessage
+        {
+            To = user.EmailAddress,
             Subject = subject,
             Body = await _templateRenderer.RenderAsync(message)
         }, template);

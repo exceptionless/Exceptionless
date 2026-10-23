@@ -53,6 +53,13 @@ public sealed record OrganizationPaymentFailedEmail(
     string BillingUrl)
     : EmailTemplate(Subject, new EmailAction("Update Billing Information", BillingUrl));
 
+public sealed record OrganizationTrialEndingEmail(
+    string Subject,
+    string OrganizationName,
+    string TrialEndsDate,
+    string UpgradeUrl)
+    : EmailTemplate(Subject, new EmailAction("Upgrade Plan", UpgradeUrl));
+
 public sealed record ProjectDailySummaryEmail(
     string Subject,
     string ProjectName,

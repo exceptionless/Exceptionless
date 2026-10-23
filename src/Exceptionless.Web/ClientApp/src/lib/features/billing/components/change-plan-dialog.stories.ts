@@ -222,6 +222,38 @@ export const ExieUpgrade: Story = {
     name: 'Exie upgrade to Medium'
 };
 
+/** Trial org — shows days left, preselects Medium, and notes that billing starts today. */
+export const Trial: Story = {
+    args: {
+        organization: makeOrg({
+            has_premium_features: true,
+            max_events_per_month: 75000,
+            max_projects: -1,
+            max_users: -1,
+            plan_description: 'Free Trial',
+            plan_id: 'EX_TRIAL',
+            plan_name: 'Trial',
+            retention_days: 90,
+            trial_ends_utc: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
+        }),
+        plans: [
+            ...MOCK_PLANS,
+            {
+                description: 'Free Trial',
+                has_premium_features: true,
+                id: 'EX_TRIAL',
+                is_hidden: false,
+                max_events_per_month: 75000,
+                max_projects: -1,
+                max_users: -1,
+                name: 'Trial',
+                price: 0,
+                retention_days: 90
+            }
+        ]
+    }
+};
+
 /** Paid Small monthly org selects a different paid plan (Large monthly). */
 export const ChangePlan: Story = {
     args: {
