@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { HTMLAttributes } from 'svelte/elements';
 
-    import * as Navigation from '$lib/features/shared/components/navigation';
+    import * as Navigation from '#lib/features/shared/components/navigation/index.ts';
 
     import type { NavigationItem } from '../../routes.svelte';
 

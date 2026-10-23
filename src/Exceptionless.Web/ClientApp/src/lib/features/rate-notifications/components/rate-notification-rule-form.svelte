@@ -1,17 +1,23 @@
 <script lang="ts">
-    import type { ViewRateNotificationRule } from '$features/rate-notifications/types';
+    import { ProblemDetails } from '@foundatiofx/fetchclient';
+    import InfoIcon from '@lucide/svelte/icons/info';
+    import { createForm } from '@tanstack/svelte-form';
+    import { untrack } from 'svelte';
+    import { toast } from 'svelte-sonner';
 
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Muted } from '$comp/typography';
-    import * as Alert from '$comp/ui/alert';
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import * as Select from '$comp/ui/select';
-    import { Spinner } from '$comp/ui/spinner';
-    import { Switch } from '$comp/ui/switch';
-    import { postRateNotificationRule, putRateNotificationRule } from '$features/rate-notifications/api.svelte';
-    import { getRateNotificationRuleFormData, RateNotificationRuleSchema, toRateNotificationRuleRequest } from '$features/rate-notifications/schemas';
+    import type { ViewRateNotificationRule } from '#features/rate-notifications/types.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import * as Alert from '#comp/ui/alert/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import * as Select from '#comp/ui/select/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { postRateNotificationRule, putRateNotificationRule } from '#features/rate-notifications/api.svelte.ts';
+    import { getRateNotificationRuleFormData, RateNotificationRuleSchema, toRateNotificationRuleRequest } from '#features/rate-notifications/schemas.ts';
     import {
         COOLDOWN_OPTIONS,
         RateNotificationSignal,
@@ -19,14 +25,9 @@
         SIGNAL_LABELS,
         SUBJECT_LABELS,
         WINDOW_OPTIONS
-    } from '$features/rate-notifications/types';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$features/shared/validation';
-    import { getProjectStacksQuery, getStackQuery } from '$features/stacks/api.svelte';
-    import { ProblemDetails } from '@foundatiofx/fetchclient';
-    import InfoIcon from '@lucide/svelte/icons/info';
-    import { createForm } from '@tanstack/svelte-form';
-    import { untrack } from 'svelte';
-    import { toast } from 'svelte-sonner';
+    } from '#features/rate-notifications/types.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
+    import { getProjectStacksQuery, getStackQuery } from '#features/stacks/api.svelte.ts';
 
     interface Props {
         onCancel?: () => void;

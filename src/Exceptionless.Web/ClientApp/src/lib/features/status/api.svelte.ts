@@ -1,6 +1,7 @@
-import { getServerUrl } from '$features/shared/api/urls';
 import { type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createQuery } from '@tanstack/svelte-query';
+
+import { getServerUrl } from '#features/shared/api/urls.ts';
 
 import type { About } from './models';
 

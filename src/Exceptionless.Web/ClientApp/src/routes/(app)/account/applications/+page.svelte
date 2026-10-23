@@ -1,14 +1,15 @@
 <script lang="ts">
-    import type { TableMemoryPagingParameters } from '$features/shared/table.svelte';
-
-    import { Muted, P } from '$comp/typography';
-    import { getOrganizationsQuery } from '$features/organizations/api.svelte';
-    import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
-    import { getOAuthGrantsQuery } from '$features/users/api.svelte';
-    import OAuthGrantsDataTable from '$features/users/components/oauth-grants/table/oauth-grants-data-table.svelte';
-    import { getTableOptions } from '$features/users/components/oauth-grants/table/options.svelte';
-    import { createQueryParameters } from '$shared/query-params';
     import { createTable } from '@tanstack/svelte-table';
+
+    import type { TableMemoryPagingParameters } from '#features/shared/table.svelte.ts';
+
+    import { Muted, P } from '#comp/typography/index.ts';
+    import { getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
+    import { DEFAULT_LIMIT } from '#features/shared/api/api.svelte.ts';
+    import { getOAuthGrantsQuery } from '#features/users/api.svelte.ts';
+    import OAuthGrantsDataTable from '#features/users/components/oauth-grants/table/oauth-grants-data-table.svelte';
+    import { getTableOptions } from '#features/users/components/oauth-grants/table/options.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     const grantsQuery = getOAuthGrantsQuery();
     const organizationsQuery = getOrganizationsQuery({});

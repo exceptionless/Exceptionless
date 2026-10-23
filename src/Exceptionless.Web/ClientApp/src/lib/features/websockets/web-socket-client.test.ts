@@ -4,7 +4,11 @@ import WS from 'vitest-websocket-mock';
 import { WebSocketClient, type WebSocketClientOptions } from './web-socket-client.svelte';
 
 const { env } = vi.hoisted(() => ({ env: { PUBLIC_BASE_URL: '' } }));
-vi.mock('$env/dynamic/public', () => ({ env }));
+vi.mock('#features/shared/environment.ts', () => ({
+    get PUBLIC_BASE_URL() {
+        return env.PUBLIC_BASE_URL;
+    }
+}));
 
 // Mock the auth module
 vi.mock('../auth/index.svelte', () => ({
@@ -14,7 +18,7 @@ vi.mock('../auth/index.svelte', () => ({
 }));
 
 // Mock DocumentVisibility to always return visible
-vi.mock('$shared/document-visibility.svelte', () => {
+vi.mock('#shared/document-visibility.svelte.ts', () => {
     return {
         DocumentVisibility: class {
             public visible = true;

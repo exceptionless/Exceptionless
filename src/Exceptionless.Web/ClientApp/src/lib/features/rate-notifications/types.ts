@@ -1,7 +1,7 @@
-import { RateNotificationSignal, RateNotificationSubject } from '$generated/api';
+import { RateNotificationSignal, RateNotificationSubject } from '#generated/api.ts';
 
-export type { NewRateNotificationRule, SnoozeRateNotificationRuleRequest, UpdateRateNotificationRule, ViewRateNotificationRule } from '$generated/api';
-export { RateNotificationSignal, RateNotificationSubject } from '$generated/api';
+export type { NewRateNotificationRule, SnoozeRateNotificationRuleRequest, UpdateRateNotificationRule, ViewRateNotificationRule } from '#generated/api.ts';
+export { RateNotificationSignal, RateNotificationSubject } from '#generated/api.ts';
 
 export const MAX_RULES_PER_PROJECT = 20;
 

@@ -1,24 +1,25 @@
 <script lang="ts">
-    import type { ShardMetric } from '$features/admin/models';
-    import type { TableMemoryPagingParameters } from '$features/shared/table.svelte';
-
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
-    import Bytes from '$comp/formatters/bytes.svelte';
-    import Number from '$comp/formatters/number.svelte';
-    import { Badge } from '$comp/ui/badge';
-    import * as Card from '$comp/ui/card';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { getElasticsearchQuery } from '$features/admin/api.svelte';
-    import ShardsOverviewDataTable from '$features/admin/components/table/shards-overview-data-table.svelte';
-    import { getTableOptions } from '$features/admin/components/table/shards-overview-options.svelte';
-    import { healthBadgeClass, healthColor, healthLabel, healthVariant } from '$features/admin/elasticsearch-utils';
     import CircleCheck from '@lucide/svelte/icons/circle-check';
     import Database from '@lucide/svelte/icons/database';
     import HardDrive from '@lucide/svelte/icons/hard-drive';
     import Server from '@lucide/svelte/icons/server';
     import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
     import { createTable } from '@tanstack/svelte-table';
+
+    import type { ShardMetric } from '#features/admin/models.ts';
+    import type { TableMemoryPagingParameters } from '#features/shared/table.svelte.ts';
+
+    import Bytes from '#comp/formatters/bytes.svelte';
+    import Number from '#comp/formatters/number.svelte';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { getElasticsearchQuery } from '#features/admin/api.svelte.ts';
+    import ShardsOverviewDataTable from '#features/admin/components/table/shards-overview-data-table.svelte';
+    import { getTableOptions } from '#features/admin/components/table/shards-overview-options.svelte.ts';
+    import { healthBadgeClass, healthColor, healthLabel, healthVariant } from '#features/admin/elasticsearch-utils.ts';
 
     const esQuery = getElasticsearchQuery();
     const data = $derived(esQuery.data);

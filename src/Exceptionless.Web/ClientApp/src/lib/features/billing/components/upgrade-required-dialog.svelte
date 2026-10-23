@@ -1,8 +1,9 @@
 <script lang="ts">
-    import { Muted } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { isStripeEnabled } from '$features/billing';
     import { toast } from 'svelte-sonner';
+
+    import { Muted } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { isStripeEnabled } from '#features/billing/index.ts';
 
     import { showChangePlanDialog } from '../change-plan.svelte';
     import { upgradeRequiredDialog } from '../upgrade-required.svelte';

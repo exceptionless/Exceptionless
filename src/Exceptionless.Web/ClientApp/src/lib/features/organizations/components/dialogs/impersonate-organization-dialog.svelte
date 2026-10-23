@@ -1,24 +1,4 @@
 <script lang="ts">
-    import type { ViewOrganization } from '$features/organizations/models';
-
-    import PageNumber from '$comp/page-number.svelte';
-    import { Muted, P } from '$comp/typography';
-    import * as Avatar from '$comp/ui/avatar';
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
-    import { Pagination, PaginationContent, PaginationFirstButton, PaginationItem, PaginationNext, PaginationPrevious } from '$comp/ui/pagination';
-    import * as Select from '$comp/ui/select';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { getAdminOrganizationsQuery } from '$features/organizations/api.svelte';
-    import SuspensionIndicator from '$features/organizations/components/suspension-indicator.svelte';
-    import { getSuspensionLabel } from '$features/organizations/suspension-utils';
-    import Number from '$features/shared/components/formatters/number.svelte';
-    import TimeAgo from '$features/shared/components/formatters/time-ago.svelte';
-    import Notification from '$features/shared/components/notification/notification.svelte';
-    import SearchInput from '$features/shared/components/search-input.svelte';
-    import { BillingStatus } from '$generated/api';
-    import { getInitials } from '$shared/strings';
     import Activity from '@lucide/svelte/icons/activity';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Ban from '@lucide/svelte/icons/ban';
@@ -33,6 +13,27 @@
     import Gift from '@lucide/svelte/icons/gift';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
     import UserRoundSearch from '@lucide/svelte/icons/user-round-search';
+
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+
+    import PageNumber from '#comp/page-number.svelte';
+    import { Muted, P } from '#comp/typography/index.ts';
+    import * as Avatar from '#comp/ui/avatar/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
+    import { Pagination, PaginationContent, PaginationFirstButton, PaginationItem, PaginationNext, PaginationPrevious } from '#comp/ui/pagination/index.ts';
+    import * as Select from '#comp/ui/select/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { getAdminOrganizationsQuery } from '#features/organizations/api.svelte.ts';
+    import SuspensionIndicator from '#features/organizations/components/suspension-indicator.svelte';
+    import { getSuspensionLabel } from '#features/organizations/suspension-utils.ts';
+    import Number from '#features/shared/components/formatters/number.svelte';
+    import TimeAgo from '#features/shared/components/formatters/time-ago.svelte';
+    import Notification from '#features/shared/components/notification/notification.svelte';
+    import SearchInput from '#features/shared/components/search-input.svelte';
+    import { BillingStatus } from '#generated/api.ts';
+    import { getInitials } from '#shared/strings.ts';
 
     interface Props {
         impersonateOrganization: (organization: ViewOrganization) => Promise<void>;
@@ -207,7 +208,7 @@
                         }
                     }}
                 >
-                    <Select.Trigger class="h-8 w-30">
+                    <Select.Trigger aria-label="Filter by plan" class="h-8 w-30">
                         {#if paidFilter === undefined}
                             All Plans
                         {:else if paidFilter}
@@ -234,7 +235,7 @@
                         }
                     }}
                 >
-                    <Select.Trigger class="h-8 w-30">
+                    <Select.Trigger aria-label="Filter by suspension status" class="h-8 w-30">
                         {#if suspendedFilter === undefined}
                             All Status
                         {:else if suspendedFilter}

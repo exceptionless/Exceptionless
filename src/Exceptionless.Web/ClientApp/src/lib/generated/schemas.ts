@@ -126,6 +126,7 @@ export const AssistantChatRequestSchema = object({
     .min(1, "Conversation id is required")
     .nullable()
     .optional(),
+  time_zone: string().min(1, "Time zone is required").nullable().optional(),
 });
 export type AssistantChatRequestFormData = Infer<
   typeof AssistantChatRequestSchema
@@ -618,6 +619,11 @@ export const PersistentEventSchema = object({
   is_first_occurrence: boolean(),
   created_utc: iso.datetime(),
   idx: record(string(), unknown()).nullable().optional(),
+  environment: string()
+    .min(1, "Environment is required")
+    .max(64, "Environment must be at most 64 characters")
+    .nullable()
+    .optional(),
   type: string()
     .min(1, "Type is required")
     .max(100, "Type must be at most 100 characters")

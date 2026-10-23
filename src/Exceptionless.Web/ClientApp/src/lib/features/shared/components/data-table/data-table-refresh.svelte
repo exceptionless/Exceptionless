@@ -5,9 +5,10 @@
 <script generics="TData extends RowData" lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { Button } from '$comp/ui/button';
-    import * as Table from '$comp/ui/table';
     import { type RowData, type StockFeatures, type Table as SvelteTable } from '@tanstack/svelte-table';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
 
     import { getDataTableLayoutContext } from './data-table-layout-context.svelte';
 

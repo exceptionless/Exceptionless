@@ -1,6 +1,7 @@
-import { getServerUrl } from '$shared/api/urls';
-import { DocumentVisibility } from '$shared/document-visibility.svelte';
 import { SvelteURL } from 'svelte/reactivity';
+
+import { getServerUrl } from '#shared/api/urls.ts';
+import { DocumentVisibility } from '#shared/document-visibility.svelte.ts';
 
 import { accessToken } from '../auth/index.svelte';
 

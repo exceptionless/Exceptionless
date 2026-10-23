@@ -227,6 +227,14 @@ public class Bootstrapper
                 s.GetRequiredService<SourceMapRequestThrottle>(),
                 DecompressionMethods.None));
         services.AddSingleton<SourceMapService>();
+        services.AddHttpClient(WebHookDelivery.HttpClientName)
+            // Job logs retain delivery diagnostics without logging credential-bearing URL paths.
+            .RemoveAllLoggers()
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+            {
+                UseCookies = false,
+                ActivityHeadersPropagator = WebHookDelivery.ContextPropagator
+            });
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<RateCounterService>();
@@ -373,8 +381,6 @@ public class Bootstrapper
             integrations.Add("Google OAuth");
         if (!String.IsNullOrWhiteSpace(options.AuthOptions.MicrosoftId))
             integrations.Add("Microsoft OAuth");
-        if (!String.IsNullOrWhiteSpace(options.AuthOptions.FacebookId))
-            integrations.Add("Facebook OAuth");
         if (!String.IsNullOrWhiteSpace(options.AuthOptions.GitHubId))
             integrations.Add("GitHub OAuth");
         if (options.AuthOptions.EnableActiveDirectoryAuth)

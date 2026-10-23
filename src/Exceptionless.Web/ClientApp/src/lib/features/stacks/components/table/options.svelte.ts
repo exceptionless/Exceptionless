@@ -1,14 +1,16 @@
-import type { GetProjectStacksParams } from '$features/stacks/api.svelte';
-import type { Stack } from '$features/stacks/models';
 import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
-import NumberFormatter from '$comp/formatters/number.svelte';
-import TimeAgo from '$comp/formatters/time-ago.svelte';
-import { Checkbox } from '$comp/ui/checkbox';
-import { getSharedTableOptions } from '$features/shared/table.svelte';
-import { nameof } from '$lib/utils';
 import { type ColumnDef, type ColumnVisibilityState, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { GetProjectStacksParams } from '#features/stacks/api.svelte.ts';
+import type { Stack } from '#features/stacks/models.ts';
+
+import NumberFormatter from '#comp/formatters/number.svelte';
+import TimeAgo from '#comp/formatters/time-ago.svelte';
+import { Checkbox } from '#comp/ui/checkbox/index.ts';
+import { getSharedTableOptions } from '#features/shared/table.svelte.ts';
+import { nameof } from '#lib/utils.ts';
 
 import StackCriticalCell from './stack-critical-cell.svelte';
 import StackStatusCell from './stack-status-cell.svelte';

@@ -1,6 +1,6 @@
 <script lang="ts">
-    import Duration from '$comp/formatters/duration.svelte';
-    import { Muted } from '$comp/typography';
+    import Duration from '#comp/formatters/duration.svelte';
+    import { Muted } from '#comp/typography/index.ts';
 
     interface Props {
         completedUtc: null | string | undefined;

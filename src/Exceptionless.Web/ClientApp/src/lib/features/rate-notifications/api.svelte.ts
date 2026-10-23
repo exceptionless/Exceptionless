@@ -1,13 +1,14 @@
-import { accessToken } from '$features/auth/index.svelte';
+import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
+import { createMutation, createQuery, type QueryClient, type QueryKey, useQueryClient } from '@tanstack/svelte-query';
+
+import { accessToken } from '#features/auth/index.svelte.ts';
 import {
     type NewRateNotificationRule,
     RateNotificationSubject,
     type SnoozeRateNotificationRuleRequest,
     type UpdateRateNotificationRule,
     type ViewRateNotificationRule
-} from '$features/rate-notifications/types';
-import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
-import { createMutation, createQuery, type QueryClient, type QueryKey, useQueryClient } from '@tanstack/svelte-query';
+} from '#features/rate-notifications/types.ts';
 
 const CONSISTENCY_REFRESH_DELAY_MS = 1500;
 

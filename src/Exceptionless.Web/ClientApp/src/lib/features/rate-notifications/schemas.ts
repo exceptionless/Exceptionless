@@ -1,9 +1,10 @@
-import type { NewRateNotificationRule, ViewRateNotificationRule } from '$generated/api';
-
-import { WINDOW_OPTIONS } from '$features/rate-notifications/types';
-import { RateNotificationSignal, RateNotificationSubject } from '$generated/api';
-import { NewRateNotificationRuleSchema } from '$generated/schemas';
 import { type infer as Infer, string } from 'zod';
+
+import type { NewRateNotificationRule, ViewRateNotificationRule } from '#generated/api.ts';
+
+import { WINDOW_OPTIONS } from '#features/rate-notifications/types.ts';
+import { RateNotificationSignal, RateNotificationSubject } from '#generated/api.ts';
+import { NewRateNotificationRuleSchema } from '#generated/schemas.ts';
 
 const MAXIMUM_COOLDOWN_SECONDS = 24 * 60 * 60;
 const SUPPORTED_WINDOWS = new Set<string>(WINDOW_OPTIONS.map((option) => option.value));

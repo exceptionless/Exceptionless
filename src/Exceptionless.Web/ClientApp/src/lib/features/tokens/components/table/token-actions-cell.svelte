@@ -1,10 +1,4 @@
 <script lang="ts">
-    import type { ViewToken } from '$features/tokens/models';
-
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { deleteToken, patchToken } from '$features/tokens/api.svelte';
-    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import Disable from '@lucide/svelte/icons/ban';
     import Enable from '@lucide/svelte/icons/check';
     import Copy from '@lucide/svelte/icons/copy';
@@ -12,6 +6,13 @@
     import Edit from '@lucide/svelte/icons/pen';
     import X from '@lucide/svelte/icons/x';
     import { toast } from 'svelte-sonner';
+
+    import type { ViewToken } from '#features/tokens/models.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { deleteToken, patchToken } from '#features/tokens/api.svelte.ts';
+    import { UseClipboard } from '#lib/hooks/use-clipboard.svelte.ts';
 
     import DisableTokenDialog from '../dialogs/disable-token-dialog.svelte';
     import EnableTokenDialog from '../dialogs/enable-token-dialog.svelte';

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import NumberFormatter from '$comp/formatters/number.svelte';
+    import NumberFormatter from '#comp/formatters/number.svelte';
 
     interface Props {
         value: number;

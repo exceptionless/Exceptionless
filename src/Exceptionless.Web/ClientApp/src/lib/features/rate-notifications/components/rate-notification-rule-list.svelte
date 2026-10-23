@@ -1,26 +1,27 @@
 <script lang="ts">
-    import type { ViewRateNotificationRule } from '$features/rate-notifications/types';
+    import BellOffIcon from '@lucide/svelte/icons/bell-off';
+    import PlusIcon from '@lucide/svelte/icons/plus';
+    import Trash2Icon from '@lucide/svelte/icons/trash-2';
+    import { toast } from 'svelte-sonner';
 
-    import ErrorMessage from '$comp/error-message.svelte';
-    import TimeAgo from '$comp/formatters/time-ago.svelte';
-    import { Muted } from '$comp/typography';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { Badge } from '$comp/ui/badge';
-    import { Button, buttonVariants } from '$comp/ui/button';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { Switch } from '$comp/ui/switch';
+    import type { ViewRateNotificationRule } from '#features/rate-notifications/types.ts';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import TimeAgo from '#comp/formatters/time-ago.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button, buttonVariants } from '#comp/ui/button/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
     import {
         deleteRateNotificationRule,
         getRateNotificationRulesQuery,
         postSnoozeRateNotificationRule,
         postUnsnoozeRateNotificationRule,
         putRateNotificationRule
-    } from '$features/rate-notifications/api.svelte';
-    import { COOLDOWN_OPTIONS, MAX_RULES_PER_PROJECT, RateNotificationSubject, SIGNAL_LABELS, WINDOW_OPTIONS } from '$features/rate-notifications/types';
-    import BellOffIcon from '@lucide/svelte/icons/bell-off';
-    import PlusIcon from '@lucide/svelte/icons/plus';
-    import Trash2Icon from '@lucide/svelte/icons/trash-2';
-    import { toast } from 'svelte-sonner';
+    } from '#features/rate-notifications/api.svelte.ts';
+    import { COOLDOWN_OPTIONS, MAX_RULES_PER_PROJECT, RateNotificationSubject, SIGNAL_LABELS, WINDOW_OPTIONS } from '#features/rate-notifications/types.ts';
 
     interface Props {
         onCreateClick?: () => void;

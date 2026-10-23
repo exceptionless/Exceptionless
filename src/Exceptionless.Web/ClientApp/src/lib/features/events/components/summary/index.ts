@@ -1,7 +1,7 @@
-import type { LogLevel } from '$features/events/models/event-data';
-import type { StackStatus } from '$features/stacks/models';
-
 import { resolve } from '$app/paths';
+
+import type { LogLevel } from '#features/events/models/event-data.ts';
+import type { StackStatus } from '#features/stacks/models.ts';
 
 export interface EventErrorSummaryData {
     Message?: string;
@@ -61,6 +61,7 @@ export interface EventSummaryData {
 export interface EventSummaryModel<T extends SummaryTemplateKeys> extends SummaryModel<T> {
     /** @format date-time */
     date: string;
+    environment?: string;
     project_id: string;
     project_name?: string;
     tags: string[];

@@ -1,6 +1,7 @@
-import { RateNotificationSignal, RateNotificationSubject, type ViewRateNotificationRule } from '$generated/api';
-import { UpdateRateNotificationRuleSchema } from '$generated/schemas';
 import { describe, expect, it } from 'vitest';
+
+import { RateNotificationSignal, RateNotificationSubject, type ViewRateNotificationRule } from '#generated/api.ts';
+import { UpdateRateNotificationRuleSchema } from '#generated/schemas.ts';
 
 import { getRateNotificationRuleFormData, RateNotificationRuleSchema } from './schemas';
 

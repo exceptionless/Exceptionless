@@ -1,7 +1,7 @@
-import type { ErrorInfo, SimpleErrorInfo } from '$features/events/models/event-data';
-
 import { cleanup, render } from '@testing-library/svelte';
 import { afterEach, describe, expect, it } from 'vitest';
+
+import type { ErrorInfo, SimpleErrorInfo } from '#features/events/models/event-data.ts';
 
 import SimpleStackTrace from '../simple-stack-trace/simple-stack-trace.svelte';
 import StackTrace from './stack-trace.svelte';

@@ -1,9 +1,10 @@
 <script lang="ts">
-    import type { ButtonSize } from '$comp/ui/button';
-
-    import { Button } from '$comp/ui/button';
     import Pause from '@lucide/svelte/icons/pause';
     import Play from '@lucide/svelte/icons/play';
+
+    import type { ButtonSize } from '#comp/ui/button/index.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
 
     interface Props {
         onToggle: () => void;

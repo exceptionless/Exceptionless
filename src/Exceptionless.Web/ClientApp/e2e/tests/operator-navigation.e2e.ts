@@ -79,7 +79,8 @@ test('operator can navigate from event discovery to event and stack details thro
 
     await test.step('open stack details from the Stacks table', async () => {
         await navigateToSidebarView(page, 'Stacks', 'Most Frequent Errors');
-        await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
+        await expect(page).toHaveURL(/\/stack\/most-frequent-errors(?:[?#]|$)/);
+        await expect(page.getByRole('heading', { exact: true, name: 'Most Frequent Errors' })).toBeVisible();
         const stackListUrl = page.url();
 
         const stackRow = getVisibleRow(page, journey.message);

@@ -1,22 +1,23 @@
 <script lang="ts">
-    import type { MigrationState, MigrationStatus } from '$features/admin/models';
-    import type { TableMemoryPagingParameters } from '$features/shared/table.svelte';
-
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import { Muted } from '$comp/typography';
-    import * as Card from '$comp/ui/card';
-    import { Input } from '$comp/ui/input';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { Switch } from '$comp/ui/switch';
-    import { getMigrationsQuery } from '$features/admin/api.svelte';
-    import MigrationsDataTable from '$features/admin/components/table/migrations-data-table.svelte';
-    import { getTableOptions } from '$features/admin/components/table/migrations-options.svelte';
-    import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import CheckCircle2 from '@lucide/svelte/icons/check-circle-2';
     import Layers from '@lucide/svelte/icons/layers';
     import Loader from '@lucide/svelte/icons/loader';
     import XCircle from '@lucide/svelte/icons/x-circle';
     import { createTable } from '@tanstack/svelte-table';
+
+    import type { MigrationState, MigrationStatus } from '#features/admin/models.ts';
+    import type { TableMemoryPagingParameters } from '#features/shared/table.svelte.ts';
+
+    import DataTableViewOptions from '#comp/data-table/data-table-view-options.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { getMigrationsQuery } from '#features/admin/api.svelte.ts';
+    import MigrationsDataTable from '#features/admin/components/table/migrations-data-table.svelte';
+    import { getTableOptions } from '#features/admin/components/table/migrations-options.svelte.ts';
+    import { DEFAULT_LIMIT } from '#features/shared/api/api.svelte.ts';
 
     const migrationsQuery = getMigrationsQuery();
     const data = $derived(migrationsQuery.data);

@@ -1,13 +1,15 @@
-import type { OAuthGrant } from '$features/users/models';
 import type { ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
-import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
-import OAuthGrantAccessCell from '$features/users/components/oauth-grants/table/oauth-grant-access-cell.svelte';
-import OAuthGrantActionsCell from '$features/users/components/oauth-grants/table/oauth-grant-actions-cell.svelte';
-import OAuthGrantApplicationCell from '$features/users/components/oauth-grants/table/oauth-grant-application-cell.svelte';
-import OAuthGrantOrganizationsCell from '$features/users/components/oauth-grants/table/oauth-grant-organizations-cell.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { OAuthGrant } from '#features/users/models.ts';
+
+import { getSharedTableOptions, type TableMemoryPagingParameters } from '#features/shared/table.svelte.ts';
+import OAuthGrantAccessCell from '#features/users/components/oauth-grants/table/oauth-grant-access-cell.svelte';
+import OAuthGrantActionsCell from '#features/users/components/oauth-grants/table/oauth-grant-actions-cell.svelte';
+import OAuthGrantApplicationCell from '#features/users/components/oauth-grants/table/oauth-grant-application-cell.svelte';
+import OAuthGrantOrganizationsCell from '#features/users/components/oauth-grants/table/oauth-grant-organizations-cell.svelte';
 
 export function getColumns(organizationNamesById: ReadonlyMap<string, string>): ColumnDef<StockFeatures, OAuthGrant, unknown>[] {
     const columns: ColumnDef<StockFeatures, OAuthGrant, unknown>[] = [

@@ -1,11 +1,12 @@
 <script lang="ts">
-    import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '$features/events/components/summary';
-
-    import { buildEventDetailsHref, buildStackDetailsHref } from '$features/events/components/summary';
-    import Summary from '$features/events/components/summary/summary.svelte';
-    import { getSharedTableOptions } from '$features/shared/table.svelte';
-    import { StackStatus } from '$features/stacks/models';
     import { type ColumnSizingState, createTable, renderComponent } from '@tanstack/svelte-table';
+
+    import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
+
+    import { buildEventDetailsHref, buildStackDetailsHref } from '#features/events/components/summary/index.ts';
+    import Summary from '#features/events/components/summary/summary.svelte';
+    import { getSharedTableOptions } from '#features/shared/table.svelte.ts';
+    import { StackStatus } from '#features/stacks/models.ts';
 
     import DataTableBody from './data-table-body.svelte';
     import DataTableEmpty from './data-table-empty.svelte';

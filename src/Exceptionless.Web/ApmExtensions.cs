@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using Exceptionless.Core.Services;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -71,7 +72,8 @@ public static partial class ApmExtensions
                     };
                 });
 
-                b.AddHttpClientInstrumentation();
+                // Only marked webhook requests are changed; other HTTP spans keep their normal tags.
+                b.AddHttpClientInstrumentation(o => o.EnrichWithHttpRequestMessage = WebHookDelivery.EnrichActivity);
                 b.AddSource("Exceptionless", "Exceptionless.Assistant", "Foundatio");
 
                 if (config.EnableRedis)

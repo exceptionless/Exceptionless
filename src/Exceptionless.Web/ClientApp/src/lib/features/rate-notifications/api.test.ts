@@ -1,8 +1,10 @@
-import type { ViewRateNotificationRule } from '$generated/api';
 import type { FetchClientResponse } from '@foundatiofx/fetchclient';
 
-import { RateNotificationSignal, RateNotificationSubject } from '$generated/api';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { ViewRateNotificationRule } from '#generated/api.ts';
+
+import { RateNotificationSignal, RateNotificationSubject } from '#generated/api.ts';
 
 const mocks = vi.hoisted(() => ({
     cancelQueries: vi.fn(),
@@ -18,7 +20,7 @@ const mocks = vi.hoisted(() => ({
     setQueryData: vi.fn()
 }));
 
-vi.mock('$features/auth/index.svelte', () => ({
+vi.mock('#features/auth/index.svelte.ts', () => ({
     accessToken: { current: 'test-token' }
 }));
 
