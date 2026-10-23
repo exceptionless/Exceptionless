@@ -2762,7 +2762,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.True(organizationView.HasPremiumFeatures);
         Assert.Equal(_plans.MediumPlan.MaxEventsPerMonth, organizationView.MaxEventsPerMonth);
         Assert.NotNull(organizationView.TrialEndsUtc);
-        Assert.InRange(organizationView.TrialEndsUtc.Value, utcNow.AddDays(7).AddMinutes(-1), utcNow.AddDays(7).AddMinutes(1));
+        Assert.InRange(organizationView.TrialEndsUtc.Value, utcNow.AddDays(14).AddMinutes(-1), utcNow.AddDays(14).AddMinutes(1));
         Assert.NotNull(secondOrganizationProblem);
 
         var updatedUser = await _userRepository.GetByIdAsync(user.Id);

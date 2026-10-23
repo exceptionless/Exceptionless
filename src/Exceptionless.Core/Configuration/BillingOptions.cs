@@ -7,7 +7,7 @@ public class BillingOptions
     /// <summary>
     /// Length of the no-card trial a user's first organization receives. Zero disables trials.
     /// </summary>
-    public int TrialDays { get; internal set; } = 7;
+    public int TrialDays { get; internal set; } = 14;
 
     /// <summary>
     /// Days before a trial ends to send the trial ending reminder email.
@@ -32,7 +32,7 @@ public class BillingOptions
     public static BillingOptions ReadFromConfiguration(IConfiguration config)
     {
         var options = new BillingOptions();
-        options.TrialDays = Math.Max(0, config.GetValue("Billing:TrialDays", 7));
+        options.TrialDays = Math.Max(0, config.GetValue("Billing:TrialDays", 14));
         options.TrialReminderDays = Math.Max(0, config.GetValue("Billing:TrialReminderDays", 2));
         options.TrialAssistantDailyCostLimitUsd = config.GetValue("Billing:TrialAssistantDailyCostLimitUsd", 25m);
         options.FreeInviteDailyLimit = Math.Max(0, config.GetValue("Billing:FreeInviteDailyLimit", 10));
