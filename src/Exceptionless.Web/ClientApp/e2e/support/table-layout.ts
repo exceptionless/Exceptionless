@@ -4,7 +4,11 @@ const ORGANIZATION_ID = '000000000000000000000001';
 const PROJECT_ID = '000000000000000000000002';
 const USER_ID = '000000000000000000000003';
 
-export async function mockTablePage(page: Page, rowCount: number): Promise<void> {
+export interface MockTablePageOptions {
+    hasPremiumFeatures?: boolean;
+}
+
+export async function mockTablePage(page: Page, rowCount: number, { hasPremiumFeatures = true }: MockTablePageOptions = {}): Promise<void> {
     await page.addInitScript(
         ({ organizationId }) => {
             window.localStorage.setItem('satellizer_token', 'table-layout-token');
@@ -14,15 +18,15 @@ export async function mockTablePage(page: Page, rowCount: number): Promise<void>
     );
     await page.routeWebSocket('**/api/v2/push*', () => {});
     await page.route('**/health', (route) => route.fulfill({ body: 'OK', contentType: 'text/plain' }));
-    await page.route('**/api/v2/**', (route) => fulfillTablePageRequest(route, rowCount));
+    await page.route('**/api/v2/**', (route) => fulfillTablePageRequest(route, rowCount, hasPremiumFeatures));
 }
 
-async function fulfillTablePageRequest(route: Route, rowCount: number): Promise<void> {
+async function fulfillTablePageRequest(route: Route, rowCount: number, hasPremiumFeatures: boolean): Promise<void> {
     const url = new URL(route.request().url());
     const path = url.pathname;
     const organization = {
         features: [],
-        has_premium_features: true,
+        has_premium_features: hasPremiumFeatures,
         id: ORGANIZATION_ID,
         name: 'Layout Organization',
         plan_id: 'EX_UNLIMITED',

@@ -1,17 +1,18 @@
 <script lang="ts">
-    import type { TableMemoryPagingParameters } from '$features/shared/table.svelte';
-
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import * as Card from '$comp/ui/card';
-    import { Input } from '$comp/ui/input';
-    import { Label } from '$comp/ui/label';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { Switch } from '$comp/ui/switch';
-    import { getElasticsearchQuery } from '$features/admin/api.svelte';
-    import IndicesDataTable from '$features/admin/components/table/indices-data-table.svelte';
-    import { getTableOptions } from '$features/admin/components/table/indices-options.svelte';
-    import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import { createTable } from '@tanstack/svelte-table';
+
+    import type { TableMemoryPagingParameters } from '#features/shared/table.svelte.ts';
+
+    import DataTableViewOptions from '#comp/data-table/data-table-view-options.svelte';
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
+    import { getElasticsearchQuery } from '#features/admin/api.svelte.ts';
+    import IndicesDataTable from '#features/admin/components/table/indices-data-table.svelte';
+    import { getTableOptions } from '#features/admin/components/table/indices-options.svelte.ts';
+    import { DEFAULT_LIMIT } from '#features/shared/api/api.svelte.ts';
 
     const esQuery = getElasticsearchQuery();
     const data = $derived(esQuery.data);

@@ -1,5 +1,6 @@
-import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
 import { describe, expect, it } from 'vitest';
+
+import { supportsColumnWrapping } from '#features/shared/components/data-table/column-meta.ts';
 
 import type { EventSummaryModel, StackSummaryModel, SummaryTemplateKeys } from '../summary';
 

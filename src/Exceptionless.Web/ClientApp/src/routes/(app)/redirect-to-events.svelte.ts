@@ -1,9 +1,10 @@
-import type { IFilter } from '$comp/faceted-filter';
-
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
-import { toFilter } from '$features/events/components/filters/helpers.svelte';
 import { SvelteURLSearchParams } from 'svelte/reactivity';
+
+import type { IFilter } from '#comp/faceted-filter/index.ts';
+
+import { toFilter } from '#features/events/components/filters/helpers.svelte.ts';
 
 interface ListNavigationOptions {
     time?: null | string;
@@ -15,6 +16,7 @@ export const ALL_TIME_QUERY_VALUE = 'all';
 
 const LIST_FILTER_QUERY_PARAM_NAMES = [
     'bot',
+    'environment',
     'filter',
     'first',
     'level',
@@ -66,6 +68,23 @@ export const LIST_FILTER_QUERY_PARAM_RESET = Object.fromEntries(LIST_FILTER_QUER
     null
 >;
 
+export function deserializeEnvironmentQueryParam(value: string): string[] {
+    try {
+        const values: unknown = JSON.parse(value);
+        if (Array.isArray(values)) {
+            return values.filter((name): name is string => typeof name === 'string');
+        }
+
+        if (typeof values === 'string') {
+            return [values];
+        }
+    } catch {
+        // Single names are also accepted in hand-written URLs.
+    }
+
+    return [value];
+}
+
 export function deserializeTimeQueryParam(time: string): string {
     const trimmed = time.trim();
     const shortcutMatch = TIME_SHORTCUT_PATTERN.exec(trimmed);
@@ -101,6 +120,7 @@ export function getEventsNavigationOptionsForFilter(filter: IFilter): ListNaviga
 export function getListFilterQueryParams(source: ListFilterQueryParams): ListFilterQueryParamSnapshot {
     return {
         bot: source.bot ?? null,
+        environment: source.environment ?? null,
         filter: source.filter ?? null,
         first: source.first ?? null,
         level: source.level ?? null,
@@ -154,6 +174,11 @@ export function serializeTimeQueryParam(time: string): string {
 function trySetRegisteredFilterQueryParam(queryParams: SvelteURLSearchParams, filter: IFilter): boolean {
     if (filter.type === 'string' && filter.key === 'string-stack' && 'value' in filter && typeof filter.value === 'string' && filter.value.trim()) {
         queryParams.set('stack', filter.value);
+        return true;
+    }
+
+    if (filter.type === 'environment' && 'value' in filter && Array.isArray(filter.value) && filter.value.length > 0) {
+        queryParams.set('environment', JSON.stringify(filter.value));
         return true;
     }
 

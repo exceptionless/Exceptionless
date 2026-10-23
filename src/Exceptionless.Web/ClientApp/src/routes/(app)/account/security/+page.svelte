@@ -1,14 +1,15 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as Field from '$comp/ui/field';
-    import { Input } from '$comp/ui/input';
-    import { changePassword } from '$features/auth/api.svelte';
-    import { ChangePasswordSchema, ChangePasswordWithCurrentSchema } from '$features/auth/schemas';
-    import { getMeQuery } from '$features/users/api.svelte';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '$shared/validation';
     import { createForm } from '@tanstack/svelte-form';
     import { toast } from 'svelte-sonner';
+
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Field from '#comp/ui/field/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { changePassword } from '#features/auth/api.svelte.ts';
+    import { ChangePasswordSchema, ChangePasswordWithCurrentSchema } from '#features/auth/schemas.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
 
     let toastId = $state<number | string>();
     const meQuery = getMeQuery();

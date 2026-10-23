@@ -1,8 +1,8 @@
-import type { AssistantAccess } from '$features/assistant/models';
-import type { ViewCurrentUser } from '$features/users/models';
-
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { AssistantAccess } from '#features/assistant/models.ts';
+import type { ViewCurrentUser } from '#features/users/models.ts';
 
 import { productTourCheckpoint } from '../state.svelte';
 import ProductTourHost from './product-tour-host.svelte';
@@ -17,12 +17,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('$app/state', () => ({ page: mocks.page }));
-vi.mock('$features/assistant/api.svelte', () => ({ invalidateAssistantAccessQueries: mocks.invalidateAssistantAccessQueries }));
-vi.mock('$features/billing/change-plan.svelte', () => ({ showChangePlanDialog: mocks.showChangePlanDialog }));
-vi.mock('$features/billing/stripe.svelte', () => ({ isStripeEnabled: mocks.isStripeEnabled }));
-vi.mock('$features/events/api.svelte', () => ({ getOrganizationEventsQuery: () => ({ data: { data: [] }, isError: false, isPending: false }) }));
-vi.mock('$features/projects/api.svelte', () => ({ getOrganizationProjectsQuery: () => ({ data: { data: [] }, isError: false, isSuccess: true }) }));
-vi.mock('$features/users/api.svelte', () => ({ putCurrentUserProductTour: () => ({ mutateAsync: mocks.mutateAsync }) }));
+vi.mock('#features/assistant/api.svelte.ts', () => ({ invalidateAssistantAccessQueries: mocks.invalidateAssistantAccessQueries }));
+vi.mock('#features/billing/change-plan.svelte.ts', () => ({ showChangePlanDialog: mocks.showChangePlanDialog }));
+vi.mock('#features/billing/stripe.svelte.ts', () => ({ isStripeEnabled: mocks.isStripeEnabled }));
+vi.mock('#features/events/api.svelte.ts', () => ({ getOrganizationEventsQuery: () => ({ data: { data: [] }, isError: false, isPending: false }) }));
+vi.mock('#features/projects/api.svelte.ts', () => ({ getOrganizationProjectsQuery: () => ({ data: { data: [] }, isError: false, isSuccess: true }) }));
+vi.mock('#features/users/api.svelte.ts', () => ({ putCurrentUserProductTour: () => ({ mutateAsync: mocks.mutateAsync }) }));
 vi.mock('@tanstack/svelte-query', () => ({ useQueryClient: () => mocks.queryClient }));
 vi.mock('../actions.svelte', () => ({ createProductTourActions: () => ({ complete: vi.fn() }) }));
 
@@ -141,6 +141,6 @@ describe('ProductTourHost', () => {
 
         // Assert
         expect(productTourCheckpoint.current).toBe(active);
-        expect(screen.queryByRole('dialog', { name: 'Guided Tours' })).toBeNull();
+        await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Guided Tours' })).toBeNull());
     });
 });

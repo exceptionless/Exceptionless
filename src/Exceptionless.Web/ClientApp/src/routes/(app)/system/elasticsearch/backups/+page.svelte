@@ -1,14 +1,15 @@
 <script lang="ts">
-    import type { TableMemoryPagingParameters } from '$features/shared/table.svelte';
-
-    import * as Card from '$comp/ui/card';
-    import { Skeleton } from '$comp/ui/skeleton';
-    import { getElasticsearchSnapshotsQuery } from '$features/admin/api.svelte';
-    import BackupsDataTable from '$features/admin/components/table/backups-data-table.svelte';
-    import { getTableOptions } from '$features/admin/components/table/backups-options.svelte';
-    import { DEFAULT_LIMIT } from '$features/shared/api/api.svelte';
     import Archive from '@lucide/svelte/icons/archive';
     import { createTable } from '@tanstack/svelte-table';
+
+    import type { TableMemoryPagingParameters } from '#features/shared/table.svelte.ts';
+
+    import * as Card from '#comp/ui/card/index.ts';
+    import { Skeleton } from '#comp/ui/skeleton/index.ts';
+    import { getElasticsearchSnapshotsQuery } from '#features/admin/api.svelte.ts';
+    import BackupsDataTable from '#features/admin/components/table/backups-data-table.svelte';
+    import { getTableOptions } from '#features/admin/components/table/backups-options.svelte.ts';
+    import { DEFAULT_LIMIT } from '#features/shared/api/api.svelte.ts';
 
     const snapshotsQuery = getElasticsearchSnapshotsQuery();
     const snapshotsData = $derived(snapshotsQuery.data);

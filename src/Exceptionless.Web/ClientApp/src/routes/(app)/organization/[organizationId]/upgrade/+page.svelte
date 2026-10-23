@@ -9,12 +9,12 @@
         const path = resolve('/(app)/organization/[organizationId]/billing', {
             organizationId: page.params.organizationId!
         });
-        const destination = new SvelteURL(path, page.url);
+        const destination = new SvelteURL(path, page.url.href);
         destination.search = page.url.search;
         destination.hash = page.url.hash;
         destination.searchParams.set('changePlan', 'true');
         void goto(destination, {
-            replaceState: true
+            replace: true
         });
     });
 </script>

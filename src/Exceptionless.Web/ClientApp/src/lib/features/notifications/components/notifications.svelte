@@ -1,12 +1,5 @@
 <script lang="ts">
-    import type { ReleaseNotification, SystemNotification } from '$features/websockets/models';
-
-    // System notification messages are admin-authored HTML and sanitized before rendering.
-    /* eslint svelte/no-at-html-tags: "off" */
-    import { Button } from '$comp/ui/button';
-    import { env } from '$env/dynamic/public';
-    import { getCurrentSystemNotificationQuery } from '$features/notifications/api.svelte';
-    import { Notification, NotificationDescription } from '$features/shared/components/notification';
+    import { PUBLIC_SYSTEM_NOTIFICATION_MESSAGE } from '$app/env/public';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import Info from '@lucide/svelte/icons/info';
     import X from '@lucide/svelte/icons/x';
@@ -14,8 +7,16 @@
     import DOMPurify from 'dompurify';
     import { useEventListener } from 'runed';
 
+    import type { ReleaseNotification, SystemNotification } from '#features/websockets/models.ts';
+
+    // System notification messages are admin-authored HTML and sanitized before rendering.
+    /* eslint svelte/no-at-html-tags: "off" */
+    import { Button } from '#comp/ui/button/index.ts';
+    import { getCurrentSystemNotificationQuery } from '#features/notifications/api.svelte.ts';
+    import { Notification, NotificationDescription } from '#features/shared/components/notification/index.ts';
+
     const currentNotificationQuery = getCurrentSystemNotificationQuery();
-    const fallbackMessage = env.PUBLIC_SYSTEM_NOTIFICATION_MESSAGE || null;
+    const fallbackMessage = PUBLIC_SYSTEM_NOTIFICATION_MESSAGE || null;
     const dismissedSystemNotificationStorageKey = 'exceptionless.system-notification.dismissed-key';
     const purify = DOMPurify(window);
 

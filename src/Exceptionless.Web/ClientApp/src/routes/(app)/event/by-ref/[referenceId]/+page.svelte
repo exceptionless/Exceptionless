@@ -2,12 +2,13 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { A, H3, Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Spinner } from '$comp/ui/spinner';
-    import { getEventsByReferenceQuery } from '$features/events/api.svelte';
-    import { buildEventDetailsHref } from '$features/events/components/summary';
-    import Summary from '$features/events/components/summary/summary.svelte';
+
+    import { A, H3, Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { getEventsByReferenceQuery } from '#features/events/api.svelte.ts';
+    import { buildEventDetailsHref } from '#features/events/components/summary/index.ts';
+    import Summary from '#features/events/components/summary/summary.svelte';
 
     const referenceId = $derived(page.params.referenceId || '');
     const eventsQuery = getEventsByReferenceQuery({
@@ -25,7 +26,7 @@
         if (event?.id && event.id !== redirectedEventId) {
             redirectedEventId = event.id;
             void goto(buildEventDetailsHref(event.id), {
-                replaceState: true
+                replace: true
             });
         }
     });

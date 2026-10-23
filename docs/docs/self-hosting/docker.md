@@ -4,6 +4,8 @@ title: "Docker"
 
 # Docker
 
+If you place a reverse proxy in front of the container, configure its [trusted forwarding peers](/docs/self-hosting/#reverse-proxies-and-https) before upgrading. The direct-port examples below do not require proxy trust settings.
+
 If you would like to test Exceptionless locally, please follow this section.
 
 ## Requirements

@@ -1,19 +1,39 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { browser } from '$app/environment';
-    import { beforeNavigate, goto, pushState, replaceState } from '$app/navigation';
+    import { browser } from '$app/env';
+    import { beforeNavigate, goto } from '$app/navigation';
     import { page } from '$app/state';
-    import { Button } from '$comp/ui/button';
-    import * as Sheet from '$comp/ui/sheet';
-    import { UseClipboard } from '$lib/hooks/use-clipboard.svelte';
     import Copy from '@lucide/svelte/icons/copy';
     import ExternalLink from '@lucide/svelte/icons/external-link';
-    import { onMount } from 'svelte';
+    import { onMount, untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
 
-    import { type DetailSheetHistoryEntry, detailSheetHistoryStateKey, type DetailSheetPageState } from '../history-state';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Sheet from '#comp/ui/sheet/index.ts';
+    import { UseClipboard } from '#lib/hooks/use-clipboard.svelte.ts';
+
+    import {
+        type DetailSheetHistoryEntry,
+        detailSheetHistoryStateKey,
+        getDetailSheetHistoryEntry,
+        type ShallowHistoryUpdate,
+        updateShallowHistory,
+        waitForShallowHistory,
+        withoutDetailSheetHistoryEntry
+    } from '../history-state';
+    import { getHistoryTraversalCount } from '../history-traversal';
     import { preserveDetailSheetForAssistant } from './detail-sheet-interaction';
+
+    interface LinkNavigationOptions {
+        replace?: boolean;
+        reset?: boolean;
+    }
+
+    interface PendingNavigation {
+        options?: LinkNavigationOptions;
+        url: URL;
+    }
 
     interface Props {
         actions?: Snippet;
@@ -27,27 +47,15 @@
         title: string;
     }
 
-    const svelteKitPageStateKey = 'sveltekit:states';
-
-    interface LinkNavigationOptions {
-        keepFocus?: boolean;
-        noScroll?: boolean;
-        replaceState?: boolean;
-    }
-
-    interface PendingNavigation {
-        options?: LinkNavigationOptions;
-        url: URL;
-    }
-
     let { actions, children, detailsHref, historyKey, historyValue, onClose, onOpen, open, title }: Props = $props();
     let historyEntryUrl: string | undefined;
     let historyEntryValue: string | undefined;
     let historyReady = $state(false);
+    // Back and Forward are handled once SvelteKit has applied the destination's page state.
+    let handledHistoryTraversals = getHistoryTraversalCount();
     let ownsHistoryEntry = false;
     let parentCloseTimer: number | undefined;
     let pendingNavigation: PendingNavigation | undefined;
-    let pendingNavigationTimer: number | undefined;
     let selectedLinkNavigationOptions: LinkNavigationOptions | undefined;
     let wasOpen = false;
     const clipboard = new UseClipboard();
@@ -63,7 +71,7 @@
             return;
         }
 
-        const shouldTraverseBack = historyEntryUrl === getCurrentUrl();
+        const shouldTraverseBack = historyEntryUrl === getBrowserUrl();
         clearOwnedHistoryEntry();
         if (shouldTraverseBack) {
             window.history.back();
@@ -79,35 +87,12 @@
         }
     }
 
-    function createHistoryState(value?: string): Record<string, unknown> {
-        return {
-            ...page.state,
-            [detailSheetHistoryStateKey]: value
-                ? {
-                      key: historyKey,
-                      value
-                  }
-                : undefined
-        };
-    }
-
     function getBrowserUrl(): string {
         return `${window.location.pathname}${window.location.search}${window.location.hash}`;
     }
 
-    function getCurrentUrl(): string {
-        return `${page.url.pathname}${page.url.search}${page.url.hash}`;
-    }
-
-    function getHistoryEntry(historyState: unknown): DetailSheetHistoryEntry | undefined {
-        if (!historyState || typeof historyState !== 'object') {
-            return undefined;
-        }
-
-        const rawHistoryState = historyState as Record<string, unknown>;
-        const pageState = (rawHistoryState[svelteKitPageStateKey] ?? rawHistoryState) as DetailSheetPageState;
-        const entry = pageState[detailSheetHistoryStateKey];
-        return entry?.key === historyKey && typeof entry.value === 'string' ? entry : undefined;
+    function getCurrentHistoryEntry(): DetailSheetHistoryEntry | undefined {
+        return getDetailSheetHistoryEntry(page.state, historyKey);
     }
 
     function getLinkNavigationOptions(link: HTMLAnchorElement): LinkNavigationOptions | undefined {
@@ -116,7 +101,7 @@
             while (element && element !== document.documentElement) {
                 const value = element.getAttribute(`data-sveltekit-${name}`);
                 if (value !== null) {
-                    return value === '' || value === 'true' ? true : value === 'off' || value === 'false' ? false : undefined;
+                    return value === '' || value === 'true' ? true : value === 'false' ? false : undefined;
                 }
 
                 element = element.parentElement;
@@ -126,12 +111,41 @@
         }
 
         const options: LinkNavigationOptions = {
-            keepFocus: getOption('keepfocus'),
-            noScroll: getOption('noscroll'),
-            replaceState: getOption('replacestate')
+            replace: getOption('replacestate'),
+            reset: getOption('reset')
         };
 
         return Object.values(options).some((value) => value !== undefined) ? options : undefined;
+    }
+
+    function handleHistoryTraversal(): void {
+        if (pendingNavigation) {
+            const navigation = pendingNavigation;
+            pendingNavigation = undefined;
+            wasOpen = false;
+            if (navigation.options) {
+                void goto(navigation.url, navigation.options);
+            } else {
+                void goto(navigation.url);
+            }
+
+            onClose();
+            return;
+        }
+
+        const entry = getCurrentHistoryEntry();
+        if (entry) {
+            restoreOwnedHistoryEntry(entry);
+            return;
+        }
+
+        if (!open || !ownsHistoryEntry) {
+            return;
+        }
+
+        clearOwnedHistoryEntry();
+        wasOpen = false;
+        onClose();
     }
 
     function handleOpenChange(nextOpen: boolean) {
@@ -142,7 +156,7 @@
     }
 
     function restoreOwnedHistoryEntry(entry: DetailSheetHistoryEntry): void {
-        historyEntryUrl = getCurrentUrl();
+        historyEntryUrl = getBrowserUrl();
         historyEntryValue = entry.value;
         ownsHistoryEntry = true;
         wasOpen = true;
@@ -152,8 +166,22 @@
         }
     }
 
-    beforeNavigate(({ cancel, to, type, willUnload }) => {
-        if (willUnload || !browser || type === 'popstate' || !ownsHistoryEntry || !to || historyEntryUrl !== getCurrentUrl()) {
+    function withHistoryEntry(value: string): NonNullable<ShallowHistoryUpdate['state']> {
+        return (state) => ({
+            ...state,
+            [detailSheetHistoryStateKey]: {
+                key: historyKey,
+                value
+            } satisfies DetailSheetHistoryEntry
+        });
+    }
+
+    beforeNavigate(({ cancel, shallow, to, type, willUnload }) => {
+        if (shallow && type === 'goto') {
+            return;
+        }
+
+        if (willUnload || !browser || type === 'popstate' || !ownsHistoryEntry || !to || historyEntryUrl !== getBrowserUrl()) {
             return;
         }
 
@@ -166,50 +194,28 @@
         window.history.back();
     });
 
+    $effect(() => {
+        // Tracks the entry's page state, which SvelteKit applies when Back or Forward traverses history.
+        void page.state;
+        untrack(() => {
+            const traversals = getHistoryTraversalCount();
+            if (traversals !== handledHistoryTraversals) {
+                handledHistoryTraversals = traversals;
+                handleHistoryTraversal();
+            }
+        });
+    });
+
     onMount(() => {
         function handleDocumentClick(event: MouseEvent): void {
             const link = event.composedPath().find((target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement);
             selectedLinkNavigationOptions = link ? getLinkNavigationOptions(link) : undefined;
         }
 
-        function handlePopState(event: PopStateEvent): void {
-            if (pendingNavigation) {
-                const navigation = pendingNavigation;
-                pendingNavigation = undefined;
-                wasOpen = false;
-                // Let SvelteKit finish accepting the shallow popstate before
-                // beginning the requested route navigation.
-                pendingNavigationTimer = window.setTimeout(() => {
-                    if (navigation.options) {
-                        void goto(navigation.url, navigation.options);
-                    } else {
-                        void goto(navigation.url);
-                    }
-
-                    onClose();
-                }, 0);
-                return;
-            }
-
-            const entry = getHistoryEntry(event.state);
-            if (entry) {
-                restoreOwnedHistoryEntry(entry);
-                return;
-            }
-
-            if (!open || !ownsHistoryEntry) {
-                return;
-            }
-
-            clearOwnedHistoryEntry();
-            wasOpen = false;
-            onClose();
-        }
-
         document.addEventListener('click', handleDocumentClick, true);
-        window.addEventListener('popstate', handlePopState);
 
-        const entry = getHistoryEntry(window.history.state);
+        // Page state is restored with its history entry, including after a reload.
+        const entry = getCurrentHistoryEntry();
         if (entry) {
             restoreOwnedHistoryEntry(entry);
         }
@@ -217,9 +223,7 @@
         historyReady = true;
         return () => {
             document.removeEventListener('click', handleDocumentClick, true);
-            window.removeEventListener('popstate', handlePopState);
             window.clearTimeout(parentCloseTimer);
-            window.clearTimeout(pendingNavigationTimer);
         };
     });
 
@@ -230,21 +234,26 @@
 
         if (open && historyValue && !wasOpen) {
             window.clearTimeout(parentCloseTimer);
-            const url = getCurrentUrl();
-            pushState(url, createHistoryState(historyValue));
-            historyEntryUrl = url;
+            void updateShallowHistory({
+                state: withHistoryEntry(historyValue)
+            });
+            historyEntryUrl = getBrowserUrl();
             historyEntryValue = historyValue;
             ownsHistoryEntry = true;
         } else if (open && historyValue && ownsHistoryEntry && historyEntryValue !== historyValue) {
-            replaceState(getCurrentUrl(), createHistoryState(historyValue));
+            void updateShallowHistory({
+                replace: true,
+                state: withHistoryEntry(historyValue)
+            });
             historyEntryValue = historyValue;
         } else if (!open && wasOpen) {
             // Parent-driven closes can be followed immediately by a URL update (for
             // example, applying a filter from the sheet). Wait for that update, then
             // either consume an unchanged same-URL entry or clear the marker while
             // preserving the newer browser URL.
-            parentCloseTimer = window.setTimeout(() => {
-                const currentEntry = getHistoryEntry(window.history.state);
+            parentCloseTimer = window.setTimeout(async () => {
+                await waitForShallowHistory();
+                const currentEntry = getCurrentHistoryEntry();
                 const shouldTraverseBack = ownsHistoryEntry && currentEntry?.value === historyEntryValue && historyEntryUrl === getBrowserUrl();
 
                 if (shouldTraverseBack) {
@@ -252,7 +261,10 @@
                     window.history.back();
                 } else {
                     if (ownsHistoryEntry && currentEntry?.value === historyEntryValue) {
-                        replaceState('', createHistoryState());
+                        void updateShallowHistory({
+                            replace: true,
+                            state: withoutDetailSheetHistoryEntry
+                        });
                     }
 
                     clearOwnedHistoryEntry();

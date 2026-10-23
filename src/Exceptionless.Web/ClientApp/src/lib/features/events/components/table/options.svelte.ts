@@ -1,16 +1,18 @@
-import type { StackStatus } from '$features/stacks/models';
-
-import NumberFormatter from '$comp/formatters/number.svelte';
-import TimeAgo from '$comp/formatters/time-ago.svelte';
-import { Checkbox } from '$comp/ui/checkbox';
-import { nameof } from '$lib/utils';
 import { type ColumnDef, type ColumnVisibilityState, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { StackStatus } from '#features/stacks/models.ts';
+
+import NumberFormatter from '#comp/formatters/number.svelte';
+import TimeAgo from '#comp/formatters/time-ago.svelte';
+import { Checkbox } from '#comp/ui/checkbox/index.ts';
+import { nameof } from '#lib/utils.ts';
 
 import type { GetEventsMode } from '../../api.svelte';
 import type { EventSummaryModel, StackSummaryModel, SummaryModel, SummaryTemplateKeys } from '../summary/index';
 
 import LogLevel from '../log-level.svelte';
 import Summary from '../summary/summary.svelte';
+import EventEnvironmentCell from './event-environment-cell.svelte';
 import EventTagsSummaryCell from './event-tags-summary-cell.svelte';
 import EventsUserIdentitySummaryCell from './events-user-identity-summary-cell.svelte';
 import StackSortHeader from './stack-sort-header.svelte';
@@ -18,6 +20,7 @@ import StackStatusCell from './stack-status-cell.svelte';
 import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
 
 export const defaultEventColumnVisibility: ColumnVisibilityState = {
+    environment: false,
     exception_type: false,
     level: false,
     message: false,
@@ -38,7 +41,12 @@ export type StackSortMode = Extract<GetEventsMode, 'stack_frequent' | 'stack_rec
 
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary',
-    options?: { onStackSort?: (mode: StackSortMode) => void; onTagClick?: (tag: string) => Promise<void> | void; showType?: boolean }
+    options?: {
+        onEnvironmentClick?: (environment: string) => Promise<void> | void;
+        onStackSort?: (mode: StackSortMode) => void;
+        onTagClick?: (tag: string) => Promise<void> | void;
+        showType?: boolean;
+    }
 ): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
     const showType = options?.showType ?? true;
     const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
@@ -184,6 +192,19 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 },
                 minSize: 80,
                 size: 112
+            },
+            {
+                accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('environment'),
+                cell: (prop) =>
+                    renderComponent(EventEnvironmentCell, {
+                        changed: options?.onEnvironmentClick,
+                        environment: prop.getValue<string | undefined>()
+                    }),
+                header: 'Environment',
+                id: 'environment',
+                maxSize: 640,
+                minSize: 96,
+                size: 144
             },
             {
                 accessorKey: nameof<EventSummaryModel<SummaryTemplateKeys>>('version'),

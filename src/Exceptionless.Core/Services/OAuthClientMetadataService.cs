@@ -1,4 +1,3 @@
-using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -66,14 +65,9 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         }
         catch (Exception ex) when (IsExpectedFetchError(ex))
         {
-            LogUnableToFetchMetadata(ex, clientId);
+            logger.LogWarning(ex, "Unable to fetch OAuth client metadata document for {ClientId}: {Message}", clientId, ex.Message);
             return await CacheFailureAsync(failureCacheKey);
         }
-    }
-
-    private void LogUnableToFetchMetadata(Exception ex, string clientId)
-    {
-        logger.LogWarning(ex, "Unable to fetch OAuth client metadata document for {ClientId}.", clientId);
     }
 
     private async Task<OAuthClientMetadataDocument?> CacheFailureAsync(string failureCacheKey)
@@ -153,33 +147,6 @@ public sealed class OAuthClientMetadataService(HttpClient httpClient, OAuthServe
         memoryStream.Position = 0;
         return memoryStream;
     }
-
-
-    public static bool IsPublicAddress(IPAddress address)
-    {
-        if (address.IsIPv4MappedToIPv6)
-            address = address.MapToIPv4();
-
-        if (IPAddress.IsLoopback(address) || IPAddress.Any.Equals(address) || IPAddress.IPv6Any.Equals(address) || IPAddress.IPv6Loopback.Equals(address))
-            return false;
-
-        if (address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
-        {
-            byte[] bytes = address.GetAddressBytes();
-            return !address.IsIPv6LinkLocal && !address.IsIPv6SiteLocal && (bytes[0] & 0xfe) != 0xfc;
-        }
-
-        byte[] octets = address.GetAddressBytes();
-        return octets[0] != 0
-            && octets[0] != 10
-            && octets[0] != 127
-            && !(octets[0] == 169 && octets[1] == 254)
-            && !(octets[0] == 172 && octets[1] >= 16 && octets[1] <= 31)
-            && !(octets[0] == 100 && octets[1] >= 64 && octets[1] <= 127)
-            && !(octets[0] == 192 && octets[1] == 168)
-            && !(octets[0] == 198 && (octets[1] == 18 || octets[1] == 19));
-    }
-
     private static string GetCacheKey(string clientId)
     {
         return CachePrefix + GetCacheKeyHash(clientId);

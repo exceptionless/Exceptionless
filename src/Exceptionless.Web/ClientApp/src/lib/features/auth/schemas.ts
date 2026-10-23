@@ -1,7 +1,8 @@
-import { ChangePasswordModelSchema, LoginSchema as GeneratedLoginSchema, ResetPasswordModelSchema } from '$generated/schemas';
 import { email, type infer as Infer, object, string } from 'zod';
 
-export { type SignupFormData, SignupSchema } from '$generated/schemas';
+import { ChangePasswordModelSchema, LoginSchema as GeneratedLoginSchema, ResetPasswordModelSchema } from '#generated/schemas.ts';
+
+export { type SignupFormData, SignupSchema } from '#generated/schemas.ts';
 
 export const LoginSchema = GeneratedLoginSchema;
 export type LoginFormData = Infer<typeof GeneratedLoginSchema>;

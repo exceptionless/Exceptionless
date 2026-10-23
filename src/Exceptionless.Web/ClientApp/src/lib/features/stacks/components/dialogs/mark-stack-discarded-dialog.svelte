@@ -1,9 +1,10 @@
 <script lang="ts">
-    import Number from '$comp/formatters/number.svelte';
-    import * as AlertDialog from '$comp/ui/alert-dialog';
-    import { Button } from '$comp/ui/button';
-    import { getProblemMessage } from '$shared/validation';
     import { toast } from 'svelte-sonner';
+
+    import Number from '#comp/formatters/number.svelte';
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { getProblemMessage } from '#shared/validation.ts';
 
     interface Props {
         count?: number;

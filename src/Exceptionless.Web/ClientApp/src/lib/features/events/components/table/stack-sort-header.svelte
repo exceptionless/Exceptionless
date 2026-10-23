@@ -1,6 +1,7 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
     import ArrowDown from '@lucide/svelte/icons/arrow-down';
+
+    import { Button } from '#comp/ui/button/index.ts';
 
     interface Props {
         active: boolean;

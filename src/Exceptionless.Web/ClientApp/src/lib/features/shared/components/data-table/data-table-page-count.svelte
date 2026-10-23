@@ -5,7 +5,7 @@
 <script generics="TData extends RowData" lang="ts">
     import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
 
-    import PageNumber from '$comp/page-number.svelte';
+    import PageNumber from '#comp/page-number.svelte';
 
     interface Props {
         table: Table<StockFeatures, TData>;

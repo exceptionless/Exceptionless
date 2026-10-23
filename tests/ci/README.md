@@ -4,7 +4,9 @@ The normal build targets a roughly **10-minute critical path**. Track elapsed wo
 
 ## Execution
 
-- `.NET`: four isolated runners build the suite and discover tests through Microsoft Testing Platform's JSON discovery. `backend-shards.mjs` groups whole classes, then distributes the longest classes first using `backend-durations.json`. New classes are included automatically; stale timing entries cannot select or exclude tests. Each runner retains the existing six collection workers and coverage collection.
+- Run `npm run lint:scripts` from `src/Exceptionless.Web/ClientApp` after installing its dependencies. This reuses the ClientApp ESLint configuration and runs as part of its existing lint command.
+
+- `.NET`: four isolated runners build the suite and discover tests through Microsoft Testing Platform's JSON discovery. `backend-shards.js` groups whole classes, then distributes the longest classes first using `backend-durations.json`. New classes are included automatically; stale timing entries cannot select or exclude tests. Each runner retains the existing six collection workers and coverage collection.
 - CI tooling uses the project's Node.js runtime (Node 24 in CI), built-in modules, and `node:test`, with no additional packages. Backend summaries read xUnit's native CTRF JSON output; TRX reports remain available as artifacts.
 - Frontend CI runs `build/update-config.test.mjs` against the real configuration writer and container entrypoints. Process stubs check configuration failures, argument preservation, and app process replacement without starting containers. CSP input cases use fast unit tests, with a representative HTTP response-header test covering integration.
 - Browser: six isolated Aspire applications run Playwright's native `--shard=N/6` with `fullyParallel` enabled for sharding. Each runner uses **one worker** because scenarios can change the shared administrator's preferences. This splits large spec files without introducing concurrent mutations of that user. Shard IDs are included in generated data names.
@@ -13,6 +15,7 @@ The normal build targets a roughly **10-minute critical path**. Track elapsed wo
 - .NET coverage is merged as a union with ReportGenerator before publishing the existing coverage summary. Browser blob reports are merged into one HTML/JSON/JUnit report. Per-shard TRX, CTRF JSON, JUnit, failure traces/screenshots, and Aspire logs remain downloadable for 14 days.
 - E2E startup lets Aspire build its referenced applications once. The former Release solution build was unused by Aspire's Debug startup and also built the unused .NET test assembly.
 - Browser shards use GitHub's Ubuntu 24.04 image (with its installed browser libraries) and install only Playwright's headless Chromium shell. This avoids unrelated apt upgrades and font downloads that added several minutes to individual runners. Browser versions still come from the locked Playwright package; all layout/locale tests remain enabled.
+- Browser shards install ClientApp dependencies with `npm ci` before AppHost startup; `--ci-e2e` disables Aspire's second install. Local `--ci-e2e` runs need ClientApp dependencies installed first.
 - Backend fixtures request `--test-services`, starting only Elasticsearch. Their queues/cache are in memory and storage is scoped to local files. The general `--services-only` mode still starts all development services. This also prevents backend tests from replacing a live preview's shared Azurite container with different dynamic ports.
 - `--ci-e2e` uses temporary Redis and storage containers with allocated ports. This prevents concurrent local AppHosts from replacing shared containers or changing credentials/TLS configuration during a test run. Normal development retains its persistent containers and volumes.
 - Superseded PR runs are cancelled; push/tag runs are not interrupted by newer runs.
@@ -43,15 +46,15 @@ Example local commands from the repository root (PowerShell):
 
 ```powershell
 dotnet build Exceptionless.slnx --configuration Release
-node tests/ci/backend-shards.mjs run --index 1 --count 4 --output "$env:TEMP/api-shard-1" --coverage
-node --test tests/ci/shards.test.mjs
+node tests/ci/backend-shards.js run --index 1 --count 4 --output "$env:TEMP/api-shard-1" --coverage
+node --test tests/ci/shards.test.js
 ```
 
 Run local .NET shards **sequentially**: separate test processes on one host reuse test index scopes. Hosted shards are isolated machines. To validate or rebalance from downloaded artifacts:
 
 ```powershell
 gh run download <run-id> --pattern 'api-results-*' --dir "$env:TEMP/api-results"
-node tests/ci/backend-shards.mjs report "$env:TEMP/api-results" --count 4 --coverage --write-timings tests/ci/backend-durations.json
+node tests/ci/backend-shards.js report "$env:TEMP/api-results" --count 4 --coverage --write-timings tests/ci/backend-durations.json
 ```
 
 For a browser shard, start Aspire, discover and health-check its current local App URL, then from `src/Exceptionless.Web/ClientApp`:

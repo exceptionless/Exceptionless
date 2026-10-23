@@ -1,5 +1,9 @@
 appMode: Staging
 appScope: dev
+# Dedicated public-alb association subnet (ex-net-v6/ex-agc); update with gateway network changes.
+forwardedHeaders:
+  knownNetworks:
+    - 10.60.64.0/24
 app:
   image:
     repository: exceptionless/app-ci

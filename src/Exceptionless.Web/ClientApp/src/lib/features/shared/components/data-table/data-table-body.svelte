@@ -5,9 +5,10 @@
 <script generics="TData extends RowData" lang="ts">
     import type { Snippet } from 'svelte';
 
-    import { A } from '$comp/typography';
-    import * as Table from '$comp/ui/table';
     import { type Cell, FlexRender, type Header, type RowData, type StockFeatures, type Table as SvelteTable } from '@tanstack/svelte-table';
+
+    import { A } from '#comp/typography/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
 
     import { getDataTableColumnMeta, supportsColumnWrapping } from './column-meta';
     import DataTableColumnHeader from './data-table-column-header.svelte';

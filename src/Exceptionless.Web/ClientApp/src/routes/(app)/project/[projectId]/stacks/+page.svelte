@@ -1,17 +1,21 @@
 <script lang="ts">
-    import type { IFilter } from '$comp/faceted-filter';
-    import type { Stack } from '$features/stacks/models';
     import type { ProblemDetails } from '@foundatiofx/fetchclient';
 
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import * as DataTable from '$comp/data-table';
-    import DataTableViewOptions from '$comp/data-table/data-table-view-options.svelte';
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import RefreshButton from '$comp/refresh-button.svelte';
-    import { Muted } from '$comp/typography';
-    import { showBillingDialogOnUpgradeProblem } from '$features/billing';
-    import { StatusFilter, StringFilter, TagFilter } from '$features/events/components/filters';
+    import { createTable } from '@tanstack/svelte-table';
+    import { useEventListener, watch } from 'runed';
+    import { toast } from 'svelte-sonner';
+
+    import type { IFilter } from '#comp/faceted-filter/index.ts';
+    import type { Stack } from '#features/stacks/models.ts';
+
+    import DataTableViewOptions from '#comp/data-table/data-table-view-options.svelte';
+    import * as DataTable from '#comp/data-table/index.ts';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import RefreshButton from '#comp/refresh-button.svelte';
+    import { Muted } from '#comp/typography/index.ts';
+    import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
     import {
         buildFilterCacheKey,
         filterChanged,
@@ -19,23 +23,21 @@
         getFiltersFromCache,
         toFilter,
         updateFilterCache
-    } from '$features/events/components/filters/helpers.svelte';
-    import { organization } from '$features/organizations/context.svelte';
-    import { removeTableSelection } from '$features/shared/table.svelte';
-    import { type GetProjectStacksParams, getProjectStacksQuery } from '$features/stacks/api.svelte';
-    import StackFacetedFilterBuilder from '$features/stacks/components/filters/stack-faceted-filter-builder.svelte';
-    import StackDetailSheet from '$features/stacks/components/stack-detail-sheet.svelte';
-    import TableStacksBulkActionsDropdownMenu from '$features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
-    import { getTableOptions } from '$features/stacks/components/table/options.svelte';
-    import StacksDataTable from '$features/stacks/components/table/stacks-data-table.svelte';
-    import { StackStatus } from '$features/stacks/models';
-    import { describeStackFilter, isStackFilterSupported, splitSupportedStackFilters } from '$features/stacks/stack-filter-support';
-    import { ChangeType, type WebSocketMessageValue } from '$features/websockets/models';
-    import { DEFAULT_LIMIT } from '$shared/api/api.svelte';
-    import { createQueryParameters } from '$shared/query-params';
-    import { createTable } from '@tanstack/svelte-table';
-    import { useEventListener, watch } from 'runed';
-    import { toast } from 'svelte-sonner';
+    } from '#features/events/components/filters/helpers.svelte.ts';
+    import { StatusFilter, StringFilter, TagFilter } from '#features/events/components/filters/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { removeTableSelection } from '#features/shared/table.svelte.ts';
+    import { type GetProjectStacksParams, getProjectStacksQuery } from '#features/stacks/api.svelte.ts';
+    import StackFacetedFilterBuilder from '#features/stacks/components/filters/stack-faceted-filter-builder.svelte';
+    import StackDetailSheet from '#features/stacks/components/stack-detail-sheet.svelte';
+    import TableStacksBulkActionsDropdownMenu from '#features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte';
+    import { getTableOptions } from '#features/stacks/components/table/options.svelte.ts';
+    import StacksDataTable from '#features/stacks/components/table/stacks-data-table.svelte';
+    import { StackStatus } from '#features/stacks/models.ts';
+    import { describeStackFilter, isStackFilterSupported, splitSupportedStackFilters } from '#features/stacks/stack-filter-support.ts';
+    import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
+    import { DEFAULT_LIMIT } from '#shared/api/api.svelte.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     import { getEventsNavigationOptionsForFilter, redirectToEventsWithFilter } from '../../../redirect-to-events.svelte';
 

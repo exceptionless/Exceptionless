@@ -71,8 +71,6 @@ public class AuthEndpointTests : IntegrationTestsBase
     {
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = false;
-        _authOptions.FacebookId = "facebook-client-id";
-        _authOptions.FacebookSecret = "facebook-client-secret";
         _authOptions.GitHubId = "github-client-id";
         _authOptions.GitHubSecret = "github-client-secret";
         _authOptions.GoogleId = "google-client-id";
@@ -517,16 +515,19 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task FacebookAsync_WithConfiguredProvider_ReturnsToken()
+    public async Task FacebookAsync_RemovedProvider_ReturnsNotFound()
     {
-        // Arrange
-        const string code = "facebook-user";
+        // Arrange is handled by the configured authentication fixture.
 
         // Act
-        var result = await SendExternalLoginAsync("facebook", code);
+        var response = await SendRequestAsync(request => request
+            .Post()
+            .AppendPaths("auth", "facebook")
+            .Content(new ExternalAuthInfo { ClientId = "facebook-client-id", Code = "facebook-user", RedirectUri = "http://localhost" })
+            .StatusCodeShouldBeNotFound());
 
         // Assert
-        await AssertExternalLoginAsync(result, "facebook", code);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -556,16 +557,20 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task LiveAsync_WithConfiguredProvider_ReturnsToken()
+    public async Task MicrosoftAsync_WithLinkedIdentity_ReturnsToken()
     {
         // Arrange
-        const string code = "live-user";
+        const string code = "microsoft-user";
+        var user = new User { EmailAddress = TestOAuthProviderClient.GetEmailAddress(code), FullName = "Microsoft User" };
+        user.MarkEmailAddressVerified();
+        user.AddOAuthAccount("Microsoft", code, user.EmailAddress);
+        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
         // Act
-        var result = await SendExternalLoginAsync("live", code);
+        var result = await SendExternalLoginAsync("microsoft", code);
 
         // Assert
-        await AssertExternalLoginAsync(result, "windowslive", code);
+        await AssertExternalLoginAsync(result, "microsoft", code);
     }
 
     [Fact]
@@ -1039,6 +1044,46 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AuthenticateAsync_InactiveUserToken_ReturnsUnauthorized()
+    {
+        // Arrange
+        const string email = "inactive-token-user@exceptionless.test";
+        const string salt = "1234567890123456";
+
+        var user = new User
+        {
+            EmailAddress = email,
+            Password = TestConstants.UserPassword.ToSaltedHash(salt),
+            Salt = salt,
+            FullName = "Inactive Token User",
+            Roles = AuthorizationRoles.AllScopes
+        };
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
+
+        var login = await SendRequestAsAsync<TokenResult>(r => r
+            .Post()
+            .AppendPath("auth/login")
+            .Content(new Login { Email = email, Password = TestConstants.UserPassword })
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(login);
+        Assert.False(String.IsNullOrEmpty(login.Token));
+
+        var storedUser = await _userRepository.GetByEmailAddressAsync(email);
+        Assert.NotNull(storedUser);
+        await _userRepository.SaveAsync(storedUser with { IsActive = false }, o => o.ImmediateConsistency());
+
+        // Act
+        var response = await SendRequestAsync(r => r
+            .BearerToken(login.Token)
+            .AppendPath("users/me")
+            .StatusCodeShouldBeUnauthorized());
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task BasicAuthentication_PasswordContainingColons_ReturnsCurrentUser()
     {
         // Arrange
@@ -1284,6 +1329,39 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.NotNull(throttledUser);
         Assert.True(throttledUser.IsActive);
         Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangePassword_StoredOldTokenSurvivesCleanup_CannotAuthenticate()
+    {
+        // Arrange
+        const string newPassword = "ChangedPassword2$";
+        var login = await SendRequestAsAsync<TokenResult>(r => r.Post().AppendPath("auth/login")
+            .Content(new Login { Email = SampleDataService.TEST_USER_EMAIL, Password = SampleDataService.TEST_USER_PASSWORD })
+            .StatusCodeShouldBeOk());
+        Assert.NotNull(login);
+        var oldToken = await _tokenRepository.GetByIdAsync(login.Token, o => o.Cache(false));
+        Assert.NotNull(oldToken);
+        await SendRequestAsync(r => r.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeOk());
+
+        // Act
+        var changed = await SendRequestAsAsync<TokenResult>(r => r.Post().AppendPath("auth/change-password")
+            .BearerToken(login.Token)
+            .Content(new ChangePasswordModel { CurrentPassword = SampleDataService.TEST_USER_PASSWORD, Password = newPassword })
+            .StatusCodeShouldBeOk());
+        // Retain a record as a failed cleanup would, after warming the authentication cache.
+        await _tokenRepository.AddAsync(oldToken, o => o.ImmediateConsistency());
+
+        // Assert
+        Assert.NotNull(changed);
+        Assert.NotEqual(login.Token, changed.Token);
+        await SendRequestAsync(r => r.BearerToken(login.Token).AppendPath("users/me").StatusCodeShouldBeUnauthorized());
+        await SendRequestAsync(r => r.BearerToken(changed.Token).AppendPath("users/me").StatusCodeShouldBeOk());
+        await SendRequestAsync(r => r.BasicAuthorization("client", login.Token).AppendPath("users/me").StatusCodeShouldBeUnauthorized());
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        Assert.False(String.IsNullOrEmpty(user.AuthenticationVersion));
+        Assert.Equal(user.AuthenticationVersion, (await _tokenRepository.GetByIdAsync(changed.Token))!.AuthenticationVersion);
     }
 
     [Fact]
@@ -1922,14 +2000,14 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.False(token.IsSuspended);
     }
 
-    private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId)
+    private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId, bool isEmailVerified = true)
     {
         Assert.NotNull(result);
         Assert.False(String.IsNullOrEmpty(result.Token));
 
         var user = await _userRepository.GetByEmailAddressAsync(TestOAuthProviderClient.GetEmailAddress(providerUserId));
         Assert.NotNull(user);
-        Assert.True(user.IsEmailAddressVerified);
+        Assert.Equal(isEmailVerified, user.IsEmailAddressVerified);
         var account = Assert.Single(user.OAuthAccounts);
         Assert.Equal(providerName, account.Provider);
         Assert.Equal(providerUserId, account.ProviderUserId);
@@ -1955,8 +2033,6 @@ public class AuthEndpointTests : IntegrationTestsBase
     private sealed record AuthOptionsState(
         bool EnableAccountCreation,
         bool EnableActiveDirectoryAuth,
-        string? FacebookId,
-        string? FacebookSecret,
         string? GitHubId,
         string? GitHubSecret,
         string? GoogleId,
@@ -1970,8 +2046,6 @@ public class AuthEndpointTests : IntegrationTestsBase
             return new AuthOptionsState(
                 options.EnableAccountCreation,
                 options.EnableActiveDirectoryAuth,
-                options.FacebookId,
-                options.FacebookSecret,
                 options.GitHubId,
                 options.GitHubSecret,
                 options.GoogleId,
@@ -1984,8 +2058,6 @@ public class AuthEndpointTests : IntegrationTestsBase
         {
             options.EnableAccountCreation = EnableAccountCreation;
             options.EnableActiveDirectoryAuth = EnableActiveDirectoryAuth;
-            options.FacebookId = FacebookId;
-            options.FacebookSecret = FacebookSecret;
             options.GitHubId = GitHubId;
             options.GitHubSecret = GitHubSecret;
             options.GoogleId = GoogleId;

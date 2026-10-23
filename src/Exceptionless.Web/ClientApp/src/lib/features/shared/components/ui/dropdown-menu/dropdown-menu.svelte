@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { browser } from "$app/environment";
+	import { browser } from "$app/env";
 	import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
 	import { onDestroy } from "svelte";
-	import { INTERACTIVE_OVERLAY_OPENED_EVENT, updateOpenInteractiveOverlay } from "../overlay-events.js";
+	import { INTERACTIVE_OVERLAY_OPENED_EVENT, updateOpenInteractiveOverlay } from "../overlay-events.ts";
 
 	let { open = $bindable(false), ...restProps }: DropdownMenuPrimitive.RootProps = $props();
 	const overlayId = Symbol("dropdown-menu");

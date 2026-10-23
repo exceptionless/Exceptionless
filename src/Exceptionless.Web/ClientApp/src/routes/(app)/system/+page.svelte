@@ -5,7 +5,7 @@
 
     onMount(() => {
         goto(resolve('/(app)/system/overview'), {
-            replaceState: true
+            replace: true
         });
     });
 </script>

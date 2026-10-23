@@ -1,12 +1,14 @@
-import type { ViewToken } from '$features/tokens/models';
 import type { FetchClientResponse, ProblemDetails } from '@foundatiofx/fetchclient';
 import type { CreateQueryResult } from '@tanstack/svelte-query';
 
-import { getSharedTableOptions } from '$features/shared/table.svelte';
-import TokenActionsCell from '$features/tokens/components/table/token-actions-cell.svelte';
-import TokenIdCell from '$features/tokens/components/table/token-id-cell.svelte';
-import TokenScopesCell from '$features/tokens/components/table/token-scopes-cell.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { ViewToken } from '#features/tokens/models.ts';
+
+import { getSharedTableOptions } from '#features/shared/table.svelte.ts';
+import TokenActionsCell from '#features/tokens/components/table/token-actions-cell.svelte';
+import TokenIdCell from '#features/tokens/components/table/token-id-cell.svelte';
+import TokenScopesCell from '#features/tokens/components/table/token-scopes-cell.svelte';
 
 import type { GetProjectTokensParams } from '../../api.svelte';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatDateLabel, getDifferenceInSeconds, getRelativeTimeFormatUnit, getSetIntervalTime } from './dates';
+import { formatDateLabel, formatDateRangeLabel, getDifferenceInSeconds, getRelativeTimeFormatUnit, getSetIntervalTime } from './dates';
 
 describe('formatDateLabel', () => {
     it('preserves local date and relative-label behavior without a timezone override', () => {
@@ -63,6 +63,26 @@ const Time = {
     weeks: (n: number) => n * 60 * 60 * 24 * 7,
     years: (n: number) => n * 60 * 60 * 24 * 365.24
 };
+
+describe('formatDateRangeLabel', () => {
+    it('shows only dates for ranges covering whole days', () => {
+        // Arrange
+        const currentDate = new Date(2026, 9, 16, 12);
+
+        // Act
+        const multipleDays = formatDateRangeLabel(new Date(2026, 9, 12), new Date(2026, 9, 14, 23, 59, 59, 999), currentDate);
+        const singleDay = formatDateRangeLabel(new Date(2026, 9, 12), new Date(2026, 9, 12, 23, 59, 59, 999), currentDate);
+        const partialDay = formatDateRangeLabel(new Date(2026, 9, 12, 9), new Date(2026, 9, 14, 23, 59, 59, 999), currentDate);
+        const endsBeforeLastMinute = formatDateRangeLabel(new Date(2026, 9, 12), new Date(2026, 9, 14, 23, 59), currentDate);
+
+        // Assert
+        const formatDay = (day: number) => new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(new Date(2026, 9, day));
+        expect(multipleDays).toBe(`${formatDay(12)} – ${formatDay(14)}`);
+        expect(singleDay).toBe(formatDay(12));
+        expect(partialDay).toContain(' at ');
+        expect(endsBeforeLastMinute).toContain(' at ');
+    });
+});
 
 describe('getDifferenceInSeconds', () => {
     it('should calculate difference in seconds correctly', () => {

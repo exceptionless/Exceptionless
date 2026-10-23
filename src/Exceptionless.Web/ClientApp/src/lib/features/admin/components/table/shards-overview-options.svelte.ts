@@ -1,7 +1,8 @@
-import type { ShardMetric } from '$features/admin/models';
-
-import { getSharedTableOptions, type TableMemoryPagingParameters } from '$features/shared/table.svelte';
 import { type ColumnDef, renderComponent, type StockFeatures } from '@tanstack/svelte-table';
+
+import type { ShardMetric } from '#features/admin/models.ts';
+
+import { getSharedTableOptions, type TableMemoryPagingParameters } from '#features/shared/table.svelte.ts';
 
 import ShardMetricCell from './shard-metric-cell.svelte';
 import ShardValueCell from './shard-value-cell.svelte';

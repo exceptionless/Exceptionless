@@ -5,10 +5,11 @@
 <script generics="TData extends RowData" lang="ts">
     import type { RowData, StockFeatures, Table } from '@tanstack/svelte-table';
 
-    import { Button } from '$comp/ui/button';
     import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
     import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
     import ChevronsLeftIcon from '@lucide/svelte/icons/chevrons-left';
+
+    import { Button } from '#comp/ui/button/index.ts';
 
     interface Props {
         table: Table<StockFeatures, TData>;
