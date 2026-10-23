@@ -1,6 +1,7 @@
 import type { RouteId } from '$app/types';
-import type { AssistantAccess } from '$features/assistant/models';
-import type { ViewProject } from '$features/projects/models';
+
+import type { AssistantAccess } from '#features/assistant/models.ts';
+import type { ViewProject } from '#features/projects/models.ts';
 export const PRODUCT_TOUR_CHECKPOINTS = {
     'app-overview': ['navigation', 'events', 'filters', 'saved-views', 'exie', 'command-search'],
     'event-investigate': ['choose-error', 'stack-summary', 'tab-overview', 'filter-stack-events'],

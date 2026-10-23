@@ -1,9 +1,10 @@
 <script lang="ts">
-    import { Button } from '$comp/ui/button';
-    import * as ContextMenu from '$comp/ui/context-menu';
     import Moon from '@lucide/svelte/icons/moon';
     import Sun from '@lucide/svelte/icons/sun';
     import { setMode, toggleMode, userPrefersMode } from 'mode-watcher';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as ContextMenu from '#comp/ui/context-menu/index.ts';
 
     function onUserThemePreferenceChange(mode?: string) {
         setMode(mode as 'dark' | 'light' | 'system');

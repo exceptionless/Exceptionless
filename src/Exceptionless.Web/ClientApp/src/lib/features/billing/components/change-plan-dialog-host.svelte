@@ -1,9 +1,9 @@
 <script lang="ts">
-    import ErrorMessage from '$comp/error-message.svelte';
-    import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
-    import { Spinner } from '$comp/ui/spinner';
-    import { getOrganizationQuery } from '$features/organizations/api.svelte';
+    import ErrorMessage from '#comp/error-message.svelte';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
+    import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
 
     import { changePlanDialog } from '../change-plan.svelte';
     import ChangePlanDialog from './change-plan-dialog.svelte';

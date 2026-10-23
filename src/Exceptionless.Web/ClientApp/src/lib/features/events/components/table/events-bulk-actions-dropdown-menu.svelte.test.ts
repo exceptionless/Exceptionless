@@ -5,7 +5,7 @@ const mutateAsync = vi.hoisted(() => vi.fn());
 const deleteEvent = vi.hoisted(() => vi.fn(() => ({ mutateAsync })));
 const toast = vi.hoisted(() => ({ success: vi.fn() }));
 
-vi.mock('$features/events/api.svelte', () => ({ deleteEvent }));
+vi.mock('#features/events/api.svelte.ts', () => ({ deleteEvent }));
 vi.mock('svelte-sonner', () => ({ toast }));
 
 import EventsBulkActionsDropdownMenu from './events-bulk-actions-dropdown-menu.svelte';

@@ -1,11 +1,12 @@
 <script lang="ts">
-    import { Muted } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import * as Dialog from '$comp/ui/dialog';
-    import { Input } from '$comp/ui/input';
-    import { Label } from '$comp/ui/label';
-    import { Switch } from '$comp/ui/switch';
     import { untrack } from 'svelte';
+
+    import { Muted } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
+    import { Input } from '#comp/ui/input/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
+    import { Switch } from '#comp/ui/switch/index.ts';
 
     import type { SavedView } from '../models';
 

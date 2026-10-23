@@ -1,11 +1,11 @@
 <script lang="ts">
-    import type { FacetedFilterProps } from '$comp/faceted-filter';
+    import type { FacetedFilterProps } from '#comp/faceted-filter/index.ts';
 
-    import * as FacetedFilter from '$comp/faceted-filter';
-    import { Button } from '$comp/ui/button';
-    import { getTagSuggestionsQuery } from '$features/events/api.svelte';
-    import { TAG_SUGGESTION_LIMIT, tagSuggestions } from '$features/events/tag-suggestions';
-    import { organization } from '$features/organizations/context.svelte';
+    import * as FacetedFilter from '#comp/faceted-filter/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { getTagSuggestionsQuery } from '#features/events/api.svelte.ts';
+    import { TAG_SUGGESTION_LIMIT, tagSuggestions } from '#features/events/tag-suggestions.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
 
     import { TagFilter } from './models.svelte';
 

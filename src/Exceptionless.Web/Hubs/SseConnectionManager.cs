@@ -213,15 +213,15 @@ public sealed class SseConnectionManager : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException ex)
         {
-            _logger.LogDebug(ex, "SSE connection cleanup canceled for {ConnectionId}", connectionId);
+            _logger.LogDebug(ex, "SSE connection cleanup canceled for {ConnectionId}: {Message}", connectionId, ex.Message);
         }
         catch (ObjectDisposedException ex)
         {
-            _logger.LogDebug(ex, "SSE connection was already disposed during cleanup for {ConnectionId}", connectionId);
+            _logger.LogDebug(ex, "SSE connection was already disposed during cleanup for {ConnectionId}: {Message}", connectionId, ex.Message);
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogDebug(ex, "SSE connection cleanup failed for {ConnectionId}", connectionId);
+            _logger.LogDebug(ex, "SSE connection cleanup failed for {ConnectionId}: {Message}", connectionId, ex.Message);
         }
     }
 }

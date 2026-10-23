@@ -1,10 +1,11 @@
 <script lang="ts">
-    import type { ErrorInfo, SourceMapFailureInfo } from '$features/events/models/event-data';
-
     import { resolve } from '$app/paths';
-    import { Button } from '$comp/ui/button';
-    import * as Popover from '$comp/ui/popover';
     import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+
+    import type { ErrorInfo, SourceMapFailureInfo } from '#features/events/models/event-data.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as Popover from '#comp/ui/popover/index.ts';
 
     interface Props {
         error: ErrorInfo;

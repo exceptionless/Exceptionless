@@ -1,4 +1,4 @@
-import { CachedPersistedState } from '$features/shared/utils/cached-persisted-state.svelte';
+import { CachedPersistedState } from '#features/shared/utils/cached-persisted-state.svelte.ts';
 
 const authSerializer = {
     deserialize: (value: null | string): null | string => {

@@ -1,7 +1,14 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { parse } from 'devalue';
 
 export function escapeRegExp(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Reads the `page.state` that SvelteKit stored with the current history entry. */
+export async function getHistoryPageState(page: Page): Promise<Record<string, unknown> | undefined> {
+    const serialized = await page.evaluate(() => (window.history.state as null | { 'sveltekit:metadata'?: { state?: string } })?.['sveltekit:metadata']?.state);
+    return serialized ? (parse(serialized) as Record<string, unknown>) : undefined;
 }
 
 export function getIdFromUrl(page: Page, pattern: RegExp): string {
@@ -63,7 +70,7 @@ export async function navigateToSidebarView(page: Page, parentName: string, chil
 }
 
 export async function selectProjectType(page: Page, optionName: string): Promise<void> {
-    await page.getByRole('button', { name: /Please select a project type|Command Line:/ }).click();
+    await page.getByRole('combobox', { exact: true, name: 'Project type' }).click();
     const option = page.getByRole('option', { name: optionName });
 
     try {

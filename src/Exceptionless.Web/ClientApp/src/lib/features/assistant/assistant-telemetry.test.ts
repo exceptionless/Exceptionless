@@ -4,7 +4,7 @@ const { submitFeatureUsage, submitLog } = vi.hoisted(() => ({
     submitFeatureUsage: vi.fn(() => Promise.resolve()),
     submitLog: vi.fn(() => Promise.resolve())
 }));
-vi.mock('$features/auth/exceptionless-session', () => ({ submitFeatureUsage, submitLog }));
+vi.mock('#features/auth/exceptionless-session.ts', () => ({ submitFeatureUsage, submitLog }));
 
 import { AssistantTurnTelemetry, trackAssistantEvent } from './assistant-telemetry';
 

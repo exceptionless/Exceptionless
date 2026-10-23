@@ -1,4 +1,4 @@
-import type { NewSavedView, SavedViewColumnSettings, UpdateSavedView, UpdateSavedViewDefault, UpdateSavedViewOrder, ViewSavedView } from '$generated/api';
+import type { NewSavedView, SavedViewColumnSettings, UpdateSavedView, UpdateSavedViewDefault, UpdateSavedViewOrder, ViewSavedView } from '#generated/api.ts';
 
 export type SavedView = ViewSavedView;
 

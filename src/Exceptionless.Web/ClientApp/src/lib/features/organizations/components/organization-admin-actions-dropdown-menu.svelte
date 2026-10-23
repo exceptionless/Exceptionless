@@ -1,22 +1,23 @@
 <script lang="ts">
-    import type { PostSetBonusOrganizationParams, PostSuspendOrganizationParams } from '$features/organizations/api.svelte';
-    import type { ViewOrganization } from '$features/organizations/models';
-
-    import { Button } from '$comp/ui/button';
-    import * as DropdownMenu from '$comp/ui/dropdown-menu';
-    import { runMaintenanceJobMutation } from '$features/admin/api.svelte';
-    import RunMaintenanceJobDialog from '$features/admin/components/dialogs/run-maintenance-job-dialog.svelte';
-    import { maintenanceActions } from '$features/admin/models';
-    import { deleteSuspendOrganization, postSetBonusOrganization, postSuspendOrganization } from '$features/organizations/api.svelte';
-    import SetEventBonusDialog from '$features/organizations/components/dialogs/set-event-bonus-dialog.svelte';
-    import SuspendOrganizationDialog from '$features/organizations/components/dialogs/suspend-organization-dialog.svelte';
-    import { getProblemMessage } from '$features/shared/validation';
     import Award from '@lucide/svelte/icons/award';
     import Pause from '@lucide/svelte/icons/pause';
     import Play from '@lucide/svelte/icons/play';
     import RefreshCw from '@lucide/svelte/icons/refresh-cw';
     import Shield from '@lucide/svelte/icons/shield';
     import { toast } from 'svelte-sonner';
+
+    import type { PostSetBonusOrganizationParams, PostSuspendOrganizationParams } from '#features/organizations/api.svelte.ts';
+    import type { ViewOrganization } from '#features/organizations/models.ts';
+
+    import { Button } from '#comp/ui/button/index.ts';
+    import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import { runMaintenanceJobMutation } from '#features/admin/api.svelte.ts';
+    import RunMaintenanceJobDialog from '#features/admin/components/dialogs/run-maintenance-job-dialog.svelte';
+    import { maintenanceActions } from '#features/admin/models.ts';
+    import { deleteSuspendOrganization, postSetBonusOrganization, postSuspendOrganization } from '#features/organizations/api.svelte.ts';
+    import SetEventBonusDialog from '#features/organizations/components/dialogs/set-event-bonus-dialog.svelte';
+    import SuspendOrganizationDialog from '#features/organizations/components/dialogs/suspend-organization-dialog.svelte';
+    import { getProblemMessage } from '#features/shared/validation.ts';
 
     interface Props {
         organization: undefined | ViewOrganization;

@@ -49,7 +49,7 @@ public sealed class PushConnectionLease : IAsyncDisposable
         catch (ConnectionLeaseStoreException ex)
         {
             // The lease expires without cleanup; a release failure must not mask request teardown.
-            _logger.LogWarning(ex, "Unable to release push lease {ConnectionId}", _connectionId);
+            _logger.LogWarning(ex, "Unable to release push lease {ConnectionId}: {Message}", _connectionId, ex.Message);
         }
         finally
         {
@@ -81,7 +81,7 @@ public sealed class PushConnectionLease : IAsyncDisposable
                 }
                 catch (ConnectionLeaseStoreException ex)
                 {
-                    _logger.LogWarning(ex, "Unable to renew push lease {ConnectionId}", _connectionId);
+                    _logger.LogWarning(ex, "Unable to renew push lease {ConnectionId}: {Message}", _connectionId, ex.Message);
                     if (_timeProvider.GetUtcNow() - lastSuccessfulRenewal >= LeaseDuration)
                     {
                         await _leaseLost.CancelAsync().ConfigureAwait(false);

@@ -9,11 +9,11 @@ import EventsOverview from './events-overview.svelte';
 const mocks = vi.hoisted(() => ({ getEventWithNavigationQuery: vi.fn() }));
 
 vi.mock('$env/dynamic/public', () => ({ env: {} }));
-vi.mock('$features/events/api.svelte', () => ({ getEventWithNavigationQuery: mocks.getEventWithNavigationQuery }));
-vi.mock('$features/projects/api.svelte', () => ({ getProjectQuery: () => ({ isPending: false }), updateProject: () => ({}) }));
-vi.mock('$features/organizations/api.svelte', () => ({ getOrganizationQuery: () => ({ isSuccess: true }) }));
-vi.mock('$comp/formatters/date-time.svelte', () => ({ default: () => ({}) }));
-vi.mock('$comp/formatters/time-ago.svelte', () => ({ default: () => ({}) }));
+vi.mock('#features/events/api.svelte.ts', () => ({ getEventWithNavigationQuery: mocks.getEventWithNavigationQuery }));
+vi.mock('#features/projects/api.svelte.ts', () => ({ getProjectQuery: () => ({ isPending: false }), updateProject: () => ({}) }));
+vi.mock('#features/organizations/api.svelte.ts', () => ({ getOrganizationQuery: () => ({ isSuccess: true }) }));
+vi.mock('#comp/formatters/date-time.svelte', () => ({ default: () => ({}) }));
+vi.mock('#comp/formatters/time-ago.svelte', () => ({ default: () => ({}) }));
 vi.mock('./tours/investigation-detail.svelte', () => ({ default: () => ({}) }));
 vi.mock('./views/overview.svelte', () => ({ default: () => ({}) }));
 

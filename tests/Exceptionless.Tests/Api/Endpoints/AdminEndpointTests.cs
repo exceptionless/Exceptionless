@@ -1124,12 +1124,24 @@ public class AdminEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task EchoRequest_AsGlobalAdmin_ReturnsIpAddress()
+    public async Task EchoRequest_AsGlobalAdmin_ReturnsForwardedIpAddressAndScheme()
     {
-        return SendRequestAsync(r => r
+        // Arrange
+        const string clientIpAddress = "203.0.113.42";
+        const string scheme = "https";
+
+        // Act
+        var response = await SendRequestAsAsync<JsonElement>(r => r
             .AsGlobalAdminUser()
             .AppendPaths("admin", "echo")
+            .Header("X-Forwarded-For", clientIpAddress)
+            .Header("X-Forwarded-Proto", scheme)
             .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.Equal(clientIpAddress, response.GetProperty("ip_address").GetString());
+        Assert.Equal(scheme, response.GetProperty("scheme").GetString());
+        Assert.Equal(JsonValueKind.Object, response.GetProperty("headers").ValueKind);
     }
 
     [Fact]

@@ -54,7 +54,7 @@ public class SseMiddleware
         }
         catch (ConnectionLeaseStoreException ex)
         {
-            _logger.LogError(ex, "Push lease store is unavailable");
+            _logger.LogError(ex, "Push lease store is unavailable: {Message}", ex.Message);
             context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
             return;
         }
@@ -101,7 +101,7 @@ public class SseMiddleware
             }
             catch (OperationCanceledException ex)
             {
-                _logger.LogDebug(ex, "SSE request canceled for {ConnectionId}", connectionId);
+                _logger.LogDebug(ex, "SSE request canceled for {ConnectionId}: {Message}", connectionId, ex.Message);
             }
             finally
             {

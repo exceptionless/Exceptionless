@@ -55,7 +55,7 @@ public sealed class WebSocketPushMiddleware
         }
         catch (ConnectionLeaseStoreException ex)
         {
-            _logger.LogError(ex, "Push lease store is unavailable");
+            _logger.LogError(ex, "Push lease store is unavailable: {Message}", ex.Message);
             context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
             return;
         }
@@ -87,11 +87,11 @@ public sealed class WebSocketPushMiddleware
             }
             catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
             {
-                _logger.LogDebug(ex, "WebSocket push closed prematurely for {ConnectionId}", connectionId);
+                _logger.LogDebug(ex, "WebSocket push closed prematurely for {ConnectionId}: {Message}", connectionId, ex.Message);
             }
             catch (OperationCanceledException ex)
             {
-                _logger.LogDebug(ex, "WebSocket push canceled for {ConnectionId}", connectionId);
+                _logger.LogDebug(ex, "WebSocket push canceled for {ConnectionId}: {Message}", connectionId, ex.Message);
             }
             finally
             {

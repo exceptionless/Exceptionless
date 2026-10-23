@@ -1,11 +1,12 @@
 using System.Text;
 using Exceptionless.Web.Extensions;
+using Foundatio.Xunit;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 
 namespace Exceptionless.Tests.Extensions;
 
-public sealed class HttpExtensionsTests
+public sealed class HttpExtensionsTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
     [Theory]
     [InlineData(null)]
@@ -31,6 +32,24 @@ public sealed class HttpExtensionsTests
 
         // Assert
         Assert.Null(credentials);
+    }
+
+    [Theory]
+    [InlineData("192.0.2.1", "192.0.2.1")]
+    [InlineData("::ffff:192.0.2.1", "192.0.2.1")]
+    [InlineData("2001:db8::1", "2001:db8::1")]
+    [InlineData(null, null)]
+    public void GetClientIpAddress_Address_NormalizesMappedIpv4(string? value, string? expected)
+    {
+        // Arrange
+        var request = new DefaultHttpContext().Request;
+        request.HttpContext.Connection.RemoteIpAddress = value is null ? null : System.Net.IPAddress.Parse(value);
+
+        // Act
+        string? address = request.GetClientIpAddress();
+
+        // Assert
+        Assert.Equal(expected, address);
     }
 
     [Theory]

@@ -19,9 +19,10 @@ test('configured HTTPS preserves incoming links before starting HTTP API request
     await page.route(`${httpOrigin}/**`, async (route) => {
         const url = new URL(route.request().url());
         const response = await route.fetch({ url: new URL(url.pathname + url.search, e2eApi.environment.appUrl).href });
-        if (url.pathname.endsWith('virtual:env/dynamic/public')) {
+        // The dev server's `$app/env/public` module exports values read from `__sveltekit_dev.env`.
+        if (url.pathname.endsWith('/generated/dev/env/public/client.js')) {
             sslFlagInjected = true;
-            await route.fulfill({ body: `${await response.text()}\nenv.PUBLIC_ENABLE_SSL = 'true';`, response });
+            await route.fulfill({ body: `globalThis.__sveltekit_dev.env.PUBLIC_ENABLE_SSL = 'true';\n${await response.text()}`, response });
         } else {
             await route.fulfill({ response });
         }
@@ -125,4 +126,7 @@ test('the application sends API requests and push connections to its configured 
     await expect.poll(() => pushConnections.length).toBeGreaterThan(0);
     await expect.poll(() => telemetryRequests).toContain('/api/v2/projects/config');
     expect(sameOriginApiRequests).toEqual([]);
+
+    // Background queries can still be forwarding through the API route when the assertions finish.
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
 });

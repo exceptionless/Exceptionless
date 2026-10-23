@@ -17,7 +17,7 @@ Keep feature behavior in `src/lib/features/<feature>/`: API operations in `api.s
 
 ## Local UI conventions
 
-- Reuse `$comp`, `$shared`, and `$lib` helpers. In particular, use `createQueryParameters` for route query binding.
+- Reuse `#comp`, `#shared`, and `#lib` helpers. In particular, use `createQueryParameters` for route query binding.
 - Use shared formatter components in `src/lib/features/shared/components/formatters/` for dates, relative time, duration, bytes, numbers, currency, percentages, booleans, and date math.
 - Match the existing dense, restrained operational UI and its theme tokens.
 - Use `href` for ordinary navigation; use action handlers when work must finish before navigating.
@@ -26,8 +26,10 @@ Keep feature behavior in `src/lib/features/<feature>/`: API operations in `api.s
 
 ## Svelte and TypeScript details
 
-- Use `options.ts` for shared option sets within a feature. Use `$features` for feature imports and `$generated` for generated contracts; extend generated types in feature-owned files.
+- Use `options.ts` for shared option sets within a feature. Use `#features` for feature imports and `#generated` for generated contracts; extend generated types in feature-owned files.
 - Prefer named imports; use namespace imports for composite components such as `Dialog`, `DropdownMenu`, `Field`, and `Card`.
+- The `#` aliases are subpath imports declared in `package.json`. Name the file on disk in each specifier: `#lib/utils.ts`, `#features/auth/index.svelte.ts`, `#comp/ui/button/index.ts` for a barrel, or `#comp/logo.svelte` for a component.
+- For shallow routing, write history through `updateShallowHistory` in `#shared/history-state.ts` and read the address-bar URL with `getVisibleUrl()` from `#features/navigation/visible-url.ts`; `page.url` keeps the rendered page's URL. Navigation hooks that should ignore shallow routing start with `if (shallow && type === 'goto') return;`.
 - Keep files and directories kebab-case. Follow the app's ESLint rules for braces and statement formatting.
 - Avoid `any`; use generated types, explicit interfaces, `unknown`, and type guards. Spell out identifiers such as `organization` and `filter`.
 - Await asynchronous work and handle failures at the appropriate local boundary. Do not let rejected promises bypass error UI or mark an operation complete before its required work finishes.

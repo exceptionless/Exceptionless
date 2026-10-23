@@ -4,13 +4,9 @@
 </script>
 
 <script lang="ts">
-    import type { ViewProject } from '$features/projects/models';
     import type { Component } from 'svelte';
 
     import { resolve } from '$app/paths';
-    import * as Command from '$comp/ui/command';
-    import { organization } from '$features/organizations/context.svelte';
-    import { generateSampleData, getOrganizationProjectsQuery } from '$features/projects/api.svelte';
     import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
     import ArrowLeft from '@lucide/svelte/icons/arrow-left';
     import Bell from '@lucide/svelte/icons/bell';
@@ -23,6 +19,12 @@
     import Stacks from '@lucide/svelte/icons/layers';
     import Integration from '@lucide/svelte/icons/plug-2';
     import { toast } from 'svelte-sonner';
+
+    import type { ViewProject } from '#features/projects/models.ts';
+
+    import * as Command from '#comp/ui/command/index.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
+    import { generateSampleData, getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
 
     type ProjectAction = {
         icon: Component;

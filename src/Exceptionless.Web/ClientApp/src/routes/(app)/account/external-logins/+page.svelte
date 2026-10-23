@@ -1,27 +1,25 @@
 <script lang="ts">
-    import FacebookIcon from '$comp/icons/FacebookIcon.svelte';
-    import GitHubIcon from '$comp/icons/GitHubIcon.svelte';
-    import GoogleIcon from '$comp/icons/GoogleIcon.svelte';
-    import MicrosoftIcon from '$comp/icons/MicrosoftIcon.svelte';
-    import { H4, Muted, P } from '$comp/typography';
-    import { Button } from '$comp/ui/button';
-    import { Separator } from '$comp/ui/separator';
-    import * as Table from '$comp/ui/table';
-    import { unlinkOAuthAccount } from '$features/auth/api.svelte';
+    import X from '@lucide/svelte/icons/x';
+    import { toast } from 'svelte-sonner';
+
+    import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
+    import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
+    import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
+    import { H4, Muted, P } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Separator } from '#comp/ui/separator/index.ts';
+    import * as Table from '#comp/ui/table/index.ts';
+    import { unlinkOAuthAccount } from '#features/auth/api.svelte.ts';
     import {
         enableOAuthLogin,
-        facebookClientId,
-        facebookLogin,
         gitHubClientId,
         githubLogin,
         googleClientId,
         googleLogin,
-        liveLogin,
-        microsoftClientId
-    } from '$features/auth/index.svelte';
-    import { getMeQuery } from '$features/users/api.svelte';
-    import X from '@lucide/svelte/icons/x';
-    import { toast } from 'svelte-sonner';
+        microsoftClientId,
+        microsoftLogin
+    } from '#features/auth/index.svelte.ts';
+    import { getMeQuery } from '#features/users/api.svelte.ts';
 
     let toastId = $state<number | string>();
     const meQuery = getMeQuery();
@@ -43,7 +41,7 @@
 
     const oauthAccounts = $derived(meQuery.data?.o_auth_accounts ?? []);
     const hasLocalAccount = $derived(meQuery.data?.has_local_account ?? false);
-    const canUnlinkAccount = $derived(hasLocalAccount || oauthAccounts.length > 1);
+    const activeOAuthAccounts = $derived(oauthAccounts.filter((account) => !['facebook', 'windowslive'].includes(account.provider.toLowerCase())));
 </script>
 
 <div class="space-y-6">
@@ -57,18 +55,13 @@
             <H4>Add an external login</H4>
             <div class="mt-2 flex flex-wrap gap-2">
                 {#if microsoftClientId}
-                    <Button aria-label="Link Microsoft account" onclick={() => liveLogin()} variant="outline">
+                    <Button aria-label="Link Microsoft account" onclick={() => microsoftLogin()} variant="outline">
                         <MicrosoftIcon class="size-4" /> Microsoft
                     </Button>
                 {/if}
                 {#if googleClientId}
                     <Button aria-label="Link Google account" onclick={() => googleLogin()} variant="outline">
                         <GoogleIcon class="size-4" /> Google
-                    </Button>
-                {/if}
-                {#if facebookClientId}
-                    <Button aria-label="Link Facebook account" onclick={() => facebookLogin()} variant="outline">
-                        <FacebookIcon class="size-4" /> Facebook
                     </Button>
                 {/if}
                 {#if gitHubClientId}
@@ -91,6 +84,7 @@
                     </Table.Header>
                     <Table.Body>
                         {#each oauthAccounts as account (account.provider_user_id)}
+                            {@const canUnlinkAccount = hasLocalAccount || activeOAuthAccounts.length > 1 || !activeOAuthAccounts.includes(account)}
                             <Table.Row>
                                 <Table.Cell class="capitalize">{account.provider} ({account.username || account.provider_user_id})</Table.Cell>
                                 <Table.Cell class="text-right">

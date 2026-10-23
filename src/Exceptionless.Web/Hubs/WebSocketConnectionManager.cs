@@ -132,15 +132,15 @@ public class WebSocketConnectionManager : IDisposable
         }
         catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
         {
-            _logger.LogDebug(ex, "WebSocket closed prematurely for {ConnectionId}", connectionId);
+            _logger.LogDebug(ex, "WebSocket closed prematurely for {ConnectionId}: {Message}", connectionId, ex.Message);
         }
         catch (ObjectDisposedException ex)
         {
-            _logger.LogDebug(ex, "WebSocket was already disposed for {ConnectionId}", connectionId);
+            _logger.LogDebug(ex, "WebSocket was already disposed for {ConnectionId}: {Message}", connectionId, ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Error closing websocket {ConnectionId}", connectionId);
+            _logger.LogDebug(ex, "Error closing websocket {ConnectionId}: {Message}", connectionId, ex.Message);
         }
         finally
         {
@@ -255,7 +255,7 @@ public class WebSocketConnectionManager : IDisposable
         }
         catch (WebSocketException ex)
         {
-            _logger.LogDebug(ex, "Error sending websocket {Operation} for {ConnectionId}", operation, connectionId);
+            _logger.LogDebug(ex, "Error sending websocket {Operation} for {ConnectionId}: {Message}", operation, connectionId, ex.Message);
         }
         finally
         {
@@ -277,19 +277,19 @@ public class WebSocketConnectionManager : IDisposable
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}", connectionId);
+            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}: {Message}", connectionId, ex.Message);
         }
         catch (OperationCanceledException ex)
         {
-            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}", connectionId);
+            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}: {Message}", connectionId, ex.Message);
         }
         catch (NotSupportedException ex)
         {
-            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}", connectionId);
+            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}: {Message}", connectionId, ex.Message);
         }
         catch (EncoderFallbackException ex)
         {
-            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}", connectionId);
+            _logger.LogDebug(ex, "Error sending websocket message for {ConnectionId}: {Message}", connectionId, ex.Message);
         }
 
         return Task.CompletedTask;
@@ -313,7 +313,7 @@ public class WebSocketConnectionManager : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Error aborting websocket {Operation} for {ConnectionId}", operation, connectionId);
+            _logger.LogDebug(ex, "Error aborting websocket {Operation} for {ConnectionId}: {Message}", operation, connectionId, ex.Message);
         }
     }
 

@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('$features/projects/api.svelte', () => ({
+vi.mock('#features/projects/api.svelte.ts', () => ({
     deleteProjectConfig: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() })),
     getProjectConfig: vi.fn(() => ({ data: { settings: {} }, isSuccess: true })),
     postProjectConfig: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() }))

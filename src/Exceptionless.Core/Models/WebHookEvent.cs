@@ -14,6 +14,7 @@ public record WebHookEvent
     public DateTimeOffset? OccurrenceDate { get; init; }
     public TagSet? Tags { get; init; }
     public string? Type { get; init; }
+    public string? Environment { get; init; }
     public string? Source { get; init; }
     public string? Message { get; init; }
     public string ProjectId { get; init; } = null!;

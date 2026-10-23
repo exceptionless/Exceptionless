@@ -25,6 +25,30 @@ Content-Type: application/json
 GET {{apiUrl}}/events?limit=10&sort=-date
 Authorization: Bearer {{token}}
 
+### Deployment environment (available on all plans)
+GET {{apiUrl}}/events?filter=environment:production&mode=summary
+Authorization: Bearer {{token}}
+
+### Environment names for this project
+GET {{apiUrl}}/projects/{{projectId}}/events/count?aggregations=terms:(environment~100)
+Authorization: Bearer {{token}}
+
+### Historical and unspecified environments
+GET {{apiUrl}}/events?filter=_missing_:environment
+Authorization: Bearer {{token}}
+
+### Submit a staging event (preserves casing; same stack across environments)
+POST {{apiUrl}}/events
+Authorization: Bearer {{clientToken}}
+Content-Type: application/json
+
+{
+  "type": "log",
+  "source": "environment-example",
+  "message": "Deployment complete",
+  "environment": "Staging"
+}
+
 ###
 @eventId = {{allEvents.response.body.$[0].id}}
 
@@ -62,6 +86,9 @@ Content-Type: application/json
     }
   }
 }
+
+### Submit a deployment environment through GET
+GET {{apiUrl}}/events/submit?access_token={{clientToken}}&environment=Production&message=Deployment+complete
 
 ### Add user feedback to the submitted event
 POST {{apiUrl}}/events/by-ref/{{referenceId}}/user-description?access_token={{clientToken}}

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import type { ParameterInfo, StackFrameInfo } from '$features/events/models/event-data';
+    import type { ParameterInfo, StackFrameInfo } from '#features/events/models/event-data.ts';
 
     interface Props {
         frame: StackFrameInfo;

@@ -7,15 +7,6 @@
 <script generics="TData extends RowData" lang="ts">
     import type { StockFeatures, Table } from '@tanstack/svelte-table';
 
-    import { Badge } from '$comp/ui/badge';
-    import { Button } from '$comp/ui/button';
-    import { Checkbox } from '$comp/ui/checkbox';
-    import * as Dialog from '$comp/ui/dialog';
-    import * as InputGroup from '$comp/ui/input-group';
-    import { Label } from '$comp/ui/label';
-    import * as RadioGroup from '$comp/ui/radio-group';
-    import { Separator } from '$comp/ui/separator';
-    import { supportsColumnWrapping } from '$features/shared/components/data-table/column-meta';
     import ChevronDown from '@lucide/svelte/icons/chevron-down';
     import ChevronUp from '@lucide/svelte/icons/chevron-up';
     import GripVertical from '@lucide/svelte/icons/grip-vertical';
@@ -23,6 +14,16 @@
     import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
     import Search from '@lucide/svelte/icons/search';
     import X from '@lucide/svelte/icons/x';
+
+    import { Badge } from '#comp/ui/badge/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
+    import { Checkbox } from '#comp/ui/checkbox/index.ts';
+    import * as Dialog from '#comp/ui/dialog/index.ts';
+    import * as InputGroup from '#comp/ui/input-group/index.ts';
+    import { Label } from '#comp/ui/label/index.ts';
+    import * as RadioGroup from '#comp/ui/radio-group/index.ts';
+    import { Separator } from '#comp/ui/separator/index.ts';
+    import { supportsColumnWrapping } from '#features/shared/components/data-table/column-meta.ts';
 
     import type { AutoFillColumnSelection, WrappedColumnIds } from '../column-settings';
 

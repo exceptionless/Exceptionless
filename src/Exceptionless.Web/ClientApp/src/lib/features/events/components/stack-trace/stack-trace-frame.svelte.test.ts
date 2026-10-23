@@ -1,7 +1,7 @@
-import type { StackFrameInfo } from '$features/events/models/event-data';
-
 import { render } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
+
+import type { StackFrameInfo } from '#features/events/models/event-data.ts';
 
 import StackTraceFrame from './stack-trace-frame.svelte';
 

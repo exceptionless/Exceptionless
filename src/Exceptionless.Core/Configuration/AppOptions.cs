@@ -70,6 +70,8 @@ public class AppOptions
         internal set => EnablePush = value;
     }
 
+    public bool EnableSsl { get; internal set; }
+
     public string? Version { get; internal set; }
 
     public string? InformationalVersion { get; internal set; }
@@ -130,6 +132,7 @@ public class AppOptions
         options.EnableRepositoryNotifications = config.GetValue(nameof(options.EnableRepositoryNotifications), true);
         // Support both new 'EnablePush' and legacy 'EnableWebSockets' config keys
         options.EnablePush = config.GetValue(nameof(options.EnablePush), config.GetValue("EnableWebSockets", true));
+        options.EnableSsl = config.GetValue(nameof(options.EnableSsl), false);
 
         try
         {

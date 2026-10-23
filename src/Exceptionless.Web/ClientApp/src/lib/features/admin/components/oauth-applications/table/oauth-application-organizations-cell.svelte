@@ -1,8 +1,9 @@
 <script lang="ts">
-    import type { OAuthApplication } from '$features/admin/models';
-
     import { resolve } from '$app/paths';
-    import { Badge } from '$comp/ui/badge';
+
+    import type { OAuthApplication } from '#features/admin/models.ts';
+
+    import { Badge } from '#comp/ui/badge/index.ts';
 
     let { application }: { application: OAuthApplication } = $props();
 </script>

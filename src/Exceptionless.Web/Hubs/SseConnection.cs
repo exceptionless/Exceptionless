@@ -143,7 +143,7 @@ public sealed class SseConnection : IAsyncDisposable
         try { _cts.Cancel(); }
         catch (ObjectDisposedException ex)
         {
-            _logger.LogDebug(ex, "SSE cancellation token source was already disposed for {ConnectionId}", ConnectionId);
+            _logger.LogDebug(ex, "SSE cancellation token source was already disposed for {ConnectionId}: {Message}", ConnectionId, ex.Message);
         }
 
         _queue.Complete();
@@ -169,7 +169,7 @@ public sealed class SseConnection : IAsyncDisposable
             }
             catch (OperationCanceledException ex)
             {
-                _logger.LogDebug(ex, "SSE disposal canceled for {ConnectionId}", ConnectionId);
+                _logger.LogDebug(ex, "SSE disposal canceled for {ConnectionId}: {Message}", ConnectionId, ex.Message);
             }
         }
     }
@@ -194,15 +194,15 @@ public sealed class SseConnection : IAsyncDisposable
         }
         catch (OperationCanceledException ex)
         {
-            _logger.LogDebug(ex, "SSE write loop canceled for {ConnectionId}", ConnectionId);
+            _logger.LogDebug(ex, "SSE write loop canceled for {ConnectionId}: {Message}", ConnectionId, ex.Message);
         }
         catch (ObjectDisposedException ex)
         {
-            _logger.LogDebug(ex, "SSE response was disposed for {ConnectionId}", ConnectionId);
+            _logger.LogDebug(ex, "SSE response was disposed for {ConnectionId}: {Message}", ConnectionId, ex.Message);
         }
         catch (IOException ex)
         {
-            _logger.LogDebug(ex, "SSE response write failed for {ConnectionId}", ConnectionId);
+            _logger.LogDebug(ex, "SSE response write failed for {ConnectionId}: {Message}", ConnectionId, ex.Message);
         }
         finally
         {
@@ -217,7 +217,7 @@ public sealed class SseConnection : IAsyncDisposable
                 }
                 catch (ObjectDisposedException ex)
                 {
-                    _logger.LogDebug(ex, "SSE cancellation token source was already disposed for {ConnectionId}", ConnectionId);
+                    _logger.LogDebug(ex, "SSE cancellation token source was already disposed for {ConnectionId}: {Message}", ConnectionId, ex.Message);
                 }
             }
         }
