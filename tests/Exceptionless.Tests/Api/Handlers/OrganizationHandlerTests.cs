@@ -37,12 +37,14 @@ public sealed class OrganizationHandlerTests : TestWithServices
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]
-    public async Task Handle_AddOrganizationUser_UsesPersistedUserAndChecksPatchResult(bool patched, bool userDeleted)
+    public async Task Handle_AddOrganizationUser_UsesPersistedUserWhenMembershipWasConcurrentlyGranted(bool membershipAlreadyGranted, bool userDeleted)
     {
         // Arrange
         var organization = new Organization { Id = "000000000000000000000001", Name = "Test", MaxUsers = -1 };
         var user = new User { Id = "000000000000000000000002", EmailAddress = "added@example.test", Version = "1:1" };
-        var persisted = user with { Version = "1:2", OrganizationIds = new HashSet<string> { organization.Id } };
+        var persisted = user with { Version = "1:2", OrganizationIds = new HashSet<string>() };
+        if (membershipAlreadyGranted)
+            persisted.OrganizationIds.Add(organization.Id);
         var context = CreateContext();
         context.Request.SetUser(user);
         var organizations = new Mock<IOrganizationRepository>(MockBehavior.Strict);
@@ -51,7 +53,9 @@ public sealed class OrganizationHandlerTests : TestWithServices
         users.Setup(repository => repository.GetByOrganizationIdAsync(organization.Id, null)).ReturnsAsync(new FindResults<User>([], 1));
         users.Setup(repository => repository.GetByEmailAddressAsync(user.EmailAddress)).ReturnsAsync(user);
         users.Setup(repository => repository.PatchAsync(user.Id, It.IsAny<IPatchOperation>(), It.IsAny<CommandOptionsDescriptor<User>>()))
-            .Returns(() => userDeleted ? Task.FromException<bool>(new DocumentNotFoundException("User deleted")) : Task.FromResult(patched));
+            .Returns((Id _, IPatchOperation operation, CommandOptionsDescriptor<User> _) => userDeleted
+                ? Task.FromException<bool>(new DocumentNotFoundException("User deleted"))
+                : Task.FromResult(((ActionPatch<User>)operation).Actions.Single()(persisted)));
         users.Setup(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(persisted);
         var publisher = new Mock<IMessagePublisher>();
         var mailer = new Mock<IMailer>();
@@ -63,9 +67,12 @@ public sealed class OrganizationHandlerTests : TestWithServices
 
         // Assert
         Assert.Empty(user.OrganizationIds);
-        Assert.Equal(patched ? ResultStatus.Success : ResultStatus.NotFound, result.Status);
-        mailer.Verify(client => client.SendOrganizationAddedAsync(It.IsAny<User>(), organization, persisted), patched ? Times.Once() : Times.Never());
-        publisher.Verify(client => client.PublishAsync(typeof(UserMembershipChanged), It.IsAny<object>(), null, default), patched ? Times.Once() : Times.Never());
+        Assert.Equal(userDeleted ? ResultStatus.NotFound : ResultStatus.Success, result.Status);
+        if (!userDeleted)
+            Assert.Contains(organization.Id, persisted.OrganizationIds);
+        mailer.Verify(client => client.SendOrganizationAddedAsync(It.IsAny<User>(), organization, persisted), userDeleted ? Times.Never() : Times.Once());
+        publisher.Verify(client => client.PublishAsync(typeof(UserMembershipChanged), It.IsAny<object>(), null, default),
+            userDeleted || membershipAlreadyGranted ? Times.Never() : Times.Once());
     }
 
     [Theory]

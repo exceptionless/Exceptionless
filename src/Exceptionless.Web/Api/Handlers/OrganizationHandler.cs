@@ -643,12 +643,10 @@ public class OrganizationHandler(
             if (!user.OrganizationIds.Contains(organization.Id))
             {
                 await using var membershipLock = await organizationService.AcquireUserMembershipLockAsync(user.Id, message.Context.RequestAborted);
+                bool membershipAdded;
                 try
                 {
-                    bool patched = await userRepository.PatchAsync(user.Id, new ActionPatch<User>(current => current.OrganizationIds.Add(organization.Id)), o => o.Cache());
-
-                    if (!patched)
-                        return Result.NotFound("User not found.");
+                    membershipAdded = await userRepository.PatchAsync(user.Id, new ActionPatch<User>(current => current.OrganizationIds.Add(organization.Id)), o => o.Cache());
                 }
                 catch (DocumentNotFoundException)
                 {
@@ -659,12 +657,15 @@ public class OrganizationHandler(
                 if (user is null)
                     return Result.NotFound("User not found.");
 
-                await messagePublisher.PublishAsync(new UserMembershipChanged
+                if (membershipAdded)
                 {
-                    ChangeType = ChangeType.Added,
-                    UserId = user.Id,
-                    OrganizationId = organization.Id
-                });
+                    await messagePublisher.PublishAsync(new UserMembershipChanged
+                    {
+                        ChangeType = ChangeType.Added,
+                        UserId = user.Id,
+                        OrganizationId = organization.Id
+                    });
+                }
             }
 
             await mailer.SendOrganizationAddedAsync(GetCurrentUser(message.Context), organization, user);
