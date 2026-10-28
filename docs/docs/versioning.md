@@ -1,48 +1,124 @@
 ---
-title: "Versioning"
-metaTitle: "Versioning and regression detection"
-description: "Set an application version in Exceptionless so stacks marked fixed in a version reopen as regressed only when a newer version hits the same error."
+title: "Releases and regressions"
+metaTitle: "Versions and regression detection"
+description: "Send your app's version with every event, mark stacks fixed in a release, and learn when Exceptionless reopens a fixed stack as regressed."
+sources:
+  - src/Exceptionless.Core/Pipeline/030_CheckForRegressionAction.cs
+  - src/Exceptionless.Core/Utility/SemanticVersionParser.cs
+  - src/Exceptionless.Core/Extensions/StackExtensions.cs
+  - src/Exceptionless.Web/Api/Handlers/StackHandler.cs
+  - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/dialogs/mark-stack-fixed-in-version-dialog.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/schemas.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/stack-card.svelte
+  - src/Exceptionless.Core/Repositories/Configuration/Indexes/EventIndex.cs
+  - tests/Exceptionless.Tests/Pipeline/EventPipelineTests.cs
+  - Exceptionless.Net:src/Exceptionless/Extensions/ExceptionlessConfigurationExtensions.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/Default/080_VersionPlugin.cs
+  - Exceptionless.JavaScript:packages/core/src/configuration/Configuration.ts
 ---
 
-# Versioning
+# Releases and regressions
 
-Stacks and their fixed version are shared across [environments](/docs/environments/). Continue sending application versions so older deployments can report occurrences without incorrectly reopening a stack fixed in a newer version.
+Send your app's version with every event, and Exceptionless can tell which release an error came from. When you mark a
+stack fixed in a version, only events from that version or later reopen it, so older releases that are still running
+don't undo your fix.
 
-You can mark error stacks fixed and they won't show up or notify you until they regress!
+## Send your app's version
 
-## How does this work?
+Set the version once when the client starts. Every event it sends then includes it.
 
-When an event comes into Exceptionless, we figure out what makes it unique and place it into a stack of similar events. This means that an error comes in, it will be placed in a stack of similar error events. All events may contain an application version, this can be used to track what versions of an application are causing errors or being actively used.
+```csharp tab=".NET"
+// Program.cs (Exceptionless.AspNetCore)
+builder.AddExceptionless(c => c.SetVersion("2.4.1"));
+```
 
-## How do I specify an application version?
+```ts tab="JavaScript"
+import { Exceptionless } from "@exceptionless/browser"
 
-An application version will try and be resolved if possible, but it's a good idea to specify a version if you can. Please view the client specific documentation below to learn more about setting an app version.
+await Exceptionless.startup((c) => {
+  c.apiKey = "YOUR_API_KEY"
+  c.version = "2.4.1"
+})
+```
 
-## Choose your Client
+If you don't set it, the .NET client uses the version of your app's entry assembly when it can find one. The JavaScript
+client sends no version unless you set it. For other clients, put the version in the event's `@version` data. See the
+configuration page for [.NET](/docs/clients/dotnet/configuration/) or
+[JavaScript](/docs/clients/javascript/client-configuration/), and the [event format](/docs/reference/event-format/).
 
-* [.NET](/docs/clients/dotnet/)
-* [JavaScript / Node.js](/docs/clients/javascript/client-configuration)
+The version appears on the event's **Overview** tab, with a filter icon to filter by it. Add the **Version** column to
+an event list with **View** > **Manage Columns...**.
 
-## What does mark fixed do?
+## Mark a stack fixed in a version
 
-To mark a stack fixed, open the stack, click the status button in the top-right corner (it shows the current status, such as **Open**), and choose **Fixed**. You can also select several stacks in a list and choose **Mark Fixed** from the [**Actions**](/docs/bulk-actions) menu. Enter the version that contains the fix in the **Version** box, or leave it empty, and then click **Mark Stack Fixed**.
+1. Open the stack and select its status button, which shows the current status, such as **Open**.
+2. Choose **Fixed**.
+3. In **Mark Stack As Fixed**, enter the **Version** that contains the fix, such as `2.4.1`, or leave it empty.
+4. Select **Mark Stack Fixed**.
 
 ![Mark Stack As Fixed dialog with an optional version](/assets/img/docs/versioning-mark-fixed-light.webp)
 
-When you mark a stack as fixed, the following meta data is recorded on the stack:
+To fix several stacks at once, select them in a list and choose **Actions** > **Mark Fixed**. See
+[Bulk actions](/docs/managing-stacks/#bulk-actions).
 
-* when the stack was fixed
-* and **optionally** the semantic version that you fixed this behavior in.
+The version must be a semantic version, such as `1.2.3` or `1.2.3-beta.1`. The dialog rewrites two common formats for
+you: a two-part version such as `1.2` becomes `1.2.0`, and a four-part version such as `1.2.3.4` becomes `1.2.3-4`.
 
-> **NOTE:** Versions are semantic versions. If you enter a **four-part version number** (E.G., `1.2.3.4`), the dialog changes it to `1.2.3-4` for you, and a two-part version like `1.2` becomes `1.2.0`. We automatically handle four-part versions when processing events.
+The stack card then shows **Fixed** with the version and date, and the stack leaves the built-in views, which show only
+open and regressed stacks.
 
-Next, the stack is hidden from the default stack lists, which only show open and regressed stacks. To see fixed stacks, include **Fixed** in the list's **Status** filter.
+## When a fixed stack regresses
 
-This meta data is then inspected when an matching event is processed to determine if the stack and all occurrences should be regressed (_marked not fixed_). There are two scenarios where a stack will be marked as regressed:
+When a new event arrives for a fixed stack, Exceptionless compares it with the fix:
 
-1. If no fixed in version is specified, any occurrence with a date newer than the date the stack was marked as fixed.
-2. If a fixed in version is specified, any occurrence that has a newer version specified (Example: `1.0.0` > `1.0.0-beta`).
+| Fixed in   | New event's version               | Result                                         |
+| ---------- | --------------------------------- | ---------------------------------------------- |
+| No version | Any, or none                      | Regressed, if the event occurred after the fix |
+| `2.4.1`    | `2.4.1` or later, such as `2.5.0` | Regressed                                      |
+| `2.4.1`    | Earlier, such as `2.4.0`          | Stays fixed                                    |
+| `2.4.1`    | None                              | Stays fixed                                    |
 
----
+A regressed stack shows **Regressed**, appears in the built-in views again, and can send a regression notification. See
+[Notifications](/docs/notifications/).
 
-[Next > Reference Ids](/docs/references-ids)
+When a stack fixed in a version stays fixed, what happens to the event depends on your plan. On paid plans, the event is
+dropped and not stored. On the Free plan, it's stored with the stack, which stays fixed.
+
+Versions are compared as semantic versions, so `2.10.0` is later than `2.9.0`, and a prerelease such as `2.4.1-beta` is
+earlier than `2.4.1`. A leading `v` in an event's version, as in `v2.4.1`, is ignored.
+
+## Fixes across environments
+
+A stack and its fixed version are shared across [environments](/docs/environments/). If staging already runs `2.4.1` and
+production still runs `2.4.0`, mark the stack fixed in `2.4.1`. Production's errors from `2.4.0` then don't reopen it.
+If you mark it fixed without a version, the next production error reopens it.
+
+## Search by version
+
+- `version:2.4` finds events from any `2.4.x` version, and `version:2.4.1` from exactly that one.
+- `version_fixed:2.4.1` finds events in stacks marked fixed in `2.4.1`.
+- Version ranges, such as `version:>2.4`, aren't supported.
+
+See the [search syntax](/docs/reference/search-syntax/#versions).
+
+## Ask Exie
+
+```prompt exie
+Which versions of my app had the most errors in the last 7 days?
+```
+
+```prompt exie
+Which stacks regressed since we released 2.4.1?
+```
+
+```prompt exie
+Mark this stack fixed in version 2.4.2.
+```
+
+With the [MCP server](/docs/ai/mcp-server/) connected and `stacks:write` granted, your coding agent can close the loop
+after a fix:
+
+```prompt agent
+Read the version from this project's build file, then mark the Exceptionless stacks for the errors fixed on this branch
+as fixed in that version.
+```

@@ -1,3 +1,6 @@
+import { crumbsFor, type NavEntry, type NavGroup, normalizeDocsNav, pagerFor } from "./docs-nav.ts"
+import { collectRedirects, type Redirect } from "./redirects.ts"
+
 type Searcher = {
   pages<T = Record<string, unknown>>(query?: string, sort?: string, limit?: number): Array<LumePageData & T>
 }
@@ -8,6 +11,9 @@ type LumePageData = {
   url?: string | false
   date?: Date | string | number
   order?: number
+  navTitle?: string
+  plan?: string
+  redirectFrom?: unknown
   hidden?: boolean
   draft?: boolean
   llms?: boolean
@@ -18,24 +24,14 @@ type LumePageData = {
 
 export type ContentPage = {
   title: string
+  navTitle?: string
+  plan?: string
   description?: string
   url: string
   sourcePath: string
   date?: string
   order?: number
   llms?: boolean
-}
-
-type NavItem = {
-  text: string
-  href?: string
-  items?: NavItem[]
-}
-
-type TreeNode = {
-  segment: string
-  page?: ContentPage
-  children: Map<string, TreeNode>
 }
 
 const excludedNews = new Set([
@@ -64,9 +60,94 @@ export function newsPosts(search: Searcher): ContentPage[] {
     .sort((a, b) => (b.date || "").localeCompare(a.date || "") || a.url.localeCompare(b.url))
 }
 
-export function docsNavHtml(search: Searcher, currentUrl = ""): string {
-  const nav = buildDocsNav(docsPages(search))
-  return `<ul class="toc-list">${renderNavItems(nav, currentUrl)}</ul>`
+/** The label a page has in the sidebar, breadcrumbs, and previous/next links. */
+function pageLabel(page: ContentPage): string {
+  return page.navTitle || page.title
+}
+
+function labelsByUrl(search: Searcher): Map<string, string> {
+  return new Map(docsPages(search).map((page) => [page.url, pageLabel(page)]))
+}
+
+/** Renders the docs sidebar from `_data/docs_nav.yml`. Entries without a page yet are skipped. */
+export function docsNavHtml(search: Searcher, currentUrl: string, rawNav: unknown): string {
+  const sections = normalizeDocsNav(rawNav)
+  const labels = labelsByUrl(search)
+
+  const renderEntries = (entries: NavEntry[]): string =>
+    entries.map((entry) => {
+      if (entry.kind === "page") {
+        const label = labels.get(entry.url)
+        return label ? renderPageItem(entry.url, label, currentUrl) : ""
+      }
+
+      return renderGroup(entry, labels, currentUrl, renderEntries)
+    }).filter(Boolean).join("\n")
+
+  const items = sections.map((section) => {
+    const children = renderEntries(section.items)
+    return children ? `<li class="toc-section"><span>${escapeHtml(section.title)}</span><ul>${children}</ul></li>` : ""
+  }).filter(Boolean).join("\n")
+
+  return `<ul class="toc-list">${items}</ul>`
+}
+
+function renderPageItem(url: string, label: string, currentUrl: string): string {
+  const href = escapeHtml(url)
+  const current = url === currentUrl
+  return `<li${current ? ' class="toc-active"' : ""} data-url="${href}"><a href="${href}"${
+    current ? ' aria-current="page"' : ""
+  }>${escapeHtml(label)}</a></li>`
+}
+
+function renderGroup(
+  group: NavGroup,
+  labels: Map<string, string>,
+  currentUrl: string,
+  renderEntries: (entries: NavEntry[]) => string,
+): string {
+  const children = renderEntries(group.items)
+  const groupHasPage = group.url ? labels.has(group.url) : false
+  if (!children && !groupHasPage) {
+    return ""
+  }
+
+  const open = containsUrl(group, currentUrl) ? " open" : ""
+  const current = group.url === currentUrl
+  const heading = group.url && groupHasPage
+    ? `<a href="${escapeHtml(group.url)}"${current ? ' aria-current="page"' : ""}>${escapeHtml(group.title)}</a>`
+    : `<span>${escapeHtml(group.title)}</span>`
+  const list = children ? `<ul>${children}</ul>` : ""
+  return `<li class="toc-group${
+    current ? " toc-active" : ""
+  }"><details${open}><summary>${heading}</summary>${list}</details></li>`
+}
+
+function containsUrl(group: NavGroup, url: string): boolean {
+  return group.url === url ||
+    group.items.some((entry) => entry.kind === "page" ? entry.url === url : containsUrl(entry, url))
+}
+
+/** Renders the previous and next links at the bottom of a docs page, following the nav order. */
+export function docsPagerHtml(search: Searcher, currentUrl: string, rawNav: unknown): string {
+  const labels = labelsByUrl(search)
+  const { previous, next } = pagerFor(normalizeDocsNav(rawNav), currentUrl, (url) => labels.get(url))
+  if (!previous && !next) {
+    return ""
+  }
+
+  const link = (kind: "previous" | "next", target: { url: string; title: string } | undefined) =>
+    target
+      ? `<a class="docs-pager-${kind}" href="${escapeHtml(target.url)}" rel="${
+        kind === "next" ? "next" : "prev"
+      }"><span class="docs-pager-label">${kind === "next" ? "Next" : "Previous"}</span><span class="docs-pager-title">${
+        escapeHtml(target.title)
+      }</span></a>`
+      : "<span></span>"
+
+  return `<nav class="docs-pager" aria-label="Previous and next pages" data-search-ignore>${
+    link("previous", previous)
+  }${link("next", next)}</nav>`
 }
 
 export type Breadcrumb = {
@@ -74,22 +155,24 @@ export type Breadcrumb = {
   url: string
 }
 
-/** Returns the Home > Docs > section > page trail for a docs URL, using page titles where they exist. */
-export function docsBreadcrumbs(search: Searcher, currentUrl: string): Breadcrumb[] {
+/**
+ * Returns the Home > Docs > section > group > page trail for a docs URL. The sections and groups come from the nav,
+ * and each links to its first page.
+ */
+export function docsBreadcrumbs(search: Searcher, currentUrl: string, rawNav?: unknown): Breadcrumb[] {
   if (!currentUrl.startsWith("/docs/")) {
     return []
   }
 
-  const titles = new Map(docsPages(search).map((page) => [page.url, page.title]))
+  const labels = labelsByUrl(search)
   const crumbs: Breadcrumb[] = [{ name: "Home", url: "/" }, { name: "Docs", url: "/docs/" }]
-  const segments = currentUrl.split("/").filter(Boolean).slice(1)
-  let path = "/docs/"
-  for (const segment of segments) {
-    path += `${segment}/`
-    const title = titles.get(path)
-    if (title) {
-      crumbs.push({ name: title, url: path })
-    }
+  if (rawNav) {
+    crumbs.push(...crumbsFor(normalizeDocsNav(rawNav), currentUrl, (url) => labels.get(url)))
+  }
+
+  const current = labels.get(currentUrl)
+  if (current && currentUrl !== "/docs/") {
+    crumbs.push({ name: current, url: currentUrl })
   }
 
   return crumbs
@@ -100,10 +183,26 @@ export function siteDataJson(search: Searcher): string {
     {
       docsPages: visibleDocsPages(search),
       newsPosts: newsPosts(search),
+      redirects: redirects(search),
     },
     null,
     2,
   )
+}
+
+/** Every `redirectFrom` declared by a published page, checked for bad paths and collisions. */
+export function redirects(search: Searcher): Redirect[] {
+  const pages = search.pages()
+    .filter((page) => !page.draft && !page.hidden && typeof page.url === "string")
+    .map((page) => ({
+      url: page.url as string,
+      title: page.title,
+      sourcePath: slash(page.page?.sourcePath || "").replace(/^\/+/, ""),
+      redirectFrom: page.redirectFrom,
+    }))
+    .filter((page) => page.sourcePath !== "(generated)")
+
+  return collectRedirects(pages)
 }
 
 function toContentPage(page: LumePageData): ContentPage | undefined {
@@ -122,6 +221,8 @@ function toContentPage(page: LumePageData): ContentPage | undefined {
 
   return {
     title: page.title || titleFromPath(sourcePath),
+    navTitle: page.navTitle,
+    plan: page.plan,
     description: page.description,
     url: page.url,
     sourcePath,
@@ -129,60 +230,6 @@ function toContentPage(page: LumePageData): ContentPage | undefined {
     order: optionalNumber(page.order),
     llms: optionalBool(page.llms),
   }
-}
-
-function buildDocsNav(pages: ContentPage[]): NavItem[] {
-  const root: TreeNode = { segment: "docs", children: new Map() }
-
-  for (const page of pages) {
-    const relative = page.sourcePath.replace(/^docs\//, "").replace(/\.md$/, "")
-    const parts = relative.split("/")
-    const isIndex = parts.at(-1) === "index"
-    const nodeParts = isIndex ? parts.slice(0, -1) : parts
-    let current = root
-
-    for (const part of nodeParts) {
-      let child = current.children.get(part)
-      if (!child) {
-        child = { segment: part, children: new Map() }
-        current.children.set(part, child)
-      }
-      current = child
-    }
-
-    current.page = page
-  }
-
-  const rootItem = nodeToNav(root)
-  return rootItem ? [rootItem] : []
-}
-
-function nodeToNav(node: TreeNode): NavItem | undefined {
-  const children = [...node.children.values()]
-    .sort(compareNodes)
-    .map(nodeToNav)
-    .filter((item): item is NavItem => Boolean(item))
-
-  if (node.page) {
-    return {
-      text: node.page.title,
-      href: node.page.url,
-      items: children.length ? children : undefined,
-    }
-  }
-
-  if (!children.length) {
-    return undefined
-  }
-
-  return {
-    text: titleFromSegment(node.segment),
-    items: children,
-  }
-}
-
-function compareNodes(a: TreeNode, b: TreeNode): number {
-  return compareOptionalNumbers(a.page?.order, b.page?.order) || nodeTitle(a).localeCompare(nodeTitle(b))
 }
 
 function comparePages(a: ContentPage, b: ContentPage): number {
@@ -203,24 +250,6 @@ function compareOptionalNumbers(a?: number, b?: number): number {
   }
 
   return 0
-}
-
-function nodeTitle(node: TreeNode): string {
-  return node.page?.title || titleFromSegment(node.segment)
-}
-
-function renderNavItems(items: NavItem[], currentUrl: string): string {
-  return items.map((item) => {
-    const label = escapeHtml(item.text)
-    const childHtml = item.items?.length ? `<ul>${renderNavItems(item.items, currentUrl)}</ul>` : ""
-    if (!item.href) {
-      return `<li><span>${label}</span>${childHtml}</li>`
-    }
-
-    const href = escapeHtml(item.href)
-    const activeClass = item.href === currentUrl ? ' class="toc-active"' : ""
-    return `<li${activeClass} data-url="${href}"><a href="${href}">${label}</a>${childHtml}</li>`
-  }).join("\n")
 }
 
 function titleFromPath(path: string): string {

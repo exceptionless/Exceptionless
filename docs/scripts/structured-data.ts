@@ -11,6 +11,7 @@ type PageData = {
   image?: string
   layout?: string
   robots?: string
+  docs_nav?: unknown
 }
 
 type Plan = {
@@ -43,7 +44,7 @@ export function structuredData(data: PageData, search: Searcher): string {
   const image = `${siteUrl}${data.image || defaultSocialImage}`
   const isDocs = data.url.startsWith("/docs/")
   const isPost = data.layout === "layouts/post.vto"
-  const breadcrumbs = isDocs ? docsBreadcrumbs(search, data.url) : pageBreadcrumbs(data)
+  const breadcrumbs = isDocs ? docsBreadcrumbs(search, data.url, data.docs_nav) : pageBreadcrumbs(data)
 
   const graph: Record<string, unknown>[] = [
     {

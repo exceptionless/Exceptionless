@@ -5,7 +5,7 @@ bodyClass: layout-docs
 <div class="docs-shell">
   <aside class="docs-sidebar" aria-label="Documentation" data-search-ignore>
     <p class="docs-sidebar-title">Documentation</p>
-    {{ docsNavHtml(search, url) }}
+    {{ docsNavHtml(search, url, docs_nav) }}
   </aside>
   <script>
     (function () {
@@ -48,7 +48,7 @@ bodyClass: layout-docs
       <button class="btn btn-secondary btn-sm" type="button" data-docs-nav-toggle aria-expanded="false">{{ icons.menu }} Menu</button>
       <button class="btn btn-ghost btn-sm" type="button" data-site-search-open>{{ icons.search }} Search</button>
     </div>
-    {{ set crumbs = docsBreadcrumbs(search, url).slice(1, -1) }}
+    {{ set crumbs = docsBreadcrumbs(search, url, docs_nav).slice(1, -1) }}
     {{ if crumbs.length }}
     <nav class="breadcrumbs" aria-label="Breadcrumb" data-search-ignore>
       <ol>
@@ -59,6 +59,7 @@ bodyClass: layout-docs
     <article class="prose" data-page-content>
       {{ content }}
     </article>
+    {{ docsPagerHtml(search, url, docs_nav) }}
   </div>
 
   <aside class="docs-aside" data-search-ignore>

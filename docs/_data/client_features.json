@@ -1,0 +1,72 @@
+[
+  {
+    "id": "unhandledErrors",
+    "label": "Unhandled error capture",
+    "description": "Reports errors your code does not catch, without any extra calls."
+  },
+  {
+    "id": "manualErrors",
+    "label": "Manual error submission",
+    "description": "Sends an error you caught and handled."
+  },
+  {
+    "id": "logs",
+    "label": "Log messages",
+    "description": "Sends log events with a source and a level."
+  },
+  {
+    "id": "featureUsage",
+    "label": "Feature usage",
+    "description": "Sends an event each time a feature is used."
+  },
+  {
+    "id": "notFound",
+    "label": "404 tracking",
+    "description": "Reports requests for resources that do not exist."
+  },
+  {
+    "id": "userIdentity",
+    "label": "User identity",
+    "description": "Attaches a user ID and name to events."
+  },
+  {
+    "id": "sessions",
+    "label": "Sessions and heartbeats",
+    "description": "Sends session start, heartbeat, and end events."
+  },
+  {
+    "id": "referenceIds",
+    "label": "Reference IDs",
+    "description": "Gives each error a short ID that a user can quote to support."
+  },
+  {
+    "id": "configValues",
+    "label": "Server-synced configuration values",
+    "description": "Reads project settings from the server and reacts when they change."
+  },
+  {
+    "id": "plugins",
+    "label": "Plugins",
+    "description": "Adds data to events or cancels them before they are sent."
+  },
+  {
+    "id": "dataExclusions",
+    "label": "Data exclusions",
+    "description": "Removes sensitive fields from events on the client."
+  },
+  {
+    "id": "offlineQueue",
+    "label": "Offline queue persistence",
+    "description": "Keeps queued events across restarts and sends them when the network returns."
+  },
+  {
+    "id": "deduplication",
+    "label": "Deduplication",
+    "description": "Merges identical errors that occur in a short window into one event with a count."
+  },
+  {
+    "id": "sourceMaps",
+    "label": "Source maps",
+    "description": "Readable stack traces for minified JavaScript."
+  }
+]

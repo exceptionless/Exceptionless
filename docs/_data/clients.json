@@ -1,0 +1,319 @@
+[
+  {
+    "id": "dotnet",
+    "language": ".NET",
+    "name": "Exceptionless.Net",
+    "support": "Official",
+    "repo": "https://github.com/exceptionless/Exceptionless.Net",
+    "docsUrl": "/docs/clients/dotnet/",
+    "version": "6.2.0",
+    "minimumRuntime": ".NET 8 for ASP.NET Core, hosting, and Microsoft.Extensions.Logging. .NET Standard 2.0 or .NET Framework 4.6.2 for the core package.",
+    "summary": "ASP.NET Core, worker services, console, WPF, WinForms, and Blazor apps, with Microsoft.Extensions.Logging, NLog, and log4net integrations",
+    "packages": [
+      {
+        "name": "Exceptionless",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless",
+        "description": "Core client for console apps, services, and libraries.",
+        "minimumRuntime": ".NET Standard 2.0, .NET Framework 4.6.2"
+      },
+      {
+        "name": "Exceptionless.AspNetCore",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.AspNetCore",
+        "description": "ASP.NET Core integration: exception handler, 404 tracking, and request details.",
+        "minimumRuntime": ".NET 8"
+      },
+      {
+        "name": "Exceptionless.Extensions.Hosting",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.Extensions.Hosting",
+        "description": "Generic host and worker service integration, with queue flushing on shutdown.",
+        "minimumRuntime": ".NET 8"
+      },
+      {
+        "name": "Exceptionless.Extensions.Logging",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.Extensions.Logging",
+        "description": "Microsoft.Extensions.Logging provider.",
+        "minimumRuntime": ".NET 8"
+      },
+      {
+        "name": "Exceptionless.NLog",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.NLog",
+        "description": "NLog target.",
+        "minimumRuntime": ".NET Standard 2.0, .NET Framework 4.6.2"
+      },
+      {
+        "name": "Exceptionless.Log4net",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.Log4net",
+        "description": "log4net appender.",
+        "minimumRuntime": ".NET Standard 2.0, .NET Framework 4.6.2"
+      },
+      {
+        "name": "Exceptionless.Wpf",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.Wpf",
+        "description": "WPF integration.",
+        "minimumRuntime": ".NET 8 (Windows), .NET Framework 4.6.2"
+      },
+      {
+        "name": "Exceptionless.Windows",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.Windows",
+        "description": "Windows Forms integration.",
+        "minimumRuntime": ".NET 8 (Windows), .NET Framework 4.6.2"
+      },
+      {
+        "name": "Exceptionless.Mvc",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.Mvc",
+        "description": "ASP.NET MVC on .NET Framework.",
+        "minimumRuntime": ".NET Framework 4.6.2"
+      },
+      {
+        "name": "Exceptionless.WebApi",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.WebApi",
+        "description": "ASP.NET Web API on .NET Framework.",
+        "minimumRuntime": ".NET Framework 4.6.2"
+      },
+      {
+        "name": "Exceptionless.Web",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.Web",
+        "description": "ASP.NET WebForms on .NET Framework.",
+        "minimumRuntime": ".NET Framework 4.6.2"
+      }
+    ],
+    "snippets": [
+      {
+        "label": "ASP.NET Core",
+        "package": "Exceptionless.AspNetCore",
+        "install": "dotnet add package Exceptionless.AspNetCore",
+        "language": "csharp",
+        "code": "using Exceptionless;\n\nvar builder = WebApplication.CreateBuilder(args);\nbuilder.AddExceptionless(\"YOUR_API_KEY\");\nbuilder.Services.AddProblemDetails();\n\nvar app = builder.Build();\napp.UseExceptionHandler();\napp.UseExceptionless();\n\napp.Run();",
+        "caption": "Reads your API key from the Exceptionless section of appsettings.json when you call AddExceptionless() with no arguments.",
+        "docsUrl": "/docs/clients/dotnet/aspnet-core/"
+      },
+      {
+        "label": ".NET",
+        "package": "Exceptionless",
+        "install": "dotnet add package Exceptionless",
+        "language": "csharp",
+        "code": "using Exceptionless;\n\nExceptionlessClient.Default.Startup(\"YOUR_API_KEY\");\n\ntry\n{\n    throw new InvalidOperationException(\"Order 1234 could not be submitted\");\n}\ncatch (Exception ex)\n{\n    ex.ToExceptionless()\n        .SetProperty(\"OrderId\", 1234)\n        .AddTags(\"checkout\")\n        .MarkAsCritical()\n        .Submit();\n}",
+        "caption": "Works in console apps, services, desktop apps, and anything else on .NET. Unhandled exceptions are captured after Startup.",
+        "docsUrl": "/docs/clients/dotnet/console/"
+      }
+    ],
+    "features": {
+      "unhandledErrors": {
+        "status": "yes",
+        "note": "Startup hooks AppDomain and unobserved task exceptions. ASP.NET Core uses an IExceptionHandler."
+      },
+      "manualErrors": {
+        "status": "yes",
+        "note": "ToExceptionless().Submit()"
+      },
+      "logs": {
+        "status": "yes",
+        "note": "SubmitLog, plus Microsoft.Extensions.Logging, NLog, and log4net integrations."
+      },
+      "featureUsage": {
+        "status": "yes",
+        "note": "SubmitFeatureUsage"
+      },
+      "notFound": {
+        "status": "yes",
+        "note": "Automatic in ASP.NET Core with UseExceptionless(). Call SubmitNotFound elsewhere."
+      },
+      "userIdentity": {
+        "status": "yes",
+        "note": "SetUserIdentity. ASP.NET Core uses the authenticated user's name when none is set."
+      },
+      "sessions": {
+        "status": "opt-in",
+        "note": "Call UseSessions() on the configuration."
+      },
+      "referenceIds": {
+        "status": "opt-in",
+        "note": "Call UseReferenceIds() on the configuration."
+      },
+      "configValues": {
+        "status": "yes",
+        "note": "Settings, with a Changed event. Checked every 2 minutes while idle."
+      },
+      "plugins": {
+        "status": "yes",
+        "note": "AddPlugin with a class or an action."
+      },
+      "dataExclusions": {
+        "status": "yes",
+        "note": "AddDataExclusions, or a project-level exclusion list."
+      },
+      "offlineQueue": {
+        "status": "opt-in",
+        "note": "The queue is in memory by default. Call UseFolderStorage or UseIsolatedStorage to persist it."
+      },
+      "deduplication": {
+        "status": "yes",
+        "note": "Identical events within 60 seconds are merged into one with a count."
+      },
+      "sourceMaps": {
+        "status": "n/a",
+        "note": "Source maps apply to JavaScript."
+      }
+    }
+  },
+  {
+    "id": "javascript",
+    "language": "JavaScript",
+    "name": "Exceptionless.JavaScript",
+    "support": "Official",
+    "repo": "https://github.com/exceptionless/Exceptionless.JavaScript",
+    "docsUrl": "/docs/clients/javascript/",
+    "version": "3.2.1",
+    "minimumRuntime": "ES2022 browsers, Node.js 18, and React Native 0.71 with React 18.",
+    "summary": "Browser, Node.js, React, Vue, Angular, Express, and React Native with Expo",
+    "packages": [
+      {
+        "name": "@exceptionless/browser",
+        "registry": "npm",
+        "url": "https://www.npmjs.com/package/@exceptionless/browser",
+        "description": "Browser client. Also available from a CDN as an ES module.",
+        "minimumRuntime": "ES2022 browsers"
+      },
+      {
+        "name": "@exceptionless/node",
+        "registry": "npm",
+        "url": "https://www.npmjs.com/package/@exceptionless/node",
+        "description": "Node.js client, including Express apps and serverless functions.",
+        "minimumRuntime": "Node.js 18"
+      },
+      {
+        "name": "@exceptionless/react",
+        "registry": "npm",
+        "url": "https://www.npmjs.com/package/@exceptionless/react",
+        "description": "React error boundary on top of the browser client.",
+        "minimumRuntime": "React 18"
+      },
+      {
+        "name": "@exceptionless/vue",
+        "registry": "npm",
+        "url": "https://www.npmjs.com/package/@exceptionless/vue",
+        "description": "Vue error handler on top of the browser client.",
+        "minimumRuntime": "ES2022 browsers"
+      },
+      {
+        "name": "@exceptionless/angularjs",
+        "registry": "npm",
+        "url": "https://www.npmjs.com/package/@exceptionless/angularjs",
+        "description": "AngularJS module on top of the browser client.",
+        "minimumRuntime": "ES2022 browsers"
+      },
+      {
+        "name": "@exceptionless/react-native",
+        "registry": "npm",
+        "url": "https://www.npmjs.com/package/@exceptionless/react-native",
+        "description": "React Native and Expo client with native iOS crash reporting and a persistent queue.",
+        "minimumRuntime": "React Native 0.71, React 18"
+      },
+      {
+        "name": "@exceptionless/core",
+        "registry": "npm",
+        "url": "https://www.npmjs.com/package/@exceptionless/core",
+        "description": "Shared core that the other packages build on. Install a platform package instead.",
+        "minimumRuntime": "ES2022"
+      }
+    ],
+    "snippets": [
+      {
+        "label": "Browser",
+        "package": "@exceptionless/browser",
+        "install": "npm install @exceptionless/browser",
+        "language": "js",
+        "code": "import { Exceptionless } from \"@exceptionless/browser\";\n\nawait Exceptionless.startup(\"YOUR_API_KEY\");\n\n// Unhandled errors are captured automatically.\n// Track the things you care about, too:\nawait Exceptionless.submitFeatureUsage(\"Checkout\");",
+        "caption": "Upload source maps to get readable stack traces from minified bundles.",
+        "docsUrl": "/docs/clients/javascript/guides/browser/"
+      },
+      {
+        "label": "Node.js",
+        "package": "@exceptionless/node",
+        "install": "npm install @exceptionless/node",
+        "language": "js",
+        "code": "import { Exceptionless } from \"@exceptionless/node\";\n\nawait Exceptionless.startup(\"YOUR_API_KEY\");\n\ntry {\n  throw new Error(\"Orders import failed\");\n} catch (error) {\n  await Exceptionless.submitException(error);\n}",
+        "caption": "Also available for Express, React, Vue, and Angular apps.",
+        "docsUrl": "/docs/clients/javascript/guides/node/"
+      },
+      {
+        "label": "React Native",
+        "package": "@exceptionless/react-native",
+        "install": "npx expo install @exceptionless/react-native @react-native-async-storage/async-storage",
+        "language": "js",
+        "code": "import { Exceptionless } from \"@exceptionless/react-native\";\n\nawait Exceptionless.startup((c) => {\n  c.apiKey = \"YOUR_API_KEY\";\n});\n\n// JavaScript errors and promise rejections are captured automatically.\nawait Exceptionless.submitFeatureUsage(\"Checkout\");",
+        "caption": "Works with Expo and bare React Native. Add the Expo config plugin for native iOS crash reporting.",
+        "docsUrl": "/docs/clients/javascript/guides/react-native/"
+      }
+    ],
+    "features": {
+      "unhandledErrors": {
+        "status": "yes",
+        "note": "Browser error and unhandledrejection events, Node.js uncaught exceptions and rejections, and React Native JavaScript errors plus native iOS crashes."
+      },
+      "manualErrors": {
+        "status": "yes",
+        "note": "submitException"
+      },
+      "logs": {
+        "status": "yes",
+        "note": "submitLog"
+      },
+      "featureUsage": {
+        "status": "yes",
+        "note": "submitFeatureUsage"
+      },
+      "notFound": {
+        "status": "partial",
+        "note": "Call submitNotFound. The browser client reports 404s from jQuery ajax calls automatically."
+      },
+      "userIdentity": {
+        "status": "yes",
+        "note": "setUserIdentity"
+      },
+      "sessions": {
+        "status": "opt-in",
+        "note": "Call useSessions() on the configuration."
+      },
+      "referenceIds": {
+        "status": "yes",
+        "note": "Error events get a reference ID automatically. Read it with getLastReferenceId()."
+      },
+      "configValues": {
+        "status": "yes",
+        "note": "settings, with subscribeServerSettingsChange. Checked every 2 minutes while idle."
+      },
+      "plugins": {
+        "status": "yes",
+        "note": "addPlugin with an object or a function."
+      },
+      "dataExclusions": {
+        "status": "yes",
+        "note": "addDataExclusions, or a project-level exclusion list."
+      },
+      "offlineQueue": {
+        "status": "opt-in",
+        "note": "Set usePersistedQueueStorage = true in the browser and Node.js. React Native persists the queue by default."
+      },
+      "deduplication": {
+        "status": "yes",
+        "note": "Identical errors are merged into one event with a count."
+      },
+      "sourceMaps": {
+        "status": "yes",
+        "note": "The server applies public or uploaded source maps to stack frames with absolute script URLs."
+      }
+    }
+  }
+]

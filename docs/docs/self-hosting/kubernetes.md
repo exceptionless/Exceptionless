@@ -1,48 +1,210 @@
 ---
 title: "Kubernetes"
-metaTitle: "Self-hosting Exceptionless on Kubernetes"
-description: "Deploy self-hosted Exceptionless on Kubernetes with Helm: EX_ config map values, connection strings, ingress proxy trust, Active Directory, and Slack."
+metaTitle: "Self-hosting Exceptionless on Kubernetes with Helm"
+description: "Deploy self-hosted Exceptionless on Kubernetes with the Helm chart: values, connection strings, ingress, proxy trust, and migrations."
+sources:
+  - k8s/exceptionless/Chart.yaml
+  - k8s/exceptionless/values.yaml
+  - k8s/exceptionless/templates/config.yaml
+  - k8s/exceptionless/templates/app.yaml
+  - k8s/exceptionless/templates/api.yaml
+  - k8s/exceptionless/templates/jobs.yaml
+  - k8s/exceptionless/templates/storage.yaml
+  - k8s/exceptionless/templates/elasticsearch.yaml
+  - k8s/exceptionless/templates/redis.yaml
+  - k8s/exceptionless/templates/_helpers.tpl
+  - src/Exceptionless.Core/Authentication/ActiveDirectoryLoginProvider.cs
+  - src/Exceptionless.Web/Api/Endpoints/StatusEndpoints.cs
 ---
 
-# Self-hosting Exceptionless on Kubernetes
+# Kubernetes
 
-Please follow this section to set up Exceptionless in a Kubernetes environment. Please note this section is a work in progress, any contributions is greatly appreciated.
+The Exceptionless repository includes a Helm chart that runs the app, the API, and each background job as separate
+deployments. This page shows how to install it, which values to set, and how to route traffic to it.
 
 ## Requirements
 
-* [Kubernetes](https://kubernetes.io)
-* [Helm](https://helm.sh)
+- A Kubernetes cluster and [Helm](https://helm.sh/).
+- Elasticsearch 8 with the `mapper-size` plugin, such as the `exceptionless/elasticsearch:8.19.22` image. See
+  [Requirements](/docs/self-hosting/#requirements).
+- Redis.
+- File storage that every pod can share: Amazon S3, Azure Blob Storage, or a `ReadWriteMany` volume.
+- An ingress controller or gateway that terminates HTTPS.
 
-## Instructions
+## What the chart deploys
 
-Please note that we recommend you use Kubernetes for running in production.
+| Resource                       | What it runs                                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `<release>-app`                | The `exceptionless/app` image: the web UI and API for your app domains, with real-time updates. Jobs don't run in it.          |
+| `<release>-api`                | The `exceptionless/api` image: the API for your API domains, where clients send events. WebSockets are off.                    |
+| `<release>-jobs-*` deployments | One deployment per continuous job, such as `event-posts`, `event-notifications`, `mail-message`, `web-hooks`, and `work-item`. |
+| `<release>-jobs-*` cron jobs   | Scheduled jobs: `cleanup-data`, `cleanup-orphaned-data`, `download-geoip-database`, and `maintain-indexes`.                    |
+| `<release>-jobs-migration`     | A cron job that never runs on its own. You start it after each install or upgrade. See [Run migrations](#run-migrations).      |
+| `<release>-config`             | A config map with the `EX_` settings, shared by every pod.                                                                     |
 
-1. Follow the steps [here](https://github.com/exceptionless/Exceptionless/blob/master/k8s/ex-setup.ps1) for how to create it in AKS
-2. View the configuration settings below for more information on configuring Exceptionless.
-3. [Configure your clients](/docs/clients/) to send errors to your website.
+`<release>` is the Helm release name.
 
-Now, you can create a local account, organization, and project and send events to it.
+## Install
 
-## Configuration
+The chart isn't published to a Helm repository. Install it from a clone of the repository:
 
-The following section will cover how to configure exceptionless inside of a Kubernetes instance using the `exceptionless-config` config map. All exceptionless configuration keys are prefixed with `EX_`. Please note that these instructions also apply to docker using environment variables.
+1. Clone the repository:
 
-All configuration options and settings can be found in the various option classes located [here](https://github.com/exceptionless/Exceptionless/tree/master/src/Exceptionless.Core/Configuration).
+   ```bash
+   git clone https://github.com/exceptionless/Exceptionless.git
+   ```
 
-The same `EX_` environment keys work in Docker Compose. Nested keys use double underscores.
+2. Create a values file, such as `exceptionless-values.yaml`. Replace the domains and connection strings with yours:
 
-### Trusted ingress peers
+   ```yaml
+   version: "9.0.0"
 
-Before deploying behind ingress, configure [trusted forwarding peers](/docs/self-hosting/#reverse-proxies-and-https) through the Helm chart's existing `config` map. For example, after replacing the documentation address with a verified proxy source address:
+   app:
+     defaultDomain: errors.example.com
+     domains:
+       - errors.example.com
+
+   api:
+     defaultDomain: api.errors.example.com
+     domains:
+       - api.errors.example.com
+
+   elasticsearch:
+     connectionString: server=http://elasticsearch.example.svc:9200
+
+   redis:
+     connectionString: redis.example.svc:6379,abortConnect=false
+
+   storage:
+     connectionString: provider=s3;bucket=exceptionless-files;region=us-east-1
+
+   email:
+     connectionString: smtp://user:password@smtp.example.com:587
+
+   config:
+     EX_SmtpFrom: "Exceptionless <noreply@example.com>"
+
+   otel:
+     enabled: false
+   ```
+
+3. Install the chart:
+
+   ```bash
+   helm install exceptionless ./Exceptionless/k8s/exceptionless \
+     --namespace exceptionless --create-namespace \
+     --values exceptionless-values.yaml
+   ```
+
+4. [Run the migrations](#run-migrations).
+
+5. [Route traffic to the services](#ingress), then open your app domain and sign up. The first account is a global
+   administrator.
+
+## Values
+
+| Value                                                                             | Default             | What it does                                                                                                                                                                                                                                                                                |
+| --------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `version`                                                                         | `latest`            | The image tag for the app, API, and job images. Pin it to a release version.                                                                                                                                                                                                                |
+| `appMode`                                                                         | `Production`        | Sets `EX_AppMode`.                                                                                                                                                                                                                                                                          |
+| `appScope`                                                                        | None                | Sets `EX_AppScope`, the prefix for index, queue, and cache names.                                                                                                                                                                                                                           |
+| `app.defaultDomain`                                                               | None                | Required. The web app's host name. The chart sets `EX_BaseUrl` to `https://` plus this value.                                                                                                                                                                                               |
+| `app.domains`                                                                     | `[]`                | Every host name for the web app. Each is also allowed as an MCP browser origin.                                                                                                                                                                                                             |
+| `api.defaultDomain`                                                               | None                | The API's host name. The chart sets `EX_ExceptionlessServerUrl` to `https://` plus this value, so the app's client setup instructions show it.                                                                                                                                              |
+| `api.domains`                                                                     | `[]`                | Every host name for the API. Each is also allowed as an MCP browser origin.                                                                                                                                                                                                                 |
+| `app.image.repository`                                                            | `exceptionless/app` | The app image.                                                                                                                                                                                                                                                                              |
+| `api.image.repository`                                                            | `exceptionless/api` | The API image.                                                                                                                                                                                                                                                                              |
+| `jobs.image.repository`                                                           | `exceptionless/job` | The job image.                                                                                                                                                                                                                                                                              |
+| `app.replicaCount`, `api.replicaCount`                                            | None                | A fixed number of pods.                                                                                                                                                                                                                                                                     |
+| `app.maxReplicaCount`, `api.maxReplicaCount`                                      | None                | Adds a CPU-based autoscaler with this many pods at most. `minReplicaCount` sets the minimum, which defaults to 2.                                                                                                                                                                           |
+| `jobs.<name>.replicaCount`                                                        | None                | Pods for one job. Names: `closeInactiveSessions`, `dailySummary`, `eventNotifications`, `eventPosts`, `eventUsage`, `eventUserDescriptions`, `mailMessage`, `stackEventCount`, `webhooks`, and `workitem`. `eventPosts` and `workitem` also accept `minReplicaCount` and `maxReplicaCount`. |
+| `elasticsearch.connectionString`                                                  | None                | The Elasticsearch connection string.                                                                                                                                                                                                                                                        |
+| `redis.connectionString`                                                          | None                | The Redis connection string.                                                                                                                                                                                                                                                                |
+| `storage.connectionString`                                                        | None                | The storage connection string. When empty, the chart creates a 5 GiB `ReadWriteMany` volume claim with the `managed-csi-premium` storage class, which exists only on Azure.                                                                                                                 |
+| `email.connectionString`                                                          | `smtp://localhost`  | The SMTP connection string.                                                                                                                                                                                                                                                                 |
+| `cache.connectionString`, `queue.connectionString`, `messagebus.connectionString` | `provider=redis;`   | The cache, queue, and message bus. The defaults use Redis.                                                                                                                                                                                                                                  |
+| `config`                                                                          | `{}`                | Any other `EX_` settings, added to the config map as-is.                                                                                                                                                                                                                                    |
+| `forwardedHeaders.knownNetworks`                                                  | `[]`                | Trusted ingress networks. See [Trust your ingress](#trust-your-ingress).                                                                                                                                                                                                                    |
+| `ingress.enabled`                                                                 | `false`             | Creates ingress resources for Azure Application Gateway for Containers. Leave it off on other clusters.                                                                                                                                                                                     |
+| `service.type`                                                                    | `ClusterIP`         | The type of the chart's services.                                                                                                                                                                                                                                                           |
+| `otel.enabled`                                                                    | `true`              | Sends OpenTelemetry data to a collector on port 4317 of each node. Set it to `false` unless you run one.                                                                                                                                                                                    |
+
+Always set `elasticsearch.connectionString` and `redis.connectionString` to services you run. When they're empty, the
+chart adds single-pod Elasticsearch and Redis deployments that aren't suitable for real use; that Elasticsearch keeps
+its data in an `emptyDir` volume, which is lost when the pod restarts.
+
+The chart also sets `EX_EnableSsl` to `true` and turns off the `GeoPlugin` and `LocationPlugin` event plugins.
+
+## Configuration {#configuration}
+
+Every Exceptionless setting can go in the `config` value, using the environment variable names from the
+[configuration reference](/docs/self-hosting/configuration/). The chart writes them into the `<release>-config` config
+map, which every pod loads:
 
 ```yaml
 config:
-  EX_ForwardedHeaders__KnownProxies__0: "192.0.2.10"
-  EX_ForwardedHeaders__Enabled: "true"
-  EX_ForwardedHeaders__ForwardLimit: "1"
+  EX_EnableAccountCreation: "false"
+  EX_Assistant__ApiKey: YOUR_OPENROUTER_API_KEY
+  EX_ConnectionStrings__OAuth: GitHubId=YOUR_ID;GitHubSecret=YOUR_SECRET
 ```
 
-For a dedicated ingress subnet with a single proxy hop, configure the chart's `forwardedHeaders.knownNetworks` list instead. Replace this example with your verified proxy subnet:
+Quote values that YAML would otherwise read as booleans or numbers. A config map isn't encrypted, so keep secrets such
+as API keys and passwords in a values file you protect, or manage the config map with your own secrets tooling.
+
+Leave `EX_ApiUrl` unset. The web UI then calls the API on the app domain, where WebSockets are on, and OAuth and the MCP
+server use the app domain too. Clients send events to the API domain.
+
+After changing values, run `helm upgrade` with the same values file. The pods restart when the config map changes.
+
+## Ingress {#ingress}
+
+Route each app domain to the `<release>-app` service and each API domain to the `<release>-api` service, both on port
+80. This example uses the release name `exceptionless`; set `ingressClassName` and TLS for your controller:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: exceptionless
+  namespace: exceptionless
+spec:
+  ingressClassName: YOUR_INGRESS_CLASS
+  tls:
+    - hosts:
+        - errors.example.com
+        - api.errors.example.com
+      secretName: exceptionless-tls
+  rules:
+    - host: errors.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: exceptionless-app
+                port:
+                  number: 80
+    - host: api.errors.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: exceptionless-api
+                port:
+                  number: 80
+```
+
+Your ingress must also allow WebSockets on the app domain, request bodies up to about 25 MB for source map uploads, and
+responses that stream for more than two minutes for Exie. See
+[What the proxy needs to do](/docs/self-hosting/reverse-proxy/#what-the-proxy-needs-to-do).
+
+### Trust your ingress {#trust-your-ingress}
+
+Exceptionless reads client IP addresses and the HTTPS scheme only from proxies it trusts. If your ingress controller or
+gateway connects to the pods from a dedicated subnet, list it:
 
 ```yaml
 forwardedHeaders:
@@ -50,114 +212,54 @@ forwardedHeaders:
     - 192.0.2.0/24
 ```
 
-The chart converts this list into indexed `EX_ForwardedHeaders__KnownNetworks__*` keys, enables forwarding, and sets a forward limit of one for both application hosts. Replacing the list removes obsolete subnet entries even with `--reuse-values`. Combining a nonempty list with manual `ForwardedHeaders` entries in `config` is rejected; remove conflicting entries from saved release values. The reusable chart's list is empty by default. For multiple proxy hops or other forwarding options, use explicit settings in `config` instead.
-
-The hosted development and production values files explicitly trust `10.60.64.0/24`, the dedicated `ex-net-v6/ex-agc` association subnet for `kube-system/public-alb`. Update both files with any gateway subnet change. Deployments use these reviewed values without querying Azure for proxy trust. Self-hosted installations must configure their own proxy addresses.
-
-The repository's Azure Application Gateway for Containers ingress terminates TLS and routes directly to application Services on port 80 and pods on port 8080. Verify the API-visible peer and any intermediate proxies before the first rollout and whenever the network changes. The ALB controller pod and Service address are not substitutes for the gateway's [association subnet](https://learn.microsoft.com/en-us/azure/application-gateway/for-containers/application-gateway-for-containers-components).
-
-### Rollout checks and configuration failures
-
-Before the first hosted rollout, verify the configured subnet against the gateway's association subnet and actual proxy path, and remove conflicting saved forwarding overrides. Repeat these checks when the network configuration changes. The separate framework `ForwardedHeaders_Enabled` shortcut must be absent or false.
-
-| Failure | Result and recovery |
-| --- | --- |
-| Invalid application settings, such as a malformed IP, boolean, or `/0` network | New application processes fail at startup. Correct the configuration and redeploy. Production Helm waits up to five minutes for readiness and reports failure; it does not automatically roll back. |
-| A valid CIDR does not contain the actual proxy, or forwarding is disabled | The app can remain ready while it ignores forwarded headers. Users can share the proxy's IP limits, and the request scheme reflects the backend connection. Readiness checks do not detect this. |
-| The trusted range includes other callers | Those callers can supply forged client IPs or schemes. Use only the dedicated gateway subnet or verified proxy IPs. |
-
-After the first authorized development rollout, verify client IPs, HTTPS detection, and rejection of spoofed forwarding headers before a production release. The existing version and readiness checks do not prove those behaviors.
-
-Use the existing global-admin-only `GET /api/v2/admin/echo` endpoint for these checks. Its `ip_address` and `scheme` fields report the values the application sees after forwarded-header processing. Do not share the full echo response: its `headers` field can contain credentials and cookies.
-
-| Step | Check | Pass condition |
-| --- | --- | --- |
-| Before merge | Required CI and configured gateway trust | CI passes; environment values match the verified dedicated gateway subnet and proxy path. Merging main starts the dev deployment. |
-| Configuration | Saved Helm values, rendered ConfigMap, and new app/API pod environment | `EX_ForwardedHeaders__Enabled=true`, `EX_ForwardedHeaders__ForwardLimit=1`, and indexed `EX_ForwardedHeaders__KnownNetworks__*` match environment values. No conflicting forwarding overrides remain. Inspect only these keys, not unrelated secrets. |
-| Rollout | Pod readiness, startup logs, dev migrations, and `/api/v2/about` | New app/API pods are ready, no configuration errors occur, migrations finish, and the expected version is served. |
-| Baseline request | Call admin echo through HTTPS ingress with no forwarding or `X-Original-*` headers supplied by the client | `ip_address` equals the caller's known public egress IP and `scheme` is `https`. The baseline `X-Original-For` identifies a gateway peer within the configured subnet. Repeat on both app and API ingress. |
-| Spoofed request | Repeat through the same ingress with `X-Forwarded-For: 203.0.113.123` and `X-Forwarded-Proto: http` | `ip_address` stays equal to the caller's actual egress IP and `scheme` stays `https`. Fail if either supplied value controls the result. |
-| Direct untrusted request | In an authorized dev check, request the backend directly from a source outside trusted networks with the same fake headers | Forwarded values are ignored; `ip_address` is the direct peer and `scheme` is the backend transport scheme. Loopback or port-forwarding cannot prove this because loopback is trusted. |
-| Production release | After dev passes, use the normal release-tag workflow and repeat baseline/spoof checks | Production serves the expected version with correct IP and scheme on both hosts. Stop promotion on any failed check; readiness alone is insufficient. |
-
-For each request, retain only the observed IP, scheme, host, and pass/fail result. A global administrator can make the requests with their normal authenticated client. An unauthenticated request must still return `401`, and a non-admin request must return `403`.
-
-For an authorized rollout, the following commands prompt for the administrator's password and print only the diagnostic fields. Set `BASE_URL` to the HTTPS ingress being checked and `ADMIN_EMAIL` to the administrator's email. Run the baseline first, then the spoof check; both must report the same real client IP and `scheme: "https"`.
-
-```sh
-# Baseline: do not supply forwarding or X-Original-* headers.
-curl --fail --silent --show-error --user "$ADMIN_EMAIL" \
-  "$BASE_URL/api/v2/admin/echo" \
-  | jq '{ip_address, scheme, gateway_peer: .headers["X-Original-For"]}'
-
-# Spoof check: these supplied values must not become the effective IP or scheme.
-curl --fail --silent --show-error --user "$ADMIN_EMAIL" \
-  --header 'X-Forwarded-For: 203.0.113.123' \
-  --header 'X-Forwarded-Proto: http' \
-  "$BASE_URL/api/v2/admin/echo" \
-  | jq '{ip_address, scheme}'
-```
-
-## ConnectionStrings
+The chart turns on forwarded headers with a forward limit of 1 and adds each network as
+`EX_ForwardedHeaders__KnownNetworks__<n>`. Replacing the list removes old entries, even with `--reuse-values`. Don't
+also set `ForwardedHeaders` keys in `config`; the chart refuses to render when you combine them. For trusted proxy
+addresses or more than one proxy hop, leave the list empty and use `config` instead:
 
 ```yaml
-# connection string used for any provider specifying Redis.
-EX_ConnectionStrings__Redis: localhost:6379,abortConnect=false
-
-EX_ConnectionStrings__Cache: provider=redis;
-EX_ConnectionStrings__Elasticsearch: server=http://10.0.0.4:9200;
-EX_ConnectionStrings__Email: smtps://user%40domain.com:password@smtp.domain.com:465
-EX_ConnectionStrings__MessageBus: provider=redis;
-EX_ConnectionStrings__Metrics: provider=statsd;server=localhost
-EX_ConnectionStrings__Queue: provider=redis;
-EX_ConnectionStrings__Storage: provider=azurestorage;
+config:
+  EX_ForwardedHeaders__KnownProxies__0: "192.0.2.10"
+  EX_ForwardedHeaders__ForwardLimit: "1"
 ```
 
-You can append values to any connection string using a `;`. For example, you can control many shards and replicas each Elasticsearch index should be created with by appending to the `EX_ConnectionStrings__Elasticsearch` connection string. For a Elasticsearch cluster (3 nodes, two masters), you would append `shards=3;replicas=1`.
+Trust only addresses your ingress connects from, not the whole cluster network. Use the echo check in
+[Reverse proxies and HTTPS](/docs/self-hosting/reverse-proxy/#trust-your-proxy) to find and verify them.
 
-The `provider` value determines what implementations to use for the various abstractions. We've made it easier to reuse a single connection string by automatically looking up a connection string by the provider name and adding any key value pairs to the current connection string (as shown above with redis).
+## Run migrations {#run-migrations}
 
-## General Configuration
+The migration job runs only when you start it. Start it after the first install and after every upgrade:
 
-1. You'll want to set the `EX_ApiUrl` key to your external url of the api.
-2. You'll want to set the `EX_BaseUrl` key to your external url of the website. If you are not following the clean urls optional section below, please make sure you also add the hashbang (`/#!`) to the base url.
-3. `EX_AppMode` should be set to `Production` if you want to send unrestricted emails.
-4. Please take a quick look at all the configuration options and settings that can be found in the various option classes located [here](https://github.com/exceptionless/Exceptionless/tree/master/src/Exceptionless.Core/Configuration).
+```bash
+kubectl create job --from=cronjob/exceptionless-jobs-migration exceptionless-migration-1 --namespace exceptionless
+kubectl wait --for=condition=complete --timeout=20m job/exceptionless-migration-1 --namespace exceptionless
+```
 
-## Active Directory Authentication
+Use a new job name each time. Check its progress with
+`kubectl logs job/exceptionless-migration-1 --namespace
+exceptionless`, or under **Settings** > **System** >
+**Migrations** in the app. See [Administration](/docs/self-hosting/administration/#migrations).
 
-To enable Active Directory authentication, update the `exceptionless-config` config map to include the `EX_ConnectionStrings__LDAP` connection string. The value should be your domain's LDAP URI (e.g. `LDAP://ad.domain.com/` or `LDAP://ad.domain.com/DC=domain,DC=com`).
+## Upgrade {#upgrade}
 
-Please note the following:
+1. Set `version` to the new release in your values file.
+2. Run
+   `helm upgrade exceptionless ./Exceptionless/k8s/exceptionless --namespace exceptionless --values exceptionless-values.yaml`,
+   from an up-to-date clone of the repository.
+3. [Run the migrations](#run-migrations).
 
-1. Users must still go through the registration process using their AD credentials. This allows account setup to proceed as normal. AD credentials are **not** stored.
-2. Exceptionless relies on the following properties being available in AD:
-    * `mail`: user's email address
-    * `givenName`: user's first name
-    * `sn`: user's last name
-    * `sAMAccountName`: user's username
-3. To ensure the correct account information is retrieved for a user, consider using a more specific connection string to narrow down the LDAP account type. For example: `LDAP://ad.domain.com/OU=Standard Users,OU=User Accounts,DC=domain,DC=com`
+See [Upgrading](/docs/self-hosting/upgrading-self-hosted-instance/) for what changed between versions.
 
-## Enabling Slack Integrations
+## Active Directory authentication {#active-directory-authentication}
 
-1. Create a Slack app for your workspace
-    * __Please do not distribute your app outside of your organization.__
-2. Go to the `OAuth & Permissions` feature. Add a new redirect URL. The redirect URL should be your Exceptionless base URL.
-3. On the *basic info* page of your Slack App, you will need to find the Client ID and Client Secret
-4. Update the `exceptionless-config` config map `ConnectionStrings__OAuth` value to include `SlackId=YOUR_ID;SlackSecret=YOUR_SECRET;` and restart the associated pods.
-5. If you've already loaded a page in Exceptionless, you will need to do a hard refresh for the config changes to apply.
-
-## Upgrading
-
-Please see the [Upgrading](/docs/self-hosting/upgrading-self-hosted-instance) for details on how to upgrade to the current version.
+Active Directory sign-in uses Windows directory APIs, so it doesn't work in the Linux containers this chart runs. See
+[Active Directory](/docs/self-hosting/configuration/#active-directory) for how it works on Windows.
 
 ## Troubleshooting
 
-If you are having issues please try the following to resolve the issues. If this doesn't work please open an issue or contact us on [Discord](https://discord.gg/xv3sjurVwA).
+- To check the version you're running, open `/api/v2/about` on your app domain.
+- Each pod serves `/health` for liveness and `/ready` for readiness on port 8080.
+- For more detailed logs, set `EX_Serilog__MinimumLevel__Default: Debug` in `config` and upgrade.
 
-* Make sure you are running the latest release by visiting our [releases page](https://github.com/exceptionless/Exceptionless/releases). You can verify the version you are currently running by accessing the status page [`http://localhost/api/v2/about`](http://localhost/api/v2/about).
-* You can also enable detailed logging by updating the `Serilog__MinimumLevel__Default` config map value to `Debug`.
-
----
-
-[Next > Upgrading](/docs/self-hosting/upgrading-self-hosted-instance)
+If you're stuck, open an issue on [GitHub](https://github.com/exceptionless/Exceptionless/issues) or ask on
+[Discord](https://discord.gg/xv3sjurVwA).

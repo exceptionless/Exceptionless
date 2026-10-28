@@ -1,163 +1,240 @@
 ---
-title: "Project Settings"
-description: "Configure Exceptionless project settings: API keys, data exclusions, error stacking, spam detection, client configuration values, and event exclusions."
+title: "Projects"
+metaTitle: "Exceptionless project settings"
+description: "Manage a project's API keys, client configuration values, data exclusions, stacking and spam settings, source maps, and reset or delete the project."
+sources:
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/routes.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/+layout.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/manage/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/api-keys/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/settings/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/configuration-values/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/source-maps/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/stacks/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/usage/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/list/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/tokens/project-token.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/tokens/components/table/token-actions-cell.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/table/config-options.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/dialogs/add-project-config-dialog.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/dialogs/reset-project-data-dialog.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/dialogs/remove-project-dialog.svelte
+  - src/Exceptionless.Core/Models/Collections/SettingsDictionary.cs
+  - src/Exceptionless.Core/Extensions/ProjectExtensions.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/0_ThrottleBotsPlugin.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/40_RequestInfoPlugin.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/45_EnvironmentInfoPlugin.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/90_RemovePrivateInformationPlugin.cs
+  - src/Exceptionless.Core/Configuration/AppOptions.cs
+  - src/Exceptionless.Web/Api/Endpoints/ProjectEndpoints.cs
+  - src/Exceptionless.Web/Utility/Headers.cs
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
+  - Exceptionless.Net:src/Exceptionless/ExceptionlessClient.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/Default/010_EventExclusionPlugin.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/Default/110_IgnoreUserAgentPlugin.cs
+  - Exceptionless.Net:src/Exceptionless/Extensions/StringExtensions.cs
+  - Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts
+  - Exceptionless.JavaScript:packages/core/src/configuration/Configuration.ts
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/EventExclusionPlugin.ts
 ---
 
-# Project Settings
+# Projects
 
-Exceptionless is different from most error monitoring services in that it provides you with real-time updates. That includes updates from your Exceptionless project settings to your client. What does that mean?
+A project is one app or service that sends events to Exceptionless. Each project has its own API keys and settings. This
+page covers every project setting: API keys, client configuration values, data exclusions, stacking, spam detection,
+source maps, and resetting or deleting a project.
 
-All project settings are synced to the client in almost real time, so when an event is submitted to Exceptionless we send down a response header with the current configuration version. If a newer version is available we will immediately retrieve and apply the latest configuration. We will also periodically check for newer configuration when the client is idle.
+## Open a project's settings
 
-By default the client will check after `5 seconds` on client startup (*if no events are submitted on startup*) and then every `2 minutes` after the last event submission for updated configuration settings.
+In the sidebar, open **Settings** > **Projects** and click the project. The settings page has these tabs:
 
-- Checking for updated settings doesn't count towards plan limits.
-- Only the current configuration version is sent when checking for updated settings (no user information will ever be sent).
-- If the settings haven't changed, then no settings will be retrieved.
+- **General**: the project name, shortcuts, and the reset and delete buttons.
+- **API Keys**: client API keys and source map upload tokens.
+- **Settings**: the default log level, data exclusions, error stacking, source maps, and spam detection.
+- **Configuration**: client configuration values.
+- **Integrations**: Slack, webhooks, and Zapier. See [Integrations](/docs/integrations/).
+- **Stack Management**: every stack in the project, including ignored and discarded ones you want to restore. See
+  [Stacks](/docs/managing-stacks/).
+- **Usage**: the project's event history against the organization's plan limit, including blocked, discarded, too big,
+  and deleted events.
 
-You can also **turn off the automatic updating of configuration settings when idle** in each client respectively. Please see the [client specific documentation](#client-configuration).
+The **General** tab also has **Go To Stacks**, **Client Setup** (install a client and send your first event),
+**Notifications** (your own email notifications for this project, see [Notifications](/docs/notifications/)), and
+**Generate Sample Data**, which queues sample events so you can try the app.
 
-Now, let's take a look at the available settings for your projects. There are quite a few, so feel free to jump to the section that interests you below:
+You can also reach most of these from the command palette: press <kbd>/</kbd> and type **Project**. See
+[Navigating the app](/docs/navigation/).
 
-<!-- - [Clients](#clients) -->
-- [API Keys](#api-keys)
-- [Data Exclusions](#data-exclusions)
-  - [Example usage](#example-usage)
-- [Error Stacking](#error-stacking)
-  - [User Namespaces](#user-namespaces)
-  - [Common Methods](#common-methods)
-- [Spam Detection](#spam-detection)
-  - [Automatic Spam Detection](#automatic-spam-detection)
-- [Client Configuration](#client-configuration)
-- [Event Exclusions](#event-exclusions)
-  - [Example](#example)
-- [Using Client Configuration Settings](#using-client-configuration-settings)
+## API keys {#api-keys}
 
----
+A client API key lets an app send events to one project. It can't read your data or change settings, so it's safe to
+ship inside an app.
 
-<!-- ## Clients
-
-Exceptionless has a robust API that can be used through any client interface, but as a convenience, we have provided two Exceptionless client wrappers—one for .NET and one for JavaScript.
-
-Each client wrapper has its own guide to help you get started. Visit either one below.
-
-- [.NET](/docs/clients/dotnet/)
-- [JavaScript / Node.js](/docs/clients/javascript/) -->
-
-## API Keys
-
-Before doing anything, you want to create an API Key for your project. This protects you and your team by ensuring you are using a revokable key. Instead of using a user-scoped key that would provide access to everything, a project-scoped key is limited to—you guessed it—a single project.
-
-To open your project settings, go to **Settings** > **Projects** in the sidebar and click your project. The settings page has tabs for **General**, **API Keys**, **Settings**, **Configuration**, **Integrations**, **Stack Management**, and **Usage**.
-
-To generate an API Key, click the **API Keys** tab, click **Add token**, and choose **Client API key**. The same menu also creates a **Source map upload token** for uploading source maps from CI/CD.
+1. Open the **API Keys** tab.
+2. Click **Add token** and choose:
+   - **Client API key** to send events from an application or service.
+   - **Source map upload token** to upload source maps from CI/CD for this project only. Its scope is
+     `source-maps:write`.
+3. Open the menu (**...**) on the new row and click **Copy Token**.
 
 ![API Keys tab with the Add token menu open](/assets/img/docs/project-settings-api-keys-light.webp)
 
-## Data Exclusions
+The same menu has **Edit Notes**, **Disable Token** (or **Enable Token**), and **Delete**. A disabled key is struck
+through in the list and stops working until you enable it again. To rotate a key, add a new one, deploy it, then disable
+or delete the old one.
 
-Data can be excluded from your error reports by specifying the information you'd like excluded. This is especially important when you are dealing with sensitive information. For example, an error on log in might, by default, send a user's password to our server. You probably don't want that, so you can exclude that type of data from being sent. For more on how we handle security issues, check out our [security page](/docs/security).
+To install a client with the key, open **Client Setup** on the **General** tab or see [Choose a client](/docs/clients/).
 
-To get started, go to your project settings page and click the **Settings** tab. The **Data Exclusions** section is near the top.
+## Client configuration values {#client-configuration}
 
-![Data Exclusions section on the project Settings tab](/assets/img/docs/project-settings-data-exclusions-light.webp)
+Client configuration values are key-value pairs that you set on the project and that the Exceptionless clients download
+while your app runs. Use them to change your app's behavior without a redeploy, for example to turn a feature on or off
+or to drop a noisy kind of event.
 
-Enter a comma delimited list of field names that should be removed from any error report data (e.g., extended data properties, form fields, cookies and query parameters). You can also specify a field name with wildcards `*` to specify starts with, ends with, or contains just to be extra safe. Changes save automatically when you leave the field.
+To add one:
 
-Turn on the switch below the field to automatically remove user identifiable information from events, such as the machine name, user information, and IP addresses.
-
-### Example usage
-
-- Entering `Password` will remove any field **named** `Password` from the report.
-- Entering `Password*` will remove any field that **starts with** `Password` from the report.
-- Entering `*Password` will remove any field that **ends with** `Password` from the report.
-- Entering `*Password*` will remove any field that **contains** `Password` from the report.
-
----
-
-## Error Stacking
-
-You can also control how errors are stacked by specifying user namespaces (if you application code utilizes namespaces) or common methods (in all apps) to ignore. Let's take a look at how each works.
-
-### User Namespaces
-
-If your app runs on .NET or other languages that support namespaces, you can define what namespaces your code runs in. This allows Exceptionless to pick a stacking target within your code.
-
-You can set this up on the project settings page in the **Settings** tab, under **Error Stacking** > **User Namespaces**. You simply need to provide a comma delimited list of the namespace names that your applications code belongs to. If this value is set, only methods inside of these namespaces will be considered as stacking targets.
-
-### Common Methods
-
-Slightly different from your namespace definitions above, defining common methods here will *exclude* stacks from building up for specified methods. This is important as you may have catch-all methods in your code or specific methods that you expect to have frequent errors you'd rather not pass to Exceptionless.
-
-You can set this up on the project settings page in the **Settings** tab, under **Error Stacking** > **Common Methods**. Simply supply a comma delimited list of common method names that should not be used as stacking targets.
-
----
-
-## Spam Detection
-
-Spam detection allows you to prevent noise from being tracked. Bots crawling your site or app can contribute to stacks that you simply do not want to see or track. We make it easy to filter these out.
-
-On your project settings page, click the **Settings** tab and scroll down to the **Spam Detection** section. There, you can specify a comma delimited list of user agents that should be ignored client side. This list supports wildcards and by default covers a vast majority of bots.
-
-![Spam Detection section on the project Settings tab](/assets/img/docs/project-settings-spam-detection-light.webp)
-
-### Automatic Spam Detection
-
-We also provide you with a simple tool to automatically detect spam from a single IP address sending in a high volume of activity. Turn on the switch below the user agent list, and we will automatically hide high volumes of events coming from a single client IP address.
-
----
-
-## Client Configuration
-
-Custom client configuration values allow you to control the behavior of your app in real time. They are a dictionary of key value pairs (string key, string value). Usage examples include controlling data exclusions to protecting sensitive data and or enabling/disabling features.
-
-To set up custom client configurations, go to **Settings** > **Projects** in the sidebar and click your project. On the project settings page, click the **Configuration** tab. Click the **+** (Add Configuration Value) button, enter a **Key** and **Value**, and click **Add Configuration Value**.
+1. Open the **Configuration** tab.
+2. Click **+** (**Add Configuration Value**).
+3. Enter a **Key** and a **Value**, then click **Add Configuration Value**.
 
 ![Configuration tab listing a project's client configuration values](/assets/img/docs/project-settings-configuration-light.webp)
 
-Once you have made changes to your Project Settings, the configuration values will only be read by your client if your client is aware of the configuration. This happens out of the box with the [Exceptionless .NET Client](/docs/clients/dotnet/) and the [Exceptionless JS Client](/docs/clients/javascript/). If you are building your own client or simply wrapping our API, you can still make use of these configuration values by reading them in periodically via a `GET` request to `/api/v2/projects/{id}/config`.
+To change or remove a value, open its menu (**...**) and click **Edit** or **Delete**.
 
-## Event Exclusions
+The table doesn't list the values that the **Settings** tab manages: `@@DataExclusions`, `@@IncludePrivateInformation`,
+`@@UserAgentBotPatterns`, `@@log:*`, `UserNamespaces`, and `CommonMethods`.
 
-The Exceptionless clients have the ability to automatically discard events based on client configuration settings. We have a plugin that looks at the client configuration settings using a simple key name convention.
+### How values reach your app
 
-To help us understand this consider that every event has a `Type` and `Source` property. The `Type` can be anything but we have a few first class types like [`error`, `usage`, `log`, `404`, `session`](https://github.com/exceptionless/Exceptionless/blob/master/src/Exceptionless.Core/Models/Event.cs#L92-L100). `Source` is usually set to the exception type when dealing with `error` events or the `log` source.
+The .NET and JavaScript clients keep their copy up to date:
 
-With that said, you can exclude any event type and source by adding a new client configuration key `@@EVENT_TYPE:SOURCE` by replacing the `EVENT_TYPE` and `SOURCE` respectively and specify a configuration value of `false`. *You can also specify a wild card `*` as part of the `SOURCE`.*
+- Every response to an event submission includes the project's current configuration version in the
+  `X-Exceptionless-ConfigVersion` header. If it's newer than the client's copy, the client downloads the new values.
+- When the app is idle, the client also checks for changes: 5 seconds after startup, then every 2 minutes.
+- A check sends only the client's current version, and downloads values only when they've changed. Checks don't count
+  toward your plan's event limit.
 
-### Example
+You can change the idle interval, or turn idle checks off, in each client's configuration. A custom client can download
+the values itself with `GET /api/v2/projects/config` and its client API key.
 
-- To discard all errors of type `System.ArgumentNullException`:
-  - **KEY:** `@@error:System.ArgumentNullException`
-  - **VALUE:** `false`
+To read values and react to changes in your code, see the client pages:
 
-- To discard all errors in general you would use a wildcard `*`:
-  - **KEY:** `@@error:*`
-  - **VALUE:** `false`
+- [.NET client configuration values](/docs/clients/dotnet/client-configuration-values/)
+- [JavaScript client configuration values](/docs/clients/javascript/client-configuration-values/)
 
-- To discard all 404s in general you would use a wildcard `*`:
-  - **KEY:** `@@404:*`
-  - **VALUE:** `false`
+### Discard events with configuration values
 
-- To discard all 404s for a specific resource, use the resource's event source as the key.
-  - **KEY:** `@@404:/invalid-file-path.jpg`
-  - **VALUE:** `false`
+The clients discard events whose type and source match a key in the form `@@EVENT_TYPE:SOURCE` with the value `false`.
+The source can contain `*` as a wildcard. For errors, the source is the exception type, and the clients check inner
+exceptions too.
 
-We have also added some additional known values to support **minimum log levels**. The known values are: `Trace`, `Debug`, `Info`, `Warn`, `Error`, `Fatal`, `Off`.
+| Key                                    | Value   | What it discards                                 |
+| -------------------------------------- | ------- | ------------------------------------------------ |
+| `@@error:System.ArgumentNullException` | `false` | Errors with an `ArgumentNullException`           |
+| `@@error:*`                            | `false` | All errors                                       |
+| `@@404:*`                              | `false` | All 404 events                                   |
+| `@@404:/favicon.ico`                   | `false` | 404 events for one path                          |
+| `@@usage:*`                            | `false` | All [feature usage](/docs/feature-usage/) events |
 
-- Sets a minimum log level of `Info` for my application:
-  - **KEY:** `@@log:*`
-  - **VALUE:** `Info`
+Log events work the same way, except the value is a minimum log level: `Trace`, `Debug`, `Info`, `Warn`, `Error`,
+`Fatal`, or `Off`. The **Default Log Level** on the **Settings** tab sets `@@log:*`, and a key such as
+`@@log:*AuthController` overrides it for matching log sources. See [Logs and log levels](/docs/setting-log-levels/).
 
-- You can also set a log level on a per log source basis. This will override any general minimum log level (e.g., `@@log:*` you have defined!
-  - **KEY:** `@@log:*AuthController`
-  - **VALUE:** `Trace`
+## Data exclusions {#data-exclusions}
 
-## Using Client Configuration Settings
+Data exclusions remove fields you don't want stored, such as passwords or card numbers, from your events. They're on the
+**Settings** tab, under **Data Exclusions**.
 
-- [.NET](/docs/clients/dotnet/client-configuration-values)
-- [JavaScript / Node.js](/docs/clients/javascript/client-configuration-values)
+![Data Exclusions section on the project Settings tab](/assets/img/docs/project-settings-data-exclusions-light.webp)
 
----
+Enter a comma-separated list of field names. Matching is case-insensitive, and `*` is a wildcard:
 
-[Next > Versioning](/docs/versioning)
+| Entry        | Removes fields that   |
+| ------------ | --------------------- |
+| `Password`   | are named `Password`  |
+| `Password*`  | start with `Password` |
+| `*Password`  | end with `Password`   |
+| `*Password*` | contain `Password`    |
+
+The clients remove matching fields from the data they collect, such as extended data properties, form fields, cookies,
+and query string parameters, before an event leaves your app. The server also removes matching cookies, query string
+parameters, and POST data fields from every event it receives, so those exclusions apply even to clients that don't
+support them. Changes save when you leave the field.
+
+Turn on **Automatically remove user identifiable information from events** to have the server strip personal data from
+every event in the project: the user identity, the email address on user descriptions, IP addresses, the machine name,
+cookies, query string parameters, and POST data.
+
+For what each client collects and the settings that control it in code, see [Security and privacy](/docs/security/) and
+the [.NET private information](/docs/clients/dotnet/private-information/) page.
+
+## Error stacking
+
+The **Error Stacking** section of the **Settings** tab controls which stack frame Exceptionless uses to group errors
+into stacks:
+
+- **User Namespaces**: a comma-separated list of the namespaces your code is in, such as `Contoso`. When set, only
+  methods in these namespaces are used as stacking targets.
+- **Common Methods**: a comma-separated list of method names, such as `Assert`, that should never be used as stacking
+  targets. Use it for shared helpers that throw for many unrelated reasons.
+
+Changes apply to new errors. See [Stacking](/docs/concepts/stacking/) for how Exceptionless picks a stack.
+
+## Source maps
+
+Exceptionless downloads public source maps for minified JavaScript automatically. To upload private maps, click **Manage
+source maps** under **JavaScript Source Maps** on the **Settings** tab, or create a **Source map upload token** on the
+**API Keys** tab for your build pipeline. See [Source maps](/docs/clients/javascript/source-maps/).
+
+## Spam detection {#spam-detection}
+
+The **Spam Detection** section of the **Settings** tab filters out bots and crawlers.
+
+![Spam Detection section on the project Settings tab](/assets/img/docs/project-settings-spam-detection-light.webp)
+
+- **User agents**: a comma-separated list of user agent patterns, with `*` wildcards. New projects start with
+  `*bot*,*crawler*,*spider*,*aolbuild*,*teoma*,*yahoo*`. The .NET and JavaScript clients don't send events from requests
+  whose user agent matches. The server marks matching events as bots and doesn't send notifications for them.
+- **Reduce noise by automatically hiding high volumes of events coming from a single client IP address**: when more than
+  25 events arrive from one public IP address within five minutes, the server discards them and deletes the events from
+  that window. This needs IP addresses, so it doesn't apply while the project removes user identifiable information.
+
+## Reset project data
+
+Resetting deletes every event and stack in the project and keeps its settings, API keys, and integrations. Use it to
+start fresh after testing.
+
+1. On the **General** tab, click the warning button (**Reset project data**).
+2. Click **Reset Project Data** to confirm.
+
+The reset runs in the background and can't be undone.
+
+## Delete a project {#delete-a-project}
+
+1. On the **General** tab, click the **X** button (**Delete project**).
+2. Click **Delete Project** to confirm.
+
+The project and its data are queued for deletion. You can also delete a project from its menu (**...**) on the
+**Projects** list.
+
+## Ask Exie
+
+[Exie](/docs/ai/exie/) is on Medium plans and up.
+
+```prompt exie
+List my projects and when each one last received an event.
+```
+
+```prompt exie
+How do I send events from my ASP.NET Core app to this project?
+```
+
+```prompt exie
+Which error types happened most in this project over the last 7 days?
+```
+
+With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can set up a client for you:
+
+```prompt agent
+Get the Exceptionless client setup for my project and add Exceptionless to this app. Read the API key from configuration instead of hard-coding it.
+```

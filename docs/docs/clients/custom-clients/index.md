@@ -1,122 +1,267 @@
 ---
-title: "Custom Exceptionless Clients"
-description: "Build a custom Exceptionless client in any language: use a client-scoped API key, follow the event data model and known data keys, and call the REST API."
+title: "Other languages and custom clients"
+navTitle: "HTTP and scripts"
+description: "Send events to Exceptionless from any language, or from Bash and PowerShell scripts, with one HTTP request and a client API key."
+sources:
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/configure/+page.svelte
+  - src/Exceptionless.Web/Api/Endpoints/EventEndpoints.cs
+  - src/Exceptionless.Web/Api/Handlers/EventHandler.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/07_SubmissionClientPlugin.cs
 ---
 
-# Custom Exceptionless Clients
+# Other languages and custom clients
 
-Exceptionless provides a [.NET Client](/docs/clients/dotnet/) and a [JavaScript Client](/docs/clients/javascript/) to make things convenient. However, we recognize that developers write code in all sorts of languages beyond .NET and JS. It is possible to use Exceptionless with any programming language. In fact, our API makes it really simple. However, to get the full power of Exceptionless, you may want to create your own custom client in the language of your choice.
+If there's no Exceptionless client for your language, you can still send errors, logs, and feature usage. Every event is
+one HTTP request to the REST API. This page shows how to send events from shell scripts and from any language; the
+[client specification](/docs/reference/client-spec/) covers what a full client library does on top of that.
 
-This guide will focus on the concepts necessary to successfully implement your custom client. Building a client in Exceptionless requires three main things:
+## Before you start {#before-you-start}
 
-1. Authentication
-2. Understanding of the data models
-3. Usage of the correct API endpoints
+You need:
 
-### Authentication
+- A **client API key** for your project. Copy one from the project's **API Keys** settings; see
+  [Client-scoped tokens](/docs/api/project-tokens/).
+- The **events URL**: `https://api.exceptionless.io/api/v2/events`.
 
-One of the key things to understand when creating a custom client (or when using the Exceptionless API) is the security implications of the API token generated and used. Exceptionless has two types of API tokens:
+> [!NOTE]
+> On a self-hosted instance, use your own host instead, for example `https://exceptionless.example.com/api/v2/events`.
 
-* User-scoped
-* Client/Project-scoped
+## Send events from a shell script {#shell-scripts}
 
-Think of a user-scoped key as the master key for that particular user. It allows for EVERYTHING. This includes password resets, deleting organizations, deleting users, and more. This is not the type of key you want to generate with your custom client. You also don't want to manually generate and use these types of keys within your client.
+The app's setup page has ready-made commands with your key filled in: open the project's **Client setup** and choose
+**Command Line: Bash Shell** or **Command Line: PowerShell**. They send a log event:
 
-Instead, you should use a client-scoped key. A client-scoped key only has access to very specific endpoints and provides a significantly increased level of security compared to using a user-scoped key.
+```bash tab="Bash"
+curl "https://api.exceptionless.io/api/v2/events" \
+    --request POST \
+    --header "Authorization: Bearer YOUR_API_KEY" \
+    --header "Content-Type: application/json" \
+    --data-binary '[{"type":"log","message":"Hello World!"}]'
+```
 
-In the Exceptionless UI, you can create a project API key from a project's settings page. To do so, go to **Settings** > **Projects** in the sidebar and click your project. On the settings page, click the **API Keys** tab, click **Add token**, and choose **Client API key** to generate a new client-scoped key.
+```powershell tab="PowerShell"
+$body = @{
+ "type"="log"
+ "message"="Hello World!"
+} | ConvertTo-Json
 
-![API Keys tab with the Add token menu open](/assets/img/docs/project-settings-api-keys-light.webp)
+$header = @{
+ "Authorization"="Bearer YOUR_API_KEY"
+ "Content-Type"="application/json"
+}
 
-This is the key that will need to be passed into the configuration settings of your custom client.
+Invoke-RestMethod -Uri "https://api.exceptionless.io/api/v2/events" -Method "Post" -Body $body -Headers $header
+```
 
-### Understanding the Data Models
+The server responds `202 Accepted`, and the event shows up on the project's **Events** page within a few seconds.
 
-Exceptionless is designed to be as flexible as possible. In fact, you can send in almost any data you want with an event. We will display some pieces of data better than others, and if you make use of well-known keys, we can use those to make sure your events are stacked properly and displayed in a usable way within your dashboard.
+### Report a failed job {#report-a-failed-job}
 
-However, before you can begin to throw any and everything at Exceptionless, it's important to understand the basic structure of an event. Let's take a look at the event model:
+To report a cron job or deployment step that fails, send an error when the command exits with a non-zero code. This
+script uses the [GET submit endpoint](/docs/api/posting-events/#get) so `curl` can encode the message for you:
 
-```json
-{
-  "type": "error",
-  "source": "code.js line 655",
-  "reference_id": "123",
-  "message": "some event message",
-  "geo": "stringified lat and long values separated by a comma",
-  "date":"2030-01-01T12:00:00.0000000-05:00",
-  "value": 0,
-  "tags": ["string", "string", "string"],
-  "data": {},
+```bash tab="Bash"
+#!/usr/bin/env bash
+set -uo pipefail
+
+EXCEPTIONLESS_API_KEY="YOUR_API_KEY"
+
+report_failure() {
+  curl --silent --get "https://api.exceptionless.io/api/v2/events/submit" \
+    --header "Authorization: Bearer ${EXCEPTIONLESS_API_KEY}" \
+    --data-urlencode "type=error" \
+    --data-urlencode "source=$1" \
+    --data-urlencode "message=$2" \
+    --data-urlencode "tags=cron" \
+    --data-urlencode "host=$(hostname)" > /dev/null
+}
+
+if ! output=$(./nightly-backup.sh 2>&1); then
+  report_failure "nightly-backup" "Nightly backup failed: ${output: -1500}"
+  exit 1
+fi
+```
+
+```powershell tab="PowerShell"
+$apiKey = "YOUR_API_KEY"
+
+function Report-Failure([string]$Source, [string]$Message) {
+  $body = @{
+    "type"    = "error"
+    "source"  = $Source
+    "message" = $Message
+    "tags"    = @("scheduled-task")
+    "data"    = @{ "host" = $env:COMPUTERNAME }
+  } | ConvertTo-Json
+
+  Invoke-RestMethod -Uri "https://api.exceptionless.io/api/v2/events" -Method "Post" -Body $body `
+    -Headers @{ "Authorization" = "Bearer $apiKey"; "Content-Type" = "application/json" }
+}
+
+try {
+  & .\nightly-backup.ps1
+  if ($LASTEXITCODE -ne 0) { throw "nightly-backup.ps1 exited with code $LASTEXITCODE" }
+}
+catch {
+  Report-Failure "nightly-backup" "Nightly backup failed: $($_.Exception.Message)"
+  exit 1
 }
 ```
 
-Let's take each of these properties and explain them one-by-one.
+Extra query parameters, like `host` in the Bash script, are saved as custom data on the event.
 
-#### type
+## Send events from any language {#any-language}
 
-The type property is an important one because it tells Exceptionless how to treat your event. Remember that Exceptionless is not just for errors. If you look at your Dashboard, you'll see categories like Exceptions, Logs, and Feature Usage. We group events into these categories for you based on the `type` value you pass in.
+Any language that can make an HTTPS request can send events:
 
-You can pass in any type value you'd like as long as it is a string value. However, we recommend the following type values:
+1. Build the event as JSON. [Event format](/docs/reference/event-format/) lists every field and the reserved data keys,
+   such as `@simple_error` for errors and `@user` for the user.
+2. `POST` an array of events to the events URL with these headers:
+   - `Authorization: Bearer YOUR_API_KEY`
+   - `Content-Type: application/json`
+   - `User-Agent: your-client-name/1.0.0`, so the server records which client sent the event.
+3. Check for `202 Accepted`. See [Posting events](/docs/api/posting-events/#responses) for the other responses.
 
-* error
-* log
-* usage
-* 404
-* session
-* sessionend
+These examples report a caught error and only use the standard library. They read the key from the
+`EXCEPTIONLESS_API_KEY` environment variable.
 
-These values are pretty self-explanatory. If you have an error, use the `error` value, if you are logging an event, use `log`, and so on and so forth.
+```python tab="Python"
+# Python 3.10 or later
+import json
+import os
+import traceback
+import urllib.request
+from datetime import datetime, timezone
 
-#### source
+EVENTS_URL = "https://api.exceptionless.io/api/v2/events"
 
-The source value should be a string representing where the error happened in your code. This usually comes from the error object in whatever programming language you are writing in. This should be a string value representing the error location.
 
-#### reference_id
+def submit(events):
+    request = urllib.request.Request(
+        EVENTS_URL,
+        data=json.dumps(events).encode("utf-8"),
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {os.environ['EXCEPTIONLESS_API_KEY']}",
+            "Content-Type": "application/json",
+            "User-Agent": "my-python-reporter/1.0.0",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=10) as response:
+        return response.status
 
-The reference id is an identifier you can pass in in order to use later. For example, if you know that you will have other events that reference this one, you can make use of the reference identifier you pass in. This identifier can be any unique string value. UUID is good option here, but as long as the value is unique, you'll be good to go.
 
-#### message
+def report_exception(error):
+    return submit([{
+        "type": "error",
+        "date": datetime.now(timezone.utc).isoformat(),
+        "data": {
+            "@simple_error": {
+                "message": str(error),
+                "type": type(error).__name__,
+                "stack_trace": "".join(traceback.format_exception(error)),
+            },
+        },
+    }])
 
-The message can mean different things depending on the type of event you're passing through. If it's an error event, you may want to pick off the error message from the error object you receive, or you may want to create a custom error message. For a log event, you can simply pass in whatever message makes sense for the event.
 
-Whatever message you send through, just make sure it is a string value.
+try:
+    1 / 0
+except ZeroDivisionError as error:
+    print(report_exception(error))  # 202
+```
 
-#### geo
+```go tab="Go"
+package main
 
-If you are capturing ip information, you may have location-based information. If so, and if you want to capture that alongside your events, you can pass that as a value for the `geo` property. This needs to be a string value, so you should pass in the longitude followed by a comma then the latitude.
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"os"
+	"runtime/debug"
+	"time"
+)
 
-#### value
+const eventsURL = "https://api.exceptionless.io/api/v2/events"
 
-The value property is an open-ended integer field that allows you capture additional information about your events. This could be number of ice cream scoops served before the event happened, it could be number of dogs walked, or any other arbitrary piece of information.
+type event struct {
+	Type    string         `json:"type"`
+	Message string         `json:"message,omitempty"`
+	Date    time.Time      `json:"date"`
+	Data    map[string]any `json:"data,omitempty"`
+}
 
-#### tags
+func submit(events []event) (int, error) {
+	body, err := json.Marshal(events)
+	if err != nil {
+		return 0, err
+	}
 
-The tags property is a string array of values you want to use to categorize your events. We have some built-in understanding of how certain tags should work. For example, events with a "critical" tag will be labels and handled as such in the interface.
+	req, err := http.NewRequest(http.MethodPost, eventsURL, bytes.NewReader(body))
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("EXCEPTIONLESS_API_KEY"))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "my-go-reporter/1.0.0")
 
-The tags array takes string values only, and all tags will be visibile on the event details page.
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	return resp.StatusCode, nil
+}
 
-#### data
+func reportError(err error) (int, error) {
+	return submit([]event{{
+		Type: "error",
+		Date: time.Now(),
+		Data: map[string]any{
+			"@simple_error": map[string]string{
+				"message":     err.Error(),
+				"type":        fmt.Sprintf("%T", err),
+				"stack_trace": string(debug.Stack()),
+			},
+		},
+	}})
+}
 
-This is the most flexible of the properties that you send into Exceptionless. It is a dictionary object containing key/value pairs of any bits of information you want. That said, there are some know keys that will help Exceptionless better display information in this data dictionary:
+func main() {
+	status, err := reportError(errors.New("payment provider timed out"))
+	fmt.Println(status, err) // 202 <nil>
+}
+```
 
-`@error` - this indicates to Exceptionless that the event is an error. We will handle the event as such.
-`@simple_error` - this, like @error, indicates that the event is in an error. However, a simple error is less complex and the event object itself fits more neatly into what we've defined here so far.
-`@request` - Events from a web server will have a request object. [Here is an example of how this data should be formed](https://github.com/exceptionless/Exceptionless.JavaScript/blob/master/packages/core/src/models/data/RequestInfo.ts).
-`@environment` - This would be a string environment about your user's environment. [Here is an example of how that model should be formed](https://github.com/exceptionless/Exceptionless.JavaScript/blob/master/packages/core/src/models/data/EnvironmentInfo.ts).
-`@user` - This is an object that can contain the following: `identity`: string value, `name`: string value, `data`: any value.
-`@user_description` - This is an object that can contain the following: `email_address`: string value, `description`: string value, `data`: any value.
-`@level` - This is designed for log events to represent the log level. It can also be used to prevent logs from being captured depending on your log level settings in Exceptionless.
-`@submission_method` - Many apps have both global event listeners and specific areas where an event can be captured manually or ad hoc. To separate the submission methods of events, you can pass in whether an event was captured in a global listener, ad hoc, or however you want to describe the capturing of the event.
-`@stack` - This is the stringified error stack for an exception.
+Exceptionless groups `@simple_error` events into stacks by the error `type` and the stack trace, so the same error from
+the same place lands in one stack.
 
-When providing data to the Exceptionless server, there are specific data models dependent on the information you're trying to provide. We'll cover those models here.
+## Build a client library {#build-a-client}
 
-### Using the API
+A one-off request is enough for scripts. For an app, you'll want what the official clients do: queue events and send
+them in the background, retry when the network is down, back off when the server says so, merge duplicates, apply the
+project's data exclusions and log levels, and track sessions. The [client specification](/docs/reference/client-spec/)
+describes each of these, with the endpoints and status codes to handle.
 
-When building your custom client, the consumers of your client will be calling methods you create, but you, of course, will be wiring up those methods to reach out to the Exceptionless API. The API is well-documented with auto-generating docs for each endpoint. To get started, you can take a look at our [API Usage docs here](/docs/api/).
+If you build a client for a new language, tell us in the
+[Exceptionless repository](https://github.com/exceptionless/Exceptionless/issues).
 
-### Wrapping Up
+## Ask Exie
 
-A custom client gives you full flexibility. While the two clients provided by Exceptionless do all of the above work for you, extending them would require forking the code. If you want extended capabilities or client support for additional programming languages, building a custom client might be the right move for you.
+```prompt exie
+Did the Billing project receive any events in the last 10 minutes?
+```
 
-We can't way to see what you build.
+```prompt exie
+Where do I find the setup steps for sending events to the Billing project?
+```
+
+With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can wire it up:
+
+```prompt agent
+Add Exceptionless error reporting to this service using the REST API at https://api.exceptionless.io/api/v2/events, following https://exceptionless.com/docs/clients/custom-clients/. Read the API key from the EXCEPTIONLESS_API_KEY environment variable, send errors as @simple_error, and never let a failed report crash the app. Then check with Exceptionless that the test error arrived.
+```

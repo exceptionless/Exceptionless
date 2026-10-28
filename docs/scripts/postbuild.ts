@@ -1,10 +1,22 @@
+import { type Client, expandClientBlocks, type FeatureDefinition } from "./clients.ts"
+import { clientOverviewUrls, flattenNav, type NavSection, parseDocsNav, sectionPages } from "./docs-nav.ts"
+import {
+  markdownPathFor,
+  type Redirect,
+  redirectTarget,
+  renderRedirectHtml,
+  renderRedirectMarkdown,
+} from "./redirects.ts"
+
 type GeneratedData = {
   docsPages: ContentPage[]
   newsPosts: ContentPage[]
+  redirects: Redirect[]
 }
 
 type ContentPage = {
   title: string
+  plan?: string
   description?: string
   url: string
   sourcePath: string
@@ -39,6 +51,7 @@ type SearchCodeToken = {
 type SiteData = {
   description?: string
   appUrl?: string
+  apiUrl?: string
   githubUrl?: string
 }
 
@@ -59,21 +72,12 @@ const llmsProductPages = [
   { title: "About", url: "/about/" },
 ]
 
-const llmsDocsSections = [
-  { title: "Using Exceptionless", match: (path: string) => !/^docs\/(?:ai|clients|api|self-hosting)\//.test(path) },
-  { title: "AI", match: (path: string) => path.startsWith("docs/ai/") },
-  { title: ".NET client", match: (path: string) => path.startsWith("docs/clients/dotnet/") },
-  { title: "JavaScript and Node.js clients", match: (path: string) => path.startsWith("docs/clients/javascript/") },
-  {
-    title: "Other clients",
-    match: (path: string) => path.startsWith("docs/clients/") && !/^docs\/clients\/(?:dotnet|javascript)\//.test(path),
-  },
-  { title: "REST API", match: (path: string) => path.startsWith("docs/api/") },
-  { title: "Self-hosting", match: (path: string) => path.startsWith("docs/self-hosting/") },
-]
 const siteData = JSON.parse(await Deno.readTextFile("_data/site.json")) as SiteData
 const fallbackDescription = normalizeHtmlText(siteData.description ?? "")
 const generated = JSON.parse(await Deno.readTextFile("_site/site-data.json")) as GeneratedData
+const navSections = parseDocsNav(await Deno.readTextFile("_data/docs_nav.yml"))
+const clients = JSON.parse(await Deno.readTextFile("_data/clients.json")) as Client[]
+const clientFeatures = JSON.parse(await Deno.readTextFile("_data/client_features.json")) as FeatureDefinition[]
 
 await copyDir("public", "_site")
 await copyDirIfExists("docs/img", "_site/docs/img")
@@ -86,15 +90,18 @@ await rewriteNewsIndex(generated.newsPosts)
 
 const routes = await collectHtmlRoutes("_site")
 await writeSearchIndex("_site", routes)
+// Redirect stubs are written after the sitemap and search routes are collected, so they never appear in either.
+await writeRedirectStubs(generated.redirects)
 const aliases = await collectRedirectAliases("_site", generated.newsPosts)
 await createRedirectAliasPages(aliases)
 
 await Deno.writeTextFile("_site/feed.xml", renderFeed(generated.newsPosts.slice(0, 25)))
 await Deno.writeTextFile("_site/sitemap.xml", renderSitemap(routes))
 await Deno.writeTextFile("_site/robots.txt", renderRobots())
-await Deno.writeTextFile("_site/llms.txt", renderLlms(generated.docsPages, false))
-await Deno.writeTextFile("_site/llms-full.txt", renderLlms(generated.docsPages, true))
-await Deno.writeTextFile("_site/_redirects", renderRedirects(aliases))
+await Deno.writeTextFile("_site/llms.txt", renderLlms(generated.docsPages, "index"))
+await Deno.writeTextFile("_site/llms-full.txt", renderLlms(generated.docsPages, "full"))
+await Deno.writeTextFile("_site/llms-small.txt", renderLlms(generated.docsPages, "small"))
+await Deno.writeTextFile("_site/_redirects", renderRedirects(aliases, generated.redirects))
 await removeIfExists("_site/site-data.json")
 
 async function copyDirIfExists(source: string, destination: string): Promise<void> {
@@ -233,9 +240,14 @@ async function writeDocsMarkdown(pages: ContentPage[]): Promise<void> {
 }
 
 function renderDocsMarkdown(page: ContentPage): string {
-  const markdown = absolutizeMarkdownLinks(markdownBody(page.sourcePath)).trim()
+  const markdown = absolutizeMarkdownLinks(expandClientBlocks(markdownBody(page.sourcePath), clients, clientFeatures))
+    .trim()
   const [, heading = `# ${page.title}`, body = markdown] = markdown.match(/^(# [^\n]+)\n+([\s\S]*)$/) ?? []
-  const summary = page.description ? `> ${page.description}\n\n` : ""
+  const summary = [
+    page.description ? `> ${page.description}` : "",
+    page.plan ? `> Available on the ${page.plan} plan and up (${siteUrl}/pricing/).` : "",
+  ].filter(Boolean).join("\n>\n")
+    .concat(page.description || page.plan ? "\n\n" : "")
   return `${heading}\n\n${summary}${body}\n\n---\n\nSource: ${siteUrl}${page.url}\nAll Exceptionless documentation: ${siteUrl}/llms.txt\n`
 }
 
@@ -723,7 +735,24 @@ async function createRedirectAliasPages(aliases: RedirectAlias[]): Promise<void>
   for (const alias of aliases) {
     const destination = `_site/${alias.from.replace(/^\/+/, "")}index.html`
     await Deno.mkdir(destination.replace(/\/index\.html$/, ""), { recursive: true })
-    await Deno.writeTextFile(destination, renderRedirectPage(alias.to))
+    await Deno.writeTextFile(destination, renderRedirectHtml({ to: alias.to }))
+  }
+}
+
+/** Writes the HTML and Markdown stubs for `redirectFrom` pages. Fails when a stub would overwrite a real file. */
+async function writeRedirectStubs(redirects: Redirect[]): Promise<void> {
+  for (const redirect of redirects) {
+    const htmlPath = `_site${redirect.from}index.html`
+    const markdownPath = `_site${markdownPathFor(redirect.from)}`
+    for (const path of [htmlPath, markdownPath]) {
+      if (existsFile(path)) {
+        throw new Error(`${redirect.source}: redirectFrom ${redirect.from} would overwrite the real file ${path}.`)
+      }
+    }
+
+    await Deno.mkdir(htmlPath.replace(/\/index\.html$/, ""), { recursive: true })
+    await Deno.writeTextFile(htmlPath, renderRedirectHtml(redirect))
+    await Deno.writeTextFile(markdownPath, renderRedirectMarkdown(redirect))
   }
 }
 
@@ -798,6 +827,7 @@ function renderRobots(): string {
   return `# Exceptionless welcomes search engines and AI assistants.
 # Summary for language models: ${siteUrl}/llms.txt
 # Complete documentation as Markdown: ${siteUrl}/llms-full.txt
+# Core documentation only (Get started, AI, clients): ${siteUrl}/llms-small.txt
 User-agent: *
 Allow: /
 
@@ -805,9 +835,46 @@ Sitemap: ${siteUrl}/sitemap.xml
 `
 }
 
-function renderLlms(pages: ContentPage[], includeBodies: boolean): string {
+type LlmsMode = "index" | "full" | "small"
+type LlmsSection = { title: string; pages: ContentPage[] }
+
+/** Groups docs pages into the nav sections, in nav order. Pages the nav does not list go in a final "More" section. */
+function llmsSections(pages: ContentPage[], sections: NavSection[], only?: Set<string>): LlmsSection[] {
+  const byUrl = new Map(pages.map((page) => [page.url, page]))
+  const grouped: LlmsSection[] = sections.map((section) => ({
+    title: section.title,
+    pages: sectionPages(sections, section.title)
+      .filter((url) => !only || only.has(url))
+      .map((url) => byUrl.get(url))
+      .filter((page): page is ContentPage => Boolean(page)),
+  }))
+
+  const listed = new Set(flattenNav(sections).map((page) => page.url))
+  const unlisted = pages.filter((page) => !listed.has(page.url) && (!only || only.has(page.url)))
+  if (unlisted.length) {
+    grouped.push({ title: "More", pages: unlisted })
+  }
+
+  return grouped.filter((section) => section.pages.length)
+}
+
+/** The page URLs `llms-small.txt` covers: Get started, AI, and the client overview pages. */
+function llmsSmallUrls(sections: NavSection[]): Set<string> {
+  return new Set([
+    ...sectionPages(sections, "Get started"),
+    ...sectionPages(sections, "AI"),
+    ...clientOverviewUrls(sections),
+  ])
+}
+
+function renderLlms(pages: ContentPage[], mode: LlmsMode): string {
   const plans = JSON.parse(Deno.readTextFileSync("_data/plans.json")) as Plan[]
   const pricing = plans.map((plan) => `${plan.name} $${plan.monthlyPrice}`).join(", ")
+  const clientSummary = clients.map((client) =>
+    `${client.language} (${client.name} ${client.version}, ${client.support.toLowerCase()}): ${client.summary}.`
+  ).join(" ")
+  const only = mode === "small" ? llmsSmallUrls(navSections) : undefined
+  const sections = llmsSections(pages, navSections, only)
   const lines = [
     "# Exceptionless",
     "",
@@ -819,28 +886,45 @@ function renderLlms(pages: ContentPage[], includeBodies: boolean): string {
     "- It notifies you about new errors, regressions (fixed errors that come back), and critical events by email, Slack, Zapier, and webhooks.",
     "- Exie is the built-in AI assistant: ask it about your errors in plain English and it investigates stacks and events using your permissions.",
     "- The Exceptionless MCP server (https://be.exceptionless.io/mcp, OAuth sign-in) lets AI coding agents such as Claude Code, Codex, GitHub Copilot, and OpenCode search your errors, read event details, and, with permission, update stacks. It is included on every plan, including Free.",
-    "- Clients: .NET (ASP.NET Core, console and worker services, WPF, WinForms, Microsoft.Extensions.Logging, NLog, log4net, Serilog), JavaScript (browser, Node.js, React, Vue, Angular, Express), and React Native with Expo. Any language can send events to the REST API.",
+    `- Clients: ${clientSummary} Any language can send events to the REST API at ${siteData.apiUrl}.`,
     `- Hosted plans are priced by monthly events, not seats. Monthly prices: ${pricing}. Yearly billing is priced at 11 months. Exie is included on Medium and larger plans.`,
     "- Exceptionless is open source under the Apache 2.0 license and can be self-hosted with Docker or Kubernetes (requires Elasticsearch).",
     `- Hosted app: ${siteData.appUrl}. Source code: ${siteData.githubUrl}.`,
     `- Every documentation page is available as Markdown by replacing the trailing slash with .md, for example ${siteUrl}/docs/getting-started.md.`,
     "",
-    "## Product",
-    "",
-    ...llmsProductPages
-      .filter((page) => existsLocalRoute(page.url, "_site"))
-      .map((page) => llmsLink(page.title, page.url, productPageDescription(page.url))),
-    "",
   ]
 
-  for (const section of llmsDocsSections) {
-    const sectionPages = pages.filter((page) => section.match(page.sourcePath))
-    if (!sectionPages.length) {
-      continue
-    }
+  if (mode !== "small") {
+    lines.push(
+      "## Product",
+      "",
+      ...llmsProductPages
+        .filter((page) => existsLocalRoute(page.url, "_site"))
+        .map((page) => llmsLink(page.title, page.url, productPageDescription(page.url))),
+      "",
+    )
+  }
 
+  if (mode === "index") {
+    lines.push(
+      "## Clients",
+      "",
+      ...clients.map((client) =>
+        llmsLink(
+          `${client.name} for ${client.language}`,
+          markdownUrl(client.docsUrl),
+          `${client.support} client, version ${client.version}. Packages: ${
+            client.packages.map((pkg) => pkg.name).join(", ")
+          }.`,
+        )
+      ),
+      "",
+    )
+  }
+
+  for (const section of sections) {
     lines.push(`## Docs: ${section.title}`, "")
-    for (const page of sectionPages) {
+    for (const page of section.pages) {
       lines.push(llmsLink(page.title, markdownUrl(page.url), page.description))
     }
     lines.push("")
@@ -850,13 +934,23 @@ function renderLlms(pages: ContentPage[], includeBodies: boolean): string {
     "## Optional",
     "",
     llmsLink("News and release notes", "/news/", "Product announcements and release notes."),
-    includeBodies
-      ? ""
-      : llmsLink("Full documentation", "/llms-full.txt", "Every documentation page in one Markdown file."),
   )
 
-  if (includeBodies) {
-    for (const page of pages) {
+  if (mode === "index") {
+    lines.push(
+      llmsLink(
+        "Core documentation",
+        "/llms-small.txt",
+        "Get started, AI, and the client overview pages in one Markdown file.",
+      ),
+      llmsLink("Full documentation", "/llms-full.txt", "Every documentation page in one Markdown file."),
+    )
+  } else if (mode === "small") {
+    lines.push(llmsLink("Full documentation", "/llms-full.txt", "Every documentation page in one Markdown file."))
+  }
+
+  if (mode !== "index") {
+    for (const page of sections.flatMap((section) => section.pages)) {
       lines.push("", "---", "", renderDocsMarkdown(page).trim())
     }
   }
@@ -876,29 +970,14 @@ function productPageDescription(url: string): string | undefined {
   }
 }
 
-function renderRedirects(aliases: RedirectAlias[]): string {
+function renderRedirects(aliases: RedirectAlias[], redirects: Redirect[]): string {
   return [
     "/docs/index /docs/ 301",
     "/news/index /news/ 301",
+    ...redirects.map((redirect) => `${redirect.from} ${redirectTarget(redirect)} 301`),
     ...aliases.map((alias) => `${alias.from} ${alias.to} 301`),
     "",
   ].join("\n")
-}
-
-function renderRedirectPage(target: string): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0; url=${target}">
-  <link rel="canonical" href="${siteUrl}${target}">
-  <title>Redirecting - Exceptionless</title>
-</head>
-<body>
-  <p><a href="${target}">Redirecting</a></p>
-</body>
-</html>
-`
 }
 
 function markdownBody(path: string): string {
@@ -936,6 +1015,14 @@ function existsLocalRoute(pathname: string, root: string): boolean {
       return false
     }
   })
+}
+
+function existsFile(path: string): boolean {
+  try {
+    return Deno.statSync(path).isFile
+  } catch {
+    return false
+  }
 }
 
 function routeForPage(path: string, root: string): string {

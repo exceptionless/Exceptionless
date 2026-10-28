@@ -1,83 +1,209 @@
 ---
-title: "Sending Events"
-metaTitle: "Sending events from JavaScript"
-description: "Send logs, feature usage, 404s, custom events, and caught errors from the Exceptionless JavaScript client, and attach tags, properties, and user identity."
-order: 4
+title: "Send events from JavaScript"
+navTitle: "Sending events"
+metaTitle: "Send events from the JavaScript client"
+description: "Send handled errors, logs, feature usage, 404s, and custom events from JavaScript, and add tags, extended data, user identity, and references."
+order: 3
+sources:
+  - Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts
+  - Exceptionless.JavaScript:packages/core/src/EventBuilder.ts
+  - Exceptionless.JavaScript:packages/core/src/models/Event.ts
+  - Exceptionless.JavaScript:packages/core/src/Utils.ts
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/ReferenceIdPlugin.ts
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/EventExclusionPlugin.ts
+  - Exceptionless.JavaScript:packages/core/test/DocumentationExamples.test.ts
+  - Exceptionless.JavaScript:.agents/skills/exceptionless-javascript/references/sending-events.md
+  - src/Exceptionless.Core/Pipeline/035_CopySimpleDataToIdxAction.cs
 ---
 
-# Sending Events
+# Send events from JavaScript
 
-Once configured, Exceptionless automatically sends unhandled exceptions that happen in your application. To send different event types, as well as customize the data that is sent, continue reading.
+Once the client is started, it reports unhandled errors on its own. Use the methods on this page to send errors you
+catch, logs, feature usage, 404s, and your own event types, and to attach more information to any of them.
 
-You can send us log messages, feature usages, or other kinds of events easily with our fluent api.
+The examples import from `@exceptionless/browser`. The methods are the same in every package; import `Exceptionless`
+from the package you installed.
+
+## Send an error you caught
 
 ```js
-import { Exceptionless } from "@exceptionless/browser";
-
-await Exceptionless.submitLog('Logging made easy');
-
-// You can also specify the log source and log level.
-// We recommend specifying one of the following log levels: Trace, Debug, Info, Warn, Error
-await Exceptionless.submitLog('app.logger', 'This is so easy', 'Info');
-await Exceptionless.createLog('app.logger', 'This is so easy', 'Info').addTags('Exceptionless').submit();
-
-// Submit feature usages
-await Exceptionless.submitFeatureUsage('MyFeature');
-await Exceptionless.createFeatureUsage('MyFeature').addTags('Exceptionless').submit();
-
-// Submit a 404
-await Exceptionless.submitNotFound('/somepage');
-await Exceptionless.createNotFound('/somepage').addTags('Exceptionless').submit();
-
-// Submit a custom event type
-await Exceptionless.submitEvent({ message: 'Low Fuel', type: 'racecar', source: 'Fuel System' });
-```
-
-### Manually Sending Errors
-
-In addition to automatically sending all unhandled exceptions, you may want to manually send exceptions to the service. You can do so by using code like this:
-
-```javascript
-import { Exceptionless } from "@exceptionless/browser";
+import { Exceptionless, toError } from "@exceptionless/browser"
 
 try {
-  throw new Error('test');
+  await placeOrder() // your own code
 } catch (error) {
-  await Exceptionless.submitException(error);
+  await Exceptionless.submitException(toError(error))
 }
 ```
 
-### Sending Additional Information
+`submitException` takes an `Error`. JavaScript lets code throw any value, so `toError` converts strings and other values
+to an `Error` and passes real errors through unchanged.
 
-You can easily include additional information in your error reports using our fluent [event builder API](https://github.com/exceptionless/Exceptionless.JavaScript/blob/master/packages/core/src/EventBuilder.ts).
+## Send a log message
 
-```javascript
-import { Exceptionless } from "@exceptionless/node";
+```js
+import { Exceptionless } from "@exceptionless/browser"
+
+await Exceptionless.submitLog("Order placed")
+await Exceptionless.submitLog("checkout", "Order placed")
+await Exceptionless.submitLog("checkout", "Payment provider timed out", "warn")
+```
+
+The forms are message only, source and message, and source, message, and level. Use the levels `trace`, `debug`, `info`,
+`warn`, `error`, and `fatal`. The source is usually the area of your app, such as a logger or module name.
+
+You can turn log sources up or down from Exceptionless without redeploying. The client drops logs below the minimum
+level for their source. See [Log levels](/docs/setting-log-levels/).
+
+## Send feature usage
+
+```js
+import { Exceptionless } from "@exceptionless/browser"
+
+await Exceptionless.submitFeatureUsage("Export to CSV")
+```
+
+The feature name is the event's source. See [Feature usage](/docs/feature-usage/) for the views that use these events.
+
+## Send a 404
+
+```js
+import { Exceptionless } from "@exceptionless/browser"
+
+await Exceptionless.submitNotFound("/products/old-sku")
+```
+
+The path is the event's source. The [Express guide](/docs/clients/javascript/guides/express/) reports 404s from
+middleware.
+
+## Send a custom event
+
+```js
+import { Exceptionless } from "@exceptionless/browser"
+
+await Exceptionless.submitEvent({ type: "racecar", message: "Low fuel", source: "Fuel System" })
+```
+
+An event with no type is sent as a log.
+
+## Add more information
+
+Every `submit*` method has a `create*` method that returns an event builder. Chain what you need and end with
+`submit()`:
+
+```js
+import { Exceptionless } from "@exceptionless/browser"
+
+const order = {
+  id: "order-123",
+  quoteId: 123,
+  creditCardNumber: "4111111111111111",
+}
 
 try {
-  throw new Error('Unable to create order from quote.');
+  throw new Error("Unable to create order from quote")
 } catch (error) {
   await Exceptionless.createException(error)
-    // Set the reference id of the event so we can search for it later (reference:id).
-    // This will automatically be populated by default with a unique id;
-    .setReferenceId('random guid')
-    // Add the order object (the ability to exclude specific fields will be coming in a future version).
-    .setProperty("Order", order)
-    // Set the quote number.
+    // Set your own reference ID so you can find this event later.
+    .setReferenceId("order-12345678")
+    // Add the order without its card number, up to 4 levels deep.
+    .setProperty("Order", order, 4, ["creditCardNumber"])
     .setProperty("Quote", 123)
-    // Add an order tag.
-    .addTags("Order")
-    // Mark critical.
+    .addTags("orders")
+    // Adds the Critical tag.
     .markAsCritical()
-    // Set the coordinates of the end user.
     .setGeo(43.595089, -88.444602)
-    // Set the user id that is in our system and provide a friendly name.
-    .setUserIdentity(user.Id, user.FullName)
-    // Submit the event.
-    .submit();
+    .setUserIdentity("user-123", "Jane Doe")
+    .submit()
 }
 ```
 
----
+The builder methods are `createException`, `createUnhandledException`, `createLog`, `createFeatureUsage`,
+`createNotFound`, `createSessionStart`, and `createEvent`.
 
-[Next > Troubleshooting](/docs/clients/javascript/troubleshooting)
+| Method                                                      | What it does                                                                                                                                                                                                                               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `addTags(...tags)`                                          | Adds tags.                                                                                                                                                                                                                                 |
+| `setProperty(name, value, maxDepth?, excluded?)`            | Adds a value to the event's extended data. Objects are copied up to `maxDepth` levels (10 by default), without the property names in `excluded` or your [data exclusions](/docs/clients/javascript/client-configuration/#data-exclusions). |
+| `markAsCritical(critical = true)`                           | Adds the `Critical` tag. `markAsCritical(false)` does nothing.                                                                                                                                                                             |
+| `setUserIdentity(identity, name?)`                          | Sets the user for this event. Also accepts `{ identity, name, data }`.                                                                                                                                                                     |
+| `setUserDescription(email, description)`                    | Adds the user's email address and their description of what happened.                                                                                                                                                                      |
+| `setReferenceId(id)`                                        | Sets the event's reference ID. It must be 8 to 100 letters, digits, or hyphens, or the method throws. See [Reference IDs](/docs/references-ids/).                                                                                          |
+| `setEventReference(name, id)`                               | Links this event to another event by that event's reference ID.                                                                                                                                                                            |
+| `setManualStackingKey(key, title?)`                         | Groups events with the same key into one stack, instead of the default grouping. See [Stacking](/docs/concepts/stacking/).                                                                                                                 |
+| `setManualStackingInfo(signatureData, title?)`              | Groups events by your own set of signature values.                                                                                                                                                                                         |
+| `setGeo(latitude, longitude)`                               | Sets where the event happened. Throws if a value is out of range.                                                                                                                                                                          |
+| `setValue(value)`                                           | Sets a numeric value on the event.                                                                                                                                                                                                         |
+| `setSource(source)`, `setMessage(message)`, `setType(type)` | Override the event's source, message, or type.                                                                                                                                                                                             |
+| `setContextProperty(name, value)`                           | Passes a value to plugins without sending it, such as an Express request.                                                                                                                                                                  |
+| `submit()`                                                  | Sends the event to the queue and returns the plugin context. `context.cancelled` is `true` if a plugin or a setting stopped it.                                                                                                            |
+
+To add the same tags or data to every event, use `defaultTags` and `defaultData` in the
+[configuration](/docs/clients/javascript/client-configuration/).
+
+### Make custom data searchable
+
+On paid plans, Exceptionless indexes simple extended data values, such as strings, numbers, booleans, and dates, so you
+can filter on them:
+
+```js
+import { Exceptionless } from "@exceptionless/browser"
+
+await Exceptionless.createFeatureUsage("Checkout")
+  .setProperty("plan", "enterprise")
+  .setProperty("retryCount", 2)
+  .submit()
+```
+
+These events match the filters `data.plan:enterprise` and `data.retrycount:2`. Field names are lowercased. Keep names
+short and stable, and keep objects for detail you only read. See
+[Filtering and searching](/docs/filtering-and-searching/).
+
+## Let users describe an error
+
+Errors get a reference ID automatically. Show it to the user, then attach what they tell you to the event:
+
+```js
+import { Exceptionless } from "@exceptionless/browser"
+
+const referenceId = Exceptionless.getLastReferenceId()
+
+// Later, when the user fills in your feedback form:
+await Exceptionless.updateUserEmailAndDescription(referenceId, "jane@example.com", "The checkout page went blank.")
+```
+
+`getLastReferenceId()` returns the reference ID of the last queued event that had one. See
+[Reference IDs](/docs/references-ids/).
+
+## Send right away
+
+`submit` puts the event in a queue that the client sends every 10 seconds. Before a short-lived process exits, or before
+a hard page navigation, send the queue yourself:
+
+```js
+import { Exceptionless } from "@exceptionless/browser"
+
+await Exceptionless.processQueue()
+```
+
+See [Node.js and serverless](/docs/clients/javascript/guides/node/#short-lived-processes-and-serverless).
+
+## Ask Exie
+
+```prompt exie
+How many times was Export to CSV used each day this week?
+```
+
+```prompt exie
+Count log events by level for the last 24 hours.
+```
+
+```prompt exie
+Which stacks had events tagged Critical today?
+```
+
+With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can search the data you send:
+
+```prompt agent
+Search my Exceptionless project for Checkout feature usage events from the last 7 days where data.plan is enterprise, and summarize how often they retried.
+```

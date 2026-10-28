@@ -1,6 +1,14 @@
 import lume from "lume/mod.ts"
 import codeHighlight from "lume/plugins/code_highlight.ts"
-import { docsBreadcrumbs, docsNavHtml, siteDataJson } from "./scripts/site-collections.ts"
+import {
+  type Client,
+  clientsSentence,
+  type FeatureDefinition,
+  renderHomeClientTabs,
+  validateClients,
+} from "./scripts/clients.ts"
+import { docsMarkdown } from "./scripts/docs-markdown.ts"
+import { docsBreadcrumbs, docsNavHtml, docsPagerHtml, siteDataJson } from "./scripts/site-collections.ts"
 import { defaultSocialImage, structuredData } from "./scripts/structured-data.ts"
 
 const site = lume({
@@ -23,6 +31,7 @@ site.ignore(
   "package.json",
   "public",
   "README.md",
+  "STYLE.md",
   "scripts",
   "serialization-architecture.md",
   "site-migration-plan.md",
@@ -31,27 +40,18 @@ site.ignore(
 
 site.use(codeHighlight())
 
+const icons = readJson<Record<string, string>>("_data/icons.json")
+const clients = readJson<Client[]>("_data/clients.json")
+const clientFeatures = readJson<FeatureDefinition[]>("_data/client_features.json")
+validateClients(clients, clientFeatures)
+
 site.hooks.markdownIt((markdownIt: any) => {
-  const defaultHeadingOpen = markdownIt.renderer.rules.heading_open ??
-    ((tokens: any[], index: number, options: unknown, env: Record<string, unknown>, self: any) => {
-      return self.renderToken(tokens, index, options)
-    })
-
-  markdownIt.renderer.rules.heading_open = (
-    tokens: any[],
-    index: number,
-    options: unknown,
-    env: Record<string, unknown>,
-    self: any,
-  ) => {
-    const token = tokens[index]
-    if (!token.attrGet("id")) {
-      const content = tokens[index + 1]?.content ?? ""
-      token.attrSet("id", uniqueHeadingSlug(content, env))
-    }
-
-    return defaultHeadingOpen(tokens, index, options, env, self)
-  }
+  docsMarkdown(markdownIt, {
+    icons,
+    clients,
+    features: clientFeatures,
+    plans: readJson<{ name: string }[]>("_data/plans.json").map((plan) => plan.name),
+  })
 
   const defaultImage = markdownIt.renderer.rules.image
   markdownIt.renderer.rules.image = (
@@ -76,6 +76,9 @@ site.preprocess([".md"], (pages) => {
 })
 
 site.data("docsNavHtml", docsNavHtml)
+site.data("docsPagerHtml", docsPagerHtml)
+site.data("homeClientTabs", () => renderHomeClientTabs(clients, icons))
+site.data("clientsSentence", () => clientsSentence(clients))
 site.data("docsBreadcrumbs", docsBreadcrumbs)
 site.data("structuredData", structuredData)
 site.data("defaultSocialImage", defaultSocialImage)
@@ -228,32 +231,6 @@ function exceptionlessClientScriptSrc(): string {
   return `/assets/js/exceptionless-client.js?${params}`
 }
 
-function uniqueHeadingSlug(value: string, env: Record<string, unknown>): string {
-  const counts = getHeadingSlugCounts(env)
-  const baseSlug = slugifyHeading(value) || "section"
-  const count = counts.get(baseSlug) ?? 0
-  counts.set(baseSlug, count + 1)
-  return count ? `${baseSlug}-${count}` : baseSlug
-}
-
-function getHeadingSlugCounts(env: Record<string, unknown>): Map<string, number> {
-  const key = "__headingSlugCounts"
-  const existing = env[key]
-  if (existing instanceof Map) {
-    return existing as Map<string, number>
-  }
-
-  const counts = new Map<string, number>()
-  env[key] = counts
-  return counts
-}
-
-function slugifyHeading(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/\./g, "")
-    .replace(/[^a-z0-9_-]/g, "")
-    .replace(/^-+|-+$/g, "")
+function readJson<T>(path: string): T {
+  return JSON.parse(Deno.readTextFileSync(path)) as T
 }

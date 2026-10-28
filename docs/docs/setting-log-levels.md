@@ -1,33 +1,102 @@
 ---
-title: "Log Levels"
-metaTitle: "Setting log levels in Exceptionless"
-description: "Set minimum log levels for Exceptionless log events in project settings or per log stack, so clients stop sending lower-level logs without a redeploy."
+title: "Logs and log levels"
+navTitle: "Logs and log levels"
+metaTitle: "Viewing logs and setting log levels in Exceptionless"
+description: "Find log events in Exceptionless and set a project's minimum log level, or one per log source, without redeploying your app."
+sources:
+  - src/Exceptionless.Core/Seed/predefined-saved-views.json
+  - src/Exceptionless.Core/Pipeline/010_AssignToStackAction.cs
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/settings/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/project-log-level.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/table/config-options.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/stack-log-level.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/options.ts
+  - Exceptionless.Net:src/Exceptionless/Models/Collections/SettingsDictionary.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/Default/010_EventExclusionPlugin.cs
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/EventExclusionPlugin.ts
 ---
 
-# Log Levels
+# Logs and log levels
 
-Setting log levels allows you to control the flow of data into your Exceptionless account. This is important when you are trying to filter the signal from the noise. In most error monitoring services, you would need to manually configure what log levels are used to send events by customizing your code. With Exceptionless, you can update the log levels used right in the Exceptionless UI.
+Exceptionless stores log messages as `log` events, each with a source (usually the logger name) and a level. This page
+shows where to find them and how to set the minimum level your apps send, for the whole project or for one log source,
+without changing code or redeploying.
 
-To configure your default log level, open **Settings > Projects** in the sidebar, click your project, and then open the **Settings** tab. The **Default Log Level** section is at the top. Click the dropdown and pick the lowest level you want to keep.
+To send logs, see the sending events page for [.NET](/docs/clients/dotnet/sending-events/) or
+[JavaScript](/docs/clients/javascript/sending-events/), or connect your logging framework with the
+[.NET logging integrations](/docs/clients/dotnet/logging/).
 
-![Default Log Level dropdown on the project Settings tab](/assets/img/docs/setting-log-levels-project-default-light.webp)
+## Find your logs
 
-You can set the level for the whole project here, or override it for a single log source on that log's stack. To find a log stack, open **Events > Logs** in the sidebar. You can also filter **Stacks > All** or **Events > All** by type.
+- **Events** > **Logs** in the sidebar lists log messages from open and regressed stacks, newest first.
+- Add a **Log Level** filter to any list to narrow it to levels such as **Error** and **Fatal**. In a raw filter, use
+  `type:log level:error`.
+- Add the **Level** and **Source** columns with **View** > **Manage Columns...**.
 
 ![The Logs events view](/assets/img/docs/setting-log-levels-logs-view-light.webp)
 
-Click a log event. The event details open with the log's stack card at the top.
+Logs from the same source group into one stack, so you can mark a noisy source ignored, or snooze it, like any other
+stack. See [Stacks](/docs/managing-stacks/).
 
-### Overriding Global Log Levels
+## Log levels
 
-In the stack card header, click the log level button (the filter icon, first in the row of buttons) and select a new level. Events at that level or above are kept for this log source. Anything below it is no longer captured. The button only appears on log stacks that have a source.
+From lowest to highest: **Trace**, **Debug**, **Information**, **Warning**, **Error**, and **Fatal**. A minimum level
+keeps that level and everything above it. **Off** stops all logs.
+
+## Set the project's default level
+
+1. Open **Settings** > **Projects** in the sidebar and select the project.
+2. Open the **Settings** tab.
+3. Under **Default Log Level**, open the menu and pick the lowest level to keep.
+
+Every log source in the project uses this level unless it has its own.
+
+## Set the level for one log source
+
+1. Open a log event, or a log stack, from any list.
+2. In the stack card, select the log level button, the first of the buttons at the top right. Its tooltip shows the
+   current level, such as "Log Level: Warning (Default)".
+3. Pick a level.
 
 ![Log Level menu on a log stack](/assets/img/docs/setting-log-levels-stack-override-light.webp)
 
-Once a stack has its own level, the menu also shows **Default** with the project's level. Click it to remove the override and go back to the project default.
+The button appears only on log stacks that have a source. Once a source has its own level, the menu also shows
+**Default** with the project's level. Select it to go back to the project default.
 
-As with Data Exclusions, updates to project level and global log level settings will be passed down to the Exceptionless client in near real-time. While the Exceptionless server will catch event that should not be included in your dashboard, the client will catch them based on your configuration and prevent them from ever being sent to the server. Read more about [Project Settings](/docs/project-settings) here.
+## How levels are applied
 
----
+Log levels are client configuration values that your apps download from Exceptionless. Each client checks a log event's
+level and drops it before sending if it's below the minimum, so dropped logs never reach Exceptionless and don't count
+against your plan. Your apps pick up a change the next time they sync their configuration. See client configuration
+values for [.NET](/docs/clients/dotnet/client-configuration-values/) and
+[JavaScript](/docs/clients/javascript/client-configuration-values/).
 
-[Next > De-Duplication](/docs/deduplication)
+- The project default is stored as `@@log:*`, and a source's level as `@@log:` followed by the source name.
+- Per-source levels show up on the project's **Configuration** tab. There you can also add a level for a group of
+  sources with a wildcard, such as `@@log:Acme.Data.*` set to `debug`. The most specific match wins. See
+  [Projects](/docs/project-settings/#client-configuration).
+- Logs without a level are always sent.
+- With no level set for a source or the project, the .NET client sends **Warning** and above, and the JavaScript client
+  sends every level.
+
+Exceptionless doesn't filter logs on the server. Logs sent another way, such as straight to the API, are stored at any
+level.
+
+## Ask Exie
+
+Exie can't change log levels, but it can tell you where your logs come from:
+
+```prompt exie
+Which log sources sent the most error and fatal logs today?
+```
+
+```prompt exie
+How many warning logs did Acme.Billing send each hour over the last 24 hours?
+```
+
+With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can trace a noisy log back to the code:
+
+```prompt agent
+Find the log source in my Exceptionless project that sent the most error logs in the last 24 hours, then find where
+this repository writes those logs and tell me whether they should be errors.
+```

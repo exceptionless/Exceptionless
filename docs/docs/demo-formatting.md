@@ -1,74 +1,66 @@
 ---
-title: "Markdown Formatting Demo"
-description: "Internal demo of the Markdown formatting available in Exceptionless docs and blog posts: footnotes, anchors, attributes, spans, alerts, and tables."
+title: "Markdown formatting demo"
+description: "Source-only demo of the Markdown features available in Exceptionless docs: heading ids, callouts, prompts, tabs, and client blocks."
 hidden: true
 url: false
 ---
 
-# Markdown Formatting Demo
+# Markdown formatting demo
 
-Shows all the different markdown formatting options available for writing docs and blog posts
+This page is not published and is not in the docs nav. It shows the syntax the docs build supports; `docs/STYLE.md` has
+the rules for using it. To see it rendered, temporarily remove `hidden` and `url: false`, add the page to
+`_data/docs_nav.yml`, and run `deno task serve`.
 
-General markdown-it formatting: <https://markdown-it.github.io/>
+## Heading ids {#heading-ids}
 
-- [Footnote](#footnote)
-- [Anchor Links](#anchor-links)
-- [Attrs {.text-center}](#attrs-text-center)
-- [Bracketed Spans](#bracketed-spans)
-- [Alerts](#alerts)
-- [Abbreviations](#abbreviations)
-- [Tables](#tables)
+An explicit `{#id}` suffix sets the heading's id and is removed from the title. Other headings get an id from their
+text.
 
-## Footnote
+## Callouts
 
-<https://github.com/markdown-it/markdown-it-footnote>
+> [!NOTE]
+> Self-hosted instances use your own API URL instead.
 
-Here is a footnote reference,[^1] and another.[^longnote]
+> [!TIP]
+> Use sparingly.
 
-[^1]: Here is the footnote.
+> [!IMPORTANT]
+> Something the reader must not miss.
 
-[^longnote]: Here's one with multiple blocks.
+> [!WARNING]
+> Something that can lose data.
 
-    Subsequent paragraphs are indented to show that they belong to the previous footnote.
+## Prompts
 
-## Anchor Links
+```prompt exie
+Which new stacks appeared in production since yesterday's deploy?
+```
 
-<https://github.com/valeriangalliat/markdown-it-anchor>
+```prompt agent
+Find the most frequent new error in my Exceptionless project, fix it, and mark the stack fixed in the next version.
+```
 
-[Link to footnote section](#footnote)
+## Tabs
 
-## Attrs {.text-center}
+Adjacent code blocks with a `tab` label form one tab set. Choosing a label switches every tab set on the page that has
+the same label.
 
-<https://github.com/arve0/markdown-it-attrs>
+```csharp tab=".NET"
+ExceptionlessClient.Default.SubmitLog("Order placed");
+```
 
-paragraph {.text-center}
+```ts tab="JavaScript"
+await Exceptionless.submitLog("Order placed")
+```
 
-## Bracketed Spans
+## Clients
 
-<https://github.com/mb21/markdown-it-bracketed-spans>
+An empty `clients` block shows each client's install command and setup snippet from `_data/clients.json`.
 
-paragraph with [a warning span]{.text-warning}
+```clients
+```
 
-## Alerts
+A `clients features` block shows the feature matrix.
 
-<https://github.com/nunof07/markdown-it-alerts>
-
-::: danger Danger danger danger! [Link](#). :::
-
-::: info Information information information! [Link](#). :::
-
-::: success Success success success! [Link](#). :::
-
-## Abbreviations
-
-<https://github.com/markdown-it/markdown-it-abbr>
-
-*[HTML]: Hyper Text Markup Language *[W3C]: World Wide Web Consortium The HTML specification is maintained by the W3C.
-
-## Tables
-
-| Feature                | Exceptionless | Application Insights | Elmah | Raygun |
-| :--------------------- | :-----------: | :------------------: | :---: | :----: |
-| Open Source            |       X       |                      |   X   |        |
-| Free Self Hosting      |       X       |                      |   X   |        |
-| Detailed error reports |       X       |          X           |       |   X    |
+```clients features
+```

@@ -113,7 +113,11 @@ function initializeDocsNav() {
   })
 }
 
+const tabStorageKey = "docs-tab"
+
 function initializeTabs() {
+  const syncedSets = []
+
   document.querySelectorAll("[data-tabs]").forEach((container) => {
     const tabs = Array.from(container.querySelectorAll('[role="tab"]'))
     const panels = tabs.map((tab) => document.getElementById(tab.getAttribute("aria-controls") ?? ""))
@@ -133,19 +137,64 @@ function initializeTabs() {
       }
     }
 
+    const choose = (index, focus = false) => {
+      select(index, focus)
+      const label = tabs[index].dataset.tabLabel
+      if (label && container.hasAttribute("data-tab-sync")) {
+        syncTabs(syncedSets, label, container)
+        try {
+          localStorage.setItem(tabStorageKey, label)
+        } catch {
+          // The choice still applies to this page view when storage is unavailable.
+        }
+      }
+    }
+
     tabs.forEach((tab, index) => {
-      tab.addEventListener("click", () => select(index))
+      tab.addEventListener("click", () => choose(index))
       tab.addEventListener("keydown", (event) => {
         if (event.key === "ArrowRight") {
           event.preventDefault()
-          select((index + 1) % tabs.length, true)
+          choose((index + 1) % tabs.length, true)
         } else if (event.key === "ArrowLeft") {
           event.preventDefault()
-          select((index - 1 + tabs.length) % tabs.length, true)
+          choose((index - 1 + tabs.length) % tabs.length, true)
+        } else if (event.key === "Home" || event.key === "End") {
+          event.preventDefault()
+          choose(event.key === "Home" ? 0 : tabs.length - 1, true)
         }
       })
     })
+
+    if (container.hasAttribute("data-tab-sync")) {
+      syncedSets.push({ container, tabs, select })
+    }
   })
+
+  let stored = null
+  try {
+    stored = localStorage.getItem(tabStorageKey)
+  } catch {
+    stored = null
+  }
+
+  if (stored) {
+    syncTabs(syncedSets, stored)
+  }
+}
+
+/** Selects the tab with `label` in every synced tab set that has one, except the set the reader used. */
+function syncTabs(sets, label, source) {
+  for (const set of sets) {
+    if (set.container === source) {
+      continue
+    }
+
+    const index = set.tabs.findIndex((tab) => tab.dataset.tabLabel === label)
+    if (index !== -1) {
+      set.select(index)
+    }
+  }
 }
 
 function initializeHeadingAnchors() {
@@ -159,6 +208,21 @@ function initializeHeadingAnchors() {
   })
 }
 
+/** Copies text and shows the result on the button label for a moment. Falls back to a hint when copying is blocked. */
+async function copyWithFeedback(text, label) {
+  label.dataset.defaultLabel ??= label.textContent
+  try {
+    await navigator.clipboard.writeText(text)
+    label.textContent = "Copied"
+  } catch {
+    label.textContent = "Press Ctrl+C"
+  }
+
+  setTimeout(() => {
+    label.textContent = label.dataset.defaultLabel
+  }, 1800)
+}
+
 function initializeCopyButtons() {
   const blocks = document.querySelectorAll(".prose pre, .code-window [role='tabpanel'] pre, .inline-code-block pre")
   blocks.forEach((pre) => {
@@ -166,20 +230,21 @@ function initializeCopyButtons() {
     button.type = "button"
     button.className = "copy-code"
     button.textContent = "Copy"
-    button.addEventListener("click", async () => {
+    button.addEventListener("click", () => {
       const code = pre.querySelector("code") ?? pre
-      try {
-        await navigator.clipboard.writeText(code.innerText.trimEnd())
-        button.textContent = "Copied"
-      } catch {
-        button.textContent = "Press Ctrl+C"
-      }
-
-      setTimeout(() => {
-        button.textContent = "Copy"
-      }, 1800)
+      void copyWithFeedback(code.innerText.trimEnd(), button)
     })
     pre.append(button)
+  })
+
+  document.querySelectorAll("[data-copy-target]").forEach((button) => {
+    const label = button.querySelector("[data-copy-label]") ?? button
+    button.addEventListener("click", () => {
+      const target = document.getElementById(button.dataset.copyTarget)
+      if (target) {
+        void copyWithFeedback(target.innerText.trim(), label)
+      }
+    })
   })
 }
 

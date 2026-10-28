@@ -1,75 +1,73 @@
 ---
 title: "FAQ"
 metaTitle: "Exceptionless frequently asked questions"
-description: "Answers to common Exceptionless questions: app performance, throttling and plan limits, bursts of errors, resetting data, offline queuing, and test runs."
+description: "Short answers to common Exceptionless questions, with links to the pages that cover each one: performance, offline apps, limits, bursts, and testing."
+sources:
+  - Exceptionless.Net:src/Exceptionless/Queue/DefaultEventQueue.cs
+  - Exceptionless.Net:src/Exceptionless/Configuration/ExceptionlessConfiguration.cs
+  - Exceptionless.Net:src/Exceptionless/Extensions/ExceptionlessConfigurationExtensions.cs
+  - Exceptionless.JavaScript:packages/core/src/queue/DefaultEventQueue.ts
+  - Exceptionless.JavaScript:packages/core/src/configuration/Configuration.ts
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/manage/+page.svelte
+  - LICENSE.txt
 ---
 
 # FAQ
 
-- [Will Exceptionless slow my application down?](#will-exceptionless-slow-my-application-down)
-- [Why is my organization throttled?](#why-is-my-organization-throttled)
-- [What happens if the organization plan limit is reached?](#what-happens-if-the-organization-plan-limit-is-reached)
-- [What will happen if my application throws a bunch of exceptions in a very short amount of time?](#what-will-happen-if-my-application-throws-a-bunch-of-exceptions-in-a-very-short-amount-of-time)
-- [Can I reset my event data?](#can-i-reset-my-event-data)
-- [What happens if my internet connection goes down?](#what-happens-if-my-internet-connection-goes-down)
-- [How can I disable event reporting during testing?](#how-can-i-disable-event-reporting-during-testing)
-- [Is there a minimum version of .NET you need to be targeting to use the Exceptionless client.](#is-there-a-minimum-version-of-net-you-need-to-be-targeting-to-use-the-exceptionless-client)
-- [Can I use Exceptionless under medium trust?](#can-i-use-exceptionless-under-medium-trust)
-
-***
-
 ## Will Exceptionless slow my application down?
 
-Exceptionless queues all events submissions to an in memory queue and then processes them in a background thread. We do everything we can to make sure that we do not slow your app down or crash your app.
-
-***
-
-## Why is my organization throttled?
-
-Every plan has both a monthly limit as well as an hourly limit. The hourly limit resets every hour and is [calculated](https://github.com/exceptionless/Exceptionless/blob/master/src/Exceptionless.Core/Extensions/OrganizationExtensions.cs#L51-L65) based on the remaining event limit divided by the number of hours left in the month times 10. We do this to prevent your event limit from being reached in seconds or minutes, thus giving you a greater sample size. _The limit can be increased at any time by upgrading the plan which boosts the monthly limit as well as hourly limit._
-
-***
-
-## What happens if the organization plan limit is reached?
-
-When the organization is throttled (hourly limit) or the plan limit (monthly limit) is reached, the clients will automatically discard any submitted events for a short period of time (usually five minutes) and resume automatically. Your app will continue to work as expected this entire time. _The limit can be increased at any time by upgrading the plan which boosts the monthly limit as well as hourly limit._
-
-***
-
-## What will happen if my application throws a bunch of exceptions in a very short amount of time?
-
-Exceptionless will intelligently try to ensure that the right amount of data is sent in. First, the client will intelligently ensure that the same event occurrence isn't submitted repeatedly. Lets assume you have ten of the exact events submitted over a period of a minute. The first one comes through as expected, the next 9 events will be rolled up into a single event with a counter and last occurred date and submitted at the end of the 60 seconds. This allows us to show you a total of how many times the event occurred. Finally, in some cases the server logic will step in to remove error occurrences that it feels are spam. For example: Your site might be scanned by a bot and throw a bunch of unique 404 errors. Our system will see all of these within a small window of time submitted by a specific IP address. Once it hits a configurable threshold of error occurrences within a specific amount of time, these error occurrences will be removed from the system.
-
-***
-
-## Can I reset my event data?
-
-You can reset your event data at the project level by going into the manage project page and clicking the Reset Project Data button. You can also delete all event data for a specific stack by going to the stack page, clicking the Options button and clicking Delete. _Please note that this will not reset any plan limits._
-
-***
+No. Submitting an event puts it in an in-memory queue, and the client sends the queue in the background, in batches of
+up to 50 events every 10 seconds. Your code doesn't wait for the network. See the
+[client specification](/docs/reference/client-spec/).
 
 ## What happens if my internet connection goes down?
 
-If persistent storage is configured, the Exceptionless client will queue all events submissions to disk and will retry them later.
+Events stay in the client's queue and are retried later. To keep queued events when the app restarts, turn on persisted
+storage: set `StoragePath` in .NET, or `usePersistedQueueStorage` in JavaScript. The server discards events that arrive
+more than three days after they happened. See [Retention](/docs/concepts/limits/#retention).
 
-***
+## Why is my organization throttled? {#why-is-my-organization-throttled}
 
-## How can I disable event reporting during testing?
+Exceptionless caps the events each organization can send in a five-minute window, so a burst can't use up a whole
+month's events. Upgrading raises the cap. See [Throttling](/docs/concepts/limits/#throttling).
 
-Set the enabled attribute to false in the exceptionless config section.
+## What happens when the organization reaches its plan limit? {#what-happens-if-the-organization-plan-limit-is-reached}
 
-***
+New events are rejected until the next month or until you upgrade. Your app keeps running, the clients pause sending for
+a few minutes at a time, and you're never billed for overage. See
+[Reaching the monthly limit](/docs/concepts/limits/#reaching-the-monthly-limit).
 
-## Is there a minimum version of .NET you need to be targeting to use the Exceptionless client.
+## What happens if my app throws thousands of errors in a short time? {#what-will-happen-if-my-application-throws-a-bunch-of-exceptions-in-a-very-short-amount-of-time}
 
-Yes, your application needs to be targeting .NET 4.5 or newer.
+The client merges identical errors into one event with a count, the errors are grouped into a stack, and throttling
+keeps the burst from using up your plan. See [Deduplication](/docs/concepts/limits/#deduplication) and
+[Bursts](/docs/concepts/limits/#bursts).
 
-***
+## Why did these errors end up in the same stack, or in different stacks?
 
-## Can I use Exceptionless under medium trust?
+Errors are grouped by a signature, usually the exception type and the method in your code that threw. Open the stack and
+choose **View Stacking Information** to see the values. See [Stacking](/docs/concepts/stacking/).
 
-Yes, you will need to set the requirePermission attribute to false in the exceptionless config section. This attribute allows the exceptionless client to read the exceptionless config settings. When you are running in medium trust, unhandled exceptions will not be caught. This means that you must submit exceptions to Exceptionless manually.
+## Can I reset my event data? {#can-i-reset-my-event-data}
 
----
+Yes. To delete all of a project's events and stacks, use the **Reset project data** button (the warning icon) on the
+project's **General** settings page. To delete one stack and its events, choose **Delete** from the stack's options
+menu. Neither gives back events already counted toward this month's limit. See [Projects](/docs/project-settings/) and
+[Stacks](/docs/managing-stacks/).
 
-[Next > Comparison](/docs/comparison)
+## How do I turn off event reporting during tests or local development? {#how-can-i-disable-event-reporting-during-testing}
+
+Disable the client. In .NET, set `"Enabled": false` in the `Exceptionless` section of your configuration, for example in
+`appsettings.Development.json`. In JavaScript, set `enabled` to `false` in the configuration. See
+[.NET configuration](/docs/clients/dotnet/configuration/) and
+[JavaScript configuration](/docs/clients/javascript/client-configuration/).
+
+## How do I keep passwords and personal data out of Exceptionless?
+
+Add [data exclusions](/docs/security/#data-exclusions) for sensitive field names, and turn off private information in
+the client or the project settings. See [Security and privacy](/docs/security/).
+
+## Can I host Exceptionless myself?
+
+Yes. Exceptionless is open source under the Apache 2.0 license, and you can run it with Docker or Kubernetes. See
+[Self-hosting](/docs/self-hosting/).

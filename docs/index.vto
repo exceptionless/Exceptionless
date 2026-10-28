@@ -71,81 +71,7 @@ description: Open source error monitoring for .NET, JavaScript, and React Native
       </div>
     </div>
 
-    <div class="code-window code-window-dark reveal" data-tabs>
-      <div class="tab-list" role="tablist" aria-label="Client setup examples">
-        <button type="button" role="tab" id="tab-aspnet" aria-controls="panel-aspnet" aria-selected="true">ASP.NET Core</button>
-        <button type="button" role="tab" id="tab-dotnet" aria-controls="panel-dotnet" aria-selected="false" tabindex="-1">.NET</button>
-        <button type="button" role="tab" id="tab-browser" aria-controls="panel-browser" aria-selected="false" tabindex="-1">Browser</button>
-        <button type="button" role="tab" id="tab-node" aria-controls="panel-node" aria-selected="false" tabindex="-1">Node.js</button>
-        <button type="button" role="tab" id="tab-react-native" aria-controls="panel-react-native" aria-selected="false" tabindex="-1">React Native</button>
-      </div>
-      <div role="tabpanel" id="panel-aspnet" aria-labelledby="tab-aspnet">
-<pre><code><span class="hljs-comment">// dotnet add package Exceptionless.AspNetCore</span>
-<span class="hljs-keyword">var</span> builder = WebApplication.CreateBuilder(args);
-builder.<span class="hljs-title">AddExceptionless</span>();
-
-<span class="hljs-keyword">var</span> app = builder.Build();
-app.UseExceptionHandler();
-app.<span class="hljs-title">UseExceptionless</span>();
-
-app.Run();</code></pre>
-        <p class="code-caption">{{ icons["circle-check"] }} Reads your API key from the <code>Exceptionless</code> section of appsettings.json.</p>
-      </div>
-      <div role="tabpanel" id="panel-dotnet" aria-labelledby="tab-dotnet" hidden>
-<pre><code><span class="hljs-comment">// dotnet add package Exceptionless</span>
-<span class="hljs-keyword">using</span> Exceptionless;
-
-ExceptionlessClient.Default.<span class="hljs-title">Startup</span>(<span class="hljs-string">"YOUR_API_KEY"</span>);
-
-<span class="hljs-keyword">try</span> {
-    orders.Submit(order);
-} <span class="hljs-keyword">catch</span> (Exception ex) {
-    ex.<span class="hljs-title">ToExceptionless</span>()
-      .SetProperty(<span class="hljs-string">"OrderId"</span>, order.Id)
-      .AddTags(<span class="hljs-string">"checkout"</span>)
-      .MarkAsCritical()
-      .Submit();
-}</code></pre>
-        <p class="code-caption">{{ icons["circle-check"] }} Works in console apps, services, desktop apps, and anything else on .NET.</p>
-      </div>
-      <div role="tabpanel" id="panel-browser" aria-labelledby="tab-browser" hidden>
-<pre><code><span class="hljs-comment">// npm install @exceptionless/browser</span>
-<span class="hljs-keyword">import</span> { Exceptionless } <span class="hljs-keyword">from</span> <span class="hljs-string">"@exceptionless/browser"</span>;
-
-<span class="hljs-keyword">await</span> Exceptionless.<span class="hljs-title">startup</span>(<span class="hljs-string">"YOUR_API_KEY"</span>);
-
-<span class="hljs-comment">// Unhandled errors are captured automatically.</span>
-<span class="hljs-comment">// Track the things you care about, too:</span>
-<span class="hljs-keyword">await</span> Exceptionless.<span class="hljs-title">submitFeatureUsage</span>(<span class="hljs-string">"Checkout"</span>);</code></pre>
-        <p class="code-caption">{{ icons["circle-check"] }} Upload source maps to get readable stack traces from minified bundles.</p>
-      </div>
-      <div role="tabpanel" id="panel-node" aria-labelledby="tab-node" hidden>
-<pre><code><span class="hljs-comment">// npm install @exceptionless/node</span>
-<span class="hljs-keyword">import</span> { Exceptionless } <span class="hljs-keyword">from</span> <span class="hljs-string">"@exceptionless/node"</span>;
-
-<span class="hljs-keyword">await</span> Exceptionless.<span class="hljs-title">startup</span>(<span class="hljs-string">"YOUR_API_KEY"</span>);
-
-<span class="hljs-keyword">try</span> {
-  <span class="hljs-keyword">await</span> importOrders();
-} <span class="hljs-keyword">catch</span> (error) {
-  <span class="hljs-keyword">await</span> Exceptionless.<span class="hljs-title">submitException</span>(error);
-}</code></pre>
-        <p class="code-caption">{{ icons["circle-check"] }} Also available for Express, React, Vue, and Angular apps.</p>
-      </div>
-      <div role="tabpanel" id="panel-react-native" aria-labelledby="tab-react-native" hidden>
-<pre><code><span class="hljs-comment">// npx expo install @exceptionless/react-native \
-//   @react-native-async-storage/async-storage</span>
-<span class="hljs-keyword">import</span> { Exceptionless } <span class="hljs-keyword">from</span> <span class="hljs-string">"@exceptionless/react-native"</span>;
-
-<span class="hljs-keyword">await</span> Exceptionless.<span class="hljs-title">startup</span>(<span class="hljs-params">c</span> =&gt; {
-  c.apiKey = <span class="hljs-string">"YOUR_API_KEY"</span>;
-});
-
-<span class="hljs-comment">// JavaScript errors are captured automatically.</span>
-<span class="hljs-keyword">await</span> Exceptionless.<span class="hljs-title">submitFeatureUsage</span>(<span class="hljs-string">"Checkout"</span>);</code></pre>
-        <p class="code-caption">{{ icons["circle-check"] }} Works with Expo and bare React Native. Add the Expo config plugin for native iOS crash reporting.</p>
-      </div>
-    </div>
+    {{ homeClientTabs() }}
   </div>
 </section>
 
@@ -389,7 +315,7 @@ for guest checkouts. I'll add a guard and a regression test.</pre>
       </details>
       <details>
         <summary>Which languages and frameworks does Exceptionless support? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">Exceptionless has clients for .NET (ASP.NET Core, console and worker services, WPF, and Windows Forms, plus NLog, log4net, and Serilog integrations), JavaScript in the browser and Node.js (including React, Vue, Angular, and Express), and React Native with Expo. Anything that can make an HTTP request can send events through the <a href="/docs/api/">REST API</a>.</div>
+        <div class="faq-body">{{ clientsSentence() }} Anything that can make an HTTP request can send events through the <a href="/docs/api/">REST API</a>.</div>
       </details>
       <details>
         <summary>How does Exceptionless use AI? {{ icons["chevron-down"] }}</summary>

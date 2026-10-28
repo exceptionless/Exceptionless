@@ -1,30 +1,67 @@
 ---
 title: "AI"
-metaTitle: "AI features in Exceptionless"
-description: "How Exceptionless uses AI: the Exie assistant in the app, the MCP server for coding agents like Claude Code and Codex, and Markdown docs for AI tools."
+metaTitle: "AI in Exceptionless: Exie and the MCP server"
+description: "How Exie, the in-app assistant, and the Exceptionless MCP server for coding agents differ, and when to use each one."
+navTitle: "Overview"
+sources:
+  - src/Exceptionless.Web/Assistant/AssistantToolDefinitions.cs
+  - src/Exceptionless.Web/Assistant/AssistantAccessService.cs
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
+  - src/Exceptionless.Core/Billing/BillingPlans.cs
+  - src/Exceptionless.Core/Services/OAuthService.cs
 ---
 
-# AI features
+# AI in Exceptionless
 
-Exceptionless has three ways to bring AI into error monitoring. They all work from your real stacks and events, and they all respect your account's permissions.
+Exceptionless gives AI two ways into your error data: Exie, an assistant inside the app, and an MCP server that coding
+agents connect to. Both read the same stacks and events you see in the app, and both act only within your own access.
 
-## Exie, the in-app assistant
+## Exie
 
-[Exie](/docs/ai/exie/) is an AI assistant built into the Exceptionless app. Ask it which errors affect the most users, why a stack keeps regressing, or what changed after a release. Exie searches your stacks and events, explains what it finds, and can update a stack when you explicitly ask it to.
+[Exie](/docs/ai/exie/) is the assistant built into the Exceptionless app. Open it from any page, ask a question in plain
+words, and it looks up stacks and events to answer: which errors are new, how often a stack happens, what an event's
+stack trace and request show, and how to fix it. When you ask for a change, Exie can mark a stack fixed, snooze or
+ignore it, set it critical, and add or remove reference links.
 
-Exie is included with Medium plans and up.
+Exie is included with the Medium plan and up.
 
-## The MCP server, for coding agents
+## The MCP server
 
-The [Exceptionless MCP server](/docs/ai/mcp-server/) lets AI coding agents such as Claude Code, Codex, GitHub Copilot CLI, and OpenCode query Exceptionless while they work. Your agent can find your top errors, read the stack trace and request behind an event, and, with your permission, mark the stack fixed once the change ships. The MCP server is included on every plan, including Free.
+The [Exceptionless MCP server](/docs/ai/mcp-server/) lets AI coding agents such as Claude Code, Codex, and GitHub
+Copilot in VS Code use your Exceptionless data while they work in your code. Your agent can find your top errors, read
+the event details behind one, fix the code, and, if you granted write access, mark the stack fixed in the version that
+ships the fix.
 
-## Documentation for AI tools
+You sign in with OAuth and choose which organizations and permissions the agent gets. Connections are read-only unless
+you grant **Stacks Write**. The MCP server is included on every plan, including Free.
 
-Every documentation page is published as Markdown so AI assistants can read it accurately:
+## Which one to use
 
-- [`/llms.txt`](/llms.txt) lists every docs page with a short summary, following the [llms.txt](https://llmstxt.org/) convention.
-- [`/llms-full.txt`](/llms-full.txt) contains the complete documentation in a single file.
-- Any docs page is available as Markdown by replacing the trailing slash with `.md`, for example [`/docs/getting-started.md`](/docs/getting-started.md).
-- Each docs page has **Copy page as Markdown**, **Open in ChatGPT**, and **Open in Claude** actions.
+| You want to                                              | Use                                                             |
+| -------------------------------------------------------- | --------------------------------------------------------------- |
+| Ask about an error while you look at it in the app       | Exie                                                            |
+| Triage what's new or noisy without leaving the browser   | Exie                                                            |
+| Fix an error in your code with an agent that can read it | The MCP server                                                  |
+| Check production from your editor or terminal            | The MCP server                                                  |
+| Mark a stack fixed when the fix ships                    | Either. Exie acts on request; the agent needs **Stacks Write**. |
+| Add Exceptionless to a new project                       | A [coding agent](/docs/ai/coding-agents/) and the client docs   |
 
-To have a coding agent set up Exceptionless in your project, point it at the client docs, for example: "Read https://exceptionless.com/docs/clients/dotnet.md and add Exceptionless to this ASP.NET Core app."
+The main differences:
+
+|                     | Exie                                                    | MCP server                                     |
+| ------------------- | ------------------------------------------------------- | ---------------------------------------------- |
+| Where it runs       | In the Exceptionless app                                | In your coding agent                           |
+| Plans               | Medium and up                                           | Every plan                                     |
+| Scope               | The organization you're viewing                         | The organizations you approve when you connect |
+| Changes stacks      | When you ask for a specific change                      | Only with the **Stacks Write** permission      |
+| Which model answers | The model Exceptionless runs Exie on                    | Your agent's own model                         |
+| Tools               | A subset of the MCP tools, scoped to the page you're on | [Every MCP tool](/docs/ai/mcp-server/#tools)   |
+
+## More
+
+- [Coding agents](/docs/ai/coding-agents/): set up Exceptionless with an agent, an `AGENTS.md` snippet, the SDK agent
+  skills, and prompts for common jobs.
+- [AI privacy and security](/docs/ai/privacy/): what Exie and the MCP server can see and do, where data goes, and how to
+  revoke access.
+- [Docs for AI](/docs/ai/docs-for-ai/): `llms.txt` and the Markdown copy of every docs page.
+- [AI features for self-hosters](/docs/self-hosting/ai/): setting up Exie and the MCP server on your own instance.

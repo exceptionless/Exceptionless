@@ -1,118 +1,205 @@
 ---
-title: "Reference Ids"
-description: "Use Exceptionless reference IDs to look up submitted events: enable UseReferenceIds in .NET, show the last reference ID to users, and search by it."
+title: "Reference IDs"
+metaTitle: "Look up errors by reference ID"
+description: "Show users a short reference ID when something fails, then find that exact event in Exceptionless. Includes an ASP.NET Core problem details example."
+sources:
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/event/by-ref/[referenceId]/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/views/overview.svelte
+  - src/Exceptionless.Web/Api/Endpoints/EventEndpoints.cs
+  - src/Exceptionless.Web/Utility/Constraints/IdentifierRouteConstraint.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/05_CheckForDuplicateReferenceIdPlugin.cs
+  - src/Exceptionless.Core/Pipeline/006_TruncateFieldsAction.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/90_RemovePrivateInformationPlugin.cs
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
+  - Exceptionless.Net:src/Exceptionless/Extensions/ExceptionlessConfigurationExtensions.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/Default/040_ReferenceIdPlugin.cs
+  - Exceptionless.Net:src/Exceptionless/ExceptionlessClient.cs
+  - Exceptionless.Net:src/Exceptionless/EventBuilder.cs
+  - Exceptionless.Net:src/Platforms/Exceptionless.AspNetCore/ExceptionlessExceptionHandler.cs
+  - Exceptionless.Net:src/Platforms/Exceptionless.AspNetCore/ExceptionlessExtensions.cs
+  - Exceptionless.Net:samples/Exceptionless.SampleAspNetCore/Program.cs
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/ReferenceIdPlugin.ts
+  - Exceptionless.JavaScript:packages/core/src/plugins/EventPluginManager.ts
+  - Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts
 ---
 
-# Reference Ids
+# Reference IDs
 
-Reference Ids are unique identifiers that let you look up a submitted event. This is important because _event Ids are not created until after an event is processed, so there's no other way to look up an event_.
+A reference ID is a short ID that a client gives an event before sending it. Show it to your users when something goes
+wrong, and when they contact support with it, you can open the exact event in Exceptionless.
 
-Reference Ids are also used to help deduplicate events on the server side.
+You need a reference ID for this because an event's own ID only exists after the server processes it, so your app can't
+show it to the user.
 
-## Uses
+## The support workflow
 
-One example of using Reference Ids is to help support your users. For instance, we always include a Reference Id with every error message for our users, allowing them to contact us with that Reference Id and receive help faster because we can easily track it down.
+1. Your app turns on reference IDs. Each error event gets a 10-character ID, such as `9f4a1c2b3d`.
+2. When a request or action fails, your app shows the reference ID in the error message or response.
+3. The user sends the reference ID to your support team.
+4. Support opens `https://be.exceptionless.io/event/by-ref/9f4a1c2b3d`, or searches for `reference:9f4a1c2b3d`, and sees
+   the error with its stack trace, request, and user.
 
-## Reference Id Example
+Optionally, the user can add their email address and a description of what they were doing, which shows on the event as
+**User Description**. See [Let users describe what happened](#let-users-describe-what-happened).
 
-To attach Reference Ids to our errors in Exceptionless, we register a default Reference Id plugin that sets a Reference Id when the event is submitted and stores the Id in an implementation of ILastReferenceIdManager. With the default plugin, we enable this behavior by calling `UseReferenceIds()` on the configuration object.
+## Turn on reference IDs
 
-## C# Example
+- **.NET:** call `UseReferenceIds()` on the configuration. It gives every error event a reference ID.
+- **JavaScript:** error events get a reference ID by default.
+
+Both clients only give **error** events a reference ID. To get the last one your app sent, call `GetLastReferenceId()`
+in .NET or `getLastReferenceId()` in JavaScript.
+
+You can also set your own with `SetReferenceId()` or `setReferenceId()` on the event builder, for example to reuse an ID
+your app already logs. A reference ID must be 8 to 100 letters, digits, or dashes, and it must be unique: when two
+events arrive with the same reference ID within a day, the server keeps the first and discards the second.
+
+## Return the reference ID from ASP.NET Core
+
+In an ASP.NET Core app, `builder.AddExceptionless()` registers an `IExceptionHandler` that reports unhandled exceptions.
+This example adds the event's reference ID to the problem details response that `UseExceptionHandler()` returns. It
+reads the reference ID from the event itself, so each response gets its own request's ID even under load.
+
+<!-- source: Exceptionless.Net:samples/Exceptionless.SampleAspNetCore/Program.cs, adapted. Verified against Exceptionless.AspNetCore 6.2.0. -->
 
 ```csharp
 using Exceptionless;
-ExceptionlessClient.Default.Configuration.UseReferenceIds();
-```
 
-## JavaScript Example
+var builder = WebApplication.CreateBuilder(args);
 
-The JavaScript client will automatically manage reference ids.
+// Reads the API key from the "Exceptionless" section of appsettings.json.
+builder.AddExceptionless(c =>
+{
+    // Give every error event a reference ID.
+    c.UseReferenceIds();
 
-You can also create your own plugin to create your own Reference Ids.
-
-## Get Last Used Reference Id
-
-Call `GetLastReferenceId()` on the `ExceptionlessClient` instance.
-
-### C# Last Reference Id Example
-
-```csharp
-using Exceptionless;
-// Get the last created Reference Id
-ExceptionlessClient.Default.GetLastReferenceId();
-```
-
-### JavaScript Last Reference Id Example
-
-```javascript
-import { Exceptionless } from "@exceptionless/browser";
-
-// Get the last created Reference Id
-Exceptionless.getLastReferenceId();
-```
-
-## Displaying Reference Ids to End Users
-
-We do this for our end users because it allows them to better support their app users.
-
-To do so, we add a custom `IExceptionHandler` and return a new error response to include the Reference Id as shown below:
-
-```csharp
-public class ExceptionlessReferenceIdExceptionHandler : IExceptionHandler {
-    public Task HandleAsync(ExceptionHandlerContext context, CancellationToken cancellationToken) {
-        if (context == null)
-            throw new ArgumentNullException(nameof(context));
-
-        var exceptionContext = context.ExceptionContext;
-        var request = exceptionContext.Request;
-        if (request == null)
-            throw new ArgumentException($"{typeof(ExceptionContext).Name}.{"Request"} must not be null", nameof(context));
-
-        context.Result = new ResponseMessageResult(CreateErrorResponse(request, exceptionContext.Exception, HttpStatusCode.InternalServerError));
-        return TaskHelper.Completed();
-    }
-
-    private HttpResponseMessage CreateErrorResponse(HttpRequestMessage request, Exception ex, HttpStatusCode statusCode) {
-        HttpConfiguration configuration = request.GetConfiguration();
-        HttpError error = new HttpError(ex, request.ShouldIncludeErrorDetail());
-
-        string lastId = ExceptionlessClient.Default.GetLastReferenceId();
-        if (!String.IsNullOrEmpty(lastId))
-            error.Add("Reference", lastId);
-
-        // CreateErrorResponse should never fail, even if there is no configuration associated with the request
-        // In that case, use the default HttpConfiguration to con-neg the response media type
-        if (configuration == null) {
-            using (HttpConfiguration defaultConfig = new HttpConfiguration()) {
-                return request.CreateResponse(statusCode, error, defaultConfig);
-            }
+    // Keep the reference ID on the current request so the error response can include it.
+    c.AddPlugin("RequestReferenceId", 50, context =>
+    {
+        if (!String.IsNullOrEmpty(context.Event.ReferenceId)
+            && context.ContextData.TryGetValue("HttpContext", out object? value)
+            && value is HttpContext httpContext)
+        {
+            httpContext.Items["ExceptionlessReferenceId"] = context.Event.ReferenceId;
         }
+    });
+});
 
-        return request.CreateResponse(statusCode, error, configuration);
-    }
+// Add the reference ID to the problem details response for unhandled exceptions.
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        if (context.HttpContext.Items.TryGetValue("ExceptionlessReferenceId", out object? referenceId))
+            context.ProblemDetails.Extensions["referenceId"] = referenceId;
+    };
+});
+
+var app = builder.Build();
+
+app.UseExceptionHandler();
+app.UseExceptionless();
+
+app.MapGet("/", () =>
+{
+    throw new InvalidOperationException("Something went wrong.");
+});
+
+app.Run();
+```
+
+The plugin runs after the built-in reference ID plugin, which has priority 40. A request to `/` now returns:
+
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+  "title": "An error occurred while processing your request.",
+  "status": 500,
+  "traceId": "00-1e00f1e67addf9cabd5a4c15024de614-18b7dfcc2181ee03-00",
+  "referenceId": "aa0310f620"
 }
 ```
 
-Then we replace the existing `IExceptionFilter`
+Your front end can show `referenceId` to the user, for example: "Something went wrong. If you contact support, include
+reference aa0310f620."
 
-```csharp
-Config.Services.Replace(typeof(IExceptionHandler), new ExceptionlessReferenceIdExceptionHandler());
+For the rest of the ASP.NET Core setup, see [ASP.NET Core](/docs/clients/dotnet/aspnet-core/).
+
+## Show the reference ID in a browser app
+
+<!-- source: Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts (submitException, getLastReferenceId) -->
+
+```ts
+import { Exceptionless } from "@exceptionless/browser"
+
+await Exceptionless.startup("YOUR_API_KEY")
+
+try {
+  await placeOrder()
+} catch (error) {
+  await Exceptionless.submitException(error as Error)
+  const referenceId = Exceptionless.getLastReferenceId()
+  showError(`Something went wrong. If you contact support, include reference ${referenceId}.`)
+}
 ```
 
-Now you'll get a user friendly error response that contains a Reference Id, like:
+`placeOrder` and `showError` stand for your own code.
 
-`{
-  "message": "An error has occurred.",
-  “reference”: “411085622e”
-}`
+## Let users describe what happened {#let-users-describe-what-happened}
 
-## Looking up Events by Reference Id
+After an error, you can ask the user what they were doing and attach their answer to the event by its reference ID. The
+email address and description show on the event's **Overview** tab under **User Description**.
 
-Link directly to an event by outputting a link in your UI or log files, like
-`https://be.exceptionless.io/event/by-ref/YOUR_REFERENCE_ID`
+<!-- source: Exceptionless.Net:src/Exceptionless/ExceptionlessClient.cs (UpdateUserEmailAndDescriptionAsync) and Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts (updateUserEmailAndDescription) -->
 
-Or you can search via the api/ui with `reference:YOUR_REFERENCE_ID`
+```csharp tab=".NET"
+using Exceptionless;
 
----
+await ExceptionlessClient.Default.UpdateUserEmailAndDescriptionAsync(
+    referenceId, "jane@example.com", "I clicked Place order twice.");
+```
 
-[Next > User Sessions](/docs/user-sessions)
+```ts tab="JavaScript"
+import { Exceptionless } from "@exceptionless/browser"
+
+await Exceptionless.updateUserEmailAndDescription(referenceId, "jane@example.com", "I clicked Place order twice.")
+```
+
+```bash tab="curl"
+curl -X POST "https://api.exceptionless.io/api/v2/events/by-ref/9f4a1c2b3d/user-description" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email_address":"jane@example.com","description":"I clicked Place order twice."}'
+```
+
+If the project removes user identifiable information, the server drops the email address and keeps the description.
+
+## Find an event by reference ID
+
+- **Link:** open `https://be.exceptionless.io/event/by-ref/YOUR_REFERENCE_ID`. If one event matches, the app opens it.
+  If several match, it lists them with **View In Events**. Your app or logs can print this link next to the error.
+- **Search:** filter the **Events** view with `reference:YOUR_REFERENCE_ID`. See
+  [Filtering and searching](/docs/filtering-and-searching/).
+- **Command palette:** press <kbd>/</kbd> and type the reference ID to search events from the last 7 days.
+- **API:** `GET /api/v2/events/by-ref/{referenceId}`. See [Querying events and stacks](/docs/api/getting-events/).
+
+On an event's **Overview** tab, the **Reference** row shows its reference ID and links to the same lookup.
+
+## Ask Exie
+
+[Exie](/docs/ai/exie/) is on Medium plans and up.
+
+```prompt exie
+Find the error with reference ID 9f4a1c2b3d and explain what went wrong.
+```
+
+```prompt exie
+How many times has the error behind reference 9f4a1c2b3d happened this week?
+```
+
+With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can take a support ticket from reference ID to
+fix:
+
+```prompt agent
+A customer reported Exceptionless reference ID 9f4a1c2b3d. Find that event, read its stack trace and request, find the cause in this repository, and propose a fix.
+```

@@ -1,125 +1,165 @@
 ---
-title: "Plugins"
+title: ".NET client plugins"
+navTitle: "Plugins"
+description: "Write Exceptionless .NET client plugins that add data to events or drop them, set their priority, and add or remove them at runtime."
 metaTitle: "Exceptionless .NET client plugins"
-description: "Write Exceptionless .NET client plugins that run on every event: implement IEventPlugin or pass an action, set priority, and add or remove plugins."
-order: 8
+sources:
+  - Exceptionless.Net:src/Exceptionless/Plugins/IEventPlugin.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/EventPluginContext.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/PriortyAttribute.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/EventPluginManager.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/Default/010_EventExclusionPlugin.cs
+  - Exceptionless.Net:src/Exceptionless/Configuration/ExceptionlessConfiguration.cs
+  - Exceptionless.Net:src/Exceptionless/ExceptionlessClient.cs
+  - Exceptionless.Net:samples/Exceptionless.SampleConsole/Plugins/SystemUptimePlugin.cs
+  - Exceptionless.Net:samples/Exceptionless.SampleConsole/Program.cs
 ---
 
-# Plugins
+# .NET client plugins
 
-A plugin is a client-side add-in that is run **every time** you submit an event.
+A plugin is code that runs on every event before it's queued. Use plugins to add data to events, remove data, or drop
+events you don't want. The client's own features, such as error details, environment info, and log level filtering, are
+plugins too.
 
-- [Create a New Plugin](#create-a-new-plugin)
-- [Add System Uptime to Feature Usages](#add-system-uptime-to-feature-usages)
-  - [Output](#output)
-- [Plugin Priority](#plugin-priority)
-- [Adding the Plugin to Your App](#adding-the-plugin-to-your-app)
-- [Removing an Existing Plugin](#removing-an-existing-plugin)
+## Write a plugin
 
-## Create a New Plugin
+Implement `IEventPlugin`. The `Run` method gets an `EventPluginContext`:
 
-Specify a `System.Action&lt;EventPluginContext&gt;` or create a class that derives from [IEventPlugin](https://github.com/exceptionless/Exceptionless.Net/blob/master/src/Exceptionless/Plugins/IEventPlugin.cs) to create a plugin.
+| Property      | What it is                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Event`       | The event being submitted. Change it in place.                                                                                                                |
+| `ContextData` | Data passed with the submission, such as the original exception (`ContextData.GetException()`) and whether it was unhandled (`ContextData.IsUnhandledError`). |
+| `Client`      | The `ExceptionlessClient`, including its `Configuration` and [client configuration values](/docs/clients/dotnet/client-configuration-values/).                |
+| `Resolver`    | The client's dependency resolver.                                                                                                                             |
+| `Log`         | The client's diagnostic log.                                                                                                                                  |
+| `Cancel`      | Set to `true` to drop the event. No later plugins run.                                                                                                        |
 
-Every plugin is passed an [EventPluginContext](https://github.com/exceptionless/Exceptionless.Net/blob/master/src/Exceptionless/Plugins/EventPluginContext.cs), which contains all the valuable contextual information that your plugin may need via the following properties:
+This plugin adds how long the machine has been up to every feature usage event. It works on Windows, Linux, and macOS:
 
-- Client
-- Event
-- ContextData
-- Log
-- Resolver
-
-## Add System Uptime to Feature Usages
+<!-- source: Exceptionless.Net:samples/Exceptionless.SampleConsole/Plugins/SystemUptimePlugin.cs -->
 
 ```csharp
 using System;
 using System.Diagnostics;
-using Exceptionless.Plugins;
 using Exceptionless.Models;
+using Exceptionless.Plugins;
 
-namespace Exceptionless.SampleConsole.Plugins {
-    [Priority(100)]
-    public class SystemUptimePlugin : IEventPlugin {
-        public void Run(EventPluginContext context) {
-            // Only update feature usage events.
-            if (context.Event.Type != Event.KnownTypes.FeatureUsage)
-                return;
+[Priority(100)]
+public class SystemUptimePlugin : IEventPlugin {
+    public void Run(EventPluginContext context) {
+        // Only update feature usage events.
+        if (context.Event.Type != Event.KnownTypes.FeatureUsage)
+            return;
 
-            // Get the system uptime
-            using (var pc = new PerformanceCounter("System", "System Up Time")) {
-                pc.NextValue();
+        var uptime = TimeSpan.FromSeconds((double)Stopwatch.GetTimestamp() / Stopwatch.Frequency);
 
-                var uptime = TimeSpan.FromSeconds(pc.NextValue());
-
-                // Store the system uptime as an extended property.
-                context.Event.SetProperty("System Uptime", String.Format("{0} Days {1} Hours {2} Minutes {3} Seconds", uptime.Days, uptime.Hours, uptime.Minutes, uptime.Seconds));
-            }
-        }
+        // Shown in its own section on the event's Extended Data tab.
+        context.Event.SetProperty("System Uptime", $"{uptime.Days} Days {uptime.Hours} Hours {uptime.Minutes} Minutes {uptime.Seconds} Seconds");
     }
 }
 ```
 
-### Output
-
-Properties a plugin adds with `SetProperty` show up on the event's **Extended Data** tab, with each property in its own section. A plugin like the one above adds a **System Uptime** section to each feature usage event.
+Properties a plugin adds with `SetProperty` show up on the event's **Extended Data** tab, each in its own section:
 
 ![Custom data on an event's Extended Data tab](/assets/img/docs/plugins-extended-data-light.webp)
 
-## Plugin Priority
+## Add a plugin
 
-The plugin priority determines the order the plugin runs (lowest to highest, then by order added). All plugins shipped with the client have a starting priority of 10 and increment by multiples of 10. For your addin to run first, give it a priority lower than 10 (e.g., 0-5). To have it run last, give it a priority higher than 100. **If a priority is not specified, it defaults to 0.**
-
-## Adding the Plugin to Your App
-
-Start by calling one of the `Exceptionless.ExceptionlessClient.Default.Configuration.AddPlugin()` overloads. This will typically be the following:
+Register a plugin class before the client starts:
 
 ```csharp
 using Exceptionless;
+
 ExceptionlessClient.Default.Configuration.AddPlugin<SystemUptimePlugin>();
 ```
 
-Passing a `System.Action&lt;EventPluginContext&gt;` to AddPlugin can also be used to add a plugin. _Note we specify a key so we can remove the plugin later. If you won't be removing the plugin, you can omit the first argument._
-
-**AddPlugin is passed three arguments:**
-
-- Unique Plugin Key (to remove later, if applicable)
-- Priority
-- Action (logic)
+In ASP.NET Core or worker services, do it in the configuration lambda:
 
 ```csharp
-using Exceptionless;
-ExceptionlessClient.Default.Configuration.AddPlugin("system-uptime", 100, context => {
-    // Only update feature usage events.
-    if (context.Event.Type != Event.KnownTypes.FeatureUsage)
-        return;
+builder.AddExceptionless(c => c.AddPlugin<SystemUptimePlugin>());
+```
 
-    // Get the system uptime
-    using (var pc = new PerformanceCounter("System", "System Up Time")) {
-         pc.NextValue();
-         var uptime = TimeSpan.FromSeconds(pc.NextValue());
+For something small, pass a key, a priority, and an action instead of writing a class. The key lets you remove it later:
 
-         // Store the system uptime as an extended property.
-         context.Event.SetProperty("System Uptime", String.Format("{0} Days {1} Hours {2} Minutes {3} Seconds", uptime.Days, uptime.Hours, uptime.Minutes, uptime.Seconds));
-
-     }
+```csharp
+ExceptionlessClient.Default.Configuration.AddPlugin("region", 100, context => {
+    context.Event.SetProperty("Region", Environment.GetEnvironmentVariable("REGION"));
 });
 ```
 
-## Removing an Existing Plugin
+Adding a plugin with a key or class that's already registered replaces it.
 
-Call one of the `Exceptionless.ExceptionlessClient.Default.Configuration.RemovePlugin` overloads to remove a plugin.
+## Drop events {#exclude-events}
+
+Set `context.Cancel = true` to drop an event:
 
 ```csharp
-using Exceptionless;
+ExceptionlessClient.Default.Configuration.AddPlugin("ignore-cancellations", 5, context => {
+    if (context.ContextData.GetException() is OperationCanceledException)
+        context.Cancel = true;
+});
+```
+
+For a simple yes-or-no check on the event, `AddEventExclusion` is shorter. Return `false` to drop the event:
+
+```csharp
+ExceptionlessClient.Default.Configuration.AddEventExclusion(ev => ev.Source != "HealthCheck");
+```
+
+To drop events by type, source, or exception type without code, use the
+[built-in client configuration values](/docs/clients/dotnet/client-configuration-values/#turn-events-off-without-code).
+
+## Priority
+
+Plugins run in priority order, lowest first. The order of plugins with the same priority isn't guaranteed. Set the
+priority with `[Priority(n)]` on a class or the second argument of `AddPlugin`. A plugin with no priority runs at `0`,
+before the built-in plugins.
+
+| Priority | Built-in plugin                                                           |
+| -------- | ------------------------------------------------------------------------- |
+| 5        | Splits aggregate exceptions into separate events                          |
+| 10       | Event exclusions and log level filtering                                  |
+| 15       | Adds default tags and data                                                |
+| 16       | Sets the Windows user as the event's user (WPF and Windows Forms)         |
+| 20       | Adds the error details and stack trace                                    |
+| 25       | Manages session IDs, with `UseSessions(useSessionIdManagement: true)`     |
+| 40       | Adds reference IDs, when turned on                                        |
+| 50       | Adds environment information                                              |
+| 70       | Adds recent trace messages                                                |
+| 80       | Adds the app version                                                      |
+| 90       | Records how the event was submitted, and adds request details in web apps |
+| 100      | Session heartbeats, when sessions are on                                  |
+| 110      | Drops web requests from bot user agents                                   |
+| 900      | Drops session starts that have no user                                    |
+| 910      | Merges duplicate events submitted within a minute                         |
+
+Pick a priority based on what you need:
+
+- **Below 10** to drop events before anything else runs.
+- **Around 100** to add data after the client has added its own.
+- **Above 900** to see events exactly as they'll be sent.
+
+## Remove a plugin
+
+Remove a class plugin by type, and an action plugin by its key:
+
+```csharp
 ExceptionlessClient.Default.Configuration.RemovePlugin<SystemUptimePlugin>();
+ExceptionlessClient.Default.Configuration.RemovePlugin("region");
 ```
 
-If it was registered via an action, you have to remove it via the key you added it with.
+## Plugins and SubmittingEvent
 
-```csharp
-using Exceptionless;
-ExceptionlessClient.Default.Configuration.RemovePlugin("system-uptime");
+The client raises its `SubmittingEvent` event after all plugins have run, so handlers see the finished event and can
+still cancel it. Plugins are better for reusable logic and can be tested on their own. See
+[Sending events](/docs/clients/dotnet/sending-events/#change-or-cancel-events).
+
+## Ask Exie
+
+```prompt exie
+Show me the latest feature usage event and its extended data.
 ```
 
----
-
-[Next > Private Information](/docs/clients/dotnet/private-information)
+```prompt exie
+Which error types did this project get most often this week? I'm deciding what to filter out.
+```

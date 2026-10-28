@@ -6,6 +6,7 @@
   "twitter": "@Exceptionless",
   "signupUrl": "https://be.exceptionless.io/signup?domain=exceptionless.com&type=organic",
   "appUrl": "https://be.exceptionless.io",
+  "apiUrl": "https://api.exceptionless.io",
   "githubUrl": "https://github.com/exceptionless/Exceptionless",
   "githubStars": "2.5k"
 }
