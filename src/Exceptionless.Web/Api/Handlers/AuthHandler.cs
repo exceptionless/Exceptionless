@@ -564,10 +564,16 @@ public class AuthHandler(
             // Ordered user locks also protect transfers and different identities on the same user.
             await using var userLock = await lockProvider.AcquireAsync(userKeys, cancellationToken: operationCancellation.Token);
             operationCancellation.Token.ThrowIfCancellationRequested();
-            var user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext, existingUser, emailUser, operationCancellation);
+            var result = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext, existingUser, emailUser, operationCancellation);
+            if (!result.IsSuccess)
+                return Result<TokenResult>.FromResult(result);
 
+            var user = result.Value;
             if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                 await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext);
+
+            if (result.Status == ResultStatus.Created && !user.IsEmailAddressVerified)
+                await mailer.SendUserEmailVerifyAsync(user);
 
             logger.UserLoggedIn(user.EmailAddress);
             return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
@@ -598,13 +604,14 @@ public class AuthHandler(
         admissionCancellation.CancelAfter(Timeout.InfiniteTimeSpan);
     }
 
-    private async Task<User> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext, User? existingUser, User? emailUser, CancellationTokenSource admissionCancellation)
+    private async Task<Result<User>> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext, User? existingUser, User? emailUser, CancellationTokenSource admissionCancellation)
     {
         var cancellationToken = admissionCancellation.Token;
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
 
+        bool isMicrosoft = String.Equals(userInfo.ProviderName, OAuthAccount.KnownProviders.Microsoft, StringComparison.Ordinal);
         var accountData = new SettingsDictionary { ["email"] = userInfo.Email };
         string? fullName = userInfo.GetFullName();
         if (!String.IsNullOrWhiteSpace(fullName))
@@ -670,7 +677,8 @@ public class AuthHandler(
         if (existingUser is not null)
         {
             CompleteExternalAccountAdmission(admissionCancellation);
-            existingUser.MarkEmailAddressVerified();
+            if (!isMicrosoft)
+                existingUser.MarkEmailAddressVerified();
             existingUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
             RemoveLegacyMicrosoftOAuthAccounts(existingUser, userInfo.ProviderName);
             return await userRepository.SaveAsync(existingUser, o => o.Cache());
@@ -679,6 +687,10 @@ public class AuthHandler(
         var user = emailUser is not null ? await userRepository.GetByIdAsync(emailUser.Id, options => options.Cache(false)).WaitAsync(cancellationToken) : null;
         if (user is not null && !String.Equals(user.EmailAddress, userInfo.Email.Trim(), StringComparison.OrdinalIgnoreCase))
             throw new UnauthorizedAccessException("The user's email address has changed.");
+
+        // Microsoft Graph does not provide a mailbox-verification assertion.
+        if (isMicrosoft && user is not null)
+            return Result.Forbidden("Sign in to your existing account first, then link Microsoft from your account settings.");
 
         if (user is null)
         {
@@ -693,16 +705,18 @@ public class AuthHandler(
 
         EnsureUserIsActive(user);
         CompleteExternalAccountAdmission(admissionCancellation);
-        user.MarkEmailAddressVerified();
+        if (isMicrosoft)
+            user.ResetVerifyEmailAddressTokenAndExpiration(timeProvider);
+        else
+            user.MarkEmailAddressVerified();
+
         user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
         RemoveLegacyMicrosoftOAuthAccounts(user, userInfo.ProviderName);
 
         if (String.IsNullOrEmpty(user.Id))
-            await userRepository.AddAsync(user, o => o.Cache());
-        else
-            await userRepository.SaveAsync(user, o => o.Cache());
+            return Result.Created(await userRepository.AddAsync(user, o => o.Cache()));
 
-        return user;
+        return await userRepository.SaveAsync(user, o => o.Cache());
     }
 
     private static void EnsureUserIsActive(User user)

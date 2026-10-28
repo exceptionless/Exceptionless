@@ -395,6 +395,42 @@ public sealed class AuthHandlerTests : TestWithServices
         oauthTokens.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public async Task Handle_MicrosoftEmailCollision_DoesNotAttachIdentityOrIssueToken()
+    {
+        // Arrange
+        const string providerUserId = "unlinked-microsoft-user";
+        var user = GetService<UserData>().GenerateUser(id: TestConstants.UserId, emailAddress: TestConstants.UserEmail);
+        user.MarkEmailAddressVerified();
+        var users = new Mock<IUserRepository>(MockBehavior.Strict);
+        users.Setup(repository => repository.GetUsersByOAuthProviderAsync(OAuthAccount.KnownProviders.Microsoft, providerUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<User>());
+        users.Setup(repository => repository.FindOneAsync(It.IsAny<RepositoryQueryDescriptor<User>>(), It.IsAny<CommandOptionsDescriptor<User>>()))
+            .ReturnsAsync(new FindHit<User>(user.Id, user, 0, user.Version, null, null));
+        users.Setup(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(user);
+        users.Setup(repository => repository.SaveAsync(user, It.IsAny<CommandOptionsDescriptor<User>>())).ReturnsAsync(user);
+        var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
+        tokens.Setup(repository => repository.GetByTypeAndUserIdAsync(TokenType.Authentication, user.Id, null)).ReturnsAsync(FindResults<Token>.Empty);
+        tokens.Setup(repository => repository.AddAsync(It.IsAny<Token>(), It.IsAny<CommandOptionsDescriptor<Token>>()))
+            .ReturnsAsync((Token token, CommandOptionsDescriptor<Token> _) => token);
+        var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
+        var provider = new Mock<IOAuthProviderClient>(MockBehavior.Strict);
+        provider.Setup(client => client.GetMicrosoftUserInfoAsync(It.IsAny<ExternalAuthInfo>(), "microsoft-client-id", "microsoft-client-secret"))
+            .ReturnsAsync(new OAuth2.Models.UserInfo { ProviderName = OAuthAccount.KnownProviders.Microsoft, Id = providerUserId, Email = user.EmailAddress });
+        var handler = CreateHandler(users.Object, tokens.Object, oauthTokens.Object, provider.Object);
+
+        // Act
+        var result = await handler.Handle(new MicrosoftLogin(new ExternalAuthInfo(), new DefaultHttpContext()));
+
+        // Assert
+        Assert.Equal(ResultStatus.Forbidden, result.Status);
+        Assert.Equal("Sign in to your existing account first, then link Microsoft from your account settings.", result.Message);
+        Assert.Empty(user.OAuthAccounts);
+        users.Verify(repository => repository.SaveAsync(It.IsAny<User>(), It.IsAny<CommandOptionsDescriptor<User>>()), Times.Never);
+        tokens.VerifyNoOtherCalls();
+        oauthTokens.VerifyNoOtherCalls();
+    }
+
     [Theory]
     [InlineData("facebook", false)]
     [InlineData("windowslive", false)]

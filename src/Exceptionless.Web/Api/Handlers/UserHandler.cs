@@ -284,7 +284,10 @@ public class UserHandler(
 
         user.ResetPasswordResetToken();
         user.EmailAddress = email;
-        user.IsEmailAddressVerified = user.OAuthAccounts.Any(oa => String.Equals(oa.EmailAddress(), email, StringComparison.InvariantCultureIgnoreCase));
+        // Microsoft Graph profile email does not establish mailbox ownership.
+        user.IsEmailAddressVerified = user.OAuthAccounts.Any(oa =>
+            !String.Equals(oa.Provider, OAuthAccount.KnownProviders.Microsoft, StringComparison.OrdinalIgnoreCase)
+            && String.Equals(oa.EmailAddress(), email, StringComparison.InvariantCultureIgnoreCase));
         if (user.IsEmailAddressVerified)
             user.MarkEmailAddressVerified();
         else
