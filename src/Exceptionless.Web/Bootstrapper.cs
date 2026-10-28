@@ -41,5 +41,11 @@ public class Bootstrapper
 
         services.AddSingleton<EnqueueOrganizationNotificationOnPlanOverage>();
         services.AddStartupAction<EnqueueOrganizationNotificationOnPlanOverage>();
+
+        services.AddSingleton<EnqueueOrganizationBudgetAlertOnUsageThreshold>();
+        services.AddStartupAction<EnqueueOrganizationBudgetAlertOnUsageThreshold>();
+
+        services.AddSingleton<EnqueueProjectSmartThrottleOnThrottleApplied>();
+        services.AddStartupAction<EnqueueProjectSmartThrottleOnThrottleApplied>();
     }
 }

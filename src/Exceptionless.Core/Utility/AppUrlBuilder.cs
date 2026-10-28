@@ -38,11 +38,15 @@ internal sealed class AppUrlBuilder
 
     public string OrganizationManage(string organizationId) => Build($"organization/{organizationId}/usage");
 
+    public string OrganizationUsage(string organizationId) => Build($"organization/{organizationId}/usage");
+
     public string OrganizationBilling(string organizationId) => Build($"organization/{organizationId}/billing");
 
     public string ProjectTimeline(string projectId) => Build($"project/{projectId}/dashboard?type=error");
 
     public string ProjectConfigure(string projectId) => Build($"project/{projectId}/configure");
+
+    public string ProjectUsage(string projectId) => Build($"project/{projectId}/usage");
 
     public string ProjectMostFrequent(string projectId) => Build($"project/{projectId}/dashboard?type=error&view=stacks");
 

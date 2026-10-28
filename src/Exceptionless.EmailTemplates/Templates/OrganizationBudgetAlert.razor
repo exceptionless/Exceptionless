@@ -1,0 +1,16 @@
+@namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<OrganizationBudgetAlertEmail>
+
+<EmailLayout Model="Model">
+    <EmailSection>
+        <p style="@EmailStyles.Lead">@Model.OrganizationName has reached @Model.Threshold% of its monthly event allowance.</p>
+        <p style="@EmailStyles.Paragraph">The organization has accepted @Model.CurrentEventCount events. The @Model.Threshold% alert is @Model.ThresholdEventCount events, the current allowance is @Model.EventLimit, and @Model.RemainingEventCount events remain.</p>
+        <EmailButton Url="@Model.Action!.Url">View Usage</EmailButton>
+    </EmailSection>
+    <ActionsFooter Links="NotificationLinks" />
+</EmailLayout>
+
+@code {
+    private IReadOnlyCollection<EmailLink> NotificationLinks =>
+        [new("Change your notification settings", Model.NotificationSettingsUrl)];
+}

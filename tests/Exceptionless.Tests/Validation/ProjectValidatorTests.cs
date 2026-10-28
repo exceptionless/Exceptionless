@@ -135,6 +135,24 @@ public sealed class ProjectValidatorTests : TestWithServices
         Assert.True(isValid);
     }
 
+    [Theory]
+    [InlineData("0.0001", true)]
+    [InlineData("8.3", true)]
+    [InlineData("0.00001", false)]
+    public async Task Validate_PercentageIngestLimit_UsesBoundedPrecision(string value, bool expectedValid)
+    {
+        var project = CreateValidProject();
+        project.IngestLimit = new ProjectIngestLimit
+        {
+            Type = ProjectIngestLimitType.PercentOfOrganizationLimit,
+            PercentOfOrganizationLimit = Decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture)
+        };
+
+        var (isValid, _) = await _validator.ValidateAsync(project);
+
+        Assert.Equal(expectedValid, isValid);
+    }
+
     [Fact]
     public async Task ValidateAsync_WhenProjectIsValid_ReturnsSuccess()
     {

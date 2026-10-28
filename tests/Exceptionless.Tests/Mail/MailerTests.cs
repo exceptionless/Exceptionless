@@ -109,9 +109,11 @@ public sealed class MailerTests : TestWithServices
             ("organization/organization-1/upgrade", appUrls.OrganizationUpgrade("organization-1")),
             ("organization/organization-1/dashboard?view=stacks", appUrls.OrganizationFrequent("organization-1")),
             ("organization/organization-1/usage", appUrls.OrganizationManage("organization-1")),
+            ("organization/organization-1/usage", appUrls.OrganizationUsage("organization-1")),
             ("organization/organization-1/billing", appUrls.OrganizationBilling("organization-1")),
             ("project/project-1/dashboard?type=error", appUrls.ProjectTimeline("project-1")),
             ("project/project-1/configure", appUrls.ProjectConfigure("project-1")),
+            ("project/project-1/usage", appUrls.ProjectUsage("project-1")),
             ("project/project-1/dashboard?type=error&view=stacks", appUrls.ProjectMostFrequent("project-1")),
             ("project/project-1/dashboard?type=error&view=stacks", appUrls.ProjectNewest("project-1")),
             ("account/notifications", appUrls.AccountNotifications()),
@@ -566,6 +568,61 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
+    public async Task SendOrganizationBudgetAlertAsync_WithHtmlName_RendersCountsAndSafeUsageLinks()
+    {
+        // Arrange
+        var user = _userData.GenerateSampleUser();
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        organization.Id = "organization-budget";
+        organization.Name = "<Budget & \"Team\">";
+
+        // Act
+        await _mailer.SendOrganizationBudgetAlertAsync(user, organization, 80, 800, 825, 1000);
+        var body = await RunMailJobAsync();
+
+        // Assert
+        Assert.Contains(WebUtility.HtmlEncode(organization.Name), body, StringComparison.Ordinal);
+        Assert.Contains("View Usage", body, StringComparison.Ordinal);
+        Assert.Contains("The organization has accepted 825 events", body, StringComparison.Ordinal);
+        Assert.Contains("The 80% alert is 800 events", body, StringComparison.Ordinal);
+        Assert.Contains("the current allowance is 1000, and 175 events remain", body, StringComparison.Ordinal);
+        string baseUrl = _options.BaseURL.TrimEnd('/');
+        Assert.Contains($"{baseUrl}/organization/organization-budget/usage", body, StringComparison.Ordinal);
+        Assert.Contains($"{baseUrl}/account/notifications", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Budget & \"Team\">", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SendProjectThrottledNoticeAsync_WithHtmlNames_RendersCountsAndSafeUsageLinks()
+    {
+        // Arrange
+        var user = _userData.GenerateSampleUser();
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        organization.Id = "organization-throttle";
+        organization.Name = "<Organization & \"Team\">";
+        var project = _projectData.GenerateSampleProject();
+        project.Id = "project-throttle";
+        project.Name = "<Checkout & API>";
+
+        // Act
+        await _mailer.SendProjectThrottledNoticeAsync(user, organization, project, 0.05, 123, 100);
+        var body = await RunMailJobAsync();
+
+        // Assert
+        Assert.Contains(WebUtility.HtmlEncode(organization.Name), body, StringComparison.Ordinal);
+        Assert.Contains(WebUtility.HtmlEncode(project.Name), body, StringComparison.Ordinal);
+        Assert.Contains("View Project Usage", body, StringComparison.Ordinal);
+        Assert.Contains("accepted 123 events this month", body, StringComparison.Ordinal);
+        Assert.Contains("monthly fair-share allowance is 100 events", body, StringComparison.Ordinal);
+        Assert.Contains("stable 5% sample", body, StringComparison.Ordinal);
+        string baseUrl = _options.BaseURL.TrimEnd('/');
+        Assert.Contains($"{baseUrl}/project/project-throttle/usage", body, StringComparison.Ordinal);
+        Assert.Contains($"{baseUrl}/account/notifications", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Organization & \"Team\">", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<Checkout & API>", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SendProjectDailySummaryAsync_WithSubmittedEvents_RendersTimelineLinks()
     {
         // Arrange
@@ -796,7 +853,7 @@ public sealed class MailerTests : TestWithServices
     private static void AssertValidInternalUrl(Uri uri)
     {
         Assert.Empty(uri.Fragment);
-        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|dashboard)|account/(?:notifications|verify)|organization/[^/]+/(?:dashboard|usage|billing|upgrade)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
+        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|dashboard|usage)|account/(?:notifications|verify)|organization/[^/]+/(?:dashboard|usage|billing|upgrade)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
 
         if (uri.AbsolutePath is "/account/verify" or "/signup")
         {
