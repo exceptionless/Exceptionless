@@ -2,13 +2,35 @@ using Exceptionless.Core;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Foundatio.Xunit;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace Exceptionless.Tests.Pipeline;
 
-public sealed class CopySimpleDataToIdxActionTests
+public sealed class CopySimpleDataToIdxActionTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
+    [Theory]
+    [InlineData(false, true, "true")]
+    [InlineData(false, false, "false")]
+    [InlineData(true, true, "true")]
+    [InlineData(true, false, "false")]
+    public async Task ProcessAsync_BooleanParentReference_MatchesJsonRepresentation(bool premium, bool value, string expected)
+    {
+        // Arrange
+        var ev = new PersistentEvent { Data = new() { ["@ref:parent"] = value } };
+        var context = new EventContext(ev, new Organization { HasPremiumFeatures = premium }, new Project());
+        var action = new CopySimpleDataToIdxAction(new AppOptions { DisabledPipelineActions = [] }, NullLoggerFactory.Instance);
+
+        // Act
+        await action.ProcessAsync(context);
+
+        // Assert
+        Assert.NotNull(ev.Idx);
+        Assert.Equal(expected, ev.Idx["parent-r"]);
+        Assert.Equal(value, ev.Data["@ref:parent"]);
+    }
+
     [Theory]
     [InlineData("@ref:parent")]
     [InlineData("@ref:Parent")]

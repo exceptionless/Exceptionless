@@ -29,7 +29,9 @@ public static class PersistentEventExtensions
                 if (!field.IsValidFieldName())
                     continue;
 
-                ev.Idx[field + "-r"] = ev.Data[key]?.ToString();
+                ev.Idx[field + "-r"] = field == Event.KnownReferenceNames.Parent && ev.Data[key] is bool parentReference
+                    ? (parentReference ? "true" : "false")
+                    : ev.Data[key]?.ToString();
                 continue;
             }
 
