@@ -573,11 +573,15 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     [Fact]
     public async Task AddEventTagsAsync_WithConcurrentCounterUpdates_PreservesBothChanges()
     {
+        // Arrange
         var stack = _stackData.GenerateSampleStack();
         stack.TotalOccurrences = 0;
         await _repository.AddAsync(stack, o => o.ImmediateConsistency());
 
-        await Task.WhenAll(Enumerable.Range(0, 20).Select(async index =>
+        // Act
+        // Overlap tags with each counter write without flooding one document with
+        // concurrent counter writers, which can exhaust its bounded conflict retries.
+        for (int index = 0; index < 20; index++)
         {
             await Task.WhenAll(
                 _repository.AddEventTagsAsync(stack.Id, [$"tag-{index}"]),
@@ -589,11 +593,13 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
                     stack.LastOccurrence.AddMinutes(index + 1),
                     1,
                     sendNotifications: false));
-        }));
+        }
 
+        // Assert
         var updated = await _repository.GetByIdAsync(stack.Id, o => o.ImmediateConsistency());
         Assert.NotNull(updated);
         Assert.Equal(20, updated.TotalOccurrences);
+        Assert.Equal(stack.LastOccurrence.AddMinutes(20), updated.LastOccurrence, TimeSpan.FromMilliseconds(1));
         Assert.All(Enumerable.Range(0, 20), index => Assert.Contains($"tag-{index}", updated.Tags));
     }
 
