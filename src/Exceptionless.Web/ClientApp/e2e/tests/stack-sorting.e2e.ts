@@ -53,7 +53,7 @@ test('legacy stack view aliases survive reset and save', async ({ e2eScenario, p
             const createResponse = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
                 data: {
                     filter: 'type:error',
-                    name: `Sort ${label}`,
+                    name: `Sort ${label} ${explicitSort ? 'explicit' : 'saved'}`,
                     organization_id: e2eScenario.organizationId,
                     slug,
                     sort,
