@@ -1,6 +1,4 @@
 <script lang="ts">
-    import Bot from '@lucide/svelte/icons/bot';
-
     import { H3, Muted } from '#comp/typography/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
@@ -8,6 +6,8 @@
     import { isStripeEnabled } from '#features/billing/stripe.svelte.ts';
 
     import type { AssistantAccessState } from '../models';
+
+    import ExieAvatar from './exie-avatar.svelte';
 
     interface Props {
         accessState?: AssistantAccessState;
@@ -31,9 +31,7 @@
 </script>
 
 <div class="flex h-full flex-col items-center justify-center gap-5 px-6 text-center">
-    <div class="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-xl">
-        <Bot aria-hidden="true" class="size-7" />
-    </div>
+    <ExieAvatar size="lg" />
     <div class="max-w-80">
         {#if accessState === 'loading'}
             <H3 class="text-base">Checking Exie access</H3>

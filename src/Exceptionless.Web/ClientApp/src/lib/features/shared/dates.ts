@@ -110,6 +110,12 @@ export function formatDateRangeLabel(start: Date, end: Date, currentDate: Date =
     const rangeExceedsDay = rangeMs > 24 * 60 * 60 * 1000;
     const sameDateStr = start.toDateString() === end.toDateString();
 
+    // Whole days (midnight through 23:59:59): show dates only
+    if (isStartOfDay(start) && isEndOfDay(end)) {
+        const startDate = formatDatePart(start, currentDate);
+        return sameDateStr ? startDate : `${startDate} – ${formatDatePart(end, currentDate)}`;
+    }
+
     if (sameDateStr) {
         // Same day: show date once, both times separated by dash
         const datePart = formatDatePart(start, currentDate);
@@ -230,4 +236,12 @@ function formatTimePart(date: Date, omitSeconds: boolean): string {
     };
 
     return new Intl.DateTimeFormat(undefined, opts).format(date);
+}
+
+function isEndOfDay(date: Date): boolean {
+    return date.getHours() === 23 && date.getMinutes() === 59 && date.getSeconds() === 59;
+}
+
+function isStartOfDay(date: Date): boolean {
+    return date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0;
 }

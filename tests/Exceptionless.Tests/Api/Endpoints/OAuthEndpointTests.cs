@@ -1194,6 +1194,41 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task OAuthBearer_McpClientSendsRemovedArgument_ReturnsInvalidArgument()
+    {
+        var token = await IssueTokenAsync();
+        using var httpClient = _server.CreateClient();
+        var transport = new HttpClientTransport(
+            new HttpClientTransportOptions
+            {
+                Endpoint = new Uri(_server.BaseAddress, "/mcp"),
+                AdditionalHeaders = new Dictionary<string, string>
+                {
+                    ["Authorization"] = $"Bearer {token.AccessToken}"
+                }
+            },
+            httpClient,
+            GetService<ILoggerFactory>(),
+            ownsHttpClient: false);
+        await using var client = await McpClient.CreateAsync(transport, cancellationToken: TestContext.Current.CancellationToken);
+
+        // Binding drops unknown arguments, so without this check an old client's last would silently search all time.
+        var result = await client.CallToolAsync(
+            "search_stacks",
+            new Dictionary<string, object?>
+            {
+                ["projectId"] = TestConstants.ProjectId,
+                ["last"] = "24h"
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsError);
+        var error = result.StructuredContent!.Value.GetProperty("error");
+        Assert.Equal("invalid_argument", error.GetProperty("code").GetString());
+        Assert.Contains("search_stacks does not accept last.", error.GetProperty("message").GetString());
+    }
+
+    [Fact]
     public async Task OAuthBearer_RestApiResourceMissingScope_ReturnsForbidden()
     {
         var token = await IssueTokenAsync(resource: RestApiResource, scope: AuthorizationRoles.ProjectsRead);

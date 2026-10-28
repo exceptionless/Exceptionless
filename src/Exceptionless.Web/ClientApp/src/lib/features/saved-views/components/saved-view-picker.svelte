@@ -24,6 +24,7 @@
 
     import { Button } from '#comp/ui/button/index.ts';
     import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
+    import * as Tooltip from '#comp/ui/tooltip/index.ts';
     import { toFilter } from '#features/events/components/filters/helpers.svelte.ts';
     import { serializeFilters } from '#features/events/components/filters/helpers.svelte.ts';
     import { getOrganizationQuery, getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
@@ -400,17 +401,30 @@
 </script>
 
 <DropdownMenu.Root bind:open={isMenuOpen}>
-    <DropdownMenu.Trigger>
-        {#snippet child({ props })}
-            <Button {...props} class="relative gap-x-1.5 px-3" data-tour="saved-view-trigger" size="lg" variant="outline" title="Manage View Settings">
-                <SlidersHorizontal class="size-4" aria-hidden="true" />
-                <span>View</span>
-                {#if isModified}
-                    <span class="bg-primary absolute top-1 right-1 size-2 rounded-full" aria-label="Unsaved view changes"></span>
-                {/if}
-            </Button>
-        {/snippet}
-    </DropdownMenu.Trigger>
+    <Tooltip.Root suppressWhenOverlayOpen>
+        <Tooltip.Trigger>
+            {#snippet child({ props: tooltipProps })}
+                <DropdownMenu.Trigger {...tooltipProps}>
+                    {#snippet child({ props })}
+                        <Button {...props} class="relative gap-x-1.5 px-3" data-tour="saved-view-trigger" size="lg" variant="outline">
+                            <SlidersHorizontal class="size-4" aria-hidden="true" />
+                            <span>View</span>
+                            {#if isModified}
+                                <span class="bg-primary absolute top-1 right-1 size-2 rounded-full" aria-label="Unsaved view changes"></span>
+                            {/if}
+                        </Button>
+                    {/snippet}
+                </DropdownMenu.Trigger>
+            {/snippet}
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+            {#if isModified}
+                This view has unsaved changes. Open to save or reset them.
+            {:else}
+                Manage view settings
+            {/if}
+        </Tooltip.Content>
+    </Tooltip.Root>
     <DropdownMenu.Content align="end" class="w-64" data-tour="saved-view-settings">
         <DropdownMenu.Group>
             <DropdownMenu.Label>Saved View</DropdownMenu.Label>

@@ -7,11 +7,6 @@ namespace Exceptionless.Tests.Utility;
 
 public sealed class TestOAuthProviderClient : IOAuthProviderClient
 {
-    public Task<UserInfo> GetFacebookUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
-    {
-        return GetUserInfoAsync("Facebook", authInfo);
-    }
-
     public Task<UserInfo> GetGitHubUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
         return GetUserInfoAsync("GitHub", authInfo);
@@ -24,7 +19,7 @@ public sealed class TestOAuthProviderClient : IOAuthProviderClient
 
     public Task<UserInfo> GetMicrosoftUserInfoAsync(ExternalAuthInfo authInfo, string appId, string appSecret)
     {
-        return GetUserInfoAsync("WindowsLive", authInfo);
+        return GetUserInfoAsync("Microsoft", authInfo);
     }
 
     public Task<SlackToken?> GetSlackAccessTokenAsync(string code)

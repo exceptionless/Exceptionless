@@ -37,6 +37,8 @@ public class AuthHandler(
     TimeProvider timeProvider,
     ILogger<AuthHandler> logger)
 {
+    private const string LegacyMicrosoftOAuthProvider = "WindowsLive";
+    private const string MicrosoftOAuthProvider = "Microsoft";
     private readonly ScopedCacheClient _cache = new(cacheClient, "Auth");
     private static bool _isFirstUserChecked;
     private static readonly TimeSpan IntercomJwtLifetime = TimeSpan.FromMinutes(60);
@@ -258,16 +260,7 @@ public class AuthHandler(
         );
     }
 
-    public Task<Result<TokenResult>> Handle(FacebookLogin message)
-    {
-        return ExternalLoginAsync(message.AuthInfo, message.Context,
-            authOptions.FacebookId,
-            authOptions.FacebookSecret,
-            oauthProviderClient.GetFacebookUserInfoAsync
-        );
-    }
-
-    public Task<Result<TokenResult>> Handle(LiveLogin message)
+    public Task<Result<TokenResult>> Handle(MicrosoftLogin message)
     {
         return ExternalLoginAsync(message.AuthInfo, message.Context,
             authOptions.MicrosoftId,
@@ -288,19 +281,16 @@ public class AuthHandler(
             return Result.BadRequest("Invalid Provider Name or Provider User Id.");
         }
 
-        if (user.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(user.Password))
-        {
-            logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login", user.EmailAddress);
-            return Result.BadRequest("You must set a local password before removing your external login.");
-        }
-
         try
         {
-            if (user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId.Value))
+            if (!user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId.Value))
             {
-                user.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
-                await userRepository.SaveAsync(user, o => o.Cache());
+                logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login", user.EmailAddress);
+                return Result.BadRequest("You must set a local password before removing your external login.");
             }
+
+            user.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
+            await userRepository.SaveAsync(user, o => o.Cache());
         }
         catch (Exception ex)
         {
@@ -553,26 +543,35 @@ public class AuthHandler(
                 }
                 else
                 {
+                    if (RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName))
+                        return await userRepository.SaveAsync(currentUser, o => o.Cache());
+
                     return currentUser;
                 }
             }
 
             currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+            RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName);
             return await userRepository.SaveAsync(currentUser, o => o.Cache());
         }
 
         if (existingUser is not null)
         {
+            bool hasChanges = RemoveLegacyMicrosoftOAuthAccounts(existingUser, userInfo.ProviderName);
             if (!existingUser.IsEmailAddressVerified)
             {
                 existingUser.MarkEmailAddressVerified();
-                await userRepository.SaveAsync(existingUser, o => o.Cache());
+                hasChanges = true;
             }
+
+            if (hasChanges)
+                await userRepository.SaveAsync(existingUser, o => o.Cache());
 
             return existingUser;
         }
 
         var user = !String.IsNullOrEmpty(userInfo.Email) ? await userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
+
         if (user is null)
         {
             if (!await IsAccountCreationEnabledAsync(inviteToken))
@@ -593,6 +592,20 @@ public class AuthHandler(
             await userRepository.SaveAsync(user, o => o.Cache());
 
         return user;
+    }
+
+    private static bool RemoveLegacyMicrosoftOAuthAccounts(User user, string providerName)
+    {
+        if (!String.Equals(providerName, MicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var legacyAccounts = user.OAuthAccounts
+            .Where(account => String.Equals(account.Provider, LegacyMicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        foreach (var account in legacyAccounts)
+            user.OAuthAccounts.Remove(account);
+
+        return legacyAccounts.Length > 0;
     }
 
     private async Task<bool> IsAccountCreationEnabledAsync(string? token)

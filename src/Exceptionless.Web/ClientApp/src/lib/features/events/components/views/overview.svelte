@@ -74,6 +74,13 @@
 
 <Table.Root>
     <Table.Body>
+        {#if event.environment}
+            <Table.Row>
+                <Table.Head class="w-40 font-semibold whitespace-nowrap">Environment</Table.Head>
+                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.EnvironmentTrigger changed={filterChanged} value={event.environment} /></Table.Cell>
+                <Table.Cell>{event.environment}</Table.Cell>
+            </Table.Row>
+        {/if}
         {#if isSessionStart}
             <Table.Row>
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Duration</Table.Head>

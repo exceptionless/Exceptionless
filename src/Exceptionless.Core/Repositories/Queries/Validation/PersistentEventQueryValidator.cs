@@ -8,6 +8,7 @@ namespace Exceptionless.Core.Queries.Validation;
 public sealed class PersistentEventQueryValidator : AppQueryValidator
 {
     private static readonly HashSet<string> _freeQueryFields = new(StringComparer.OrdinalIgnoreCase) {
+            EventIndex.Alias.Environment,
             "date",
             "type",
             EventIndex.Alias.ReferenceId,
@@ -22,6 +23,7 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
         };
 
     private static readonly HashSet<string> _freeAggregationFields = new(StringComparer.OrdinalIgnoreCase) {
+            EventIndex.Alias.Environment,
             "date",
             "type",
             "value",
@@ -36,6 +38,7 @@ public sealed class PersistentEventQueryValidator : AppQueryValidator
         };
 
     private static readonly HashSet<string> _allowedAggregationFields = new(StringComparer.OrdinalIgnoreCase) {
+            EventIndex.Alias.Environment,
             "date",
             "source",
             "tags",

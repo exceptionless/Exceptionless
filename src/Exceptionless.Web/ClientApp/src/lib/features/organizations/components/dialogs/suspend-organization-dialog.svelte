@@ -101,7 +101,7 @@
                         <Field.Field data-invalid={ariaInvalid(field)}>
                             <Field.Label for={field.name}>Reason for Suspension</Field.Label>
                             <Select.Root bind:value={selectedCodeValue} onValueChange={handleCodeChange} type="single">
-                                <Select.Trigger class="w-full">
+                                <Select.Trigger id={field.name} class="w-full">
                                     {suspensionCodeOptions.find((option) => String(option.value) === selectedCodeValue)?.label || 'Select a reason...'}
                                 </Select.Trigger>
                                 <Select.Content>

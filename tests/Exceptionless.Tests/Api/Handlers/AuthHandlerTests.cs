@@ -142,9 +142,66 @@ public sealed class AuthHandlerTests : TestWithServices
         { new OperationCanceledException("Repository operation was canceled."), true }
     };
 
-    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient providerClient)
+    [Theory]
+    [InlineData("facebook")]
+    [InlineData("windowslive")]
+    public async Task Handle_RemoveLastUsableExternalLogin_ReturnsBadRequest(string retiredProvider)
+    {
+        // Arrange
+        var user = GetService<UserData>().GenerateUser(id: TestConstants.UserId, emailAddress: TestConstants.UserEmail);
+        user.Password = null;
+        user.AddOAuthAccount("google", "google-user", user.EmailAddress);
+        user.AddOAuthAccount(retiredProvider, "retired-user", user.EmailAddress);
+        var context = new DefaultHttpContext();
+        context.Request.SetUser(user);
+        var users = new Mock<IUserRepository>(MockBehavior.Strict);
+        var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
+        var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
+        var handler = CreateHandler(users.Object, tokens.Object, oauthTokens.Object, GetService<IOAuthProviderClient>());
+
+        // Act
+        var result = await handler.Handle(new RemoveExternalLogin("google", new ValueFromBody<string>("google-user"), context));
+
+        // Assert
+        Assert.Equal(ResultStatus.BadRequest, result.Status);
+        Assert.Equal(2, user.OAuthAccounts.Count);
+        users.VerifyNoOtherCalls();
+        tokens.VerifyNoOtherCalls();
+        oauthTokens.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task Handle_MicrosoftProviderFails_DoesNotAccessUserRepository()
+    {
+        // Arrange
+        var userRepository = new Mock<IUserRepository>(MockBehavior.Strict);
+        var oauthProvider = new Mock<IOAuthProviderClient>(MockBehavior.Strict);
+        oauthProvider.Setup(provider => provider.GetMicrosoftUserInfoAsync(It.IsAny<ExternalAuthInfo>(), "microsoft-client-id", "microsoft-client-secret"))
+            .ThrowsAsync(new InvalidOperationException("Microsoft provider failed."));
+        var handler = CreateHandler(
+            userRepository.Object,
+            GetService<ITokenRepository>(),
+            GetService<IOAuthTokenRepository>(),
+            oauthProvider.Object);
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await handler.Handle(new MicrosoftLogin(
+                new ExternalAuthInfo { ClientId = "microsoft-client-id", Code = "provider-failure", RedirectUri = "http://localhost" },
+                new DefaultHttpContext()));
+        });
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(exception);
+        userRepository.VerifyNoOtherCalls();
+    }
+
+    private AuthHandler CreateHandler(IUserRepository userRepository, ITokenRepository tokenRepository, IOAuthTokenRepository oauthTokenRepository, IOAuthProviderClient oauthProvider)
     {
         var appOptions = GetService<AppOptions>();
+        appOptions.AuthOptions.MicrosoftId = "microsoft-client-id";
+        appOptions.AuthOptions.MicrosoftSecret = "microsoft-client-secret";
 
         return new AuthHandler(
             appOptions.AuthOptions,
@@ -153,7 +210,7 @@ public sealed class AuthHandlerTests : TestWithServices
             userRepository,
             tokenRepository,
             oauthTokenRepository,
-            providerClient,
+            oauthProvider,
             GetService<ICacheClient>(),
             new AuthService(userRepository, GetService<ICacheClient>(), TimeProvider, Log),
             GetService<IMailer>(),
