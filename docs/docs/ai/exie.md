@@ -19,6 +19,8 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/components/assistant-history-menu.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/components/assistant-fix-button.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/components/assistant-project-scope.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/components/assistant-conversation-sharing.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/components/assistant-tool-trace.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/assistant-starters.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/conversation-history.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/shared/keyboard-shortcuts.ts
@@ -99,9 +101,9 @@ When you ask, Exie can:
 | `add_stack_reference_link`    | Add a link to an issue, pull request, deployment, or incident                                |
 | `remove_stack_reference_link` | Remove a reference link                                                                      |
 
-Exie doesn't show a confirmation dialog. Instead, it changes a stack only when your message asks for that exact change.
-Asking it to look at, investigate, or explain something never changes data. After a change, Exie says what changed, or
-that nothing needed to change, and the change always appears as a step above the answer.
+Exie doesn't show a confirmation dialog. Instead, it is instructed to change a stack only when your message asks for
+that exact change, so asking it to look at, investigate, or explain something shouldn't change data. After a change,
+Exie says what changed, or that nothing needed to change, and the change always appears as a step above the answer.
 
 Exie can make mistakes, so check important changes. You can reverse any of them on the stack in the app. See
 [Stacks](/docs/managing-stacks/).
@@ -114,8 +116,9 @@ Exie can make mistakes, so check important changes. You can reverse any of them 
 - Chats are saved in your browser, not on the Exceptionless servers. They're kept for 30 days, are separate for each
   organization, and are removed when you sign out. They don't follow you to another browser.
 
-When you continue a chat, Exie reuses the results it looked up in the last 30 minutes. After that, it looks them up
-again. See [AI privacy and security](/docs/ai/privacy/#exie-conversations) for what is stored where.
+When you continue a chat, Exie reuses the results it already looked up, until 30 minutes pass without a new lookup.
+After that, it looks them up again. See [AI privacy and security](/docs/ai/privacy/#exie-conversations) for what is
+stored where.
 
 ## Messages and feedback
 

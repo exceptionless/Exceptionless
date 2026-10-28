@@ -24,6 +24,9 @@ sources:
   - src/Exceptionless.Core/Plugins/EventParser/Default/JsonEventParserPlugin.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/40_RequestInfoPlugin.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/07_SubmissionClientPlugin.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/45_EnvironmentInfoPlugin.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/90_RemovePrivateInformationPlugin.cs
+  - src/Exceptionless.Core/Jobs/EventUserDescriptionsJob.cs
   - src/Exceptionless.Core/Pipeline/001_CheckEventDateAction.cs
   - src/Exceptionless.Core/Pipeline/006_TruncateFieldsAction.cs
   - src/Exceptionless.Core/Extensions/PersistentEventExtensions.cs
@@ -275,7 +278,8 @@ removes `ip_address` and `machine_name`.
 ### User {#user}
 
 `@user` identifies the user an event happened to. Events with a user identity are grouped into
-[sessions](/docs/user-sessions/) automatically.
+[sessions](/docs/user-sessions/) automatically. When the project excludes private information, the server removes
+`@user`.
 
 | Field      | Type   | Description                                                       |
 | ---------- | ------ | ----------------------------------------------------------------- |
@@ -286,7 +290,8 @@ removes `ip_address` and `machine_name`.
 ### User description {#user-description}
 
 `@user_description` holds feedback from the user. You can also add it after the fact with
-`POST /api/v2/events/by-ref/{referenceId}/user-description`.
+`POST /api/v2/events/by-ref/{referenceId}/user-description`. When the project excludes private information, the server
+removes `email_address` from a user description sent with the event, but not from one added later with that endpoint.
 
 | Field           | Type   | Description               |
 | --------------- | ------ | ------------------------- |

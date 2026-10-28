@@ -7,6 +7,7 @@ sources:
   - src/Exceptionless.Web/Api/Endpoints/EventEndpoints.cs
   - src/Exceptionless.Web/Api/Handlers/EventHandler.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/07_SubmissionClientPlugin.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/30_SimpleErrorPlugin.cs
 ---
 
 # Other languages and custom clients
@@ -28,7 +29,7 @@ You need:
 
 ## Send events from a shell script {#shell-scripts}
 
-The app's setup page has ready-made commands with your key filled in: open the project's **Client setup** and choose
+The app's setup page has ready-made commands with your key filled in: open the project's **Client Setup** and choose
 **Command Line: Bash Shell** or **Command Line: PowerShell**. They send a log event:
 
 ```bash tab="Bash"
@@ -77,7 +78,7 @@ report_failure() {
 }
 
 if ! output=$(./nightly-backup.sh 2>&1); then
-  report_failure "nightly-backup" "Nightly backup failed: ${output: -1500}"
+  report_failure "nightly-backup" "Nightly backup failed: $(printf '%s' "$output" | tail -c 1500)"
   exit 1
 fi
 ```
@@ -91,7 +92,7 @@ function Report-Failure([string]$Source, [string]$Message) {
     "source"  = $Source
     "message" = $Message
     "tags"    = @("scheduled-task")
-    "data"    = @{ "host" = $env:COMPUTERNAME }
+    "data"    = @{ "host" = [Environment]::MachineName }
   } | ConvertTo-Json
 
   Invoke-RestMethod -Uri "https://api.exceptionless.io/api/v2/events" -Method "Post" -Body $body `
@@ -99,6 +100,7 @@ function Report-Failure([string]$Source, [string]$Message) {
 }
 
 try {
+  $global:LASTEXITCODE = 0
   & .\nightly-backup.ps1
   if ($LASTEXITCODE -ne 0) { throw "nightly-backup.ps1 exited with code $LASTEXITCODE" }
 }
@@ -159,7 +161,7 @@ def report_exception(error):
             "@simple_error": {
                 "message": str(error),
                 "type": type(error).__name__,
-                "stack_trace": "".join(traceback.format_exception(error)),
+                "stack_trace": "".join(traceback.format_tb(error.__traceback__)),
             },
         },
     }])
@@ -253,8 +255,10 @@ func main() {
 }
 ```
 
-Exceptionless groups `@simple_error` events into stacks by the error `type` and the stack trace, so the same error from
-the same place lands in one stack.
+Exceptionless groups `@simple_error` events into stacks by the error `type` and the exact `stack_trace` text, so the
+same error from the same place lands in one stack. Keep values that change between occurrences, such as the error
+message, IDs, or memory addresses, out of `stack_trace`. That's why the Python example uses `format_tb`, which leaves
+out the message line that `format_exception` adds.
 
 ## Build a client library {#build-a-client}
 

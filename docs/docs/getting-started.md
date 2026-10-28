@@ -51,8 +51,8 @@ button).
 ## 3. Install a client
 
 The **Client Setup** page, titled **Send Events to** your project name, shows **Waiting for your first event** while it
-listens for data. Choose your app type from the list, and the page shows the install command and startup code with your
-project's API key already filled in. Copy them into your app.
+listens for data. Choose your project type from the list, and the page shows the install command and startup code with
+your project's API key already filled in. Copy them into your app.
 
 The same setup for each client, with `YOUR_API_KEY` in place of your key:
 

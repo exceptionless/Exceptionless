@@ -71,7 +71,7 @@ Some things to know:
   with a link to resend the verification email.
 - When you create a project, your **Daily Project Summary**, **New Errors**, **Critical Errors**, and **Error
   Regressions** notifications start on. Other members of the organization start with nothing turned on for it.
-- On the Free plan, the **Event Notifications** switches are turned off, with an **Upgrade now** link.
+- On the Free plan, the **Event Notifications** switches are disabled, with an **Upgrade now** link.
 
 ## Daily project summary
 

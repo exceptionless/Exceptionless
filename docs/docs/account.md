@@ -27,8 +27,8 @@ sources:
 Your account settings cover your profile, how the app looks, your email notifications, the AI tools and applications
 connected to your account, how you sign in, and deleting your account.
 
-To open them, click your name at the bottom of the sidebar (or press <kbd>U</kbd>) and choose **Account**. The **My
-Account** pages are **General**, **Appearance**, **Notifications**, **AI Tools**, **Applications**, **Password**, and
+To open them, click your name at the bottom of the sidebar (or press <kbd>U</kbd>) and choose **Account**. The
+**Account** pages are **General**, **Appearance**, **Notifications**, **AI Tools**, **Applications**, **Password**, and
 **External Logins**.
 
 ## Profile
@@ -76,8 +76,8 @@ to the MCP server. For each one you see:
 - **Organizations:** the organizations it can use.
 
 To disconnect an application, open its menu (**...**), choose **Revoke Access**, and confirm. It has to sign in and get
-your approval again before it can use your account. See
-[Manage connected applications](/docs/ai/mcp-server/#connected-applications) for what each scope allows.
+your approval again before it can use your account. See [Approve access](/docs/ai/mcp-server/#approve-access) for what
+each scope allows.
 
 ## External logins
 
@@ -90,7 +90,7 @@ You can't remove your only way to sign in. If you have no password and one exter
 
 Only the providers your Exceptionless instance has set up appear. Older Facebook and Windows Live logins can no longer
 be used to sign in; link Microsoft, Google, or GitHub, or set a password, to keep access. If no provider is set up, the
-page says **External login providers are not configured.**
+**External Logins** page isn't shown.
 
 ## Password
 

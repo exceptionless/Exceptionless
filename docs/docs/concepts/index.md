@@ -60,9 +60,9 @@ See [Events](/docs/events/), [Logs and log levels](/docs/setting-log-levels/), [
 ## Stacks
 
 A **stack** groups every event that describes the same problem. Exceptionless computes a signature for each event: for
-errors, the exception type and the stack trace; for other events, the type and source. Events with the same signature in
-the same project join the same stack. A thousand occurrences of one bug are one stack with a count of 1,000, not a
-thousand rows to read.
+errors, the exception type and the method in your code that threw it; for other events, the type and source. Events with
+the same signature in the same project join the same stack. A thousand occurrences of one bug are one stack with a count
+of 1,000, not a thousand rows to read.
 
 You triage at the stack level. A stack's status, critical flag, reference links, and fixed version apply to all of its
 events. See [Stacking](/docs/concepts/stacking/) for how signatures work and how to change them.
@@ -78,8 +78,8 @@ events. See [Stacking](/docs/concepts/stacking/) for how signatures work and how
 | **Ignored**   | Events are still recorded, but you get no notifications for the stack.                                      |
 | **Discarded** | Future events are dropped and don't count against your plan's event limit.                                  |
 
-The built-in views show open and regressed stacks, so fixed, snoozed, ignored, and discarded stacks drop out of your
-daily list. See [Stacks](/docs/managing-stacks/).
+The built-in **Stacks** views show only open and regressed stacks, so fixed, snoozed, ignored, and discarded stacks drop
+out of your daily list. See [Stacks](/docs/managing-stacks/).
 
 ## Versions and regressions
 
@@ -111,12 +111,12 @@ belong to. See [Saved views](/docs/saved-views/) and [Filtering and searching](/
 
 ## Where AI fits
 
-Exceptionless works with AI in two ways, and both use the same set of tools over your data:
+Exceptionless works with AI in two ways, and Exie uses a subset of the MCP server's tools:
 
 - **Exie** is the assistant in the app. Ask it which errors matter, what changed after a release, or why a stack keeps
-  happening. It searches stacks and events, counts events over time, and reads stack traces. When you ask it to, it also
-  changes a stack's status, snoozes it, marks it critical, or adds a reference link. Exie never changes data unless you
-  ask for that exact change. Exie is on Medium plans and up. See [Exie](/docs/ai/exie/).
+  happening. It searches stacks, looks up their events, counts events over time, and reads stack traces. When you ask it
+  to, it also changes a stack's status, snoozes it, marks it critical, or adds a reference link. Exie is instructed to
+  change data only when you ask for that exact change. Exie is on Medium plans and up. See [Exie](/docs/ai/exie/).
 - **The MCP server** connects your own coding agent, such as Claude Code or Codex, to Exceptionless on every plan. The
   agent signs in with your account, you choose what it can access, and it can look up an error and fix the code in the
   same session. Changing stacks needs a separate `stacks:write` permission. See [MCP server](/docs/ai/mcp-server/).

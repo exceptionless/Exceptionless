@@ -119,6 +119,10 @@ builder.AddExceptionless(c => {
 If you build the host another way, `builder.Services.AddExceptionless()` registers just the client, and
 `builder.Services.AddExceptionlessExceptionHandler()` registers just the exception handler.
 
+ASP.NET Core calls exception handlers in the order they're registered and stops at the first one that handles the
+exception. The Exceptionless handler never stops the chain, so if you have your own `IExceptionHandler`, register it
+after `builder.AddExceptionless()`.
+
 ## Verify
 
 Add an endpoint that throws, run the app, and request it:
@@ -197,8 +201,9 @@ Events you submit during a request get the request details automatically, becaus
 - **404 responses**, as not-found events with the request path.
 - **Request details**: HTTP method, URL, host and port, user agent, referrer, client IP address, headers, cookies, and
   query string. The `Authorization`, `Cookie`, and `Proxy-Authorization` headers are left out.
-- **Request body** for unhandled exceptions on non-GET requests, when it's form data or a seekable stream of 50 KB or
-  less. Call `context.Request.EnableBuffering()` in your own middleware if you want raw bodies.
+- **Request body** for unhandled exceptions on non-GET requests, up to 50 KB. ASP.NET Core can't read a request body
+  twice by default, so the body, including form data, is only included when you call `context.Request.EnableBuffering()`
+  in middleware that runs before your endpoints.
 - **The signed-in user's name** from `HttpContext.User`, when no user identity is set on the event.
 - **Environment details**: machine name, operating system, .NET version, process, memory, and IP addresses.
 - **Unhandled exceptions outside requests**, from `AppDomain.UnhandledException` and unobserved task exceptions.

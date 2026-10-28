@@ -6,6 +6,7 @@ sources:
   - src/Exceptionless.Core/Repositories/Configuration/Indexes/StackIndex.cs
   - src/Exceptionless.Core/Repositories/Queries/Visitors/EventFieldsQueryVisitor.cs
   - src/Exceptionless.Core/Repositories/Queries/Visitors/EventStackFilterQueryVisitor.cs
+  - src/Exceptionless.Core/Repositories/Queries/EventStackFilterQuery.cs
   - src/Exceptionless.Core/Repositories/Queries/Validation/PersistentEventQueryValidator.cs
   - src/Exceptionless.Core/Repositories/Queries/Validation/StackQueryValidator.cs
   - src/Exceptionless.Core/Repositories/Queries/Validation/EventStackQueryValidator.cs
@@ -68,7 +69,7 @@ whole value must match, including case. "Whole value" means the whole value must
 | `stack`              | Stack ID                                                                                           | Exact       | `stack:1ecd0826e447a44e78877ab1`                |
 | `project`            | Project ID                                                                                         | Exact       | `project:537650f3b77efe23a47914f4`              |
 | `organization`       | Organization ID                                                                                    | Exact       | `organization:537650f3b77efe23a47914f3`         |
-| `type`               | Event type: `error`, `log`, `usage`, `404`, `session`, `heartbeat`, `sessionend`, or a custom type | Whole value | `type:usage`                                    |
+| `type`               | Event type: `error`, `log`, `usage`, `404`, `session`, `heartbeat`, `sessionend`, or a custom type | Exact       | `type:usage`                                    |
 | `environment`        | The deployment [environment](/docs/environments/)                                                  | Whole value | `environment:production`                        |
 | `source`             | Log source, feature name, or other event source                                                    | Words       | `source:"GET /Print"`                           |
 | `message`            | Event message                                                                                      | Words       | `message:timeout`                               |
@@ -112,9 +113,9 @@ whole value must match, including case. "Whole value" means the whole value must
 | `data.<name>`        | A custom data value. See [Custom data](#custom-data).                                              | Depends     | `data.orderid:12345`                            |
 | `ref.<name>`         | A named event reference, such as a session                                                         | Exact       | `ref.session:abc123`                            |
 
-The `error.*` fields match any exception in the chain, including inner exceptions. "Type name" fields match the full
-name or any trailing part of it: `error.type:NullReferenceException` and `error.type:System.NullReferenceException` both
-match a `System.NullReferenceException`.
+The `error.*` fields match any exception in the chain, including inner exceptions. "Type name" fields ignore case and
+match the full name, a leading namespace, or any single part of it: `error.type:NullReferenceException`,
+`error.type:System.NullReferenceException`, and `error.type:System` all match a `System.NullReferenceException`.
 
 ### Search without a field
 

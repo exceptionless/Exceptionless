@@ -89,6 +89,8 @@ These routes return events and take the same parameters:
 | `GET /api/v2/events/sessions/{sessionId}`           | Events in one session.                                                    |
 | `GET /api/v2/projects/{projectId}/events/sessions`  | Session start events in one project. Also by organization and across all. |
 
+The session routes need a paid plan and return `426` on the free plan.
+
 ### Parameters {#parameters}
 
 | Parameter         | Description                                                                                                                                          |

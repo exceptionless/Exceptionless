@@ -127,7 +127,7 @@ await Exceptionless.processQueue()
 ```
 
 Open **Events** in Exceptionless. The error is there, with the machine name, Node.js version, and command line on the
-event's **Environment** tab. If it isn't, add `c.useDebugLogger()` to `startup` and run the script again. See
+event's **Machine & runtime** tab. If it isn't, add `c.useDebugLogger()` to `startup` and run the script again. See
 [Troubleshooting](/docs/clients/javascript/troubleshooting/).
 
 ## What is captured automatically {#what-is-captured-automatically}

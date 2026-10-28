@@ -73,7 +73,7 @@ To see where your events went, open the organization's **Usage** page. The chart
 because of a limit), **Discarded**, **Too Big**, and **Deleted** events against the **Limit**. Each project has its own
 **Usage** page too.
 
-## Throttling
+## Throttling {#throttling}
 
 If an app sent its whole month's events in one afternoon, you'd have no events left for the rest of the month. To
 prevent this, Exceptionless counts events in five-minute windows and caps each window at 10 times the even share of the
@@ -91,7 +91,7 @@ When a window's cap is reached, new events are rejected until the next window st
 currently being throttled** for the organization. Rejected events show up as **Blocked** on the **Usage** page.
 Upgrading raises the cap right away.
 
-## Reaching the monthly limit
+## Reaching the monthly limit {#reaching-the-monthly-limit}
 
 When the organization reaches its monthly limit, the API rejects new events until the next month starts or you upgrade.
 The app shows that the organization has reached its monthly plan limit, and Exceptionless emails the organization's
@@ -160,7 +160,7 @@ To turn it off, remove the plugin: `RemovePlugin<DuplicateCheckerPlugin>()` on t
 The server also discards an event whose [reference ID](/docs/references-ids/) was already used in the same project in
 the last day, so a client that retries a submission doesn't store the event twice.
 
-## Bursts
+## Bursts {#bursts}
 
 Deduplication and throttling together handle most bursts. When an outage throws thousands of errors a minute:
 
@@ -179,9 +179,9 @@ them on the project's **Settings** page under **Spam Detection**:
 
 - A list of user agents to ignore. The clients drop events from requests with a matching user agent before sending them.
 - **Reduce noise by automatically hiding high volumes of events coming from a single client IP address.** When a single
-  public IP address causes 25 or more events within a five-minute window, the server discards them and removes the
-  events already stored from that address in that window. This needs IP addresses, so it has no effect when the project
-  removes user identifiable information.
+  public IP address causes 25 or more events in the project within a five-minute window, the server discards them and
+  removes the events already stored from that address in that project and window. This needs IP addresses, so it has no
+  effect when the project removes user identifiable information.
 
 See [Projects](/docs/project-settings/) for both settings.
 

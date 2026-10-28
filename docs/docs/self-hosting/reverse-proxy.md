@@ -177,7 +177,8 @@ networks:
 ## Caddy in Docker Compose
 
 Caddy gets HTTPS certificates automatically, sets `X-Forwarded-For` and `X-Forwarded-Proto` itself, ignores forwarded
-headers from clients by default, and passes WebSockets and streamed responses through. Its `Caddyfile` is short:
+headers from clients by default, and passes WebSockets and streamed responses through. Save this as `conf/Caddyfile`
+next to your Compose file:
 
 ```text
 errors.example.com {
@@ -195,9 +196,11 @@ services:
     ports:
       - 80:80
       - 443:443
+      - 443:443/udp
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./conf:/etc/caddy
       - caddy_data:/data
+      - caddy_config:/config
     networks:
       default:
         ipv4_address: 172.30.0.10
@@ -212,6 +215,7 @@ networks:
 
 volumes:
   caddy_data:
+  caddy_config:
 ```
 
 Then add these to the shared Exceptionless settings, and remove the app's `ports` entry so all traffic goes through

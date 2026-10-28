@@ -7,6 +7,7 @@ sources:
   - Exceptionless.Net:src/Platforms/Exceptionless.Extensions.Hosting/ExceptionlessLifetimeService.cs
   - Exceptionless.Net:src/Platforms/Exceptionless.Extensions.Hosting/readme.txt
   - Exceptionless.Net:src/Exceptionless/Extensions/ExceptionlessClientExtensions.cs
+  - Exceptionless.Net:src/Platforms/Exceptionless.Extensions.Logging/ExceptionlessLogger.cs
   - Exceptionless.Net:samples/Exceptionless.SampleHosting/Program.cs
   - Exceptionless.Net:samples/Exceptionless.SampleHosting/SampleService.cs
 ---
@@ -139,8 +140,9 @@ provider, the warning shows up as a log event.
 - **Environment details**: machine name, operating system, .NET version, process, memory, and IP addresses.
 - **`ILogger` entries**, if you added `builder.Logging.AddExceptionless()`.
 
-Exceptions that your own code catches, including ones a `BackgroundService` swallows, are not unhandled. Submit them
-with `ex.ToExceptionless(client).Submit()` or log them with `ILogger`.
+Exceptions that your own code catches are not unhandled. Submit them with `ex.ToExceptionless(client).Submit()` or log
+them with `ILogger`. An exception that escapes a `BackgroundService` doesn't reach these handlers either: the host logs
+it and stops. With the logging provider added, that log entry is reported as an error event.
 
 The hosting package doesn't call `Startup()` on the client, so it doesn't poll for
 [client configuration values](/docs/clients/dotnet/client-configuration-values/) while the worker is idle. The client

@@ -10,6 +10,7 @@ sources:
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/05_CheckForDuplicateReferenceIdPlugin.cs
   - src/Exceptionless.Core/Pipeline/006_TruncateFieldsAction.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/90_RemovePrivateInformationPlugin.cs
+  - src/Exceptionless.Core/Jobs/EventUserDescriptionsJob.cs
   - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
   - Exceptionless.Net:src/Exceptionless/Extensions/ExceptionlessConfigurationExtensions.cs
   - Exceptionless.Net:src/Exceptionless/Plugins/Default/040_ReferenceIdPlugin.cs
@@ -172,7 +173,8 @@ curl -X POST "https://api.exceptionless.io/api/v2/events/by-ref/9f4a1c2b3d/user-
   -d '{"email_address":"jane@example.com","description":"I clicked Place order twice."}'
 ```
 
-If the project removes user identifiable information, the server drops the email address and keeps the description.
+The server stores the email address as sent, even if the project removes user identifiable information. That setting
+only applies to a user description included in the event itself.
 
 ## Find an event by reference ID
 

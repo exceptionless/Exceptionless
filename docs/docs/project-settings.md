@@ -5,6 +5,8 @@ description: "Manage a project's API keys, client configuration values, data exc
 sources:
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/routes.svelte.ts
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/+layout.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/(components)/navigation-command.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/project-command-actions.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/manage/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/api-keys/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/settings/+page.svelte
@@ -22,6 +24,7 @@ sources:
   - src/Exceptionless.Core/Models/Collections/SettingsDictionary.cs
   - src/Exceptionless.Core/Extensions/ProjectExtensions.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/0_ThrottleBotsPlugin.cs
+  - src/Exceptionless.Core/Jobs/EventNotificationsJob.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/40_RequestInfoPlugin.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/45_EnvironmentInfoPlugin.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/90_RemovePrivateInformationPlugin.cs
@@ -36,6 +39,7 @@ sources:
   - Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts
   - Exceptionless.JavaScript:packages/core/src/configuration/Configuration.ts
   - Exceptionless.JavaScript:packages/core/src/plugins/default/EventExclusionPlugin.ts
+  - src/Exceptionless.Core/Jobs/EventUserDescriptionsJob.cs
 ---
 
 # Projects
@@ -62,8 +66,9 @@ The **General** tab also has **Go To Stacks**, **Client Setup** (install a clien
 **Notifications** (your own email notifications for this project, see [Notifications](/docs/notifications/)), and
 **Generate Sample Data**, which queues sample events so you can try the app.
 
-You can also reach most of these from the command palette: press <kbd>/</kbd> and type **Project**. See
-[Navigating the app](/docs/navigation/).
+From anywhere, press <kbd>/</kbd> and type **Project** to use a **Project Actions** command, such as **Project API
+Keys** or **Project Webhooks & Integrations**, then pick the project. While you're in a project's settings, the palette
+also lists its tabs under **Project Settings**. See [Navigating the app](/docs/navigation/).
 
 ## API keys {#api-keys}
 
@@ -110,7 +115,7 @@ The .NET and JavaScript clients keep their copy up to date:
 
 - Every response to an event submission includes the project's current configuration version in the
   `X-Exceptionless-ConfigVersion` header. If it's newer than the client's copy, the client downloads the new values.
-- When the app is idle, the client also checks for changes: 5 seconds after startup, then every 2 minutes.
+- When the app is idle, the client also checks for changes: a few seconds after startup, then every 2 minutes.
 - A check sends only the client's current version, and downloads values only when they've changed. Checks don't count
   toward your plan's event limit.
 
@@ -163,7 +168,7 @@ support them. Changes save when you leave the field.
 
 Turn on **Automatically remove user identifiable information from events** to have the server strip personal data from
 every event in the project: the user identity, the email address on user descriptions, IP addresses, the machine name,
-cookies, query string parameters, and POST data.
+cookies, query string parameters, and POST data. A user description added later by reference ID keeps its email address.
 
 For what each client collects and the settings that control it in code, see [Security and privacy](/docs/security/) and
 the [.NET private information](/docs/clients/dotnet/private-information/) page.
@@ -195,9 +200,10 @@ The **Spam Detection** section of the **Settings** tab filters out bots and craw
 - The user agent list: a comma-separated list of user agent patterns to ignore, with `*` wildcards. New projects start
   with `*bot*,*crawler*,*spider*,*aolbuild*,*teoma*,*yahoo*`. The .NET and JavaScript clients don't send events from
   requests whose user agent matches. The server marks matching events as bots and doesn't send notifications for them.
-- **Reduce noise by automatically hiding high volumes of events coming from a single client IP address**: when more than
-  25 events arrive from one public IP address within five minutes, the server discards them and deletes the events from
-  that window. This needs IP addresses, so it doesn't apply while the project removes user identifiable information.
+- **Reduce noise by automatically hiding high volumes of events coming from a single client IP address**: when 25 or
+  more events arrive from one public IP address within a five-minute window, the server discards them and deletes the
+  events from that window. This needs IP addresses, so it doesn't apply while the project removes user identifiable
+  information.
 
 ## Reset project data
 

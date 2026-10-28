@@ -13,11 +13,11 @@ at one of these instead of letting it guess from older content.
 
 ## Files
 
-| URL                                                           | Contents                                                                                                                                                                                  |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`https://exceptionless.com/llms.txt`](/llms.txt)             | An index in the [llms.txt](https://llmstxt.org/) format: a short summary of Exceptionless, then every docs page by section, each linked to its Markdown copy with a one-line description. |
-| [`https://exceptionless.com/llms-small.txt`](/llms-small.txt) | The full text of the Get started and AI pages and the client overviews, for agents with a small context window.                                                                           |
-| [`https://exceptionless.com/llms-full.txt`](/llms-full.txt)   | The full text of every docs page in one file.                                                                                                                                             |
+| URL                                                           | Contents                                                                                                                                                                                                                       |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`https://exceptionless.com/llms.txt`](/llms.txt)             | An index in the [llms.txt](https://llmstxt.org/) format: key facts about Exceptionless, links to the product pages and clients, then every docs page by section, each linked to its Markdown copy with a one-line description. |
+| [`https://exceptionless.com/llms-small.txt`](/llms-small.txt) | The full text of the Get started and AI pages and the client overviews, for agents with a small context window.                                                                                                                |
+| [`https://exceptionless.com/llms-full.txt`](/llms-full.txt)   | The full text of every docs page in one file.                                                                                                                                                                                  |
 
 ## Markdown copy of every page
 

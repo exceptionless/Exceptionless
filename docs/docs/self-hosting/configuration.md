@@ -119,7 +119,6 @@ Add these keys to the Elasticsearch connection string, for example
 | `replicas`           | `1` in `Production`, otherwise `0` | Replicas for new indexes. Use `0` on a single-node cluster.                              |
 | `field-limit`        | `1500`                             | The mapping field limit for event indexes.                                               |
 | `enable-size-plugin` | `true`, except in `Development`    | Uses the `mapper-size` plugin. Set to `false` if your cluster doesn't have it installed. |
-| `scope`              | `EX_AppScope`                      | Overrides the index name prefix for Elasticsearch only.                                  |
 
 ### Queues {#queues}
 

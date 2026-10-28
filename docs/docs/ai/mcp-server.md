@@ -11,6 +11,8 @@ sources:
   - src/Exceptionless.Core/Configuration/OAuthServerOptions.cs
   - src/Exceptionless.Core/Authorization/AuthorizationRoles.cs
   - src/Exceptionless.Web/Api/Endpoints/OAuthEndpoints.cs
+  - src/Exceptionless.Web/Api/Handlers/OAuthHandler.cs
+  - src/Exceptionless.Web/ClientApp/src/lib/features/users/components/oauth-grants/table/oauth-grant-actions-cell.svelte
   - src/Exceptionless.Web/Api/Endpoints/UserEndpoints.cs
   - src/Exceptionless.Web/ClientApp/src/routes/(auth)/oauth/authorize/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/account/ai-tools/+page.svelte
@@ -36,7 +38,8 @@ traces and request details, and, with your permission, update stacks while it fi
 > On a self-hosted instance, the server is at `/mcp` on your API URL, for example
 > `https://exceptionless.example.com/mcp`. See [AI features](/docs/self-hosting/ai/) to set it up.
 
-The **AI Tools** page under **My Account** in the app shows setup commands with the server URL for your instance.
+The **AI Tools** page under **My Account** in the app shows setup commands with the server URL for your instance, for
+Claude Code, Codex, the GitHub Copilot CLI, and OpenCode.
 
 ## Connect your agent
 
@@ -89,29 +92,18 @@ Add the server to your agent, then approve access in the browser window that ope
 
 ### VS Code with GitHub Copilot
 
-1. Add the server to `.vscode/mcp.json` in your workspace:
+1. Open the Command Palette and run **MCP: Add Server**.
 
-   ```json
-   {
-     "servers": {
-       "exceptionless": {
-         "type": "http",
-         "url": "https://be.exceptionless.io/mcp"
-       }
-     }
-   }
-   ```
+2. Choose **HTTP (HTTP or Server-Sent Events)**, enter `https://be.exceptionless.io/mcp`, and enter `exceptionless` as
+   the server ID.
 
-   To add it to your user profile instead, run:
+3. To use the server in every workspace, select **Global**, then **Copilot Global**. This saves it in
+   `~/.copilot/mcp-config.json`.
 
-   ```bash
-   code --add-mcp '{"name":"exceptionless","type":"http","url":"https://be.exceptionless.io/mcp"}'
-   ```
+4. Ask Copilot Chat a question that uses Exceptionless. VS Code starts the server, asks you to trust it if needed, and
+   opens your browser to sign in the first time it connects.
 
-2. Start the server and ask Copilot Chat a question that uses it. VS Code opens your browser to sign in the first time
-   it connects.
-
-3. Approve access in your browser.
+5. Approve access in your browser.
 
 ### Other MCP clients
 
@@ -149,11 +141,14 @@ Select **Approve** to finish, or **Cancel** to deny access.
 | Stacks Write   | `stacks:write`   | Change stack status, snooze, set critical, and add or remove reference links              |
 | Offline Access | `offline_access` | Stay connected without asking you again when its access token expires                     |
 
-### Read-only by default
+### Keep a connection read-only {#read-only}
 
-A client that doesn't ask for specific permissions gets the read-only set: **MCP**, **Projects Read**, **Stacks Read**,
-**Events Read**, and **Offline Access**. **Stacks Write** appears on the consent screen only when the client asks for
-it. To keep a connection read-only, clear **Stacks Write** before you approve.
+**Stacks Write** appears on the consent screen only when the agent asks for it. Agents that follow the MCP specification
+ask for every permission the server offers, so expect to see it, already selected. To keep a connection read-only, clear
+**Stacks Write** before you approve.
+
+An application that registers without asking for specific permissions is limited to the read-only set: **MCP**,
+**Projects Read**, **Stacks Read**, **Events Read**, and **Offline Access**.
 
 If the agent calls a tool it doesn't have permission for, the tool returns an error that names the missing scope. To
 change the permissions of a connection, revoke it and connect again.
@@ -256,8 +251,8 @@ For step-by-step jobs, see the recipes in [Coding agents](/docs/ai/coding-agents
 - **Event data is untrusted.** Error messages, stack traces, request data, and custom data come from your apps and the
   people who use them, so anyone who can cause an error can put text in front of your agent. Treat it as input, never as
   instructions. Prefer an agent that asks before it runs commands or edits files, and review what it does.
-- **Grant only what the agent needs.** Leave **Stacks Write** cleared unless the agent should change stacks, and approve
-  only the organizations it needs.
+- **Grant only what the agent needs.** Clear **Stacks Write** on the consent screen unless the agent should change
+  stacks, and approve only the organizations it needs.
 - **The API key in setup results.** `get_client_setup_instructions` returns the project's API key so the agent can
   configure a client. Anyone with the key can send events to the project, so treat it like any other configuration
   secret.

@@ -74,7 +74,7 @@ Even with everything turned on, the web packages leave out:
 - the `Authorization`, `Cookie`, and `Proxy-Authorization` headers;
 - cookies named `.ASPX*`, `__*`, or `*SessionId*`, and form fields named `__*`;
 - header, cookie, query string, and form values of 1,000 characters or more;
-- request bodies over 50 KB in ASP.NET Core, and request bodies on GET requests.
+- request bodies over 50 KB, and request bodies on GET requests.
 
 ## Data exclusions {#data-exclusions}
 

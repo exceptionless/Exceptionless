@@ -81,7 +81,7 @@ builder.AddExceptionless();
 ```
 
 Then decide which categories reach it with the standard `Logging` configuration. This sends `Information` and above from
-your code, and only warnings and errors from the framework:
+your code, the host's startup and shutdown messages, and only warnings and errors from the rest of the framework:
 
 ```json
 {
@@ -210,7 +210,7 @@ With `apiKey` or `serverUrl` set, the appender creates its own client that keeps
 level through. Without them, it uses `ExceptionlessClient.Default`, which drops entries below `Warn` until you set an
 Exceptionless log level.
 
-## Serilog
+## Serilog {#serilog}
 
 Serilog support is in the separate
 [`Serilog.Sinks.Exceptionless`](https://github.com/exceptionless/serilog-sinks-exceptionless) package, which is not part

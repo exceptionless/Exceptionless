@@ -123,7 +123,7 @@ Click **Sessions** in the sidebar to see every session in the date range.
   and the average **Duration**.
 - The chart shows sessions over time. Drag across it to zoom into a time range.
 - The list shows each session's **Summary**, **Duration**, **User**, and **Date**. The **Environment** column is hidden
-  by default; turn it on from the column options.
+  by default; add it with **View** > **Manage Columns...**.
 - Turn on **View Active** to show only sessions that haven't ended.
 - Filter by project, date, environment, version, tag, and more with the filter bar. See
   [Filtering and searching](/docs/filtering-and-searching/).
@@ -136,8 +136,6 @@ Click a session to open its session start event.
 Any event that belongs to a session has a **Session Events** tab in its details. It lists every event in the session
 with its **Summary**, **User**, and **Session Time**. On a session start event, the tab also shows the session's
 **Duration** and the user.
-
-![Session Events tab on an event](/assets/img/docs/user-sessions-session-events-light.webp)
 
 Click an event in the list to open it. Click **Open events filtered to this session** (the button above the list) to see
 the session's events in the **Events** view, where you can filter and sort them.

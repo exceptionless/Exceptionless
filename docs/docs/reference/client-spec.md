@@ -23,6 +23,7 @@ sources:
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/05_CheckForDuplicateReferenceIdPlugin.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/07_SubmissionClientPlugin.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/70_SessionPlugin.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/90_RemovePrivateInformationPlugin.cs
   - Exceptionless.Net:src/Exceptionless/Submission/DefaultSubmissionClient.cs
   - Exceptionless.Net:src/Exceptionless/Queue/DefaultEventQueue.cs
   - Exceptionless.Net:src/Exceptionless/Configuration/ExceptionlessConfiguration.cs
@@ -148,17 +149,17 @@ down.
 
 After each batch, the client decides whether to keep the events and how long to pause. The official clients do this:
 
-| Status                         | Meaning                                                                      | What the client does                                                                                             |
-| ------------------------------ | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `202`                          | Accepted.                                                                    | Remove the batch.                                                                                                |
-| `400`                          | The request was rejected, for example no project could be found for the key. | Drop the batch and pause for 4 hours.                                                                            |
-| `401`, `403`                   | The key is missing, wrong, disabled, or its organization is suspended.       | Drop the batch and pause for 15 minutes.                                                                         |
-| `402`                          | The organization has used its plan's events for the month.                   | Drop the batch, clear the queue, and discard new events until the pause ends.                                    |
-| `404`                          | The project wasn't found, or the server URL is wrong.                        | Drop the batch and pause for 4 hours.                                                                            |
-| `413`                          | The body is too large.                                                       | Retry with a smaller batch (both clients divide the batch size by 1.5). If a single event is too large, drop it. |
-| `429`                          | Too many requests. See [rate limits](/docs/api/#rate-limits).                | Keep the batch and pause.                                                                                        |
-| `503`                          | The server isn't accepting events right now.                                 | Keep the batch and pause.                                                                                        |
-| Other errors, network failures | Anything else.                                                               | Keep the batch and pause.                                                                                        |
+| Status                         | Meaning                                                                      | What the client does                                                                                                       |
+| ------------------------------ | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `202`                          | Accepted.                                                                    | Remove the batch.                                                                                                          |
+| `400`                          | The request was rejected, for example no project could be found for the key. | Drop the batch and pause for 4 hours.                                                                                      |
+| `401`, `403`                   | The key is missing, wrong, disabled, or its organization is suspended.       | Drop the batch and pause for 15 minutes.                                                                                   |
+| `402`                          | The organization has used its plan's events for the month.                   | Drop the batch, clear the queue, and discard new events until the pause ends.                                              |
+| `404`                          | The project wasn't found, or the server URL is wrong.                        | Drop the batch and pause for 4 hours.                                                                                      |
+| `413`                          | The body is too large.                                                       | Retry with a smaller batch (the JavaScript client divides the batch size by 1.5). If a single event is too large, drop it. |
+| `429`                          | Too many requests. See [rate limits](/docs/api/#rate-limits).                | Keep the batch and pause.                                                                                                  |
+| `503`                          | The server isn't accepting events right now.                                 | Keep the batch and pause.                                                                                                  |
+| Other errors, network failures | Anything else.                                                               | Keep the batch and pause.                                                                                                  |
 
 A pause stops queue processing for a while; events submitted during a pause still go into the queue, except after a
 `402`. The .NET client pauses for 5 minutes by default, and the JavaScript client pauses until the next quarter hour. A
@@ -230,8 +231,9 @@ rely on that.
 
 A client should let the app turn off sending private information: the user name, machine name, IP address, request
 headers, cookies, post data, and query string. Both official clients have one `includePrivateInformation` switch for all
-of these. When the project turns off private information in its settings, the server removes the IP address, machine
-name, cookies, post data, and query string from events it receives.
+of these. When the project turns off private information in its settings, the server removes the user (`@user`), the
+email address in a user description, the IP addresses, machine name, cookies, post data, and query string from events it
+receives.
 
 ## Deduplication {#deduplication}
 

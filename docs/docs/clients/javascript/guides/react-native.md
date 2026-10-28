@@ -152,8 +152,8 @@ export function SendTestError() {
 }
 ```
 
-Tap it, then open **Events** in Exceptionless. The event's **Environment** tab shows the OS, its version, and the React
-Native version.
+Tap it, then open **Events** in Exceptionless. The event's **Machine & runtime** tab shows the OS, its version, and the
+React Native version.
 
 To check native crash reporting on iOS, run a development or release build without the Xcode debugger attached, crash
 the app from native code, and open the app again. The crash is sent on the next launch as an unhandled error with a
@@ -175,8 +175,7 @@ If nothing arrives, add `c.useDebugLogger()` to `startup` and watch the Metro lo
   and model on Android and the device idiom on iOS.
 - **App lifecycle.** When the app goes to the background, the client sends its queue, ends the session if sessions are
   on, and pauses. It resumes when the app becomes active.
-- **A persistent queue.** Unsent events are stored with AsyncStorage and sent after the app restarts. If AsyncStorage
-  can't be loaded, the client keeps events in memory.
+- **A persistent queue.** Unsent events are stored with AsyncStorage and sent after the app restarts.
 
 ## Next steps
 

@@ -19,6 +19,8 @@ sources:
   - src/Exceptionless.Core/Serialization/JsonSerializerOptionsExtensions.cs
   - src/Exceptionless.Web/Api/Handlers/WebHookHandler.cs
   - src/Exceptionless.Web/Api/Handlers/StackHandler.cs
+  - src/Exceptionless.Web/Api/Handlers/ProjectHandler.cs
+  - src/Exceptionless.Web/Api/Endpoints/WebHookEndpoints.cs
   - tests/Exceptionless.Tests/Plugins/WebHookData/v2.event.expected.json
   - tests/Exceptionless.Tests/Plugins/WebHookData/v2.stack.expected.json
 ---
@@ -30,7 +32,8 @@ Zapier zaps. They're set up per project. Open the project's settings and click t
 
 ![Integrations tab in project settings](/assets/img/docs/integrations-overview-light.webp)
 
-Slack and webhooks need a paid plan. On the Free plan, adding one asks you to upgrade.
+Slack notifications, webhooks, and Zapier need a paid plan. On the Free plan, adding a webhook asks you to upgrade,
+Zapier can't connect, and a connected Slack channel gets no messages.
 
 ## Slack
 

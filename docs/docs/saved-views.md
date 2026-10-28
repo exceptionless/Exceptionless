@@ -23,9 +23,9 @@ sources:
 # Saved views
 
 A saved view is a named list: its filters, date range, sort order, columns, and whether it shows the stat boxes and
-chart. The **Stacks**, **Events**, and **Sessions** pages each show a saved view, and every view in the organization is
-listed under its page in the sidebar. Save a view for anything you check often, such as production errors in the
-checkout service, and share it with your team.
+chart. The **Stacks**, **Events**, and **Sessions** pages each show a saved view, and every shared view in the
+organization, plus your private ones, is listed under its page in the sidebar. Save a view for anything you check often,
+such as production errors in the checkout service, and share it with your team.
 
 Each view owns its own filters. There's no global project or date filter: changing the filters on one view doesn't
 change any other view.

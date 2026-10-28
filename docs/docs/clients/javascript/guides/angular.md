@@ -48,14 +48,15 @@ export class ExceptionlessErrorHandler extends ErrorHandler {
 
 `toError` turns any value into an `Error`, since Angular can pass strings and other values to `handleError`.
 
-> [!TIP]
-> If your `app.config.ts` includes `provideBrowserGlobalErrorListeners()`, Angular also forwards window errors and
-> unhandled rejections to `ErrorHandler`. The browser client already reports those, so the same error can arrive twice.
-> Remove that provider if you see duplicates.
+> [!IMPORTANT]
+> New Angular projects include `provideBrowserGlobalErrorListeners()` in `app.config.ts`. It forwards window errors and
+> unhandled rejections to `ErrorHandler`, which the browser client already reports, so each of those errors would arrive
+> twice. Remove that provider, as the next step shows.
 
 ### 2. Provide it
 
-Add the provider to `src/app/app.config.ts`, next to the providers your app already has:
+Add the provider to `src/app/app.config.ts`, next to the providers your app already has, and remove
+`provideBrowserGlobalErrorListeners()`:
 
 ```ts
 import { ApplicationConfig, ErrorHandler } from "@angular/core"
@@ -90,6 +91,9 @@ bootstrapApplication(App, appConfig).catch((err) => console.error(err))
 
 `startup` sets the API key right away, so you don't need to wait for it before bootstrapping. Errors that happen during
 bootstrap are queued and sent once the client finishes starting.
+
+The build may warn that `stacktrace-js`, which the browser client uses, is not an ES module. The warning is harmless. To
+hide it, add `"stacktrace-js"` to `allowedCommonJsDependencies` in the build options in `angular.json`.
 
 To submit errors you catch yourself, import `Exceptionless` from `@exceptionless/browser` in any service or component
 and call `Exceptionless.submitException(toError(error))`.

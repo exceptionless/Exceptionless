@@ -105,8 +105,8 @@ Then use it in `MainLayout.razor` in place of the built-in `ErrorBoundary`:
 ```html
 <main>
   <ExceptionlessErrorBoundary>
-        @Body
-    </ExceptionlessErrorBoundary>
+    @Body
+  </ExceptionlessErrorBoundary>
 </main>
 ```
 

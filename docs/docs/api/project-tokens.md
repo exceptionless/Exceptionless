@@ -98,7 +98,8 @@ The server responds `201 Created`. The `id` is the key:
 }
 ```
 
-- With no body, or no `scopes`, the key gets the `client` scope.
+- Without `scopes`, the key gets the `client` scope. Keep the `Content-Type: application/json` header even if you send
+  no body.
 - Use `"scopes": ["source-maps:write"]` for a source map upload token.
 - `notes` is optional. `expires_utc` sets an expiration date.
 

@@ -13,6 +13,7 @@ sources:
   - src/Exceptionless.Web/Api/Endpoints/EventEndpoints.cs
   - src/Exceptionless.Web/Api/Endpoints/ProjectEndpoints.cs
   - src/Exceptionless.Web/Api/Handlers/OrganizationHandler.cs
+  - src/Exceptionless.Web/Assistant/AssistantService.cs
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/settings/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/api-keys/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte
@@ -84,7 +85,8 @@ To strip private information from every event a project receives, without changi
 **Settings** page and turn on **Automatically remove user identifiable information from events**. Before an event is
 stored, the server then removes:
 
-- the user identity, and the email address from user descriptions
+- the user identity, and the email address from a user description sent with the event (a description added later
+  through the user description API keeps its email address)
 - IP addresses, from both the request and the environment
 - the machine name
 - cookies, the query string, and POST data
@@ -156,5 +158,6 @@ To read data from the API, use a user token or OAuth instead; see [Authenticatio
 
 ## Self-hosting
 
-A self-hosted instance keeps all event data in your own Elasticsearch, Redis, and storage. See
-[Self-hosting](/docs/self-hosting/).
+A self-hosted instance keeps all event data in your own Elasticsearch, Redis, and storage. If you turn on Exie, your
+questions and the data its tools return go to the AI provider you configure; see [AI features](/docs/self-hosting/ai/).
+See [Self-hosting](/docs/self-hosting/).

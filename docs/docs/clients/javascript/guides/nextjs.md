@@ -164,30 +164,32 @@ saw with the server event.
 ### 4. Report client render errors
 
 Errors during client rendering go to the nearest `error.jsx`. Errors with a `digest` came from the server and were
-already reported by `onRequestError`, so report only the others.
+already reported by `onRequestError`, so report only the others. Next.js doesn't guarantee that the thrown value is an
+`Error`, so `toError` converts it.
 
 `app/error.jsx`:
 
 ```jsx
 "use client"
 
+import { toError } from "@exceptionless/browser"
 import { useEffect } from "react"
 
 import { Exceptionless, startup } from "../lib/exceptionless-browser.js"
 
-export default function ErrorPage({ error, reset }) {
+export default function ErrorPage({ error, retry }) {
   useEffect(() => {
-    if (error.digest) {
+    if (error?.digest) {
       return
     }
 
-    void startup().then(() => Exceptionless.createException(error).addTags("error-boundary").submit())
+    void startup().then(() => Exceptionless.createException(toError(error)).addTags("error-boundary").submit())
   }, [error])
 
   return (
     <main>
       <h1>Something went wrong.</h1>
-      <button type="button" onClick={() => reset()}>
+      <button type="button" onClick={() => retry()}>
         Try again
       </button>
     </main>
@@ -195,30 +197,34 @@ export default function ErrorPage({ error, reset }) {
 }
 ```
 
+`retry` is passed in Next.js 16.3 and later. On earlier versions, take `reset` from the props and call `reset()`
+instead.
+
 `app/global-error.jsx` catches errors in the root layout. It uses the same effect and renders its own `<html>` and
 `<body>`:
 
 ```jsx
 "use client"
 
+import { toError } from "@exceptionless/browser"
 import { useEffect } from "react"
 
 import { Exceptionless, startup } from "../lib/exceptionless-browser.js"
 
-export default function GlobalError({ error, reset }) {
+export default function GlobalError({ error, retry }) {
   useEffect(() => {
-    if (error.digest) {
+    if (error?.digest) {
       return
     }
 
-    void startup().then(() => Exceptionless.createException(error).addTags("global-error").submit())
+    void startup().then(() => Exceptionless.createException(toError(error)).addTags("global-error").submit())
   }, [error])
 
   return (
     <html lang="en">
       <body>
         <h1>Something went wrong.</h1>
-        <button type="button" onClick={() => reset()}>
+        <button type="button" onClick={() => retry()}>
           Try again
         </button>
       </body>

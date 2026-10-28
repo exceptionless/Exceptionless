@@ -21,6 +21,8 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/payment/[id]/+page@.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/(components)/layouts/sidebar-user.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/(components)/layouts/sidebar-organization-switcher.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/(components)/navigation-command.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/+layout.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/billing/components/change-plan-dialog.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/billing/invoice.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/users/components/invite-user-dialog.svelte
@@ -46,6 +48,9 @@ Any of these opens the current organization's settings:
 - the organization switcher at the top of the sidebar (<kbd>O</kbd>) > **Manage Organization**,
 - **Settings** > **Organizations** in the sidebar, then click the organization.
 
+If you belong to only one organization, the switcher and <kbd>O</kbd> open its settings directly, and the sidebar shows
+**Settings** > **Organization** instead of the list.
+
 The settings have these tabs: **General**, **Users**, **Billing**, and **Usage**.
 
 To switch to another organization, use the organization switcher, or press <kbd>/</kbd> and type its name. See
@@ -53,8 +58,8 @@ To switch to another organization, use the organization switcher, or press <kbd>
 
 ## Create an organization
 
-1. Open the organization switcher and click **Add Organization**, or click **+** (**Add Organization**) on **Settings**
-   > **Organizations**.
+1. Press <kbd>/</kbd> and choose **Add Organization**. With more than one organization, you can also click **Add
+   Organization** in the organization switcher, or **+** (**Add Organization**) on **Settings** > **Organizations**.
 2. Enter an **Organization Name** and a **Project Name**, then click **Continue**.
 3. Connect your app on the **Client Setup** page that opens. See [Quickstart](/docs/getting-started/).
 
@@ -95,7 +100,8 @@ From a user's menu (**...**) in the list:
 Pending invitations count toward your plan's user limit. An organization always keeps at least one user.
 
 To leave an organization yourself, open **Settings** > **Organizations**, open the organization's menu (**...**), and
-click **Leave Organization**.
+click **Leave Organization**. If you belong to only one organization, the sidebar doesn't link to that list; open
+`https://be.exceptionless.io/organization/list` instead.
 
 ## Plans
 

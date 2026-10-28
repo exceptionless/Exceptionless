@@ -1,7 +1,7 @@
 ---
 title: "Vue"
 metaTitle: "Exceptionless error tracking for Vue"
-description: "Install @exceptionless/vue, start the Exceptionless client, and set ExceptionlessErrorHandler as Vue's global error handler to report component errors."
+description: "Install @exceptionless/vue, start the Exceptionless client, and report component errors from Vue's global app.config.errorHandler."
 order: 8
 redirectFrom:
   - /docs/clients/javascript/vue-example/
@@ -11,13 +11,15 @@ sources:
   - Exceptionless.JavaScript:example/vue/src/main.js
   - Exceptionless.JavaScript:example/vue/src/components/HelloWorld.vue
   - Exceptionless.JavaScript:packages/browser/src/BrowserExceptionlessClient.ts
+  - Exceptionless.JavaScript:packages/core/src/EventBuilder.ts
+  - Exceptionless.JavaScript:packages/core/src/Utils.ts
 ---
 
 # Vue
 
 `@exceptionless/vue` reports errors from Vue components, and everything the
 [browser client](/docs/clients/javascript/guides/browser/) reports: unhandled errors and promise rejections anywhere on
-the page. `ExceptionlessErrorHandler` plugs into Vue's global `app.config.errorHandler`.
+the page. A few lines in Vue's global `app.config.errorHandler` send component errors to it.
 
 The example app uses Vue 3.
 
@@ -29,11 +31,11 @@ npm install @exceptionless/vue
 
 ## Configure
 
-Start the client and set the error handler in your entry file, usually `src/main.js`:
+Start the client and set the error handler in your entry file, usually `src/main.js` or `src/main.ts`:
 
 ```js
 import { createApp } from "vue"
-import { Exceptionless, ExceptionlessErrorHandler } from "@exceptionless/vue"
+import { Exceptionless, toError } from "@exceptionless/vue"
 
 import App from "./App.vue"
 
@@ -43,7 +45,10 @@ Exceptionless.startup((c) => {
 })
 
 const app = createApp(App)
-app.config.errorHandler = ExceptionlessErrorHandler
+app.config.errorHandler = (err, instance, info) => {
+  console.error(err)
+  void Exceptionless.createException(toError(err)).setProperty("info", info).submit()
+}
 app.mount("#app")
 ```
 
@@ -51,18 +56,14 @@ app.mount("#app")
 errors are queued and sent once the client finishes starting.
 
 Vue calls `errorHandler` for errors in component rendering, lifecycle hooks, watchers, and event handlers bound in
-templates. `ExceptionlessErrorHandler` submits the error with two extra properties: `vm`, the component instance, and
-`info`, Vue's description of where the error happened.
+templates. The handler submits the error with an `info` property, Vue's description of where the error happened.
+`toError` turns a thrown value that isn't an `Error` into one. Setting `app.config.errorHandler` replaces Vue's default
+handling, so the `console.error` call keeps the errors in the console.
 
-Setting `app.config.errorHandler` replaces Vue's default handling, so Vue stops logging those errors to the console. To
-keep the console output, wrap the handler:
-
-```js
-app.config.errorHandler = (err, instance, info) => {
-  console.error(err)
-  return ExceptionlessErrorHandler(err, instance, info)
-}
-```
+> [!WARNING]
+> Don't assign the package's `ExceptionlessErrorHandler` export to `app.config.errorHandler`. In 3.2.1 it adds the whole
+> component instance to the event, and serializing it can freeze the page. Its first parameter is also typed `Error`, so
+> the assignment doesn't compile in a TypeScript `main.ts`.
 
 Errors you catch yourself are not reported unless you submit them. Import `Exceptionless` from `@exceptionless/vue`
 anywhere in your app:
@@ -106,7 +107,7 @@ If nothing arrives, add `c.useDebugLogger()` to `startup` and check the browser 
 
 ## What is captured automatically
 
-- **Component errors** passed to Vue's `errorHandler`, with the component instance and Vue's `info` string.
+- **Component errors** passed to Vue's `errorHandler`, with Vue's `info` string.
 - **Unhandled errors and promise rejections** that don't go through Vue, such as errors in timers and async code.
 - Everything else the
   [browser client captures](/docs/clients/javascript/guides/browser/#what-is-captured-automatically), such as request

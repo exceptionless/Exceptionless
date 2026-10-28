@@ -54,8 +54,8 @@ Check these in order:
    [Node.js and serverless](/docs/clients/javascript/guides/node/#short-lived-processes-and-serverless).
 5. **The request isn't blocked.** In the browser, look for a failed request in the network tab. If your site has a
    Content Security Policy, its `connect-src` must allow your Exceptionless server. For the hosted service, set
-   `c.serverUrl = "https://api.exceptionless.io"` and allow that origin. Self-hosted servers must also allow your site's
-   origin for cross-origin requests.
+   `c.serverUrl = "https://api.exceptionless.io"` and allow that origin. Exceptionless accepts cross-origin requests
+   from any site, so on a self-hosted server, check that a proxy in front of it doesn't block them.
 
 ## The client stopped sending
 

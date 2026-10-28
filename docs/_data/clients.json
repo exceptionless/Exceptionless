@@ -251,7 +251,7 @@
         "install": "npm install @exceptionless/node",
         "language": "js",
         "code": "import { Exceptionless } from \"@exceptionless/node\";\n\nawait Exceptionless.startup(\"YOUR_API_KEY\");\n\ntry {\n  throw new Error(\"Orders import failed\");\n} catch (error) {\n  await Exceptionless.submitException(error);\n}",
-        "caption": "Also available for Express, React, Vue, and Angular apps.",
+        "caption": "Works in servers, scripts, Express apps, and serverless functions. Call processQueue() before a short-lived process exits.",
         "docsUrl": "/docs/clients/javascript/guides/node/"
       },
       {

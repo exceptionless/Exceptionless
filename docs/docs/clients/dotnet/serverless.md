@@ -137,7 +137,7 @@ The Functions host catches exceptions your function throws, so catch, submit, an
 > [!NOTE]
 > If you self-host Exceptionless, also set `Exceptionless__ServerUrl` to your instance's URL.
 
-## Reuse the flush with a scope
+## Reuse the flush with a scope {#reuse-the-flush-with-a-scope}
 
 To avoid repeating `try`/`finally`, wrap the flush in a small `IAsyncDisposable` and declare it with `await using` at
 the top of each handler:

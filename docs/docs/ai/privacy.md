@@ -17,6 +17,7 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/assistant-telemetry.ts
   - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
   - src/Exceptionless.Core/Services/OAuthService.cs
+  - src/Exceptionless.Web/Api/Handlers/OAuthHandler.cs
 ---
 
 # AI privacy and security
@@ -77,9 +78,10 @@ provider under that provider's terms. Exceptionless doesn't see your agent's pro
 - **In your browser.** Your chats are saved in your browser's local storage: up to 20 per organization, for 30 days.
   Large tool results are trimmed before they're saved. Delete a chat from **Recent chats**. Signing out removes all of
   them from that browser.
-- **On the server.** Exceptionless keeps the tool results from a chat for 30 minutes so follow-up questions don't repeat
-  the same lookups. They're stored for your user, organization, and chat only, and are dropped early if a project they
-  came from is deleted. The model's internal reasoning isn't stored or sent to your browser.
+- **On the server.** Exceptionless keeps the tool results from a chat, up to 48,000 characters, until 30 minutes pass
+  without a new lookup, so follow-up questions don't repeat the same lookups. They're stored for your user,
+  organization, and chat only, and are dropped early if a project they came from is deleted. The model's internal
+  reasoning isn't stored or sent to your browser.
 - **Usage records.** Exceptionless counts each organization's Exie responses, tokens, and cost per month to enforce plan
   limits. These records don't include message content.
 
@@ -118,8 +120,9 @@ How to limit it with the MCP server:
 
 ## Read-only access
 
-An MCP connection is read-only unless you grant **Stacks Write**. A client that doesn't ask for specific permissions
-gets read-only access, and you can clear **Stacks Write** on the consent screen when a client asks for it.
+An MCP connection is read-only unless you grant **Stacks Write**. Most agents ask for it when they connect, and it
+starts selected on the consent screen, so clear it before you approve to keep the connection read-only. See
+[Keep a connection read-only](/docs/ai/mcp-server/#read-only).
 
 Exie has no read-only mode. Anyone who can use Exie in an organization can ask it to change stacks there, just as they
 can in the app.

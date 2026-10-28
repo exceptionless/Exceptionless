@@ -58,21 +58,21 @@ Many items match related words too. For example, typing `members` finds **Users*
 
 Press <kbd>?</kbd> to see this list in the app.
 
-| Key              | Action                                                       |
-| ---------------- | ------------------------------------------------------------ |
-| <kbd>I</kbd>     | Go to **Stacks**                                             |
-| <kbd>E</kbd>     | Go to **Events** (all events)                                |
-| <kbd>/</kbd>     | Open the command palette                                     |
-| <kbd>A</kbd>     | Open or close [Exie](/docs/ai/exie/), when Exie is available |
-| <kbd>O</kbd>     | Open the organization switcher                               |
-| <kbd>U</kbd>     | Open the user menu                                           |
-| <kbd>?</kbd>     | Show the keyboard shortcuts                                  |
-| <kbd>Enter</kbd> | Open the selected command, or the focused row in a list      |
-| <kbd>Space</kbd> | Toggle the focused checkbox in a list                        |
-| <kbd>Esc</kbd>   | Close the command palette, menus, and popovers               |
+| Key              | Action                                                                                   |
+| ---------------- | ---------------------------------------------------------------------------------------- |
+| <kbd>I</kbd>     | Go to **Stacks**                                                                         |
+| <kbd>E</kbd>     | Go to **Events** (all events)                                                            |
+| <kbd>/</kbd>     | Open the command palette                                                                 |
+| <kbd>A</kbd>     | Open or close [Exie](/docs/ai/exie/), when Exie is available                             |
+| <kbd>O</kbd>     | Open the organization switcher, or the organization's settings if you belong to only one |
+| <kbd>U</kbd>     | Open the user menu                                                                       |
+| <kbd>?</kbd>     | Show the keyboard shortcuts                                                              |
+| <kbd>Enter</kbd> | Open the selected command, or the focused row in a list                                  |
+| <kbd>Space</kbd> | Toggle the focused checkbox in a list                                                    |
+| <kbd>Esc</kbd>   | Close the command palette, menus, and popovers                                           |
 
 The single-key shortcuts don't fire while you're typing in a field, while you hold <kbd>Ctrl</kbd>, <kbd>Cmd</kbd>, or
-<kbd>Alt</kbd>, or while a menu or dialog is open.
+<kbd>Alt</kbd>, or while the command palette, the shortcuts list, or the organization or user menu is open.
 
 Other places where the keyboard helps:
 

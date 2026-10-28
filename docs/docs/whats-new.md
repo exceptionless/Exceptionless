@@ -4,6 +4,7 @@ navTitle: "What's new"
 description: "Exceptionless 9.0 for returning users: the new app, saved views, Exie, the MCP server, environments, Microsoft sign-in, and where things moved."
 sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/navigation/legacy-links.ts
+  - src/Exceptionless.Web/ClientApp/src/hooks.ts
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/routes.svelte.ts
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/(components)/layouts/sidebar-user.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/account/routes.svelte.ts
@@ -21,6 +22,7 @@ sources:
   - src/Exceptionless.Web/Api/Endpoints/AuthEndpoints.cs
   - src/Exceptionless.Web/Assistant/AssistantAccessService.cs
   - src/Exceptionless.Web/Assistant/AssistantToolDefinitions.cs
+  - src/Exceptionless.Web/Assistant/AssistantSystemPrompt.cs
   - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
   - src/Exceptionless.Web/Security/TrustedForwardedHeadersOptions.cs
   - src/Exceptionless.Web/Program.cs
@@ -42,7 +44,8 @@ events today keep working without a client update.
 
 ## A new app
 
-The new app is now the only app, served at the root of the site. The classic app and the `/next` preview are gone.
+The new app is now the only app, served at the root of the site. The classic app and the `/next` preview are gone. Links
+that start with `/next` aren't redirected; remove `/next` from them.
 
 - **Your old links still work.** Bookmarks to classic dashboards, account notification settings, organization billing,
   and project integrations open the matching page in the new app. See [Where things moved](#where-things-moved).
@@ -82,9 +85,9 @@ the **Absolute** tab. The **Relative** tab keeps the date math expressions, such
 ## Exie, the AI assistant
 
 Exie is an assistant built into the app. Ask it which errors matter this week, what changed after a release, or why a
-stack keeps happening. It searches your stacks and events, counts events over time, and reads stack traces. When you ask
-it to, it also marks a stack fixed, snoozes or ignores it, marks it critical, or adds a reference link. It changes
-nothing unless you ask for that exact change.
+stack keeps happening. It searches your stacks, looks up their events, counts events over time, and reads stack traces.
+When you ask it to, it also marks a stack fixed, snoozes or ignores it, marks it critical, or adds a reference link.
+Exie is instructed to change data only when you ask for that exact change.
 
 - Open it in a side panel with **Ask Exie** in the top bar or <kbd>A</kbd>, or full page with **Exie** in the sidebar.
 - On a stack, **Fix** starts a conversation with Exie about that error.

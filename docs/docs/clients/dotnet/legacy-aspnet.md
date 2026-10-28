@@ -173,7 +173,7 @@ transforms:
 later source overrides an earlier one. Configure anything else in code, before the module or `RegisterWebApi()` runs,
 for example in `Application_Start`.
 
-### Assembly attributes
+### Assembly attributes {#assembly-attributes}
 
 Instead of a config file, you can set the API key with an assembly attribute:
 
@@ -184,8 +184,8 @@ using Exceptionless.Configuration;
 [assembly: ExceptionlessSetting("IncludeOrderData", "true")]
 ```
 
-`Startup()` looks for these attributes in the entry and calling assemblies. A web app has no entry assembly, so read
-them from your app's assembly before the client starts:
+`Startup()` looks for these attributes in the app's entry assembly. A web app has no entry assembly, so read them from
+your app's assembly before the client starts:
 
 ```csharp
 ExceptionlessClient.Default.Configuration.ReadFromAttributes(typeof(WebApiApplication).Assembly);
