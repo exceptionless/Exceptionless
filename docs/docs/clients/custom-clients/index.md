@@ -181,7 +181,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"runtime/debug"
+	"runtime"
+	"strings"
 	"time"
 )
 
@@ -217,6 +218,21 @@ func submit(events []event) (int, error) {
 	return resp.StatusCode, nil
 }
 
+// stackTrace lists function, file, and line for each caller. Unlike debug.Stack, it has no
+// goroutine IDs or argument values, so the same error from the same place stacks together.
+func stackTrace() string {
+	pcs := make([]uintptr, 32)
+	frames := runtime.CallersFrames(pcs[:runtime.Callers(2, pcs)])
+	var sb strings.Builder
+	for {
+		frame, more := frames.Next()
+		fmt.Fprintf(&sb, "%s\n\t%s:%d\n", frame.Function, frame.File, frame.Line)
+		if !more {
+			return sb.String()
+		}
+	}
+}
+
 func reportError(err error) (int, error) {
 	return submit([]event{{
 		Type: "error",
@@ -225,7 +241,7 @@ func reportError(err error) (int, error) {
 			"@simple_error": map[string]string{
 				"message":     err.Error(),
 				"type":        fmt.Sprintf("%T", err),
-				"stack_trace": string(debug.Stack()),
+				"stack_trace": stackTrace(),
 			},
 		},
 	}})

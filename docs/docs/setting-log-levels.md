@@ -77,7 +77,9 @@ values for [.NET](/docs/clients/dotnet/client-configuration-values/) and
   [Projects](/docs/project-settings/#client-configuration).
 - Logs without a level are always sent.
 - With no level set for a source or the project, the .NET client sends **Warning** and above, and the JavaScript client
-  sends every level.
+  sends every level. The .NET logging integrations, such as the Microsoft.Extensions.Logging provider and the NLog
+  target, change that default to **Trace**, so your logging rules decide. See
+  [.NET logging](/docs/clients/dotnet/logging/).
 
 Exceptionless doesn't filter logs on the server. Logs sent another way, such as straight to the API, are stored at any
 level.

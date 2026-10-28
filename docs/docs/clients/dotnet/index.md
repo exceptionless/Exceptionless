@@ -108,7 +108,7 @@ The source code, samples, and release notes are in the
 ## Ask Exie
 
 ```prompt exie
-Help me set up Exceptionless in my .NET worker service. Which package do I need?
+How do I connect my .NET worker service to this project?
 ```
 
 ```prompt exie

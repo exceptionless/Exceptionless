@@ -41,6 +41,7 @@ This plugin adds how long the machine has been up to every feature usage event. 
 ```csharp
 using System;
 using System.Diagnostics;
+using Exceptionless;
 using Exceptionless.Models;
 using Exceptionless.Plugins;
 

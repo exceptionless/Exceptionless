@@ -47,7 +47,7 @@ Use this package instead of `@exceptionless/browser` or `@exceptionless/react` i
 npx expo install @exceptionless/react-native @react-native-async-storage/async-storage
 ```
 
-Add the config plugin to `app.json` so development and standalone builds include the native crash reporter:
+Add the package's config plugin to `app.json`:
 
 ```json
 {
@@ -58,7 +58,8 @@ Add the config plugin to `app.json` so development and standalone builds include
 ```
 
 Then rebuild the native app, for example with `npx expo run:ios` after installing `expo-dev-client`, or with an EAS
-build. Expo Go can't load the native module, so it reports JavaScript errors but not native crashes.
+build. The native crash reporter is linked into the build automatically. Expo Go can't load the native module, so it
+reports JavaScript errors but not native crashes.
 
 ### React Native CLI
 

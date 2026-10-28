@@ -35,6 +35,7 @@ Start the client at the top of `Program.cs`:
 using Exceptionless;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using MyBlazorApp; // your app's root namespace, for App
 
 ExceptionlessClient.Default.Startup("YOUR_API_KEY");
 

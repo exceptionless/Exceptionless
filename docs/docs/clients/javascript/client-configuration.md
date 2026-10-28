@@ -118,8 +118,10 @@ A user is attached to events only when you call `setUserIdentity`, on the config
 names or email addresses you don't need.
 
 > [!NOTE]
-> The project setting **Automatically remove user identifiable information from events** is not read by the JavaScript
-> client 3.2.1. Set `includePrivateInformation = false` in code instead.
+> The project setting **Automatically remove user identifiable information from events** is applied by the server when
+> it processes events, not by the JavaScript client. The client still sends the data, and the server removes the user,
+> email address, IP addresses, machine name, and request cookies, query strings, and bodies before storing the event. To
+> keep that data from leaving your app, set `includePrivateInformation = false` in code.
 
 ### Data exclusions {#data-exclusions}
 

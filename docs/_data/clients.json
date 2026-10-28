@@ -53,6 +53,13 @@
         "minimumRuntime": ".NET Standard 2.0, .NET Framework 4.6.2"
       },
       {
+        "name": "Exceptionless.MessagePack",
+        "registry": "NuGet",
+        "url": "https://www.nuget.org/packages/Exceptionless.MessagePack",
+        "description": "MessagePack serialization for the stored queue.",
+        "minimumRuntime": ".NET Standard 2.0, .NET 8"
+      },
+      {
         "name": "Exceptionless.Wpf",
         "registry": "NuGet",
         "url": "https://www.nuget.org/packages/Exceptionless.Wpf",
@@ -143,7 +150,7 @@
       },
       "configValues": {
         "status": "yes",
-        "note": "Settings, with a Changed event. Checked every 2 minutes while idle."
+        "note": "Settings, with a Changed event. Checked every 2 minutes while idle after Startup()."
       },
       "plugins": {
         "status": "yes",
@@ -155,7 +162,7 @@
       },
       "offlineQueue": {
         "status": "opt-in",
-        "note": "The queue is in memory by default. Call UseFolderStorage or UseIsolatedStorage to persist it."
+        "note": "The queue is in memory by default. Call UseFolderStorage or set StoragePath to persist it."
       },
       "deduplication": {
         "status": "yes",
@@ -253,7 +260,7 @@
         "install": "npx expo install @exceptionless/react-native @react-native-async-storage/async-storage",
         "language": "js",
         "code": "import { Exceptionless } from \"@exceptionless/react-native\";\n\nawait Exceptionless.startup((c) => {\n  c.apiKey = \"YOUR_API_KEY\";\n});\n\n// JavaScript errors and promise rejections are captured automatically.\nawait Exceptionless.submitFeatureUsage(\"Checkout\");",
-        "caption": "Works with Expo and bare React Native. Add the Expo config plugin for native iOS crash reporting.",
+        "caption": "Works with Expo and bare React Native. Native iOS crash reporting needs a development or release build, not Expo Go.",
         "docsUrl": "/docs/clients/javascript/guides/react-native/"
       }
     ],
@@ -308,7 +315,7 @@
       },
       "deduplication": {
         "status": "yes",
-        "note": "Identical errors are merged into one event with a count."
+        "note": "Identical errors within 30 seconds are merged into one with a count."
       },
       "sourceMaps": {
         "status": "yes",

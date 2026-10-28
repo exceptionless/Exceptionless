@@ -98,8 +98,8 @@ whole value must match, including case. "Whole value" means the whole value must
 | `cmd`                | Process command line                                                                               | Exact       | `cmd:"MyApp.exe --run"`                         |
 | `country`            | Country                                                                                            | Whole value | `country:US`                                    |
 | `level1`             | Region, such as a state                                                                            | Exact       | `level1:TX`                                     |
-| `level2`             | City                                                                                               | Exact       | `level2:Dallas`                                 |
-| `locality`           | Locality                                                                                           | Exact       | `locality:Downtown`                             |
+| `level2`             | Second-level region, such as a county                                                              | Exact       | `level2:"Dallas County"`                        |
+| `locality`           | City                                                                                               | Exact       | `locality:Dallas`                               |
 | `user`               | The user's identity                                                                                | Words       | `user:jane@example.com`                         |
 | `user.email`         | The user's email address (matches the user identity)                                               | Words       | `user.email:jane@example.com`                   |
 | `user.name`          | The user's name                                                                                    | Whole value | `user.name:"Jane Doe"`                          |

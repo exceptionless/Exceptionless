@@ -197,6 +197,7 @@ and sends email through SMTP.
    ```bash
    docker run --rm -it -p 7110:8080 -p 7111:8443 \
      -e ASPNETCORE_URLS="http://+:8080;https://+:8443" \
+     -e EX_HTTPS_PORT=7111 \
      -e EX_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx \
      -e EX_Kestrel__Certificates__Default__Password=password \
      -e EX_BaseURL=https://localhost:7111 \
@@ -210,7 +211,8 @@ and sends email through SMTP.
    - `ASPNETCORE_URLS` makes the app listen for HTTP on port 8080 and HTTPS on port 8443 inside the container. The `-p`
      options publish them as 7110 and 7111.
    - The certificate settings use the `EX_` prefix. Exceptionless doesn't read `ASPNETCORE_Kestrel__...` variables.
-   - HTTP stays available on port 7110.
+   - Requests to HTTP on port 7110 are redirected to HTTPS. `EX_HTTPS_PORT` makes the redirect use the published port,
+     7111, instead of 8443.
 
 3. Open `https://localhost:7111`.
 

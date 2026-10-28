@@ -50,7 +50,7 @@ don't need to add anything.
 
 ```csharp
 using Exceptionless;
-using Exceptionless.Logging;
+using LogLevel = Exceptionless.Logging.LogLevel;
 
 ExceptionlessClient.Default.SubmitLog("Import finished");
 ExceptionlessClient.Default.SubmitLog(typeof(OrderImporter).FullName, "Import took longer than expected", LogLevel.Warn);

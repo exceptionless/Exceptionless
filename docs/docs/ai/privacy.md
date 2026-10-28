@@ -33,7 +33,8 @@ Exie acts as you, inside the organization you're viewing:
 - It can read projects, stacks, and events, including stack traces, request details, and custom data.
 - It can change stacks in five ways: status, snooze, critical, and adding or removing reference links. These are things
   you can already do in the app. It can't delete data or change settings.
-- It changes a stack only when your message asks for that change, and every change appears in **Exie's steps**.
+- It changes a stack only when your message asks for that change, and every change appears as a step above Exie's
+  answer.
 
 See [Exie](/docs/ai/exie/) for the full list of tools.
 
@@ -103,7 +104,7 @@ How Exie limits this:
   inside them.
 - It changes data only when your own message asks for that change, never because of something it read.
 - It has no way to run code, browse the web, send messages, or reach other organizations, so the most it can do is one
-  of the five stack changes, which appear in **Exie's steps** and can be reversed.
+  of the five stack changes, which appear as steps above Exie's answer and can be reversed.
 
 How to limit it with the MCP server:
 

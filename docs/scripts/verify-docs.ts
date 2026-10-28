@@ -20,6 +20,11 @@ const bannedHostnames = ["collector.exceptionless.io"]
 const apiPathsOnAppHost = ["/api", "/docs"]
 /** Routes allowed to use an API path on the app host. The contact form posts to the app origin that allows its CORS. */
 const appHostApiRoutes = new Set(["/contact/"])
+/**
+ * The hosted OAuth resource identifier for the REST API. It names the resource on the configured origin (BaseURL,
+ * because production doesn't set ApiUrl); it isn't a URL that requests are sent to.
+ */
+const appHostOAuthResource = `https://${appHostname}/api/v2`
 
 const siteRoot = "_site"
 const repoRoot = ".."
@@ -187,7 +192,8 @@ async function verifyHostnames(): Promise<void> {
       }
     }
 
-    for (const match of allowAppHostApi ? [] : text.matchAll(apiPathPattern)) {
+    const checkedText = text.replaceAll(appHostOAuthResource, "")
+    for (const match of allowAppHostApi ? [] : checkedText.matchAll(apiPathPattern)) {
       errors.push(`${relative}: ${appHostname}${match[1]} is an API path. Use ${apiHostname}${match[1]}.`)
       break
     }

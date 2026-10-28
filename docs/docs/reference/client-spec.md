@@ -292,8 +292,9 @@ should set a `reference_id` on every error event; both official clients can gene
 ## Environment {#environment}
 
 A client should let the app set a default deployment environment and override it per event, and send it in the top-level
-`environment` field. See [Event format](/docs/reference/event-format/#environment) for the rules and
-[Environments](/docs/environments/) for how the app uses it.
+`environment` field. The current .NET (6.2.0) and JavaScript (3.2.1) clients don't set it yet. See
+[Event format](/docs/reference/event-format/#environment) for the rules and [Environments](/docs/environments/) for how
+the app uses it.
 
 ## Errors in the client {#client-errors}
 

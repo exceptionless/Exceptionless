@@ -129,5 +129,5 @@ readable from JavaScript: `ETag`, `Link`, `X-Result-Count`, `X-RateLimit-Limit`,
 
 ## MCP server {#mcp}
 
-AI tools connect to Exceptionless through the MCP server at `https://api.exceptionless.io/mcp`, which uses OAuth sign-in
+AI tools connect to Exceptionless through the MCP server at `https://be.exceptionless.io/mcp`, which uses OAuth sign-in
 and its own scopes. See [MCP server](/docs/ai/mcp-server/).

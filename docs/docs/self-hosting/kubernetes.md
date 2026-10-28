@@ -39,7 +39,7 @@ deployments. This page shows how to install it, which values to set, and how to 
 | `<release>-api`                | The `exceptionless/api` image: the API for your API domains, where clients send events. WebSockets are off.                    |
 | `<release>-jobs-*` deployments | One deployment per continuous job, such as `event-posts`, `event-notifications`, `mail-message`, `web-hooks`, and `work-item`. |
 | `<release>-jobs-*` cron jobs   | Scheduled jobs: `cleanup-data`, `cleanup-orphaned-data`, `download-geoip-database`, and `maintain-indexes`.                    |
-| `<release>-jobs-migration`     | A cron job that never runs on its own. You start it after each install or upgrade. See [Run migrations](#run-migrations).      |
+| `<release>-jobs-migration`     | A cron job for migrations. Start it by hand after each install or upgrade. See [Run migrations](#run-migrations).              |
 | `<release>-config`             | A config map with the `EX_` settings, shared by every pod.                                                                     |
 
 `<release>` is the Helm release name.
@@ -228,7 +228,7 @@ Trust only addresses your ingress connects from, not the whole cluster network. 
 
 ## Run migrations {#run-migrations}
 
-The migration job runs only when you start it. Start it after the first install and after every upgrade:
+Start the migration job by hand after the first install and after every upgrade:
 
 ```bash
 kubectl create job --from=cronjob/exceptionless-jobs-migration exceptionless-migration-1 --namespace exceptionless

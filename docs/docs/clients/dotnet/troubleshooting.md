@@ -33,7 +33,7 @@ The client writes nothing about itself unless you give it a logger. Turn on its 
 
 ```csharp tab="Code"
 using Exceptionless;
-using Exceptionless.Logging;
+using LogLevel = Exceptionless.Logging.LogLevel;
 
 ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log", LogLevel.Trace);
 ```

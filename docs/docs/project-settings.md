@@ -192,9 +192,9 @@ The **Spam Detection** section of the **Settings** tab filters out bots and craw
 
 ![Spam Detection section on the project Settings tab](/assets/img/docs/project-settings-spam-detection-light.webp)
 
-- **User agents**: a comma-separated list of user agent patterns, with `*` wildcards. New projects start with
-  `*bot*,*crawler*,*spider*,*aolbuild*,*teoma*,*yahoo*`. The .NET and JavaScript clients don't send events from requests
-  whose user agent matches. The server marks matching events as bots and doesn't send notifications for them.
+- The user agent list: a comma-separated list of user agent patterns to ignore, with `*` wildcards. New projects start
+  with `*bot*,*crawler*,*spider*,*aolbuild*,*teoma*,*yahoo*`. The .NET and JavaScript clients don't send events from
+  requests whose user agent matches. The server marks matching events as bots and doesn't send notifications for them.
 - **Reduce noise by automatically hiding high volumes of events coming from a single client IP address**: when more than
   25 events arrive from one public IP address within five minutes, the server discards them and deletes the events from
   that window. This needs IP addresses, so it doesn't apply while the project removes user identifiable information.

@@ -54,7 +54,7 @@ Exceptionless updates a built-in view, it leaves the ones you've changed alone.
 1. Open a view and set it up the way you want: add filters, change the date range, and arrange columns.
 2. Select **View** at the top right, then **Save As...**.
 3. In **Save View**, enter a **Name**. The **URL name** fills in from it; change it if you like.
-4. Check **Private** if only you should see it.
+4. Turn on **Private** if only you should see it.
 5. Select **Save**.
 
 The view opens and appears in the sidebar under its page. Its address uses the URL name, such as
@@ -73,6 +73,8 @@ Hover over it to see "This view has unsaved changes. Open to save or reset them.
 - **Save** to update the view. For a shared view, everyone sees the change.
 - **Save As...** to keep the original and save your changes as a new view.
 - **Reset to Saved** to discard your changes.
+
+![The View menu with Save, Save As, Rename, Reset to Saved, home view, and display options](/assets/img/docs/filtering-and-searching-save-view-light.webp)
 
 Unsaved changes stay with the view in your browser tab, so you can move between pages and come back to them. The address
 bar includes your filter, date range, and sort changes, so a link you copy opens the view with them.
@@ -100,9 +102,9 @@ Under **View** > **Display**, turn **Stat boxes** and **Chart** on or off. These
 
 ## Share a view
 
-A view is shared with everyone in your organization unless you check **Private** when you create it. Shared views appear
-in everyone's sidebar, and anyone in the organization can save changes to them, rename them, or delete them. Private
-views appear only in your sidebar, and only you can change them.
+A view is shared with everyone in your organization unless you turn on **Private** when you create it. Shared views
+appear in everyone's sidebar, and anyone in the organization can save changes to them, rename them, or delete them.
+Private views appear only in your sidebar, and only you can change them.
 
 To send someone a view, copy the address from your browser. They need access to the organization to open it.
 

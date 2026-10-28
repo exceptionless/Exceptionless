@@ -396,7 +396,9 @@ A short `docs/STYLE.md` that every writer and agent follows:
 4. **Comparison page.** It goes away and redirects to `/why/`.
 5. **Clients.** The docs and the marketing site are built for many languages (see [Send data](#3-send-data-clients)).
    Only clients that work with 9.0 are listed.
-6. **API hostname.** `api.exceptionless.io`, kept in one place so it can move to `api.exceptionless.com`.
+6. **API hostname.** `api.exceptionless.io`, kept in one place so it can move to `api.exceptionless.com`. The MCP server
+   URL and OAuth resource identifiers use `be.exceptionless.io`, because production derives them from `BaseURL` (no
+   `EX_ApiUrl` is set). Setting `EX_ApiUrl` in production would let them move to the API host too.
 7. **MCP clients.** Document only the clients that pass [verification](#mcp-client-verification).
 
 ## Redirect map

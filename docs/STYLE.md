@@ -23,8 +23,10 @@ How the Exceptionless docs are written. Every writer, person or agent, follows i
   starts with a matching `# Heading`.
 - Headings use sentence case: "Mark a stack fixed", not "Mark A Stack Fixed".
 - To keep an anchor that other pages or the app link to, give the heading an explicit id:
-  `## Client configuration
-  {#client-configuration}`.
+
+  ```markdown
+  ## Client configuration {#client-configuration}
+  ```
 
 ## Frontmatter
 
@@ -89,7 +91,8 @@ Use GitHub alert syntax, and use it sparingly:
 > Self-hosted instances use your own API URL instead.
 ```
 
-`[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, and `[!WARNING]` are supported.
+`[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, and `[!CAUTION]` are supported. The marker goes on its own first
+line.
 
 ## Prompts
 

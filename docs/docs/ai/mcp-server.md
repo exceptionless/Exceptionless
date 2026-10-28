@@ -26,7 +26,7 @@ traces and request details, and, with your permission, update stacks while it fi
 
 | Setting        | Value                                               |
 | -------------- | --------------------------------------------------- |
-| Server URL     | `https://api.exceptionless.io/mcp`                  |
+| Server URL     | `https://be.exceptionless.io/mcp`                   |
 | Transport      | Streamable HTTP                                     |
 | Authentication | OAuth in your browser. No API key or client secret. |
 | Access         | Read-only unless you grant **Stacks Write**         |
@@ -48,7 +48,7 @@ Add the server to your agent, then approve access in the browser window that ope
 1. Add the server:
 
    ```bash
-   claude mcp add --transport http exceptionless https://api.exceptionless.io/mcp
+   claude mcp add --transport http exceptionless https://be.exceptionless.io/mcp
    ```
 
    This adds it for you in the current project. Add `--scope user` to use it in every project, or `--scope project` to
@@ -69,14 +69,14 @@ Add the server to your agent, then approve access in the browser window that ope
 1. Add the server:
 
    ```bash
-   codex mcp add exceptionless --url https://api.exceptionless.io/mcp
+   codex mcp add exceptionless --url https://be.exceptionless.io/mcp
    ```
 
    Or add it to `~/.codex/config.toml`:
 
    ```toml
    [mcp_servers.exceptionless]
-   url = "https://api.exceptionless.io/mcp"
+   url = "https://be.exceptionless.io/mcp"
    ```
 
 2. Sign in:
@@ -96,7 +96,7 @@ Add the server to your agent, then approve access in the browser window that ope
      "servers": {
        "exceptionless": {
          "type": "http",
-         "url": "https://api.exceptionless.io/mcp"
+         "url": "https://be.exceptionless.io/mcp"
        }
      }
    }
@@ -105,7 +105,7 @@ Add the server to your agent, then approve access in the browser window that ope
    To add it to your user profile instead, run:
 
    ```bash
-   code --add-mcp '{"name":"exceptionless","type":"http","url":"https://api.exceptionless.io/mcp"}'
+   code --add-mcp '{"name":"exceptionless","type":"http","url":"https://be.exceptionless.io/mcp"}'
    ```
 
 2. Start the server and ask Copilot Chat a question that uses it. VS Code opens your browser to sign in the first time

@@ -77,7 +77,7 @@ curl https://api.exceptionless.io/api/v2/auth/login \
 OAuth lets an app or tool use the API on a user's behalf without seeing their password. The user signs in, chooses the
 organizations to share, and approves the scopes the app asks for.
 
-For the REST API, request the resource `https://api.exceptionless.io/api/v2` and one or more of these scopes:
+For the REST API, request the resource `https://be.exceptionless.io/api/v2` and one or more of these scopes:
 
 | Scope            | Allows                                                                                                   |
 | ---------------- | -------------------------------------------------------------------------------------------------------- |
@@ -91,13 +91,17 @@ An OAuth access token works only on the routes its scopes allow, and only in the
 still belongs to. It can't send events or manage projects, tokens, or users. Access tokens last one hour and refresh
 tokens 30 days by default.
 
-The server supports the authorization code flow with PKCE (`S256`) for public clients. Apps find the endpoints through
-discovery:
+The server supports the authorization code flow with PKCE (`S256`) for public clients. The OAuth server and its
+resources are identified by the web app's origin, `https://be.exceptionless.io`, even though you send the API requests
+themselves to `https://api.exceptionless.io`. Apps find the endpoints through discovery:
 
-- `https://api.exceptionless.io/.well-known/oauth-protected-resource/api/v2` describes the REST API resource and its
+- `https://be.exceptionless.io/.well-known/oauth-protected-resource/api/v2` describes the REST API resource and its
   scopes.
-- `https://api.exceptionless.io/.well-known/oauth-authorization-server` lists the authorization, token, registration,
-  and revocation endpoints.
+- `https://be.exceptionless.io/.well-known/oauth-authorization-server` lists the authorization, token, registration, and
+  revocation endpoints.
+
+> [!NOTE]
+> On a self-hosted instance, the origin is `EX_ApiUrl` if you set it, otherwise `EX_BaseURL`.
 
 Users see and revoke the apps they've approved under their account's **Applications** page. AI tools use the same OAuth
 server with the MCP resource; see [MCP server](/docs/ai/mcp-server/).

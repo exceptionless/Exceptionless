@@ -76,7 +76,7 @@ they are saved with it, instead of a global picker at the top of the app. See [S
 
 Choose **Custom range** in the date filter to pick dates on a calendar or type them into **From** and **To** fields on
 the **Absolute** tab. The **Relative** tab keeps the date math expressions, such as `now-7d`. The quick ranges, from
-**Last 5 minutes** to **Last 90 days**, still apply with one click. See
+**Last 15 minutes** to **Last 90 days**, still apply with one click. See
 [Filtering and searching](/docs/filtering-and-searching/).
 
 ## Exie, the AI assistant
@@ -87,7 +87,7 @@ it to, it also marks a stack fixed, snoozes or ignores it, marks it critical, or
 nothing unless you ask for that exact change.
 
 - Open it in a side panel with **Ask Exie** in the top bar or <kbd>A</kbd>, or full page with **Exie** in the sidebar.
-- On a stack, **Fix with Exie** starts a conversation about that error.
+- On a stack, **Fix** starts a conversation with Exie about that error.
 - In 9.0, Exie shows each lookup and change as it works, lets you stop, retry, or edit a question, and keeps recent
   chats in your browser.
 

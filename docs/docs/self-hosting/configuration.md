@@ -54,12 +54,12 @@ Environment variable names follow these rules:
 
 The `app` and all-in-one images also copy some settings into the web UI when the container starts. The UI reads only
 environment variables with these exact names: `EX_ApiUrl`, `EX_EnableAccountCreation`, `EX_EnableSsl`,
-`EX_NotificationMessage`, `EX_ExceptionlessApiKey`, `EX_ExceptionlessServerUrl`, `EX_ClientSetupShowServerUrl`, and the
-client IDs in `EX_ConnectionStrings__OAuth`. Set them as environment variables, not in YAML, and restart the container
-after you change them.
+`EX_NotificationMessage`, `EX_ExceptionlessApiKey`, `EX_ExceptionlessServerUrl`, `EX_ClientSetupShowServerUrl`,
+`EX_StripePublishableApiKey`, and the client IDs in `EX_ConnectionStrings__OAuth`. Set them as environment variables,
+not in YAML, and restart the container after you change them.
 
 > [!IMPORTANT]
-> Always set `EX_BaseURL`. The built-in production settings point at the hosted service at exceptionless.com.
+> Always set `EX_BaseURL`. The built-in production settings point at the hosted service, `https://be.exceptionless.io`.
 
 ## App
 
@@ -83,7 +83,7 @@ after you change them.
 | `EX_MaxMindGeoIpKey`          | None                                         | A MaxMind license key. A daily job downloads the GeoLite2 City database and uses it to look up locations from IP addresses.                                                                                  |
 | `EX_GoogleGeocodingApiKey`    | None                                         | A Google Geocoding API key used to resolve locations.                                                                                                                                                        |
 | `EX_ExceptionlessApiKey`      | None                                         | An API key for an Exceptionless project that receives this instance's own errors and logs. The web UI reports its errors there too.                                                                          |
-| `EX_ExceptionlessServerUrl`   | None                                         | The server URL shown in the app's client setup instructions. With `EX_ExceptionlessApiKey`, also where this instance sends its own errors.                                                                   |
+| `EX_ExceptionlessServerUrl`   | None                                         | The server URL shown in the app's client setup instructions. With `EX_ExceptionlessApiKey`, also where this instance sends its own errors; without it, they go to the hosted service in `Production`.        |
 | `EX_InternalProjectId`        | The hosted service's project                 | The ID of the project that receives this instance's own errors, so they aren't processed in a loop.                                                                                                          |
 | `EX_ClientSetupShowServerUrl` | `true`                                       | Set to `false` to leave the server URL out of the client setup instructions.                                                                                                                                 |
 
@@ -264,13 +264,13 @@ The rest of the limits, including separate limits for the Free plan, are in
 
 ## HTTPS, logging, and telemetry
 
-| Environment variable                          | Default                                            | What it does                                                                                             |
-| --------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `ASPNETCORE_URLS`                             | `http://+:8080` in the images                      | The addresses the app listens on, such as `http://+:8080;https://+:8443`.                                |
-| `EX_Kestrel__Certificates__Default__Path`     | None                                               | A PFX certificate file for HTTPS. Use the `EX_` prefix; `ASPNETCORE_Kestrel__...` variables aren't read. |
-| `EX_Kestrel__Certificates__Default__Password` | None                                               | The certificate's password.                                                                              |
-| `EX_Serilog__MinimumLevel__Default`           | `Warning` in `Production`, otherwise `Information` | The log level: `Verbose`, `Debug`, `Information`, `Warning`, `Error`, or `Fatal`.                        |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`                 | None                                               | An OpenTelemetry collector. When set, Exceptionless exports traces, metrics, and logs to it.             |
+| Environment variable                          | Default                                                | What it does                                                                                             |
+| --------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `ASPNETCORE_URLS`                             | `http://+:8080` in the images                          | The addresses the app listens on, such as `http://+:8080;https://+:8443`.                                |
+| `EX_Kestrel__Certificates__Default__Path`     | None                                                   | A PFX certificate file for HTTPS. Use the `EX_` prefix; `ASPNETCORE_Kestrel__...` variables aren't read. |
+| `EX_Kestrel__Certificates__Default__Password` | None                                                   | The certificate's password.                                                                              |
+| `EX_Serilog__MinimumLevel__Default`           | `Information`; `Warning` in `Production` and `Staging` | The log level: `Verbose`, `Debug`, `Information`, `Warning`, `Error`, or `Fatal`.                        |
+| `OTEL_EXPORTER_OTLP_ENDPOINT`                 | None                                                   | An OpenTelemetry collector. When set, Exceptionless exports traces, metrics, and logs to it.             |
 
 ## Hosted service settings
 

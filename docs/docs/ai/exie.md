@@ -81,8 +81,8 @@ Exie answers from your live data with these tools:
 | `list_projects`     | The projects in the organization                                                                          |
 | `get_project_setup` | The project's **Client Setup** page and which clients are supported                                       |
 
-Every tool call appears in **Exie's steps** above the answer, with the project, filter, and time range it used. Expand a
-step to see its details.
+Every tool call appears as a step above the answer, with the project, filter, and time range it used. Expand a step to
+see its request and response.
 
 Exie can't see data outside the current organization, delete anything, change project or organization settings, or read
 your source code. To work with your code, connect a coding agent to the [MCP server](/docs/ai/mcp-server/).
@@ -101,7 +101,7 @@ When you ask, Exie can:
 
 Exie doesn't show a confirmation dialog. Instead, it changes a stack only when your message asks for that exact change.
 Asking it to look at, investigate, or explain something never changes data. After a change, Exie says what changed, or
-that nothing needed to change, and the step always appears in **Exie's steps**.
+that nothing needed to change, and the change always appears as a step above the answer.
 
 Exie can make mistakes, so check important changes. You can reverse any of them on the stack in the app. See
 [Stacks](/docs/managing-stacks/).
@@ -168,8 +168,8 @@ Each answer also has limits that keep it fast:
 
 ## Self-hosting
 
-Exie needs an AI provider API key on a self-hosted instance, and the plan limits above apply the same way. See
-[AI features](/docs/self-hosting/ai/).
+Exie needs an AI provider API key on a self-hosted instance. Organizations created there without billing are on the
+Unlimited plan, which has higher limits than the plans above. See [AI features](/docs/self-hosting/ai/).
 
 ## Ask Exie
 
