@@ -3,6 +3,7 @@
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
     import { createForm } from '@tanstack/svelte-form';
+    import { untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import ErrorMessage from '#comp/error-message.svelte';
@@ -19,6 +20,8 @@
 
     const token = page.params.token;
     const shouldCancel = page.url.searchParams.get('cancel') === 'true';
+    let isCancelling = $state(false);
+    let cancelFailed = $state(false);
 
     const form = createForm(() => ({
         defaultValues: {
@@ -49,19 +52,29 @@
     }));
 
     async function handleCancelToken() {
-        if (shouldCancel && token) {
+        if (!shouldCancel || !token || isCancelling) {
+            return;
+        }
+
+        isCancelling = true;
+        cancelFailed = false;
+        try {
             const response = await cancelResetPassword(token);
             if (!response.ok) {
-                toast.error('An error occurred while trying to cancel your password reset. Please try again.');
-                return;
+                throw new Error('Password reset cancellation failed');
             }
 
             await goto(resolve('/(auth)/login'));
+        } catch {
+            cancelFailed = true;
+            toast.error('An error occurred while trying to cancel your password reset. Please try again.');
+        } finally {
+            isCancelling = false;
         }
     }
 
     $effect(() => {
-        handleCancelToken();
+        untrack(handleCancelToken);
     });
 </script>
 
@@ -69,12 +82,20 @@
     <Card.Root class="mx-auto w-sm">
         <Card.Header>
             <Logo />
-            <Card.Title class="text-center text-2xl">Cancelling password reset...</Card.Title>
+            <Card.Title class="text-center text-2xl">{cancelFailed ? 'Unable to cancel password reset' : 'Cancelling password reset...'}</Card.Title>
         </Card.Header>
         <Card.Content>
-            <div class="flex justify-center">
-                <Spinner class="size-8" />
-            </div>
+            {#if cancelFailed}
+                <P class="text-center" role="alert">Please try again, or return to login.</P>
+                <Button class="mt-4 w-full" onclick={handleCancelToken}>Try Again</Button>
+                <P class="mt-4 text-center text-sm">
+                    <A href={resolve('/(auth)/login')}>Back to Login</A>
+                </P>
+            {:else}
+                <div class="flex justify-center">
+                    <Spinner class="size-8" />
+                </div>
+            {/if}
         </Card.Content>
     </Card.Root>
 {:else}

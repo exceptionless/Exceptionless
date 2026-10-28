@@ -6,9 +6,11 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Models;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Tests.Extensions;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Web.Models;
+using FluentRest;
 using Foundatio.Repositories;
 using Foundatio.Caching;
 using Foundatio.Repositories.Models;
@@ -122,6 +124,65 @@ public sealed class ExternalAccountConcurrencyTests : IntegrationTestsBase
         Assert.IsAssignableFrom<OperationCanceledException>(exception);
         Assert.NotNull(nextResult);
         Assert.NotNull(await _tokens.GetByIdAsync(nextResult.Token));
+    }
+
+    [Fact]
+    public async Task ExternalLogin_DestinationVersionConflict_PreservesPreviousOwnerAndConcurrentChanges()
+    {
+        // Arrange
+        const string code = "external-account-transfer-conflict";
+        const string newPassword = "ChangedDestination2$";
+        var owner = await _users.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        var destination = await _users.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(owner);
+        Assert.NotNull(destination);
+        owner.AddOAuthAccount("github", code, "original-provider-name", new SettingsDictionary { ["profile"] = "original" });
+        await _users.SaveAsync(owner);
+        string? originalAuthenticationVersion = owner.AuthenticationVersion;
+        bool destinationChanged = false;
+        TokenResult? replacementToken = null;
+        using var subscription = _users.DocumentsSaving.AddHandler(async (_, args) =>
+        {
+            if (destinationChanged || !args.Documents.Any(document => document.Value.Id == destination.Id))
+                return;
+
+            destinationChanged = true;
+            replacementToken = await SendRequestAsAsync<TokenResult>(request => request.AsTestOrganizationUser()
+                .Post().AppendPath("auth/change-password")
+                .Content(new ChangePasswordModel { CurrentPassword = SampleDataService.TEST_ORG_USER_PASSWORD, Password = newPassword })
+                .StatusCodeShouldBeOk());
+            var currentOwner = await _users.GetByIdAsync(owner.Id, options => options.Cache(false))
+                ?? throw new InvalidOperationException("The previous owner no longer exists.");
+            currentOwner.FullName = "Concurrent owner update";
+            await _users.SaveAsync(currentOwner);
+        });
+        using var client = _server.CreateClient();
+        SetAuthorization(client, SampleDataService.TEST_ORG_USER_EMAIL, SampleDataService.TEST_ORG_USER_PASSWORD);
+
+        // Act
+        using var response = await client.PostAsJsonAsync("api/v2/auth/github", new ExternalAuthInfo
+        {
+            ClientId = "client-id", Code = code, RedirectUri = "http://localhost/callback"
+        }, TestCancellationToken);
+        var storedOwner = await _users.GetByIdAsync(owner.Id, options => options.Cache(false));
+        var storedDestination = await _users.GetByIdAsync(destination.Id, options => options.Cache(false));
+        var owners = await _users.GetUsersByOAuthProviderAsync("github", code, TestCancellationToken);
+
+        // Assert
+        Assert.True(destinationChanged);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(owner.Id, Assert.Single(owners).Id);
+        Assert.NotNull(storedOwner);
+        Assert.Equal("Concurrent owner update", storedOwner.FullName);
+        Assert.NotEqual(originalAuthenticationVersion, storedOwner.AuthenticationVersion);
+        var restoredAccount = Assert.Single(storedOwner.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
+        Assert.Equal("original-provider-name", restoredAccount.Username);
+        Assert.Equal("original", restoredAccount.ExtraData["profile"]);
+        Assert.NotNull(storedDestination);
+        Assert.True(storedDestination.IsCorrectPassword(newPassword));
+        Assert.DoesNotContain(storedDestination.OAuthAccounts, account => account.Provider == "github" && account.ProviderUserId == code);
+        Assert.NotNull(replacementToken);
+        await SendRequestAsync(request => request.BearerToken(replacementToken.Token).AppendPath("users/me").StatusCodeShouldBeOk());
     }
 
     [Fact]
