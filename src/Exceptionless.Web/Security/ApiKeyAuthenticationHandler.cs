@@ -268,13 +268,9 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         return AuthenticateResult.Success(CreateOAuthUserAuthenticationTicket(user, tokenRecord, activeOAuthOrganizationIds));
     }
 
-    private async Task<Token?> GetTokenRecordAsync(string token)
+    private Task<Token?> GetTokenRecordAsync(string token)
     {
-        var record = await _tokenRepository.GetByIdAsync(token, o => o.Cache());
-        // Delayed reads may repopulate a snapshot after logout or revocation.
-        if (record is not null && (record.Type == TokenType.Authentication || !String.IsNullOrEmpty(record.UserId)))
-            return await _tokenRepository.GetByIdAsync(token, o => o.Cache(false));
-        return record;
+        return _tokenRepository.GetForAuthenticationAsync(token);
     }
 
     private async Task<OAuthToken?> GetOAuthTokenRecordAsync(string token)

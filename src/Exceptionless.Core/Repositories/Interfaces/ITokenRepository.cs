@@ -6,6 +6,8 @@ namespace Exceptionless.Core.Repositories;
 
 public interface ITokenRepository : IRepositoryOwnedByOrganizationAndProject<Token>
 {
+    Task<Token?> GetForAuthenticationAsync(string tokenId);
+
     Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token>? options = null);
     Task<FindResults<Token>> GetByTypeAndOrganizationIdAsync(TokenType type, string organizationId, CommandOptionsDescriptor<Token>? options = null);
     Task<FindResults<Token>> GetByTypeAndProjectIdAsync(TokenType type, string projectId, CommandOptionsDescriptor<Token>? options = null);
