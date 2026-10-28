@@ -14,6 +14,8 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
+using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Assistant;
 using Foundatio.Repositories;
@@ -37,14 +39,13 @@ public sealed class ExceptionlessMcpTools
     private const int MaxDetailSize = 64 * 1024;
     private const int MinDetailSize = 1024;
     private const string SummaryLimitDescription = "Maximum number of summary rows to return. Defaults to 10 and is capped at 100. Use the returned pagination.after or pagination.before cursor with the same limit to page through additional results.";
-    private const string LastDescription = "Optional relative time range such as 24h, 7d, or 30m. Do not combine with startUtc or endUtc.";
-    private const string StartUtcDescription = "Optional inclusive UTC start time, for example 2026-06-25T00:00:00Z. Do not combine with last.";
-    private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Do not combine with last.";
-    private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
+    private const string TimeDescription = "Optional date range in the same syntax as the Exceptionless app's time filter, resolved in timeZone. Use date math in brackets: [now-24h TO now] for the last 24 hours, [now-7d TO now] for the last 7 days, [now/d TO now/d] for today, [now-1d/d TO now-1d/d] for yesterday, [now/w TO now/w] for this week, [now-1w/w TO now-1w/w] for last week, [now/M TO now/M] for this month, or dates such as [2026-06-01 TO 2026-06-30]. Weeks start on Sunday, so for a period that starts on another named day, such as since Monday, use that date: [2026-06-22 TO now]. Omit for no time limit.";
+    private const string TimeZoneDescription = "Optional IANA time zone, such as America/Chicago, that time is resolved in, so now/d is the user's midnight. Defaults to UTC.";
+    private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: environment, version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
     private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
     private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences.";
-    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*. data.* works for custom data values that were indexed for search; arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
+    private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, environment, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*. data.* works for custom data values that were indexed for search; arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
 
     private const string IndexedDataFilterNote = "data.* filters work for custom data values that were indexed for search. Arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
 
@@ -149,7 +150,7 @@ public sealed class ExceptionlessMcpTools
         string? organizationId = null,
         [Description(ProjectFilterDescription)]
         string? filter = null,
-        [Description("Optional sort expression. Defaults to project name.")]
+        [Description("Optional sort field: name, created_utc, updated_utc, or last_event_date_utc. Prefix with - for descending. Defaults to name.")]
         string? sort = null,
         [Description(SummaryLimitDescription)]
         int limit = DefaultLimit,
@@ -350,9 +351,9 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "search_stacks", Title = "Search error stacks", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
-    [Description("Searches stacks in an Exceptionless project for broad, top, or recent-issue questions. This tool has no stack id filter; use get_stack when stackId is known. When pagination.hasMore is true, pass pagination.after to fetch the next page or pagination.before to fetch the previous page.")]
+    [Description("Searches stacks in one Exceptionless project by stack fields such as status, tag, title, or type. time matches each stack's last occurrence, so a stack that occurred in a past period and again since is left out; to find or rank the stacks that occurred during a period, use count_events with groupBy stack. Stack occurrence counts are all-time totals. There is no organization-wide search: when more than one project is accessible, pass projectId and call once per project. This tool has no stack id filter; use get_stack when stackId is known. When pagination.hasMore is true, pass pagination.after to fetch the next page or pagination.before to fetch the previous page.")]
     public async Task<McpResponse<McpListData<McpStackResult>>> SearchStacksAsync(
-        [Description("Optional Exceptionless project id to search within. May be omitted when only one project is accessible.")]
+        [Description("Exceptionless project id to search within. Required when more than one project is accessible; omit only when exactly one project is accessible.")]
         string? projectId = null,
         [Description(StackFilterDescription)]
         string? filter = null,
@@ -360,12 +361,10 @@ public sealed class ExceptionlessMcpTools
         string? sort = "-last_occurrence",
         [Description(SummaryLimitDescription)]
         int limit = DefaultLimit,
-        [Description(LastDescription)]
-        string? last = null,
-        [Description(StartUtcDescription)]
-        string? startUtc = null,
-        [Description(EndUtcDescription)]
-        string? endUtc = null,
+        [Description(TimeDescription)]
+        string? time = null,
+        [Description(TimeZoneDescription)]
+        string? timeZone = null,
         [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
         string? after = null,
         [Description("Optional cursor returned from a previous response. Fetches results before this cursor.")]
@@ -384,7 +383,7 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidatePaginationCursors(after, before, out var cursorError))
                 return McpResponse<McpListData<McpStackResult>>.Failed(cursorError);
 
-            if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
+            if (!TryResolveTimeRange(time, timeZone, out var timeRange, out var timeError))
                 return McpResponse<McpListData<McpStackResult>>.Failed(timeError);
 
             var projectContext = await _mcpContextService.ResolveProjectAsync(projectId);
@@ -453,12 +452,10 @@ public sealed class ExceptionlessMcpTools
         string? sort = "-date",
         [Description(SummaryLimitDescription)]
         int limit = DefaultLimit,
-        [Description(LastDescription)]
-        string? last = null,
-        [Description(StartUtcDescription)]
-        string? startUtc = null,
-        [Description(EndUtcDescription)]
-        string? endUtc = null,
+        [Description(TimeDescription)]
+        string? time = null,
+        [Description(TimeZoneDescription)]
+        string? timeZone = null,
         [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
         string? after = null,
         [Description("Optional cursor returned from a previous response. Fetches results before this cursor.")]
@@ -480,7 +477,7 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidatePaginationCursors(after, before, out var cursorError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(cursorError);
 
-            if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
+            if (!TryResolveTimeRange(time, timeZone, out var timeRange, out var timeError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(timeError);
 
             var (stack, organization) = await GetStackAndOrganizationAsync(stackId, projectId);
@@ -516,12 +513,10 @@ public sealed class ExceptionlessMcpTools
         string? sort = "-date",
         [Description(SummaryLimitDescription)]
         int limit = DefaultLimit,
-        [Description(LastDescription)]
-        string? last = null,
-        [Description(StartUtcDescription)]
-        string? startUtc = null,
-        [Description(EndUtcDescription)]
-        string? endUtc = null,
+        [Description(TimeDescription)]
+        string? time = null,
+        [Description(TimeZoneDescription)]
+        string? timeZone = null,
         [Description("Optional cursor returned from a previous response. Fetches results after this cursor.")]
         string? after = null,
         [Description("Optional cursor returned from a previous response. Fetches results before this cursor.")]
@@ -540,7 +535,7 @@ public sealed class ExceptionlessMcpTools
             if (!TryValidatePaginationCursors(after, before, out var cursorError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(cursorError);
 
-            if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
+            if (!TryResolveTimeRange(time, timeZone, out var timeRange, out var timeError))
                 return McpResponse<McpListData<McpEventResult>>.Failed(timeError);
 
             var projectContext = await _mcpContextService.ResolveProjectAsync(projectId);
@@ -612,18 +607,16 @@ public sealed class ExceptionlessMcpTools
     }
 
     [McpServerTool(Name = "count_events", Title = "Count events", ReadOnly = true, OpenWorld = false, UseStructuredContent = true)]
-    [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets and groupBy dimensions for questions like occurrences by version, tag, user, or error type.")]
+    [Description("Counts Exceptionless events and occurrences in a project, with optional time buckets and groupBy dimensions for questions like occurrences by version, tag, user, or error type. Groups are ordered by occurrences. groupBy stack ranks stacks by how often they occurred in the time range, like the Most Frequent view, and names each stack with its title, status, and first and last occurrence, so a stack first seen in the range is a new error.")]
     public async Task<McpResponse<McpEventCountResult>> CountEventsAsync(
         [Description("Optional Exceptionless project id to count within. May be omitted when only one project is accessible.")]
         string? projectId = null,
         [Description(EventFilterDescription)]
         string? filter = null,
-        [Description(LastDescription)]
-        string? last = null,
-        [Description(StartUtcDescription)]
-        string? startUtc = null,
-        [Description(EndUtcDescription)]
-        string? endUtc = null,
+        [Description(TimeDescription)]
+        string? time = null,
+        [Description(TimeZoneDescription)]
+        string? timeZone = null,
         [Description("Optional date histogram interval for trend buckets, such as 1h, 1d, or 1w. Leave blank for a total only.")]
         string? interval = null,
         [Description(EventGroupByDescription)]
@@ -641,7 +634,7 @@ public sealed class ExceptionlessMcpTools
             if (validation.Error is not null)
                 return McpResponse<McpEventCountResult>.Failed(validation.Error);
 
-            if (!TryResolveTimeRange(last, startUtc, endUtc, out var timeRange, out var timeError))
+            if (!TryResolveTimeRange(time, timeZone, out var timeRange, out var timeError))
                 return McpResponse<McpEventCountResult>.Failed(timeError);
 
             if (!TryValidateInterval(interval, out var intervalError))
@@ -702,6 +695,14 @@ public sealed class ExceptionlessMcpTools
                             groupTrend);
                     })
                     .ToArray() ?? [];
+
+                if (resolvedGroupBy.Name == "stack" && groups.Count > 0)
+                {
+                    var stacks = (await _stackRepository.GetByIdsAsync(groups.Select(group => group.Key).ToArray())).ToDictionary(stack => stack.Id);
+                    groups = groups
+                        .Select(group => stacks.TryGetValue(group.Key, out var stack) ? group with { Title = stack.Title, Status = stack.Status.ToString().ToLowerInvariant(), FirstOccurrence = stack.FirstOccurrence, LastOccurrence = stack.LastOccurrence } : group)
+                        .ToArray();
+                }
             }
 
             string? warning = CombineWarnings(groupLimitWarning, GetGroupByOverlapWarning(resolvedGroupBy));
@@ -1164,6 +1165,10 @@ public sealed class ExceptionlessMcpTools
         if (!queryValidation.IsValid)
             return SearchValidationResult.Failed(McpErrors.InvalidFilter($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}"));
 
+        // Elasticsearch rejects leading wildcards, which would otherwise fail the whole search.
+        if (filter is not null && s_leadingWildcardPattern.IsMatch(filter))
+            return SearchValidationResult.Failed(McpErrors.InvalidFilter("Invalid filter: leading wildcards such as *timeout* are not supported. Search for a whole word instead, such as title:timeout or timeout."));
+
         var filterFieldError = GetFilterFieldError(filter, allowedFilterFields, allowIndexedDataFields);
         if (filterFieldError is not null)
             return SearchValidationResult.Failed(filterFieldError);
@@ -1248,45 +1253,139 @@ public sealed class ExceptionlessMcpTools
         return Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
     }
 
-    private bool TryResolveTimeRange(string? last, string? startUtc, string? endUtc, out McpTimeRange timeRange, out McpErrorInfo error)
+    /// <summary>Resolves a time filter the same way the API's time parameter does, so tools and the app agree on ranges.</summary>
+    /// <summary>Returns which of the given projects still exist in the organization, for reusing cached tool results.</summary>
+    public async Task<IReadOnlySet<string>> GetExistingProjectIdsAsync(string organizationId, IReadOnlyCollection<string> projectIds)
+    {
+        if (projectIds.Count == 0)
+            return new HashSet<string>(StringComparer.Ordinal);
+
+        var projects = await _projectRepository.GetByIdsAsync(projectIds.ToArray(), o => o.Cache());
+        return projects.Where(project => String.Equals(project.OrganizationId, organizationId, StringComparison.Ordinal)).Select(project => project.Id).ToHashSet(StringComparer.Ordinal);
+    }
+
+    private bool TryResolveTimeRange(string? time, string? timeZone, out McpTimeRange timeRange, out McpErrorInfo error)
     {
         timeRange = new McpTimeRange(null, null);
-
-        if (!String.IsNullOrWhiteSpace(last) && (!String.IsNullOrWhiteSpace(startUtc) || !String.IsNullOrWhiteSpace(endUtc)))
+        var zone = TimeZoneInfo.Utc;
+        if (!String.IsNullOrWhiteSpace(timeZone) && !TimeZoneInfo.TryFindSystemTimeZoneById(timeZone.Trim(), out zone))
         {
-            error = McpErrors.InvalidTimeRange("Use either last or startUtc/endUtc, not both.", last, startUtc, endUtc);
+            error = McpErrors.InvalidTimeRange("timeZone must be an IANA time zone such as America/Chicago.", time, timeZone);
             return false;
         }
 
-        if (!String.IsNullOrWhiteSpace(last))
+        if (String.IsNullOrWhiteSpace(time))
         {
-            if (!TryParseRelativeTime(last, out var duration))
-            {
-                error = McpErrors.InvalidTimeRange("last must be a relative duration such as 30m, 24h, 7d, or 1w.", last, startUtc, endUtc);
-                return false;
-            }
-
-            var end = _timeProvider.GetUtcNow().UtcDateTime;
-            timeRange = new McpTimeRange(end.Subtract(duration), end);
             error = null!;
             return true;
         }
 
-        if (!TryParseUtcDate(startUtc, out DateTime? start, out error))
-            return false;
-
-        if (!TryParseUtcDate(endUtc, out DateTime? endUtcDate, out error))
-            return false;
-
-        if (start.HasValue && endUtcDate.HasValue && start.Value >= endUtcDate.Value)
+        var utcOffset = zone.GetUtcOffset(_timeProvider.GetUtcNow());
+        (DateTime? exactStart, DateTime? exactEnd, string expression) = GetExactBoundaries(time.Trim());
+        DateTime? start = exactStart;
+        DateTime? end = exactEnd;
+        if (exactStart is null || exactEnd is null)
         {
-            error = McpErrors.InvalidTimeRange("startUtc must be before endUtc.", last, startUtc, endUtc);
+            // Check the parsed range before TimeRangeParser fills an open end with now, which would hide a parse failure.
+            // An inverted range such as [now/d TO now-1d/d] parses to a single instant.
+            var parsedRange = DateTimeRange.Parse(expression, _timeProvider.GetUtcNow().ToOffset(utcOffset));
+            if (parsedRange == DateTimeRange.Empty || parsedRange.UtcStart >= parsedRange.UtcEnd)
+            {
+                error = InvalidTimeExpression(time, timeZone);
+                return false;
+            }
+
+            var timeInfo = TimeRangeParser.GetTimeInfo(expression, utcOffset, _timeProvider);
+            (bool isCalendarStart, bool isCalendarEnd) = GetCalendarBoundaries(expression);
+            start ??= timeInfo.Range.UtcStart == DateTime.MinValue ? null : ToZoneBoundary(timeInfo.Range.UtcStart, utcOffset, zone, isCalendarStart, isStart: true);
+            end ??= timeInfo.Range.UtcEnd == DateTime.MaxValue ? null : ToZoneBoundary(timeInfo.Range.UtcEnd, utcOffset, zone, isCalendarEnd, isStart: false);
+        }
+
+        if (start >= end)
+        {
+            error = InvalidTimeExpression(time, timeZone);
             return false;
         }
 
-        timeRange = new McpTimeRange(start, endUtcDate);
+        timeRange = new McpTimeRange(start, end);
         error = null!;
         return true;
+    }
+
+    private static McpErrorInfo InvalidTimeExpression(string time, string? timeZone)
+        => McpErrors.InvalidTimeRange("time must be a date range such as [now-24h TO now], [now/d TO now/d] for today, [now-1d/d TO now-1d/d] for yesterday, or [2026-06-01 TO 2026-06-30].", time, timeZone);
+
+    /// <summary>
+    /// Which sides of a range fall on calendar lines (now/d, now-1w/w, or a date) rather than a duration from now
+    /// such as now-24h. Only calendar boundaries depend on the zone's offset on that day.
+    /// </summary>
+    private static (bool Start, bool End) GetCalendarBoundaries(string time)
+    {
+        var match = s_bracketTimeRange.Match(time.Trim());
+        if (match.Success)
+            return (IsCalendarBoundary(match.Groups["start"].Value), IsCalendarBoundary(match.Groups["end"].Value));
+
+        // Named periods such as today, last week, or 2026-10 are calendar periods; "last 7 days" style phrases are durations.
+        bool isCalendar = !time.Contains("now", StringComparison.OrdinalIgnoreCase) && !s_durationWords.IsMatch(time);
+        return (isCalendar, isCalendar);
+    }
+
+    /// <summary>
+    /// Boundaries written with Z or a numeric offset are exact instants. DateTimeRange reads them as local times in
+    /// the requested zone, or cannot parse them, so they are parsed here and replaced with * in the expression it sees.
+    /// </summary>
+    private static (DateTime? Start, DateTime? End, string Expression) GetExactBoundaries(string time)
+    {
+        var match = s_bracketTimeRange.Match(time);
+        if (!match.Success)
+            return (null, null, time);
+
+        // { and } exclude their boundary; queries are inclusive at millisecond precision, so move one millisecond inward.
+        var start = GetExactInstant(match.Groups["start"].Value)?.AddMilliseconds(time[0] == '{' ? 1 : 0);
+        var end = GetExactInstant(match.Groups["end"].Value)?.AddMilliseconds(time[^1] == '}' ? -1 : 0);
+        string expression = $"{time[0]}{(start is null ? match.Groups["start"].Value : "*")} TO {(end is null ? match.Groups["end"].Value : "*")}{time[^1]}";
+        return (start, end, expression);
+    }
+
+    private static DateTime? GetExactInstant(string boundary)
+    {
+        boundary = boundary.Trim();
+        return s_explicitOffset.IsMatch(boundary) && DateTimeOffset.TryParse(boundary, CultureInfo.InvariantCulture, DateTimeStyles.None, out var instant)
+            ? instant.UtcDateTime
+            : null;
+    }
+
+    private static bool IsCalendarBoundary(string boundary)
+    {
+        boundary = boundary.Trim();
+        // A timestamp with Z or a numeric offset is already an exact instant, not a local calendar value.
+        return boundary != "*"
+            && !s_explicitOffset.IsMatch(boundary)
+            && (boundary.Contains('/') || !boundary.StartsWith("now", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// TimeRangeParser resolves the whole range with today's offset. A calendar boundary on the other side of a
+    /// daylight saving change belongs to that day's offset, so this resolves its wall-clock time in the zone.
+    /// </summary>
+    private static DateTime ToZoneBoundary(DateTime utc, TimeSpan appliedOffset, TimeZoneInfo zone, bool isCalendarBoundary, bool isStart)
+    {
+        if (!isCalendarBoundary || zone == TimeZoneInfo.Utc)
+            return utc;
+
+        var wallClock = DateTime.SpecifyKind(utc + appliedOffset, DateTimeKind.Unspecified);
+        // A wall-clock time skipped by a daylight saving change starts at the end of the gap.
+        while (zone.IsInvalidTime(wallClock))
+            wallClock = wallClock.AddMinutes(30);
+
+        // A repeated hour starts at its first occurrence and ends at its last.
+        if (zone.IsAmbiguousTime(wallClock))
+        {
+            var offsets = zone.GetAmbiguousTimeOffsets(wallClock);
+            return new DateTimeOffset(wallClock, isStart ? offsets.Max() : offsets.Min()).UtcDateTime;
+        }
+
+        return TimeZoneInfo.ConvertTimeToUtc(wallClock, zone);
     }
 
     private static bool TryParseRelativeTime(string value, out TimeSpan duration)
@@ -1306,26 +1405,6 @@ public sealed class ExceptionlessMcpTools
         };
 
         return duration > TimeSpan.Zero;
-    }
-
-    private static bool TryParseUtcDate(string? value, out DateTime? date, out McpErrorInfo error)
-    {
-        date = null;
-        if (String.IsNullOrWhiteSpace(value))
-        {
-            error = null!;
-            return true;
-        }
-
-        if (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dto))
-        {
-            date = dto.UtcDateTime;
-            error = null!;
-            return true;
-        }
-
-        error = McpErrors.InvalidTimeRange($"{value} is not a valid UTC date/time.", last: null, startUtc: value, endUtc: null);
-        return false;
     }
 
     private static bool TryValidateInterval(string? interval, out McpErrorInfo error)
@@ -1388,9 +1467,10 @@ public sealed class ExceptionlessMcpTools
         if (groupBy is null)
             return rootAggregations;
 
+        // Order groups by occurrences, as the app's Most Frequent view does, rather than by event documents.
         string groupAggregations = String.IsNullOrWhiteSpace(interval)
-            ? "sum:count~1"
-            : $"sum:count~1 date:(date~{interval} sum:count~1)";
+            ? "-sum:count~1"
+            : $"-sum:count~1 date:(date~{interval} sum:count~1)";
 
         return $"terms:({groupBy.AggregationField}~{groupLimit} {groupAggregations}) {rootAggregations}";
     }
@@ -1655,7 +1735,8 @@ public sealed class ExceptionlessMcpTools
             ev.Source,
             ev.Message,
             ev.ReferenceId,
-            includeDetails ? ToEventDetails(ev, maxDetailSize) : null);
+            includeDetails ? ToEventDetails(ev, maxDetailSize) : null,
+            ev.Environment);
     }
 
     private McpEventDetails ToEventDetails(PersistentEvent ev, int maxDetailSize)
@@ -1782,7 +1863,7 @@ public sealed class ExceptionlessMcpTools
         where TDocument : class
     {
         return McpResponse<McpListData<TResult>>.Success(
-            new McpListData<TResult>(results.Documents.Select(mapper).ToArray()),
+            new McpListData<TResult>(results.Documents.Select(mapper).ToArray(), results.Total),
             warning,
             new McpPagination(
                 results.HasMore,
@@ -1827,11 +1908,16 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly Regex FilterFieldRegex = new(@"(?:^|[-+\s(])(?<field>@?[A-Za-z_][A-Za-z0-9_@.-]*):", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex IdRegex = new(@"^[A-Za-z0-9]{24,36}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex s_bracketTimeRange = new(@"^[\[{](?<start>.+?)\s+TO\s+(?<end>.+?)[\]}]$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    private static readonly Regex s_explicitOffset = new(@"T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    // "last 7 days" or "past 2 weeks" is a duration, like [now-7d TO now]; "last week" with no number is a calendar week.
+    private static readonly Regex s_durationWords = new(@"\b\d+\s*(minutes?|mins?|hours?|hrs?|days?|weeks?|months?|years?)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex RelativeTimeRegex = new(@"^(?<value>\d+)(?<unit>[mhdw])$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IntervalRegex = new(@"^\d+[mhdwM]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
     private static readonly string[] EventGroupByAllowedFields =
     [
+        "environment",
         "version",
         "type",
         "source",
@@ -1849,6 +1935,7 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly IReadOnlyDictionary<string, McpEventGroupBy> EventGroupByFields = new Dictionary<string, McpEventGroupBy>(StringComparer.OrdinalIgnoreCase)
     {
+        ["environment"] = new("environment", EventIndex.Alias.Environment),
         ["version"] = new("version", EventIndex.Alias.Version),
         ["type"] = new("type", EventIndex.Alias.Type),
         ["source"] = new("source", EventIndex.Alias.Source),
@@ -1865,6 +1952,8 @@ public sealed class ExceptionlessMcpTools
         ["os.version"] = new("os.version", "os.version"),
         ["browser"] = new("browser", EventIndex.Alias.Browser)
     };
+
+    private static readonly Regex s_leadingWildcardPattern = new(@"(?:^|[\s:(])[*?]\w", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
     private static readonly HashSet<string> ProjectSortFields = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -1922,6 +2011,7 @@ public sealed class ExceptionlessMcpTools
 
     private static readonly HashSet<string> EventSortFields = new(StringComparer.OrdinalIgnoreCase)
     {
+        EventIndex.Alias.Environment,
         EventIndex.Alias.Date,
         EventIndex.Alias.Type,
         EventIndex.Alias.Source,

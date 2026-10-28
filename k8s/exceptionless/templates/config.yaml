@@ -17,6 +17,19 @@ data:
     {{- end }}
     EX_DisabledPlugins: GeoPlugin,LocationPlugin
     EX_EnableSsl: "true"
+    {{- $knownNetworks := dig "forwardedHeaders" "knownNetworks" (list) .Values.AsMap }}
+    {{- if $knownNetworks }}
+    {{- range $key, $value := .Values.config }}
+    {{- if hasPrefix "forwardedheaders:" (lower (replace "__" ":" (trimPrefix "EX_" $key))) }}
+    {{- fail "Do not combine forwardedHeaders.knownNetworks with ForwardedHeaders config overrides; remove the old overrides" }}
+    {{- end }}
+    {{- end }}
+    EX_ForwardedHeaders__Enabled: "true"
+    EX_ForwardedHeaders__ForwardLimit: "1"
+    {{- range $index, $network := $knownNetworks }}
+    EX_ForwardedHeaders__KnownNetworks__{{ $index }}: {{ $network | quote }}
+    {{- end }}
+    {{- end }}
     EX_ConnectionStrings__Elasticsearch: {{ default "server=http://elasticsearch:9200" .Values.elasticsearch.connectionString }}
     {{- if (empty .Values.redis.connectionString) }}
     EX_ConnectionStrings__Redis: {{ template "exceptionless.fullname" . }}-redis-master,abortConnect=false

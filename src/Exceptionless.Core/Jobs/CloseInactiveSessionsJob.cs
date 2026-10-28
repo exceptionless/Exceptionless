@@ -50,20 +50,22 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
         if (results.Documents.Count == 0)
             return JobResult.Success;
 
+        // A user's heartbeat applies to their sessions in every environment, and those sessions can be on
+        // different pages, so heartbeats are consumed only after every page has been processed.
+        var consumedHeartbeats = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+        var closeKeysToRemove = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var existingSessionHeartbeatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         while (results.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             var inactivePeriodUtc = _timeProvider.GetUtcNow().UtcDateTime.Subtract(DefaultInactivePeriod);
             var sessionsToUpdate = new List<PersistentEvent>(results.Documents.Count);
-            var cacheKeysToRemove = new List<string>(results.Documents.Count * 2);
-            var existingSessionHeartbeatIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var (sessionStart, heartbeatResult) in await GetHeartbeatsBatchAsync(results.Documents))
             {
                 var lastActivityUtc = sessionStart.Date.UtcDateTime.AddSeconds((double)sessionStart.Value.GetValueOrDefault());
 
-                bool closeDuplicate = heartbeatResult?.CacheKey is not null && existingSessionHeartbeatIds.Contains(heartbeatResult.CacheKey);
-                if (heartbeatResult?.CacheKey is not null && !closeDuplicate)
-                    existingSessionHeartbeatIds.Add(heartbeatResult.CacheKey);
+                // Heartbeats are not scoped to an environment, so one user's sessions in different environments are not duplicates.
+                bool closeDuplicate = heartbeatResult?.CacheKey is not null && !existingSessionHeartbeatIds.Add($"{heartbeatResult.CacheKey}:{sessionStart.Environment}");
 
                 if (heartbeatResult is not null && (closeDuplicate || heartbeatResult.Close || heartbeatResult.ActivityUtc > lastActivityUtc))
                     sessionStart.UpdateSessionStart(heartbeatResult.ActivityUtc, isSessionEnd: closeDuplicate || heartbeatResult.Close || heartbeatResult.ActivityUtc <= inactivePeriodUtc);
@@ -75,9 +77,10 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                 sessionsToUpdate.Add(sessionStart);
                 if (heartbeatResult?.CacheKey is not null)
                 {
-                    cacheKeysToRemove.Add(heartbeatResult.CacheKey);
+                    // Keep the first value read: sessions on earlier pages only applied that one.
+                    consumedHeartbeats.TryAdd(heartbeatResult.CacheKey, heartbeatResult.ActivityUtc);
                     if (heartbeatResult.Close)
-                        cacheKeysToRemove.Add($"{heartbeatResult.CacheKey}-close");
+                        closeKeysToRemove.Add($"{heartbeatResult.CacheKey}-close");
                 }
 
                 Debug.Assert(sessionStart.Value is not null && sessionStart.Value >= 0, "Session start value cannot be a negative number.");
@@ -88,9 +91,6 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
 
             if (sessionsToUpdate.Count > 0)
                 await _eventRepository.SaveAsync(sessionsToUpdate);
-
-            if (cacheKeysToRemove.Count > 0)
-                await _cache.RemoveAllAsync(cacheKeysToRemove);
 
             _logger.LogInformation("Closing {SessionClosedCount} of {SessionCount} sessions", sessionsToUpdate.Count, results.Documents.Count);
 
@@ -106,6 +106,16 @@ public class CloseInactiveSessionsJob : JobWithLockBase, IHealthCheck
                 _lastActivity = _timeProvider.GetUtcNow().UtcDateTime;
             }
         }
+
+        // Sessions on unprocessed pages still need the heartbeats, so a cancelled run leaves them for the next run.
+        if (!context.CancellationToken.IsCancellationRequested)
+        {
+            // A heartbeat written while later pages were processed has not been applied, so only unchanged values are removed.
+            await Task.WhenAll(consumedHeartbeats.Select(heartbeat => _cache.RemoveIfEqualAsync(heartbeat.Key, heartbeat.Value)));
+            if (closeKeysToRemove.Count > 0)
+                await _cache.RemoveAllAsync(closeKeysToRemove);
+        }
+
         _logger.LogInformation("Done checking active sessions. Closed {SessionClosedCount} of {SessionCount} sessions", sessionsClosed, totalSessions);
 
         return JobResult.Success;

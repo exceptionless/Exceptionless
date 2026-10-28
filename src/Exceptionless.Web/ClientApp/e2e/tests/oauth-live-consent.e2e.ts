@@ -89,9 +89,9 @@ test('AuthorizeConsent_ExpandedClientRegistration_RequiresFreshMemberGrant', asy
             // Act
             await administratorPage.goto(`/system/oauth-applications?criteria=${encodeURIComponent(applicationName)}`);
             // Assert
-            await expect(administratorPage.getByRole('button', { name: 'Filter by authorization' })).toHaveText('Authorized');
+            await expect(administratorPage.getByRole('combobox', { name: 'Filter by authorization' })).toHaveText('Authorized');
             await expect(administratorPage.getByRole('link', { exact: true, name: applicationName })).toHaveCount(0);
-            await administratorPage.getByRole('button', { name: 'Filter by authorization' }).click();
+            await administratorPage.getByRole('combobox', { name: 'Filter by authorization' }).click();
             await administratorPage.getByRole('option', { exact: true, name: 'Not authorized' }).click();
             await expect(administratorPage.getByRole('link', { exact: true, name: applicationName })).toBeVisible();
             await administratorPage.getByRole('button', { name: `Show details for ${applicationName}` }).click();

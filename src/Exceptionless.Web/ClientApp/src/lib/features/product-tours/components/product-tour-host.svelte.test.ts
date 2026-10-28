@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AssistantAccess } from '#features/assistant/models.ts';
@@ -141,6 +141,6 @@ describe('ProductTourHost', () => {
 
         // Assert
         expect(productTourCheckpoint.current).toBe(active);
-        expect(screen.queryByRole('dialog', { name: 'Guided Tours' })).toBeNull();
+        await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Guided Tours' })).toBeNull());
     });
 });

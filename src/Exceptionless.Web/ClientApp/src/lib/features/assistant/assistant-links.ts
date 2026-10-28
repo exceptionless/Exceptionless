@@ -28,6 +28,34 @@ export function addAssistantResourceLinks(content: string, tools: AssistantToolA
     });
 }
 
+/**
+ * Builds a markdown URL transform for one response. Models sometimes prefix a tool's relative
+ * webUrl with an invented host; an absolute link whose path exactly matches a webUrl from this
+ * response's tool results is restored to that trusted relative path.
+ */
+export function createAssistantUrlTransform(tools: AssistantToolActivity[]): (url: string, key: string) => string {
+    const trustedPaths = getAssistantResourcePaths(tools);
+
+    return (url, key) => {
+        const normalizedUrl = normalizeAssistantUrl(url, key);
+        if (key !== 'href' || normalizedUrl !== url || trustedPaths.size === 0) {
+            return normalizedUrl;
+        }
+
+        try {
+            const parsedUrl = new URL(url);
+            const path = `${parsedUrl.pathname}${parsedUrl.search}`;
+            if ((parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') && trustedPaths.has(path)) {
+                return `${path}${parsedUrl.hash}`;
+            }
+        } catch {
+            // Relative URLs are already same-origin and should remain unchanged.
+        }
+
+        return url;
+    };
+}
+
 export function normalizeAssistantUrl(url: string, key: string): string {
     if (key !== 'href') {
         return url;
@@ -65,13 +93,29 @@ function collectAssistantResourceLinks(value: unknown, urlsByLabel: Map<string, 
         return;
     }
 
-    if (Array.isArray(value.data.items)) {
-        for (const item of value.data.items) {
-            collectAssistantResourceLink(item, urlsByLabel);
-        }
-    } else {
-        collectAssistantResourceLink(value.data, urlsByLabel);
+    // List tools return items; count_events grouped by stack returns groups with each stack's title and webUrl.
+    const entries = Array.isArray(value.data.items) ? value.data.items : Array.isArray(value.data.groups) ? value.data.groups : [value.data];
+    for (const entry of entries) {
+        collectAssistantResourceLink(entry, urlsByLabel);
     }
+}
+
+function collectAssistantResourceUrlsByLabel(tools: AssistantToolActivity[]): Map<string, Set<string>> {
+    const urlsByLabel = new Map<string, Set<string>>();
+
+    for (const tool of tools) {
+        if (tool.status !== 'complete' || !tool.result) {
+            continue;
+        }
+
+        try {
+            collectAssistantResourceLinks(JSON.parse(tool.result) as unknown, urlsByLabel);
+        } catch {
+            // Tool activity can contain non-JSON diagnostic text.
+        }
+    }
+
+    return urlsByLabel;
 }
 
 function countRun(content: string, start: number, character: string): number {
@@ -207,19 +251,7 @@ function findInlineLinkRanges(content: string): Array<{ end: number; start: numb
 }
 
 function getAssistantResourceLinks(tools: AssistantToolActivity[]): AssistantResourceLink[] {
-    const urlsByLabel = new Map<string, Set<string>>();
-
-    for (const tool of tools) {
-        if (tool.status !== 'complete' || !tool.result) {
-            continue;
-        }
-
-        try {
-            collectAssistantResourceLinks(JSON.parse(tool.result) as unknown, urlsByLabel);
-        } catch {
-            // Tool activity can contain non-JSON diagnostic text.
-        }
-    }
+    const urlsByLabel = collectAssistantResourceUrlsByLabel(tools);
 
     return [...urlsByLabel]
         .filter(([label, urls]) => /[\p{L}\p{N}]/u.test(label) && urls.size === 1)
@@ -228,6 +260,10 @@ function getAssistantResourceLinks(tools: AssistantToolActivity[]): AssistantRes
             return url ? [{ label, url }] : [];
         })
         .sort((left, right) => right.label.length - left.label.length);
+}
+
+function getAssistantResourcePaths(tools: AssistantToolActivity[]): Set<string> {
+    return new Set([...collectAssistantResourceUrlsByLabel(tools).values()].flatMap((urls) => [...urls]));
 }
 
 function isAssistantPath(value: string): boolean {

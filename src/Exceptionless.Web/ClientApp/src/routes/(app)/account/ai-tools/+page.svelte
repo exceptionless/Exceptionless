@@ -142,7 +142,7 @@
                             selectedToolId = value as AiToolId;
                         }}
                     >
-                        <Select.Trigger class="mt-2 w-full max-w-md">
+                        <Select.Trigger aria-label="AI tool" class="mt-2 w-full max-w-md">
                             <span>{selectedTool.name}</span>
                         </Select.Trigger>
                         <Select.Content>

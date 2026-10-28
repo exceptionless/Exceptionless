@@ -1,10 +1,10 @@
 <script lang="ts">
     import { resolve } from '$app/paths';
-    import Bot from '@lucide/svelte/icons/bot';
     import Search from '@lucide/svelte/icons/search';
     import { MediaQuery } from 'svelte/reactivity';
 
     import DarkModeButton from '#comp/dark-mode-button.svelte';
+    import ExieIcon from '#comp/icons/ExieIcon.svelte';
     import Logo from '#comp/logo.svelte';
     import { A } from '#comp/typography/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
@@ -54,15 +54,17 @@
                 {#if assistantEnabled}
                     <Button
                         aria-expanded={isAssistantOpen}
-                        aria-label={isAssistantOpen ? 'Close Exie' : 'Open Exie'}
+                        aria-keyshortcuts="A"
+                        aria-label="Ask Exie"
                         class="px-2"
                         data-assistant-trigger
                         data-tour="exie-trigger"
                         onclick={toggleAssistant}
-                        title="Ask Exie"
-                        variant="outline"
+                        title="Ask Exie (A)"
+                        variant={isAssistantOpen ? 'secondary' : 'outline'}
                     >
-                        <Bot aria-hidden="true" class="size-6" data-icon="inline-start" />
+                        <ExieIcon aria-hidden="true" class="text-primary size-5" data-icon="inline-start" />
+                        <!-- The label stays the same when open so the navbar never shifts; the button style and aria-expanded show the state. -->
                         <span class="hidden lg:inline">Ask Exie</span>
                     </Button>
                 {/if}

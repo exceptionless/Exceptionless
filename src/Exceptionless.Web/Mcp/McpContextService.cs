@@ -95,7 +95,7 @@ public sealed class McpContextService(
             {
                 var context = ToContextResult(activeOrganization, null, accessibleOrganizations, accessibleProjects.Documents);
                 return McpContextResolution.Failed(McpErrors.ContextRequired(
-                    "Specify a project id before using this MCP tool.",
+                    "Specify a project id before using this MCP tool. Choose one from details.projects; to cover several projects, call the tool once per project.",
                     "project",
                     context.Organizations,
                     context.Projects), context, activeOrganization);
@@ -228,7 +228,7 @@ public sealed class McpContextService(
             var activeOrganization = accessibleOrganizations.Count == 1 ? accessibleOrganizations[0] : null;
             var context = ToContextResult(activeOrganization, null, accessibleOrganizations, projects.Documents);
             return McpProjectContextResolution.Failed(McpErrors.ContextRequired(
-                "Specify a project id before using this MCP tool.",
+                "Specify a project id before using this MCP tool. Choose one from details.projects; to cover several projects, call the tool once per project.",
                 "project",
                 context.Organizations,
                 context.Projects), context);

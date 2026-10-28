@@ -20,82 +20,63 @@ type Story = StoryObj<typeof meta>;
 export const DefaultQuickRanges: Story = {
     args: {
         value: '[now-1d TO now]'
-    }
-};
-
-export const CustomRange: Story = {
-    args: {
-        value: '[2025-01-01T00:00:00 TO 2025-01-02T00:00:00]'
-    }
-};
-
-export const WithSelectedRange: Story = {
-    args: {
-        value: '[now-7d TO now]'
-    }
-};
-
-export const ShowingCustomForm: Story = {
-    args: {
-        value: '[now-1d TO now]'
     },
     parameters: {
         docs: {
             description: {
-                story: 'This story demonstrates the date range picker with a selected quick range. Expand the Custom range section to edit a custom range.'
+                story: 'Quick ranges apply with one click. Custom range opens the From and To fields and the calendar, which apply with the Apply button.'
             }
         }
     }
 };
 
-export const AutoSelectCustomTab: Story = {
+export const AbsoluteRange: Story = {
     args: {
-        value: '[2025-01-01T00:00:00 TO 2025-01-02T00:00:00]'
+        value: '[2025-01-10 TO 2025-01-12]'
     },
     parameters: {
         docs: {
             description: {
-                story: 'When the current value does not match any common range option, the Custom range section is automatically expanded.'
+                story: 'Absolute ranges open in the From and To fields with the range highlighted on the calendar. Each part of the date and time can be edited with the keyboard.'
             }
         }
     }
 };
 
-export const AutoSelectQuickTab: Story = {
+export const AbsoluteRangeWithTimes: Story = {
     args: {
-        value: '[now-1d TO now]'
+        value: '[2025-01-01T09:30 TO 2025-01-02T17:00]'
+    }
+};
+
+export const WholeMonth: Story = {
+    args: {
+        value: '[2025-01 TO 2025-01]'
     },
     parameters: {
         docs: {
             description: {
-                story: 'When the value matches a quick range option exactly, the Quick Range tab is selected and the item highlighted.'
+                story: 'Calendar expressions resolve to the whole month in the absolute fields. The Relative tab keeps the original expression.'
             }
         }
     }
 };
 
-export const QuickRangeCustomEditing: Story = {
+export const RelativeExpression: Story = {
     args: {
-        value: '[now-90d TO now]'
+        value: '[now-2h/h TO now]'
     },
     parameters: {
         docs: {
             description: {
-                story: 'A persisted quick range should populate the Custom range fields when the section is opened after the picker mounts.'
+                story: 'Custom relative expressions open in the Relative tab so they are not converted to fixed dates.'
             }
         }
     }
 };
 
-export const CommandSearchFiltering: Story = {
+export const Empty: Story = {
     args: {
-        value: '[now-5m TO now]'
-    },
-    parameters: {
-        docs: {
-            description: {
-                story: 'Demonstrates the command palette based quick range filtering UX.'
-            }
-        }
+        value: ''
     }
 };

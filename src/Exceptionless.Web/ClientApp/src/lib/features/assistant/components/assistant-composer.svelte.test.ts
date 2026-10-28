@@ -29,37 +29,84 @@ describe('AssistantComposer', () => {
         expect(onStop).toHaveBeenCalledOnce();
     });
 
-    it('shows and runs the tools command while typing a slash command', async () => {
-        const onSubmit = vi.fn();
-        render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit, value: '/' } });
+    it('shows the page context and lets the user leave it out', async () => {
+        const view = render(AssistantComposer, {
+            props: { context: { kind: 'stack', title: 'NullReferenceException in Checkout' }, onStop: vi.fn(), onSubmit: vi.fn() }
+        });
 
-        const commandMenu = screen.getByLabelText('Exie commands');
-        expect(commandMenu.textContent).toContain('/tools');
-        expect(commandMenu.textContent).toContain('Show tool calls in the conversation');
+        const chip = screen.getByTestId('assistant-context-chip');
+        expect(chip.textContent).toContain('Stack:');
+        expect(chip.textContent).toContain('NullReferenceException in Checkout');
+        expect(screen.getByRole('textbox', { name: 'Message Exie' }).getAttribute('placeholder')).toBe('Ask about this stack…');
 
-        await fireEvent.click(screen.getByText('/tools'));
+        await fireEvent.click(screen.getByRole('button', { name: 'Don’t use this stack as context' }));
 
-        expect(onSubmit).toHaveBeenCalledWith('/tools');
+        expect(screen.queryByTestId('assistant-context-chip')).toBeNull();
+        await fireEvent.click(screen.getByRole('button', { name: 'Use this stack as context' }));
+        expect(screen.getByTestId('assistant-context-chip')).toBeTruthy();
+        view.unmount();
     });
 
-    it('accepts the visible tools command with Enter', async () => {
+    it('offers a project scope only when there is more than one project', async () => {
+        const onProjectChange = vi.fn();
+        const view = render(AssistantComposer, {
+            props: { onProjectChange, onStop: vi.fn(), onSubmit: vi.fn(), projects: [{ id: 'project-1', name: 'Storefront' }] }
+        });
+        expect(screen.queryByTestId('assistant-project-scope')).toBeNull();
+
+        await view.rerender({
+            onProjectChange,
+            onStop: vi.fn(),
+            onSubmit: vi.fn(),
+            projects: [
+                { id: 'project-1', name: 'Storefront' },
+                { id: 'project-2', name: 'Billing API' }
+            ]
+        });
+        await fireEvent.click(screen.getByRole('button', { name: 'Project scope: All projects' }));
+        await fireEvent.click(await screen.findByRole('option', { name: 'Storefront' }));
+
+        expect(onProjectChange).toHaveBeenCalledWith('project-1');
+        view.unmount();
+    });
+
+    it('cancels editing a message with Escape', async () => {
+        const onCancelEdit = vi.fn();
+        render(AssistantComposer, { props: { isEditing: true, onCancelEdit, onStop: vi.fn(), onSubmit: vi.fn(), value: 'Original question' } });
+
+        expect(screen.getByText('Editing message')).toBeTruthy();
+        await fireEvent.keyDown(screen.getByRole('textbox', { name: 'Message Exie' }), { key: 'Escape' });
+
+        expect(onCancelEdit).toHaveBeenCalledOnce();
+    });
+
+    it('skips automatic focus on touch screens so the keyboard does not pop open', () => {
+        const view = render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit: vi.fn() } });
+        const textarea = screen.getByRole('textbox', { name: 'Message Exie' });
+
+        view.component.focus();
+        expect(document.activeElement).not.toBe(textarea);
+
+        view.component.focus({ force: true });
+        expect(document.activeElement).toBe(textarea);
+    });
+
+    it('focuses the message box automatically with a mouse or trackpad', () => {
+        vi.mocked(window.matchMedia).mockImplementationOnce((query: string) => ({ matches: query === '(pointer: fine)', media: query }) as MediaQueryList);
+        const view = render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit: vi.fn() } });
+
+        view.component.focus();
+
+        expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Message Exie' }));
+    });
+
+    it('does not submit an empty prompt', async () => {
         const onSubmit = vi.fn();
-        render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit, value: '/' } });
+        render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit, value: '   ' } });
 
         await fireEvent.keyDown(screen.getByRole('textbox', { name: 'Message Exie' }), { key: 'Enter' });
 
-        expect(onSubmit).toHaveBeenCalledOnce();
-        expect(onSubmit).toHaveBeenCalledWith('/tools');
-    });
-
-    it('submits unmatched slash text as a regular prompt', async () => {
-        const onSubmit = vi.fn();
-        render(AssistantComposer, { props: { onStop: vi.fn(), onSubmit, value: '/unknown' } });
-
-        expect(screen.queryByLabelText('Exie commands')).toBeNull();
-        await fireEvent.keyDown(screen.getByRole('textbox', { name: 'Message Exie' }), { key: 'Enter' });
-
-        expect(onSubmit).toHaveBeenCalledOnce();
-        expect(onSubmit).toHaveBeenCalledWith('/unknown');
+        expect(onSubmit).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: 'Send message' }).hasAttribute('disabled')).toBe(true);
     });
 });

@@ -19,6 +19,7 @@
     import EventDetailSheet from '#features/events/components/event-detail-sheet.svelte';
     import {
         buildFilterCacheKey,
+        deserializeFilters,
         filterChanged,
         filterRemoved,
         getFiltersFromCache,
@@ -28,7 +29,7 @@
         toFilter,
         updateFilterCache
     } from '#features/events/components/filters/helpers.svelte.ts';
-    import { ProjectFilter, StatusFilter, TagFilter } from '#features/events/components/filters/index.ts';
+    import { EnvironmentFilter, ProjectFilter, StatusFilter, TagFilter } from '#features/events/components/filters/index.ts';
     import OrganizationDefaultsFacetedFilterBuilder from '#features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
     import { defaultEventColumnVisibility, getColumns } from '#features/events/components/table/options.svelte.ts';
@@ -61,6 +62,7 @@
     const DEFAULT_FILTERS = [new ProjectFilter([]), new StatusFilter([StackStatus.Open, StackStatus.Regressed])];
     const DEFAULT_PARAMS = {
         filter: '(status:open OR status:regressed)',
+        filters: undefined as string | undefined,
         limit: DEFAULT_LIMIT,
         saved: undefined as string | undefined
     };
@@ -75,6 +77,7 @@
         history: 'push',
         schema: {
             filter: 'string',
+            filters: 'string',
             limit: 'number',
             saved: 'string'
         }
@@ -122,7 +125,10 @@
 
     watch(
         () => organization.current,
-        () => {
+        (_currentOrganizationId, previousOrganizationId) => {
+            if (previousOrganizationId === undefined) {
+                return;
+            }
             updateFilterCache(filterCacheKey(DEFAULT_PARAMS.filter), DEFAULT_FILTERS);
             queryParams.update(DEFAULT_PARAMS);
             paused = false;
@@ -132,11 +138,23 @@
         }
     );
 
-    let filters = $state(getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter));
+    function getQueryFilters() {
+        const cached = getFiltersFromCache(filterCacheKey(queryParams.filter), queryParams.filter);
+        if (queryParams.filters && serializeFilters(cached) !== queryParams.filters) {
+            const restored = deserializeFilters(queryParams.filters);
+            if (toFilter(restored) === queryParams.filter) {
+                return restored;
+            }
+        }
+
+        return cached;
+    }
+
+    let filters = $state(getQueryFilters());
     watch(
-        [() => queryParams.filter],
-        ([filter]) => {
-            filters = getFiltersFromCache(filterCacheKey(filter), filter);
+        [() => queryParams.filter, () => queryParams.filters],
+        () => {
+            filters = getQueryFilters();
         },
         {
             lazy: true
@@ -174,7 +192,8 @@
         updateFilterCache(filterCacheKey(filter), updatedFilters);
         queryParams.update(
             {
-                filter
+                filter,
+                filters: updatedFilters.some((filter) => filter.type === 'environment') ? serializeFilters(updatedFilters) : null
             },
             {
                 history: options.history
@@ -210,6 +229,7 @@
             columnPersistenceKey: 'stream-column-visibility',
             get columns() {
                 return getColumns<EventSummaryModel<SummaryTemplateKeys>>(eventsQueryParameters.mode, {
+                    onEnvironmentClick: (environment) => onFilterChanged(new EnvironmentFilter([environment])),
                     onTagClick: (tag) => onFilterChanged(new TagFilter([tag])),
                     showType: !hasSingleTypeFilter(eventsQueryParameters.filter)
                 })
