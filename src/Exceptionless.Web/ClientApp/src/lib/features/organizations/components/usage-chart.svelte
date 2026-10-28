@@ -80,10 +80,7 @@
             key: 'limit',
             ...chartConfig.limit,
             props: {
-                class: 'usage-limit-line fill-none [stroke-dasharray:4]',
-                line: {
-                    class: 'usage-limit-line [stroke-dasharray:4]'
-                }
+                class: 'usage-limit-line fill-none'
             }
         }
     ]);
@@ -95,15 +92,9 @@
         {data}
         x="date"
         xScale={scaleUtc()}
-        yDomain={[
-            0,
-            Math.max(
-                1,
-                ...data.map((d) =>
-                    Math.max(d.total, d.limit, d.blocked, d.discarded, d.too_big, d.deleted, showOrganizationTotal ? (d.organization_total ?? 0) : 0)
-                )
-            )
-        ]}
+        yDomain={showOrganizationTotal
+            ? undefined
+            : [0, Math.max(1, ...data.map((d) => Math.max(d.total, d.limit, d.blocked, d.discarded, d.too_big, d.deleted)))]}
         seriesLayout="overlap"
         {series}
         props={{
@@ -116,7 +107,8 @@
         }}
     >
         {#snippet tooltip()}
-            <Chart.Tooltip class="min-w-57.5" indicator="line" labelFormatter={(v) => formatDateLabel(v as Date)} />
+            <!-- Preserve the tooltip order used by the original stacked charts. -->
+            <Chart.Tooltip reverse class="min-w-57.5" indicator="line" labelFormatter={(v) => formatDateLabel(v as Date)} />
         {/snippet}
     </AreaChart>
 </Chart.Container>

@@ -25,9 +25,13 @@ describe('Usage chart', () => {
     });
 
     it.each([false, true])('keeps the limit independent of randomized usage (project=%s)', async (showOrganizationTotal) => {
+        // Arrange
         const data = createUsageChartData(showOrganizationTotal ? 912 : 731);
+
+        // Act
         const { container } = render(UsageChart, { data, showOrganizationTotal });
 
+        // Assert
         await waitFor(() => {
             const path = container.querySelector('path.usage-limit-line:not(.lc-area-path)')?.getAttribute('d');
             expect(path).toBeTruthy();
@@ -53,9 +57,13 @@ describe('Usage chart', () => {
     });
 
     it.each([false, true])('plots changing limits and usage above the allowance on the same scale (project=%s)', async (showOrganizationTotal) => {
+        // Arrange
         const data = createUsageChartData(481).map((point, index) => ({ ...point, limit: index < 6 ? 500_000 : 1_000_000 }));
+
+        // Act
         const { container } = render(UsageChart, { data, showOrganizationTotal });
 
+        // Assert
         await waitFor(() => {
             const path = container.querySelector('path.usage-limit-line:not(.lc-area-path)')?.getAttribute('d');
             expect(path).toBeTruthy();

@@ -1,13 +1,30 @@
 <script module lang="ts">
     import { defineMeta } from '@storybook/addon-svelte-csf';
-    import { expect, waitFor } from 'storybook/test';
+    import { expect, userEvent, waitFor, within } from 'storybook/test';
 
     import { createUsageChartData } from './usage-chart.fixtures.ts';
     import UsageChart from './usage-chart.svelte';
 
     async function checkConstantLimit({ canvasElement }: { canvasElement: HTMLElement }) {
-        // A constant allowance must stay horizontal as all usage counters vary.
+        // Arrange
+        const canvas = within(canvasElement);
+        const limitButton = await canvas.findByRole('button', {
+            name: 'Limit'
+        });
+        const seriesCount = canvasElement.querySelectorAll('.lc-area-path').length;
+
+        // Act
+        await userEvent.click(limitButton);
+
+        // Assert
+        await waitFor(() => expect(canvasElement.querySelectorAll('.lc-area-path')).toHaveLength(1));
+
+        // Act
+        await userEvent.click(limitButton);
+
+        // Assert
         await waitFor(() => {
+            expect(canvasElement.querySelectorAll('.lc-area-path')).toHaveLength(seriesCount);
             const limit = canvasElement.querySelector<SVGPathElement>('path.usage-limit-line:not(.lc-area-path)');
             expect(limit).not.toBeNull();
             expect(limit!.getTotalLength()).toBeGreaterThan(100);
