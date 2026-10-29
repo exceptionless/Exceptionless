@@ -70,9 +70,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     private const string AuthorizationCodeCachePrefix = "oauth:code:";
     private const string RefreshTokenLockPrefix = "oauth:refresh:";
-    private const string AccessTokenClientValidityCachePrefix = "oauth:client-valid:";
+    private const string AccessTokenClientValidityCachePrefix = "oauth:client-application:";
     private const int OAuthGrantFamilyPageLimit = 1000;
-    private static readonly TimeSpan AccessTokenClientValidityCacheLifetime = TimeSpan.FromSeconds(30);
     private const string ClientMetadataNotes = "Discovered from OAuth client metadata document.";
     private const string DynamicClientRegistrationNotes = "Registered through OAuth dynamic client registration.";
     private static readonly Regex CodeChallengeRegex = new("^[A-Za-z0-9_-]{43}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -176,14 +175,22 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         clientId = clientId.Trim();
         string cacheKey = GetAccessTokenClientValidityCacheKey(clientId);
-        bool? cached = await cacheClient.GetAsync<bool?>(cacheKey, null);
-        if (cached.HasValue)
-            return cached.Value;
+        string? applicationId = await cacheClient.GetAsync<string?>(cacheKey, null);
+        if (!String.IsNullOrEmpty(applicationId))
+        {
+            var current = await oauthApplicationRepository.GetByIdAsync(applicationId, o => o.Cache(false));
+            if (current is not null && String.Equals(current.ClientId, clientId, StringComparison.Ordinal))
+                return !current.IsDisabled;
 
-        var application = await oauthApplicationRepository.GetByClientIdAsync(clientId);
-        bool isValid = application is { IsDisabled: false };
-        await cacheClient.SetAsync(cacheKey, isValid, AccessTokenClientValidityCacheLifetime);
-        return isValid;
+            await cacheClient.RemoveAsync(cacheKey);
+        }
+
+        // Cache only the lookup identity; application state always comes from storage.
+        var application = await oauthApplicationRepository.GetByClientIdAsync(clientId, o => o.Cache(false));
+        if (application is not null)
+            await cacheClient.SetAsync(cacheKey, application.Id, TimeSpan.FromMinutes(5));
+
+        return application is { IsDisabled: false };
     }
 
     public Task ClearAccessTokenClientValidityCacheAsync(string? clientId)

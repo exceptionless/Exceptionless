@@ -17,6 +17,26 @@ public class TokenRepository : RepositoryOwnedByOrganizationAndProject<Token>, I
         DefaultConsistency = Consistency.Immediate;
     }
 
+    public async Task<Token?> GetForAuthenticationAsync(string tokenId)
+    {
+        if (String.IsNullOrEmpty(tokenId))
+            return null;
+
+        if (IsCacheEnabled)
+        {
+            var cached = (await GetCachedFindHit(new Id(tokenId)))?.Document;
+            if (cached is { Type: TokenType.Access } && String.IsNullOrEmpty(cached.UserId))
+                return cached;
+        }
+
+        // Session state must come from storage even if an older read repopulates the cache.
+        var token = await GetByIdAsync(tokenId, o => o.Cache(false));
+        if (token is { Type: TokenType.Access } && String.IsNullOrEmpty(token.UserId))
+            await AddDocumentsToCacheAsync(token, new CommandOptions<Token>().Cache(), false);
+
+        return token;
+    }
+
     public Task<FindResults<Token>> GetByTypeAndUserIdAsync(TokenType type, string userId, CommandOptionsDescriptor<Token>? options = null)
     {
         return FindAsync(q => q.FieldEquals(t => t.UserId, userId).FieldEquals(t => t.Type, (int)type).Sort(f => f.CreatedUtc), options);
