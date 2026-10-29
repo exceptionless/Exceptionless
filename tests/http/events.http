@@ -87,6 +87,13 @@ Content-Type: application/json
   }
 }
 
+### Find events by reference
+GET {{apiUrl}}/events/by-ref/{{referenceId}}
+Authorization: Bearer {{token}}
+
+### Find project events by reference
+GET {{apiUrl}}/projects/{{projectId}}/events/by-ref/{{referenceId}}
+Authorization: Bearer {{token}}
 ### Submit a deployment environment through GET
 GET {{apiUrl}}/events/submit?access_token={{clientToken}}&environment=Production&message=Deployment+complete
 
