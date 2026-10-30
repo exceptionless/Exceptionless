@@ -3,29 +3,63 @@
 
     import CopyToClipboardButton from '#comp/copy-to-clipboard-button.svelte';
     import { CodeBlock, Muted, P } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
     import * as Card from '#comp/ui/card/index.ts';
     import * as Select from '#comp/ui/select/index.ts';
     import { getServerUrl } from '#shared/api/urls.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     type AiTool = {
         description: string;
         id: AiToolId;
         name: string;
-        steps: CommandStep[];
+        steps: SetupStep[];
     };
 
-    type AiToolId = 'claude' | 'codex' | 'github-copilot' | 'opencode';
+    type AiToolId = NonNullable<typeof queryParams.type>;
 
-    type CommandStep = {
-        code: string;
+    type SetupStep = ({ code: string; language: 'json' | 'shellscript' } | { code?: never; language?: never }) & {
         description: string;
-        language: 'json' | 'shellscript';
+        install?: { label: string; url: string };
         title: string;
     };
 
     let mcpEndpoint = $state('/mcp');
     let mcpServerName = $state('exceptionless');
-    let selectedToolId = $state<AiToolId>('claude');
+
+    const queryParams = createQueryParameters({
+        defaults: {
+            type: 'claude'
+        },
+        history: 'push',
+        schema: {
+            type: '<claude,codex,cursor,github-copilot,opencode,vscode>'
+        }
+    });
+
+    const cursorInstallUrl = $derived(
+        browser && mcpEndpoint !== '/mcp'
+            ? `cursor://anysphere.cursor-deeplink/mcp/install?${new URLSearchParams({
+                  config: btoa(
+                      JSON.stringify({
+                          url: mcpEndpoint
+                      })
+                  ),
+                  name: mcpServerName
+              })}`
+            : undefined
+    );
+    const vscodeInstallUrl = $derived(
+        browser && mcpEndpoint !== '/mcp'
+            ? `vscode:mcp/install?${encodeURIComponent(
+                  JSON.stringify({
+                      name: mcpServerName,
+                      type: 'http',
+                      url: mcpEndpoint
+                  })
+              )}`
+            : undefined
+    );
 
     $effect(() => {
         if (browser) {
@@ -73,6 +107,40 @@
             ]
         },
         {
+            description: 'Use Cursor with the hosted Exceptionless MCP server.',
+            id: 'cursor',
+            name: 'Cursor',
+            steps: [
+                {
+                    code: JSON.stringify(
+                        {
+                            mcpServers: {
+                                [mcpServerName]: {
+                                    url: mcpEndpoint
+                                }
+                            }
+                        },
+                        null,
+                        4
+                    ),
+                    description:
+                        'Add the server to Cursor, or add this configuration to ~/.cursor/mcp.json (or .cursor/mcp.json in your project). Keep any existing servers.',
+                    install: cursorInstallUrl
+                        ? {
+                              label: 'Add to Cursor',
+                              url: cursorInstallUrl
+                          }
+                        : undefined,
+                    language: 'json',
+                    title: 'Add the server'
+                },
+                {
+                    description: 'Connect to the server in Cursor and approve the OAuth sign-in when prompted.',
+                    title: 'Authenticate'
+                }
+            ]
+        },
+        {
             description: 'Use Copilot with the hosted Exceptionless MCP server.',
             id: 'github-copilot',
             name: 'Copilot',
@@ -109,10 +177,44 @@
                     title: 'Authenticate'
                 }
             ]
+        },
+        {
+            description: 'Use VS Code with the hosted Exceptionless MCP server.',
+            id: 'vscode',
+            name: 'VS Code',
+            steps: [
+                {
+                    code: JSON.stringify(
+                        {
+                            servers: {
+                                [mcpServerName]: {
+                                    type: 'http',
+                                    url: mcpEndpoint
+                                }
+                            }
+                        },
+                        null,
+                        4
+                    ),
+                    description: 'Add the server to VS Code, or add this configuration to .vscode/mcp.json in your workspace. Keep any existing servers.',
+                    install: vscodeInstallUrl
+                        ? {
+                              label: 'Add to VS Code',
+                              url: vscodeInstallUrl
+                          }
+                        : undefined,
+                    language: 'json',
+                    title: 'Add the server'
+                },
+                {
+                    description: 'Connect to the server in VS Code and approve the OAuth sign-in when prompted.',
+                    title: 'Authenticate'
+                }
+            ]
         }
     ]);
 
-    const selectedTool = $derived(aiTools.find((tool) => tool.id === selectedToolId) ?? aiTools[0]!);
+    const selectedTool = $derived(aiTools.find((tool) => tool.id === queryParams.type) ?? aiTools[0]!);
 
     const examplePrompts = [
         'What are my top issues this week?',
@@ -128,7 +230,7 @@
     <Card.Root>
         <Card.Header>
             <Card.Title class="text-sm font-medium">Setup Instructions</Card.Title>
-            <Card.Description>Choose an AI tool, then run each command in order.</Card.Description>
+            <Card.Description>Choose an AI tool, then follow the setup steps.</Card.Description>
         </Card.Header>
 
         <Card.Content class="space-y-6">
@@ -137,9 +239,9 @@
                     <P>Select your AI tool.</P>
                     <Select.Root
                         type="single"
-                        value={selectedToolId}
+                        value={selectedTool.id}
                         onValueChange={(value) => {
-                            selectedToolId = value as AiToolId;
+                            queryParams.type = value as AiToolId;
                         }}
                     >
                         <Select.Trigger aria-label="AI tool" class="mt-2 w-full max-w-md">
@@ -157,12 +259,17 @@
                 {#each selectedTool.steps as step (step.title)}
                     <li class="pl-1">
                         <P>{step.description}</P>
-                        <div class="bg-muted relative mt-2 min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={step.code} language={step.language} class="max-h-80 overflow-auto pr-12" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={step.code} />
+                        {#if step.install}
+                            <Button href={step.install.url} class="mt-2">{step.install.label}</Button>
+                        {/if}
+                        {#if step.code && step.language}
+                            <div class="bg-muted relative mt-2 min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={step.code} language={step.language} class="max-h-80 overflow-auto pr-12" />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={step.code} />
+                                </div>
                             </div>
-                        </div>
+                        {/if}
                     </li>
                 {/each}
             </ol>
