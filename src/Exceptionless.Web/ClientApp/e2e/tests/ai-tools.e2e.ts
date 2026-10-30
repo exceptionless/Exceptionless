@@ -4,7 +4,7 @@ test.use({ e2eUseGeneratedUser: true });
 
 test('AI tool setup links select the requested tool and Cursor offers an install link', async ({ browser, e2eApi, e2eScenario, page }) => {
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.goto('/account/ai-tools?tool=cursor&source=shared');
+    await page.goto('/account/ai-tools?type=cursor&source=shared');
 
     const toolSelector = page.getByRole('combobox', { name: 'AI tool' });
     await expect(toolSelector).toHaveText('Cursor');
@@ -30,19 +30,19 @@ test('AI tool setup links select the requested tool and Cursor offers an install
     await toolSelector.click();
     await page.getByRole('option', { exact: true, name: 'Codex' }).click();
     await expect.poll(() => new URL(page.url()).searchParams.get('source')).toBe('shared');
-    await expect.poll(() => new URL(page.url()).searchParams.get('tool')).toBe('codex');
+    await expect.poll(() => new URL(page.url()).searchParams.get('type')).toBe('codex');
     await page.goBack();
     await expect(toolSelector).toHaveText('Cursor');
 
     await page.getByRole('button', { name: 'Copy link' }).click();
     const copiedLink = await page.evaluate(() => navigator.clipboard.readText());
-    expect(copiedLink).toBe(new URL('/account/ai-tools?tool=cursor', page.url()).href);
+    expect(copiedLink).toBe(new URL('/account/ai-tools?type=cursor', page.url()).href);
     await page.goto(copiedLink);
     await expect(toolSelector).toHaveText('Cursor');
 
     await toolSelector.click();
     await page.getByRole('option', { exact: true, name: 'Codex' }).click();
-    await expect(page).toHaveURL(/\?tool=codex/);
+    await expect(page).toHaveURL(/\?type=codex/);
     await expect(page.getByText(/codex mcp add/)).toBeVisible();
     await page.reload();
     await expect(toolSelector).toHaveText('Codex');
@@ -59,7 +59,7 @@ test('AI tool setup links select the requested tool and Cursor offers an install
         ['opencode', 'OpenCode'],
         ['unknown', 'Claude Code']
     ]) {
-        await page.goto(`/account/ai-tools?tool=${id}`);
+        await page.goto(`/account/ai-tools?type=${id}`);
         await expect(toolSelector).toHaveText(name!);
     }
 
@@ -68,7 +68,7 @@ test('AI tool setup links select the requested tool and Cursor offers an install
         const signedOutPage = await signedOutContext.newPage();
         await signedOutPage.goto(copiedLink);
         await expect(signedOutPage.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
-        await expect.poll(() => new URL(signedOutPage.url()).searchParams.get('redirect')).toBe('/account/ai-tools?tool=cursor');
+        await expect.poll(() => new URL(signedOutPage.url()).searchParams.get('redirect')).toBe('/account/ai-tools?type=cursor');
         await signedOutPage.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
         await signedOutPage.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);
         await signedOutPage.getByRole('button', { exact: true, name: 'Login' }).click();

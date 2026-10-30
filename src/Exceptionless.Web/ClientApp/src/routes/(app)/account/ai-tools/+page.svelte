@@ -17,7 +17,7 @@
         steps: SetupStep[];
     };
 
-    type AiToolId = NonNullable<typeof queryParams.tool>;
+    type AiToolId = NonNullable<typeof queryParams.type>;
 
     type SetupStep = ({ code: string; language: 'json' | 'shellscript' } | { code?: never; language?: never }) & {
         description: string;
@@ -30,11 +30,11 @@
 
     const queryParams = createQueryParameters({
         defaults: {
-            tool: 'claude'
+            type: 'claude'
         },
         history: 'push',
         schema: {
-            tool: '<claude,codex,cursor,github-copilot,opencode>'
+            type: '<claude,codex,cursor,github-copilot,opencode>'
         }
     });
 
@@ -165,8 +165,8 @@
         }
     ]);
 
-    const selectedTool = $derived(aiTools.find((tool) => tool.id === queryParams.tool) ?? aiTools[0]!);
-    const toolLink = $derived(browser ? new URL(`${resolve('/(app)/account/ai-tools')}?tool=${selectedTool.id}`, window.location.origin).href : '');
+    const selectedTool = $derived(aiTools.find((tool) => tool.id === queryParams.type) ?? aiTools[0]!);
+    const toolLink = $derived(browser ? new URL(`${resolve('/(app)/account/ai-tools')}?type=${selectedTool.id}`, window.location.origin).href : '');
 
     const examplePrompts = [
         'What are my top issues this week?',
@@ -194,7 +194,7 @@
                             type="single"
                             value={selectedTool.id}
                             onValueChange={(value) => {
-                                queryParams.tool = value as AiToolId;
+                                queryParams.type = value as AiToolId;
                             }}
                         >
                             <Select.Trigger aria-label="AI tool" class="w-full max-w-md">
