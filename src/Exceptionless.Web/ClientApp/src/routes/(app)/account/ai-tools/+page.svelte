@@ -21,7 +21,7 @@
 
     type SetupStep = ({ code: string; language: 'json' | 'shellscript' } | { code?: never; language?: never }) & {
         description: string;
-        installUrl?: string;
+        install?: { label: string; url: string };
         title: string;
     };
 
@@ -115,7 +115,12 @@
                     ),
                     description:
                         'Add the server to Cursor, or add this configuration to ~/.cursor/mcp.json (or .cursor/mcp.json in your project). Keep any existing servers.',
-                    installUrl: cursorInstallUrl,
+                    install: cursorInstallUrl
+                        ? {
+                              label: 'Add to Cursor',
+                              url: cursorInstallUrl
+                          }
+                        : undefined,
                     language: 'json',
                     title: 'Add the server'
                 },
@@ -216,8 +221,8 @@
                 {#each selectedTool.steps as step (step.title)}
                     <li class="pl-1">
                         <P>{step.description}</P>
-                        {#if step.installUrl}
-                            <Button href={step.installUrl} class="mt-2">Add to Cursor</Button>
+                        {#if step.install}
+                            <Button href={step.install.url} class="mt-2">{step.install.label}</Button>
                         {/if}
                         {#if step.code && step.language}
                             <div class="bg-muted relative mt-2 min-h-13 overflow-hidden rounded-md">
