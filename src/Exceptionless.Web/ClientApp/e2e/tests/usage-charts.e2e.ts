@@ -3,6 +3,11 @@ import { expect, test } from '../fixtures/e2e-test';
 
 test.use({ locale: 'en-US', timezoneId: 'UTC' });
 
+test.afterEach(async ({ page }) => {
+    await page.unrouteAll({ behavior: 'wait' });
+    await page.close();
+});
+
 test('usage charts preserve labels, hover values, and legend interactions', async ({ e2eScenario, page }) => {
     // Arrange
     const data = createUsageChartData();
