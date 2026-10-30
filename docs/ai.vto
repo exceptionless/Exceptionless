@@ -1,0 +1,264 @@
+---
+title: AI error monitoring
+metaTitle: "AI error monitoring: Exie assistant and MCP server"
+layout: layouts/base.vto
+description: Exceptionless brings AI to error monitoring. Ask Exie about production errors, or connect Claude Code, Codex, or GitHub Copilot through the MCP server.
+---
+<section class="page-hero">
+  <div class="container">
+    <p class="eyebrow">{{ icons["ai-sparkle"] }} AI in Exceptionless</p>
+    <h1>Error monitoring built for <span class="text-gradient">the age of AI agents</span><span class="ai-mark">{{ icons["ai-sparkle"] }}</span></h1>
+    <p>Exie investigates errors with you inside Exceptionless. The MCP server hands the same production context to the coding agent writing your fix. Both work from real stack traces and events, with your permissions.</p>
+    <div class="btn-group">
+      <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="ai-hero">Get started {{ icons["arrow-right"] }}</a>
+      <a class="btn btn-secondary btn-lg" href="/docs/ai/mcp-server/">Connect your coding agent</a>
+    </div>
+  </div>
+</section>
+
+<section class="section section-sm">
+  <div class="container">
+    <div class="grid grid-3">
+      <a class="card reveal" href="#exie">
+        <span class="feature-icon">{{ icons.exie }}</span>
+        <h3>Exie, in the app</h3>
+        <p>Your debugging sidekick. Ask in plain English and Exie digs through your stacks and events to explain what broke and why.</p>
+      </a>
+      <a class="card reveal" href="#mcp">
+        <span class="feature-icon">{{ icons.plug }}</span>
+        <h3>MCP, in your editor</h3>
+        <p>Claude Code, Codex, GitHub Copilot, and OpenCode can query Exceptionless while they work on the fix. Included on every plan.</p>
+      </a>
+      <a class="card reveal" href="#docs-for-ai">
+        <span class="feature-icon">{{ icons["book-open"] }}</span>
+        <h3>Docs your AI can read</h3>
+        <p>Every docs page is available as Markdown, with an llms.txt index, so assistants answer from the source.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="exie">
+  <div class="container">
+    <div class="feature-row reveal">
+      <div class="feature-copy">
+        <p class="eyebrow">{{ icons["ai-sparkle"] }} Meet Exie</p>
+        <h2>An assistant that actually knows your errors</h2>
+        {{ include "partials/exie-says.vto" { text: "I read stack traces so you don't have to at 2 a.m. Ask me what's broken, what changed, or what to fix first, and I'll show you what I found." } }}
+        <p>Open <strong>Ask Exie</strong> from anywhere in the app, or press <strong>Fix</strong> on a stack. Exie picks up the organization, project, stack, or event you are looking at and investigates with the same tools you use.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Triage:</strong> "What are my top issues this week?" or "What changed after version 1.0.2?"</span></li>
+          <li>{{ icons.check }}<span><strong>Root cause:</strong> explanations grounded in your stack traces, requests, and environment data, with links back to every stack it mentions.</span></li>
+          <li>{{ icons.check }}<span><strong>Up front about limits:</strong> when the data can't answer a question, Exie says so and tells you what it could find.</span></li>
+          <li>{{ icons.check }}<span><strong>Acts only on request:</strong> mark a stack fixed in a version, snooze it, flag it critical, or attach an issue link, only when you ask for that change.</span></li>
+          <li>{{ icons.check }}<span><strong>Your access, nothing more:</strong> Exie works inside the current organization and only sees what your account can see.</span></li>
+        </ul>
+        <p class="note">Exie is included with Medium plans and up, with a monthly AI usage allowance. Self-hosted installs can enable it with their own model provider key.</p>
+      </div>
+      <div class="feature-media">
+        {{ productShot("exie", "Exie answering which errors affected the most users this week") }}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-subtle" id="mcp">
+  <div class="container">
+    <div class="feature-row reverse reveal">
+      <div class="feature-copy">
+        <p class="eyebrow">{{ icons.plug }} MCP server</p>
+        <h2>Production errors, inside your coding agent</h2>
+        <p>The Model Context Protocol lets AI coding agents call tools. Add the Exceptionless MCP server, approve access in your browser, and your agent can find the error, read the stack trace and request that caused it, then write the fix and mark the stack fixed.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Hosted endpoint:</strong> <code>https://be.exceptionless.io/mcp</code> over streamable HTTP.</span></li>
+          <li>{{ icons.check }}<span><strong>OAuth sign-in:</strong> no API keys to paste into config files.</span></li>
+          <li>{{ icons.check }}<span><strong>Works with your tools:</strong> setup commands for Claude Code, Codex, GitHub Copilot CLI, and OpenCode.</span></li>
+          <li>{{ icons.check }}<span><strong>On every plan:</strong> included with all plans, including Free, at no extra cost.</span></li>
+        </ul>
+      </div>
+      <div class="feature-media">
+        <div class="terminal">
+          <div class="terminal-bar" aria-hidden="true"><span></span><span></span><span></span><em>Terminal</em></div>
+<pre><span class="t-prompt">&gt;</span> Find recent errors for order 98213 and fix the cause.
+
+<span class="t-tool">● exceptionless.search_events</span>
+<span class="t-tool">● exceptionless.get_event</span>
+<span class="t-tool">● exceptionless.get_stack</span>
+
+The order failed with a TimeoutException in PaymentClient.
+Charge: the gateway call has no retry and a 5 second
+timeout. I added a retry with backoff and a test.
+
+<span class="t-prompt">&gt;</span> Mark that stack fixed in 2.8.1.
+
+<span class="t-tool">● exceptionless.update_stack_status</span>
+<span class="t-dim">Stack marked fixed in 2.8.1.</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head reveal">
+      <h2 class="section-title">Set up in under a minute</h2>
+      <p class="section-lead">Run the command for your agent, then approve access when the browser opens. You choose which organizations it can use.</p>
+    </div>
+
+    <div class="code-window code-window-dark reveal" data-tabs>
+      <div class="tab-list" role="tablist" aria-label="MCP setup commands">
+        <button type="button" role="tab" id="tab-claude" aria-controls="panel-claude" aria-selected="true">Claude Code</button>
+        <button type="button" role="tab" id="tab-codex" aria-controls="panel-codex" aria-selected="false" tabindex="-1">Codex</button>
+        <button type="button" role="tab" id="tab-copilot" aria-controls="panel-copilot" aria-selected="false" tabindex="-1">GitHub Copilot</button>
+        <button type="button" role="tab" id="tab-opencode" aria-controls="panel-opencode" aria-selected="false" tabindex="-1">OpenCode</button>
+      </div>
+      <div role="tabpanel" id="panel-claude" aria-labelledby="tab-claude">
+<pre><code>claude mcp add --transport http exceptionless https://be.exceptionless.io/mcp
+claude mcp login exceptionless</code></pre>
+      </div>
+      <div role="tabpanel" id="panel-codex" aria-labelledby="tab-codex" hidden>
+<pre><code>codex mcp add exceptionless --url https://be.exceptionless.io/mcp</code></pre>
+      </div>
+      <div role="tabpanel" id="panel-copilot" aria-labelledby="tab-copilot" hidden>
+<pre><code>copilot mcp add --transport http exceptionless https://be.exceptionless.io/mcp
+copilot -i "List my Exceptionless projects"</code></pre>
+      </div>
+      <div role="tabpanel" id="panel-opencode" aria-labelledby="tab-opencode" hidden>
+<pre><code>opencode mcp add exceptionless --url https://be.exceptionless.io/mcp
+opencode mcp auth exceptionless</code></pre>
+      </div>
+    </div>
+    <p class="center-link reveal"><a class="text-link" href="/docs/ai/mcp-server/">Read the MCP server guide {{ icons["arrow-right"] }}</a></p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">{{ icons["shield-check"] }} Safe by design</p>
+      <h2 class="section-title">AI that only does what you approve</h2>
+      <p class="section-lead">Giving an AI access to production data should not mean giving up control. Exie and the MCP server share the same guardrails.</p>
+    </div>
+    <div class="grid grid-3">
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons.lock }}</span>
+        <h3>Scoped OAuth access</h3>
+        <p>Agents sign in with OAuth and PKCE. You pick the organizations and permissions at approval time, and access tokens expire after an hour.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons["eye-off"] }}</span>
+        <h3>Read-only if you want</h3>
+        <p>Uncheck the Stacks Write permission on the consent screen and your agent can investigate but never change anything.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons["rotate-ccw"] }}</span>
+        <h3>Revoke anytime</h3>
+        <p>See every connected application under your account and revoke one with a click. Leaving an organization removes its access too.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons.layers }}</span>
+        <h3>Narrow write actions</h3>
+        <p>Changes are limited to stack status, snoozing, critical flags, and reference links. Write tools are marked so your agent can ask before using them.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons["shield-check"] }}</span>
+        <h3>Prompt-injection aware</h3>
+        <p>Event messages and payloads are treated as untrusted data, so instructions hidden in an error message are not followed.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons.github }}</span>
+        <h3>Open source</h3>
+        <p>The MCP server and Exie ship in the same Apache 2.0 codebase as the rest of Exceptionless, so you can read exactly what they do.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-subtle" id="docs-for-ai">
+  <div class="container">
+    <div class="feature-row reveal">
+      <div class="feature-copy">
+        <p class="eyebrow">{{ icons["book-open"] }} Agent-ready documentation</p>
+        <h2>Docs your assistant can actually read</h2>
+        <p>When your AI tool sets up Exceptionless or answers a question about it, it should read the real documentation, not guess. Every page is published in formats language models handle well.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><a href="/llms.txt"><code>/llms.txt</code></a> indexes every docs page with a short summary.</span></li>
+          <li>{{ icons.check }}<span><a href="/llms-full.txt"><code>/llms-full.txt</code></a> contains the complete documentation in one file.</span></li>
+          <li>{{ icons.check }}<span>Any docs URL works as Markdown: add <code>.md</code>, like <a href="/docs/getting-started.md"><code>/docs/getting-started.md</code></a>.</span></li>
+          <li>{{ icons.check }}<span>Every docs page has <strong>Copy page as Markdown</strong>, <strong>Open in ChatGPT</strong>, and <strong>Open in Claude</strong> buttons.</span></li>
+        </ul>
+      </div>
+      <div class="feature-media">
+        <div class="terminal">
+          <div class="terminal-bar" aria-hidden="true"><span></span><span></span><span></span><em>llms.txt</em></div>
+<pre><span class="t-tool"># Exceptionless</span>
+
+<span class="t-dim">&gt; Open source error monitoring for .NET,
+&gt; JavaScript, and React Native...</span>
+
+<span class="t-tool">## Docs: .NET client</span>
+
+- [Configuration](.../configuration.md)
+- [Sending Events](.../sending-events.md)
+- [Troubleshooting](.../troubleshooting.md)
+
+<span class="t-tool">## Docs: AI</span>
+
+- [MCP server](.../docs/ai/mcp-server.md)</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="section-title">AI questions, answered</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>What is Exie? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Exie is the AI assistant built into Exceptionless. It answers questions about your errors in plain English by searching stacks, reading events, and explaining the likely cause, and it can update a stack when you explicitly ask it to.</div>
+      </details>
+      <details>
+        <summary>Which plans include Exie? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Exie is included with Medium, Large, Extra Large, and Enterprise plans, each with a monthly AI usage allowance. Self-hosted installs can enable Exie by configuring their own model provider API key.</div>
+      </details>
+      <details>
+        <summary>What is the Exceptionless MCP server? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">It is a Model Context Protocol server at <code>https://be.exceptionless.io/mcp</code> that gives AI coding agents tools to search stacks and events, read event details, count events over time, and, with your permission, update stacks.</div>
+      </details>
+      <details>
+        <summary>Is the MCP server included in my plan? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Yes. The MCP server is included with every plan, including Free. Agent requests work like any other API access, so there is nothing extra to buy.</div>
+      </details>
+      <details>
+        <summary>Which AI coding agents work with Exceptionless? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">The app gives copy-paste setup commands for Claude Code, Codex, GitHub Copilot CLI, and OpenCode. Other MCP clients that support remote streamable HTTP servers with OAuth sign-in can connect with the same URL.</div>
+      </details>
+      <details>
+        <summary>Can an AI agent change or delete my data? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Agents can only change stack status, snooze stacks, mark them critical, and add or remove reference links, and only if you grant the Stacks Write permission. They cannot delete events, projects, or organizations.</div>
+      </details>
+      <details>
+        <summary>What data does Exie send to the AI model? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Your question, recent messages in the conversation, the page you are on, and the stack and event details Exie looks up to answer. Large event payloads are truncated before they are sent.</div>
+      </details>
+      <details>
+        <summary>Does the MCP server work with self-hosted Exceptionless? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Yes. The MCP server is part of the Exceptionless web app, so a self-hosted install serves it at <code>/mcp</code> on your own domain. See the <a href="/docs/ai/mcp-server/">MCP server guide</a> for details.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="section section-sm">
+  <div class="container">
+    <div class="cta reveal">
+      <h2>Give your AI the context to fix it</h2>
+      <p>Create an account, send your first errors, and connect Exie or your coding agent in minutes.</p>
+      <div class="btn-group">
+        <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="ai-footer">Get started {{ icons["arrow-right"] }}</a>
+        <a class="btn btn-secondary btn-lg" href="/docs/ai/">Read the AI docs</a>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,49 +1,147 @@
 ---
-title: "Troubleshooting"
+title: "Troubleshoot the JavaScript client"
+navTitle: "Troubleshooting"
+metaTitle: "Troubleshooting the Exceptionless JavaScript client"
+description: "Find out why JavaScript events don't reach Exceptionless: turn on debug logging, read server responses, flush the queue, and check filters and privacy settings."
 order: 6
+sources:
+  - Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts
+  - Exceptionless.JavaScript:packages/core/src/configuration/Configuration.ts
+  - Exceptionless.JavaScript:packages/core/src/queue/DefaultEventQueue.ts
+  - Exceptionless.JavaScript:packages/core/src/submission/DefaultSubmissionClient.ts
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/EventExclusionPlugin.ts
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/DuplicateCheckerPlugin.ts
+  - Exceptionless.JavaScript:packages/core/src/logging/ILog.ts
+  - Exceptionless.JavaScript:packages/browser/src/plugins/BrowserIgnoreExtensionErrorsPlugin.ts
+  - Exceptionless.JavaScript:packages/browser/package.json
+  - Exceptionless.JavaScript:.agents/skills/exceptionless-javascript/references/troubleshooting.md
 ---
 
-# Troubleshooting
+# Troubleshoot the JavaScript client
 
-If your events aren't being sent to the server there are a few things that you can try to diagnose the issue.
+The client doesn't throw when it can't send events, so a bad API key or an unreachable server fails quietly. Start with
+debug logging, which shows every step from queuing an event to the server's response.
 
-## Update Your Client
-
-Please make sure that you are using the latest version of the client.
-
-## Ensure the Queue has Time to Process
-
-If you are using Exceptionless in a scenario where an event is submitted and the process is immediately terminated, then you will need to make sure that the queue is processed before the application ends. Please note that the client will try to do this automatically.
-
-Events are queued and sent in the background, if the application isn't running then the events cannot be sent. You can manually force the queue to be processed by calling the following line of code before before the process ends:
+## Turn on debug logging
 
 ```js
-import { Exceptionless } from "@exceptionless/browser";
-await Exceptionless.processQueue();
+import { Exceptionless } from "@exceptionless/browser"
+
+await Exceptionless.startup((c) => {
+  c.apiKey = "YOUR_API_KEY"
+  c.useDebugLogger()
+})
 ```
 
-This will cause the event queue to be processed asynchronously and the events to be reported. If this doesn’t solve the issue then please enable client logging and send us the log file. You can also attempt to pass true to `process(true)` to try and process the queue synchronously. _Please note that sending synchronously depends on specific api's that may not be available, so it may not send synchronously._
+The client writes to the console: the browser's developer tools, your Node.js output, or the Metro logs in React Native.
+When events flow, you see lines such as `Enqueued event`, `Sending 1 events to ...`, and `Sent 1 events`.
 
-## Enable Client Logging
+To send the client's messages somewhere else, set `c.services.log` to an object with `trace`, `info`, `warn`, and
+`error` methods. Turn debug logging off again in production.
 
-The Exceptionless client can be configured to write diagnostic messages to the console to help diagnose any issues with the client.
+## Nothing is sent
+
+Check these in order:
+
+1. **`startup` ran.** Events submitted before `startup`, or from a different copy of the package, aren't sent. Import
+   `Exceptionless` from the same package everywhere.
+2. **The API key is right.** The client sends nothing while `apiKey` is shorter than 10 characters, and logs
+   `Exceptionless is not configured and will not process events.` Copy the key from your project's **API Keys** page,
+   and make sure it isn't disabled.
+3. **The client is enabled.** `c.enabled = false` discards every event.
+4. **The process lived long enough.** Events wait in a queue that's sent every 10 seconds. A script, serverless
+   function, or page that ends first loses them. Call `await Exceptionless.processQueue()` before it ends. See
+   [Node.js and serverless](/docs/clients/javascript/guides/node/#short-lived-processes-and-serverless).
+5. **The request isn't blocked.** In the browser, look for a failed request in the network tab. If your site has a
+   Content Security Policy, its `connect-src` must allow your Exceptionless server. For the hosted service, set
+   `c.serverUrl = "https://api.exceptionless.io"` and allow that origin. Exceptionless accepts cross-origin requests
+   from any site, so on a self-hosted server, check that a proxy in front of it doesn't block them.
+
+## The client stopped sending
+
+The client pauses when the server turns events away. The debug log shows which case you hit:
+
+| Server response                              | Log message                                                     | What the client does                                                                                       |
+| -------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `401` or `403`                               | `Unable to authenticate, please check your configuration.`      | Discards the batch and pauses for 15 minutes. Check the API key.                                           |
+| `402`                                        | `Too many events have been submitted, please upgrade your plan` | Your organization is over its plan's limit. Discards the queue and new events until the next quarter hour. |
+| `429` or `503`                               | `Server returned service unavailable`                           | Keeps the queue and pauses until the next quarter hour.                                                    |
+| `400` or `404`                               | `Error while trying to submit data: ...`                        | Discards the batch and pauses for 4 hours. A `404` usually means a wrong `serverUrl`.                      |
+| `413`                                        | `Event submission discarded for being too large.`               | Retries with smaller batches, and discards an event that's too large on its own.                           |
+| No response, such as a network or CORS error | `Error processing queue: ...`                                   | Keeps the queue and pauses until the next quarter hour.                                                    |
+| Any other error status                       | `Error submitting events: ...`                                  | Keeps the queue and pauses until the next quarter hour.                                                    |
+
+Reloading the page or restarting the process clears a pause.
+
+## Some events are missing
+
+The client drops events on purpose in these cases:
+
+- **A configuration value turns them off**, such as a `@@log` minimum level or `@@error:<type>` set to `false`. See
+  [built-in keys](/docs/clients/javascript/client-configuration-values/#built-in-keys).
+- **A plugin cancelled them**, by setting `context.cancelled = true` or by throwing.
+- **The user agent matches a bot pattern** from your project's **Spam Detection** list or `addUserAgentBotPatterns`.
+- **The error came from a browser extension.** The browser client ignores errors whose stack trace has an
+  `-extension://` URL.
+- **The error repeated within 30 seconds.** Repeats are held and sent later as one event with a count.
+
+`submit()` returns the plugin context, and `context.cancelled` is `true` when the client dropped the event:
 
 ```js
-import { Exceptionless } from "@exceptionless/browser";
+import { Exceptionless } from "@exceptionless/browser"
 
-await Exceptionless.startup(c => {
-  c.useDebugLogger();
-});
+const context = await Exceptionless.submitLog("checkout", "Order placed", "info")
+console.log("Dropped:", context.cancelled)
 ```
 
-## Check Your API Key
+## Some data is missing
 
-By design, an invalid API key provided to the Exceptionless client is not going to crash your application. Be sure to check the log outputs as this information will tell you if you have provided an invalid key.
+If cookies, headers, query strings, request bodies, IP addresses, or extended data values are missing, check the
+`include*` settings and your data exclusions, both in code and in your project's **Data Exclusions** setting. See
+[Private information](/docs/clients/javascript/client-configuration/#general-data-protection-regulation).
 
-## Debugging Source Code
+## Stack traces are minified
 
-You can also debug the Exceptionless source code by using the unmagnified version and set breakpoints in your browsers developer tools.
+Production bundles need source maps for readable stack traces. See [Source maps](/docs/clients/javascript/source-maps/).
+For Node.js, run with `--enable-source-maps`.
 
----
+## Update the client
 
-[Next > JavaScript Example](/docs/clients/javascript/javascript-example)
+Make sure you have the current release, and that every `@exceptionless/*` package you use is the same version:
+
+```bash
+npm install @exceptionless/browser@latest
+```
+
+To step through the client's code in the browser, load the unminified bundle from the CDN, which ships with a source
+map:
+
+```html
+<script type="module">
+import { Exceptionless } from "https://unpkg.com/@exceptionless/browser@3/dist/index.bundle.js"
+
+await Exceptionless.startup((c) => {
+  c.apiKey = "YOUR_API_KEY"
+  c.useDebugLogger()
+})
+</script>
+```
+
+If you're still stuck, [open an issue](https://github.com/exceptionless/Exceptionless.JavaScript/issues/new) with the
+debug log.
+
+## Ask Exie
+
+```prompt exie
+Did this project receive any events in the last 15 minutes?
+```
+
+```prompt exie
+When did each of my projects last receive an event?
+```
+
+With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can check while it works:
+
+```prompt agent
+I just added Exceptionless to this app. Throw a test error, run the app, and then check my Exceptionless project for the event. If it doesn't arrive, turn on useDebugLogger, read the client's output, and fix the setup.
+```

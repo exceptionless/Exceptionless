@@ -1,141 +1,175 @@
 ---
-title: "Filtering & Searching"
+title: "Filtering and searching"
+metaTitle: "Filtering and searching events in Exceptionless"
+description: "Narrow any Exceptionless list with the filter bar: field filters, environments, raw filter queries, and the date range."
+sources:
+  - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/faceted-filter/faceted-filter-builder.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/faceted-filter/faceted-filter-keyword.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/faceted-filter/faceted-filter-actions.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/filters/organization-defaults-faceted-filter-builder.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/filters/models.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/filters/environment-faceted-filter.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/filters/date-faceted-filter.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/date-range-picker/date-range-picker.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/events-dashboard-chart.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/views/overview.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/premium-filter.ts
+  - src/Exceptionless.Core/Seed/predefined-saved-views.json
 ---
 
-# Filtering & Searching
+# Filtering and searching
 
-- [Filter by Organization \& Project](#filter-by-organization--project)
-- [Filter by Time Frame](#filter-by-time-frame)
-- [Filter by Environment](#filter-by-environment)
-- [Filter / Search by Specific Criteria](#filter--search-by-specific-criteria)
-- [Searchable Fields \& Requirements](#searchable-fields--requirements)
-- [Multiple Queries](#multiple-queries)
-- [Wild Cards](#wild-cards)
-- [Exclusions](#exclusions)
-- [Set and Unset Fields](#set-and-unset-fields)
-- [Ranges](#ranges)
-- [Custom Extended Data](#custom-extended-data)
-- [Demo Video](#demo-video)
+Every list in Exceptionless, such as **Stacks**, **Events**, and **Sessions**, has a filter bar. Use it to narrow the
+list by project, status, type, environment, tag, or any other field, and to set the time range. The filters belong to
+the [saved view](/docs/saved-views/) you're looking at; there's no global filter that follows you between pages.
 
-## Filter by Organization & Project
+![Stacks list filtered by project, tag, and date range](/assets/img/docs/filtering-and-searching-filtered-view-light.webp)
 
-The dashboard loads up with all projects selected by default.
+The filter bar sits next to the view's name. Each filter is a button that shows its field and value. Changes apply right
+away, and the address bar updates so you can share a link to exactly what you see.
 
-Click on the “All Projects” drop down in the top left of the dashboard and select your organization or project to filter the data to your liking.
+## Add a filter
 
-![Exceptionless Filter Project Organization](img/filter-by-project-organization.png)
+1. Select **Manage filters** (the **Filter** button when the view has no filters yet).
+2. Type to find a field, then select it.
+3. Pick or enter a value. Text filters apply when you press <kbd>Enter</kbd>; <kbd>Escape</kbd> cancels.
 
-## Filter by Time Frame
+![Add filter menu listing the fields you can filter by](/assets/img/docs/filtering-and-searching-add-filter-light.webp)
 
-Click on the calendar icon in the header to select from multiple preset time frame filters, or click "Custom" and select your own.
+The most common filters are **Project**, **Status**, **Type**, **Environment**, **Tag**, **Log Level**, **Message**,
+**User**, and **Version**. You can also filter by **Source**, **Error Type**, **Error Code**, **Browser**, **OS**,
+**Device**, **Machine Name**, **Ip Address**, **Http Path**, **Country**, **Reference**, **Session**, **First
+Occurrence**, **Is Bot**, **Value**, **Count**, and more.
 
-![Exceptionless Filter Time Frame](img/filter-by-timeframe.png)
+Selecting more than one value in a filter, such as two statuses, matches either value. Different filters all have to
+match.
 
-## Filter by Environment
+A text, number, date, or version filter with **No Value** matches items where that field isn't set. A **Project** filter
+with no value includes every project.
 
-Choose **Manage filters → Environment** to select production, staging, development, or a custom name. Select **Unspecified** for events without this property, or clear the selection to include all environments. See [Environments](/docs/environments/) for client configuration and shared stack behavior.
+To change a filter, select its button. At the bottom of each filter:
 
-## Filter / Search by Specific Criteria
+- **Clear value** empties it.
+- **Hide filter** keeps it in effect but hides its button. **Show filter** brings it back.
+- **Remove filter** removes it.
 
-Click the magnifying glass to search by specific criteria.
+## Filter from an event or stack
 
-You can filter by tag, ID, organization, project, stack, type, value, IP, architecture, user, and much more.
+You don't have to start from the filter bar. In an event's or stack's details, select the filter icon next to a value,
+such as its type, source, version, environment, or user, to filter the list by it. Select a tag to filter by that tag,
+and select **Open events for this stack** on a stack to list its events. See [Events](/docs/events/).
 
-Some searches, such as ID, require a prefix (“id:”) on the search, but others, such as error.message, can be entered as strings (“A NullReferenceException occurred”).
+## Hidden filters
 
-View a complete list of searchable terms, examples, and FAQs below.
+Views can include filters you don't see. The built-in views use them to keep the list focused: **Stacks** > **All** has
+a hidden **Status** filter for open and regressed stacks, and **Events** > **Errors** hides its **Type** and **Status**
+filters.
 
-![Exceptionless Filter Search Criteria Field](img/filter-by-search-filter-criteria.png)
+The number on **Manage filters** is the count of hidden filters. Open it and select the eye icon to show them, or the
+eraser icon (**Clear all filters**) to remove every filter except the date range.
 
-## Searchable Fields & Requirements
+Selecting a field in **Manage filters** that the view already filters on, such as **Status**, opens that filter instead
+of adding a second one, even when it's hidden.
 
-| TERM               | EXAMPLE                                                                                                              | FIELD REQUIRED? (field:term) | DESCRIPTION                                   |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------- | ---------------------------- | --------------------------------------------- |
-| `*`                | `*`                                                                                                                  | false                        | Shows all events (including hidden and fixed) |
-| id                 | `id:54d8315ce6bb2d0500bcc7b4`                                                                                        | true                         | Documents id                                  |
-| organization       | `organization:54d8315ce6bb2d0500bcc7b4`                                                                              | true                         | Organization id                               |
-| project            | `project:54d8315ce6bb2d0500bcc7b4`                                                                                   | true                         | Project id                                    |
-| stack              | `stack:54d8315ce6bb2d0500bcc7b4`                                                                                     | true                         | Stack id                                      |
-| reference          | `reference:12345678`                                                                                                 | true                         | Reference id                                  |
-| session            | `session:12345678`                                                                                                   | true                         | Session id                                    |
-| environment        | `environment:production` or `_missing_:environment` | true | Deployment environment |
-| type               | `type:error`                                                                                                         | true                         | Event type                                    |
-| source             | `source:"my log source"` or `"my log source"`                                                                        | false                        | Event source                                  |
-| level              | `level:Error`                                                                                                        | true                         | Log level                                     |
-| date               | `date:"2020-10-16T12:00:00.000"`                                                                                     | true                         | Occurrence date                               |
-| first              | `first:true`                                                                                                         | true                         | True if first occurrence of event             |
-| message            | `message:"My error message"` or `"My error message"`                                                                 | false                        | Event message                                 |
-| tag                | `tag:"Blake Niemyjski"` or `tag:Blake` or `blake`                                                                    | false                        | Tags                                          |
-| value              | `value:1`                                                                                                            | true                         | Value of event (used in charts)               |
-| geo                | `geo:75044~75mi` or `geo:[geohash1..geohash2]`                                                                       | true                         | Geo Location                                  |
-| status             | `status:open` or `status:discarded` or `status:fixed` or `status:regressed` or `status:snoozed` or `status:ignored`  | true                         | Stack status                                  |
-| version            | `version:1` or `version:1.0` or `version:1.0.0`                                                                      | true                         | Application version                           |
-| machine            | `machine:Server` or `Server`                                                                                         | false                        | Machine name                                  |
-| ip                 | `ip:127.0.0.1` or `127.0.0.1`                                                                                        | false                        | IP address                                    |
-| architecture       | `architecture:x64`                                                                                                   | true                         | Machine architecture                          |
-| useragent          | `useragent:IE` or `useragent:"Mozilla/5.0"`                                                                          | true                         | User Agent                                    |
-| path               | `path:"/cart"` or `"/cart"`                                                                                          | false                        | URL path                                      |
-| browser            | `browser:Chrome`                                                                                                     | true                         | Browser                                       |
-| browser.version    | `browser.version:50.0`                                                                                               | true                         | Browser version                               |
-| browser.major      | `browser.major:50`                                                                                                   | true                         | Browser major version                         |
-| device             | `device:iPhone`                                                                                                      | true                         | Device                                        |
-| os                 | `os:iOS`                                                                                                             | true                         | Operating System                              |
-| os.version         | `os.version:8.0`                                                                                                     | true                         | Operating System version                      |
-| os.major           | `os.major:8`                                                                                                         | true                         | Operating System major version                |
-| bot                | `bot:true`                                                                                                           | true                         | bot                                           |
-| error.code         | `error.code:500` or `500`                                                                                            | false                        | Error code                                    |
-| error.message      | `error.message:"A NullReferenceException occurred"` or `"A NullReferenceException occurred"`                         | false                        | Error message                                 |
-| error.type         | `error.type:"System.NullReferenceException"` or `"System.NullReferenceException"`                                    | false                        | Error type                                    |
-| error.targettype   | `error.targettype:"System.NullReferenceException"` or `"System.NullReferenceException"`                              | false                        | Error target type                             |
-| error.targetmethod | `error.targetmethod:AssociateWithCurrentThread` or `AssociateWithCurrentThread`                                      | false                        | Error target method                           |
-| user               | `user:"random user identifier"` or `"random user identifier"`                                                        | false                        | Uniquely identifies user                      |
-| user.name          | `user:"Exceptionless User"` or `"Exceptionless User"`                                                                | false                        | Friendly name of user                         |
-| user.description   | `user.description:"I clicked the button"` or `"I clicked the button"`                                                | false                        | User Description                              |
-| user.email         | `user.email:"support@exceptionless.io"` or `"support@exceptionless.io"`                                              | false                        | User Email Address                            |
+## Filter by environment
 
-## Multiple Queries
+Select **Manage filters** > **Environment** and pick one or more names, such as `production` or `staging`. The list
+shows the environments seen in the selected projects and time range. To filter by a name that hasn't sent events yet,
+type it and select **Use** _name_.
 
-All queries separated by a space will be an `AND` operation. If you wish to `OR` queries you’ll need to use an `OR` statement. We recommend wrapping conditional statements with parentheses.
+- **Unspecified** matches events that have no environment.
+- With nothing selected, the filter reads **All environments**.
 
-**Example:** Lets assume we want to return all events that have a `blue` or `red` tag. To search for these events our query would be `(tag:blue OR tag:red)`.
+Environment names are matched without regard to case. See [Environments](/docs/environments/) for how events get an
+environment.
 
-## Wild Cards
+## Search with a raw filter
 
-Suffix your query with `*` for wild card searches.
+A **Raw Filter** takes a query in the [search syntax](/docs/reference/search-syntax/), so you can use `OR`, exclusions,
+ranges, wildcards, and custom data fields:
 
-## Exclusions
+```text
+(tag:Billing OR tag:Checkout) -bot:true
+```
 
-Prefix the field name with `-` for exclusions.
+Open **Manage filters** and select **Raw Filter**, or type your query in the menu's search box and select **Create Raw
+Filter**. Press <kbd>Enter</kbd> to apply it or <kbd>Escape</kbd> to cancel. The help icon in the filter opens this
+page.
 
-**Example:** Lets assume that we want to return all events that are not marked as a bot. To search for these events our query would be `-bot:true`.
-*NOTE: In some cases searching with `-bot:true` is more accurate than searching with `bot:false`. This happens because the first query returns all records where `bot` field is `not set` or `not equal to true`. The second query returns results only where the `bot` field is set to `false`.
+![Raw filter with a query using OR and an exclusion](/assets/img/docs/filtering-and-searching-raw-filter-light.webp)
 
-## Set and Unset Fields
+A raw filter is combined with the view's other filters, including hidden ones, and with the date range.
 
-Prefix the field name with `_missing_` or `_exists_`.
+Some examples:
 
-**Example:** Lets assume that we want to return all events that do not contain any tags. To search for these events our query would be `_missing_:tag`.
+| Query                                   | Finds                                            |
+| --------------------------------------- | ------------------------------------------------ |
+| `error.type:NullReferenceException`     | Errors of one exception type                     |
+| `type:log (level:error OR level:fatal)` | Error and fatal log messages                     |
+| `user:jane@example.com`                 | Events from one user                             |
+| `version:2.4 environment:production`    | Events from any `2.4.x` version in production    |
+| `_missing_:environment`                 | Events with no environment                       |
+| `data.orderid:12345`                    | Events whose custom data has that order ID       |
+| `count:>5`                              | Events that represent more than five occurrences |
 
-## Ranges
+See the [search syntax reference](/docs/reference/search-syntax/) for every field and operator.
 
-Specify a `date` or `numeric` range as part of the term.
+> [!NOTE]
+> On the Free plan, filters can use only a few fields, such as type, environment, status, and project. Other fields,
+> search terms without a field, and custom data need a paid plan. See
+> [Free plan searches](/docs/reference/search-syntax/#free-plan-searches).
 
-**Date Range Example:** Lets assume that we want to return all events that occurred in 2020. To search for these events our query would be `date:[2020-01-01 TO 2020-12-31]`.
+## Set the date range
 
-**Numeric Range Example:** Lets assume that we want to return all events that contain contain a `value` between 1 and 10. To search for these events our query would be `value:(>0 AND <=10)`.
+The **Date** filter sets the time range of the list. Select it, then pick a range:
 
-## Custom Extended Data
+- **Last 15 minutes**, **Last 1 hour**, **Last 4 hours**, **Last 24 hours**, **Last 7 days**, **Last 30 days**, or
+  **Last 90 days**.
+- **Custom range** for anything else.
 
-All simple data types (`string`, `boolean`, `date`, `number`) that are stored in extended data will be indexed. _NOTE_: Field names will be lowercased and escaped. Any field name that is not a valid identifier (containing only letter and digits) or is longer than 25 characters will be ignored.
+A custom range has two tabs:
 
-**Example:** Lets assume that our events extended data contains a property called `Age` with a value of `18`. To search for this value our query would be `data.age:18`.
+- **Absolute**: Set **From** and **To** with the date and time fields, or select days on the calendar. The first click
+  selects a whole day and a second click extends the range. Times are in your browser's local time zone.
+- **Relative**: Type expressions such as `now-1h`, `now-7d`, or `now/d` (the start of today). A year or month, such as
+  `2024` or `2024-01`, covers all of it. Each field shows the date it resolves to.
 
-***
+Select **Apply** or press <kbd>Enter</kbd> to use the custom range.
 
-## Demo Video
+On lists with a chart, drag across the chart to zoom into that time range.
 
-<http://www.youtube.com/watch?v=ed8uEVs3IO0>
+The built-in views start at **Last 7 days**. Removing the **Date** filter shows all time, back to your plan's retention
+limit.
 
----
+## Save your filters
 
-[Next > Bulk Actions](/docs/bulk-actions)
+Changing a filter changes only the view you're on, and a dot on the **View** button shows the view has unsaved changes.
+Open **View** to save them to the view, save them as a new view, or reset. See [Saved views](/docs/saved-views/).
+
+## Search from anywhere
+
+Press <kbd>/</kbd> to open the command palette and type at least two characters to search recent events and stacks. See
+[Navigating the app](/docs/navigation/).
+
+## Ask Exie
+
+Exie filters with the same fields, so you can ask in plain words instead of building a query:
+
+```prompt exie
+Which errors did users on Chrome hit in production over the last 24 hours?
+```
+
+```prompt exie
+Count the events for version 2.4.0 by environment for the last 7 days.
+```
+
+```prompt exie
+Which stacks tagged Billing are still open?
+```
+
+With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can run the same searches:
+
+```prompt agent
+Use Exceptionless to find the errors with error.type NullReferenceException in production over the last 7 days,
+then find where they're thrown in this repository and explain the likely cause.
+```

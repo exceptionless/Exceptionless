@@ -1,206 +1,351 @@
 ---
 title: Home
+metaTitle: "Exceptionless: Open source error monitoring with AI built in"
 layout: layouts/base.vto
-description: Real-time exception reporting for ASP.NET, Web API, WebForms, WPF, Console, and MVC applications. Includes event organization, notifications, and more.
-extraStyles:
-  - /assets/cyclone-slider-pro/templates/standard/style.css
+bodyClass: layout-home
+description: Open source error monitoring for .NET, JavaScript, and React Native with AI built in. Get alerts for new and regressed errors, then fix them with Exie or your coding agent.
 ---
-<div id="sliderRow">
-    <div class="cycloneslider cycloneslider-template-standard cycloneslider-width-responsive" id="cycloneslider-20-1" style="max-width: 100%;">
-        <div class="cycloneslider-slides">
-            <div class="cycloneslider-slide cycloneslider-slide-custom is-active">
-                <div class="span6">
-                    <div class="thumb thumb-left"><img src="/assets/img/dashboard-2-1024x594.png" alt="Exceptionless Dashboard" width="1024" height="594" sizes="(max-width: 767px) 92vw, 50vw" transform-images="avif webp png 512 768 1024" fetchpriority="high" decoding="async"></div>
-                </div>
-                <div class="span6"><h2>Don't let your users walk away in frustration</h2>
-                    <p>Discover errors in your app you never knew were happening and use detailed error reports to
-                        squash them with ease. Make your app Exceptionless!</p><a
-                            href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic"
-                            class="btn btn-large btn-primary">Sign up for FREE!</a></div>
-                <div style="clear:both;"></div>
-            </div>
-            <div class="cycloneslider-slide cycloneslider-slide-custom">
-                <div class="span6"><h2>Exceptionless makes error reporting a breeze</h2>
-                    <p>Simply install the client and begin collecting unhandled exceptions right away. Use our fluent
-                        API to send additional details about critical errors and be notified immediately.</p><a
-                            href="tour/" class="btn btn-large btn-primary">Take the Tour</a></div>
-                <div class="span6">
-                    <div class="thumb thumb-right"><img src="/assets/img/toexceptionless.png" alt="Exceptionless submission code sample" width="560" height="280" sizes="(max-width: 767px) 92vw, 50vw" transform-images="avif webp png 280 560" loading="lazy" decoding="async"></div>
-                </div>
-                <div style="clear:both;"></div>
-            </div>
-            <div class="cycloneslider-slide cycloneslider-slide-custom">
-                <div class="span6">
-                    <div class="thumb thumb-left"><img src="/assets/img/logs-2.jpg" alt="Exceptionless logs tracking" width="705" height="319" sizes="(max-width: 767px) 92vw, 50vw" transform-images="avif webp jpg 352 705" loading="lazy" decoding="async"></div>
-                </div>
-                <div class="span6"><h2>Report Logs, Feature Usages, and more!</h2>
-                    <p>You can send any type of event to your Exceptionless dashboard. Create tags for organization, and
-                        you've got a robust event logging system!</p><a href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic" class="btn btn-large btn-primary">Sign up for
-                        FREE!</a></div>
-                <div style="clear:both;"></div>
-            </div>
-            <div class="cycloneslider-slide cycloneslider-slide-custom">
-                <div class="span6"><h2>Fork Us! Exceptionless is Open Source</h2>
-                    <p>Join the community and help us make the software world a better place. Collaborate, give
-                        feedback, report bugs, and host Exceptionless yourself - for free.</p><a
-                            href="https://github.com/exceptionless/Exceptionless" target="_blank"
-                            class="btn btn-large btn-primary">Fork Us on GitHub!</a></div>
-                <div class="span6">
-                    <div class="thumb thumb-right"><img src="/assets/img/slider-github.jpg" alt="Exceptionless on GitHub" width="715" height="357" sizes="(max-width: 767px) 92vw, 50vw" transform-images="avif webp jpg 358 715" loading="lazy" decoding="async"></div>
-                </div>
-                <div style="clear:both;"></div>
-            </div>
+<section class="hero">
+  <div class="container">
+    <div class="hero-copy">
+      <a class="announcement" href="/tour/">
+        <span class="announcement-badge">New</span>
+        A completely redesigned app, with an AI assistant built in
+        {{ icons["arrow-right"] }}
+      </a>
+      <h1 class="hero-title">Find and fix errors <span class="text-gradient">before your users notice</span></h1>
+      <p class="hero-lead">Exceptionless captures exceptions, logs, and feature usage from your .NET, JavaScript, and React Native apps, groups them into stacks, and alerts you the moment something breaks. Then Exie and your AI coding agent help you fix it.</p>
+      <div class="btn-group">
+        <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="home-hero">Get started {{ icons["arrow-right"] }}</a>
+        <a class="btn btn-secondary btn-lg" href="/tour/">See how it works</a>
+      </div>
+      <ul class="hero-meta">
+        <li>{{ icons["circle-check"] }} No credit card required</li>
+        <li>{{ icons["circle-check"] }} Open source, no lock-in</li>
+        <li>{{ icons["circle-check"] }} Set up in minutes</li>
+      </ul>
+    </div>
+    <div class="hero-shot">
+      {{ productShot("stacks", "Exceptionless stacks view showing grouped errors, logs, and event trends", { frame: true, eager: true, path: "/stack/all", sizes: "(max-width: 1200px) 100vw, 1160px" }) }}
+    </div>
+  </div>
+</section>
+
+<section class="proof" aria-label="Exceptionless at a glance">
+  <div class="container">
+    <div class="proof-grid">
+      <div class="proof-item">
+        <span class="proof-value">Since 2013</span>
+        <span class="proof-label">Catching production errors</span>
+      </div>
+      <div class="proof-item">
+        <span class="proof-value" data-github-stars>{{ site.githubStars }}</span>
+        <span class="proof-label">Stars on GitHub</span>
+      </div>
+      <div class="proof-item">
+        <span class="proof-value">Apache 2.0</span>
+        <span class="proof-label">Open source, no lock-in</span>
+      </div>
+      <div class="proof-item">
+        <span class="proof-value">AI built in<span class="ai-mark">{{ icons["ai-sparkle"] }}</span></span>
+        <span class="proof-label">Exie assistant and MCP server</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="get-started">
+  <div class="container setup">
+    <div class="reveal">
+      <p class="eyebrow">{{ icons.zap }} Set up in minutes</p>
+      <h2 class="section-title">A few lines of code. Every error, organized.</h2>
+      <p class="section-lead">Install the client, add your API key, and unhandled exceptions start flowing in. Add context like users, tags, and custom objects whenever you need more detail.</p>
+      <ol class="steps">
+        <li><strong>Create a project</strong><span>Sign up in seconds. No credit card required.</span></li>
+        <li><strong>Add the client</strong><span>One NuGet or npm package and a single line of startup code.</span></li>
+        <li><strong>Watch the stacks roll in</strong><span>Errors, logs, 404s, and feature usage, grouped and ready to act on.</span></li>
+      </ol>
+      <div class="btn-group">
+        <a class="btn btn-primary" href="{{ site.signupUrl }}" data-cta="home-setup">Get your API key {{ icons["arrow-right"] }}</a>
+        <a class="btn btn-ghost" href="/docs/getting-started/">Getting started guide</a>
+      </div>
+    </div>
+
+    {{ homeClientTabs() }}
+  </div>
+</section>
+
+<section class="section section-subtle" id="features">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">{{ icons.layers }} From alert to fix</p>
+      <h2 class="section-title">Less noise. More fixes.</h2>
+      <p class="section-lead">Exceptionless turns a firehose of events into a short, prioritized list, then gives you the context to fix each one quickly.</p>
+    </div>
+
+    <div class="feature-row reveal">
+      <div class="feature-copy">
+        <span class="feature-icon">{{ icons.layers }}</span>
+        <h3>Thousands of events. A handful of stacks.</h3>
+        <p>Every occurrence is grouped by error type and where it happened in your code, so you work through real problems instead of duplicate alerts.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Most frequent, newest, and regressed</strong> views show you what to fix first.</span></li>
+          <li>{{ icons.check }}<span><strong>Mark it fixed in a version</strong> and hear about it if it ever comes back.</span></li>
+          <li>{{ icons.check }}<span><strong>Snooze, ignore, or mark critical</strong> in bulk, right from the list.</span></li>
+        </ul>
+        <a class="text-link" href="/docs/managing-stacks/">How stacking works {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        {{ productShot("most-frequent", "Most frequent errors saved view with occurrence counts and user impact") }}
+      </div>
+    </div>
+
+    <div class="feature-row reverse reveal">
+      <div class="feature-copy">
+        <span class="feature-icon">{{ icons["file-code"] }}</span>
+        <h3>Every detail you would otherwise have to ask for</h3>
+        <p>Stop asking users for screenshots and versions. Each event arrives with the stack trace, request, environment, user, and session already attached.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Full stack traces</strong> including inner exceptions and source-mapped JavaScript.</span></li>
+          <li>{{ icons.check }}<span><strong>Custom objects</strong> like orders or tenants, promotable to their own tabs.</span></li>
+          <li>{{ icons.check }}<span><strong>Reference IDs</strong> so support can jump straight from a ticket to the error.</span></li>
+        </ul>
+        <a class="text-link" href="/tour/#investigate">See event details {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        {{ productShot("event", "Event details with exception information and a full stack trace") }}
+      </div>
+    </div>
+
+    {{ include "partials/signup-banner.vto" { cta: "home-features", title: "Know the moment something breaks", text: "Real-time alerts for new and regressed errors, with the full context to fix them. Set up in minutes, no credit card required.", secondaryHref: "/tour/", secondaryLabel: "Take the tour" } }}
+  </div>
+</section>
+
+<section class="section" id="ai">
+  <div class="container">
+    <div class="feature-row reveal">
+      <div class="feature-copy">
+        <p class="eyebrow">{{ icons["ai-sparkle"] }} Meet Exie</p>
+        <h2>Your debugging sidekick, built right in</h2>
+        {{ include "partials/exie-says.vto" { text: "Hi, I'm Exie. Tell me what broke and I'll dig through your stacks and events to find out why, then help you fix it." } }}
+        <ul class="check-list">
+          <li>{{ icons.check }}<span><strong>Knows where you are.</strong> Ask "why is this happening?" on a stack and Exie already knows which one you mean.</span></li>
+          <li>{{ icons.check }}<span><strong>Shows its work.</strong> Exie tells you the time range it looked at and links every stack it mentions.</span></li>
+          <li>{{ icons.check }}<span><strong>Hands off until you ask.</strong> Exie only marks a stack fixed, snoozes it, or links an issue when you tell it to.</span></li>
+        </ul>
+        <a class="text-link" href="/ai/">Explore AI in Exceptionless {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        {{ productShot("exie", "Exie answering which errors affected the most users this week") }}
+      </div>
+    </div>
+
+    <div class="feature-row reverse reveal" id="mcp">
+      <div class="feature-copy">
+        <p class="eyebrow">{{ icons.plug }} MCP server</p>
+        <h2>Bring production errors into your coding agent</h2>
+        <p>Connect Claude Code, Codex, GitHub Copilot, or OpenCode to the Exceptionless MCP server. Your agent can search stacks, read events, and pull stack traces while it works on the fix, all through a secure OAuth sign-in. It's included on every plan, including Free.</p>
+        <div class="ai-panel">
+          <span class="ai-client">Claude Code</span>
+          <span class="ai-client">Codex</span>
+          <span class="ai-client">GitHub Copilot</span>
+          <span class="ai-client">OpenCode</span>
         </div>
-        <a href="#" class="cycloneslider-prev" aria-label="Previous slide"> <span aria-hidden="true"></span> </a> <a href="#" class="cycloneslider-next" aria-label="Next slide"> <span aria-hidden="true"></span>
-    </a></div>
-</div>
+        <a class="text-link" href="/docs/ai/mcp-server/">Set up the MCP server {{ icons["arrow-right"] }}</a>
+      </div>
+      <div class="feature-media">
+        <div class="terminal">
+          <div class="terminal-bar" aria-hidden="true"><span></span><span></span><span></span><em>Terminal</em></div>
+<pre><span class="t-prompt">$</span> claude mcp add --transport http exceptionless https://be.exceptionless.io/mcp
+<span class="t-prompt">$</span> claude mcp login exceptionless
+<span class="t-dim">Opening browser to authorize Exceptionless... done</span>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        var slider = document.getElementById("cycloneslider-20-1");
-        if (!slider) {
-            return;
-        }
+<span class="t-prompt">&gt;</span> What's my top error this week? Find the cause and fix it.
 
-        var slides = Array.prototype.slice.call(slider.querySelectorAll(".cycloneslider-slide"));
-        var previous = slider.querySelector(".cycloneslider-prev");
-        var next = slider.querySelector(".cycloneslider-next");
-        var index = 0;
-        var timer = null;
+<span class="t-tool">● exceptionless.search_stacks</span>
+<span class="t-tool">● exceptionless.get_stack</span>
+<span class="t-tool">● exceptionless.get_stack_events</span>
 
-        slides.forEach(function (slide, slideIndex) {
-            slide.setAttribute("aria-hidden", slideIndex === index ? "false" : "true");
-        });
-
-        function showSlide(nextIndex) {
-            if (!slides.length) {
-                return;
-            }
-
-            slides[index].classList.remove("is-active");
-            slides[index].setAttribute("aria-hidden", "true");
-            index = (nextIndex + slides.length) % slides.length;
-            slides[index].classList.add("is-active");
-            slides[index].setAttribute("aria-hidden", "false");
-        }
-
-        function start() {
-            stop();
-            timer = window.setInterval(function () {
-                showSlide(index + 1);
-            }, 10000);
-        }
-
-        function stop() {
-            if (timer) {
-                window.clearInterval(timer);
-                timer = null;
-            }
-        }
-
-        if (previous) {
-            previous.addEventListener("click", function (event) {
-                event.preventDefault();
-                showSlide(index - 1);
-                start();
-            });
-        }
-
-        if (next) {
-            next.addEventListener("click", function (event) {
-                event.preventDefault();
-                showSlide(index + 1);
-                start();
-            });
-        }
-
-        slider.addEventListener("mouseenter", stop);
-        slider.addEventListener("mouseleave", start);
-        start();
-    });
-</script>
-
-<div id="wrap" class="container margin-top" role="document">
-    <div id="content" class="row-fluid">
-        <div id="main" class="span12" role="main">
-
-            <div class="span6"><img class="aligncenter size-full" src="/assets/img/codesmith-client-logo-bar-left.png" alt="Exceptionless Customers &amp; Users" width="588" height="150" srcset="/assets/img/codesmith-client-logo-bar-left.png 588w, /assets/img/codesmith-client-logo-bar-left-300x77.png 300w" sizes="(max-width: 588px) 100vw, 588px"></div>
-            <div class="span6"><img class="aligncenter size-full" src="/assets/img/codesmith-client-logo-bar-right.png" alt="Exceptionless Users &amp; Customers" width="582" height="150" srcset="/assets/img/codesmith-client-logo-bar-right.png 582w, /assets/img/codesmith-client-logo-bar-right-300x77.png 300w" sizes="(max-width: 582px) 100vw, 582px"></div>
-            <h1 style="margin-bottom: 15px;">What Is Exceptionless?</h1>
-            <div style="font-size: 14px;">
-                <p><strong>The definition of the word exceptionless is: <em class="text-accent">to be without exception</em></strong>. Our product provides real-time error, feature, and log reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless. Best of all, it’s <a title="Exceptionless on GitHub" href="https://github.com/exceptionless/Exceptionless" target="_blank">open source</a>!</p>
-                <ul class="icons clearfix" style="margin-top: 20px;">
-                    <li>
-                        <div class="icon-bullhorn icon-large"></div>
-                        <div class="feature">Error <strong>notifications</strong>, including critical and regressions</div>
-                    </li>
-                    <li>
-                        <div class="icon-signal icon-large"></div>
-                        <div class="feature">Easily see <strong>top errors</strong> and prioritize them</div>
-                    </li>
-                    <li>
-                        <div class="icon-link icon-large"></div>
-                        <div class="feature">Intelligent <strong>grouping</strong> of exceptions, logs, and features</div>
-                    </li>
-                    <li>
-                        <div class="icon-dashboard icon-large"></div>
-                        <div class="feature"><strong>Dashboard</strong> with event stats and trends</div>
-                    </li>
-                    <li>
-                        <div class="icon-eye-open icon-large"></div>
-                        <div class="feature"><strong>Detailed</strong> error reports, including stacktrace</div>
-                    </li>
-                    <li>
-                        <div class="icon-paper-clip icon-large"></div>
-                        <div class="feature">Add any <strong>custom objects</strong> to your events</div>
-                    </li>
-                    <li>
-                        <div class="icon-group icon-large"></div>
-                        <div class="feature"><strong>Unlimited users</strong> per organization</div>
-                    </li>
-                    <li>
-                        <div class="icon-ok icon-large"></div>
-                        <div class="feature">Mark exceptions as <strong>fixed</strong>, monitor for regressions</div>
-                    </li>
-                    <li>
-                        <div class="icon-bolt icon-large"></div>
-                        <div class="feature"><strong>Real-time</strong> view of events as they happen</div>
-                    </li>
-                    <li>
-                        <div class="icon-warning-sign icon-large"></div>
-                        <div class="feature">Ability to mark events as being <strong>critical</strong></div>
-                    </li>
-                    <li>
-                        <div class="icon-plane icon-large"></div>
-                        <div class="feature"><strong>Supports offline</strong> and occasionally connected scenarios</div>
-                    </li>
-                    <li>
-                        <div class=" icon-cloud-download icon-large"></div>
-                        <div class="feature"><strong>Easy setup</strong> in less than 5 minutes</div>
-                    </li>
-                </ul>
-            </div>
-            <h2 style="margin-top: 20px;">How Does It Work?</h2>
-            <div class="howDoesWork">
-                <div class="howDoesWorkSection">
-                    <h3>1. <a title="Create a free Exceptionless account" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Create a free account</a></h3>
-                    <p>Signup in seconds – No credit card required</p>
-                </div>
-                <div class="howDoesWorkArrow">›</div>
-                <div class="howDoesWorkSection">
-                    <h3>2. Install the client</h3>
-                    <p>Install the Exceptionless client from NuGet</p>
-                </div>
-                <div class="howDoesWorkArrow">›</div>
-                <div class="howDoesWorkSection">
-                    <h3>3. See your exceptions</h3>
-                    <p>Done – Start tracking &amp; fixing those exceptions!</p>
-                </div>
-                <div style="clear: both;"></div>
-            </div>
-            <div class="signup center"><a class="btn btn-large btn-primary" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Sign Up For <strong>FREE</strong> Now!</a></div>
-
+NullReferenceException in OrderService.Submit is your top
+error: 1,284 occurrences, 212 users. order.Customer is null
+for guest checkouts. I'll add a guard and a regression test.</pre>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    </div><!-- /#content -->
-</div><!-- /#wrap -->
+<section class="section section-subtle" id="more">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">{{ icons["layout-dashboard"] }} One place for app health</p>
+      <h2 class="section-title">More than error tracking</h2>
+      <p class="section-lead">Send logs, 404s, feature usage, and sessions to the same place, then search, slice, and get notified across all of it.</p>
+    </div>
+
+    <div class="bento">
+      <div class="card span-3 reveal">
+        <span class="feature-icon">{{ icons["list-filter"] }}</span>
+        <h3>Search that speaks developer</h3>
+        <p>Filter by any field, tag, user, version, or custom data with a simple query syntax, then save it as a view for the whole team.</p>
+        <div class="card-visual">
+          <div class="query-demo">
+            <div class="query-input">{{ icons.search }}<span><span class="q-key">type</span>:error (<span class="q-key">status</span>:open <span class="q-op">OR</span> <span class="q-key">status</span>:regressed) <span class="q-key">tag</span>:checkout</span></div>
+            <div class="chip-row">
+              <span class="chip"><span class="chip-dot red"></span>Most Frequent Errors</span>
+              <span class="chip"><span class="chip-dot amber"></span>Most Frequent 404s</span>
+              <span class="chip"><span class="chip-dot"></span>Most Used Features</span>
+              <span class="chip"><span class="chip-dot blue"></span>My saved view</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card span-3 reveal">
+        <span class="feature-icon">{{ icons.bell }}</span>
+        <h3>Alerts that matter, nothing more</h3>
+        <p>Get notified about new errors, regressions, and critical events by email, Slack, webhooks, or Zapier, with daily summaries for everything else.</p>
+        <div class="card-visual">
+          <div class="notify-demo">
+            <div class="notify"><span class="notify-icon red">{{ icons["rotate-ccw"] }}</span><div><strong>Regression in Rocket Ship 2.4.1</strong><span>TimeoutException was fixed in 2.4.0 and is happening again.</span></div></div>
+            <div class="notify"><span class="notify-icon">{{ icons.bug }}</span><div><strong>New error in Checkout API</strong><span>NullReferenceException in OrderService.Submit</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons["scroll-text"] }}</span>
+        <h3>Logs and feature usage</h3>
+        <p>Structured log messages with levels and sources, plus feature usage to see what people actually use.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons.users }}</span>
+        <h3>Sessions and users</h3>
+        <p>Follow a user's session, see who was affected by each error, and find every event for a customer.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons.radio }}</span>
+        <h3>Real-time event stream</h3>
+        <p>Watch events arrive live as you deploy, then drill into anything that looks off.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons["sliders-horizontal"] }}</span>
+        <h3>Real-time client configuration</h3>
+        <p>Change log levels, ignore noisy errors, and flip settings in deployed apps without redeploying.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons["eye-off"] }}</span>
+        <h3>Privacy controls</h3>
+        <p>Exclude sensitive fields like passwords and card numbers before they ever leave your app.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons.keyboard }}</span>
+        <h3>Built for keyboards</h3>
+        <p>A command palette, keyboard shortcuts, guided tours, and a dark mode that is easy on the eyes at 2 a.m.</p>
+      </div>
+    </div>
+
+    <div class="btn-group center-link reveal">
+      <a class="btn btn-primary" href="{{ site.signupUrl }}" data-cta="home-more">Get started {{ icons["arrow-right"] }}</a>
+      <a class="btn btn-secondary" href="/tour/">Explore all features</a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="open-source">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">{{ icons.github }} Open source since 2014</p>
+      <h2 class="section-title">Your cloud or ours</h2>
+      <p class="section-lead">The hosted service and the code on GitHub are the same product, so you are never locked in. Most teams let us run it; some need it on their own servers.</p>
+    </div>
+    <div class="split-panel reveal">
+      <div>
+        <h3>{{ icons.cloud }} Exceptionless Cloud</h3>
+        <p>The fastest way to get going. We run Elasticsearch, scale ingestion, back up your data, and ship upgrades, so you can focus on your app.</p>
+        <ul class="check-list">
+          <li>{{ icons.check }}<span>Real-time alerts plus Slack, webhook, and Zapier integrations</span></li>
+          <li>{{ icons.check }}<span>Up to 180 days of retention and unlimited users on larger plans</span></li>
+          <li>{{ icons.check }}<span>Exie AI assistant on Medium plans and up</span></li>
+        </ul>
+        <div class="btn-group">
+          <a class="btn btn-primary" href="{{ site.signupUrl }}" data-cta="home-cloud">Get started</a>
+          <a class="btn btn-ghost" href="/pricing/">Compare plans</a>
+        </div>
+      </div>
+      <div>
+        <h3>{{ icons.server }} Self-hosted</h3>
+        <p>Need full control or strict data residency? Run the same product on your own infrastructure with Docker or Kubernetes. You operate Elasticsearch, storage, backups, and upgrades.</p>
+        <div class="inline-code-block">
+<pre><code>docker run --rm -it -p 5200:8080 \
+  exceptionless/exceptionless:latest</code></pre>
+        </div>
+        <div class="btn-group">
+          <a class="btn btn-secondary" href="/docs/self-hosting/">Self-hosting guide</a>
+          <a class="btn btn-ghost" href="{{ site.githubUrl }}">{{ icons.github }} View on GitHub</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-sm" aria-label="What developers say">
+  <div class="container">
+    <div class="grid grid-2">
+      <figure class="card quote-card reveal">
+        <blockquote>"Exceptionless is awesome. I've stopped worrying about whether I'm losing customers to bugs I don't know about."</blockquote>
+        <figcaption><strong>Eric B.</strong></figcaption>
+      </figure>
+      <figure class="card quote-card reveal">
+        <blockquote>"Exceptionless allows us to prioritize fixes smarter by showing frequently occurring errors. In real time!"</blockquote>
+        <figcaption><strong>Ryan H.</strong></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="section section-subtle" id="faq">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="section-title">Frequently asked questions</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>What is Exceptionless? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Exceptionless is an open source error monitoring service. Its clients capture unhandled exceptions, logs, feature usage, 404s, and user sessions from your apps, group similar errors into stacks, and notify you when a new error appears or a fixed one comes back.</div>
+      </details>
+      <details>
+        <summary>Which languages and frameworks does Exceptionless support? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">{{ clientsSentence() }} Anything that can make an HTTP request can send events through the <a href="/docs/api/">REST API</a>.</div>
+      </details>
+      <details>
+        <summary>How does Exceptionless use AI? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Exie, the built-in assistant, answers questions about your errors and can update stacks when you ask. The MCP server, included on every plan, lets coding agents like Claude Code, Codex, GitHub Copilot, and OpenCode search your errors and read stack traces while they write the fix. <a href="/ai/">Learn more about AI in Exceptionless</a>.</div>
+      </details>
+      <details>
+        <summary>Is Exceptionless open source? Can I self-host it? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Yes. Exceptionless is licensed under Apache 2.0 and the hosted service runs the same code that is on <a href="{{ site.githubUrl }}">GitHub</a>. You can run it yourself with <a href="/docs/self-hosting/docker/">Docker</a> or <a href="/docs/self-hosting/kubernetes/">Kubernetes</a>, or let us host it for you.</div>
+      </details>
+      <details>
+        <summary>How much does Exceptionless cost? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Hosted plans are priced by the number of events you send each month, not by seats, and you are never charged overage fees. You can start without a credit card. See <a href="/pricing/">pricing</a> for each plan's limits.</div>
+      </details>
+      <details>
+        <summary>How long does setup take? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Most apps take a few minutes: install the client package, add your project's API key, and unhandled errors start arriving. The <a href="/docs/getting-started/">getting started guide</a> walks through each platform.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="section section-sm">
+  <div class="container">
+    <div class="cta reveal">
+      <h2>Make your app exceptionless</h2>
+      <p>Get set up in minutes. No credit card to start, no sales call, and pricing that stays predictable as you grow.</p>
+      <div class="btn-group">
+        <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="home-footer">Get started {{ icons["arrow-right"] }}</a>
+        <a class="btn btn-secondary btn-lg" href="/pricing/">See pricing</a>
+      </div>
+    </div>
+  </div>
+</section>

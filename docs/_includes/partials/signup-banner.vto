@@ -1,0 +1,10 @@
+<div class="signup-banner reveal">
+  <div class="signup-banner-copy">
+    <h2>{{ title || "See your own errors in minutes" }}</h2>
+    <p>{{ text || "Create an account, add a few lines of code, and watch your first stacks appear. No credit card required." }}</p>
+  </div>
+  <div class="btn-group">
+    <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="{{ cta }}">Get started {{ icons["arrow-right"] }}</a>
+    {{ if secondaryHref }}<a class="btn btn-secondary btn-lg" href="{{ secondaryHref }}">{{ secondaryLabel }}</a>{{ /if }}
+  </div>
+</div>

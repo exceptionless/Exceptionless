@@ -1,143 +1,134 @@
 ---
 title: Why Exceptionless?
 layout: layouts/base.vto
-description: Why developers use Exceptionless for real-time error monitoring and event reporting.
+redirectFrom:
+  - /docs/comparison/
+description: Why developers choose Exceptionless for error monitoring - open source, self-hostable, predictable pricing, real-time configuration, and an AI assistant that works with your data.
 ---
-<style>
-    .homepage-hero-module {
-        border-right: none;
-        border-left: none;
-        position: relative;
-        height: 400px;
-    }
-    .no-video .video-container video,
-    .touch .video-container video {
-        display: none;
-    }
-    .no-video .video-container .poster,
-    .touch .video-container .poster {
-        display: block !important;
-    }
-    .video-container {
-        position: relative;
-        bottom: 0%;
-        left: 0%;
-        height: 400px;
-        width: 100%;
-        overflow: hidden;
-        background: #000;
-    }
-    .video-container .poster,
-    .video-container .filter,
-    .video-container video {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-    }
-    .video-container .poster img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        z-index:0;
-        max-width:none;
-        display: block;
-    }
-    .video-container .filter {
-        z-index: 100;
-        background: rgba(0, 0, 0, 0.4);
-    }
-    .video-container video {
-        z-index: 100;
-        object-fit: cover;
-    }
-    .video-container video.fillWidth {
-        width: 100%;
-    }
-</style>
-<div class="homepage-hero-module">
-    <div class="video-container">
-        <div style="text-align:center;font-size: 40px;font-weight:900;padding-top: 125px;position: absolute;z-index: 1020;margin: 0 auto;color: white;line-height: 50px;width: 100%;text-shadow:3px 3px 10px #333;">RETAIN<br>INNOVATE<br>EVOLVE</div>
-        <div class="filter"></div>
-        <video autoplay="" loop="" muted="" playsinline="" class="fillWidth fadeIn animated">
-            <source src="/assets/Working-Space.mp4" type="video/mp4">Your browser does not support the video tag. Please upgrade your browser.
-<!--            <source src="/assets/covers/workspace/WEBM/Working-Space.webm" type="video/webm">Your browser does not support the video tag. Please upgrade your browser.-->
-        </video>
-        <div class="poster">
-            <img src="/assets/img/covers/workspace/snapshots/Working-Space.jpg" alt="" width="1593" height="896">
-        </div>
+<section class="page-hero">
+  <div class="container">
+    <p class="eyebrow">{{ icons["heart-handshake"] }} Why Exceptionless</p>
+    <h1>The bugs you don't know about <span class="text-gradient">cost you users</span></h1>
+    <p>Most people who hit an error don't report it. They just leave. Exceptionless shows you what's broken, who it affects, and whether your fix worked, without an enterprise price tag or lock-in.</p>
+  </div>
+</section>
+
+<section class="section section-sm">
+  <div class="container">
+    <div class="grid grid-3">
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons.users }}</span>
+        <h3>Keep the users you worked to win</h3>
+        <p>Catch the errors people hit every day but never report, and fix them before frustration turns into churn.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons.rocket }}</span>
+        <h3>Spend your time building</h3>
+        <p>Stop reproducing bugs from vague reports. Get the stack trace, request, user, and context the first time, then get back to features.</p>
+      </div>
+      <div class="card reveal">
+        <span class="feature-icon">{{ icons["badge-check"] }}</span>
+        <h3>Be the app that just works</h3>
+        <p>Know about regressions before your customers do, and prove that your fixes actually stuck.</p>
+      </div>
     </div>
-</div>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        var video = document.querySelector(".homepage-hero-module .video-container video");
-        if (video) {
-            video.classList.add("fadeIn", "animated");
-        }
-    });
-</script>
-<div id="wrap" class="container" role="document">
 
-    <div id="content" class="row-fluid">
+    {{ include "partials/signup-banner.vto" { cta: "why-top", title: "Find out what your users are running into", secondaryHref: "/tour/", secondaryLabel: "Take the tour" } }}
+  </div>
+</section>
 
-        <div id="main" class="span12" role="main">
-            <script>
-            var start = new Date(2015, 10, 11);
-            var rate = 23 / 1000;
-            var base = 150000000;
-            function addCommas(nStr) {
-                nStr += '';
-                var x = nStr.split('.');
-                var x1 = x[0];
-                var x2 = x.length > 1 ? '.' + x[1] : '';
-                var rgx = /(\d+)(\d{3})/;
-                while (rgx.test(x1)) {
-                    x1 = x1.replace(rgx, '$1' + ',' + '$2');
-                }
-                return x1 + x2;}
-            setInterval(function () {
-                var cans = addCommas(Math.floor((new Date() - start) * rate) + base);
-                var counter = document.getElementById("cans");
-                if (counter) {
-                    counter.textContent = cans;
-                }
-            }, 250);
-            </script>
-            <div class="span6"><img class="aligncenter size-full" src="/assets/img/codesmith-client-logo-bar-left.png" alt="Exceptionless Customers &amp; Users" width="588" height="150" srcset="/assets/img/codesmith-client-logo-bar-left.png 588w, /assets/img/codesmith-client-logo-bar-left-300x77.png 300w" sizes="(max-width: 588px) 100vw, 588px"></div>
-            <div class="span6"><img class="aligncenter size-full" src="/assets/img/codesmith-client-logo-bar-right.png" alt="Exceptionless Users & Customers" width="582" height="150" srcset="/assets/img/codesmith-client-logo-bar-right.png 582w, /assets/img/codesmith-client-logo-bar-right-300x77.png 300w" sizes="(max-width: 582px) 100vw, 582px"></div>
-            <div class="span6" style="clear: both;">
-                <h1 style="margin-bottom: 20px;">Why Exceptionless?</h1>
-                <h2 style="font-size: 24px; margin-bottom: 0;"><i class="icon-user icon-large" style="margin-right: 20px; color: #999;"></i><strong>You’re Losing Users</strong>, Leads, and Customers</h2>
-                <p>Chances are, you’re losing users every day because of minor or major bugs or errors that aren’t being reported in your app or website. Exceptionless catches these bugs and notifies you, allowing you to fix them quickly and <strong>retain those users</strong>.</p>
-                <h2 style="font-size: 24px; margin: 20px 0 0 0;"><i class="icon-arrow-right icon-large" style="margin-right: 20px; color: #999;"></i><strong>Innovate</strong>, Don’t Get Stuck Fixing Bugs!</h2>
-                <p>Developers should be building the next big thing or adding that revenue-doubling feature, not wasting their time tracking down bugs that could have been caught right away and fixed <strong>during</strong> the development process. <strong>Progress, not regress.</strong></p>
-                <h2 style="font-size: 24px; margin: 20px 0 0 0;"><i class="icon-star icon-large" style="margin-right: 20px; color: #999;"></i>Be <i><strong>That</strong></i> Company</h2>
-                <p>You know <em><strong>that</strong> </em>company. The one <strong>everyone loves</strong> because their systems, website, applications, tools, etc<strong> just work!</strong> You want to be those guys, and Exceptionless can help you get there by helping make sure the code powering your services is <strong>error free!</strong></p>
-            </div>
-            <div class="span6 quote smaller" style="line-height: 44px; color: #bbb; padding: 50px 50px 0 50px; text-align: center; box-sizing: border-box;">"Exceptionless is <strong>awesome</strong>. I’ve <strong>STOPPED</strong> worrying about whether I’m losing customers to bugs I don’t know about." – <strong>Eric B</strong></div>
-            <div style="clear: both; height: 0;"></div>
-            <div style="margin: 30px 0; background: #333; width: 100%; color: #fff; clear: both; font-size: 30px; box-sizing: border-box; line-height: 34px; text-align: center; font-weight: bold; padding: 30px 30px 25px 30px;"><span id="cans" style="font-size: 50px; color: #78b001;">3,711,629,930</span> EVENTS, AND COUNTING… <span style="font-weight: normal;">  //  </span> 9700+ ACTIVE PROJECTS</div>
-            <div class="span6 quote smaller" style="line-height: 44px; color: #bbb; padding: 40px 50px; text-align: center; box-sizing: border-box;">"Exceptionless allows us to <strong>prioritize fixes smarter</strong> by showing frequently occurring errors. In <strong>real time!</strong>"<br>
-                – Ryan H.</div>
-            <div class="span6">
-                <h2>Make Developer Life Easier</h2>
-                <p>Simply put, <strong>Exceptionless makes developer life easier</strong> by reporting, logging, tracking, and providing the important details about bugs in <strong>real time</strong> so action can be taken and the developer can move on to important things, like working on actual features.</p>
-                <h3>Unique Features</h3>
-                <ul>
-                    <li style="list-style-type: none;"><i class="icon-dashboard icon-large" style="margin-right: 20px;"></i><strong>Detailed</strong> Dashboard</li>
-                    <li style="list-style-type: none;"><i class="icon-group icon-large" style="margin-right: 20px;"></i><strong>Unlimited</strong> Users per Organization</li>
-                    <li style="list-style-type: none;"><i class="icon-cloud-download icon-large" style="margin-right: 20px;"></i><strong>Easy & Fast</strong> Setup</li>
-                    <li style="list-style-type: none;"><i class="icon-bullhorn icon-large" style="margin-right: 20px;"></i>Event <strong>Notifications</strong></li>
-                    <li style="list-style-type: none;"><i class="icon-ok icon-large" style="margin-right: 20px;"></i><strong>Mark Events</strong> as Fixed or Critical</li>
-                    <li style="list-style-type: none;"><i class="icon-search icon-large" style="margin-right: 20px;"></i><strong>Monitor</strong> Fixed Events for Regression</li>
-                    <li style="list-style-type: none;"><i class="icon-eye-open icon-large" style="margin-right: 20px;"></i>Detailed Error <strong>Reports</strong></li>
-                    <li style="list-style-type: none;"><i class="icon-bolt icon-large" style="margin-right: 20px;"></i><strong>Real-time</strong> View as Events Occur</li>
-                    <li style="list-style-type: none;"><i class="icon-cloud icon-large" style="margin-right: 20px;"></i><strong>Open Source</strong> – Self Host for <strong>Free</strong>! <em>(affordable hosting available)</em></li>
-                </ul>
-            </div>
-            <div style="clear: both; height: 0;"></div>
-            <div class="signup center" style="margin-top: 20px;"><a class="btn btn-large btn-primary" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Sign Up For <strong>FREE</strong> Now!</a></div>
+<section class="section section-subtle">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">{{ icons.star }} What makes us different</p>
+      <h2 class="section-title">Built by developers, for developers</h2>
+      <p class="section-lead">Exceptionless has been catching production errors since 2013. Here's what teams tell us made them switch, and stay.</p>
+    </div>
+    <div class="reasons">
+      <div class="reason reveal">
+        <span class="feature-icon">{{ icons.github }}</span>
+        <div>
+          <h3>Open source, for real</h3>
+          <p>The hosted service runs the same code you can read, audit, and contribute to on GitHub under the Apache 2.0 license. No closed-core features, no surprises.</p>
         </div>
+      </div>
+      <div class="reason reveal">
+        <span class="feature-icon">{{ icons.server }}</span>
+        <div>
+          <h3>Let us run it, or run it yourself</h3>
+          <p>Use the hosted service and never think about infrastructure, or keep data on your own servers with Docker or Kubernetes. The code is the same either way, so switching later is always an option.</p>
+        </div>
+      </div>
+      <div class="reason reveal">
+        <span class="feature-icon">{{ icons.scale }}</span>
+        <div>
+          <h3>Simple, predictable pricing</h3>
+          <p>Plans are based on monthly events, not seats. Larger plans include unlimited users and projects, with no surprise overage charges.</p>
+        </div>
+      </div>
+      <div class="reason reveal">
+        <span class="feature-icon">{{ icons["sliders-horizontal"] }}</span>
+        <div>
+          <h3>Change behavior without redeploying</h3>
+          <p>Real-time client configuration lets you adjust log levels, ignore noisy errors, and toggle settings in apps that are already running.</p>
+        </div>
+      </div>
+      <div class="reason reveal">
+        <span class="feature-icon">{{ icons.code }}</span>
+        <div>
+          <h3>Deep .NET roots, first-class JavaScript and mobile</h3>
+          <p>Born in the .NET world with clients for ASP.NET Core, WPF, console apps, and every major logging library, plus browser and Node.js clients with source map support, and a React Native client that works with Expo.</p>
+        </div>
+      </div>
+      <div class="reason reveal">
+        <span class="feature-icon">{{ icons["ai-sparkle"] }}</span>
+        <div>
+          <h3>AI that works with your data</h3>
+          <p>Ask Exie about your errors in plain English, or connect your coding agent through the MCP server. Both use your permissions and only change things when you ask. <a href="/ai/">See how it works</a>.</p>
+        </div>
+      </div>
+      <div class="reason reveal">
+        <span class="feature-icon">{{ icons["shield-check"] }}</span>
+        <div>
+          <h3>Privacy you control</h3>
+          <p>Exclude sensitive fields before events leave your app, decide whether to collect private information, and host it all yourself if you need to.</p>
+        </div>
+      </div>
+      <div class="reason reveal">
+        <span class="feature-icon">{{ icons["heart-handshake"] }}</span>
+        <div>
+          <h3>Real people behind it</h3>
+          <p>A small, independent team that has been building, running, and supporting Exceptionless for more than a decade.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    </div><!-- /#content -->
-</div><!-- /#wrap -->
+<section class="section section-sm" aria-label="What developers say">
+  <div class="container">
+    <div class="grid grid-2">
+      <figure class="card quote-card reveal">
+        <blockquote>"Exceptionless is awesome. I've stopped worrying about whether I'm losing customers to bugs I don't know about."</blockquote>
+        <figcaption><strong>Eric B.</strong></figcaption>
+      </figure>
+      <figure class="card quote-card reveal">
+        <blockquote>"Exceptionless allows us to prioritize fixes smarter by showing frequently occurring errors. In real time!"</blockquote>
+        <figcaption><strong>Ryan H.</strong></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="section section-sm">
+  <div class="container">
+    <div class="cta reveal">
+      <h2>Stop guessing what's broken</h2>
+      <p>Set up Exceptionless in minutes and see the errors your users have been quietly running into.</p>
+      <div class="btn-group">
+        <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="why-footer">Get started {{ icons["arrow-right"] }}</a>
+        <a class="btn btn-secondary btn-lg" href="/tour/">Take the tour</a>
+      </div>
+    </div>
+  </div>
+</section>
