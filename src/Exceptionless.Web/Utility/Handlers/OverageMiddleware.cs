@@ -16,6 +16,9 @@ public sealed class OverageMiddleware
     private readonly ILogger _logger;
     private readonly RequestDelegate _next;
 
+    // Event submission is disabled by an administrator, so clients should wait before resending.
+    private const string SubmissionDisabledRetryAfterSeconds = "300";
+
     public OverageMiddleware(RequestDelegate next, UsageService usageService, IOrganizationRepository organizationRepository, AppOptions appOptions, SystemSettingsService systemSettingsService, ILogger<OverageMiddleware> logger)
     {
         _next = next;
@@ -44,6 +47,7 @@ public sealed class OverageMiddleware
         if (!await _systemSettingsService.IsEventSubmissionEnabledAsync())
         {
             context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            context.Response.Headers.RetryAfter = SubmissionDisabledRetryAfterSeconds;
             return;
         }
 

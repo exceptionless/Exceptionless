@@ -204,6 +204,7 @@ public sealed class OverageMiddlewareTests : IntegrationTestsBase
             // Assert
             Assert.False(nextCalled);
             Assert.Equal(StatusCodes.Status503ServiceUnavailable, context.Response.StatusCode);
+            Assert.Equal("300", context.Response.Headers.RetryAfter.ToString());
         }
         finally
         {

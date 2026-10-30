@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using System.Globalization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Extensions;
 using Foundatio.Caching;
@@ -85,7 +86,10 @@ public class ThrottlingMiddleware
         long maxRequests = _options.MaxRequestsForUserIdentifierFunc(identifier);
         if (requestCount > maxRequests)
         {
+            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+            long secondsUntilReset = Math.Max((long)Math.Ceiling((utcNow.Ceiling(_options.Period) - utcNow).TotalSeconds), 1);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            context.Response.Headers.RetryAfter = secondsUntilReset.ToString(CultureInfo.InvariantCulture);
             return;
         }
 

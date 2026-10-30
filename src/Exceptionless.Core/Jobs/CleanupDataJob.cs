@@ -26,6 +26,10 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     private static readonly TimeSpan OAuthApplicationCleanupSafetyWindow = TimeSpan.FromDays(1);
     private static readonly TimeSpan SyntheticOrganizationCleanupSafetyWindow = TimeSpan.FromDays(1);
     private static readonly TimeSpan SyntheticUserCleanupSafetyWindow = TimeSpan.FromDays(1);
+    // Event post files are kept this long after their queue entry stops processing them, so an
+    // administrator can still requeue them after an outage.
+    private static readonly TimeSpan StaleEventPostAge = TimeSpan.FromDays(7);
+    private const int MaximumStaleEventPostDeletesPerRun = 10000;
     private const string SyntheticOrganizationNamePrefix = "E2E Playwright Org";
     private const string SyntheticUserEmailPrefix = "playwright-";
     private const string SyntheticUserEmailSuffix = "@exceptionless.test";
@@ -116,6 +120,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await CleanupSoftDeletedStacksAsync(context);
 
         await EnforceRetentionAsync(context, canCleanupSourceMaps);
+        await CleanupStaleEventPostsAsync(context);
 
         _logger.CleanupFinished();
 
@@ -406,6 +411,34 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
             if (!await projects.NextPageAsync())
                 break;
         }
+    }
+
+    private async Task CleanupStaleEventPostsAsync(JobContext context)
+    {
+        // Queued event post files are deleted when their queue entry completes. Files from entries
+        // that were dead-lettered or lost would otherwise remain in storage forever.
+        var cutoffUtc = _timeProvider.GetUtcNow().UtcDateTime.Subtract(StaleEventPostAge);
+        var stalePaths = new List<string>();
+        var files = await _fileStorage.GetPagedFileListAsync(500, "q/*", context.CancellationToken);
+        do
+        {
+            stalePaths.AddRange(files.Files.Where(file => file.Modified < cutoffUtc).Select(file => file.Path));
+            if (stalePaths.Count >= MaximumStaleEventPostDeletesPerRun || context.CancellationToken.IsCancellationRequested)
+                break;
+        } while (await files.NextPageAsync());
+
+        foreach (string path in stalePaths.Take(MaximumStaleEventPostDeletesPerRun))
+        {
+            if (context.CancellationToken.IsCancellationRequested)
+                break;
+
+            await _fileStorage.DeleteFileAsync(path, context.CancellationToken);
+        }
+
+        if (stalePaths.Count > 0)
+            _logger.LogInformation("Deleted {Count} stale event post files older than {CutoffUtc}", Math.Min(stalePaths.Count, MaximumStaleEventPostDeletesPerRun), cutoffUtc);
+
+        await RenewLockAsync(context);
     }
 
     private async Task RemoveFilesAsync(string path, CancellationToken cancellationToken)
