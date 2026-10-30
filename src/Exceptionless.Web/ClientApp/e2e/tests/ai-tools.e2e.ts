@@ -2,8 +2,7 @@ import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
 
 test.use({ e2eUseGeneratedUser: true });
 
-test('AI tool setup links select the requested tool and Cursor offers an install link', async ({ browser, e2eApi, e2eScenario, page }) => {
-    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+test('AI tool setup links select the requested tool and supported editors offer install links', async ({ browser, e2eApi, e2eScenario, page }) => {
     await page.goto('/account/ai-tools?type=cursor&source=shared');
 
     const toolSelector = page.getByRole('combobox', { name: 'AI tool' });
@@ -11,7 +10,6 @@ test('AI tool setup links select the requested tool and Cursor offers an install
     await expect(page.getByText('Connect to the server in Cursor and approve the OAuth sign-in when prompted.')).toBeVisible();
     await page.setViewportSize({ height: 844, width: 390 });
     await expect(toolSelector).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Copy link' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Add to Cursor' })).toBeVisible();
     await page.setViewportSize({ height: 720, width: 1280 });
 
@@ -34,10 +32,9 @@ test('AI tool setup links select the requested tool and Cursor offers an install
     await page.goBack();
     await expect(toolSelector).toHaveText('Cursor');
 
-    await page.getByRole('button', { name: 'Copy link' }).click();
-    const copiedLink = await page.evaluate(() => navigator.clipboard.readText());
-    expect(copiedLink).toBe(new URL('/account/ai-tools?type=cursor', page.url()).href);
-    await page.goto(copiedLink);
+    const shareableLink = page.url();
+    expect(new URL(shareableLink).searchParams.get('type')).toBe('cursor');
+    await page.goto(shareableLink);
     await expect(toolSelector).toHaveText('Cursor');
 
     await toolSelector.click();
@@ -51,12 +48,27 @@ test('AI tool setup links select the requested tool and Cursor offers an install
     await page.goForward();
     await expect(toolSelector).toHaveText('Codex');
 
+    await toolSelector.click();
+    await page.getByRole('option', { exact: true, name: 'VS Code' }).click();
+    await expect.poll(() => new URL(page.url()).searchParams.get('type')).toBe('vscode');
+    await page.reload();
+    await expect(toolSelector).toHaveText('VS Code');
+    await expect(page.getByText('Connect to the server in VS Code and approve the OAuth sign-in when prompted.')).toBeVisible();
+    const vscodeConfiguration = JSON.parse(await page.locator('pre').first().innerText()) as {
+        servers: Record<string, { type: string; url: string }>;
+    };
+    expect(vscodeConfiguration.servers).toEqual({ [serverName]: { type: 'http', url: server.url } });
+    const vscodeInstallLink = await page.getByRole('link', { name: 'Add to VS Code' }).getAttribute('href');
+    expect(vscodeInstallLink).toMatch(/^vscode:mcp\/install\?/);
+    expect(JSON.parse(decodeURIComponent(vscodeInstallLink!.split('?')[1]!))).toEqual({ name: serverName, type: 'http', url: server.url });
+
     for (const [id, name] of [
         ['claude', 'Claude Code'],
         ['codex', 'Codex'],
         ['cursor', 'Cursor'],
         ['github-copilot', 'Copilot'],
         ['opencode', 'OpenCode'],
+        ['vscode', 'VS Code'],
         ['unknown', 'Claude Code']
     ]) {
         await page.goto(`/account/ai-tools?type=${id}`);
@@ -66,13 +78,13 @@ test('AI tool setup links select the requested tool and Cursor offers an install
     const signedOutContext = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
     try {
         const signedOutPage = await signedOutContext.newPage();
-        await signedOutPage.goto(copiedLink);
+        await signedOutPage.goto(shareableLink);
         await expect(signedOutPage.getByRole('button', { exact: true, name: 'Login' })).toBeVisible();
-        await expect.poll(() => new URL(signedOutPage.url()).searchParams.get('redirect')).toBe('/account/ai-tools?type=cursor');
+        await expect.poll(() => new URL(signedOutPage.url()).searchParams.get('redirect')).toBe('/account/ai-tools?type=cursor&source=shared');
         await signedOutPage.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
         await signedOutPage.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);
         await signedOutPage.getByRole('button', { exact: true, name: 'Login' }).click();
-        await expect(signedOutPage).toHaveURL(copiedLink);
+        await expect(signedOutPage).toHaveURL(shareableLink);
         await expect(signedOutPage.getByRole('combobox', { name: 'AI tool' })).toHaveText('Cursor');
     } finally {
         await signedOutContext.close();

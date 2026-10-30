@@ -1,6 +1,5 @@
 <script lang="ts">
     import { browser } from '$app/env';
-    import { resolve } from '$app/paths';
 
     import CopyToClipboardButton from '#comp/copy-to-clipboard-button.svelte';
     import { CodeBlock, Muted, P } from '#comp/typography/index.ts';
@@ -34,7 +33,7 @@
         },
         history: 'push',
         schema: {
-            type: '<claude,codex,cursor,github-copilot,opencode>'
+            type: '<claude,codex,cursor,github-copilot,opencode,vscode>'
         }
     });
 
@@ -48,6 +47,17 @@
                   ),
                   name: mcpServerName
               })}`
+            : undefined
+    );
+    const vscodeInstallUrl = $derived(
+        browser && mcpEndpoint !== '/mcp'
+            ? `vscode:mcp/install?${encodeURIComponent(
+                  JSON.stringify({
+                      name: mcpServerName,
+                      type: 'http',
+                      url: mcpEndpoint
+                  })
+              )}`
             : undefined
     );
 
@@ -167,11 +177,44 @@
                     title: 'Authenticate'
                 }
             ]
+        },
+        {
+            description: 'Use VS Code with the hosted Exceptionless MCP server.',
+            id: 'vscode',
+            name: 'VS Code',
+            steps: [
+                {
+                    code: JSON.stringify(
+                        {
+                            servers: {
+                                [mcpServerName]: {
+                                    type: 'http',
+                                    url: mcpEndpoint
+                                }
+                            }
+                        },
+                        null,
+                        4
+                    ),
+                    description: 'Add the server to VS Code, or add this configuration to .vscode/mcp.json in your workspace. Keep any existing servers.',
+                    install: vscodeInstallUrl
+                        ? {
+                              label: 'Add to VS Code',
+                              url: vscodeInstallUrl
+                          }
+                        : undefined,
+                    language: 'json',
+                    title: 'Add the server'
+                },
+                {
+                    description: 'Connect to the server in VS Code and approve the OAuth sign-in when prompted.',
+                    title: 'Authenticate'
+                }
+            ]
         }
     ]);
 
     const selectedTool = $derived(aiTools.find((tool) => tool.id === queryParams.type) ?? aiTools[0]!);
-    const toolLink = $derived(browser ? new URL(`${resolve('/(app)/account/ai-tools')}?type=${selectedTool.id}`, window.location.origin).href : '');
 
     const examplePrompts = [
         'What are my top issues this week?',
@@ -194,27 +237,22 @@
             <ol class="ml-6 list-decimal space-y-6">
                 <li class="pl-1">
                     <P>Select your AI tool.</P>
-                    <div class="mt-2 flex flex-wrap items-center gap-2">
-                        <Select.Root
-                            type="single"
-                            value={selectedTool.id}
-                            onValueChange={(value) => {
-                                queryParams.type = value as AiToolId;
-                            }}
-                        >
-                            <Select.Trigger aria-label="AI tool" class="w-full max-w-md">
-                                <span>{selectedTool.name}</span>
-                            </Select.Trigger>
-                            <Select.Content>
-                                {#each aiTools as tool (tool.id)}
-                                    <Select.Item value={tool.id}>{tool.name}</Select.Item>
-                                {/each}
-                            </Select.Content>
-                        </Select.Root>
-                        <CopyToClipboardButton title={`Copy link to ${selectedTool.name} setup`} size="default" variant="outline" value={toolLink}>
-                            Copy link
-                        </CopyToClipboardButton>
-                    </div>
+                    <Select.Root
+                        type="single"
+                        value={selectedTool.id}
+                        onValueChange={(value) => {
+                            queryParams.type = value as AiToolId;
+                        }}
+                    >
+                        <Select.Trigger aria-label="AI tool" class="mt-2 w-full max-w-md">
+                            <span>{selectedTool.name}</span>
+                        </Select.Trigger>
+                        <Select.Content>
+                            {#each aiTools as tool (tool.id)}
+                                <Select.Item value={tool.id}>{tool.name}</Select.Item>
+                            {/each}
+                        </Select.Content>
+                    </Select.Root>
                     <Muted class="mt-2 block text-sm">{selectedTool.description}</Muted>
                 </li>
 
