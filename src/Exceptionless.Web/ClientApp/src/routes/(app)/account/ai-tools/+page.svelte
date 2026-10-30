@@ -1,31 +1,55 @@
 <script lang="ts">
     import { browser } from '$app/env';
+    import { resolve } from '$app/paths';
 
     import CopyToClipboardButton from '#comp/copy-to-clipboard-button.svelte';
     import { CodeBlock, Muted, P } from '#comp/typography/index.ts';
+    import { Button } from '#comp/ui/button/index.ts';
     import * as Card from '#comp/ui/card/index.ts';
     import * as Select from '#comp/ui/select/index.ts';
     import { getServerUrl } from '#shared/api/urls.ts';
+    import { createQueryParameters } from '#shared/query-params/index.ts';
 
     type AiTool = {
         description: string;
         id: AiToolId;
         name: string;
-        steps: CommandStep[];
+        steps: SetupStep[];
     };
 
-    type AiToolId = 'claude' | 'codex' | 'github-copilot' | 'opencode';
+    type AiToolId = NonNullable<typeof queryParams.tool>;
 
-    type CommandStep = {
-        code: string;
+    type SetupStep = ({ code: string; language: 'json' | 'shellscript' } | { code?: never; language?: never }) & {
         description: string;
-        language: 'json' | 'shellscript';
+        installUrl?: string;
         title: string;
     };
 
     let mcpEndpoint = $state('/mcp');
     let mcpServerName = $state('exceptionless');
-    let selectedToolId = $state<AiToolId>('claude');
+
+    const queryParams = createQueryParameters({
+        defaults: {
+            tool: 'claude'
+        },
+        history: 'push',
+        schema: {
+            tool: '<claude,codex,cursor,github-copilot,opencode>'
+        }
+    });
+
+    const cursorInstallUrl = $derived(
+        browser && mcpEndpoint !== '/mcp'
+            ? `cursor://anysphere.cursor-deeplink/mcp/install?${new URLSearchParams({
+                  config: btoa(
+                      JSON.stringify({
+                          url: mcpEndpoint
+                      })
+                  ),
+                  name: mcpServerName
+              })}`
+            : undefined
+    );
 
     $effect(() => {
         if (browser) {
@@ -73,6 +97,35 @@
             ]
         },
         {
+            description: 'Use Cursor with the hosted Exceptionless MCP server.',
+            id: 'cursor',
+            name: 'Cursor',
+            steps: [
+                {
+                    code: JSON.stringify(
+                        {
+                            mcpServers: {
+                                [mcpServerName]: {
+                                    url: mcpEndpoint
+                                }
+                            }
+                        },
+                        null,
+                        4
+                    ),
+                    description:
+                        'Add the server to Cursor, or add this configuration to ~/.cursor/mcp.json (or .cursor/mcp.json in your project). Keep any existing servers.',
+                    installUrl: cursorInstallUrl,
+                    language: 'json',
+                    title: 'Add the server'
+                },
+                {
+                    description: 'Connect to the server in Cursor and approve the OAuth sign-in when prompted.',
+                    title: 'Authenticate'
+                }
+            ]
+        },
+        {
             description: 'Use Copilot with the hosted Exceptionless MCP server.',
             id: 'github-copilot',
             name: 'Copilot',
@@ -112,7 +165,8 @@
         }
     ]);
 
-    const selectedTool = $derived(aiTools.find((tool) => tool.id === selectedToolId) ?? aiTools[0]!);
+    const selectedTool = $derived(aiTools.find((tool) => tool.id === queryParams.tool) ?? aiTools[0]!);
+    const toolLink = $derived(browser ? new URL(`${resolve('/(app)/account/ai-tools')}?tool=${selectedTool.id}`, window.location.origin).href : '');
 
     const examplePrompts = [
         'What are my top issues this week?',
@@ -128,41 +182,51 @@
     <Card.Root>
         <Card.Header>
             <Card.Title class="text-sm font-medium">Setup Instructions</Card.Title>
-            <Card.Description>Choose an AI tool, then run each command in order.</Card.Description>
+            <Card.Description>Choose an AI tool, then follow the setup steps.</Card.Description>
         </Card.Header>
 
         <Card.Content class="space-y-6">
             <ol class="ml-6 list-decimal space-y-6">
                 <li class="pl-1">
                     <P>Select your AI tool.</P>
-                    <Select.Root
-                        type="single"
-                        value={selectedToolId}
-                        onValueChange={(value) => {
-                            selectedToolId = value as AiToolId;
-                        }}
-                    >
-                        <Select.Trigger aria-label="AI tool" class="mt-2 w-full max-w-md">
-                            <span>{selectedTool.name}</span>
-                        </Select.Trigger>
-                        <Select.Content>
-                            {#each aiTools as tool (tool.id)}
-                                <Select.Item value={tool.id}>{tool.name}</Select.Item>
-                            {/each}
-                        </Select.Content>
-                    </Select.Root>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <Select.Root
+                            type="single"
+                            value={selectedTool.id}
+                            onValueChange={(value) => {
+                                queryParams.tool = value as AiToolId;
+                            }}
+                        >
+                            <Select.Trigger aria-label="AI tool" class="w-full max-w-md">
+                                <span>{selectedTool.name}</span>
+                            </Select.Trigger>
+                            <Select.Content>
+                                {#each aiTools as tool (tool.id)}
+                                    <Select.Item value={tool.id}>{tool.name}</Select.Item>
+                                {/each}
+                            </Select.Content>
+                        </Select.Root>
+                        <CopyToClipboardButton title={`Copy link to ${selectedTool.name} setup`} size="default" variant="outline" value={toolLink}>
+                            Copy link
+                        </CopyToClipboardButton>
+                    </div>
                     <Muted class="mt-2 block text-sm">{selectedTool.description}</Muted>
                 </li>
 
                 {#each selectedTool.steps as step (step.title)}
                     <li class="pl-1">
                         <P>{step.description}</P>
-                        <div class="bg-muted relative mt-2 min-h-13 overflow-hidden rounded-md">
-                            <CodeBlock code={step.code} language={step.language} class="max-h-80 overflow-auto pr-12" />
-                            <div class="absolute top-2 right-2">
-                                <CopyToClipboardButton value={step.code} />
+                        {#if step.installUrl}
+                            <Button href={step.installUrl} class="mt-2">Add to Cursor</Button>
+                        {/if}
+                        {#if step.code && step.language}
+                            <div class="bg-muted relative mt-2 min-h-13 overflow-hidden rounded-md">
+                                <CodeBlock code={step.code} language={step.language} class="max-h-80 overflow-auto pr-12" />
+                                <div class="absolute top-2 right-2">
+                                    <CopyToClipboardButton value={step.code} />
+                                </div>
                             </div>
-                        </div>
+                        {/if}
                     </li>
                 {/each}
             </ol>
