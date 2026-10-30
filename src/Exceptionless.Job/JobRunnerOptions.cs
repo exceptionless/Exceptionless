@@ -83,6 +83,10 @@ public class JobRunnerOptions
         if (StackEventCount && args.Length != 0)
             JobName = nameof(StackEventCount);
 
+        TrialExpiration = args.Length == 0 || args.Contains(nameof(TrialExpiration), StringComparer.OrdinalIgnoreCase);
+        if (TrialExpiration && args.Length != 0)
+            JobName = nameof(TrialExpiration);
+
         WebHooks = args.Length == 0 || args.Contains(nameof(WebHooks), StringComparer.OrdinalIgnoreCase);
         if (WebHooks && args.Length != 0)
             JobName = nameof(WebHooks);
@@ -112,6 +116,7 @@ public class JobRunnerOptions
     public bool RunDataSeedStartupAction => !Migration;
     public bool StackStatus { get; }
     public bool StackEventCount { get; }
+    public bool TrialExpiration { get; }
     public bool WebHooks { get; }
     public bool WorkItem { get; }
 }

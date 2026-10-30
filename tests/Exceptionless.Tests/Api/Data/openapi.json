@@ -7196,6 +7196,16 @@
               }
             }
           },
+          "403": {
+            "description": "Please verify your email address before inviting users.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "The organization was not found.",
             "content": {
@@ -7206,8 +7216,8 @@
               }
             }
           },
-          "426": {
-            "description": "Please upgrade your plan to add an additional user.",
+          "429": {
+            "description": "You\u0027ve sent the maximum number of invites for today.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11881,7 +11891,8 @@
         "required": [
           "enabled",
           "has_access",
-          "upgrade_required"
+          "upgrade_required",
+          "email_verification_required"
         ],
         "type": "object",
         "properties": {
@@ -11905,6 +11916,10 @@
               "null",
               "string"
             ]
+          },
+          "email_verification_required": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -14232,6 +14247,14 @@
               "string"
             ]
           },
+          "trial_started_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Date the user started their one no-card trial.",
+            "format": "date-time"
+          },
           "verify_email_address_token_expiration": {
             "type": "string",
             "format": "date-time"
@@ -14625,6 +14648,13 @@
           "billing_price": {
             "type": "number",
             "format": "double"
+          },
+          "trial_ends_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "max_events_per_month": {
             "type": "integer",
