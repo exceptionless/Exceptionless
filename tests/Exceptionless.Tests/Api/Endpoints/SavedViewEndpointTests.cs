@@ -1,7 +1,9 @@
 using System.Net;
 using System.Text.Json;
+using Elastic.Clients.Elasticsearch.IndexManagement;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Seed;
 using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
@@ -395,6 +397,61 @@ public sealed class SavedViewEndpointTests : IntegrationTestsBase
         Assert.Equal("Production Errors", savedView.Name);
         Assert.Equal("-date", savedView.Sort);
         Assert.Equal(2, savedView.Columns?["user"].Position);
+    }
+
+    [Fact]
+    public async Task PostAsync_AutomaticRefreshDisabled_NewViewIsImmediatelyListed()
+    {
+        // Arrange
+        await SendRequestAsync(r => r
+            .AsGlobalAdminUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+            .StatusCodeShouldBeOk());
+        var configuration = GetService<ExceptionlessElasticConfiguration>();
+        string index = configuration.SavedViews.Name;
+        var settings = await configuration.Client.Indices.GetSettingsAsync((Elastic.Clients.Elasticsearch.Indices)index, TestCancellationToken);
+        Assert.True(settings.IsValidResponse, settings.DebugInformation);
+        var refreshInterval = settings.Settings.Values.Single().Settings?.RefreshInterval ?? "1s";
+        var disabled = await configuration.Client.Indices.PutSettingsAsync(new PutIndicesSettingsRequest(index, new IndexSettings { RefreshInterval = "-1" }), TestCancellationToken);
+        Assert.True(disabled.IsValidResponse, disabled.DebugInformation);
+
+        try
+        {
+            var newView = new NewSavedView
+            {
+                OrganizationId = SampleDataService.TEST_ORG_ID,
+                Name = "Immediately searchable view",
+                ViewType = "events"
+            };
+
+            // Act
+            var created = await SendRequestAsAsync<ViewSavedView>(r => r
+                .Post()
+                .AsGlobalAdminUser()
+                .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+                .Content(newView)
+                .StatusCodeShouldBeCreated());
+            var organizationViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views")
+                .StatusCodeShouldBeOk());
+            var eventViews = await SendRequestAsAsync<List<ViewSavedView>>(r => r
+                .AsGlobalAdminUser()
+                .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "saved-views", "events")
+                .StatusCodeShouldBeOk());
+
+            // Assert
+            Assert.NotNull(created);
+            Assert.NotNull(organizationViews);
+            Assert.NotNull(eventViews);
+            Assert.Contains(organizationViews, view => view.Id == created.Id);
+            Assert.Contains(eventViews, view => view.Id == created.Id);
+        }
+        finally
+        {
+            var restored = await configuration.Client.Indices.PutSettingsAsync(new PutIndicesSettingsRequest(index, new IndexSettings { RefreshInterval = refreshInterval }), CancellationToken.None);
+            Assert.True(restored.IsValidResponse, restored.DebugInformation);
+        }
     }
 
     [Fact]
