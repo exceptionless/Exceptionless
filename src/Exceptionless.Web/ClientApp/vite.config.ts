@@ -10,6 +10,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
+import { createApiProxies } from './src/lib/server/sse-proxy.ts';
+
 const apiTarget = process.env.API_HTTPS || process.env.API_HTTP;
 const apiProxy = { changeOrigin: true, target: apiTarget };
 
@@ -188,8 +190,8 @@ export default defineConfig({
         hmr,
         port,
         proxy: {
+            ...createApiProxies(apiTarget),
             '/.well-known': apiProxy,
-            '/api': { ...apiProxy, ws: true },
             '/docs': apiProxy,
             '/health': apiProxy,
             '/mcp': apiProxy,
