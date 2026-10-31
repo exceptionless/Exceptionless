@@ -72,7 +72,7 @@ describe('microsoftLogin', () => {
                 redirectUri: 'http://localhost:7131',
                 state
             },
-            { expectedStatusCodes: [401, 403, 422] }
+            { expectedStatusCodes: [401, 403, 409, 422] }
         );
         expect(accessToken.current).toBe('session-token');
         expect(goto).toHaveBeenCalledExactlyOnceWith('/organization/invited');
@@ -97,8 +97,11 @@ describe('microsoftLogin', () => {
         expect(popup.close).toHaveBeenCalledOnce();
     });
 
-    it('displays the 403 with the application error callback enabled', async () => {
-        const message = 'Account Creation is currently disabled';
+    it.each([
+        { message: 'Account Creation is currently disabled', status: 403 },
+        { message: 'The account changed while the request was being processed.', status: 409 }
+    ])('displays the $status with the application error callback enabled', async ({ message, status }) => {
+        // Arrange
         const client = new FetchClient({
             baseUrl: 'http://localhost/api/v2',
             defaultRequestOptions: {
@@ -107,17 +110,21 @@ describe('microsoftLogin', () => {
                 }
             },
             fetch: async () =>
-                new Response(JSON.stringify({ status: 403, title: message }), {
+                new Response(JSON.stringify({ status, title: message }), {
                     headers: { 'Content-Type': 'application/problem+json' },
-                    status: 403
+                    status
                 })
         });
         postJSON.mockImplementation(client.postJSON.bind(client));
         vi.stubGlobal('crypto', { randomUUID: () => 'expected-state' });
+
+        // Act
         const login = microsoftLogin();
         const completed = expect(login).resolves.toBeUndefined();
         popup.location = new URL('http://localhost:7131/?code=authorization-code&state=expected-state');
         await vi.advanceTimersByTimeAsync(500);
+
+        // Assert
         await completed;
         expect(toastError).toHaveBeenCalledExactlyOnceWith(message);
         expect(accessToken.current).toBeNull();

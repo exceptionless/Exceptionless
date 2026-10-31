@@ -1,5 +1,7 @@
 using System.Text.Json;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Serializer;
 using Xunit;
 
@@ -231,6 +233,7 @@ public class UserSerializerTests : TestWithServices
         Assert.NotNull(user);
         Assert.Equal("user-from-cache", user.Id);
         Assert.Null(user.AuthenticationVersion);
+        Assert.Empty(user.Version);
         Assert.Equal(2, user.OrganizationIds.Count);
         Assert.Contains("cached-org-1", user.OrganizationIds);
         Assert.Contains("cached-org-2", user.OrganizationIds);
@@ -260,11 +263,14 @@ public class UserSerializerTests : TestWithServices
         // Act
         string? json = _serializer.SerializeToString(original);
 
+        using var document = JsonDocument.Parse(json!);
+        string productToursJson = document.RootElement.GetProperty("product_tours").GetRawText();
+
         // Assert
         Assert.Contains("\"product_tours\":{\"app_overview\":\"2024-01-15T12:00:00Z\",\"future_guide_v2\":\"2024-01-15T12:01:00Z\"}", json);
-        Assert.DoesNotContain("status", json, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("version", json, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("event_investigate", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("status", productToursJson, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("version", productToursJson, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("event_investigate", productToursJson, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -420,11 +426,13 @@ public class UserSerializerTests : TestWithServices
     public void Deserialize_UserWithAllProperties_PreservesAllValues()
     {
         // Arrange
-        const string authenticationVersion = "current-version";
+        string authenticationVersion = StringExtensions.GetNewToken();
+        string documentVersion = new ElasticDocumentVersion(primaryTerm: 1, sequenceNumber: 42);
         var original = new User
         {
             Id = "full-user",
             AuthenticationVersion = authenticationVersion,
+            Version = documentVersion,
             FullName = "Full Test User",
             EmailAddress = "full@example.com",
             Password = "hashedpassword",
@@ -441,13 +449,14 @@ public class UserSerializerTests : TestWithServices
         original.Roles.Add("user");
 
         // Act
-        string? json = _serializer.SerializeToString(original);
+        string json = _serializer.SerializeToString(original)!;
         var deserialized = _serializer.Deserialize<User>(json);
 
         // Assert
         Assert.NotNull(deserialized);
         Assert.Equal("full-user", deserialized.Id);
         Assert.Equal(authenticationVersion, deserialized.AuthenticationVersion);
+        Assert.Equal(documentVersion, deserialized.Version);
         Assert.Equal("Full Test User", deserialized.FullName);
         Assert.Equal("full@example.com", deserialized.EmailAddress);
         Assert.Equal("hashedpassword", deserialized.Password);

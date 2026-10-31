@@ -200,6 +200,11 @@ public sealed class WebHooksJobTests : TestWithServices
         var requests = new ConcurrentQueue<(string Path, string Cookie, string TraceParent, string TraceState, string Baggage)>();
         var activities = new ConcurrentQueue<Activity>();
         var sampledTraceIds = new ConcurrentDictionary<ActivityTraceId, bool>();
+        // Parallel application hosts keep a parent-based HTTP tracing provider active in this process.
+        using var applicationTracing = Sdk.CreateTracerProviderBuilder()
+            .SetSampler(new ParentBasedSampler(new AlwaysOnSampler()))
+            .AddHttpClientInstrumentation(options => options.EnrichWithHttpRequestMessage = WebHookDelivery.EnrichActivity)
+            .Build();
         using var tracing = Sdk.CreateTracerProviderBuilder()
             .SetSampler(new TrackingSampler(sampled ? new AlwaysOnSampler() : new AlwaysOffSampler(), sampledTraceIds))
             .AddHttpClientInstrumentation(options => options.EnrichWithHttpRequestMessage = WebHookDelivery.EnrichActivity)
@@ -238,6 +243,8 @@ public sealed class WebHooksJobTests : TestWithServices
         HttpStatusCode internalStatus;
         var previousBaggage = Baggage.Current;
         Baggage.SetBaggage("webhook-test", "private-baggage");
+        using var parentActivity = new Activity("webhook-delivery-test").SetIdFormat(ActivityIdFormat.W3C).Start();
+        parentActivity.ActivityTraceFlags = sampled ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None;
         try
         {
             // Act

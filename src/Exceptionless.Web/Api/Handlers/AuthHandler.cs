@@ -15,8 +15,11 @@ using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Security;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
+using Foundatio.Repositories.Models;
 using Microsoft.IdentityModel.Tokens;
 using OAuth2.Models;
 
@@ -31,17 +34,16 @@ public class AuthHandler(
     IOAuthTokenRepository oauthTokenRepository,
     IOAuthProviderClient oauthProviderClient,
     ICacheClient cacheClient,
+    ILockProvider lockProvider,
     AuthService authService,
     IMailer mailer,
     IDomainLoginProvider domainLoginProvider,
     TimeProvider timeProvider,
     ILogger<AuthHandler> logger)
 {
-    private const string LegacyMicrosoftOAuthProvider = "WindowsLive";
-    private const string MicrosoftOAuthProvider = "Microsoft";
     private readonly ScopedCacheClient _cache = new(cacheClient, "Auth");
-    private static bool _isFirstUserChecked;
     private static readonly TimeSpan IntercomJwtLifetime = TimeSpan.FromMinutes(60);
+    private static readonly TimeSpan ExternalAccountAdmissionTimeout = TimeSpan.FromSeconds(15);
 
     public async Task<Result<TokenResult>> Handle(LoginMessage message)
     {
@@ -285,19 +287,27 @@ public class AuthHandler(
 
     public async Task<Result<TokenResult>> Handle(RemoveExternalLogin message)
     {
+        if (String.IsNullOrWhiteSpace(message.ProviderUserId))
+            return Result.BadRequest("Invalid Provider Name or Provider User Id.");
+
         var httpContext = message.Context;
         var user = httpContext.Request.GetUser();
-        using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(message.ProviderName).Identity(user.EmailAddress).Property("Provider User Id", message.ProviderUserId?.Value).SetHttpContext(httpContext));
+        using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(message.ProviderName).Identity(user.EmailAddress).Property("Provider User Id", message.ProviderUserId).SetHttpContext(httpContext));
 
-        if (String.IsNullOrWhiteSpace(message.ProviderName) || String.IsNullOrWhiteSpace(message.ProviderUserId?.Value))
-        {
-            logger.LogError("Remove external login failed for {EmailAddress}: Invalid Provider Name or Provider User Id", user.EmailAddress);
-            return Result.BadRequest("Invalid Provider Name or Provider User Id.");
-        }
-
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
+        operationCancellation.CancelAfter(ExternalAccountAdmissionTimeout);
         try
         {
-            if (!user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId.Value))
+            operationCancellation.Token.ThrowIfCancellationRequested();
+            await using var userLock = await lockProvider.AcquireAsync(GetExternalAccountUserLockKey(user.Id), cancellationToken: operationCancellation.Token);
+            var storedUser = await userRepository.GetByIdAsync(user.Id, options => options.Cache(false)).WaitAsync(operationCancellation.Token);
+            if (storedUser is null || !storedUser.IsActive
+                || !String.Equals(user.AuthenticationVersion, storedUser.AuthenticationVersion, StringComparison.Ordinal))
+                return Result.Unauthorized("Login failed.");
+
+            user = storedUser;
+            CompleteExternalAccountAdmission(operationCancellation);
+            if (!user.RemoveOAuthAccount(message.ProviderName, message.ProviderUserId))
             {
                 logger.LogError("Remove external login failed for {EmailAddress}: You must set a local password before removing your external login", user.EmailAddress);
                 return Result.BadRequest("You must set a local password before removing your external login.");
@@ -305,17 +315,23 @@ public class AuthHandler(
 
             user.AuthenticationVersion = Core.Extensions.StringExtensions.GetNewToken();
             await userRepository.SaveAsync(user, o => o.Cache());
+
+            await ResetUserTokensAsync(user, "RemoveExternalLoginAsync", httpContext);
+
+            logger.UserRemovedExternalLogin(user.EmailAddress, message.ProviderName);
+            return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
+        }
+        catch (Exception ex) when (ex is LockAcquisitionTimeoutException
+            || ex is OperationCanceledException && operationCancellation.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Remove external login failed for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
+            return Result.Unauthorized("Login failed.");
         }
         catch (Exception ex)
         {
             logger.LogCritical(ex, "Error removing external login for {EmailAddress}: {Message}", user.EmailAddress, ex.Message);
             throw;
         }
-
-        await ResetUserTokensAsync(user, "RemoveExternalLoginAsync", httpContext);
-
-        logger.UserRemovedExternalLogin(user.EmailAddress, message.ProviderName);
-        return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
     public async Task<Result<TokenResult>> Handle(ChangePassword message)
@@ -407,7 +423,14 @@ public class AuthHandler(
         }
 
         user.CreatePasswordResetToken(timeProvider);
-        await userRepository.SaveAsync(user, o => o.Cache());
+        try
+        {
+            await userRepository.SaveAsync(user, o => o.Cache());
+        }
+        catch (VersionConflictDocumentException)
+        {
+            return Result.Success();
+        }
 
         await mailer.SendUserPasswordResetAsync(user);
         logger.UserForgotPassword(user.EmailAddress);
@@ -479,16 +502,11 @@ public class AuthHandler(
         return Result.Success();
     }
 
-    private async Task AddGlobalAdminRoleIfFirstUserAsync(User user)
+    private async Task AddGlobalAdminRoleIfFirstUserAsync(User user, CancellationToken cancellationToken = default)
     {
-        if (_isFirstUserChecked)
-            return;
-
-        bool isFirstUser = await userRepository.CountAsync() == 0;
+        bool isFirstUser = await userRepository.CountAsync().WaitAsync(cancellationToken) == 0;
         if (isFirstUser)
             user.Roles.Add(AuthorizationRoles.GlobalAdmin);
-
-        _isFirstUserChecked = true;
     }
 
     private async Task<Result<TokenResult>> ExternalLoginAsync(ExternalAuthInfo authInfo, HttpContext httpContext, string? appId, string? appSecret, Func<ExternalAuthInfo, string, string, Task<UserInfo>> getUserInfoAsync)
@@ -509,10 +527,56 @@ public class AuthHandler(
             throw;
         }
 
-        User? user;
+        // Bound admission reads only. Once admitted, complete account changes and token issuance inside the locks.
+        using var operationCancellation = CancellationTokenSource.CreateLinkedTokenSource(httpContext.RequestAborted);
+        operationCancellation.CancelAfter(ExternalAccountAdmissionTimeout);
         try
         {
-            user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext);
+            ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
+            ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
+            ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
+
+            // Lock the identity and normalized email before resolving or creating its owner.
+            string[] accountKeys = [
+                $"external-account:identity:{userInfo.ProviderName}:{OAuthService.CreateTokenHash(userInfo.Id)}",
+                $"external-account:email:{OAuthService.CreateTokenHash(userInfo.Email.Trim().ToLowerInvariant())}"
+            ];
+            operationCancellation.Token.ThrowIfCancellationRequested();
+            await using var accountLock = await lockProvider.AcquireAsync(accountKeys, cancellationToken: operationCancellation.Token);
+            var owners = await userRepository.GetUsersByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id, operationCancellation.Token)
+                .WaitAsync(operationCancellation.Token);
+            if (owners.Count > 1)
+            {
+                logger.LogWarning("External login failed for {EmailAddress}: The external account is linked to multiple users", userInfo.Email);
+                return Result.Unauthorized("Login failed.");
+            }
+
+            var existingUser = owners.SingleOrDefault();
+            // Admission reads may outlive cancellation; do not read or populate a stale email cache entry.
+            var emailUser = existingUser is null
+                ? (await userRepository.FindOneAsync(query => query.FieldEquals(user => user.EmailAddress, userInfo.Email.Trim().ToLowerInvariant()),
+                    options => options.Cache(false)).WaitAsync(operationCancellation.Token))?.Document
+                : null;
+            string? currentUserId = String.IsNullOrWhiteSpace(authInfo.InviteToken) && httpContext.User.IsUserAuthType()
+                ? httpContext.Request.GetUser().Id : null;
+            var userKeys = new[] { existingUser?.Id, emailUser?.Id, currentUserId }
+                .OfType<string>().Select(GetExternalAccountUserLockKey);
+            // Ordered user locks also protect transfers and different identities on the same user.
+            await using var userLock = await lockProvider.AcquireAsync(userKeys, cancellationToken: operationCancellation.Token);
+            operationCancellation.Token.ThrowIfCancellationRequested();
+            var user = await FromExternalLoginAsync(userInfo, authInfo.InviteToken, httpContext, existingUser, emailUser, operationCancellation);
+
+            if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
+                await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext);
+
+            logger.UserLoggedIn(user.EmailAddress);
+            return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or LockAcquisitionTimeoutException
+            || ex is OperationCanceledException && operationCancellation.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
+            return Result.Unauthorized("Login failed.");
         }
         catch (ApplicationException ex)
         {
@@ -524,30 +588,58 @@ public class AuthHandler(
             logger.LogCritical(ex, "External login failed for {EmailAddress}: {Message}", userInfo.Email, ex.Message);
             throw;
         }
-
-        if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
-            await AddInvitedUserToOrganizationAsync(authInfo.InviteToken, user, httpContext);
-
-        logger.UserLoggedIn(user.EmailAddress);
-        return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
     }
 
-    private async Task<User> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext)
+    private static string GetExternalAccountUserLockKey(string userId) => $"external-account:user:{userId}";
+
+    private static void CompleteExternalAccountAdmission(CancellationTokenSource admissionCancellation)
     {
+        admissionCancellation.Token.ThrowIfCancellationRequested();
+        admissionCancellation.CancelAfter(Timeout.InfiniteTimeSpan);
+    }
+
+    private async Task<User> FromExternalLoginAsync(UserInfo userInfo, string? inviteToken, HttpContext httpContext, User? existingUser, User? emailUser, CancellationTokenSource admissionCancellation)
+    {
+        var cancellationToken = admissionCancellation.Token;
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Id);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.ProviderName);
         ArgumentException.ThrowIfNullOrWhiteSpace(userInfo.Email);
 
-        var existingUser = await userRepository.GetUserByOAuthProviderAsync(userInfo.ProviderName, userInfo.Id);
+        var accountData = new SettingsDictionary { ["email"] = userInfo.Email };
+        string? fullName = userInfo.GetFullName();
+        if (!String.IsNullOrWhiteSpace(fullName))
+            accountData["name"] = fullName;
+
         using var _ = logger.BeginScope(new ExceptionlessState().Tag("External Login").Tag(userInfo.ProviderName).Identity(userInfo.Email).SetHttpContext(httpContext));
+
+        if (existingUser is not null)
+        {
+            existingUser = await userRepository.GetByIdAsync(existingUser.Id, options => options.Cache(false)).WaitAsync(cancellationToken)
+                ?? throw new UnauthorizedAccessException("The user no longer exists.");
+            EnsureUserIsActive(existingUser);
+            if (!existingUser.OAuthAccounts.Any(account =>
+                String.Equals(account.Provider, userInfo.ProviderName, StringComparison.Ordinal) &&
+                String.Equals(account.ProviderUserId, userInfo.Id, StringComparison.Ordinal)))
+                throw new UnauthorizedAccessException("The external account is no longer linked to this user.");
+        }
 
         if (String.IsNullOrWhiteSpace(inviteToken) && httpContext.User.IsUserAuthType())
         {
-            var currentUser = httpContext.Request.GetUser();
+            var authenticatedUser = httpContext.Request.GetUser();
+            var currentUser = await userRepository.GetByIdAsync(authenticatedUser.Id, options => options.Cache(false)).WaitAsync(cancellationToken)
+                ?? throw new UnauthorizedAccessException("The user no longer exists.");
+            EnsureUserIsActive(currentUser);
+            if (!String.Equals(authenticatedUser.AuthenticationVersion, currentUser.AuthenticationVersion, StringComparison.Ordinal))
+                throw new UnauthorizedAccessException("The user session has been revoked.");
+            CompleteExternalAccountAdmission(admissionCancellation);
+            OAuthAccount? transferredAccount = null;
             if (existingUser is not null)
             {
                 if (!String.Equals(existingUser.Id, currentUser.Id, StringComparison.Ordinal))
                 {
+                    transferredAccount = existingUser.OAuthAccounts.First(account =>
+                        String.Equals(account.Provider, userInfo.ProviderName, StringComparison.Ordinal)
+                        && String.Equals(account.ProviderUserId, userInfo.Id, StringComparison.Ordinal));
                     if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
                         throw new Exception($"Unable to remove existing oauth account for existing user: {existingUser.EmailAddress}");
 
@@ -555,50 +647,55 @@ public class AuthHandler(
                     await userRepository.SaveAsync(existingUser, o => o.Cache());
                     await ResetUserTokensAsync(existingUser, "Link external account to another user", httpContext);
                 }
-                else
-                {
-                    if (RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName))
-                        return await userRepository.SaveAsync(currentUser, o => o.Cache());
-
-                    return currentUser;
-                }
             }
 
-            currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+            currentUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
             RemoveLegacyMicrosoftOAuthAccounts(currentUser, userInfo.ProviderName);
-            return await userRepository.SaveAsync(currentUser, o => o.Cache());
+            try
+            {
+                return await userRepository.SaveAsync(currentUser, o => o.Cache());
+            }
+            catch (VersionConflictDocumentException) when (existingUser is not null && transferredAccount is not null)
+            {
+                // The destination write did not commit. Restore the link on fresh state, retaining session revocation.
+                bool restored = await userRepository.PatchAsync(existingUser.Id, new ActionPatch<User>(user =>
+                    user.AddOAuthAccount(transferredAccount.Provider, transferredAccount.ProviderUserId, transferredAccount.Username, transferredAccount.ExtraData)));
+                if (!restored)
+                    throw new InvalidOperationException("Unable to restore the previous external account owner.");
+
+                throw;
+            }
         }
 
         if (existingUser is not null)
         {
-            bool hasChanges = RemoveLegacyMicrosoftOAuthAccounts(existingUser, userInfo.ProviderName);
-            if (!existingUser.IsEmailAddressVerified)
-            {
-                existingUser.MarkEmailAddressVerified();
-                hasChanges = true;
-            }
-
-            if (hasChanges)
-                await userRepository.SaveAsync(existingUser, o => o.Cache());
-
-            return existingUser;
+            CompleteExternalAccountAdmission(admissionCancellation);
+            existingUser.MarkEmailAddressVerified();
+            existingUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
+            RemoveLegacyMicrosoftOAuthAccounts(existingUser, userInfo.ProviderName);
+            return await userRepository.SaveAsync(existingUser, o => o.Cache());
         }
 
-        var user = !String.IsNullOrEmpty(userInfo.Email) ? await userRepository.GetByEmailAddressAsync(userInfo.Email) : null;
+        var user = emailUser is not null ? await userRepository.GetByIdAsync(emailUser.Id, options => options.Cache(false)).WaitAsync(cancellationToken) : null;
+        if (user is not null && !String.Equals(user.EmailAddress, userInfo.Email.Trim(), StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("The user's email address has changed.");
 
         if (user is null)
         {
-            if (!await IsAccountCreationEnabledAsync(inviteToken))
+            if (!await IsAccountCreationEnabledAsync(inviteToken, cancellationToken))
                 throw new ApplicationException("Account Creation is currently disabled.");
 
             user = new User { FullName = userInfo.GetFullName()!, EmailAddress = userInfo.Email };
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
-            await AddGlobalAdminRoleIfFirstUserAsync(user);
+            await AddGlobalAdminRoleIfFirstUserAsync(user, cancellationToken);
         }
 
+        EnsureUserIsActive(user);
+        CompleteExternalAccountAdmission(admissionCancellation);
         user.MarkEmailAddressVerified();
-        user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+        user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email, accountData);
+        RemoveLegacyMicrosoftOAuthAccounts(user, userInfo.ProviderName);
 
         if (String.IsNullOrEmpty(user.Id))
             await userRepository.AddAsync(user, o => o.Cache());
@@ -608,13 +705,19 @@ public class AuthHandler(
         return user;
     }
 
+    private static void EnsureUserIsActive(User user)
+    {
+        if (!user.IsActive)
+            throw new UnauthorizedAccessException("The user is inactive.");
+    }
+
     private static bool RemoveLegacyMicrosoftOAuthAccounts(User user, string providerName)
     {
-        if (!String.Equals(providerName, MicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase))
+        if (!String.Equals(providerName, OAuthAccount.KnownProviders.Microsoft, StringComparison.OrdinalIgnoreCase))
             return false;
 
         var legacyAccounts = user.OAuthAccounts
-            .Where(account => String.Equals(account.Provider, LegacyMicrosoftOAuthProvider, StringComparison.OrdinalIgnoreCase))
+            .Where(account => String.Equals(account.Provider, OAuthAccount.KnownProviders.WindowsLive, StringComparison.OrdinalIgnoreCase))
             .ToArray();
         foreach (var account in legacyAccounts)
             user.OAuthAccounts.Remove(account);
@@ -622,7 +725,7 @@ public class AuthHandler(
         return legacyAccounts.Length > 0;
     }
 
-    private async Task<bool> IsAccountCreationEnabledAsync(string? token)
+    private async Task<bool> IsAccountCreationEnabledAsync(string? token, CancellationToken cancellationToken = default)
     {
         if (authOptions.EnableAccountCreation)
             return true;
@@ -630,7 +733,7 @@ public class AuthHandler(
         if (String.IsNullOrEmpty(token))
             return false;
 
-        var organization = await organizationRepository.GetByInviteTokenAsync(token);
+        var organization = await organizationRepository.GetByInviteTokenAsync(token).WaitAsync(cancellationToken);
         return organization is not null;
     }
 

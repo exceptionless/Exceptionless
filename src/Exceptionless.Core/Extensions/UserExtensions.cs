@@ -64,34 +64,48 @@ public static class UserExtensions
 
     public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary? data = null)
     {
-        var account = new OAuthAccount
+        var accounts = user.OAuthAccounts.Where(account => String.Equals(account.Provider, providerName, StringComparison.Ordinal)
+            && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal)).ToArray();
+        var account = accounts.FirstOrDefault();
+        if (account is null)
         {
-            Provider = providerName.ToLowerInvariant(),
-            ProviderUserId = providerUserId,
-            Username = username
-        };
+            account = new OAuthAccount
+            {
+                Provider = providerName,
+                ProviderUserId = providerUserId,
+                Username = username
+            };
+            user.OAuthAccounts.Add(account);
+        }
+        else
+        {
+            account.Username = username;
+        }
 
         if (data is not null)
             account.ExtraData.Apply(data);
 
-        user.OAuthAccounts.Add(account);
+        foreach (var duplicate in accounts.Skip(1))
+            user.OAuthAccounts.Remove(duplicate);
     }
 
     public static bool RemoveOAuthAccount(this User user, string providerName, string providerUserId)
     {
-        var account = user.OAuthAccounts.FirstOrDefault(o =>
-            String.Equals(o.Provider, providerName, StringComparison.OrdinalIgnoreCase)
-            && String.Equals(o.ProviderUserId, providerUserId, StringComparison.Ordinal));
-        if (account is null)
+        var accounts = user.OAuthAccounts.Where(account => String.Equals(account.Provider, providerName, StringComparison.Ordinal)
+            && String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal)).ToArray();
+        if (accounts.Length is 0)
             return true;
 
         var activeOAuthAccounts = user.OAuthAccounts
-            .Where(o => !String.Equals(o.Provider, "facebook", StringComparison.OrdinalIgnoreCase)
-                && !String.Equals(o.Provider, "windowslive", StringComparison.OrdinalIgnoreCase))
+            .Where(account => !String.Equals(account.Provider, OAuthAccount.KnownProviders.Facebook, StringComparison.OrdinalIgnoreCase)
+                && !String.Equals(account.Provider, OAuthAccount.KnownProviders.WindowsLive, StringComparison.OrdinalIgnoreCase))
             .ToArray();
-        if (String.IsNullOrEmpty(user.Password) && activeOAuthAccounts.Length <= 1 && activeOAuthAccounts.Contains(account))
+        if (String.IsNullOrEmpty(user.Password) && activeOAuthAccounts.Length <= accounts.Length && activeOAuthAccounts.Contains(accounts[0]))
             return false;
 
-        return user.OAuthAccounts.Remove(account);
+        foreach (var account in accounts)
+            user.OAuthAccounts.Remove(account);
+
+        return true;
     }
 }
