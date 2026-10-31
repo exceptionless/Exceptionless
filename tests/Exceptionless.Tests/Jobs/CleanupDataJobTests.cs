@@ -9,6 +9,7 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Exceptionless.Web.Models;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
@@ -58,6 +59,204 @@ public class CleanupDataJobTests : IntegrationTestsBase
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
         _fileStorage = GetService<IFileStorage>();
+    }
+
+    [Fact]
+    public async Task RunAsync_OrphanedPrivateSavedViews_RemovesEveryPageAndPreservesAccessibleViews()
+    {
+        // Arrange
+        var savedViews = GetService<ISavedViewRepository>();
+        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId));
+        var otherOrganization = await _organizationRepository.AddAsync(_organizationData.GenerateOrganization(_billingManager, _plans, id: TestConstants.OrganizationId2));
+        var deletedUser = _userData.GenerateUser(generateId: true, organizationId: organization.Id);
+        var formerMember = _userData.GenerateUser(generateId: true, organizationId: organization.Id);
+        formerMember.OrganizationIds.Add(otherOrganization.Id);
+        var member = _userData.GenerateUser(generateId: true, organizationId: organization.Id);
+        var disabledMember = _userData.GenerateUser(generateId: true, organizationId: organization.Id) with { IsActive = false };
+        var administrator = _userData.GenerateUser(generateId: true, organizationId: otherOrganization.Id, roles: [AuthorizationRoles.GlobalAdmin]);
+        var users = new[] { deletedUser, formerMember, member, disabledMember, administrator };
+        foreach (var user in users)
+            user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(users);
+
+        var orphaned = Enumerable.Range(0, 501)
+            .Select(index => CreateView(organization.Id, deletedUser.Id, $"deleted-owner-{index}"))
+            .ToList();
+        orphaned.Add(CreateView(organization.Id, formerMember.Id, "former-member"));
+        var removedOrganization = await _organizationRepository.AddAsync(_organizationData.GenerateOrganization(_billingManager, _plans, generateId: true));
+        member.OrganizationIds.Add(removedOrganization.Id);
+        await _userRepository.SaveAsync(member);
+        orphaned.Add(CreateView(removedOrganization.Id, member.Id, "removed-organization"));
+        var retained = new[]
+        {
+            CreateView(organization.Id, null, "shared-view", deletedUser.Id),
+            CreateView(organization.Id, member.Id, "member-view"),
+            CreateView(otherOrganization.Id, formerMember.Id, "other-membership"),
+            CreateView(organization.Id, disabledMember.Id, "disabled-member"),
+            CreateView(organization.Id, administrator.Id, "administrator-view")
+        };
+        await savedViews.AddAsync(orphaned.Concat(retained), options => options.ImmediateConsistency());
+        await _userRepository.RemoveAsync(deletedUser);
+        formerMember.OrganizationIds.Remove(organization.Id);
+        await _userRepository.SaveAsync(formerMember);
+        await _organizationRepository.RemoveAsync(removedOrganization);
+
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+        var remaining = await savedViews.GetAllAsync(options => options.PageLimit(1000));
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(retained.Select(view => view.Id).Order(), remaining.Documents.Select(view => view.Id).Order());
+        Assert.Equal(retained.Length, remaining.Total);
+
+        SavedView CreateView(string organizationId, string? userId, string name, string? createdByUserId = null) => new()
+        {
+            OrganizationId = organizationId,
+            UserId = userId,
+            CreatedByUserId = createdByUserId ?? userId!,
+            Name = name,
+            Slug = name,
+            ViewType = "events"
+        };
+    }
+
+    [Fact]
+    public async Task RunAsync_PrivateViewMadeSharedAfterScan_PreservesView()
+    {
+        // Arrange
+        var savedViews = Assert.IsType<SavedViewRepository>(GetService<ISavedViewRepository>());
+        var organization = await _organizationRepository.AddAsync(_organizationData.GenerateOrganization(_billingManager, _plans));
+        var view = await savedViews.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id,
+            UserId = TestConstants.UserId,
+            CreatedByUserId = TestConstants.UserId,
+            Name = "Former private view",
+            Slug = "former-private-view",
+            ViewType = "events"
+        }, options => options.ImmediateConsistency());
+        bool madeShared = false;
+        using var subscription = savedViews.AfterQuery.AddHandler(async (_, args) =>
+        {
+            if (madeShared || args.Result is not FindResults<SavedView> results || !results.Documents.Any(candidate => candidate.Id == view.Id))
+                return;
+
+            madeShared = true;
+            await savedViews.SaveAsync(view with { UserId = null }, options => options.ImmediateConsistency());
+        });
+
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
+        var retained = await savedViews.GetByIdAsync(view.Id, options => options.Cache(false));
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.True(madeShared);
+        Assert.NotNull(retained);
+        Assert.Null(retained.UserId);
+    }
+
+    [Fact]
+    public async Task RunAsync_InviteAcceptanceInProgress_PreservesPrivateView()
+    {
+        // Arrange
+        await GetService<SampleDataService>().CreateDataAsync();
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        var organization = _organizationData.GenerateOrganization(_billingManager, _plans, generateId: true);
+        var invite = new Invite
+        {
+            EmailAddress = user.EmailAddress, Token = StringExtensions.GetNewToken(),
+            DateAdded = TimeProvider.GetUtcNow().UtcDateTime
+        };
+        organization.Invites.Add(invite);
+        await _organizationRepository.AddAsync(organization, options => options.ImmediateConsistency());
+        var savedViews = GetService<ISavedViewRepository>();
+        var view = await savedViews.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id, UserId = user.Id, CreatedByUserId = user.Id,
+            Name = "Returning member", Slug = "returning-member", ViewType = "events"
+        }, options => options.ImmediateConsistency());
+        var grantStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishGrant = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var subscription = _userRepository.DocumentsSaving.AddHandler(async (_, args) =>
+        {
+            if (!args.Documents.Any(document => document.Value.Id == user.Id && document.Value.OrganizationIds.Contains(organization.Id)))
+                return;
+
+            grantStarted.TrySetResult();
+            await finishGrant.Task.WaitAsync(TestCancellationToken);
+        });
+
+        // Act
+        var grant = SendRequestAsync(request => request.Post().AppendPath("auth/login")
+            .Content(new Login { Email = user.EmailAddress, Password = SampleDataService.TEST_ORG_USER_PASSWORD, InviteToken = invite.Token })
+            .ExpectedStatus(System.Net.HttpStatusCode.OK));
+        Foundatio.Jobs.JobResult result;
+        try
+        {
+            await grantStarted.Task.WaitAsync(TimeSpan.FromSeconds(30), TestCancellationToken);
+            result = await _job.RunAsync(TestCancellationToken);
+        }
+        finally
+        {
+            finishGrant.TrySetResult();
+        }
+        using var response = await grant;
+        var member = await _userRepository.GetByIdAsync(user.Id, options => options.Cache(false));
+        var retained = await savedViews.GetByIdAsync(view.Id, options => options.Cache(false));
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(member);
+        Assert.Contains(organization.Id, member.OrganizationIds);
+        Assert.NotNull(retained);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task RunAsync_MembershipRestoredDuringOrganizationLookup_PreservesPrivateView(int restoreOnOrganizationRead)
+    {
+        // Arrange
+        var savedViews = GetService<ISavedViewRepository>();
+        var organizations = Assert.IsType<OrganizationRepository>(_organizationRepository);
+        var organization = await organizations.AddAsync(_organizationData.GenerateOrganization(_billingManager, _plans));
+        var user = _userData.GenerateUser();
+        user.OrganizationIds.Clear();
+        user.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(user);
+        var view = await savedViews.AddAsync(new SavedView
+        {
+            OrganizationId = organization.Id, UserId = user.Id, CreatedByUserId = user.Id,
+            Name = "Restored member", Slug = "restored-member", ViewType = "events"
+        }, options => options.ImmediateConsistency());
+        bool restored = false;
+        int organizationReads = 0;
+        using var subscription = organizations.BeforeGet.AddHandler(async (_, args) =>
+        {
+            if (!args.Ids.Any(id => id.Value == organization.Id))
+                return;
+
+            organizationReads++;
+            if (restored || organizationReads != restoreOnOrganizationRead)
+                return;
+
+            restored = true;
+            user.OrganizationIds.Add(organization.Id);
+            await _userRepository.SaveAsync(user);
+        });
+
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
+        var retained = await savedViews.GetByIdAsync(view.Id, options => options.Cache(false));
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.True(restored);
+        Assert.NotNull(retained);
     }
 
     [Fact]
@@ -325,6 +524,29 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var project1 = await _projectRepository.AddAsync(_projectData.GenerateProject(id: TestConstants.ProjectId, organizationId: organization1.Id), o => o.ImmediateConsistency());
         var project2 = await _projectRepository.AddAsync(_projectData.GenerateProject(generateId: true, organizationId: organization2.Id), o => o.ImmediateConsistency());
 
+        var user = _userData.GenerateUser();
+        user.MarkEmailAddressVerified();
+        user.OrganizationIds.Clear();
+        user.OrganizationIds.UnionWith([organization1.Id, organization2.Id]);
+        await _userRepository.AddAsync(user);
+        var legacyUser = _userData.GenerateUser(generateId: true, organizationId: organization1.Id);
+        legacyUser.MarkEmailAddressVerified();
+        await _userRepository.AddAsync(legacyUser);
+        project1.NotificationSettings[user.Id] = new NotificationSettings { ReportNewErrors = true };
+        project2.NotificationSettings[user.Id] = new NotificationSettings { ReportNewErrors = true };
+        await _projectRepository.SaveAsync([project1, project2]);
+        var savedViews = GetService<ISavedViewRepository>();
+        var deletedView = await savedViews.AddAsync(new SavedView
+        {
+            OrganizationId = organization1.Id, UserId = user.Id, CreatedByUserId = user.Id,
+            Name = "Deleted private view", Slug = "deleted-private-view", ViewType = "events"
+        }, options => options.ImmediateConsistency());
+        var retainedView = await savedViews.AddAsync(new SavedView
+        {
+            OrganizationId = organization2.Id, UserId = user.Id, CreatedByUserId = user.Id,
+            Name = "Retained private view", Slug = "retained-private-view", ViewType = "events"
+        }, options => options.ImmediateConsistency());
+
         var stack1 = await _stackRepository.AddAsync(_stackData.GenerateStack(id: TestConstants.StackId, organizationId: organization1.Id, projectId: project1.Id), o => o.ImmediateConsistency());
         var stack2 = await _stackRepository.AddAsync(_stackData.GenerateStack(generateId: true, organizationId: organization2.Id, projectId: project2.Id), o => o.ImmediateConsistency());
 
@@ -359,6 +581,16 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _projectRepository.GetByIdAsync(deletedProject.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _stackRepository.GetByIdAsync(stack1.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(event1.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await savedViews.GetByIdAsync(deletedView.Id));
+        Assert.NotNull(await savedViews.GetByIdAsync(retainedView.Id));
+        Assert.Null(await _userRepository.GetByIdAsync(legacyUser.Id));
+        var retainedUser = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(retainedUser);
+        Assert.DoesNotContain(organization1.Id, retainedUser.OrganizationIds);
+        Assert.Contains(organization2.Id, retainedUser.OrganizationIds);
+        var retainedProject = await _projectRepository.GetByIdAsync(project2.Id);
+        Assert.NotNull(retainedProject);
+        Assert.Contains(user.Id, retainedProject.NotificationSettings.Keys);
 
         Assert.NotNull(await _organizationRepository.GetByIdAsync(organization2.Id));
         Assert.NotNull(await _projectRepository.GetByIdAsync(project2.Id));
