@@ -112,6 +112,7 @@ public class StackHandler(
         foreach (var stack in stacks)
         {
             stack.Status = StackStatus.Snoozed;
+            stack.ClearPendingNotifications();
             stack.SnoozeUntilUtc = message.SnoozeUntilUtc;
             stack.FixedInVersion = null;
             stack.DateFixed = null;
@@ -228,6 +229,7 @@ public class StackHandler(
             foreach (var stack in stacks)
             {
                 stack.Status = message.Status;
+                stack.ClearPendingNotifications();
                 if (message.Status == StackStatus.Fixed)
                 {
                     stack.DateFixed = timeProvider.GetUtcNow().UtcDateTime;

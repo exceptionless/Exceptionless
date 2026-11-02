@@ -22,3 +22,26 @@ public record DiscardedEnvironment
 
     public DateTime LastSeenUtc { get; init; }
 }
+
+/// <summary>
+/// The names that recently had events discarded, plus how many events came from names that could not be listed individually.
+/// </summary>
+public record DiscardedEnvironmentSummary
+{
+    public IReadOnlyCollection<DiscardedEnvironment> Environments { get; init; } = [];
+
+    /// <summary>
+    /// Events within the retention window from names beyond the per-project limit.
+    /// </summary>
+    public long OtherEvents { get; init; }
+
+    /// <summary>
+    /// How many different names those events came from, up to a limit.
+    /// </summary>
+    public int OtherNames { get; init; }
+
+    /// <summary>
+    /// True when there were more other names than are counted.
+    /// </summary>
+    public bool OtherNamesCapped { get; init; }
+}

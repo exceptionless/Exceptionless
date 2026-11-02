@@ -36,5 +36,11 @@ public class ProjectEnvironment
     /// </summary>
     public static string GetKey(string name) => name.ToLowerInvariant();
 
-    public static bool NamesMatch(string? first, string? second) => String.Equals(first, second, StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// Compares by <see cref="GetKey"/> so matching and keys can never disagree. Lowercasing keeps the length, which rules out most names without allocating.
+    /// </summary>
+    public static bool NamesMatch(string? first, string? second)
+    {
+        return first is not null && second is not null && first.Length == second.Length && String.Equals(GetKey(first), GetKey(second), StringComparison.Ordinal);
+    }
 }

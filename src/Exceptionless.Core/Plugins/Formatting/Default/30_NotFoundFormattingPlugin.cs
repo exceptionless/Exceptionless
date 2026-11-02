@@ -103,7 +103,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
 
         AddDefaultSlackFields(ev, attachment.Fields, false);
         notificationType = InEnvironment(notificationType, ev, project);
-        string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, ev.Source?.Truncate(120))}*";
+        string subject = $"[{EscapeSlack(project.Name)}] A {EscapeSlack(notificationType)}: *{GetSlackEventUrl(ev.Id, ev.Source?.Truncate(120))}*";
         return new SlackMessage(subject)
         {
             Attachments = [attachment]

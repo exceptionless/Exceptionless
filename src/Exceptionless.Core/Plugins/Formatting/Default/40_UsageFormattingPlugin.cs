@@ -70,7 +70,7 @@ public sealed class UsageFormattingPlugin : FormattingPluginBase
         };
 
         AddDefaultSlackFields(ev, attachment.Fields, false);
-        string subject = $"[{project.Name}] Feature: *{GetSlackEventUrl(ev.Id, ev.Source).Truncate(120)}*";
+        string subject = $"[{EscapeSlack(project.Name)}] Feature: *{GetSlackEventUrl(ev.Id, ev.Source).Truncate(120)}*";
         return new SlackMessage(subject)
         {
             Attachments = [attachment]

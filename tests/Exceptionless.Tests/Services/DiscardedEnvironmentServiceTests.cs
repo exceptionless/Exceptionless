@@ -28,7 +28,7 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
 
         // Act
         await _service.RecordAsync(ProjectId, ["PRODUTION"]);
-        var discarded = await _service.GetAsync(ProjectId);
+        var discarded = (await _service.GetAsync(ProjectId)).Environments;
 
         // Assert
         var entry = Assert.Single(discarded);
@@ -45,7 +45,7 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
         await _service.RecordAsync(ProjectId, [null, "", "dev", null]);
 
         // Act
-        var discarded = await _service.GetAsync(ProjectId);
+        var discarded = (await _service.GetAsync(ProjectId)).Environments;
 
         // Assert
         Assert.Equal(2, discarded.Count);
@@ -56,7 +56,7 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
     }
 
     [Fact]
-    public async Task RecordAsync_WithMoreNamesThanTheCap_TracksOnlyTheFirstNamesAndKeepsCountingKnownOnes()
+    public async Task RecordAsync_WithMoreNamesThanTheCap_TracksTheFirstNamesAndCountsTheRestAsOtherEvents()
     {
         // Arrange
         var names = Enumerable.Range(0, DiscardedEnvironmentService.MaximumNamesPerProject + 10).Select(i => $"env-{i}").ToList();
@@ -65,12 +65,47 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
 
         // Act
         await _service.RecordAsync(ProjectId, ["ENV-0", "env-0"]);
-        var discarded = await _service.GetAsync(ProjectId);
+        await _service.RecordAsync(ProjectId, [names[^1], names[^1]]);
+        var summary = await _service.GetAsync(ProjectId);
 
         // Assert
-        Assert.Equal(DiscardedEnvironmentService.MaximumNamesPerProject, discarded.Count);
-        Assert.DoesNotContain(discarded, d => d.Key == names[^1]);
-        Assert.Equal(3, discarded.Single(d => d.Key == "env-0").Count);
+        Assert.Equal(DiscardedEnvironmentService.MaximumNamesPerProject, summary.Environments.Count);
+        Assert.DoesNotContain(summary.Environments, d => d.Key == names[^1]);
+        Assert.Equal(3, summary.Environments.Single(d => d.Key == "env-0").Count);
+        Assert.Equal(12, summary.OtherEvents);
+        Assert.Equal(10, summary.OtherNames);
+        Assert.False(summary.OtherNamesCapped);
+    }
+
+    [Fact]
+    public async Task RecordAsync_WithManyMoreNamesThanTheCap_CapsTheCountOfOtherNames()
+    {
+        // Arrange
+        int total = DiscardedEnvironmentService.MaximumNamesPerProject + DiscardedEnvironmentService.MaximumOtherNamesPerProject + 20;
+        await _service.RecordAsync(ProjectId, Enumerable.Range(0, total).Select(i => (string?)$"env-{i}"));
+
+        // Act
+        var summary = await _service.GetAsync(ProjectId);
+
+        // Assert
+        Assert.Equal(DiscardedEnvironmentService.MaximumNamesPerProject, summary.Environments.Count);
+        Assert.Equal(total - DiscardedEnvironmentService.MaximumNamesPerProject, summary.OtherEvents);
+        Assert.Equal(DiscardedEnvironmentService.MaximumOtherNamesPerProject, summary.OtherNames);
+        Assert.True(summary.OtherNamesCapped);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenNothingOverflowed_ReportsNoOtherEvents()
+    {
+        // Arrange
+        await _service.RecordAsync(ProjectId, ["dev"]);
+
+        // Act
+        var summary = await _service.GetAsync(ProjectId);
+
+        // Assert
+        Assert.Equal(0, summary.OtherEvents);
+        Assert.Equal(0, summary.OtherNames);
     }
 
     [Fact]
@@ -83,7 +118,7 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
 
         // Act
         _timeProvider.Advance(TimeSpan.FromDays(2));
-        var discarded = await _service.GetAsync(ProjectId);
+        var discarded = (await _service.GetAsync(ProjectId)).Environments;
 
         // Assert
         var entry = Assert.Single(discarded);
@@ -97,7 +132,7 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
         await _service.RecordAsync(ProjectId, ["dev"]);
 
         // Act
-        var discarded = await _service.GetAsync("537650f3b77efe23a47914f5");
+        var discarded = (await _service.GetAsync("537650f3b77efe23a47914f5")).Environments;
 
         // Assert
         Assert.Empty(discarded);
@@ -112,7 +147,7 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
         // Act
         await _service.RemoveAsync(ProjectId, "PRODUTION");
         await _service.RemoveAsync(ProjectId, null);
-        var discarded = await _service.GetAsync(ProjectId);
+        var discarded = (await _service.GetAsync(ProjectId)).Environments;
 
         // Assert
         var entry = Assert.Single(discarded);

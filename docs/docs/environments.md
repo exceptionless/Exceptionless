@@ -80,8 +80,9 @@ Ingestion acknowledges events before they are processed, so a client cannot see 
 
 An event can send notifications (email, Slack, and web hooks) only when its environment notifies: a listed environment with notifications on, or an unlisted environment or no environment while **Send notifications for other environments** is on.
 
-- Critical error, critical event, and regression notifications are sent only for events from a notifying environment.
+- Critical error and critical event notifications are sent only for events from a notifying environment.
 - A new error or new event notification is sent the first time a stack occurs in a notifying environment. If an error is first seen in `dev` and `dev` does not notify, nothing is sent; the first time the same error occurs in `Production`, you get the new error notification, and it is not reported as new again in other environments.
+- A regression works the same way as a new stack. If a fixed stack regresses in an environment that does not notify, nothing is sent; the first time the regressed stack occurs in a notifying environment, you get the regression notification. A regression in a notifying environment notifies immediately, as it always has. Changing the stack's status (for example marking it fixed or ignored) drops a regression or new notification that was still waiting.
 - Stacks that existed before environments could be managed are treated as already reported, so deploying this change does not send new notifications for old stacks.
 - Notification emails and Slack messages mention the environment, for example "New error in Production".
 - Daily summaries are unchanged and still include events from every environment.

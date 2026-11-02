@@ -60,4 +60,19 @@ public record ProjectDiscardedEnvironments
     public int RetentionDays { get; set; }
 
     public IReadOnlyCollection<DiscardedEnvironment> Environments { get; set; } = [];
+
+    /// <summary>
+    /// Events from names beyond the per-project limit, which are counted but not listed individually.
+    /// </summary>
+    public long OtherEvents { get; set; }
+
+    /// <summary>
+    /// How many different names those events came from, up to a limit.
+    /// </summary>
+    public int OtherNames { get; set; }
+
+    /// <summary>
+    /// True when there were more other names than are counted.
+    /// </summary>
+    public bool OtherNamesCapped { get; set; }
 }

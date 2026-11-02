@@ -17,9 +17,11 @@ public class DiscardedEnvironmentService
 {
     public const int RetentionDays = 7;
     public const int MaximumNamesPerProject = 50;
+    public const int MaximumOtherNamesPerProject = 100;
 
     private const string UnspecifiedBucket = "unspecified";
     private const string NamePrefix = "name:";
+    private const string OtherBucket = "other";
     private static readonly TimeSpan _retention = TimeSpan.FromDays(RetentionDays);
     private static readonly TimeSpan _counterRetention = TimeSpan.FromDays(RetentionDays + 1);
 
@@ -57,10 +59,16 @@ public class DiscardedEnvironmentService
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         string day = GetDay(utcNow);
+        var otherBuckets = new List<string>();
+        int otherEvents = 0;
         foreach ((string bucket, (string? name, int count)) in groups)
         {
             if (!trackedBuckets.Contains(bucket) && trackedBuckets.Count >= MaximumNamesPerProject)
+            {
+                otherBuckets.Add(bucket);
+                otherEvents += count;
                 continue;
+            }
 
             await Task.WhenAll(
                 _cache.ListAddAsync(namesKey, bucket, _retention),
@@ -71,22 +79,56 @@ public class DiscardedEnvironmentService
 
             trackedBuckets.Add(bucket);
         }
+
+        if (otherEvents > 0)
+            await RecordOtherAsync(projectId, otherBuckets, otherEvents, day);
+    }
+
+    private async Task RecordOtherAsync(string projectId, List<string> buckets, int events, string day)
+    {
+        // Names past the limit are not tracked, but the page still reports that events were dropped and roughly from how many names.
+        string otherNamesKey = GetOtherNamesKey(projectId);
+        var known = await _cache.GetListAsync<string>(otherNamesKey);
+        var knownBuckets = known.HasValue ? new HashSet<string>(known.Value, StringComparer.Ordinal) : [];
+        var newBuckets = buckets.Where(b => !knownBuckets.Contains(b)).Take(Math.Max(MaximumOtherNamesPerProject - knownBuckets.Count, 0)).ToList();
+
+        var tasks = new List<Task> { _cache.IncrementAsync(GetCountKey(projectId, OtherBucket, day), events, _counterRetention) };
+        if (newBuckets.Count > 0)
+            tasks.Add(_cache.ListAddAsync(otherNamesKey, newBuckets, _retention));
+
+        await Task.WhenAll(tasks);
     }
 
     /// <summary>
-    /// Gets the discarded names, most discarded first.
+    /// Gets the discarded names, most discarded first, and the events from names that were not tracked.
     /// </summary>
-    public async Task<IReadOnlyCollection<DiscardedEnvironment>> GetAsync(string projectId)
+    public async Task<DiscardedEnvironmentSummary> GetAsync(string projectId)
     {
         ArgumentException.ThrowIfNullOrEmpty(projectId);
 
-        var tracked = await _cache.GetListAsync<string>(GetNamesKey(projectId));
-        if (!tracked.HasValue || tracked.Value.Count == 0)
-            return [];
-
-        var buckets = tracked.Value.Distinct(StringComparer.Ordinal).ToList();
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var days = Enumerable.Range(0, RetentionDays).Select(offset => GetDay(utcNow.AddDays(-offset))).ToList();
+
+        var otherCounts = await _cache.GetAllAsync<long>(days.Select(d => GetCountKey(projectId, OtherBucket, d)));
+        long otherEvents = otherCounts.Values.Sum(v => v.HasValue ? v.Value : 0);
+        var otherNames = otherEvents > 0 ? await _cache.GetListAsync<string>(GetOtherNamesKey(projectId)) : default;
+        int otherNameCount = otherNames is { HasValue: true } ? otherNames.Value.Count : 0;
+
+        var tracked = await _cache.GetListAsync<string>(GetNamesKey(projectId));
+        var environments = tracked.HasValue && tracked.Value.Count > 0 ? await GetTrackedAsync(projectId, tracked.Value, days) : [];
+
+        return new DiscardedEnvironmentSummary
+        {
+            Environments = environments,
+            OtherEvents = otherEvents,
+            OtherNames = otherNameCount,
+            OtherNamesCapped = otherNameCount >= MaximumOtherNamesPerProject
+        };
+    }
+
+    private async Task<IReadOnlyCollection<DiscardedEnvironment>> GetTrackedAsync(string projectId, ICollection<string> tracked, List<string> days)
+    {
+        var buckets = tracked.Distinct(StringComparer.Ordinal).ToList();
 
         var displayNames = await _cache.GetAllAsync<string>(buckets.Select(b => GetDisplayKey(projectId, b)));
         var lastSeen = await _cache.GetAllAsync<DateTime>(buckets.Select(b => GetLastSeenKey(projectId, b)));
@@ -141,6 +183,7 @@ public class DiscardedEnvironmentService
     private static string GetBucket(string? environment) => String.IsNullOrEmpty(environment) ? UnspecifiedBucket : NamePrefix + ProjectEnvironment.GetKey(environment);
     private static string GetDay(DateTime utc) => utc.ToString("yyyyMMdd");
     private static string GetPrefix(string projectId) => String.Concat("project:", projectId, ":discarded-environments");
+    private static string GetOtherNamesKey(string projectId) => String.Concat(GetPrefix(projectId), ":other-names");
     private static string GetNamesKey(string projectId) => String.Concat(GetPrefix(projectId), ":names");
     private static string GetDisplayKey(string projectId, string bucket) => String.Concat(GetPrefix(projectId), ":display:", bucket);
     private static string GetLastSeenKey(string projectId, string bucket) => String.Concat(GetPrefix(projectId), ":last:", bucket);

@@ -124,7 +124,7 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
         if (environments.Count > ProjectEnvironment.MaximumCount)
             yield return new ValidationResult($"A project cannot list more than {ProjectEnvironment.MaximumCount} environments.", [nameof(Environments)]);
 
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var names = new HashSet<string>(StringComparer.Ordinal);
         foreach (var environment in environments)
         {
             string? name = environment?.Name;
@@ -134,7 +134,7 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
                 continue;
             }
 
-            if (!names.Add(name))
+            if (!names.Add(ProjectEnvironment.GetKey(name)))
                 yield return new ValidationResult($"The environment '{name}' is listed more than once. Names are case-insensitive.", [nameof(Environments)]);
         }
     }

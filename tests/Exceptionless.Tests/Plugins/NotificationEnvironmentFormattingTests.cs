@@ -56,6 +56,37 @@ public sealed class NotificationEnvironmentFormattingTests(ITestOutputHelper out
         Assert.Equal("Critical Error regression in Production: Boom", message.Subject);
     }
 
+    [Theory]
+    [InlineData(Event.KnownTypes.Error)]
+    [InlineData(Event.KnownTypes.Log)]
+    [InlineData(Event.KnownTypes.NotFound)]
+    [InlineData(Event.KnownTypes.FeatureUsage)]
+    [InlineData("custom")]
+    public void GetSlackEventNotificationMessage_WithHostileEnvironmentAndProjectName_EscapesThemSoSlackShowsThemLiterally(string type)
+    {
+        // Arrange
+        const string hostile = "<!channel> <https://evil.example|login> & more";
+        var project = new Project { Id = "537650f3b77efe23a47914f4", Name = "<!here> project" };
+        var ev = CreateError(hostile);
+        ev.Type = type;
+        ev.Source = "source";
+
+        // Act
+        var message = GetService<FormattingPluginManager>().GetSlackEventNotificationMessage(ev, project, false, true, false);
+
+        // Assert
+        int linkStart = message.Text.IndexOf("*<", StringComparison.Ordinal);
+        string text = message.Text[..linkStart];
+        Assert.DoesNotContain("<", text);
+        Assert.DoesNotContain(">", text);
+        Assert.Contains("&lt;!here&gt; project", text);
+        if (type != Event.KnownTypes.FeatureUsage)
+            Assert.Contains("&lt;!channel&gt; &lt;https://evil.example|login&gt; &amp; more", text);
+
+        // The only real link is the event link.
+        Assert.Equal(1, message.Text.Count(c => c == '<'));
+    }
+
     private static Project CreateProject() => new()
     {
         Id = "537650f3b77efe23a47914f4",

@@ -268,6 +268,29 @@ public sealed partial class ProjectEndpointTests
         Assert.NotEqual(default, typo.LastSeenUtc);
         var missing = Assert.Single(result.Environments, e => e.Key is null);
         Assert.Equal(1, missing.Count);
+        Assert.Equal(0, result.OtherEvents);
+    }
+
+    [Fact]
+    public async Task GetDiscardedEnvironmentsAsync_WithMoreNamesThanAreTracked_ReportsTheOtherEvents()
+    {
+        // Arrange
+        var discarded = GetService<DiscardedEnvironmentService>();
+        await discarded.RecordAsync(SampleDataService.TEST_PROJECT_ID, Enumerable.Range(0, DiscardedEnvironmentService.MaximumNamesPerProject + 3).Select(i => (string?)$"env-{i}"));
+
+        // Act
+        var result = await SendRequestAsAsync<ProjectDiscardedEnvironments>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, EnvironmentsPath, "discarded")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(DiscardedEnvironmentService.MaximumNamesPerProject, result.Environments.Count);
+        Assert.Equal(3, result.OtherEvents);
+        Assert.Equal(3, result.OtherNames);
+        Assert.False(result.OtherNamesCapped);
     }
 
     [Fact]

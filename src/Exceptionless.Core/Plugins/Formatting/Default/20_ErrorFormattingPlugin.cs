@@ -166,7 +166,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
 
         AddDefaultSlackFields(ev, attachment.Fields);
         notificationType = InEnvironment(notificationType, ev, project);
-        string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, stackingTarget.Error.Message?.Truncate(120))}*";
+        string subject = $"[{EscapeSlack(project.Name)}] A {EscapeSlack(notificationType)}: *{GetSlackEventUrl(ev.Id, stackingTarget.Error.Message?.Truncate(120))}*";
         return new SlackMessage(subject)
         {
             Attachments = [attachment]

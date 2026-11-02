@@ -80,11 +80,19 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
         attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });
     }
 
+    /// <summary>
+    /// Escapes text that came from a client or a user so Slack shows it literally instead of as a mention or link.
+    /// </summary>
+    protected static string EscapeSlack(string? value)
+    {
+        return value?.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;") ?? String.Empty;
+    }
+
     protected string GetSlackEventUrl(string eventId, string? message = null)
     {
         var parts = new List<string> { new AppUrlBuilder(_options.BaseURL).Event(eventId) };
         if (!String.IsNullOrEmpty(message))
-            parts.Add($"|{message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")}");
+            parts.Add($"|{EscapeSlack(message)}");
 
         return $"<{String.Join(String.Empty, parts)}>";
     }

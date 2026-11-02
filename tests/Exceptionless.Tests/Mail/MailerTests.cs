@@ -230,6 +230,37 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
+    public async Task SendEventNoticeAsync_WithHostileEnvironment_EncodesItInTheBody()
+    {
+        // Arrange
+        var ev = new PersistentEvent
+        {
+            Type = Event.KnownTypes.Error,
+            Environment = "<!channel> <b>login</b>",
+            Data = new Core.Models.DataDictionary {
+                    { Event.KnownDataKeys.SimpleError, new SimpleError { Message = "Boom" } }
+                }
+        };
+
+        ev.Id = TestConstants.EventId;
+        ev.OrganizationId = TestConstants.OrganizationId;
+        ev.ProjectId = TestConstants.ProjectId;
+        ev.StackId = TestConstants.StackId;
+        var project = _projectData.GenerateSampleProject();
+        project.Name = "<script>alert(1)</script>";
+
+        // Act
+        await _mailer.SendEventNoticeAsync(_userData.GenerateSampleUser(), ev, project, true, false, 1);
+        string body = await RunMailJobAsync();
+
+        // Assert
+        Assert.DoesNotContain("<b>login</b>", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<!channel>", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("<script>alert(1)</script>", body, StringComparison.Ordinal);
+        Assert.Contains("&lt;script&gt;alert(1)&lt;/script&gt;", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SendEventNoticeAsync_WithStructuredError_RendersEventNotice()
     {
         // Arrange

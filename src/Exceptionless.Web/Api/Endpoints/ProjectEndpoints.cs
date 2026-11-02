@@ -504,7 +504,7 @@ public static class ProjectEndpoints
         });
 
         group.MapPatch("projects/{id:objectid}/environments", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateProjectEnvironment? changes, string? name = null)
-            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ProjectEnvironmentSettings>>(new ProjectMessages.UpdateProjectEnvironmentMessage(id, name, changes, httpContext))).ToHttpResult(resultMapper))
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ProjectEnvironmentSettings>>(new ProjectMessages.ChangeProjectEnvironment(id, name, changes, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<UpdateProjectEnvironment>("application/json", "application/*+json")
         .Produces<ProjectEnvironmentSettings>()
@@ -541,7 +541,7 @@ public static class ProjectEndpoints
         });
 
         group.MapPut("projects/{id:objectid}/environments/settings", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateProjectEnvironmentSettings? settings)
-            => settings is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ProjectEnvironmentSettings>>(new ProjectMessages.UpdateProjectEnvironmentSettingsMessage(id, settings, httpContext))).ToHttpResult(resultMapper))
+            => settings is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ProjectEnvironmentSettings>>(new ProjectMessages.ChangeProjectEnvironmentSettings(id, settings, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Accepts<UpdateProjectEnvironmentSettings>("application/json", "application/*+json")
         .Produces<ProjectEnvironmentSettings>()
@@ -575,7 +575,7 @@ public static class ProjectEndpoints
             }
         });
 
-        group.MapGet("organizations/{organizationId:objectid}/projects/check-name",async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null, string? projectId = null)
+        group.MapGet("organizations/{organizationId:objectid}/projects/check-name", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null, string? projectId = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, projectId, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)
         .Produces(StatusCodes.Status201Created)

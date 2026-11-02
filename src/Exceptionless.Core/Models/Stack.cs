@@ -109,6 +109,13 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     public bool IsNewNotificationPending { get; set; }
 
     /// <summary>
+    /// True when the stack regressed from an environment that does not send notifications and no notifying environment has
+    /// reported the regression yet. The first notifying occurrence clears this and is reported as the regression.
+    /// Changing the stack's status clears it.
+    /// </summary>
+    public bool IsRegressionNotificationPending { get; set; }
+
+    /// <summary>
     /// A list of references.
     /// </summary>
     public ICollection<string> References { get; set; } = new Collection<string>();

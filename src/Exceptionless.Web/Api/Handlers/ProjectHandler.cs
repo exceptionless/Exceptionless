@@ -487,7 +487,7 @@ public class ProjectHandler(
         return MapEnvironmentSettings(project);
     }
 
-    public async Task<Result<ProjectEnvironmentSettings>> Handle(UpdateProjectEnvironmentMessage message)
+    public async Task<Result<ProjectEnvironmentSettings>> Handle(ChangeProjectEnvironment message)
     {
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
@@ -520,7 +520,7 @@ public class ProjectHandler(
         return MapEnvironmentSettings(project);
     }
 
-    public async Task<Result<ProjectEnvironmentSettings>> Handle(UpdateProjectEnvironmentSettingsMessage message)
+    public async Task<Result<ProjectEnvironmentSettings>> Handle(ChangeProjectEnvironmentSettings message)
     {
         var project = await GetModelAsync(message.Id, message.Context, useCache: false);
         if (project is null)
@@ -545,10 +545,14 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
+        var discarded = await discardedEnvironmentService.GetAsync(project.Id);
         return new ProjectDiscardedEnvironments
         {
             RetentionDays = DiscardedEnvironmentService.RetentionDays,
-            Environments = await discardedEnvironmentService.GetAsync(project.Id)
+            Environments = discarded.Environments,
+            OtherEvents = discarded.OtherEvents,
+            OtherNames = discarded.OtherNames,
+            OtherNamesCapped = discarded.OtherNamesCapped
         };
     }
 

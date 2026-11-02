@@ -777,6 +777,7 @@ public sealed class ExceptionlessMcpTools
             else if (changed)
             {
                 stack.Status = stackStatus;
+                stack.ClearPendingNotifications();
                 stack.DateFixed = null;
                 stack.FixedInVersion = null;
                 stack.SnoozeUntilUtc = null;
@@ -832,6 +833,7 @@ public sealed class ExceptionlessMcpTools
             if (changed)
             {
                 stack.Status = StackStatus.Snoozed;
+                stack.ClearPendingNotifications();
                 stack.SnoozeUntilUtc = untilUtc;
                 stack.FixedInVersion = null;
                 stack.DateFixed = null;

@@ -42,22 +42,23 @@ public class QueueNotificationAction : EventPipelineActionBase
             return;
 
         bool isNew = await IsNewForNotificationAsync(ctx);
-        if (ShouldQueueNotification(ctx, isNew))
+        bool isRegression = ctx.IsRegression || await ClaimPendingAsync(ctx, PendingStackNotification.Regression);
+        if (ShouldQueueNotification(ctx, isNew, isRegression))
             await _notificationQueue.EnqueueAsync(new EventNotification
             {
                 EventId = ctx.Event.Id,
                 IsNew = isNew,
-                IsRegression = ctx.IsRegression,
+                IsRegression = isRegression,
                 TotalOccurrences = ctx.Stack.TotalOccurrences
             });
 
         var webHooks = await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId);
         foreach (var hook in webHooks.Documents)
         {
-            if (!ShouldCallWebHook(hook, ctx, isNew))
+            if (!ShouldCallWebHook(hook, ctx, isNew, isRegression))
                 continue;
 
-            var context = new WebHookDataContext(hook, ctx.Organization, ctx.Project, ctx.Stack, ctx.Event, isNew, ctx.IsRegression);
+            var context = new WebHookDataContext(hook, ctx.Organization, ctx.Project, ctx.Stack, ctx.Event, isNew, isRegression);
             var notification = new WebHookNotification
             {
                 OrganizationId = ctx.Event.OrganizationId,
@@ -89,21 +90,28 @@ public class QueueNotificationAction : EventPipelineActionBase
         if (ctx.IsNew)
             return true;
 
-        if (ctx.Stack is not { IsNewNotificationPending: true })
-            return false;
-
-        // The repository clears the flag atomically, so concurrent events can only produce one new notification.
-        if (!await _stackRepository.TryClaimNewNotificationAsync(ctx.Stack))
-        {
-            ctx.Stack.IsNewNotificationPending = false;
-            return false;
-        }
-
-        ctx.Stack.IsNewNotificationPending = false;
-        return true;
+        return await ClaimPendingAsync(ctx, PendingStackNotification.New);
     }
 
-    private bool ShouldCallWebHook(WebHook hook, EventContext ctx, bool isNew)
+    /// <summary>
+    /// The repository clears the flag atomically, so concurrent events can only produce one notification.
+    /// </summary>
+    private async Task<bool> ClaimPendingAsync(EventContext ctx, PendingStackNotification kind)
+    {
+        bool isPending = kind == PendingStackNotification.New ? ctx.Stack!.IsNewNotificationPending : ctx.Stack!.IsRegressionNotificationPending;
+        if (!isPending)
+            return false;
+
+        bool claimed = await _stackRepository.TryClaimNotificationAsync(ctx.Stack, kind);
+        if (kind == PendingStackNotification.New)
+            ctx.Stack.IsNewNotificationPending = false;
+        else
+            ctx.Stack.IsRegressionNotificationPending = false;
+
+        return claimed;
+    }
+
+    private bool ShouldCallWebHook(WebHook hook, EventContext ctx, bool isNew, bool isRegression)
     {
         if (!hook.IsEnabled)
             return false;
@@ -117,7 +125,7 @@ public class QueueNotificationAction : EventPipelineActionBase
         if (ctx.Event.IsCritical() && ctx.Event.IsError() && hook.EventTypes.Contains(WebHook.KnownEventTypes.CriticalError))
             return true;
 
-        if (ctx.IsRegression && hook.EventTypes.Contains(WebHook.KnownEventTypes.StackRegression))
+        if (isRegression && hook.EventTypes.Contains(WebHook.KnownEventTypes.StackRegression))
             return true;
 
         if (isNew && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewEvent))
@@ -129,7 +137,7 @@ public class QueueNotificationAction : EventPipelineActionBase
         return false;
     }
 
-    private bool ShouldQueueNotification(EventContext ctx, bool isNew)
+    private bool ShouldQueueNotification(EventContext ctx, bool isNew, bool isRegression)
     {
         if (ctx.Project.NotificationSettings.Count == 0)
             return false;
@@ -140,7 +148,7 @@ public class QueueNotificationAction : EventPipelineActionBase
         if (ctx.Event.IsCritical() && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalErrors))
             return true;
 
-        if (ctx.IsRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportEventRegressions))
+        if (isRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportEventRegressions))
             return true;
 
         if (isNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewEvents))

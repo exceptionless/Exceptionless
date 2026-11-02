@@ -97,7 +97,7 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         Assert.False(listed.IsDiscarded);
         Assert.Equal(1, await _stackRepository.CountAsync());
         Assert.Equal(1, await _eventRepository.CountAsync());
-        var discarded = Assert.Single(await _discardedEnvironments.GetAsync(project.Id));
+        var discarded = Assert.Single((await _discardedEnvironments.GetAsync(project.Id)).Environments);
         Assert.Equal("prodution", discarded.Key);
         Assert.Equal("Prodution", discarded.Name);
         Assert.Equal(2, discarded.Count);
@@ -119,7 +119,7 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
 
         // Act
         var context = await RunAsync(project, null);
-        var discarded = await _discardedEnvironments.GetAsync(project.Id);
+        var discarded = (await _discardedEnvironments.GetAsync(project.Id)).Environments;
 
         // Assert
         Assert.Equal(expectedDiscard, context.IsDiscarded);
@@ -347,6 +347,150 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_WhenAStaleStackSaveRestoresTheClaimedFlag_DoesNotNotifyAsNewTwice()
+    {
+        // Arrange
+        var project = await ConfigureProjectAsync(p => p.Environments =
+        [
+            new ProjectEnvironment { Name = "dev", Notify = false },
+            new ProjectEnvironment { Name = "production" }
+        ]);
+        var dev = await RunAsync(project, "dev");
+        var stale = (await _stackRepository.GetByIdAsync(dev.Event.StackId))!;
+        Assert.True(stale.IsNewNotificationPending);
+        await RunAsync(project, "production");
+        Assert.Single(await DequeueNotificationsAsync());
+
+        // Act
+        await _stackRepository.SaveAsync(stale, o => o.ImmediateConsistency());
+        Assert.True((await _stackRepository.GetByIdAsync(stale.Id))!.IsNewNotificationPending);
+        await RunAsync(project, "production");
+        var notifications = await DequeueNotificationsAsync();
+
+        // Assert
+        Assert.Empty(notifications);
+        Assert.False((await _stackRepository.GetByIdAsync(stale.Id))!.IsNewNotificationPending);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenAStackRegressesInANonNotifyingEnvironment_NotifiesOnTheFirstNotifyingOccurrence()
+    {
+        // Arrange
+        var project = await ConfigureProjectAsync(p => p.Environments =
+        [
+            new ProjectEnvironment { Name = "dev", Notify = false },
+            new ProjectEnvironment { Name = "production" }
+        ]);
+        var first = await RunAsync(project, "production");
+        await DequeueNotificationsAsync();
+        await MarkFixedAsync(first.Event.StackId);
+
+        // Act
+        var dev = await RunAsync(project, "dev");
+        var devNotifications = await DequeueNotificationsAsync();
+        var pendingStack = (await _stackRepository.GetByIdAsync(first.Event.StackId))!;
+        var production = await RunAsync(project, "production");
+        var productionNotifications = await DequeueNotificationsAsync();
+        await RunAsync(project, "production");
+        var laterNotifications = await DequeueNotificationsAsync();
+
+        // Assert
+        Assert.True(dev.IsRegression);
+        Assert.Empty(devNotifications);
+        Assert.Equal(StackStatus.Regressed, pendingStack.Status);
+        Assert.True(pendingStack.IsRegressionNotificationPending);
+        Assert.False(production.IsRegression);
+        var notification = Assert.Single(productionNotifications);
+        Assert.True(notification.IsRegression);
+        Assert.False(notification.IsNew);
+        Assert.Empty(laterNotifications);
+        Assert.False((await _stackRepository.GetByIdAsync(first.Event.StackId))!.IsRegressionNotificationPending);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenAStackRegressesInANotifyingEnvironment_NotifiesImmediatelyAndNeverMarksItPending()
+    {
+        // Arrange
+        var project = await ConfigureProjectAsync(_ => { });
+        var first = await RunAsync(project, "production");
+        await DequeueNotificationsAsync();
+        await MarkFixedAsync(first.Event.StackId);
+
+        // Act
+        var regression = await RunAsync(project, "production");
+        var notifications = await DequeueNotificationsAsync();
+        await RunAsync(project, "production");
+        var laterNotifications = await DequeueNotificationsAsync();
+
+        // Assert
+        Assert.True(regression.IsRegression);
+        Assert.Equal(regression.Event.Id, Assert.Single(notifications).EventId);
+        Assert.True(notifications[0].IsRegression);
+        Assert.False((await _stackRepository.GetByIdAsync(first.Event.StackId))!.IsRegressionNotificationPending);
+        Assert.Empty(laterNotifications);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenTheStatusChangesWhileARegressionIsPending_DropsThePendingNotification()
+    {
+        // Arrange
+        var project = await ConfigureProjectAsync(p => p.Environments =
+        [
+            new ProjectEnvironment { Name = "dev", Notify = false },
+            new ProjectEnvironment { Name = "production" }
+        ]);
+        var first = await RunAsync(project, "production");
+        await DequeueNotificationsAsync();
+        await MarkFixedAsync(first.Event.StackId);
+        await RunAsync(project, "dev");
+        var stack = (await _stackRepository.GetByIdAsync(first.Event.StackId))!;
+        Assert.True(stack.IsRegressionNotificationPending);
+
+        // Act
+        stack.MarkOpen();
+        await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+        await RunAsync(project, "production");
+        var notifications = await DequeueNotificationsAsync();
+
+        // Assert
+        Assert.Empty(notifications);
+        Assert.False((await _stackRepository.GetByIdAsync(first.Event.StackId))!.IsRegressionNotificationPending);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenTwoBatchesTouchAPendingStack_TagsUpdateDoesNotRestoreAClaimedFlag()
+    {
+        // Arrange
+        var project = await ConfigureProjectAsync(p => p.Environments =
+        [
+            new ProjectEnvironment { Name = "dev", Notify = false },
+            new ProjectEnvironment { Name = "production" }
+        ]);
+        var dev = await RunAsync(project, "dev");
+        var staleBatchStack = (await _stackRepository.GetByIdAsync(dev.Event.StackId))!;
+        await RunAsync(project, "production");
+        await DequeueNotificationsAsync();
+
+        // Act
+        staleBatchStack.Tags.Add("late");
+        await _stackRepository.UpdateTagsAsync(staleBatchStack);
+        await RefreshDataAsync();
+
+        // Assert
+        var stack = (await _stackRepository.GetByIdAsync(dev.Event.StackId))!;
+        Assert.False(stack.IsNewNotificationPending);
+        Assert.Contains("late", stack.Tags);
+    }
+
+    private async Task MarkFixedAsync(string stackId)
+    {
+        var stack = (await _stackRepository.GetByIdAsync(stackId))!;
+        stack.MarkFixed(null, TimeProvider);
+        stack.DateFixed = DateTime.UtcNow.AddHours(-1);
+        await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
+    }
+
+    [Fact]
     public async Task TryClaimNewNotificationAsync_WithConcurrentCallers_ReturnsTrueForExactlyOne()
     {
         // Arrange
@@ -355,8 +499,8 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         stack = await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
 
         // Act
-        var results = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => _stackRepository.TryClaimNewNotificationAsync(stack)));
-        bool claimedAgain = await _stackRepository.TryClaimNewNotificationAsync(stack);
+        var results = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => _stackRepository.TryClaimNotificationAsync(stack, PendingStackNotification.New)));
+        bool claimedAgain = await _stackRepository.TryClaimNotificationAsync(stack, PendingStackNotification.New);
 
         // Assert
         Assert.Equal(1, results.Count(r => r));
@@ -371,7 +515,7 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         var stack = await _stackRepository.AddAsync(GetService<StackData>().GenerateStack(projectId: SampleDataService.TEST_PROJECT_ID, organizationId: SampleDataService.TEST_ORG_ID), o => o.ImmediateConsistency());
 
         // Act
-        bool claimed = await _stackRepository.TryClaimNewNotificationAsync(stack);
+        bool claimed = await _stackRepository.TryClaimNotificationAsync(stack, PendingStackNotification.New);
 
         // Assert
         Assert.False(claimed);
