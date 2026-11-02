@@ -83,7 +83,7 @@ describe('Environments page', () => {
         render(EnvironmentsPage);
 
         // Act
-        await userEvent.click(screen.getByRole('switch', { name: 'Discard events from environments that are not listed' }));
+        await userEvent.click(screen.getByRole('radio', { name: 'Only environments in this list' }));
 
         // Assert
         expect(await screen.findByText(/every event that has an environment will be discarded/)).toBeTruthy();
@@ -93,7 +93,7 @@ describe('Environments page', () => {
     it('saves the setting once the warning is confirmed', async () => {
         // Arrange
         render(EnvironmentsPage);
-        await userEvent.click(screen.getByRole('switch', { name: 'Discard events from environments that are not listed' }));
+        await userEvent.click(screen.getByRole('radio', { name: 'Only environments in this list' }));
 
         // Act
         await userEvent.click(await screen.findByRole('button', { name: 'Discard Unlisted Environments' }));
@@ -105,7 +105,7 @@ describe('Environments page', () => {
     it('does not save the setting when the warning is cancelled and puts the switch back', async () => {
         // Arrange
         render(EnvironmentsPage);
-        const discard = () => screen.getByRole('switch', { name: 'Discard events from environments that are not listed' });
+        const discard = () => screen.getByRole('radio', { name: 'Only environments in this list' });
         await userEvent.click(discard());
 
         // Act
@@ -113,6 +113,7 @@ describe('Environments page', () => {
 
         // Assert
         await waitFor(() => expect(discard().getAttribute('aria-checked')).toBe('false'));
+        expect(screen.getByRole('radio', { name: 'Any environment' }).getAttribute('aria-checked')).toBe('true');
         expect(mocks.updateSettings).not.toHaveBeenCalled();
     });
 
@@ -123,7 +124,7 @@ describe('Environments page', () => {
         render(EnvironmentsPage);
 
         // Act
-        await userEvent.click(screen.getByRole('switch', { name: 'Discard events from environments that are not listed' }));
+        await userEvent.click(screen.getByRole('radio', { name: 'Only environments in this list' }));
 
         // Assert
         expect(await screen.findByText(/None of the listed environments has had events in the last 30 days/)).toBeTruthy();
@@ -137,14 +138,14 @@ describe('Environments page', () => {
         render(EnvironmentsPage);
 
         // Act
-        await userEvent.click(screen.getByRole('switch', { name: 'Discard events from environments that are not listed' }));
+        await userEvent.click(screen.getByRole('radio', { name: 'Only environments in this list' }));
 
         // Assert
         await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ discard_unlisted_environments: true }));
         expect(screen.queryByRole('button', { name: 'Discard Unlisted Environments' })).toBeNull();
     });
 
-    it('fills the add form with the observed name so the casing can be confirmed instead of adding it', async () => {
+    it('fills the add dialog with the observed name so the casing can be confirmed instead of adding it', async () => {
         // Arrange
         mocks.countData = observed({ count: 4, key: 'qa-west' });
         render(EnvironmentsPage);
@@ -153,7 +154,27 @@ describe('Environments page', () => {
         await userEvent.click(await screen.findByRole('button', { name: 'Add qa-west' }));
 
         // Assert
-        await waitFor(() => expect((screen.getByLabelText('Environment name') as HTMLInputElement).value).toBe('qa-west'));
+        await waitFor(() => expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('qa-west'));
         expect(mocks.addEnvironment).not.toHaveBeenCalled();
+    });
+
+    it('hides the discarded section while every environment is accepted and nothing was discarded', () => {
+        // Act
+        render(EnvironmentsPage);
+
+        // Assert
+        expect(screen.queryByText(/Discarded in the Last/)).toBeNull();
+    });
+
+    it('shows the discarded section once only listed environments are accepted', () => {
+        // Arrange
+        mocks.project = { ...project([{ created_utc: '2026-11-01T00:00:00Z', name: 'Production', notify: true }]), discard_unlisted_environments: true };
+
+        // Act
+        render(EnvironmentsPage);
+
+        // Assert
+        expect(screen.getByText('Discarded in the Last 7 Days')).toBeTruthy();
+        expect(screen.getByText('Nothing discarded in the last 7 days.')).toBeTruthy();
     });
 });

@@ -1,12 +1,13 @@
 <script lang="ts">
     import { page } from '$app/state';
+    import Plus from '@lucide/svelte/icons/plus';
     import { toast } from 'svelte-sonner';
 
-    import type { DiscardedEnvironment, UpdateProjectEnvironmentSettings } from '#features/projects/models.ts';
+    import type { DiscardedEnvironment, NewProjectEnvironment, UpdateProjectEnvironmentSettings } from '#features/projects/models.ts';
 
     import { A, H4, Muted } from '#comp/typography/index.ts';
     import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
-    import { buttonVariants } from '#comp/ui/button/index.ts';
+    import { Button, buttonVariants } from '#comp/ui/button/index.ts';
     import { getProjectCountQuery } from '#features/events/api.svelte.ts';
     import {
         deleteProjectEnvironment,
@@ -16,7 +17,7 @@
         postProjectEnvironment,
         putProjectEnvironmentSettings
     } from '#features/projects/api.svelte.ts';
-    import AddEnvironmentForm from '#features/projects/components/environments/add-environment-form.svelte';
+    import AddEnvironmentDialog from '#features/projects/components/environments/add-environment-dialog.svelte';
     import DiscardedEnvironmentsTable from '#features/projects/components/environments/discarded-environments-table.svelte';
     import EnvironmentSettings from '#features/projects/components/environments/environment-settings.svelte';
     import EnvironmentsTable from '#features/projects/components/environments/environments-table.svelte';
@@ -53,7 +54,8 @@
 
     let environmentToRemove = $state<EnvironmentRow>();
     let showRemoveDialog = $state(false);
-    let prefill = $state<{ name: string }>();
+    let showAddDialog = $state(false);
+    let addName = $state('');
     let pendingSettings = $state<UpdateProjectEnvironmentSettings>();
     let showDiscardDialog = $state(false);
     // Changing this remounts the settings so a switch that was cancelled goes back to the saved value.
@@ -71,6 +73,8 @@
     const rows = $derived(buildEnvironmentRows(project?.environments, observed));
     const discarded = $derived(splitDiscardedEnvironments(discardedQuery.data?.environments));
     const discardWarning = $derived(getDiscardUnlistedWarning(rows, observedQuery.isSuccess));
+    const hasDiscarded = $derived(discarded.named.length > 0 || !!discarded.unspecified || (discardedQuery.data?.other_events ?? 0) > 0);
+    const showDiscarded = $derived(!!project?.discard_unlisted_environments || hasDiscarded);
 
     async function add(name: string, display = name) {
         try {
@@ -84,6 +88,11 @@
         }
     }
 
+    async function addFromDialog(environment: NewProjectEnvironment) {
+        await addEnvironment.mutateAsync(environment);
+        toast.success(`Added ${environment.name}.`);
+    }
+
     async function allow(environment: DiscardedEnvironment) {
         await add(environment.name ?? environment.key!, environment.name ?? environment.key!);
     }
@@ -91,6 +100,11 @@
     function cancelDiscard() {
         pendingSettings = undefined;
         settingsVersion++;
+    }
+
+    function openAddDialog(name = '') {
+        addName = name;
+        showAddDialog = true;
     }
 
     function requestChange(settings: UpdateProjectEnvironmentSettings) {
@@ -164,81 +178,75 @@
 </script>
 
 <div class="space-y-6">
-    <section class="space-y-2">
-        <H4>Environments</H4>
-        <Muted>
-            Clients report the <A href="https://exceptionless.com/docs/environments/" target="_blank">environment</A> an event came from, such as production or staging.
-            List an environment to show it with the casing you choose, choose whether it sends notifications, or discard events from environments you have not listed.
-            Names are not case-sensitive, and adding or removing a name never changes or deletes events.
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <Muted class="max-w-2xl">
+            Track the deployment <A href="https://exceptionless.com/docs/environments/" target="_blank">environments</A> your clients report, choose which ones send
+            notifications, and optionally discard the rest.
         </Muted>
-    </section>
+        <Button onclick={() => openAddDialog()}>
+            <Plus class="size-4" aria-hidden="true" />
+            Add Environment
+        </Button>
+    </div>
 
-    <section class="space-y-3">
-        <H4>Add Environment</H4>
-        <AddEnvironmentForm
-            add={(environment) => addEnvironment.mutateAsync(environment)}
-            listedNames={project?.environments?.map((e) => e.name) ?? []}
-            {prefill}
-        />
-    </section>
+    <EnvironmentsTable
+        add={(row) => openAddDialog(row.name)}
+        {busy}
+        discardUnlisted={project?.discard_unlisted_environments ?? false}
+        isError={projectQuery.isError || observedQuery.isError}
+        isLoading={projectQuery.isLoading || observedQuery.isLoading}
+        notifyOtherEnvironments={project?.notify_other_environments ?? true}
+        remove={confirmRemove}
+        {rows}
+        {toggleNotify}
+        toggleNotifyOther={(notify) =>
+            change({
+                notify_other_environments: notify
+            })}
+    />
 
-    <section class="space-y-3">
-        <H4>Settings</H4>
-        {#if project}
+    {#if project}
+        <section class="rounded-md border p-4">
             {#key settingsVersion}
                 <EnvironmentSettings
                     disabled={busy}
                     discardEventsWithoutEnvironment={project.discard_events_without_environment}
                     discardUnlistedEnvironments={project.discard_unlisted_environments}
-                    notifyOtherEnvironments={project.notify_other_environments}
                     update={requestChange}
                 />
             {/key}
-        {/if}
-    </section>
+        </section>
+    {/if}
 
-    <section class="space-y-3">
-        <H4>Environments in Use</H4>
-        <Muted>Listed environments and the environments seen in this project's events over the last 30 days.</Muted>
-        <EnvironmentsTable
-            add={(row) =>
-                (prefill = {
-                    name: row.name
-                })}
-            {busy}
-            isError={projectQuery.isError || observedQuery.isError}
-            isLoading={projectQuery.isLoading || observedQuery.isLoading}
-            notifyOtherEnvironments={project?.notify_other_environments ?? true}
-            remove={confirmRemove}
-            {rows}
-            {toggleNotify}
-        />
-    </section>
-
-    <section class="space-y-3">
-        <H4>Discarded Events</H4>
-        <Muted>
-            Clients are told an event was accepted before it is checked, so discarded events are only visible here. Allow an environment to start accepting its
-            events, for example when a name was misspelled in a client.
-        </Muted>
-        <DiscardedEnvironmentsTable
-            allow={(environment) => allow(environment)}
-            {busy}
-            isError={discardedQuery.isError}
-            isLoading={discardedQuery.isLoading}
-            named={discarded.named}
-            otherEvents={discardedQuery.data?.other_events}
-            otherNames={discardedQuery.data?.other_names}
-            otherNamesCapped={discardedQuery.data?.other_names_capped}
-            retentionDays={discardedQuery.data?.retention_days ?? 7}
-            stopDiscardingUnspecified={() =>
-                change({
-                    discard_events_without_environment: false
-                })}
-            unspecified={discarded.unspecified}
-        />
-    </section>
+    {#if showDiscarded}
+        <section class="space-y-3">
+            <div class="space-y-1">
+                <H4>Discarded in the Last {discardedQuery.data?.retention_days ?? 7} Days</H4>
+                <Muted>Clients aren't told when events are discarded. Allow a name to start accepting its events.</Muted>
+            </div>
+            <DiscardedEnvironmentsTable
+                allow={(environment) => allow(environment)}
+                {busy}
+                isError={discardedQuery.isError}
+                isLoading={discardedQuery.isLoading}
+                named={discarded.named}
+                otherEvents={discardedQuery.data?.other_events}
+                otherNames={discardedQuery.data?.other_names}
+                otherNamesCapped={discardedQuery.data?.other_names_capped}
+                retentionDays={discardedQuery.data?.retention_days ?? 7}
+                stopDiscardingUnspecified={() =>
+                    change({
+                        discard_events_without_environment: false
+                    })}
+                unspecified={discarded.unspecified}
+            />
+        </section>
+    {/if}
 </div>
+
+{#if showAddDialog}
+    <AddEnvironmentDialog add={addFromDialog} bind:open={showAddDialog} listedNames={project?.environments?.map((e) => e.name) ?? []} name={addName} />
+{/if}
 
 <AlertDialog.Root bind:open={showDiscardDialog}>
     <AlertDialog.Content>

@@ -48,9 +48,9 @@
         <Table.Header>
             <Table.Row>
                 <Table.Head>Environment</Table.Head>
-                <Table.Head class="text-right">Events discarded ({retentionDays} days)</Table.Head>
-                <Table.Head>Last seen</Table.Head>
-                <Table.Head class="w-40"><span class="sr-only">Actions</span></Table.Head>
+                <Table.Head class="w-36 text-right">Events</Table.Head>
+                <Table.Head class="w-40 pl-6">Last seen</Table.Head>
+                <Table.Head class="w-24"><span class="sr-only">Actions</span></Table.Head>
             </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -62,8 +62,7 @@
                 >
             {:else if !hasRows}
                 <Table.Row
-                    ><Table.Cell colspan={4} class="text-muted-foreground h-24 text-center"
-                        >No events have been discarded because of their environment in the last {retentionDays} days.</Table.Cell
+                    ><Table.Cell colspan={4} class="text-muted-foreground h-24 text-center">Nothing discarded in the last {retentionDays} days.</Table.Cell
                     ></Table.Row
                 >
             {:else}
@@ -71,7 +70,7 @@
                     <Table.Row>
                         <Table.Cell class="font-medium">{environment.name ?? environment.key}</Table.Cell>
                         <Table.Cell class="text-right tabular-nums">{environment.count.toLocaleString()}</Table.Cell>
-                        <Table.Cell><TimeAgo value={environment.last_seen_utc} /></Table.Cell>
+                        <Table.Cell class="text-muted-foreground pl-6"><TimeAgo value={environment.last_seen_utc} /></Table.Cell>
                         <Table.Cell class="text-right">
                             <Button
                                 aria-label={`Allow ${environment.name ?? environment.key}`}
@@ -88,9 +87,8 @@
                 {#if otherEvents > 0}
                     <Table.Row>
                         <Table.Cell class="text-muted-foreground italic" colspan={4}>
-                            {otherEvents.toLocaleString()} events from {otherNamesCapped ? 'at least ' : ''}{otherNames.toLocaleString()} other names were discarded.
-                            Only the first {named.length.toLocaleString()} names seen are listed, so the others cannot be allowed here. Check the environment your
-                            clients send, add the names you expect to the list above, or turn off discarding of unlisted environments.
+                            Plus {otherEvents.toLocaleString()} events from {otherNamesCapped ? 'at least ' : ''}{otherNames.toLocaleString()} more names, too many
+                            to list here. Check the environment your clients send.
                         </Table.Cell>
                     </Table.Row>
                 {/if}
@@ -98,7 +96,7 @@
                     <Table.Row>
                         <Table.Cell class="text-muted-foreground font-medium italic">No environment</Table.Cell>
                         <Table.Cell class="text-right tabular-nums">{unspecified.count.toLocaleString()}</Table.Cell>
-                        <Table.Cell><TimeAgo value={unspecified.last_seen_utc} /></Table.Cell>
+                        <Table.Cell class="text-muted-foreground pl-6"><TimeAgo value={unspecified.last_seen_utc} /></Table.Cell>
                         <Table.Cell class="text-right">
                             <Button
                                 aria-label="Stop discarding events without an environment"

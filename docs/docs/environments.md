@@ -64,21 +64,21 @@ The **New** view is not environment-aware. A stack is dated from its first event
 
 ## Manage environments
 
-Open **Project Settings → Environments** to list the environments a project uses. Listed names are shown in the casing you type (for example `Production`) in the Environment filter, event details, and notification emails, while matching stays case-insensitive. Adding or removing a name never changes or deletes events, and the server never adds names to the list on its own: environments that appear in your data show up in the table with an **Add** action. A project can list up to 100 environments, and a name follows the same rules as an event's environment: 1 to 64 characters after trimming, with no control characters.
+Open **Project Settings → Environments** to list the environments a project uses. Listed names are shown in the casing you type (for example `Production`) in the Environment filter, event details, and notification emails, while matching stays case-insensitive. Adding or removing a name never changes or deletes events, and the server never adds names to the list on its own: environments that appear in your data show up in the table marked **Not added**, with an **Add** action. A project can list up to 100 environments, and a name follows the same rules as an event's environment: 1 to 64 characters after trimming, with no control characters.
 
-Three project settings control what happens to events from environments that are not listed. Projects with no list and default settings behave exactly as before.
+These settings control what happens to events from environments that are not listed. Projects with no list and default settings behave exactly as before.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| Discard events from environments that are not listed | Off | Events whose environment is not in the list are discarded before they are stored or stacked. They count as discarded events in your usage and do not count toward your plan limit, like events for a discarded stack. |
-| Also discard events that have no environment | Off | Only applies when the setting above is on. Events without an environment are discarded too. Session heartbeats and session ends, which never carry an environment, are never discarded for this reason. |
-| Send notifications for other environments | On | Applies to environments that are not listed and to events without an environment. Each listed environment has its own **Notifications** toggle. |
+| **Accept events from:** Only environments in this list | Off (Any environment) | Events whose environment is not in the list are discarded before they are stored or stacked. They count as discarded events in your usage and do not count toward your plan limit, like events for a discarded stack. |
+| **Also accept events that don't send an environment** | On | Only shown when the setting above is on. When unchecked, events without an environment are discarded too. Session heartbeats and session ends, which never carry an environment, are never discarded for this reason. |
+| **Other environments** notifications | On | The last row of the table. Applies to environments that are not listed and to events without an environment. Each listed environment has its own **Notifications** toggle. |
 
-Ingestion acknowledges events before they are processed, so a client cannot see that an event was discarded. The **Discarded Events** table shows the names that were rejected in the last 7 days (up to 50 names per project), how many events each had, and an **Allow** action that adds the name to the list. This is the quickest way to find a misspelled environment such as `prodution`. Events without an environment are shown as their own row.
+Ingestion acknowledges events before they are processed, so a client cannot see that an event was discarded. The **Discarded** section, shown while only listed environments are accepted or when anything was discarded, shows the names that were rejected in the last 7 days (up to 50 names per project), how many events each had, and an **Allow** action that adds the name to the list. This is the quickest way to find a misspelled environment such as `prodution`. Events without an environment are shown as their own row.
 
 ### Notifications by environment
 
-An event can send notifications (email, Slack, and web hooks) only when its environment notifies: a listed environment with notifications on, or an unlisted environment or no environment while **Send notifications for other environments** is on.
+An event can send notifications (email, Slack, and web hooks) only when its environment notifies: a listed environment with notifications on, or an unlisted environment or no environment while **Other environments** notifications are on.
 
 - Critical error and critical event notifications are sent only for events from a notifying environment.
 - A new error or new event notification is sent the first time a stack occurs in a notifying environment. If an error is first seen in `dev` and `dev` does not notify, nothing is sent; the first time the same error occurs in `Production`, you get the new error notification, and it is not reported as new again in other environments.
