@@ -17,6 +17,10 @@
     <ReferenceFoundatioRepositoriesSource>false</ReferenceFoundatioRepositoriesSource>
     <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <!-- .NET 11 runtime async is still a preview compiler feature. Build with -p:UseRuntimeAsync=true to compile our
+         async methods as runtime async methods instead of state machines. It is off by default because it made no
+         measurable difference to event processing or API throughput on .NET 11 RC3. -->
+    <Features Condition="'$(UseRuntimeAsync)' == 'true'">$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
   <ItemGroup>

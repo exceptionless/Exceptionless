@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.6.1">
+<Project Sdk="Aspire.AppHost.Sdk/13.6.4">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net11.0</TargetFramework>
@@ -9,10 +9,10 @@
     <NoWarn>$(NoWarn);ASPIRECERTIFICATES001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.6.1" />
-    <PackageReference Include="Aspire.Hosting.Browsers" Version="13.6.1-preview.1.26506.6" />
-    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.6.1" />
-    <PackageReference Include="Aspire.Hosting.Redis" Version="13.6.1" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.6.4" />
+    <PackageReference Include="Aspire.Hosting.Browsers" Version="13.6.4-preview.1.26523.11" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" Version="13.6.4" />
+    <PackageReference Include="Aspire.Hosting.Redis" Version="13.6.4" />
     <PackageReference Include="AspNetCore.HealthChecks.Elasticsearch" Version="9.0.0" />
     <!-- Override Aspire's transitive dependency with a patched MessagePack release. -->
     <PackageReference Include="MessagePack" Version="3.1.12" />

@@ -114,7 +114,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 11.0.100-rc.2.26504.105
+          dotnet-version: 11.0.100-rc.3.26522.148
 
       - name: Version
         id: version
@@ -156,7 +156,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 11.0.100-rc.2.26504.105
+          dotnet-version: 11.0.100-rc.3.26522.148
 
       - uses: actions/cache@v6
         with:
@@ -215,7 +215,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 11.0.100-rc.2.26504.105
+          dotnet-version: 11.0.100-rc.3.26522.148
 
       - name: Merge coverage
         run: |
@@ -324,7 +324,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 11.0.100-rc.2.26504.105
+          dotnet-version: 11.0.100-rc.3.26522.148
 
       - name: Install Aspire CLI
         run: |
