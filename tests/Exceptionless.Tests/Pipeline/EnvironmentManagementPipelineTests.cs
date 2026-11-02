@@ -441,6 +441,36 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_WhenAConcurrentDevBatchMarksAnImmediateRegressionPending_DoesNotNotifyTwice()
+    {
+        // Arrange
+        var project = await ConfigureProjectAsync(p => p.Environments =
+        [
+            new ProjectEnvironment { Name = "dev", Notify = false },
+            new ProjectEnvironment { Name = "production" }
+        ]);
+        var first = await RunAsync(project, "production");
+        await DequeueNotificationsAsync();
+        await MarkFixedAsync(first.Event.StackId);
+        var staleFixedStack = (await _stackRepository.GetByIdAsync(first.Event.StackId))!;
+
+        // Act
+        var regression = await RunAsync(project, "production");
+        var regressionNotifications = await DequeueNotificationsAsync();
+        // A dev batch that loaded the fixed stack before the production regression finishes after it.
+        await _stackRepository.MarkAsRegressedAsync(staleFixedStack, notificationPending: true);
+        await RefreshDataAsync();
+        await RunAsync(project, "production");
+        var laterNotifications = await DequeueNotificationsAsync();
+
+        // Assert
+        Assert.True(regression.IsRegression);
+        Assert.True(Assert.Single(regressionNotifications).IsRegression);
+        Assert.Empty(laterNotifications);
+        Assert.False((await _stackRepository.GetByIdAsync(first.Event.StackId))!.IsRegressionNotificationPending);
+    }
+
+    [Fact]
     public async Task RunAsync_WhenAStackRegressesInANotifyingEnvironment_NotifiesImmediatelyAndNeverMarksItPending()
     {
         // Arrange

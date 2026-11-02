@@ -183,6 +183,12 @@ if (ctx._source.{field} == true) {{
         }
     }
 
+    public Task<bool> TryReserveNotificationAsync(Stack stack, PendingStackNotification kind)
+    {
+        // Shares the claim key, so a pending flag restored by a concurrent batch can't send the same notification again.
+        return Cache.AddAsync(GetClaimCacheKey(stack, kind), true, _claimGuardExpiration);
+    }
+
     public async Task UpdateTagsAsync(Stack stack)
     {
         // Only the tags change, so patch them instead of saving the whole document. A stale copy must not overwrite fields that other

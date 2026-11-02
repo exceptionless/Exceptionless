@@ -21,6 +21,12 @@ public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Sta
     Task<bool> TryClaimNotificationAsync(Stack stack, PendingStackNotification kind);
 
     /// <summary>
+    /// Records that a notification is being sent right away instead of through a pending claim. Returns false if the notification
+    /// was already sent for the stack's current cycle.
+    /// </summary>
+    Task<bool> TryReserveNotificationAsync(Stack stack, PendingStackNotification kind);
+
+    /// <summary>
     /// Updates only the tags of the stack.
     /// </summary>
     Task UpdateTagsAsync(Stack stack);

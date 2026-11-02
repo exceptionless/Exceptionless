@@ -42,7 +42,11 @@ public class QueueNotificationAction : EventPipelineActionBase
             return;
 
         bool isNew = await IsNewForNotificationAsync(ctx);
-        bool isRegression = ctx.IsRegression || await ClaimPendingAsync(ctx, PendingStackNotification.Regression);
+        // An immediate regression reserves the same per-cycle key a pending claim uses, so a concurrent batch that marks the regression
+        // pending from a non-notifying environment can't report it a second time.
+        bool isRegression = ctx.IsRegression
+            ? await _stackRepository.TryReserveNotificationAsync(ctx.Stack, PendingStackNotification.Regression)
+            : await ClaimPendingAsync(ctx, PendingStackNotification.Regression);
         if (ShouldQueueNotification(ctx, isNew, isRegression))
             await _notificationQueue.EnqueueAsync(new EventNotification
             {
