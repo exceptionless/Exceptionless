@@ -410,6 +410,37 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_WhenABatchWithAnExplicitStackIdRegressesInDevThenProduction_NotifiesOnceForProduction()
+    {
+        // Arrange
+        var project = await ConfigureProjectAsync(p => p.Environments =
+        [
+            new ProjectEnvironment { Name = "dev", Notify = false },
+            new ProjectEnvironment { Name = "production" }
+        ]);
+        var first = await RunAsync(project, "production");
+        await DequeueNotificationsAsync();
+        await MarkFixedAsync(first.Event.StackId);
+        var dev = NewEvent("dev", "test");
+        dev.StackId = first.Event.StackId;
+        var production = NewEvent("production", "test");
+        production.StackId = first.Event.StackId;
+        production.Date = dev.Date.AddSeconds(1);
+
+        // Act
+        var contexts = await _pipeline.RunAsync([dev, production], await GetOrganizationAsync(), project);
+        await RefreshDataAsync();
+        var notifications = await DequeueNotificationsAsync();
+
+        // Assert
+        Assert.NotSame(contexts.First().Stack, contexts.Last().Stack);
+        var notification = Assert.Single(notifications);
+        Assert.Equal(production.Id, notification.EventId);
+        Assert.True(notification.IsRegression);
+        Assert.False((await _stackRepository.GetByIdAsync(first.Event.StackId))!.IsRegressionNotificationPending);
+    }
+
+    [Fact]
     public async Task RunAsync_WhenAStackRegressesInANotifyingEnvironment_NotifiesImmediatelyAndNeverMarksItPending()
     {
         // Arrange
