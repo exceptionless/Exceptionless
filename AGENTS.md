@@ -86,7 +86,9 @@ tests/                         # C# tests and HTTP samples
 
 ## Pull Requests
 
-- Fill out the existing PR template when creating a PR.
+- Fill out `.github/pull_request_template.md` when creating a PR.
+- Write descriptions for a human skimming them. Aim for 150–400 words. Open with one sentence on what the PR does. Use tables for settings or options, a mermaid diagram for flows or decision logic, short bullets instead of paragraphs, and a code sample when the PR adds API surface.
+- Leave out file lists, implementation narration, test inventories, and per-review-round history. After review rounds, rewrite the description to match the current state instead of appending to it.
 - Use `feature/` for feature branch names and `issue/` for bug fix or issue branch names; keep PR titles neutral and project-facing, and do not add tool or automation branding unless the user explicitly asks for it.
 - Before creating a PR branch, fetch the default branch and branch from `origin/main` (or the repository default), never from a detached or unknown worktree `HEAD`. Before pushing a long-running change, fetch again and rebase if the base branch moved.
 - Keep descriptions concise: what changed, why, affected APIs/behaviors, verification, and breaking changes.
