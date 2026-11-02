@@ -174,7 +174,8 @@ if (ctx._source.{field} == true) {{
 
             // A whole-document save of a stale copy can put the flag back after it was claimed. Remembering the claim lets the next
             // claim clear the restored flag again without reporting the same notification twice.
-            return await Cache.AddAsync(GetClaimCacheKey(stack.Id, kind), true, _claimGuardExpiration);
+            // Delivery is at most once: the flag is already cleared, so if this cache call throws the notification is lost, not repeated.
+            return await Cache.AddAsync(GetClaimCacheKey(stack, kind), true, _claimGuardExpiration);
         }
         catch (DocumentNotFoundException)
         {
@@ -212,6 +213,7 @@ if (ctx._source.{field} == true) {{
     public async Task MarkAsRegressedAsync(Stack stack, bool notificationPending = false)
     {
         // A script update changes only these fields on the current document, so a regression cannot restore or drop a claimed flag.
+        // The claim guard key belongs to the regression cycle (see GetClaimCacheKey), so an earlier cycle's key never blocks this one.
         const string script = @"
 ctx._source.status = 'regressed';
 ctx._source.is_new_notification_pending = false;
@@ -223,9 +225,6 @@ ctx._source.is_regression_notification_pending = params.notificationPending;";
             {
                 Params = new Dictionary<string, object>(1) { { "notificationPending", notificationPending } }
             });
-
-            if (notificationPending)
-                await Cache.RemoveAsync(GetClaimCacheKey(stack.Id, PendingStackNotification.Regression));
 
             await InvalidateStackCacheAsync(stack);
         }
@@ -274,7 +273,11 @@ ctx._source.is_regression_notification_pending = params.notificationPending;";
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
     };
 
-    private static string GetClaimCacheKey(string stackId, PendingStackNotification kind) => String.Concat("notification-claim:", stackId, ":", GetPendingField(kind));
+    // A new notification is pending once per stack. A regression is pending once per fix (a stack regresses again only after it was fixed
+    // again), so the fix date identifies the cycle and each cycle gets its own key.
+    private static string GetClaimCacheKey(Stack stack, PendingStackNotification kind) => kind == PendingStackNotification.Regression
+        ? String.Concat("notification-claim:", stack.Id, ":", GetPendingField(kind), ":", stack.DateFixed?.Ticks ?? 0)
+        : String.Concat("notification-claim:", stack.Id, ":", GetPendingField(kind));
 
     private static string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
     private static string GetStackSignatureCacheKey(string projectId, string signatureHash) => String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);

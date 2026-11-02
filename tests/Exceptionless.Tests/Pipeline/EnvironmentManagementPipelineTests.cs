@@ -11,6 +11,8 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
+using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
@@ -480,6 +482,63 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         var stack = (await _stackRepository.GetByIdAsync(dev.Event.StackId))!;
         Assert.False(stack.IsNewNotificationPending);
         Assert.Contains("late", stack.Tags);
+    }
+
+    [Fact]
+    public async Task ProcessBatchAsync_WhenAnotherBatchClaimsAfterTheStackWasLoaded_AddingTagsDoesNotRestoreTheClaimedFlag()
+    {
+        // Arrange
+        var project = await ConfigureProjectAsync(p => p.Environments =
+        [
+            new ProjectEnvironment { Name = "dev", Notify = false },
+            new ProjectEnvironment { Name = "production" }
+        ]);
+        var dev = await RunAsync(project, "dev");
+        Assert.True(dev.Stack!.IsNewNotificationPending);
+
+        // The batch loads the pending stack, then another batch claims the notification before this one saves its tags.
+        var repository = DispatchProxy.Create<IStackRepository, AfterStackLoadedProxy>();
+        var proxy = (AfterStackLoadedProxy)(object)repository;
+        proxy.Inner = _stackRepository;
+        proxy.AfterLoaded = loaded => _stackRepository.TryClaimNotificationAsync(loaded, PendingStackNotification.New);
+        var action = ActivatorUtilities.CreateInstance<AssignToStackAction>(GetService<IServiceProvider>(), repository);
+
+        var ev = NewEvent("dev", "boom");
+        ev.Tags = ["late"];
+        var context = new EventContext(ev, await GetOrganizationAsync(), project);
+        foreach (var item in dev.Stack.SignatureInfo)
+            context.StackSignatureData[item.Key] = item.Value;
+
+        // Act
+        await action.ProcessBatchAsync([context]);
+        await RefreshDataAsync();
+
+        // Assert
+        Assert.Equal(dev.Stack.Id, context.Stack!.Id);
+        var stack = (await _stackRepository.GetByIdAsync(dev.Stack.Id))!;
+        Assert.Contains("late", stack.Tags);
+        Assert.False(stack.IsNewNotificationPending);
+    }
+
+    private class AfterStackLoadedProxy : DispatchProxy
+    {
+        public IStackRepository Inner { get; set; } = null!;
+        public Func<Stack, Task<bool>> AfterLoaded { get; set; } = null!;
+
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            object? result = targetMethod!.Invoke(Inner, args);
+            return targetMethod.Name == nameof(IStackRepository.GetStackBySignatureHashAsync) ? LoadAsync((Task<Stack?>)result!) : result;
+        }
+
+        private async Task<Stack?> LoadAsync(Task<Stack?> load)
+        {
+            var stack = await load;
+            if (stack is not null)
+                await AfterLoaded(stack);
+
+            return stack;
+        }
     }
 
     private async Task MarkFixedAsync(string stackId)

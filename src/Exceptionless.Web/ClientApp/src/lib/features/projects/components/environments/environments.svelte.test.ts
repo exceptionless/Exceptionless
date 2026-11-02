@@ -84,6 +84,7 @@ describe('DiscardedEnvironmentsTable', () => {
 
         // Assert
         expect(screen.getByText(/1,200 events from at least 100 other names were discarded/)).toBeTruthy();
+        expect(screen.getByText(/cannot be allowed here\. Check the environment your clients send, add the names you expect to the list above/)).toBeTruthy();
     });
 
     it('explains when nothing has been discarded', () => {

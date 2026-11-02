@@ -89,7 +89,8 @@
                     <Table.Row>
                         <Table.Cell class="text-muted-foreground italic" colspan={4}>
                             {otherEvents.toLocaleString()} events from {otherNamesCapped ? 'at least ' : ''}{otherNames.toLocaleString()} other names were discarded.
-                            Only the first {named.length.toLocaleString()} names are listed. Fix the clients that send these names, or list the ones you want.
+                            Only the first {named.length.toLocaleString()} names seen are listed, so the others cannot be allowed here. Check the environment your
+                            clients send, add the names you expect to the list above, or turn off discarding of unlisted environments.
                         </Table.Cell>
                     </Table.Row>
                 {/if}

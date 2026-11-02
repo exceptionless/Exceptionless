@@ -408,6 +408,9 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         var stack2 = _stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id, signatureHash: signatureHash);
         stack2.CreatedUtc = DateTime.UtcNow.AddDays(-5);
         stack2.TotalOccurrences = 10;
+        stack1.Status = StackStatus.Fixed;
+        stack2.IsNewNotificationPending = true;
+        stack2.IsRegressionNotificationPending = true;
         await _stackRepository.AddAsync([stack1, stack2], o => o.ImmediateConsistency());
 
         // Events on both stacks
@@ -425,6 +428,11 @@ public class CleanupOrphanedDataJobTests : IntegrationTestsBase
         var deletedStacks = allStacks.Documents.Where(s => s.IsDeleted).ToList();
         Assert.Single(activeStacks);
         Assert.Single(deletedStacks);
+
+        // Merging changes the status, which drops notifications that were waiting for a notifying environment
+        Assert.Equal(StackStatus.Fixed, activeStacks[0].Status);
+        Assert.False(activeStacks[0].IsNewNotificationPending);
+        Assert.False(activeStacks[0].IsRegressionNotificationPending);
 
         // All events should now reference the surviving stack
         var allEvents = await _eventRepository.GetAllAsync();

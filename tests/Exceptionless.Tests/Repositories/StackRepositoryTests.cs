@@ -141,20 +141,42 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task MarkAsRegressedAsync_WithPendingNotification_AllowsANewClaimEvenAfterAnEarlierOne()
+    public async Task TryClaimNotificationAsync_ForALaterRegressionCycle_ClaimsEvenThoughAnEarlierCycleWasClaimed()
     {
         // Arrange
         var stack = await AddPendingStackAsync();
+        stack.DateFixed = DateTime.UtcNow.AddDays(-2);
         await _repository.MarkAsRegressedAsync(stack, notificationPending: true);
         bool first = await _repository.TryClaimNotificationAsync(stack, PendingStackNotification.Regression);
 
-        // Act
+        // Act: the stack is fixed again and regresses again. The new cycle is pending in Elasticsearch before anything else happens,
+        // so a claim at that moment must not be blocked by the previous cycle's guard.
+        stack.DateFixed = DateTime.UtcNow.AddDays(-1);
         await _repository.MarkAsRegressedAsync(stack, notificationPending: true);
         bool second = await _repository.TryClaimNotificationAsync(stack, PendingStackNotification.Regression);
 
         // Assert
         Assert.True(first);
         Assert.True(second);
+    }
+
+    [Fact]
+    public async Task TryClaimNotificationAsync_WhenAStaleSaveRestoresARegressionFlag_DoesNotClaimTheSameCycleTwice()
+    {
+        // Arrange
+        var stack = await AddPendingStackAsync();
+        stack.DateFixed = DateTime.UtcNow.AddDays(-1);
+        await _repository.MarkAsRegressedAsync(stack, notificationPending: true);
+        var stale = (await _repository.GetByIdAsync(stack.Id))!;
+        bool claimed = await _repository.TryClaimNotificationAsync(stack, PendingStackNotification.Regression);
+
+        // Act
+        await _repository.SaveAsync(stale, o => o.ImmediateConsistency());
+        bool claimedAgain = await _repository.TryClaimNotificationAsync(stack, PendingStackNotification.Regression);
+
+        // Assert
+        Assert.True(claimed);
+        Assert.False(claimedAgain);
     }
 
     [Fact]

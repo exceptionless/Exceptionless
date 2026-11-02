@@ -170,8 +170,7 @@ public class AssignToStackAction : EventPipelineActionBase
         }
 
         // Only the tags changed, so update just those. Saving the whole stack could overwrite a notification another batch just claimed.
-        foreach (var stack in stacks.Where(s => s.Value.ShouldSave).Select(kvp => kvp.Value.Stack))
-            await _stackRepository.UpdateTagsAsync(stack);
+        await Task.WhenAll(stacks.Where(s => s.Value.ShouldSave).Select(kvp => _stackRepository.UpdateTagsAsync(kvp.Value.Stack)));
 
         // Set stack ids after they have been saved and created
         contexts.ForEach(ctx =>
