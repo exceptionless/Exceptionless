@@ -230,6 +230,20 @@ describe('AddEnvironmentDialog', () => {
         expect(add).not.toHaveBeenCalled();
     });
 
+    it('does not add anything when cancelled', async () => {
+        // Arrange
+        const add = vi.fn();
+        render(AddEnvironmentDialog, { add, listedNames: [], open: true });
+        await userEvent.type(screen.getByLabelText('Name'), 'Staging');
+
+        // Act
+        await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        // Assert
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(add).not.toHaveBeenCalled();
+    });
+
     it('requires a name', async () => {
         // Arrange
         const add = vi.fn();

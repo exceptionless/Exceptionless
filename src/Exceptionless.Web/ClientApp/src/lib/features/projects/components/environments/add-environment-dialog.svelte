@@ -129,7 +129,7 @@
             </div>
 
             <AlertDialog.Footer>
-                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                <AlertDialog.Cancel type="button">Cancel</AlertDialog.Cancel>
                 <AlertDialog.Action type="submit">Add Environment</AlertDialog.Action>
             </AlertDialog.Footer>
         </form>
