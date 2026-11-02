@@ -13805,7 +13805,10 @@
       "ProjectDiscardedEnvironments": {
         "required": [
           "retention_days",
-          "environments"
+          "environments",
+          "other_events",
+          "other_names",
+          "other_names_capped"
         ],
         "type": "object",
         "properties": {
@@ -13819,6 +13822,20 @@
             "items": {
               "$ref": "#/components/schemas/DiscardedEnvironment"
             }
+          },
+          "other_events": {
+            "type": "integer",
+            "description": "Events from names beyond the per-project limit, which are counted but not listed individually.",
+            "format": "int64"
+          },
+          "other_names": {
+            "type": "integer",
+            "description": "How many different names those events came from, up to a limit.",
+            "format": "int32"
+          },
+          "other_names_capped": {
+            "type": "boolean",
+            "description": "True when there were more other names than are counted."
           }
         }
       },
@@ -14044,6 +14061,7 @@
           "last_occurrence",
           "occurrences_are_critical",
           "is_new_notification_pending",
+          "is_regression_notification_pending",
           "references",
           "tags",
           "duplicate_signature",
@@ -14154,6 +14172,10 @@
           "is_new_notification_pending": {
             "type": "boolean",
             "description": "True when the stack was created by an event from an environment that does not send notifications and no notifying\nenvironment has reported it yet. The first occurrence in a notifying environment clears this and is reported as new.\nStacks created before this field existed are not pending, so they never produce a new notification for it."
+          },
+          "is_regression_notification_pending": {
+            "type": "boolean",
+            "description": "True when the stack regressed from an environment that does not send notifications and no notifying environment has\nreported the regression yet. The first notifying occurrence clears this and is reported as the regression.\nChanging the stack\u0027s status clears it."
           },
           "references": {
             "type": "array",

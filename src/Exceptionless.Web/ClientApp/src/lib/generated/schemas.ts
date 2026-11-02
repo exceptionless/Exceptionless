@@ -663,6 +663,9 @@ export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
 export const ProjectDiscardedEnvironmentsSchema = object({
   retention_days: int32(),
   environments: array(lazy(() => DiscardedEnvironmentSchema)),
+  other_events: int(),
+  other_names: int32(),
+  other_names_capped: boolean(),
 });
 export type ProjectDiscardedEnvironmentsFormData = Infer<
   typeof ProjectDiscardedEnvironmentsSchema
@@ -777,6 +780,7 @@ export const StackSchema = object({
   description: string().min(1, "Description is required").nullable().optional(),
   occurrences_are_critical: boolean(),
   is_new_notification_pending: boolean(),
+  is_regression_notification_pending: boolean(),
   references: array(string()),
   tags: array(string()),
   duplicate_signature: string().min(1, "Duplicate signature is required"),

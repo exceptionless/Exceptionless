@@ -20,6 +20,7 @@
         hasErrorOrSimpleError
     } from '#features/events/persistent-event.ts';
     import EnvironmentName from '#features/projects/components/environment-name.svelte';
+    import { useEnvironmentDisplayName } from '#features/projects/environment-display.svelte.ts';
     import TagList from '#features/shared/components/tag-list.svelte';
 
     import type { PersistentEvent } from '../../models/index';
@@ -71,6 +72,11 @@
     let requestUrl = $derived(getRequestInfoUrl(event));
     let requestUrlPath = $derived(getRequestInfoPath(event));
     let version = $derived(event.data?.['@version']);
+
+    const environmentDisplay = useEnvironmentDisplayName({
+        environment: () => event.environment,
+        projectId: () => event.project_id
+    });
 </script>
 
 <Table.Root>
@@ -78,7 +84,9 @@
         {#if event.environment}
             <Table.Row>
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Environment</Table.Head>
-                <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.EnvironmentTrigger changed={filterChanged} value={event.environment} /></Table.Cell>
+                <Table.Cell class="w-4 pr-0"
+                    ><EventsFacetedFilter.EnvironmentTrigger changed={filterChanged} label={environmentDisplay.name} value={event.environment} /></Table.Cell
+                >
                 <Table.Cell><EnvironmentName environment={event.environment} projectId={event.project_id} /></Table.Cell>
             </Table.Row>
         {/if}

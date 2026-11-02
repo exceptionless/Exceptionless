@@ -20,7 +20,7 @@
     import DiscardedEnvironmentsTable from '#features/projects/components/environments/discarded-environments-table.svelte';
     import EnvironmentSettings from '#features/projects/components/environments/environment-settings.svelte';
     import EnvironmentsTable from '#features/projects/components/environments/environments-table.svelte';
-    import { buildEnvironmentRows, type EnvironmentRow, splitDiscardedEnvironments } from '#features/projects/environments.ts';
+    import { buildEnvironmentRows, type EnvironmentRow, getDiscardUnlistedWarning, splitDiscardedEnvironments } from '#features/projects/environments.ts';
     import * as agg from '#features/shared/api/aggregations.ts';
 
     const projectId = $derived(page.params.projectId || '');
@@ -53,6 +53,11 @@
 
     let environmentToRemove = $state<EnvironmentRow>();
     let showRemoveDialog = $state(false);
+    let prefill = $state<{ name: string }>();
+    let pendingSettings = $state<UpdateProjectEnvironmentSettings>();
+    let showDiscardDialog = $state(false);
+    // Changing this remounts the settings so a switch that was cancelled goes back to the saved value.
+    let settingsVersion = $state(0);
 
     const project = $derived(projectQuery.data);
     const busy = $derived(addEnvironment.isPending || updateEnvironment.isPending || removeEnvironment.isPending || updateSettings.isPending);
@@ -65,6 +70,7 @@
     );
     const rows = $derived(buildEnvironmentRows(project?.environments, observed));
     const discarded = $derived(splitDiscardedEnvironments(discardedQuery.data?.environments));
+    const discardWarning = $derived(getDiscardUnlistedWarning(rows, observedQuery.isSuccess));
 
     async function add(name: string, display = name) {
         try {
@@ -82,12 +88,43 @@
         await add(environment.name ?? environment.key!, environment.name ?? environment.key!);
     }
 
+    function cancelDiscard() {
+        pendingSettings = undefined;
+        settingsVersion++;
+    }
+
+    function requestChange(settings: UpdateProjectEnvironmentSettings) {
+        if (settings.discard_unlisted_environments && discardWarning) {
+            pendingSettings = settings;
+            showDiscardDialog = true;
+            return;
+        }
+
+        return change(settings);
+    }
+
+    // Cancel, Escape and clicking outside all close the dialog without confirming.
+    $effect(() => {
+        if (!showDiscardDialog && pendingSettings) {
+            cancelDiscard();
+        }
+    });
+
     async function change(settings: UpdateProjectEnvironmentSettings) {
         try {
             await updateSettings.mutateAsync(settings);
             toast.success('Environment settings saved.');
         } catch {
             toast.error('Unable to save the environment settings. Please try again.');
+        }
+    }
+
+    async function confirmDiscard() {
+        const settings = pendingSettings;
+        pendingSettings = undefined;
+        showDiscardDialog = false;
+        if (settings) {
+            await change(settings);
         }
     }
 
@@ -138,19 +175,25 @@
 
     <section class="space-y-3">
         <H4>Add Environment</H4>
-        <AddEnvironmentForm add={(environment) => addEnvironment.mutateAsync(environment)} listedNames={project?.environments?.map((e) => e.name) ?? []} />
+        <AddEnvironmentForm
+            add={(environment) => addEnvironment.mutateAsync(environment)}
+            listedNames={project?.environments?.map((e) => e.name) ?? []}
+            {prefill}
+        />
     </section>
 
     <section class="space-y-3">
         <H4>Settings</H4>
         {#if project}
-            <EnvironmentSettings
-                disabled={busy}
-                discardEventsWithoutEnvironment={project.discard_events_without_environment}
-                discardUnlistedEnvironments={project.discard_unlisted_environments}
-                notifyOtherEnvironments={project.notify_other_environments}
-                update={change}
-            />
+            {#key settingsVersion}
+                <EnvironmentSettings
+                    disabled={busy}
+                    discardEventsWithoutEnvironment={project.discard_events_without_environment}
+                    discardUnlistedEnvironments={project.discard_unlisted_environments}
+                    notifyOtherEnvironments={project.notify_other_environments}
+                    update={requestChange}
+                />
+            {/key}
         {/if}
     </section>
 
@@ -158,7 +201,10 @@
         <H4>Environments in Use</H4>
         <Muted>Listed environments and the environments seen in this project's events over the last 30 days.</Muted>
         <EnvironmentsTable
-            add={(row) => add(row.name)}
+            add={(row) =>
+                (prefill = {
+                    name: row.name
+                })}
             {busy}
             isError={projectQuery.isError || observedQuery.isError}
             isLoading={projectQuery.isLoading || observedQuery.isLoading}
@@ -181,6 +227,9 @@
             isError={discardedQuery.isError}
             isLoading={discardedQuery.isLoading}
             named={discarded.named}
+            otherEvents={discardedQuery.data?.other_events}
+            otherNames={discardedQuery.data?.other_names}
+            otherNamesCapped={discardedQuery.data?.other_names_capped}
             retentionDays={discardedQuery.data?.retention_days ?? 7}
             stopDiscardingUnspecified={() =>
                 change({
@@ -190,6 +239,34 @@
         />
     </section>
 </div>
+
+<AlertDialog.Root bind:open={showDiscardDialog}>
+    <AlertDialog.Content>
+        <AlertDialog.Header>
+            <AlertDialog.Title>Discard Events From Unlisted Environments?</AlertDialog.Title>
+            <AlertDialog.Description>
+                {#if discardWarning === 'empty-list'}
+                    No environments are listed, so <span class="font-medium">every event that has an environment will be discarded</span> until you list them. Clients
+                    are told the events were accepted, so nothing will look wrong on their side.
+                {:else}
+                    None of the listed environments has had events in the last 30 days, so <span class="font-medium"
+                        >events from the environments you are sending now will be discarded</span
+                    >. Clients are told the events were accepted, so nothing will look wrong on their side.
+                {/if}
+                You can turn this off again at any time, but discarded events are not recovered.
+            </AlertDialog.Description>
+        </AlertDialog.Header>
+        <AlertDialog.Footer>
+            <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+            <AlertDialog.Action
+                class={buttonVariants({
+                    variant: 'destructive'
+                })}
+                onclick={confirmDiscard}>Discard Unlisted Environments</AlertDialog.Action
+            >
+        </AlertDialog.Footer>
+    </AlertDialog.Content>
+</AlertDialog.Root>
 
 <AlertDialog.Root bind:open={showRemoveDialog}>
     <AlertDialog.Content>

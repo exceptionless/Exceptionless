@@ -536,6 +536,18 @@ export interface ProjectDiscardedEnvironments {
    */
   retention_days: number;
   environments: DiscardedEnvironment[];
+  /**
+   * Events from names beyond the per-project limit, which are counted but not listed individually.
+   * @format int64
+   */
+  other_events: number;
+  /**
+   * How many different names those events came from, up to a limit.
+   * @format int32
+   */
+  other_names: number;
+  /** True when there were more other names than are counted. */
+  other_names_capped: boolean;
 }
 
 /** A deployment environment that a project has chosen to list, such as production or staging. */
@@ -675,6 +687,12 @@ export interface Stack {
    * Stacks created before this field existed are not pending, so they never produce a new notification for it.
    */
   is_new_notification_pending: boolean;
+  /**
+   * True when the stack regressed from an environment that does not send notifications and no notifying environment has
+   * reported the regression yet. The first notifying occurrence clears this and is reported as the regression.
+   * Changing the stack's status clears it.
+   */
+  is_regression_notification_pending: boolean;
   /** A list of references. */
   references: string[];
   /** A list of tags used to categorize this stack. */

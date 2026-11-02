@@ -3,6 +3,8 @@ import type { DiscardedEnvironment, ProjectEnvironment } from '#generated/api.ts
 export const MAX_ENVIRONMENT_NAME_LENGTH = 64;
 export const MAX_LISTED_ENVIRONMENTS = 100;
 
+export type DiscardUnlistedWarning = 'empty-list' | 'no-recent-events';
+
 export interface EnvironmentRow {
     count: number;
     isListed: boolean;
@@ -61,6 +63,20 @@ export function buildEnvironmentRows(listed: null | ProjectEnvironment[] | undef
         .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
 
     return [...listedRows, ...unlistedRows];
+}
+
+/**
+ * Discarding unlisted environments drops every event whose environment is not in the list. That is almost never intended when the list
+ * is empty, or when none of the listed environments has sent events recently, so the page asks for confirmation first.
+ * Recent activity is only judged once it has loaded.
+ */
+export function getDiscardUnlistedWarning(rows: EnvironmentRow[], observedLoaded: boolean): DiscardUnlistedWarning | undefined {
+    const listed = rows.filter((row) => row.isListed);
+    if (listed.length === 0) {
+        return 'empty-list';
+    }
+
+    return observedLoaded && listed.every((row) => row.count === 0) ? 'no-recent-events' : undefined;
 }
 
 /** Returns the listed casing for a listed environment, otherwise the name as it was given. */

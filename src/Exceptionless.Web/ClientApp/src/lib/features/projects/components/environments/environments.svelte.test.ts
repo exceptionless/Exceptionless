@@ -70,6 +70,22 @@ describe('DiscardedEnvironmentsTable', () => {
         expect(stopDiscardingUnspecified).toHaveBeenCalledOnce();
     });
 
+    it('reports events from names that were too many to list', () => {
+        // Act
+        render(DiscardedEnvironmentsTable, {
+            allow: vi.fn(),
+            named: [{ count: 5, key: 'dev', last_seen_utc: '2026-11-02T09:00:00Z', name: 'dev' }],
+            otherEvents: 1200,
+            otherNames: 100,
+            otherNamesCapped: true,
+            retentionDays: 7,
+            stopDiscardingUnspecified: vi.fn()
+        });
+
+        // Assert
+        expect(screen.getByText(/1,200 events from at least 100 other names were discarded/)).toBeTruthy();
+    });
+
     it('explains when nothing has been discarded', () => {
         // Act
         render(DiscardedEnvironmentsTable, { allow: vi.fn(), named: [], retentionDays: 7, stopDiscardingUnspecified: vi.fn() });
@@ -137,6 +153,36 @@ describe('AddEnvironmentForm', () => {
 
         // Assert
         expect(await screen.findByText(new RegExp(message))).toBeTruthy();
+        expect(add).not.toHaveBeenCalled();
+    });
+
+    it('fills in the name it is given so the casing can be confirmed before adding', async () => {
+        // Arrange
+        const add = vi.fn().mockResolvedValue(undefined);
+        render(AddEnvironmentForm, { add, listedNames: [], prefill: { name: 'qa-west' } });
+        const input = screen.getByLabelText('Environment name') as HTMLInputElement;
+        await waitFor(() => expect(input.value).toBe('qa-west'));
+
+        // Act
+        await userEvent.clear(input);
+        await userEvent.type(input, 'QA-West');
+        await userEvent.click(screen.getByRole('button', { name: 'Add environment' }));
+
+        // Assert
+        await waitFor(() => expect(add).toHaveBeenCalledWith({ name: 'QA-West', notify: true }));
+    });
+
+    it('rejects a name that is only whitespace', async () => {
+        // Arrange
+        const add = vi.fn();
+        render(AddEnvironmentForm, { add, listedNames: [] });
+
+        // Act
+        await userEvent.type(screen.getByLabelText('Environment name'), '   ');
+        await userEvent.click(screen.getByRole('button', { name: 'Add environment' }));
+
+        // Assert
+        expect(await screen.findByText(/Name must be 1 to 64 characters/)).toBeTruthy();
         expect(add).not.toHaveBeenCalled();
     });
 

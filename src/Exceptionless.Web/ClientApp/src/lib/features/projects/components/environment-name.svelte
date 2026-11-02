@@ -1,6 +1,5 @@
 <script lang="ts">
-    import { getProjectQuery } from '#features/projects/api.svelte.ts';
-    import { getEnvironmentDisplayName } from '#features/projects/environments.ts';
+    import { useEnvironmentDisplayName } from '#features/projects/environment-display.svelte.ts';
 
     interface Props {
         /** The environment as stored on the event. */
@@ -12,16 +11,10 @@
 
     let { environment, projectId, unspecified = 'Unspecified' }: Props = $props();
 
-    const projectQuery = getProjectQuery({
-        route: {
-            get id() {
-                return environment ? projectId : undefined;
-            }
-        }
+    const display = useEnvironmentDisplayName({
+        environment: () => environment,
+        projectId: () => projectId
     });
-
-    // Listed environments always show in their listed casing. Anything else shows the way the event reported it.
-    const name = $derived(environment ? getEnvironmentDisplayName(projectQuery.data?.environments, environment) : unspecified);
 </script>
 
-{name}
+{display.name ?? unspecified}

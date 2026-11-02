@@ -2,6 +2,7 @@
     import { ProblemDetails } from '@foundatiofx/fetchclient';
     import Plus from '@lucide/svelte/icons/plus';
     import { createForm } from '@tanstack/svelte-form';
+    import { untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import type { NewProjectEnvironment } from '#features/projects/models.ts';
@@ -12,27 +13,39 @@
     import { Input } from '#comp/ui/input/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
     import { Switch } from '#comp/ui/switch/index.ts';
-    import { getEnvironmentKey, MAX_LISTED_ENVIRONMENTS } from '#features/projects/environments.ts';
-    import { type AddEnvironmentFormData, AddEnvironmentSchema } from '#features/projects/schemas.ts';
+    import { getEnvironmentKey, MAX_LISTED_ENVIRONMENTS, normalizeEnvironmentName } from '#features/projects/environments.ts';
+    import { type NewProjectEnvironmentFormData, NewProjectEnvironmentSchema } from '#features/projects/schemas.ts';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     interface Props {
         add: (environment: NewProjectEnvironment) => Promise<unknown>;
         /** The names that are already listed. Names are compared case-insensitively. */
         listedNames: string[];
+        /** Fills the name so it can be confirmed or corrected before adding. A new object fills it again. */
+        prefill?: { name: string };
     }
 
-    let { add, listedNames }: Props = $props();
+    let { add, listedNames, prefill }: Props = $props();
+
+    let nameInput = $state<HTMLInputElement | null>(null);
 
     const form = createForm(() => ({
         defaultValues: {
             name: '',
             notify: true
-        } as AddEnvironmentFormData,
+        } as NewProjectEnvironmentFormData,
         validators: {
-            onSubmit: AddEnvironmentSchema,
+            onSubmit: NewProjectEnvironmentSchema,
             onSubmitAsync: async ({ value }) => {
-                const name = value.name.trim();
+                const name = normalizeEnvironmentName(value.name);
+                if (!name) {
+                    return {
+                        fields: {
+                            name: 'Name must be 1 to 64 characters and cannot contain control characters.'
+                        }
+                    };
+                }
+
                 if (listedNames.some((listed) => getEnvironmentKey(listed) === getEnvironmentKey(name))) {
                     return {
                         fields: {
@@ -67,6 +80,17 @@
             }
         }
     }));
+
+    $effect(() => {
+        const name = prefill?.name;
+        if (name !== undefined) {
+            // Only a new prefill should fill the field, not the form state that setting it changes.
+            untrack(() => {
+                form.setFieldValue('name', name);
+                nameInput?.focus();
+            });
+        }
+    });
 </script>
 
 <form
@@ -89,6 +113,7 @@
                 <Field.Label for={field.name}>Environment name</Field.Label>
                 <Input
                     autocomplete="off"
+                    bind:ref={nameInput}
                     id={field.name}
                     maxlength={64}
                     name={field.name}

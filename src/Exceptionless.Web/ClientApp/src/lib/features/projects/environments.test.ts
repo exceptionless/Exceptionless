@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
     buildEnvironmentRows,
+    getDiscardUnlistedWarning,
     getEnvironmentDisplayName,
     getListedEnvironmentNames,
     normalizeEnvironmentName,
@@ -103,5 +104,30 @@ describe('splitDiscardedEnvironments', () => {
         expect(named.map((environment) => environment.key)).toEqual(['prodution', 'dev']);
         expect(unspecified?.count).toBe(9);
         expect(splitDiscardedEnvironments(undefined)).toEqual({ named: [], unspecified: undefined });
+    });
+});
+
+describe('getDiscardUnlistedWarning', () => {
+    const rows = (...counts: (number | undefined)[]) =>
+        buildEnvironmentRows(
+            counts.map((_, index) => listed(`env-${index}`)),
+            counts.flatMap((count, index) => (count === undefined ? [] : [{ count, key: `env-${index}` }]))
+        );
+
+    it.each([
+        ['no listed environments', [], true, 'empty-list'],
+        ['no listed environment has events', [undefined, 0], true, 'no-recent-events'],
+        ['a listed environment has events', [undefined, 3], true, undefined],
+        ['recent activity has not loaded', [undefined], false, undefined]
+    ])('returns the right warning when %s', (_, counts, loaded, expected) => {
+        expect(getDiscardUnlistedWarning(rows(...(counts as (number | undefined)[])), loaded)).toBe(expected);
+    });
+
+    it('does not count unlisted environments that have events', () => {
+        // Arrange
+        const mixed = buildEnvironmentRows([listed('Production')], [{ count: 50, key: 'qa-west' }]);
+
+        // Act & Assert
+        expect(getDiscardUnlistedWarning(mixed, true)).toBe('no-recent-events');
     });
 });

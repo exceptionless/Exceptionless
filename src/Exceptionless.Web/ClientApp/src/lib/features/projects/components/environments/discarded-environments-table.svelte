@@ -16,15 +16,31 @@
         isError?: boolean;
         isLoading?: boolean;
         named: DiscardedEnvironment[];
+        /** Events from names beyond the tracking limit. They are counted but cannot be allowed individually. */
+        otherEvents?: number;
+        otherNames?: number;
+        otherNamesCapped?: boolean;
         retentionDays: number;
         /** Turns off discarding events that have no environment. */
         stopDiscardingUnspecified: () => Promise<unknown> | unknown;
         unspecified?: DiscardedEnvironment;
     }
 
-    let { allow, busy = false, isError = false, isLoading = false, named, retentionDays, stopDiscardingUnspecified, unspecified }: Props = $props();
+    let {
+        allow,
+        busy = false,
+        isError = false,
+        isLoading = false,
+        named,
+        otherEvents = 0,
+        otherNames = 0,
+        otherNamesCapped = false,
+        retentionDays,
+        stopDiscardingUnspecified,
+        unspecified
+    }: Props = $props();
 
-    const hasRows = $derived(named.length > 0 || !!unspecified);
+    const hasRows = $derived(named.length > 0 || !!unspecified || otherEvents > 0);
 </script>
 
 <div class="rounded-md border">
@@ -69,6 +85,14 @@
                         </Table.Cell>
                     </Table.Row>
                 {/each}
+                {#if otherEvents > 0}
+                    <Table.Row>
+                        <Table.Cell class="text-muted-foreground italic" colspan={4}>
+                            {otherEvents.toLocaleString()} events from {otherNamesCapped ? 'at least ' : ''}{otherNames.toLocaleString()} other names were discarded.
+                            Only the first {named.length.toLocaleString()} names are listed. Fix the clients that send these names, or list the ones you want.
+                        </Table.Cell>
+                    </Table.Row>
+                {/if}
                 {#if unspecified}
                     <Table.Row>
                         <Table.Cell class="text-muted-foreground font-medium italic">No environment</Table.Cell>

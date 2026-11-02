@@ -25,6 +25,17 @@ test('operator can list, configure, and filter environments and allow discarded 
         await expect(page.getByRole('row', { name: /^staging Not listed/ })).toBeVisible();
     });
 
+    await test.step('discarding unlisted environments asks for confirmation while nothing is listed', async () => {
+        const discard = page.getByRole('switch', { name: 'Discard events from environments that are not listed' });
+        await discard.click();
+
+        const dialog = page.getByRole('alertdialog');
+        await expect(dialog.getByText(/every event that has an environment will be discarded/)).toBeVisible();
+        await dialog.getByRole('button', { name: 'Cancel' }).click();
+        await expect(dialog).toBeHidden();
+        await expect(discard).not.toBeChecked();
+    });
+
     await test.step('adding a name lists it in the casing that was typed and merges the observed row', async () => {
         await page.getByLabel('Environment name').fill('  Production ');
         await page.getByRole('button', { name: 'Add environment' }).click();
@@ -36,6 +47,16 @@ test('operator can list, configure, and filter environments and allow discarded 
         await page.getByLabel('Environment name').fill('PRODUCTION');
         await page.getByRole('button', { name: 'Add environment' }).click();
         await expect(page.getByText('PRODUCTION is already listed. Names are not case-sensitive.')).toBeVisible();
+    });
+
+    await test.step('adding an observed name pre-fills the form so the casing can be corrected', async () => {
+        await page.getByRole('button', { name: 'Add staging' }).click();
+        await expect(page.getByLabel('Environment name')).toHaveValue('staging');
+        await expect(page.getByRole('row', { name: /^staging Not listed/ })).toBeVisible();
+
+        await page.getByLabel('Environment name').fill('Staging');
+        await page.getByRole('button', { name: 'Add environment' }).click();
+        await expect(page.getByRole('row', { name: /^Staging Listed/ })).toBeVisible();
     });
 
     await test.step('notifications can be turned off for a listed environment and persist', async () => {
@@ -58,7 +79,7 @@ test('operator can list, configure, and filter environments and allow discarded 
         await page.getByText('Environment', { exact: true }).click();
 
         await expect(page.getByRole('option', { exact: true, name: 'Production' })).toBeVisible();
-        await expect(page.getByRole('option', { exact: true, name: 'staging' })).toBeVisible();
+        await expect(page.getByRole('option', { exact: true, name: 'Staging' })).toBeVisible();
         await page.keyboard.press('Escape');
     });
 
