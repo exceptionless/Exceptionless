@@ -1,7 +1,19 @@
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
-import type { ClientConfiguration, NewProject, NotificationSettings, SourceMapArtifact, UpdateProject, ViewProject } from '#features/projects/models.ts';
+import type {
+    ClientConfiguration,
+    NewProject,
+    NewProjectEnvironment,
+    NotificationSettings,
+    ProjectDiscardedEnvironments,
+    ProjectEnvironmentSettings,
+    SourceMapArtifact,
+    UpdateProject,
+    UpdateProjectEnvironment,
+    UpdateProjectEnvironmentSettings,
+    ViewProject
+} from '#features/projects/models.ts';
 import type { StringValueFromBody, WorkInProgressResult } from '#features/shared/models/index.ts';
 import type { WebSocketMessageValue } from '#features/websockets/models.ts';
 
@@ -50,11 +62,13 @@ export async function invalidateProjectSummaryQueries(queryClient: QueryClient):
 
 // TODO: Do we need to scope these all by organization?
 export const queryKeys = {
+    addEnvironment: (id: string | undefined) => [...queryKeys.id(id), 'add-environment'] as const,
     config: (id: string | undefined) => [...queryKeys.id(id), 'config'] as const,
     deleteConfig: (id: string | undefined) => [...queryKeys.id(id), 'delete-config'] as const,
     deleteProject: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     deletePromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'demote-tab'] as const,
     deleteSlack: (id: string | undefined) => [...queryKeys.id(id), 'delete-slack'] as const,
+    discardedEnvironments: (id: string | undefined) => [...queryKeys.id(id), 'discarded-environments'] as const,
     generateSampleData: (id: string | undefined) => [...queryKeys.id(id), 'sample-data'] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
     ids: (ids: string[] | undefined) => [...queryKeys.type, ...(ids ?? [])] as const,
@@ -68,9 +82,12 @@ export const queryKeys = {
     projects: () => [...queryKeys.type, 'projects'] as const,
     putIntegrationNotificationSettings: (id: string | undefined, integration: string) =>
         [...queryKeys.id(id), integration, 'put-notification-settings'] as const,
+    removeEnvironment: (id: string | undefined) => [...queryKeys.id(id), 'remove-environment'] as const,
     resetData: (id: string | undefined) => [...queryKeys.id(id), 'reset-data'] as const,
     sourceMaps: (id: string | undefined) => [...queryKeys.id(id), 'source-maps'] as const,
     type: ['Project'] as const,
+    updateEnvironment: (id: string | undefined) => [...queryKeys.id(id), 'update-environment'] as const,
+    updateEnvironmentSettings: (id: string | undefined) => [...queryKeys.id(id), 'update-environment-settings'] as const,
     userNotificationSettings: (id: string | undefined, userId: string | undefined) => [...queryKeys.id(id), userId, 'notification-settings'] as const
 };
 export interface DeleteConfigParams {
@@ -102,6 +119,12 @@ export interface DeletePromotedTabRequest {
 export interface DeleteSlackRequest {
     route: {
         id: string;
+    };
+}
+
+export interface EnvironmentRequest {
+    route: {
+        id: string | undefined;
     };
 }
 
@@ -288,6 +311,26 @@ export function deleteProjectConfig(request: DeleteConfigRequest) {
     }));
 }
 
+export function deleteProjectEnvironment(request: EnvironmentRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ProjectEnvironmentSettings, ProblemDetails, string>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (name: string) => {
+            const client = useFetchClient();
+            const response = await client.deleteJSON<ProjectEnvironmentSettings>(`projects/${request.route.id}/environments`, {
+                params: {
+                    name
+                }
+            });
+            return response.data!;
+        },
+        mutationKey: queryKeys.removeEnvironment(request.route.id),
+        onError: () => invalidateEnvironmentQueries(queryClient, request.route.id),
+        onSuccess: (settings: ProjectEnvironmentSettings) => applyEnvironmentSettings(queryClient, request.route.id, settings)
+    }));
+}
+
 export function deletePromotedTab(request: DeletePromotedTabRequest) {
     const queryClient = useQueryClient();
     return createMutation<boolean, ProblemDetails, DeletePromotedTabParams>(() => ({
@@ -425,6 +468,20 @@ export function getProjectConfig(request: GetProjectConfigRequest) {
     }));
 }
 
+export function getProjectDiscardedEnvironments(request: EnvironmentRequest) {
+    return createQuery<ProjectDiscardedEnvironments, ProblemDetails>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<ProjectDiscardedEnvironments>(`projects/${request.route.id}/environments/discarded`, {
+                signal
+            });
+            return response.data!;
+        },
+        queryKey: queryKeys.discardedEnvironments(request.route.id)
+    }));
+}
+
 export function getProjectIntegrationNotificationSettings(request: GetProjectIntegrationNotificationSettingsRequest) {
     return createQuery<NotificationSettings, ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
@@ -521,6 +578,26 @@ export function getSourceMapsQuery(request: SourceMapRequest) {
     }));
 }
 
+export function patchProjectEnvironment(request: EnvironmentRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ProjectEnvironmentSettings, ProblemDetails, { changes: UpdateProjectEnvironment; name: string }>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async ({ changes, name }) => {
+            const client = useFetchClient();
+            const response = await client.patchJSON<ProjectEnvironmentSettings>(`projects/${request.route.id}/environments`, changes, {
+                params: {
+                    name
+                }
+            });
+            return response.data!;
+        },
+        mutationKey: queryKeys.updateEnvironment(request.route.id),
+        onError: () => invalidateEnvironmentQueries(queryClient, request.route.id),
+        onSuccess: (settings: ProjectEnvironmentSettings) => applyEnvironmentSettings(queryClient, request.route.id, settings)
+    }));
+}
+
 export function postProject() {
     const queryClient = useQueryClient();
 
@@ -586,6 +663,21 @@ export function postProjectConfig(request: PostConfigRequest) {
                 queryKey: queryKeys.config(request.route.id)
             });
         }
+    }));
+}
+
+export function postProjectEnvironment(request: EnvironmentRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ProjectEnvironmentSettings, ProblemDetails, NewProjectEnvironment>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (environment: NewProjectEnvironment) => {
+            const client = useFetchClient();
+            const response = await client.postJSON<ProjectEnvironmentSettings>(`projects/${request.route.id}/environments`, environment);
+            return response.data!;
+        },
+        mutationKey: queryKeys.addEnvironment(request.route.id),
+        onSuccess: (settings: ProjectEnvironmentSettings) => applyEnvironmentSettings(queryClient, request.route.id, settings)
     }));
 }
 
@@ -689,6 +781,22 @@ export function postSourceMapMutation(request: SourceMapRequest) {
     }));
 }
 
+export function putProjectEnvironmentSettings(request: EnvironmentRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<ProjectEnvironmentSettings, ProblemDetails, UpdateProjectEnvironmentSettings>(() => ({
+        enabled: () => !!accessToken.current && !!request.route.id,
+        mutationFn: async (settings: UpdateProjectEnvironmentSettings) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<ProjectEnvironmentSettings>(`projects/${request.route.id}/environments/settings`, settings);
+            return response.data!;
+        },
+        mutationKey: queryKeys.updateEnvironmentSettings(request.route.id),
+        onError: () => invalidateEnvironmentQueries(queryClient, request.route.id),
+        onSuccess: (settings: ProjectEnvironmentSettings) => applyEnvironmentSettings(queryClient, request.route.id, settings)
+    }));
+}
+
 export function putProjectIntegrationNotificationSettings(request: PutProjectIntegrationNotificationSettingsRequest) {
     const queryClient = useQueryClient();
 
@@ -749,4 +857,37 @@ export function updateProject(request: UpdateProjectRequest) {
             ]);
         }
     }));
+}
+
+/** Shows the saved environment settings on the project right away, then refreshes everything that lists environments. */
+async function applyEnvironmentSettings(queryClient: QueryClient, id: string | undefined, settings: ProjectEnvironmentSettings) {
+    const project = queryClient.getQueryData<ViewProject>(queryKeys.id(id));
+    if (project) {
+        queryClient.setQueryData<ViewProject>(queryKeys.id(id), {
+            ...project,
+            discard_events_without_environment: settings.discard_events_without_environment,
+            discard_unlisted_environments: settings.discard_unlisted_environments,
+            environments: settings.environments,
+            notify_other_environments: settings.notify_other_environments
+        });
+    }
+
+    await invalidateEnvironmentQueries(queryClient, id, project?.organization_id);
+}
+
+async function invalidateEnvironmentQueries(queryClient: QueryClient, id: string | undefined, organizationId?: string) {
+    await Promise.all([
+        // The project key is a prefix of the discarded names key, so this refreshes both.
+        queryClient.invalidateQueries({
+            queryKey: queryKeys.id(id)
+        }),
+        queryClient.invalidateQueries({
+            queryKey: queryKeys.projects()
+        }),
+        organizationId
+            ? queryClient.invalidateQueries({
+                  queryKey: queryKeys.organization(organizationId)
+              })
+            : Promise.resolve()
+    ]);
 }

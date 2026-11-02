@@ -47,7 +47,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         return new SummaryData { Id = ev.Id, TemplateKey = "event-notfound-summary", Data = data };
     }
 
-    public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -61,6 +61,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
+        notificationType = InEnvironment(notificationType, ev, project);
         string subject = String.Concat(notificationType, ": ", ev.Source).Truncate(120);
         var requestInfo = ev.GetRequestInfo(_serializer, _logger);
         var data = new Dictionary<string, object?> {
@@ -101,6 +102,7 @@ public sealed class NotFoundFormattingPlugin : FormattingPluginBase
         };
 
         AddDefaultSlackFields(ev, attachment.Fields, false);
+        notificationType = InEnvironment(notificationType, ev, project);
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, ev.Source?.Truncate(120))}*";
         return new SlackMessage(subject)
         {

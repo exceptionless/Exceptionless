@@ -42,7 +42,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         return new SummaryData { Id = ev.Id, TemplateKey = "event-summary", Data = data };
     }
 
-    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    public override MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
         string? messageOrSource = !String.IsNullOrEmpty(ev.Message) ? ev.Message : ev.Source;
         if (String.IsNullOrEmpty(messageOrSource))
@@ -57,6 +57,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
+        notificationType = InEnvironment(notificationType, ev, project);
         string subject = String.IsNullOrEmpty(messageOrSource)
             ? notificationType
             : String.Concat(notificationType, ": ", messageOrSource).Truncate(120);
@@ -98,6 +99,7 @@ public sealed class DefaultFormattingPlugin : FormattingPluginBase
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Source", Value = ev.Source.Truncate(60) });
 
         AddDefaultSlackFields(ev, attachment.Fields);
+        notificationType = InEnvironment(notificationType, ev, project);
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, messageOrSource.Truncate(120))}*";
         return new SlackMessage(subject)
         {

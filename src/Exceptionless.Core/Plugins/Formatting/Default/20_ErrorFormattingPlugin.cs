@@ -85,7 +85,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         return new SummaryData { Id = ev.Id, TemplateKey = "event-error-summary", Data = data };
     }
 
-    public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -109,6 +109,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("Critical ", notificationType);
 
+        notificationType = InEnvironment(notificationType, ev, project);
         string subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message).Truncate(120);
         var data = new Dictionary<string, object?> { { "Message", stackingTarget.Error.Message?.Truncate(60) } };
         if (!String.IsNullOrEmpty(errorTypeName))
@@ -164,6 +165,7 @@ public sealed class ErrorFormattingPlugin : FormattingPluginBase
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Method", Value = stackingTarget.Method.Name.Truncate(60) });
 
         AddDefaultSlackFields(ev, attachment.Fields);
+        notificationType = InEnvironment(notificationType, ev, project);
         string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, stackingTarget.Error.Message?.Truncate(120))}*";
         return new SlackMessage(subject)
         {

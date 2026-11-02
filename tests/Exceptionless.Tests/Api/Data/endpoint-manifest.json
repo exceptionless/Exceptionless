@@ -1852,6 +1852,76 @@
     "authenticationSchemes": []
   },
   {
+    "method": "DELETE",
+    "route": "/api/v2/projects/{id:objectid}/environments",
+    "displayName": "HTTP: DELETE api/v2/projects/{id:objectid}/environments",
+    "tags": [
+      "Project"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PATCH",
+    "route": "/api/v2/projects/{id:objectid}/environments",
+    "displayName": "HTTP: PATCH api/v2/projects/{id:objectid}/environments",
+    "tags": [
+      "Project"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/projects/{id:objectid}/environments",
+    "displayName": "HTTP: POST api/v2/projects/{id:objectid}/environments",
+    "tags": [
+      "Project"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/projects/{id:objectid}/environments/discarded",
+    "displayName": "HTTP: GET api/v2/projects/{id:objectid}/environments/discarded",
+    "tags": [
+      "Project"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/projects/{id:objectid}/environments/settings",
+    "displayName": "HTTP: PUT api/v2/projects/{id:objectid}/environments/settings",
+    "tags": [
+      "Project"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "GET",
     "route": "/api/v2/projects/{id:objectid}/notifications",
     "displayName": "HTTP: GET api/v2/projects/{id:objectid}/notifications",

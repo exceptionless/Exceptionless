@@ -6167,6 +6167,310 @@
         }
       }
     },
+    "/api/v2/projects/{id}/environments": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Add environment",
+        "description": "Lists an environment on the project. Events are never changed, and a name that was being discarded is accepted from now on.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The environment to list.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewProjectEnvironment"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/NewProjectEnvironment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectEnvironmentSettings"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The environment is already listed. Names are case-insensitive.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The name is not a valid environment name, or the project already lists the maximum number of environments.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Update environment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The environment name. Matching is case-insensitive.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The changes.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectEnvironment"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectEnvironment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectEnvironmentSettings"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project or the listed environment could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Remove environment",
+        "description": "Removes an environment from the project\u0027s list. Events are never deleted.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "The environment name. Matching is case-insensitive.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectEnvironmentSettings"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/projects/{id}/environments/settings": {
+      "put": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Update environment settings",
+        "description": "Sets whether unlisted environments and events without an environment are discarded, and whether they send notifications. Omitted settings are unchanged.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The settings to change.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectEnvironmentSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectEnvironmentSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectEnvironmentSettings"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/projects/{id}/environments/discarded": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Get discarded environments",
+        "description": "Gets the environment names that recently had events discarded because they are not listed, with the number of events discarded.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the project.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDiscardedEnvironments"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/organizations/{organizationId}/projects/check-name": {
       "get": {
         "tags": [
@@ -12231,6 +12535,39 @@
           }
         }
       },
+      "DiscardedEnvironment": {
+        "required": [
+          "count",
+          "last_seen_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The lowercased key for the environment, or null for events that had no environment."
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The first-seen casing of the name, or null for events that had no environment."
+          },
+          "count": {
+            "type": "integer",
+            "description": "The number of events discarded within the retention window.",
+            "format": "int64"
+          },
+          "last_seen_utc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "An environment name that recently had events discarded because it is not listed on the project."
+      },
       "EventSubmissionSettings": {
         "required": [
           "enabled",
@@ -12520,6 +12857,23 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "NewProjectEnvironment": {
+        "required": [
+          "name",
+          "notify"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The environment name. It is trimmed, limited to 64 characters, and is matched case-insensitively against event environments."
+          },
+          "notify": {
+            "type": "boolean",
+            "description": "If true, events from this environment can send notifications."
           }
         }
       },
@@ -13448,6 +13802,77 @@
           }
         }
       },
+      "ProjectDiscardedEnvironments": {
+        "required": [
+          "retention_days",
+          "environments"
+        ],
+        "type": "object",
+        "properties": {
+          "retention_days": {
+            "type": "integer",
+            "description": "The number of days that discarded environment names are remembered.",
+            "format": "int32"
+          },
+          "environments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscardedEnvironment"
+            }
+          }
+        }
+      },
+      "ProjectEnvironment": {
+        "required": [
+          "name",
+          "notify",
+          "created_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string",
+            "description": "The environment name in the exact casing that was entered. Matching against event environments is case-insensitive."
+          },
+          "notify": {
+            "type": "boolean",
+            "description": "If true, events from this environment can send notifications."
+          },
+          "created_utc": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "A deployment environment that a project has chosen to list, such as production or staging."
+      },
+      "ProjectEnvironmentSettings": {
+        "required": [
+          "environments",
+          "discard_unlisted_environments",
+          "discard_events_without_environment",
+          "notify_other_environments"
+        ],
+        "type": "object",
+        "properties": {
+          "environments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectEnvironment"
+            }
+          },
+          "discard_unlisted_environments": {
+            "type": "boolean"
+          },
+          "discard_events_without_environment": {
+            "type": "boolean"
+          },
+          "notify_other_environments": {
+            "type": "boolean"
+          }
+        }
+      },
       "RecordProductTourResult": {
         "required": [
           "recorded_utc"
@@ -13618,6 +14043,7 @@
           "first_occurrence",
           "last_occurrence",
           "occurrences_are_critical",
+          "is_new_notification_pending",
           "references",
           "tags",
           "duplicate_signature",
@@ -13724,6 +14150,10 @@
           "occurrences_are_critical": {
             "type": "boolean",
             "description": "If true, all future occurrences will be marked as critical."
+          },
+          "is_new_notification_pending": {
+            "type": "boolean",
+            "description": "True when the stack was created by an event from an environment that does not send notifications and no notifying\nenvironment has reported it yet. The first occurrence in a notifying environment clears this and is reported as new.\nStacks created before this field existed are not pending, so they never produce a new notification for it."
           },
           "references": {
             "type": "array",
@@ -13913,6 +14343,47 @@
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
+      },
+      "UpdateProjectEnvironment": {
+        "required": [
+          "notify"
+        ],
+        "type": "object",
+        "properties": {
+          "notify": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "If true, events from this environment can send notifications."
+          }
+        }
+      },
+      "UpdateProjectEnvironmentSettings": {
+        "type": "object",
+        "properties": {
+          "discard_unlisted_environments": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "If true, events whose environment is not listed are discarded."
+          },
+          "discard_events_without_environment": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "If true, events without an environment are also discarded. Only applies while unlisted environments are discarded."
+          },
+          "notify_other_environments": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "If true, events from environments that are not listed and events without an environment can send notifications."
+          }
+        }
       },
       "UpdateSavedView": {
         "type": "object",
@@ -14741,6 +15212,10 @@
           "organization_name",
           "name",
           "delete_bot_data_enabled",
+          "environments",
+          "discard_unlisted_environments",
+          "discard_events_without_environment",
+          "notify_other_environments",
           "promoted_tabs",
           "stack_count",
           "event_count",
@@ -14774,6 +15249,22 @@
             "type": "string"
           },
           "delete_bot_data_enabled": {
+            "type": "boolean"
+          },
+          "environments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectEnvironment"
+            },
+            "description": "The environments that the project lists, in the casing they were entered. Change them with the project environment endpoints."
+          },
+          "discard_unlisted_environments": {
+            "type": "boolean"
+          },
+          "discard_events_without_environment": {
+            "type": "boolean"
+          },
+          "notify_other_environments": {
             "type": "boolean"
           },
           "data": {

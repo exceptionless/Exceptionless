@@ -151,6 +151,31 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
         }
     }
 
+    public async Task<bool> TryClaimNewNotificationAsync(Stack stack)
+    {
+        // The update is applied by Elasticsearch to the current document, so only one caller can see the flag set.
+        // Everyone else (and stacks that were never pending) becomes a no-op, which PatchAsync reports as not modified.
+        const string script = @"
+if (ctx._source.is_new_notification_pending == true) {
+  ctx._source.is_new_notification_pending = false;
+} else {
+  ctx.op = 'noop';
+}";
+
+        try
+        {
+            bool claimed = await PatchAsync(stack.Id, new ScriptPatch(script.TrimScript()), o => o.Notifications(false));
+            if (claimed)
+                await InvalidateCacheAsync([new ModifiedDocument<Stack>(stack, stack)]);
+
+            return claimed;
+        }
+        catch (DocumentNotFoundException)
+        {
+            return false;
+        }
+    }
+
     public async Task<Stack?> GetStackBySignatureHashAsync(string projectId, string signatureHash)
     {
         string key = GetStackSignatureCacheKey(projectId, signatureHash);

@@ -102,6 +102,13 @@ public class Stack : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates, ISu
     public bool OccurrencesAreCritical { get; set; }
 
     /// <summary>
+    /// True when the stack was created by an event from an environment that does not send notifications and no notifying
+    /// environment has reported it yet. The first occurrence in a notifying environment clears this and is reported as new.
+    /// Stacks created before this field existed are not pending, so they never produce a new notification for it.
+    /// </summary>
+    public bool IsNewNotificationPending { get; set; }
+
+    /// <summary>
     /// A list of references.
     /// </summary>
     public ICollection<string> References { get; set; } = new Collection<string>();

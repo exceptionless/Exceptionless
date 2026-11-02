@@ -1,4 +1,4 @@
-import { custom, type infer as Infer, object, string } from 'zod';
+import { boolean, custom, type infer as Infer, object, string } from 'zod';
 
 import {
     UpdateProjectSchema as GeneratedUpdateProjectSchema,
@@ -7,6 +7,8 @@ import {
     type NotificationSettingsFormData,
     NotificationSettingsSchema
 } from '#generated/schemas.ts';
+
+import { hasControlCharacters, MAX_ENVIRONMENT_NAME_LENGTH } from './environments';
 
 export { type NewProjectFormData, NewProjectSchema, type NotificationSettingsFormData, NotificationSettingsSchema };
 
@@ -24,3 +26,13 @@ export const SourceMapUploadSchema = object({
     generated_file_url: string().url('Enter the absolute URL of the generated JavaScript file')
 });
 export type SourceMapUploadFormData = Infer<typeof SourceMapUploadSchema>;
+
+export const AddEnvironmentSchema = object({
+    name: string()
+        .trim()
+        .min(1, 'Name is required')
+        .max(MAX_ENVIRONMENT_NAME_LENGTH, `Name must be at most ${MAX_ENVIRONMENT_NAME_LENGTH} characters`)
+        .refine((name) => !hasControlCharacters(name), 'Name cannot contain control characters'),
+    notify: boolean()
+});
+export type AddEnvironmentFormData = Infer<typeof AddEnvironmentSchema>;

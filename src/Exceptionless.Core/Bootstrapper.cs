@@ -237,6 +237,7 @@ public class Bootstrapper
         services.AddSingleton<IAssistantUsageRecorder>(provider => provider.GetRequiredService<UsageService>());
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
+        services.AddSingleton<DiscardedEnvironmentService>();
 
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
     }

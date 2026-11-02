@@ -6,6 +6,7 @@ import TimeAgo from '#comp/formatters/time-ago.svelte';
 import { Checkbox } from '#comp/ui/checkbox/index.ts';
 import Summary from '#features/events/components/summary/summary.svelte';
 import EventsUserIdentitySummaryCell from '#features/events/components/table/events-user-identity-summary-cell.svelte';
+import EnvironmentName from '#features/projects/components/environment-name.svelte';
 
 import SessionDurationCell from './session-duration-cell.svelte';
 
@@ -77,7 +78,7 @@ export function getSessionColumns(): ColumnDef<StockFeatures, EventSummaryModel<
         },
         {
             accessorKey: 'environment',
-            cell: (prop) => prop.getValue<string>() ?? 'Unspecified',
+            cell: (prop) => renderComponent(EnvironmentName, { environment: prop.getValue<string | undefined>(), projectId: prop.row.original.project_id }),
             header: 'Environment',
             id: 'environment',
             maxSize: 640,

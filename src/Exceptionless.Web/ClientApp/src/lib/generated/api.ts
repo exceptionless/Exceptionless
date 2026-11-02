@@ -163,6 +163,21 @@ export interface CountResult {
   data?: null | object;
 }
 
+/** An environment name that recently had events discarded because it is not listed on the project. */
+export interface DiscardedEnvironment {
+  /** The lowercased key for the environment, or null for events that had no environment. */
+  key?: null | string;
+  /** The first-seen casing of the name, or null for events that had no environment. */
+  name?: null | string;
+  /**
+   * The number of events discarded within the retention window.
+   * @format int64
+   */
+  count: number;
+  /** @format date-time */
+  last_seen_utc: string;
+}
+
 export interface EventSubmissionSettings {
   enabled: boolean;
   configured_enabled: boolean;
@@ -251,6 +266,13 @@ export interface NewProject {
   name: string;
   delete_bot_data_enabled: boolean;
   promoted_tabs?: string[] | null;
+}
+
+export interface NewProjectEnvironment {
+  /** The environment name. It is trimmed, limited to 64 characters, and is matched case-insensitively against event environments. */
+  name: string;
+  /** If true, events from this environment can send notifications. */
+  notify: boolean;
 }
 
 export interface NewSavedView {
@@ -507,6 +529,32 @@ export interface ProblemDetails {
   instance?: null | string;
 }
 
+export interface ProjectDiscardedEnvironments {
+  /**
+   * The number of days that discarded environment names are remembered.
+   * @format int32
+   */
+  retention_days: number;
+  environments: DiscardedEnvironment[];
+}
+
+/** A deployment environment that a project has chosen to list, such as production or staging. */
+export interface ProjectEnvironment {
+  /** The environment name in the exact casing that was entered. Matching against event environments is case-insensitive. */
+  name: string;
+  /** If true, events from this environment can send notifications. */
+  notify: boolean;
+  /** @format date-time */
+  created_utc: string;
+}
+
+export interface ProjectEnvironmentSettings {
+  environments: ProjectEnvironment[];
+  discard_unlisted_environments: boolean;
+  discard_events_without_environment: boolean;
+  notify_other_environments: boolean;
+}
+
 export interface RecordProductTourResult {
   /** @format date-time */
   recorded_utc: string;
@@ -621,6 +669,12 @@ export interface Stack {
   description?: null | string;
   /** If true, all future occurrences will be marked as critical. */
   occurrences_are_critical: boolean;
+  /**
+   * True when the stack was created by an event from an environment that does not send notifications and no notifying
+   * environment has reported it yet. The first occurrence in a notifying environment clears this and is reported as new.
+   * Stacks created before this field existed are not pending, so they never produce a new notification for it.
+   */
+  is_new_notification_pending: boolean;
   /** A list of references. */
   references: string[];
   /** A list of tags used to categorize this stack. */
@@ -679,6 +733,20 @@ export interface UpdateProject {
   name: string;
   delete_bot_data_enabled: boolean;
   promoted_tabs?: string[] | null;
+}
+
+export interface UpdateProjectEnvironment {
+  /** If true, events from this environment can send notifications. */
+  notify?: null | boolean;
+}
+
+export interface UpdateProjectEnvironmentSettings {
+  /** If true, events whose environment is not listed are discarded. */
+  discard_unlisted_environments?: null | boolean;
+  /** If true, events without an environment are also discarded. Only applies while unlisted environments are discarded. */
+  discard_events_without_environment?: null | boolean;
+  /** If true, events from environments that are not listed and events without an environment can send notifications. */
+  notify_other_environments?: null | boolean;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -755,6 +823,12 @@ export interface User {
   id: string;
   /** The organizations that the user has access to. */
   organization_ids: string[];
+  /**
+   * Session revocation generation, rotated when a password changes or resets, or an external login is removed or transferred away.
+   * Remains null until rotation; active users with a null generation accept only matching legacy null token generations.
+   * This value does not describe the password hashing format.
+   */
+  authentication_version?: null | string;
   password?: null | string;
   salt?: null | string;
   password_reset_token?: null | string;
@@ -919,6 +993,11 @@ export interface ViewProject {
   organization_name: string;
   name: string;
   delete_bot_data_enabled: boolean;
+  /** The environments that the project lists, in the casing they were entered. Change them with the project environment endpoints. */
+  environments: ProjectEnvironment[];
+  discard_unlisted_environments: boolean;
+  discard_events_without_environment: boolean;
+  notify_other_environments: boolean;
   data?: null | Record<string, unknown>;
   promoted_tabs: string[];
   is_configured?: null | boolean;

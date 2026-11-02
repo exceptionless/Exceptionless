@@ -19,6 +19,7 @@
         getStackTrace,
         hasErrorOrSimpleError
     } from '#features/events/persistent-event.ts';
+    import EnvironmentName from '#features/projects/components/environment-name.svelte';
     import TagList from '#features/shared/components/tag-list.svelte';
 
     import type { PersistentEvent } from '../../models/index';
@@ -78,7 +79,7 @@
             <Table.Row>
                 <Table.Head class="w-40 font-semibold whitespace-nowrap">Environment</Table.Head>
                 <Table.Cell class="w-4 pr-0"><EventsFacetedFilter.EnvironmentTrigger changed={filterChanged} value={event.environment} /></Table.Cell>
-                <Table.Cell>{event.environment}</Table.Cell>
+                <Table.Cell><EnvironmentName environment={event.environment} projectId={event.project_id} /></Table.Cell>
             </Table.Row>
         {/if}
         {#if isSessionStart}
