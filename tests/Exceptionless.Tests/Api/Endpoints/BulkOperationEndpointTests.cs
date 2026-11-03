@@ -400,7 +400,9 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = [] } },
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = ["not-an-id"] } },
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Filter = "type:log", Ids = ["537650f3b77efe23a47914f3"] } },
-            FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = ids } }
+            FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = ids } },
+            // An undefined kind must not fall through to an empty filter that selects everything.
+            FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = (BulkOperationSelectionKind)2 } }
         };
 
         // Act

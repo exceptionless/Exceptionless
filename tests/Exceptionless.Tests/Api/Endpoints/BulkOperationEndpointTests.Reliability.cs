@@ -234,6 +234,44 @@ public partial class BulkOperationEndpointTests
     }
 
     [Fact]
+    public async Task Execute_RestartAfterTheLastIdBatchBeforeCompletion_DoesNotStartOver()
+    {
+        // Arrange
+        var now = TimeProvider.GetUtcNow();
+        var (_, events) = await CreateDataAsync(d =>
+        {
+            for (int i = 0; i < 5; i++)
+                d.Event().TestProject().Date(now.AddMinutes(-i - 1));
+        });
+        var recorder = new RecordingHandler();
+        var service = CreateService(recorder);
+        var operation = NewRecordingOperation("test.record");
+        operation.Selection = new BulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = events.Select(e => e.Id).ToList() };
+        var result = await service.CreateAsync(operation);
+        var created = result.Operation;
+        Assert.NotNull(created);
+        await RunOperationAsync(service, created.Id, 2, TestCancellationToken);
+        int batchesBefore = recorder.Batches.Count;
+        // The worker stopped after saving the last batch but before saving the completed status.
+        await service.UpdateAsync(created.Id, current =>
+        {
+            current.Status = BulkOperationStatus.Running;
+            current.CompletedUtc = null;
+            return true;
+        });
+
+        // Act
+        await RunOperationAsync(service, created.Id, 2, TestCancellationToken);
+        var finished = await service.GetAsync(created.Id);
+
+        // Assert
+        Assert.Equal(batchesBefore, recorder.Batches.Count);
+        Assert.NotNull(finished);
+        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(5, finished.Processed);
+    }
+
+    [Fact]
     public void Handler_RenewsTheQueueEntryAndLockOnEveryBatch()
     {
         // Arrange

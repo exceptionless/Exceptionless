@@ -20,6 +20,12 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
     /// </summary>
     public const int MaxTransientFailures = 3;
 
+    /// <summary>
+    /// Saved as the cursor once the last batch is done, so a run that restarts before the operation is marked complete finds
+    /// nothing left to do instead of starting the selection over.
+    /// </summary>
+    internal const string ExhaustedCursor = "exhausted";
+
     private readonly BulkOperationService _service;
     private readonly IReadOnlyDictionary<BulkOperationEntity, IBulkSelectionResolver> _resolvers;
     private readonly BulkOperationOptions _options;
@@ -141,7 +147,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
                     current.Processed += page.Ids.Count;
                     current.Succeeded += result.Succeeded;
                     current.Failed += result.Failed;
-                    current.Cursor = page.NextCursor;
+                    current.Cursor = page.NextCursor ?? ExhaustedCursor;
                     current.RetryCount = 0;
                     current.Total = Math.Max(current.Total, current.Processed);
                     current.Message = result.Message;
@@ -229,6 +235,9 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
     private async Task<BulkSelectionPage> GetPageAsync(BulkOperation operation, IBulkSelectionResolver resolver, string? pinnedSelection, CancellationToken cancellationToken)
     {
         int size = Math.Max(1, _options.BatchSize);
+        if (operation.Cursor == ExhaustedCursor)
+            return new BulkSelectionPage([], null);
+
         if (operation.Selection.Kind is not BulkOperationSelectionKind.Ids)
             return await resolver.GetPageAsync(operation, pinnedSelection, operation.Cursor, size, cancellationToken);
 

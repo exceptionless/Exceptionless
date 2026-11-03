@@ -175,6 +175,11 @@ public class BulkOperationHandler(
             return (new BulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = ids }, null);
         }
 
+        // Only an explicit filter selection may resolve a filter. An unknown kind must never fall through to an empty filter,
+        // which would select everything in scope.
+        if (model.Kind is not BulkOperationSelectionKind.Filter)
+            return (null, Result.Invalid(ValidationError.Create("selection.kind", "The selection kind must be ids or filter.")));
+
         if (model.Ids is { Count: > 0 })
             return (null, Result.Invalid(ValidationError.Create("selection", "A filter selection cannot include ids.")));
 
