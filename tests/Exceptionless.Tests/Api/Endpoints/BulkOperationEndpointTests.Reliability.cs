@@ -233,6 +233,20 @@ public partial class BulkOperationEndpointTests
         Assert.Equal(events.OrderByDescending(e => e.Date).Select(e => e.Id).ToArray(), recorder.Batches.SelectMany(b => b).ToArray());
     }
 
+    [Fact]
+    public void Handler_RenewsTheQueueEntryAndLockOnEveryBatch()
+    {
+        // Arrange
+        var handler = new Exceptionless.Core.Jobs.WorkItemHandlers.BulkOperationWorkItemHandler(CreateService(new RecordingHandler()), [GetService<EventBulkSelectionResolver>()],
+            new BulkOperationOptions(), GetService<Foundatio.Lock.ILockProvider>(), TimeProvider, Log);
+
+        // Act
+        bool renews = handler.AutoRenewLockOnProgress;
+
+        // Assert
+        Assert.True(renews);
+    }
+
     private async Task<long> GetEnqueuedWorkItemCountAsync()
     {
         return (await GetService<IQueue<WorkItemData>>().GetQueueStatsAsync()).Enqueued;

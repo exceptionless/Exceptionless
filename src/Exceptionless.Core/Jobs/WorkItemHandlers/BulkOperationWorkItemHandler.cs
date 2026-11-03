@@ -34,6 +34,10 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         _options = options;
         _lockProvider = lockProvider;
         _timeProvider = timeProvider;
+
+        // Progress is reported after every batch. Renewing the queue entry and the operation lock then keeps a long run from
+        // timing out and being delivered to a second worker while this one is still deleting.
+        AutoRenewLockOnProgress = true;
     }
 
     public override Task<ILock?> GetWorkItemLockAsync(object workItem, CancellationToken cancellationToken = default)
