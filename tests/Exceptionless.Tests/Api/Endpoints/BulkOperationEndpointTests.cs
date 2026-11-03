@@ -74,6 +74,33 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Create_FilterWithRelativeDates_PinsThemAndDeletesOnlyTheMatches()
+    {
+        // Arrange
+        var now = TimeProvider.GetUtcNow();
+        var (_, events) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Message("inside").Date(now.AddHours(-1));
+            d.Event().TestProject().Message("outside").Date(now.AddHours(-3));
+        });
+
+        // Act
+        var created = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, null, "date:[now-2h TO now]"));
+        string? pinned = await _bulkOperationService.GetPinnedSelectionAsync(created.Id);
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        var finished = await GetOperationAsync(created.Id);
+
+        // Assert
+        Assert.NotNull(pinned);
+        Assert.DoesNotContain("now", pinned, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("||-2h", pinned);
+        Assert.Equal(1, created.Total);
+        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(1, finished.Succeeded);
+        Assert.Equal(["outside"], (await GetRemainingMessagesAsync(events)).ToArray());
+    }
+
+    [Fact]
     public async Task Create_FilterSelection_OnlyDeletesMatchesInsideScopeFilterAndWindow()
     {
         // Arrange

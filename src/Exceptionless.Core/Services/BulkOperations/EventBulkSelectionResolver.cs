@@ -76,7 +76,8 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
 
         var pinned = new PinnedEventSelection
         {
-            EventFilter = query.GetFilterExpression(),
+            // Relative dates in the filter are pinned to the creation time, like the outer time window.
+            EventFilter = await RelativeDateFreezer.FreezeAsync(query.GetFilterExpression(), operation.Selection.UtcCreatedBefore ?? operation.CreatedUtc),
             ExcludedStackIds = query.GetExcludedStacks().ToArray(),
             StackIds = query.GetStacks().ToArray()
         };
