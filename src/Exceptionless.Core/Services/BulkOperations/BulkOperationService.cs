@@ -165,13 +165,27 @@ public class BulkOperationService
 
         await _cache.ListAddAsync(GetIndexKey(operation.OrganizationId), [operation.Id], OperationLifetime);
         await _cache.ListAddAsync(GetActiveIndexKey(operation.OrganizationId), [operation.Id], OperationLifetime);
-        await _workItemQueue.EnqueueAsync(new BulkOperationWorkItem
+        try
         {
-            Description = operation.Description,
-            OperationId = operation.Id,
-            OrganizationId = operation.OrganizationId,
-            Type = operation.Type
-        });
+            await _workItemQueue.EnqueueAsync(new BulkOperationWorkItem
+            {
+                Description = operation.Description,
+                OperationId = operation.Id,
+                OrganizationId = operation.OrganizationId,
+                Type = operation.Type
+            });
+        }
+        catch (Exception ex)
+        {
+            // Nothing would ever run an operation that was not queued, and it would block new operations on the project.
+            _logger.LogError(ex, "Unable to queue bulk operation {OperationId}: {Message}", operation.Id, ex.Message);
+            Finish(operation, BulkOperationStatus.Failed, "The operation could not be started. Please try again.");
+            await SaveAsync(operation);
+            await _cache.ListRemoveAsync(GetActiveIndexKey(operation.OrganizationId), [operation.Id]);
+            await PublishAsync(operation);
+            throw;
+        }
+
         await PublishAsync(operation);
 
         return BulkOperationCreateResult.Created(operation);

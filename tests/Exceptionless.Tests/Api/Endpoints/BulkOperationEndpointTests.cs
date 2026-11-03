@@ -657,9 +657,9 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         return CreateService(handlers, [GetService<EventBulkSelectionResolver>()]);
     }
 
-    private BulkOperationService CreateService(IBulkOperationHandler[] handlers, IBulkSelectionResolver[] resolvers)
+    private BulkOperationService CreateService(IBulkOperationHandler[] handlers, IBulkSelectionResolver[] resolvers, IQueue<WorkItemData>? workItemQueue = null)
     {
-        return new BulkOperationService(GetService<ICacheClient>(), GetService<ILockProvider>(), GetService<IMessagePublisher>(), GetService<IQueue<WorkItemData>>(),
+        return new BulkOperationService(GetService<ICacheClient>(), GetService<ILockProvider>(), GetService<IMessagePublisher>(), workItemQueue ?? GetService<IQueue<WorkItemData>>(),
             handlers, resolvers, TimeProvider, GetService<ILogger<BulkOperationService>>());
     }
 

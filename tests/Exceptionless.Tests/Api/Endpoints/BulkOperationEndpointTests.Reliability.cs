@@ -272,6 +272,30 @@ public partial class BulkOperationEndpointTests
     }
 
     [Fact]
+    public async Task Create_WhenTheQueueRejectsTheWorkItem_FailsTheOperationSoItDoesNotBlockTheProject()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().TestProject());
+        var unavailableQueue = new Mock<IQueue<WorkItemData>>();
+        unavailableQueue.SetupGet(q => q.Serializer).Returns(GetService<IQueue<WorkItemData>>().Serializer);
+        unavailableQueue.Setup(q => q.EnqueueAsync(It.IsAny<WorkItemData>(), It.IsAny<QueueEntryOptions>())).ThrowsAsync(new TimeoutException("Queue unavailable"));
+        var recorder = new RecordingHandler("test.destroy", isDestructive: true);
+        var failingService = CreateService([recorder], [GetService<EventBulkSelectionResolver>()], unavailableQueue.Object);
+        var service = CreateService([recorder], [GetService<EventBulkSelectionResolver>()]);
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await failingService.CreateAsync(NewRecordingOperation("test.destroy")));
+        var orphan = (await service.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID)).Single();
+        var retry = await service.CreateAsync(NewRecordingOperation("test.destroy"));
+
+        // Assert
+        Assert.IsType<TimeoutException>(thrown);
+        Assert.Equal(BulkOperationStatus.Failed, orphan.Status);
+        Assert.NotNull(retry.Operation);
+        Assert.Equal(BulkOperationStatus.Queued, retry.Operation.Status);
+    }
+
+    [Fact]
     public void Handler_RenewsTheQueueEntryAndLockOnEveryBatch()
     {
         // Arrange
