@@ -36,8 +36,12 @@
     const inviteToken = page.url.searchParams.get('token');
     const redirectUrl = inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add');
 
+    // Only an invitation ends the current session: it must be accepted as the invited user. Every login shares one
+    // server token, so ending the session on any visit would sign out the user's other tabs and devices.
+    const isEndingSessionForInvite = !!inviteToken && !!accessToken.current;
+
     onMount(async () => {
-        if (accessToken.current) {
+        if (isEndingSessionForInvite) {
             try {
                 await logout();
             } catch {
@@ -68,7 +72,7 @@
     }));
 </script>
 
-<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg" inert={!!accessToken.current}>
+<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg" inert={!!inviteToken && !!accessToken.current}>
     <Card.Header>
         <Logo />
         <Card.Title class="text-center text-2xl">Signup for a FREE account in seconds</Card.Title>

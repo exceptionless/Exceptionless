@@ -40,8 +40,12 @@
     const canSignup = enableAccountCreation || !!inviteToken;
     const signupUrl = inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup');
 
+    // Only an invitation ends the current session: it must be accepted as the invited user. Every login shares one
+    // server token, so ending the session on any visit would sign out the user's other tabs and devices.
+    const isEndingSessionForInvite = !!inviteToken && !!accessToken.current;
+
     onMount(async () => {
-        if (accessToken.current) {
+        if (isEndingSessionForInvite) {
             try {
                 await logout();
             } catch {
@@ -76,7 +80,7 @@
     }
 </script>
 
-<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col items-center" inert={!!accessToken.current}>
+<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col items-center" inert={!!inviteToken && !!accessToken.current}>
     <Card.Root class="w-full">
         <Card.Header>
             <Logo />

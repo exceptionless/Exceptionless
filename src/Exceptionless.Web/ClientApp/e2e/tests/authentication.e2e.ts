@@ -52,6 +52,31 @@ test('user can recover from a failed login, restore the session, and log out', a
     }
 });
 
+test('reloading a login or signup tab keeps the session in other tabs', async ({ e2eApi, e2eScenario, page }) => {
+    // Arrange
+    const logouts: string[] = [];
+    page.context().on('request', (request) => {
+        if (new URL(request.url()).pathname.endsWith('/auth/logout')) logouts.push(request.url());
+    });
+    await page.goto('/stack/all');
+    await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
+    const authPage = await page.context().newPage();
+
+    // Act
+    for (const path of ['/login', '/signup']) {
+        await authPage.goto(path);
+        await authPage.reload();
+        await expect(authPage.getByRole('button', { exact: true, name: path === '/login' ? 'Login' : 'Create My Account' })).toBeVisible();
+    }
+    await page.reload();
+
+    // Assert
+    expect(logouts).toEqual([]);
+    expect(await e2eApi.getCurrentUser(e2eScenario.userToken)).toBeDefined();
+    await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
+});
+
 test('login restores the full notification settings link and selected project', async ({ browser, e2eApi, e2eScenario, e2eSecondaryProject }) => {
     const context = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
     const page = await context.newPage();
