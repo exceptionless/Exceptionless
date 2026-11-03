@@ -42,14 +42,23 @@ public interface IBulkSelectionResolver
     /// <summary>Checks that the filter of a selection can be run for the organization (syntax, plan limits).</summary>
     Task<BulkOperationCheckResult> ValidateSelectionAsync(Organization organization, BulkOperationSelection selection);
 
-    /// <summary>Counts everything that currently matches the selection.</summary>
-    Task<long> CountAsync(BulkOperation operation, CancellationToken cancellationToken);
+    /// <summary>
+    /// Runs once when the operation is created. Counts what matches and pins every part of the selection that could
+    /// otherwise change while the operation runs (for events, the stack level filter), so the selection stays exactly
+    /// what the user confirmed and pages stay cheap. The pinned state is stored with the operation for its lifetime.
+    /// </summary>
+    Task<BulkSelectionPreparation> PrepareAsync(BulkOperation operation, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns the next page of ids after <paramref name="cursor"/>. The cursor is a value based position, so
-    /// paging stays correct while earlier items are being deleted or changed.
+    /// paging stays correct while earlier items are being deleted or changed. Paging must not count totals.
     /// </summary>
-    Task<BulkSelectionPage> GetPageAsync(BulkOperation operation, string? cursor, int size, CancellationToken cancellationToken);
+    Task<BulkSelectionPage> GetPageAsync(BulkOperation operation, string? pinnedState, string? cursor, int size, CancellationToken cancellationToken);
+}
+
+public record BulkSelectionPreparation(BulkOperationCheckResult Check, long Total = 0, string? PinnedState = null)
+{
+    public static BulkSelectionPreparation Rejected(BulkOperationCheckResult check) => new(check);
 }
 
 public record BulkSelectionPage(IReadOnlyList<string> Ids, string? NextCursor);

@@ -18,10 +18,20 @@
         operation: ViewBulkOperation;
     }
 
+    const STATUS_LABELS: Record<BulkOperationStatus, string> = {
+        [BulkOperationStatus.Cancelled]: 'cancelled',
+        [BulkOperationStatus.Completed]: 'completed',
+        [BulkOperationStatus.Failed]: 'failed',
+        [BulkOperationStatus.Queued]: 'waiting to start',
+        [BulkOperationStatus.Running]: 'in progress'
+    };
+
     let { isCancelling = false, onCancel, onDismiss, operation }: Props = $props();
 
     const isActive = $derived(isBulkOperationActive(operation.status));
     const percent = $derived(getProgressPercent(operation));
+    // The visible counts change on every update. Screen readers only hear the operation's state, which changes rarely.
+    const announcement = $derived(`${operation.description}: ${STATUS_LABELS[operation.status]}`);
 </script>
 
 <div class="bg-popover text-popover-foreground flex flex-col gap-2 rounded-lg border p-3 shadow-md" data-slot="bulk-operation" data-status={operation.status}>
@@ -38,8 +48,9 @@
             {/if}
         </span>
         <div class="min-w-0 flex-1">
+            <span class="sr-only" role="status">{announcement}</span>
             <p class="truncate text-sm font-medium" title={operation.description}>{operation.description}</p>
-            <p class="text-muted-foreground text-xs" role="status">
+            <p class="text-muted-foreground text-xs" data-slot="bulk-operation-progress">
                 {#if operation.status === BulkOperationStatus.Queued}
                     Waiting to start
                 {:else if operation.status === BulkOperationStatus.Running}
@@ -56,9 +67,11 @@
             </p>
         </div>
         {#if isActive}
-            <Button disabled={isCancelling} onclick={() => onCancel(operation)} size="sm" variant="outline">Cancel</Button>
+            <Button aria-label={`Cancel ${operation.description}`} disabled={isCancelling} onclick={() => onCancel(operation)} size="sm" variant="outline"
+                >Cancel</Button
+            >
         {:else}
-            <Button aria-label="Dismiss" onclick={() => onDismiss(operation)} size="icon-sm" variant="ghost">
+            <Button aria-label={`Dismiss ${operation.description}`} onclick={() => onDismiss(operation)} size="icon-sm" variant="ghost">
                 <X />
             </Button>
         {/if}

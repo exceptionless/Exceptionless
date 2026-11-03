@@ -34,6 +34,21 @@ describe('createAllMatchingSelection', () => {
         expect(selection.active).toBeUndefined();
     });
 
+    it('ignores a count that was fetched for a filter that is no longer showing', () => {
+        // Arrange
+        let identity = getEventsQueryIdentity({ filter: 'type:error', organizationId: 'organization-id' });
+        const selection = createAllMatchingSelection(() => identity);
+        const identityWhenCountingStarted = selection.identity;
+
+        // Act
+        identity = getEventsQueryIdentity({ filter: 'type:log', organizationId: 'organization-id' });
+        const selected = selection.select(1234, identityWhenCountingStarted);
+
+        // Assert
+        expect(selected).toBe(false);
+        expect(selection.active).toBeUndefined();
+    });
+
     it('does not come back when the original query is restored after being cleared', () => {
         // Arrange
         const original = getEventsQueryIdentity({ filter: 'type:error', organizationId: 'organization-id' });

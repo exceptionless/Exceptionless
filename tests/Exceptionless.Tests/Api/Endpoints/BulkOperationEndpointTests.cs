@@ -25,7 +25,7 @@ using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
 
-public class BulkOperationEndpointTests : IntegrationTestsBase
+public partial class BulkOperationEndpointTests : IntegrationTestsBase
 {
     private readonly IEventRepository _eventRepository;
     private readonly BulkOperationService _bulkOperationService;
@@ -652,8 +652,13 @@ public class BulkOperationEndpointTests : IntegrationTestsBase
 
     private BulkOperationService CreateService(params IBulkOperationHandler[] handlers)
     {
+        return CreateService(handlers, [GetService<EventBulkSelectionResolver>()]);
+    }
+
+    private BulkOperationService CreateService(IBulkOperationHandler[] handlers, IBulkSelectionResolver[] resolvers)
+    {
         return new BulkOperationService(GetService<ICacheClient>(), GetService<ILockProvider>(), GetService<IMessagePublisher>(), GetService<IQueue<WorkItemData>>(),
-            handlers, TimeProvider, GetService<ILogger<BulkOperationService>>());
+            handlers, resolvers, TimeProvider, GetService<ILogger<BulkOperationService>>());
     }
 
     private async Task<BulkOperation> CreateRecordingOperationAsync(BulkOperationService service)
@@ -686,18 +691,27 @@ public class BulkOperationEndpointTests : IntegrationTestsBase
 
     private Task RunOperationAsync(BulkOperationService service, string operationId, int batchSize, CancellationToken shutdownToken)
     {
+        return RunWorkItemAsync(service, new BulkOperationWorkItem { OperationId = operationId, OrganizationId = SampleDataService.TEST_ORG_ID }, batchSize, shutdownToken);
+    }
+
+    private Task RunWorkItemAsync(BulkOperationService service, BulkOperationWorkItem workItem, int batchSize, CancellationToken shutdownToken)
+    {
         var handler = new Exceptionless.Core.Jobs.WorkItemHandlers.BulkOperationWorkItemHandler(service, [GetService<EventBulkSelectionResolver>()],
             new BulkOperationOptions { BatchSize = batchSize }, GetService<ILockProvider>(), TimeProvider, Log);
-        var context = new WorkItemContext(new BulkOperationWorkItem { OperationId = operationId }, "test-job", EmptyLock.Empty,
-            shutdownToken, static (_, _) => Task.CompletedTask);
+        var context = new WorkItemContext(workItem, "test-job", EmptyLock.Empty, shutdownToken, static (_, _) => Task.CompletedTask);
 
         return handler.HandleItemAsync(context);
     }
 
     private sealed class RecordingHandler(string type = "test.record", bool isDestructive = false) : IBulkOperationHandler
     {
+        private int _calls;
+
         public List<List<string>> Batches { get; } = [];
         public Action? AfterBatch { get; set; }
+
+        /// <summary>Called with the 1 based batch number before the batch is recorded; return an exception to make it fail.</summary>
+        public Func<int, Exception?>? Failure { get; set; }
 
         public string Type => type;
         public BulkOperationEntity Entity => BulkOperationEntity.Events;
@@ -709,6 +723,10 @@ public class BulkOperationEndpointTests : IntegrationTestsBase
 
         public Task<BulkBatchResult> ExecuteBatchAsync(BulkOperation operation, IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
         {
+            var failure = Failure?.Invoke(++_calls);
+            if (failure is not null)
+                throw failure;
+
             Batches.Add(ids.ToList());
             AfterBatch?.Invoke();
             return Task.FromResult(new BulkBatchResult(ids.Count, 0));

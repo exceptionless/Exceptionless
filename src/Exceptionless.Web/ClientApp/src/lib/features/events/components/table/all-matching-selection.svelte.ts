@@ -29,11 +29,25 @@ export function createAllMatchingSelection(getIdentity: () => string) {
         clear() {
             selection = undefined;
         },
-        select(count: number) {
+        /** The query the list is showing right now. Capture it before awaiting a count, then pass it to select. */
+        get identity(): string {
+            return getIdentity();
+        },
+        /**
+         * Selects everything matching the current query. When an expected identity is given and the query changed in
+         * the meantime (the count was fetched for a different filter), nothing is selected and false is returned.
+         */
+        select(count: number, expectedIdentity?: string): boolean {
+            const identity = getIdentity();
+            if (expectedIdentity !== undefined && expectedIdentity !== identity) {
+                return false;
+            }
+
             selection = {
                 count,
-                identity: getIdentity()
+                identity
             };
+            return true;
         }
     };
 }

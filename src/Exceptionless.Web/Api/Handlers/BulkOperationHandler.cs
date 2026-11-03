@@ -94,17 +94,13 @@ public class BulkOperationHandler(
             var selectionCheck = await resolver.ValidateSelectionAsync(organization, selection);
             if (!selectionCheck.IsOk)
                 return ToResult<AcceptedResponse<ViewBulkOperation>>(selectionCheck);
-
-            operation.Total = await resolver.CountAsync(operation, HttpContext.RequestAborted);
-        }
-        else
-        {
-            operation.Total = selection.Ids!.Count;
         }
 
-        operation.Description = handler.Describe(operation);
-
+        // Counting and pinning the selection (and describing the operation) happens while it is created.
         var created = await bulkOperationService.CreateAsync(operation);
+        if (created.Rejection is not null)
+            return ToResult<AcceptedResponse<ViewBulkOperation>>(created.Rejection);
+
         if (created.Conflict is not null)
             return Result.Conflict("Another destructive operation is already running for this project. Wait for it to finish or cancel it first.");
 

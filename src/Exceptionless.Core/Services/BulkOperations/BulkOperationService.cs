@@ -28,23 +28,29 @@ public class BulkOperationService
     /// <summary>An active operation that has not reported progress for this long is considered abandoned.</summary>
     public static readonly TimeSpan StaleAfter = TimeSpan.FromHours(2);
 
-    private const int MaxIndexedOperations = 500;
+    /// <summary>How many operations the list shows, newest first.</summary>
+    public const int ListLimit = 50;
+
+    private const int IndexPageSize = 500;
+    private const int MaxIndexPages = 100;
     private readonly ICacheClient _cache;
     private readonly ILockProvider _lockProvider;
     private readonly IMessagePublisher _publisher;
     private readonly IQueue<WorkItemData> _workItemQueue;
     private readonly IReadOnlyDictionary<string, IBulkOperationHandler> _handlers;
+    private readonly IReadOnlyDictionary<BulkOperationEntity, IBulkSelectionResolver> _resolvers;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<BulkOperationService> _logger;
 
     public BulkOperationService(ICacheClient cache, ILockProvider lockProvider, IMessagePublisher publisher, IQueue<WorkItemData> workItemQueue,
-        IEnumerable<IBulkOperationHandler> handlers, TimeProvider timeProvider, ILogger<BulkOperationService> logger)
+        IEnumerable<IBulkOperationHandler> handlers, IEnumerable<IBulkSelectionResolver> resolvers, TimeProvider timeProvider, ILogger<BulkOperationService> logger)
     {
         _cache = cache;
         _lockProvider = lockProvider;
         _publisher = publisher;
         _workItemQueue = workItemQueue;
         _handlers = handlers.ToDictionary(h => h.Type, StringComparer.Ordinal);
+        _resolvers = resolvers.ToDictionary(r => r.Entity);
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -60,24 +66,21 @@ public class BulkOperationService
         return cached.HasValue ? cached.Value : null;
     }
 
-    /// <summary>All operations of the organization that are still stored, newest first.</summary>
-    public async Task<IReadOnlyList<BulkOperation>> GetByOrganizationAsync(string organizationId)
+    /// <summary>
+    /// The newest operations of the organization that are still stored, newest first. Every indexed id is read so a busy
+    /// organization cannot push recent operations out of the list; only the history that is shown is limited.
+    /// </summary>
+    public async Task<IReadOnlyList<BulkOperation>> GetByOrganizationAsync(string organizationId, int limit = ListLimit)
     {
-        var ids = new List<string>();
-        for (int page = 1; page <= MaxIndexedOperations / 100; page++)
-        {
-            var batch = await _cache.GetListAsync<string>(GetIndexKey(organizationId), page, 100);
-            if (!batch.HasValue || batch.Value.Count == 0)
-                break;
-
-            ids.AddRange(batch.Value);
-            if (batch.Value.Count < 100)
-                break;
-        }
+        // Ids are ObjectIds, so descending order is newest first no matter how the cache orders its list.
+        var newestIds = (await GetIndexedIdsAsync(GetIndexKey(organizationId)))
+            .Distinct(StringComparer.Ordinal)
+            .OrderByDescending(id => id, StringComparer.Ordinal)
+            .Take(limit);
 
         var operations = new List<BulkOperation>();
         var expired = new List<string>();
-        foreach (string id in ids.Distinct(StringComparer.Ordinal))
+        foreach (string id in newestIds)
         {
             var operation = await GetAsync(id);
             if (operation is null)
@@ -89,7 +92,13 @@ public class BulkOperationService
         if (expired.Count > 0)
             await _cache.ListRemoveAsync(GetIndexKey(organizationId), expired);
 
-        return operations.OrderByDescending(o => o.CreatedUtc).ToList();
+        return operations.OrderByDescending(o => o.CreatedUtc).ThenByDescending(o => o.Id, StringComparer.Ordinal).ToList();
+    }
+
+    public async Task<string?> GetPinnedSelectionAsync(string id)
+    {
+        var cached = await _cache.GetAsync<string>(GetPinnedKey(id));
+        return cached.HasValue ? cached.Value : null;
     }
 
     /// <summary>
@@ -99,6 +108,33 @@ public class BulkOperationService
     public async Task<BulkOperationCreateResult> CreateAsync(BulkOperation operation)
     {
         var handler = GetHandler(operation.Type) ?? throw new ArgumentException($"Unknown bulk operation type '{operation.Type}'.", nameof(operation));
+
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        operation.Id = ObjectId.GenerateNewId(utcNow).ToString();
+        operation.Status = BulkOperationStatus.Queued;
+        operation.CreatedUtc = utcNow;
+        operation.UpdatedUtc = utcNow;
+
+        // Count and pin the selection before taking the lock, so a slow search never holds up other requests.
+        string? pinnedSelection = null;
+        if (operation.Selection.Kind is BulkOperationSelectionKind.Filter)
+        {
+            if (!_resolvers.TryGetValue(handler.Entity, out var resolver))
+                throw new InvalidOperationException($"No selection resolver is registered for {handler.Entity}.");
+
+            var preparation = await resolver.PrepareAsync(operation, CancellationToken.None);
+            if (!preparation.Check.IsOk)
+                return BulkOperationCreateResult.Rejected(preparation.Check);
+
+            operation.Total = preparation.Total;
+            pinnedSelection = preparation.PinnedState;
+        }
+        else
+        {
+            operation.Total = operation.Selection.Ids?.Count ?? 0;
+        }
+
+        operation.Description = handler.Describe(operation);
 
         await using var createLock = await _lockProvider.TryAcquireAsync($"bulk-operations:create:{operation.OrganizationId}", TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(10));
         if (createLock is null)
@@ -111,15 +147,19 @@ public class BulkOperationService
                 return BulkOperationCreateResult.Conflicting(conflict);
         }
 
-        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        operation.Id = ObjectId.GenerateNewId(utcNow).ToString();
-        operation.Status = BulkOperationStatus.Queued;
-        operation.CreatedUtc = utcNow;
-        operation.UpdatedUtc = utcNow;
-
         await SaveAsync(operation);
+        if (pinnedSelection is not null)
+            await _cache.SetAsync(GetPinnedKey(operation.Id), pinnedSelection, OperationLifetime);
+
         await _cache.ListAddAsync(GetIndexKey(operation.OrganizationId), [operation.Id], OperationLifetime);
-        await _workItemQueue.EnqueueAsync(new BulkOperationWorkItem { OperationId = operation.Id });
+        await _cache.ListAddAsync(GetActiveIndexKey(operation.OrganizationId), [operation.Id], OperationLifetime);
+        await _workItemQueue.EnqueueAsync(new BulkOperationWorkItem
+        {
+            Description = operation.Description,
+            OperationId = operation.Id,
+            OrganizationId = operation.OrganizationId,
+            Type = operation.Type
+        });
         await PublishAsync(operation);
 
         return BulkOperationCreateResult.Created(operation);
@@ -133,7 +173,7 @@ public class BulkOperationService
     {
         await using var updateLock = await _lockProvider.TryAcquireAsync($"bulk-operations:update:{id}", TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(10));
         if (updateLock is null)
-            throw new InvalidOperationException($"Unable to lock bulk operation {id} for update.");
+            throw new TimeoutException($"Unable to lock bulk operation {id} for update.");
 
         var operation = await GetAsync(id);
         if (operation is null)
@@ -144,6 +184,9 @@ public class BulkOperationService
 
         operation.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
         await SaveAsync(operation);
+        if (!operation.IsActive)
+            await _cache.ListRemoveAsync(GetActiveIndexKey(operation.OrganizationId), [operation.Id]);
+
         await PublishAsync(operation);
         return operation;
     }
@@ -189,45 +232,96 @@ public class BulkOperationService
 
     private async Task<BulkOperation?> FindConflictingOperationAsync(BulkOperation candidate)
     {
+        // Only active operations can conflict, and every one of them is in the active index no matter how much history
+        // the organization has.
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        foreach (var existing in await GetByOrganizationAsync(candidate.OrganizationId))
+        var finished = new List<string>();
+        BulkOperation? conflict = null;
+        foreach (string id in (await GetIndexedIdsAsync(GetActiveIndexKey(candidate.OrganizationId))).Distinct(StringComparer.Ordinal))
         {
-            if (!existing.IsActive || utcNow - existing.UpdatedUtc >= StaleAfter)
+            var existing = await GetAsync(id);
+            if (existing is null || !existing.IsActive)
+            {
+                finished.Add(id);
                 continue;
+            }
 
-            if (GetHandler(existing.Type) is not { IsDestructive: true })
+            if (utcNow - existing.UpdatedUtc >= StaleAfter || GetHandler(existing.Type) is not { IsDestructive: true })
                 continue;
 
             // An organization wide operation can touch every project, so it conflicts with any project's operation.
             bool overlaps = existing.ProjectId is null || candidate.ProjectId is null || String.Equals(existing.ProjectId, candidate.ProjectId, StringComparison.Ordinal);
             if (overlaps)
-                return existing;
+                conflict ??= existing;
         }
 
-        return null;
+        if (finished.Count > 0)
+            await _cache.ListRemoveAsync(GetActiveIndexKey(candidate.OrganizationId), finished);
+
+        return conflict;
+    }
+
+    private async Task<List<string>> GetIndexedIdsAsync(string key)
+    {
+        var ids = new List<string>();
+        for (int page = 1; page <= MaxIndexPages; page++)
+        {
+            var batch = await _cache.GetListAsync<string>(key, page, IndexPageSize);
+            if (!batch.HasValue || batch.Value.Count == 0)
+                break;
+
+            ids.AddRange(batch.Value);
+            if (batch.Value.Count < IndexPageSize)
+                break;
+        }
+
+        return ids;
     }
 
     private Task SaveAsync(BulkOperation operation) => _cache.SetAsync(GetOperationKey(operation.Id), operation, OperationLifetime);
 
-    private async Task PublishAsync(BulkOperation operation)
+    /// <summary>
+    /// Tells clients that an operation can no longer run because its record is gone (for example the cache was cleared).
+    /// The work item carries enough to publish a final state so the progress panel does not wait forever.
+    /// </summary>
+    public Task PublishLostAsync(BulkOperationWorkItem workItem)
+    {
+        return PublishAsync(new BulkOperationUpdated
+        {
+            Description = workItem.Description ?? "Bulk operation",
+            Id = workItem.OperationId,
+            Message = "The operation's progress was lost and it could not continue.",
+            OrganizationId = workItem.OrganizationId,
+            Status = BulkOperationStatus.Failed,
+            Type = workItem.Type ?? String.Empty,
+            UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime
+        });
+    }
+
+    private Task PublishAsync(BulkOperation operation)
+    {
+        return PublishAsync(new BulkOperationUpdated
+        {
+            Id = operation.Id,
+            OrganizationId = operation.OrganizationId,
+            ProjectId = operation.ProjectId,
+            Type = operation.Type,
+            Description = operation.Description,
+            Status = operation.Status,
+            Total = operation.Total,
+            Processed = operation.Processed,
+            Succeeded = operation.Succeeded,
+            Failed = operation.Failed,
+            Message = operation.Message,
+            UpdatedUtc = operation.UpdatedUtc
+        });
+    }
+
+    private async Task PublishAsync(BulkOperationUpdated message)
     {
         try
         {
-            await _publisher.PublishAsync(new BulkOperationUpdated
-            {
-                Id = operation.Id,
-                OrganizationId = operation.OrganizationId,
-                ProjectId = operation.ProjectId,
-                Type = operation.Type,
-                Description = operation.Description,
-                Status = operation.Status,
-                Total = operation.Total,
-                Processed = operation.Processed,
-                Succeeded = operation.Succeeded,
-                Failed = operation.Failed,
-                Message = operation.Message,
-                UpdatedUtc = operation.UpdatedUtc
-            });
+            await _publisher.PublishAsync(message);
         }
         catch (OperationCanceledException)
         {
@@ -235,13 +329,15 @@ public class BulkOperationService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to publish bulk operation update for {OperationId}: {Message}", operation.Id, ex.Message);
+            _logger.LogWarning(ex, "Failed to publish bulk operation update for {OperationId}: {Message}", message.Id, ex.Message);
         }
     }
 
     private static string GetOperationKey(string id) => $"bulk-operations:{id}";
     private static string GetCancelKey(string id) => $"bulk-operations:{id}:cancel";
     private static string GetIndexKey(string organizationId) => $"bulk-operations:organization:{organizationId}";
+    private static string GetActiveIndexKey(string organizationId) => $"bulk-operations:organization:{organizationId}:active";
+    private static string GetPinnedKey(string id) => $"bulk-operations:{id}:selection";
 }
 
 public record BulkOperationCreateResult
@@ -249,8 +345,10 @@ public record BulkOperationCreateResult
     public BulkOperation? Operation { get; init; }
     public BulkOperation? Conflict { get; init; }
     public bool IsBusy { get; init; }
+    public BulkOperationCheckResult? Rejection { get; init; }
 
     public static BulkOperationCreateResult Created(BulkOperation operation) => new() { Operation = operation };
     public static BulkOperationCreateResult Conflicting(BulkOperation conflict) => new() { Conflict = conflict };
     public static BulkOperationCreateResult Busy() => new() { IsBusy = true };
+    public static BulkOperationCreateResult Rejected(BulkOperationCheckResult rejection) => new() { Rejection = rejection };
 }

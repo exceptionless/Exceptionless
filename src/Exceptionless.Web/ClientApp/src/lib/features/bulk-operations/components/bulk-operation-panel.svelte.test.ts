@@ -77,7 +77,7 @@ describe('BulkOperationPanel', () => {
 
         // Assert
         expect(screen.getAllByText('Delete 50 events matching filter')).toHaveLength(1);
-        expect(screen.getByRole('status').textContent?.replace(/\s+/g, ' ').trim()).toBe('20 of 50');
+        expect(document.querySelector('[data-slot="bulk-operation-progress"]')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('20 of 50');
         expect(mocks.invalidateAffected).not.toHaveBeenCalled();
     });
 
@@ -113,7 +113,7 @@ describe('BulkOperationPanel', () => {
         // Assert
         expect(mocks.invalidateAffected).toHaveBeenCalledTimes(1);
         expect(mocks.invalidateAffected).toHaveBeenCalledWith(mocks.queryClient);
-        expect(screen.getByRole('status').textContent).toContain('Completed');
+        expect(document.querySelector('[data-slot="bulk-operation-progress"]')?.textContent).toContain('Completed');
     });
 
     it('requests cancellation of a running operation', async () => {
@@ -122,7 +122,7 @@ describe('BulkOperationPanel', () => {
         render(BulkOperationPanel);
 
         // Act
-        await fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        await fireEvent.click(screen.getByRole('button', { name: /^Cancel / }));
 
         // Assert
         await waitFor(() => expect(mocks.cancelMutateAsync).toHaveBeenCalledWith('operation-1'));
@@ -134,7 +134,7 @@ describe('BulkOperationPanel', () => {
         render(BulkOperationPanel);
 
         // Act
-        await fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+        await fireEvent.click(screen.getByRole('button', { name: /^Dismiss / }));
 
         // Assert
         expect(screen.queryByText('Delete 50 events matching filter')).toBeNull();

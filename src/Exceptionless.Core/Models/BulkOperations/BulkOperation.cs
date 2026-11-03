@@ -34,6 +34,9 @@ public class BulkOperation : IIdentity, IOwnedByOrganization
 
     public string? Message { get; set; }
 
+    /// <summary>Consecutive batches that failed with a temporary error. Reset by the next successful batch.</summary>
+    public int RetryCount { get; set; }
+
     /// <summary>Opaque position of the last batch that finished; the job resumes after it.</summary>
     public string? Cursor { get; set; }
 

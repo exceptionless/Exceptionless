@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Services.BulkOperations;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -13,6 +15,12 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 /// </summary>
 public class BulkOperationWorkItemHandler : WorkItemHandlerBase
 {
+    /// <summary>
+    /// How many consecutive batches may fail before the operation fails for good. Matches the queue, which delivers a
+    /// work item three times in total.
+    /// </summary>
+    public const int MaxTransientFailures = 3;
+
     private readonly BulkOperationService _service;
     private readonly IReadOnlyDictionary<BulkOperationEntity, IBulkSelectionResolver> _resolvers;
     private readonly BulkOperationOptions _options;
@@ -43,7 +51,9 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         var operation = await _service.GetAsync(workItem.OperationId);
         if (operation is null)
         {
+            // The record expired or the cache was cleared. Say so, otherwise the progress panel waits forever.
             Log.LogWarning("Bulk operation {OperationId} no longer exists", workItem.OperationId);
+            await _service.PublishLostAsync(workItem);
             return;
         }
 
@@ -65,6 +75,17 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         {
             await FinishAsync(operation.Id, BulkOperationStatus.Cancelled, "Cancelled by user.");
             return;
+        }
+
+        string? pinnedSelection = null;
+        if (operation.Selection.Kind is BulkOperationSelectionKind.Filter)
+        {
+            pinnedSelection = await _service.GetPinnedSelectionAsync(operation.Id);
+            if (pinnedSelection is null)
+            {
+                await FinishAsync(operation.Id, BulkOperationStatus.Failed, "The saved selection expired, so the operation could not continue.");
+                return;
+            }
         }
 
         operation = await _service.UpdateAsync(operation.Id, current =>
@@ -100,10 +121,13 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
                     return;
                 }
 
-                var page = await GetPageAsync(operation, resolver, context.CancellationToken);
+                var page = await GetPageAsync(operation, resolver, pinnedSelection, context.CancellationToken);
                 if (page.Ids.Count == 0)
                     break;
 
+                // The user who started the operation is authorized once, when it is created. Each batch re-checks the scope
+                // (organization and project) but not the user: someone removed from the organization mid-run still finishes
+                // the deletion they legitimately started, and any member of the organization can cancel it.
                 var result = await handler.ExecuteBatchAsync(operation, page.Ids, context.CancellationToken);
 
                 operation = await _service.UpdateAsync(operation.Id, current =>
@@ -115,6 +139,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
                     current.Succeeded += result.Succeeded;
                     current.Failed += result.Failed;
                     current.Cursor = page.NextCursor;
+                    current.RetryCount = 0;
                     current.Total = Math.Max(current.Total, current.Processed);
                     current.Message = result.Message;
                     return true;
@@ -143,6 +168,32 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         {
             context.Result = JobResult.CancelledWithMessage($"Stopping bulk operation {operation?.Id} for shutdown");
         }
+        catch (Exception ex) when (!IsPermanent(ex))
+        {
+            // Elasticsearch, cache and network hiccups: let the queue deliver the work item again. The saved counts and
+            // cursor mean the retry continues where this run stopped. After MaxTransientFailures in a row, give up.
+            var failed = await _service.UpdateAsync(workItem.OperationId, current =>
+            {
+                if (!current.IsActive)
+                    return false;
+
+                current.RetryCount++;
+                current.Message = current.RetryCount >= MaxTransientFailures ? "The operation stopped because of repeated errors." : "Retrying after a temporary error.";
+                if (current.RetryCount >= MaxTransientFailures)
+                    _service.Finish(current, BulkOperationStatus.Failed, current.Message);
+
+                return true;
+            });
+
+            if (failed is { IsActive: false })
+            {
+                Log.LogError(ex, "Bulk operation {OperationId} failed after repeated errors: {Message}", workItem.OperationId, ex.Message);
+                return;
+            }
+
+            Log.LogWarning(ex, "Bulk operation {OperationId} hit a temporary error and will be retried: {Message}", workItem.OperationId, ex.Message);
+            throw;
+        }
         catch (Exception ex)
         {
             Log.LogError(ex, "Bulk operation {OperationId} failed: {Message}", workItem.OperationId, ex.Message);
@@ -150,11 +201,26 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         }
     }
 
-    private async Task<BulkSelectionPage> GetPageAsync(BulkOperation operation, IBulkSelectionResolver resolver, CancellationToken cancellationToken)
+    /// <summary>
+    /// Errors that retrying cannot fix. Everything else (Elasticsearch, cache and network failures surface as many different
+    /// exception types) is treated as temporary and bounded by <see cref="MaxTransientFailures"/>.
+    /// </summary>
+    internal static bool IsPermanent(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is DocumentLimitExceededException or ArgumentException or InvalidOperationException or NotSupportedException or FormatException or JsonException or InvalidCastException or NullReferenceException or KeyNotFoundException)
+                return true;
+        }
+
+        return false;
+    }
+
+    private async Task<BulkSelectionPage> GetPageAsync(BulkOperation operation, IBulkSelectionResolver resolver, string? pinnedSelection, CancellationToken cancellationToken)
     {
         int size = Math.Max(1, _options.BatchSize);
         if (operation.Selection.Kind is not BulkOperationSelectionKind.Ids)
-            return await resolver.GetPageAsync(operation, operation.Cursor, size, cancellationToken);
+            return await resolver.GetPageAsync(operation, pinnedSelection, operation.Cursor, size, cancellationToken);
 
         // The cursor of an id selection is the index of the next id to process.
         var ids = operation.Selection.Ids ?? [];

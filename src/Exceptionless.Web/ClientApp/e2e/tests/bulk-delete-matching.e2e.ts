@@ -37,10 +37,17 @@ test('deleting everything matching the filter runs in the background and shows p
         await expect(page.getByRole('button', { name: `Select all ${EVENT_COUNT} events matching this filter` })).toBeVisible();
     });
 
-    await test.step('selecting everything matching the filter can be undone', async () => {
+    await test.step('selecting everything matching the filter shows the total', async () => {
         // Act
         await page.getByRole('button', { name: `Select all ${EVENT_COUNT} events matching this filter` }).click();
+
+        // Assert
         await expect(page.getByRole('status').filter({ hasText: `All ${EVENT_COUNT} events are selected` })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Clear selection' })).toBeVisible();
+    });
+
+    await test.step('clearing the selection deselects the page', async () => {
+        // Act
         await page.getByRole('button', { name: 'Clear selection' }).click();
 
         // Assert
@@ -48,7 +55,7 @@ test('deleting everything matching the filter runs in the background and shows p
         await expect(table.getByRole('checkbox', { name: 'Select all rows' })).not.toBeChecked();
     });
 
-    await test.step('deleting against the filter confirms the exact count', async () => {
+    await test.step('deleting against the filter asks to confirm the exact count', async () => {
         // Arrange
         await table.getByRole('checkbox', { name: 'Select all rows' }).click();
         await page.getByRole('button', { name: `Select all ${EVENT_COUNT} events matching this filter` }).click();
@@ -58,14 +65,16 @@ test('deleting everything matching the filter runs in the background and shows p
         await page.getByRole('menuitem', { name: 'Delete' }).click();
 
         // Assert
-        const dialog = page.getByRole('alertdialog');
-        await expect(dialog).toContainText(`Delete ${EVENT_COUNT} events matching this filter? This can't be undone.`);
-
-        // Act
-        await dialog.getByRole('button', { name: `Delete ${EVENT_COUNT} Events` }).click();
+        await expect(page.getByRole('alertdialog')).toContainText(`Delete ${EVENT_COUNT} events matching this filter? This can't be undone.`);
     });
 
-    await test.step('the progress panel follows the operation to completion', async () => {
+    await test.step('confirming runs in the background and the progress panel reaches completion', async () => {
+        // Act
+        await page
+            .getByRole('alertdialog')
+            .getByRole('button', { name: `Delete ${EVENT_COUNT} Events` })
+            .click();
+
         // Assert
         const panel = page.getByRole('region', { name: 'Bulk operations' });
         await expect(panel).toContainText(/Delete \d+ events matching filter/, { timeout: 30_000 });

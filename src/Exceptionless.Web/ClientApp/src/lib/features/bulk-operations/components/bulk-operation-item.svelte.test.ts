@@ -24,7 +24,7 @@ function createOperation(overrides: Partial<ViewBulkOperation> = {}): ViewBulkOp
 }
 
 function statusText(): string {
-    return (screen.getByRole('status').textContent ?? '').replace(/\s+/g, ' ').trim();
+    return (document.querySelector('[data-slot="bulk-operation-progress"]')?.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
 describe('BulkOperationItem', () => {
@@ -37,14 +37,40 @@ describe('BulkOperationItem', () => {
         render(BulkOperationItem, { props: { onCancel, onDismiss: vi.fn(), operation } });
 
         // Act
-        await fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        await fireEvent.click(screen.getByRole('button', { name: /^Cancel / }));
 
         // Assert
         expect(screen.getByText('Delete 1,234 events matching filter')).toBeTruthy();
         expect(statusText()).toBe('500 of 1,234');
         expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('41');
         expect(onCancel).toHaveBeenCalledWith(operation);
-        expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull();
+        expect(screen.queryByRole('button', { name: /^Dismiss / })).toBeNull();
+    });
+
+    it('names the operation on its buttons and announces only state changes, not every progress update', async () => {
+        // Arrange
+        const { rerender } = render(BulkOperationItem, { props: { onCancel: vi.fn(), onDismiss: vi.fn(), operation: createOperation({ processed: 100 }) } });
+        const announcement = () => screen.getByRole('status').textContent;
+        const initial = announcement();
+
+        // Act
+        await rerender({ operation: createOperation({ processed: 900 }) });
+        const afterProgress = announcement();
+        await rerender({ operation: createOperation({ processed: 1234, status: BulkOperationStatus.Completed }) });
+
+        // Assert
+        expect(initial).toBe('Delete 1,234 events matching filter: in progress');
+        expect(afterProgress).toBe(initial);
+        expect(announcement()).toBe('Delete 1,234 events matching filter: completed');
+        expect(screen.getByRole('button', { name: 'Dismiss Delete 1,234 events matching filter' })).toBeTruthy();
+    });
+
+    it('labels Cancel with the operation it cancels', () => {
+        // Arrange & Act
+        render(BulkOperationItem, { props: { onCancel: vi.fn(), onDismiss: vi.fn(), operation: createOperation() } });
+
+        // Assert
+        expect(screen.getByRole('button', { name: 'Cancel Delete 1,234 events matching filter' })).toBeTruthy();
     });
 
     it('shows the queued state without a count', () => {
@@ -55,7 +81,7 @@ describe('BulkOperationItem', () => {
 
         // Assert
         expect(statusText()).toBe('Waiting to start');
-        expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+        expect(screen.getByRole('button', { name: /^Cancel / })).toBeTruthy();
     });
 
     it('disables Cancel once cancellation was requested', () => {
@@ -63,7 +89,7 @@ describe('BulkOperationItem', () => {
         render(BulkOperationItem, { props: { isCancelling: true, onCancel: vi.fn(), onDismiss: vi.fn(), operation: createOperation() } });
 
         // Assert
-        expect((screen.getByRole('button', { name: 'Cancel' }) as HTMLButtonElement).disabled).toBe(true);
+        expect((screen.getByRole('button', { name: /^Cancel / }) as HTMLButtonElement).disabled).toBe(true);
     });
 
     it('shows a completed operation with its failures and a Dismiss button', async () => {
@@ -73,11 +99,11 @@ describe('BulkOperationItem', () => {
         render(BulkOperationItem, { props: { onCancel: vi.fn(), onDismiss, operation } });
 
         // Act
-        await fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+        await fireEvent.click(screen.getByRole('button', { name: /^Dismiss / }));
 
         // Assert
         expect(statusText()).toBe('Completed · 1,232 processed, 2 failed');
-        expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+        expect(screen.queryByRole('button', { name: /^Cancel / })).toBeNull();
         expect(onDismiss).toHaveBeenCalledWith(operation);
     });
 

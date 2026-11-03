@@ -879,11 +879,13 @@
     }
 
     async function selectAllMatching() {
-        // Count again right now, so the number the user confirms is current.
+        // Count again right now, so the number the user confirms is current. If the filter changes while the count is
+        // loading, the count belongs to the old filter and must not be bound to the new one.
+        const identity = allMatching.identity;
         const result = await matchingTotalQuery.refetch();
         const count = (result.data?.meta.total ?? totalMatching) as number | undefined;
         if (count !== undefined) {
-            allMatching.select(count);
+            allMatching.select(count, identity);
         }
     }
 
