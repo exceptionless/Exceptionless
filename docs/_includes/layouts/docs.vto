@@ -1,29 +1,78 @@
 ---
 layout: layouts/base.vto
+bodyClass: layout-docs
 ---
-<div class="page-header margin-top" data-search-ignore>
-  <h1 id="documentation">Documentation</h1>
-</div>
+<div class="docs-shell">
+  <aside class="docs-sidebar" aria-label="Documentation" data-search-ignore>
+    <p class="docs-sidebar-title">Documentation</p>
+    {{ docsNavHtml(search, url, docs_nav) }}
+  </aside>
+  <script>
+    (function () {
+      var sidebar = document.querySelector(".docs-sidebar")
+      if (!sidebar) {
+        return
+      }
 
-<div id="wrap" class="container" role="document">
-  <div id="responsive-menu" data-search-ignore><button class="btn btn-primary" type="button" data-docs-toc-toggle>Table of Contents</button></div>
-  <div id="content" class="row-fluid">
-    <div class="toc well span3 visible-toc" data-search-ignore>
-      <button
-        class="docs-search-trigger"
-        type="button"
-        data-site-search-open
-        aria-label="Search documentation"
-        aria-keyshortcuts="Meta+K Control+K /"
-      >
-        <i class="icon-search" aria-hidden="true"></i>
-        <span>Search docs...</span>
-        <kbd aria-hidden="true">/</kbd>
-      </button>
-      {{ docsNavHtml(search, url) }}
+      var key = "docs-sidebar-scroll"
+      try {
+        var saved = sessionStorage.getItem(key)
+        if (saved !== null) {
+          sidebar.scrollTop = Number(saved)
+        }
+      } catch (error) {
+        // Fall back to revealing the active topic below.
+      }
+
+      var active = sidebar.querySelector(".toc-active")
+      if (active) {
+        var top = active.offsetTop
+        var bottom = top + active.offsetHeight
+        if (top < sidebar.scrollTop || bottom > sidebar.scrollTop + sidebar.clientHeight) {
+          sidebar.scrollTop = top - sidebar.clientHeight / 3
+        }
+      }
+
+      addEventListener("pagehide", function () {
+        try {
+          sessionStorage.setItem(key, String(sidebar.scrollTop))
+        } catch (error) {
+          // Scroll position is a convenience only.
+        }
+      })
+    })()
+  </script>
+
+  <div class="docs-main">
+    <div class="docs-mobile-bar" data-search-ignore>
+      <button class="btn btn-secondary btn-sm" type="button" data-docs-nav-toggle aria-expanded="false">{{ icons.menu }} Menu</button>
+      <button class="btn btn-ghost btn-sm" type="button" data-site-search-open>{{ icons.search }} Search</button>
     </div>
-    <div class="well span9 docs">
+    {{ set crumbs = docsBreadcrumbs(search, url, docs_nav).slice(1, -1) }}
+    {{ if crumbs.length }}
+    <nav class="breadcrumbs" aria-label="Breadcrumb" data-search-ignore>
+      <ol>
+        {{ for crumb of crumbs }}<li><a href="{{ crumb.url }}">{{ crumb.name }}</a></li>{{ /for }}
+      </ol>
+    </nav>
+    {{ /if }}
+    <article class="prose" data-page-content>
       {{ content }}
-    </div>
+    </article>
+    {{ docsPagerHtml(search, url, docs_nav) }}
   </div>
+
+  <aside class="docs-aside" data-search-ignore>
+    {{ set markdownUrl = url === "/docs/" ? "/docs.md" : url.replace(/\/$/, ".md") }}
+    {{ set aiPrompt = "Read " + site.url + markdownUrl + " so you can answer questions about it and help me use Exceptionless." }}
+    <div class="page-actions" aria-label="Use this page with AI" role="group">
+      <button class="page-action" type="button" data-copy-markdown="{{ markdownUrl }}">{{ icons.copy }}<span data-copy-label>Copy page as Markdown</span></button>
+      <a class="page-action" href="{{ markdownUrl }}">{{ icons["file-text"] }}<span>View as Markdown</span></a>
+      <a class="page-action" href="https://chatgpt.com/?hints=search&amp;q={{ aiPrompt |> encodeURIComponent }}" target="_blank" rel="noopener">{{ icons["ai-sparkle"] }}<span>Open in ChatGPT</span></a>
+      <a class="page-action" href="https://claude.ai/new?q={{ aiPrompt |> encodeURIComponent }}" target="_blank" rel="noopener">{{ icons["ai-sparkle"] }}<span>Open in Claude</span></a>
+    </div>
+    <nav class="page-toc" aria-label="On this page" data-page-toc hidden>
+      <h2>On this page</h2>
+    </nav>
+  </aside>
 </div>

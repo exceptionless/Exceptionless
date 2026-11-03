@@ -1,80 +1,163 @@
 ---
-title: "User Sessions"
+title: "Sessions"
+metaTitle: "Track user sessions in Exceptionless"
+description: "See what a user did before an error: how Exceptionless groups events into sessions, how clients start, heartbeat, and end them, and the Sessions view."
+sources:
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/70_SessionPlugin.cs
+  - src/Exceptionless.Core/Jobs/CloseInactiveSessionsJob.cs
+  - src/Exceptionless.Core/Extensions/PersistentEventExtensions.cs
+  - src/Exceptionless.Web/Api/Endpoints/EventEndpoints.cs
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/sessions/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/sessions/components/session-table-columns.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/sessions/components/sessions-stats-dashboard.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/events-overview.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/views/session-events.svelte
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
+  - Exceptionless.Net:src/Exceptionless/Extensions/ExceptionlessConfigurationExtensions.cs
+  - Exceptionless.Net:src/Exceptionless/Extensions/ExceptionlessClientExtensions.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/Default/100_HeartbeatPlugin.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/Default/016_SetEnvironmentUserPlugin.cs
+  - Exceptionless.Net:src/Exceptionless/Plugins/Default/900_CancelSessionsWithNoUserPlugin.cs
+  - Exceptionless.Net:src/Platforms/Exceptionless.AspNetCore/ExceptionlessAspNetCorePlugin.cs
+  - Exceptionless.JavaScript:packages/core/src/configuration/Configuration.ts
+  - Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/HeartbeatPlugin.ts
+  - Exceptionless.JavaScript:packages/browser/src/plugins/BrowserLifeCyclePlugin.ts
+  - Exceptionless.JavaScript:packages/core/test/DocumentationExamples.test.ts
 ---
 
-# User Sessions
+# Sessions
 
-With user session tracking, you can easily see what a user is doing that leads up to an event occurrence, or just see how they are using your app.
+A session is one user's visit to your app: every error, log, feature usage, and 404 they triggered, in order. Use
+sessions to see what a user did before an error, or how people use your app. Sessions are on paid plans.
 
-Each session has a list of events (feature usages, exceptions, log messages, etc) that the user triggered. Each can be clicked on to drill down.
+## How sessions work
 
-![Exceptionless User Session Events](img/sessions-event-tab-user-footsteps.jpg)
+Every event that has a **user identity** belongs to a session. Exceptionless groups a user's events on the server, so
+you get sessions as soon as your events carry a user identity:
 
-Browser and environment information, along with any other data that persists throughout the user session is stored as well.
+- The first event from a user starts a session. Exceptionless creates a session start event for it, with the user, the
+  version, the location, and the environment information from that first event.
+- Later events from the same user, in the same project and environment, join that session.
+- A session ends when the client sends a session end, or when the user has had no events and no heartbeats for five
+  minutes.
+- The session's duration runs from its first event to its last activity.
 
-Once you set up session tracking, you can find the report under Reports > Sessions, or click on the unique session id in any event's overview tab.
+Events without a user identity or a session ID don't belong to a session.
 
-![Exceptionless Sessions Report](img/dashboard-nav.jpg)
+A client can also manage sessions itself:
 
-## Turn On Session Tracking
+- **Session start**, **heartbeat**, and **session end** events mark when a session begins, show that the user is still
+  active while nothing else is being sent, and close the session.
+- A client can give events its own session ID instead of relying on the user identity. Session IDs are 8 to 100 letters,
+  digits, or dashes.
 
-Set a default user identity via the following client methods to send the user ID for each event. Once set, it will be applied for all future events.
+## Set the user identity
 
-### C# Set User Identity Example
+Set the user identity once your app knows who the user is, and every event after that carries it. Use a stable, unique
+value such as a user ID or email address, and optionally a display name.
 
-```csharp
+Some clients set it for you:
+
+- In ASP.NET Core, the .NET client uses the signed-in user's name when you haven't set an identity.
+- In WinForms and WPF apps, the .NET client uses the Windows user name.
+
+To set it in code, see [sending events in .NET](/docs/clients/dotnet/sending-events/) and
+[sending events in JavaScript](/docs/clients/javascript/sending-events/).
+
+> [!NOTE]
+> If the project removes user identifiable information (see [data exclusions](/docs/project-settings/#data-exclusions)),
+> events still group into sessions, but the user identity isn't stored on them.
+
+## Turn on client sessions
+
+In apps with one user at a time, such as browser, desktop, and mobile apps, turn on sessions in the client. The client
+then:
+
+- sends a session start when it starts up,
+- sends a heartbeat every minute while the app stays open, counting from the last event, so an idle user's session stays
+  open,
+- sends a session end when the app shuts down. In the browser, that's when the page unloads.
+
+<!-- source: Exceptionless.Net:src/Exceptionless/Extensions/ExceptionlessConfigurationExtensions.cs (SetUserIdentity, UseSessions) and Exceptionless.JavaScript:packages/core/test/DocumentationExamples.test.ts -->
+
+```csharp tab=".NET"
 using Exceptionless;
-ExceptionlessClient.Default.Configuration.SetUserIdentity("UNIQUE_ID_OR_EMAIL_ADDRESS", "Display Name");
+
+var client = ExceptionlessClient.Default;
+client.Configuration.SetUserIdentity("user-123", "Jane Doe");
+client.Configuration.UseSessions();
+client.Startup("YOUR_API_KEY");
 ```
 
-### JavaScript Set User Identity Example
+```ts tab="JavaScript"
+import { Exceptionless } from "@exceptionless/browser"
 
-```javascript
-exceptionless.ExceptionlessClient.default.config.setUserIdentity('UNIQUE_ID_OR_EMAIL_ADDRESS', 'Display Name');
+await Exceptionless.startup((c) => {
+  c.apiKey = "YOUR_API_KEY"
+  c.setUserIdentity("user-123", "Jane Doe")
+  c.useSessions()
+})
 ```
 
-**Please Note: In WinForms and WPF applications**, a plugin will automatically set the default user to the `Environment.UserName` if the default user hasn’t been already set. Likewise, if you are in a web environment, we will set the default user to the request principal’s identity if the default user hasn’t already been set.
+Both clients accept options on `UseSessions()` and `useSessions()`: whether to send heartbeats, the heartbeat interval
+(one minute by default, at least 30 seconds), and whether the client generates its own session ID.
 
-**If you are using WinForms, WPF, or a Browser App**, you can enable sessions by calling the `UseSessions` extension method.
+Don't turn on client sessions in a server app that handles many users. Set the user identity on each event instead, as
+ASP.NET Core does, and Exceptionless groups each user's events into sessions on the server.
 
-### C# Use Sessions Example
+You can also send session start, heartbeat, and end events yourself, for example when a user signs in or out. The client
+pages show how:
 
-```csharp
-using Exceptionless;
-ExceptionlessClient.Default.Configuration.UseSessions();
+- [.NET: sending events](/docs/clients/dotnet/sending-events/)
+- [JavaScript: sending events](/docs/clients/javascript/sending-events/)
+- [Client specification](/docs/reference/client-spec/) for the heartbeat endpoint that custom clients call
+
+## View sessions
+
+Click **Sessions** in the sidebar to see every session in the date range.
+
+![Sessions view with totals, a chart, and the session list](/assets/img/docs/user-sessions-dashboard-light.webp)
+
+- The cards show the **Total** number of sessions, the average sessions per hour (**Avg/hr**), the number of **Users**,
+  and the average **Duration**.
+- The chart shows sessions over time. Drag across it to zoom into a time range.
+- The list shows each session's **Summary**, **Duration**, **User**, and **Date**. The **Environment** column is hidden
+  by default; add it with **View** > **Manage Columns...**.
+- Turn on **View Active** to show only sessions that haven't ended.
+- Filter by project, date, environment, version, tag, and more with the filter bar. See
+  [Filtering and searching](/docs/filtering-and-searching/).
+- Save a filtered list as a view with **View**. See [Saved views](/docs/saved-views/).
+
+Click a session to open its session start event.
+
+## See the events in a session
+
+Any event that belongs to a session has a **Session Events** tab in its details. It lists every event in the session
+with its **Summary**, **User**, and **Session Time**. On a session start event, the tab also shows the session's
+**Duration** and the user.
+
+Click an event in the list to open it. Click **Open events filtered to this session** (the button above the list) to see
+the session's events in the **Events** view, where you can filter and sort them.
+
+## Ask Exie
+
+[Exie](/docs/ai/exie/) is on Medium plans and up.
+
+```prompt exie
+How many sessions started in production over the last 7 days?
 ```
 
-### JavaScript Use Sessions Example
-
-```javascript
-exceptionless.ExceptionlessClient.default.config.useSessions();
+```prompt exie
+Which users had the most sessions this week?
 ```
 
-## Manually Send SessionStart, SessionEnd, and heartbeat Events
-
-You can use our client API to start, update, or end a session. Just remember, a user identity must be set.
-
-### C# Submit Session Events Example
-
-```csharp
-using Exceptionless;
-ExceptionlessClient.Default.SubmitSessionStart();
-await ExceptionlessClient.Default.SubmitSessionHeartbeatAsync();
-await ExceptionlessClient.Default.SubmitSessionEndAsync();
+```prompt exie
+What errors did jane@example.com run into today?
 ```
 
-### JavaScript Submit Session Events Example
+With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can follow a user's session while it debugs:
 
-```javascript
-exceptionless.ExceptionlessClient.default.submitSessionStart();
-exceptionless.ExceptionlessClient.default.submitSessionHeartbeat();
-exceptionless.ExceptionlessClient.default.submitSessionEnd();
+```prompt agent
+Find the latest error for user jane@example.com in Exceptionless, list her events from the hour before it in order, and tell me what she did before it happened.
 ```
-
-## Disable Heartbeat
-
-If you would like to disable the near real-time session tracking heartbeat that goes out ever 30 seconds, you can pass `false` as an argument to the `UseSessions()` method.
-
----
-
-[Next > Notifications](/docs/notifications)

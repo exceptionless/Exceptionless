@@ -1,159 +1,273 @@
 ---
 title: Pricing
 layout: layouts/base.vto
-description: Exceptionless hosted and self-hosted pricing.
+description: Simple Exceptionless pricing based on monthly events, not seats. The MCP server is on every plan; paid plans add real-time alerts, integrations, and Exie.
 ---
-<div class="page-header margin-top">
-  <h1 id="pricing">Pricing</h1>
-</div>
-
-<div id="wrap" class="container" role="document">
-  <div id="content" class="row-fluid">
-    <div id="main" class="span12" role="main">
-    <div class="row">
-        <div class="span12">
-            <div class="pricing-plans plans-3">
-                <div class="plan-container">
-                    <div class="plan">
-                        <div class="plan-header">
-                            <div class="plan-title">Free</div>
-                            <div class="plan-price"><span class="note">$</span>0<span class="term">Per Month</span></div>
-                        </div>
-                        <div class="plan-features">
-                            <ul>
-                                <li><strong>1</strong> project / <strong>1</strong> user</li>
-                                <li class="short-content"><strong>3 days</strong> event retention</li>
-                                <li><strong>3,000 events</strong> per month</li>
-                                <li class="short-content">No premium features</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="plan-container">
-                    <div class="plan">
-                        <div class="plan-header">
-                            <div class="plan-title">Small</div>
-                            <div class="plan-price"><span class="note">$</span>15<span class="term">Per Month</span></div>
-                        </div>
-                        <div class="plan-features">
-                            <ul>
-                                <li><strong>5</strong> projects / <strong>10</strong> users</li>
-                                <li class="short-content"><strong>30 days</strong> event retention</li>
-                                <li><strong>15,000 events </strong>per month</li>
-                                <li><strong>Premium features</strong> included</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="plan-container">
-                    <div class="plan">
-                        <div class="plan-header">
-                            <div class="plan-title">Medium</div>
-                            <div class="plan-price"><span class="note">$</span>49<span class="term">Per Month</span></div>
-                        </div>
-                        <div class="plan-features">
-                            <ul>
-                                <li><strong>15</strong> projects / <strong>25</strong> users</li>
-                                <li class="short-content"><strong>90 days</strong> event retention</li>
-                                <li><strong>75,000 events </strong>per month</li>
-                                <li><strong>Premium features</strong> included</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<section class="page-hero">
+  <div class="container">
+    <p class="eyebrow">{{ icons.tag }} Pricing</p>
+    <h1>Simple pricing that <span class="text-gradient">grows with you</span></h1>
+    <p>Pay for the events you send, not the seats on your team. Every plan includes the full app and the MCP server for AI coding agents; paid plans add real-time alerts, integrations, longer retention, and Exie.</p>
+    <div class="billing-toggle" role="group" aria-label="Billing period">
+      <button type="button" data-billing="monthly" aria-pressed="true">Monthly</button>
+      <button type="button" data-billing="yearly" aria-pressed="false">Yearly <span class="save">1 month free</span></button>
     </div>
-    <div class="row">
-        <div class="span12">
-            <div class="pricing-plans plans-3">
-                <div class="plan-container best-value">
-                    <div class="plan">
-                        <div class="plan-header">
-                            <div class="plan-title">Large</div>
-                            <div class="plan-price"><span class="note">$</span>99<span class="term">Per Month</span></div>
-                        </div>
-                        <div class="plan-features">
-                            <ul>
-                                <li><strong>Unlimited</strong> projects / users</li>
-                                <li class="short-content"><strong>180 days</strong> event retention</li>
-                                <li><strong>250,000 events </strong>per month</li>
-                                <li><strong>Premium features</strong> included</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="plan-container">
-                    <div class="plan">
-                        <div class="plan-header">
-                            <div class="plan-title">Extra Large</div>
-                            <div class="plan-price"><span class="note">$</span>199<span class="term">Per Month</span></div>
-                        </div>
-                        <div class="plan-features">
-                            <ul>
-                                <li><strong>Unlimited</strong> projects / users</li>
-                                <li class="short-content"><strong>180 days</strong> event retention</li>
-                                <li><strong>1,000,000 events </strong>per month</li>
-                                <li><strong>Premium features</strong> included</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                <div class="plan-container">
-                    <div class="plan">
-                        <div class="plan-header">
-                            <div class="plan-title">Enterprise</div>
-                            <div class="plan-price"><span class="note">$</span>499<span class="term">Per Month</span></div>
-                        </div>
-                        <div class="plan-features">
-                            <ul>
-                                <li><strong>Unlimited</strong> projects / users</li>
-                                <li class="short-content"><strong>180 days</strong> event retention</li>
-                                <li><strong>3,000,000 events </strong>per month</li>
-                                <li><strong>Premium features</strong> included</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="signup center"><a class="btn btn-large btn-primary" href="https://be.exceptionless.io/signup?domain=exceptionless.com&amp;type=organic">Sign Up For <strong>FREE</strong> Now!</a></div>
-    <div class="row" style="margin-top: 5px;">
-        <div id="pricing-faq" class="span6">
-            <h4 style="margin-top: 15px;">Frequently Asked Questions</h4>
-            <dl>
-                <dt>Can I try before I buy?</dt>
-                <dd>Yes! Just use our free plan and start tracking exceptions, log messages or feature usages in minutes.</dd>
-                <dt>Can I change my plan at any time?</dt>
-                <dd>Yes. You can change your plan at any time.</dd>
-                <dt>Can I cancel my account at any time?</dt>
-                <dd>If you decide that you no longer want to use Exceptionless, simply cancel before your next billing period.</dd>
-                <dt>What happens if I go over my error limit?</dt>
-                <dd>We will simply send you a notification. If you continually exceed your limit, you will be asked to upgrade your plan or your account will be closed.</dd>
-                <dt>What are the premium features?</dt>
-                <dd>Premium features are only available in the paid plans. Here is a list of the premium features: </dd>
-                <dd>
-                    <ul>
-                        <li>Searching</li>
-                        <li>Error occurrence notifications (only daily summaries are allowed in the free plan)</li>
-                        <li>Web hooks, <a href="https://slack.com" target="_blank" rel="noopener noreferrer">Slack</a> integration, and <a href="https://zapier.com/" target="_blank" rel="noopener noreferrer">Zapier</a> integration</li>
-                        <li>Additional premium features coming soon.</li>
-                    </ul>
-                </dd>
-                <dt>Can I host Exceptionless myself?</dt>
-                <dd>Sure! Feel free to visit <a title="Exceptionless on Github" href="https://github.com/exceptionless/Exceptionless" target="_blank" rel="noopener noreferrer">Exceptionless on GitHub</a> for hosting details if you have the resources to set it up.</dd>
-            </dl>
-        </div>
-        <div id="pricing-info" class="span5 pull-right">
-            <div class="well">
-                <h4>Important Information</h4>
-                <ul>
-                    <li>No credit card required.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
   </div>
-</div>
+</section>
+
+<section class="section-sm pricing-plans">
+  <div class="container">
+    <div class="plans">
+      <div class="plan">
+        <h2 class="plan-name">Free</h2>
+        <p class="plan-tagline">For a single developer evaluating Exceptionless.</p>
+        <div class="plan-price"><span class="amount">$0</span><span class="per">/month</span></div>
+        <p class="plan-billed">No credit card required</p>
+        <a class="btn btn-secondary" href="{{ site.signupUrl }}" data-cta="pricing-free">Get started</a>
+        <ul>
+          <li>{{ icons.check }}<span><strong>3,000</strong> events per month</span></li>
+          <li>{{ icons.check }}<span><strong>3 days</strong> of retention</span></li>
+          <li>{{ icons.check }}<span><strong>1</strong> project, <strong>1</strong> user</span></li>
+          <li>{{ icons.plug }}<span><strong>MCP server</strong> for AI agents</span></li>
+          <li class="is-muted">{{ icons.minus }}<span>Daily summary emails only</span></li>
+        </ul>
+      </div>
+
+      <div class="plan">
+        <h2 class="plan-name">Small</h2>
+        <p class="plan-tagline">For small teams shipping a few apps.</p>
+        <div class="plan-price"><span class="amount" data-monthly="$15" data-yearly="$13.75">$15</span><span class="per">/month</span></div>
+        <p class="plan-billed" data-monthly="Billed monthly" data-yearly="Billed $165 yearly">Billed monthly</p>
+        <a class="btn btn-secondary" href="{{ site.signupUrl }}" data-cta="pricing-small">Get started</a>
+        <ul>
+          <li>{{ icons.check }}<span><strong>15,000</strong> events per month</span></li>
+          <li>{{ icons.check }}<span><strong>30 days</strong> of retention</span></li>
+          <li>{{ icons.check }}<span><strong>5</strong> projects, <strong>10</strong> users</span></li>
+          <li>{{ icons.check }}<span>Premium features</span></li>
+          <li>{{ icons.plug }}<span><strong>MCP server</strong> for AI agents</span></li>
+        </ul>
+      </div>
+
+      <div class="plan is-featured">
+        <span class="plan-badge">Recommended</span>
+        <h2 class="plan-name">Medium</h2>
+        <p class="plan-tagline">For growing teams that want alerts, integrations, and AI help.</p>
+        <div class="plan-price"><span class="amount" data-monthly="$49" data-yearly="$44.92">$49</span><span class="per">/month</span></div>
+        <p class="plan-billed" data-monthly="Billed monthly" data-yearly="Billed $539 yearly">Billed monthly</p>
+        <a class="btn btn-primary" href="{{ site.signupUrl }}" data-cta="pricing-medium">Get started</a>
+        <ul>
+          <li>{{ icons.check }}<span><strong>75,000</strong> events per month</span></li>
+          <li>{{ icons.check }}<span><strong>90 days</strong> of retention</span></li>
+          <li>{{ icons.check }}<span><strong>15</strong> projects, <strong>25</strong> users</span></li>
+          <li>{{ icons.check }}<span>Premium features</span></li>
+          <li>{{ icons["ai-sparkle"] }}<span><strong>Exie</strong> AI assistant</span></li>
+          <li>{{ icons.plug }}<span><strong>MCP server</strong> for AI agents</span></li>
+        </ul>
+      </div>
+
+      <div class="plan">
+        <h2 class="plan-name">Large</h2>
+        <p class="plan-tagline">For whole engineering teams.</p>
+        <div class="plan-price"><span class="amount" data-monthly="$99" data-yearly="$90.75">$99</span><span class="per">/month</span></div>
+        <p class="plan-billed" data-monthly="Billed monthly" data-yearly="Billed $1,089 yearly">Billed monthly</p>
+        <a class="btn btn-secondary" href="{{ site.signupUrl }}" data-cta="pricing-large">Get started</a>
+        <ul>
+          <li>{{ icons.check }}<span><strong>250,000</strong> events per month</span></li>
+          <li>{{ icons.check }}<span><strong>180 days</strong> of retention</span></li>
+          <li>{{ icons.check }}<span><strong>Unlimited</strong> projects and users</span></li>
+          <li>{{ icons.check }}<span>Premium features</span></li>
+          <li>{{ icons["ai-sparkle"] }}<span><strong>Exie</strong> AI assistant</span></li>
+          <li>{{ icons.plug }}<span><strong>MCP server</strong> for AI agents</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="plans-more">
+      <div class="plan-row">
+        <div>
+          <h3>Extra Large</h3>
+          <p>1,000,000 events per month, 180 days of retention, unlimited projects and users.</p>
+        </div>
+        <div class="plan-row-price">
+          <strong data-monthly="$199" data-yearly="$182.42">$199</strong>
+          <span data-monthly="per month" data-yearly="per month, billed yearly">per month</span>
+        </div>
+      </div>
+      <div class="plan-row">
+        <div>
+          <h3>Enterprise</h3>
+          <p>3,000,000 events per month, 180 days of retention, unlimited projects and users.</p>
+        </div>
+        <div class="plan-row-price">
+          <strong data-monthly="$499" data-yearly="$457.42">$499</strong>
+          <span data-monthly="per month" data-yearly="per month, billed yearly">per month</span>
+        </div>
+      </div>
+      <div class="plan-row">
+        <div>
+          <h3>Self-hosted</h3>
+          <p>Run it on your own infrastructure with no limits. You operate it; Apache 2.0 licensed.</p>
+        </div>
+        <div class="plan-row-price">
+          <strong>Open source</strong>
+          <span><a href="/docs/self-hosting/">Read the guide</a></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="section-title">Compare plans</h2>
+      <p class="section-lead">Every plan includes intelligent stacking, detailed event reports, logs, feature usage, sessions, and the full app.</p>
+    </div>
+    <div class="table-wrap reveal">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th scope="col">Plan</th>
+            <th scope="col">Free</th>
+            <th scope="col">Small</th>
+            <th scope="col">Medium</th>
+            <th scope="col">Large</th>
+            <th scope="col">Extra Large</th>
+            <th scope="col">Enterprise</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Monthly price</th>
+            <td>$0</td><td>$15</td><td>$49</td><td>$99</td><td>$199</td><td>$499</td>
+          </tr>
+          <tr>
+            <th scope="row">Yearly price</th>
+            <td>&mdash;</td><td>$165</td><td>$539</td><td>$1,089</td><td>$2,189</td><td>$5,489</td>
+          </tr>
+          <tr class="group"><th scope="rowgroup" colspan="7">Limits</th></tr>
+          <tr>
+            <th scope="row">Events per month</th>
+            <td>3,000</td><td>15,000</td><td>75,000</td><td>250,000</td><td>1,000,000</td><td>3,000,000</td>
+          </tr>
+          <tr>
+            <th scope="row">Data retention</th>
+            <td>3 days</td><td>30 days</td><td>90 days</td><td>180 days</td><td>180 days</td><td>180 days</td>
+          </tr>
+          <tr>
+            <th scope="row">Projects</th>
+            <td>1</td><td>5</td><td>15</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td>
+          </tr>
+          <tr>
+            <th scope="row">Users</th>
+            <td>1</td><td>10</td><td>25</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td>
+          </tr>
+          <tr class="group"><th scope="rowgroup" colspan="7">Features</th></tr>
+          <tr>
+            <th scope="row">Stacking, event details, logs, and sessions</th>
+            <td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td>
+          </tr>
+          <tr>
+            <th scope="row">Daily summary emails</th>
+            <td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td>
+          </tr>
+          <tr>
+            <th scope="row">Advanced search and custom filters</th>
+            <td class="no">&mdash;</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td>
+          </tr>
+          <tr>
+            <th scope="row">Real-time new, regression, and critical notifications</th>
+            <td class="no">&mdash;</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td>
+          </tr>
+          <tr>
+            <th scope="row">Slack, webhooks, and Zapier</th>
+            <td class="no">&mdash;</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td>
+          </tr>
+          <tr>
+            <th scope="row">Geolocation</th>
+            <td class="no">&mdash;</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td>
+          </tr>
+          <tr>
+            <th scope="row">MCP server for AI coding agents</th>
+            <td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td>
+          </tr>
+          <tr>
+            <th scope="row">Exie AI assistant</th>
+            <td class="no">&mdash;</td><td class="no">&mdash;</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td><td>{{ icons.check }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="section section-subtle">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="section-title">Frequently asked questions</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>Can I try Exceptionless before I buy? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Yes. Sign up with no credit card and send your first events on the Free plan. When you're ready for real-time alerts, integrations, longer retention, more users, or Exie, upgrade in a couple of clicks.</div>
+      </details>
+      <details>
+        <summary>Can I change or cancel my plan at any time? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Yes. Upgrade, downgrade, or switch between monthly and yearly billing from your organization's billing page. If you no longer want to use Exceptionless, cancel before your next billing period.</div>
+      </details>
+      <details>
+        <summary>What counts as an event? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Every error, log message, feature usage, 404, or custom event your apps send counts as one event. Session heartbeats don't count toward your limit, and you can use client configuration and log levels to control how much you send.</div>
+      </details>
+      <details>
+        <summary>What happens if I go over my event limit? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Exceptionless stops accepting new events until your next billing period and lets you know, so you can upgrade if you need more room. You're never charged surprise overage fees, and the data you've already collected isn't affected.</div>
+      </details>
+      <details>
+        <summary>What are premium features? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">
+          Premium features are included on every paid plan:
+          <ul>
+            <li>Advanced search and filtering on any field</li>
+            <li>Real-time notifications for new, regressed, and critical errors (the free plan gets daily summaries)</li>
+            <li>Slack, webhook, and Zapier integrations</li>
+            <li>Geolocation of events</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary>Which plans include Exie? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">The Exie AI assistant is included with Medium, Large, Extra Large, and Enterprise plans. Each plan includes a monthly AI usage allowance, and there's nothing extra to set up.</div>
+      </details>
+      <details>
+        <summary>Which plans include the MCP server? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">All of them, including Free. The MCP server lets coding agents like Claude Code, Codex, GitHub Copilot, and OpenCode work with your errors, and it uses your plan like any other API access, with no extra charge. <a href="/docs/ai/mcp-server/">Set up the MCP server</a>.</div>
+      </details>
+      <details>
+        <summary>How much do I save with yearly billing? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Yearly plans are priced at 11 months, so you get one month free compared to paying monthly.</div>
+      </details>
+      <details>
+        <summary>Can I host Exceptionless myself? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">Absolutely. Exceptionless is open source under the Apache 2.0 license and you can run it on your own infrastructure with Docker or Kubernetes. You take on operating Elasticsearch, storage, backups, and upgrades, which the hosted service handles for you. See the <a href="/docs/self-hosting/">self-hosting guide</a> to get started, or browse the code on <a href="{{ site.githubUrl }}">GitHub</a>.</div>
+      </details>
+      <details>
+        <summary>Need something else? {{ icons["chevron-down"] }}</summary>
+        <div class="faq-body">If you need more events, longer retention, or have questions about billing, <a href="/contact/">send us a message</a> or reach us through <strong>Help &rarr; Support</strong> in the app.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="section section-sm">
+  <div class="container">
+    <div class="cta reveal">
+      <h2>Get set up in minutes</h2>
+      <p>No credit card required to sign up. Upgrade when you're ready for real-time alerts, integrations, and Exie.</p>
+      <div class="btn-group">
+        <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="pricing-footer">Get started {{ icons["arrow-right"] }}</a>
+        <a class="btn btn-secondary btn-lg" href="/contact/">Talk to us</a>
+      </div>
+    </div>
+  </div>
+</section>

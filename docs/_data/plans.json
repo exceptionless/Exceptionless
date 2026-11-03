@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Free",
+    "monthlyPrice": 0,
+    "description": "3,000 events per month, 3 days of retention, 1 project and 1 user, and the MCP server."
+  },
+  {
+    "name": "Small",
+    "monthlyPrice": 15,
+    "description": "15,000 events per month, 30 days of retention, 5 projects and 10 users, and the MCP server."
+  },
+  {
+    "name": "Medium",
+    "monthlyPrice": 49,
+    "description": "75,000 events per month, 90 days of retention, 15 projects and 25 users, the Exie AI assistant, and the MCP server."
+  },
+  {
+    "name": "Large",
+    "monthlyPrice": 99,
+    "description": "250,000 events per month, 180 days of retention, unlimited projects and users, the Exie AI assistant, and the MCP server."
+  },
+  {
+    "name": "Extra Large",
+    "monthlyPrice": 199,
+    "description": "1,000,000 events per month, 180 days of retention, unlimited projects and users, the Exie AI assistant, and the MCP server."
+  },
+  {
+    "name": "Enterprise",
+    "monthlyPrice": 499,
+    "description": "3,000,000 events per month, 180 days of retention, unlimited projects and users, the Exie AI assistant, and the MCP server."
+  }
+]
