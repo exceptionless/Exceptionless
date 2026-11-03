@@ -33,24 +33,50 @@ public static class RelativeDateFreezer
         // Elasticsearch date math anchors an expression on a date with ||, for example 2026-11-03T04:00:00.000Z||/d-4d.
         private readonly string _anchor = $"{utcNow.ToUniversalTime():yyyy-MM-ddTHH:mm:ss.fffZ}||";
 
+        public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context)
+        {
+            // A custom field on a group is stored by the type of the group's terms, as the events index decides it. When that
+            // is a date, name the stored date field so the frozen bounds below keep the date type.
+            string? storedField = EventFieldsQueryVisitor.GetCustomFieldName(node.Field, EventFieldsQueryVisitor.GetGroupChildTerms(node));
+            if (IsStoredDateField(storedField))
+                node.Field = storedField;
+
+            foreach (var child in node.Children)
+                await child.AcceptAsync(this, context);
+        }
+
         public override async Task VisitAsync(TermRangeNode node, IQueryVisitorContext context)
         {
-            if (String.IsNullOrEmpty(node.Field) || (!IsRelative(node.Min) && !IsRelative(node.Max)))
+            if (!IsRelative(node.Min) && !IsRelative(node.Max))
                 return;
 
-            // Custom data fields are stored by type, and the events index picks a date field only when the bounds look like
-            // dates. Freezing the bounds would hide that, so name the stored date field directly.
-            string? storedField = EventFieldsQueryVisitor.GetCustomFieldName(node.Field, [node.Min, node.Max]);
-            if (!String.Equals(storedField, node.Field, StringComparison.Ordinal))
+            // A range inside a group such as date:(>now-2h AND <=now) takes its field from the group.
+            string? field = node.Field ?? GetGroupField(node);
+            if (String.IsNullOrEmpty(field))
+                return;
+
+            if (node.Field is null)
             {
-                if (storedField is null || !storedField.EndsWith("-d", StringComparison.Ordinal))
+                // The group already decided the stored field: a custom field left unchanged there is not a date.
+                if (!IsStoredDateField(field) && (IsCustomField(field) || !await isDateFieldAsync(field)))
                     return;
-
-                node.Field = storedField;
             }
-            else if (!await isDateFieldAsync(node.Field))
+            else
             {
-                return;
+                // Custom data fields are stored by type, and the events index picks a date field only when the bounds look like
+                // dates. Freezing the bounds would hide that, so name the stored date field directly.
+                string? storedField = EventFieldsQueryVisitor.GetCustomFieldName(field, [node.Min, node.Max]);
+                if (IsCustomField(field))
+                {
+                    if (!IsStoredDateField(storedField))
+                        return;
+
+                    node.Field = storedField;
+                }
+                else if (!IsStoredDateField(field) && !await isDateFieldAsync(field))
+                {
+                    return;
+                }
             }
 
             if (IsRelative(node.Min))
@@ -64,6 +90,27 @@ public static class RelativeDateFreezer
                 node.Max = _anchor + node.Max![3..];
                 node.IsMaxQuotedTerm = true;
             }
+        }
+
+        private static bool IsCustomField(string field)
+        {
+            return !String.Equals(EventFieldsQueryVisitor.GetCustomFieldName(field, []), field, StringComparison.Ordinal);
+        }
+
+        private static bool IsStoredDateField(string? field)
+        {
+            return field is not null && field.StartsWith("idx.", StringComparison.OrdinalIgnoreCase) && field.EndsWith("-d", StringComparison.Ordinal);
+        }
+
+        private static string? GetGroupField(IQueryNode node)
+        {
+            for (var parent = node.Parent; parent is not null; parent = parent.Parent)
+            {
+                if (parent is GroupNode { Field: { Length: > 0 } groupField })
+                    return groupField;
+            }
+
+            return null;
         }
 
         private static bool IsRelative(string? value)

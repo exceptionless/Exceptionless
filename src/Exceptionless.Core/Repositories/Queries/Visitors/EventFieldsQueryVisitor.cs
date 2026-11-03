@@ -9,6 +9,16 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
 {
     public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context)
     {
+        node.Field = GetCustomFieldName(node.Field, GetGroupChildTerms(node)) ?? node.Field;
+        foreach (var child in node.Children)
+            await child.AcceptAsync(this, context);
+    }
+
+    /// <summary>
+    /// The terms of a group's unfielded children, which pick the stored type of a custom field set on the group.
+    /// </summary>
+    internal static string[] GetGroupChildTerms(GroupNode node)
+    {
         var childTerms = new List<string>();
         if (node.Left is TermNode { Field: null, Term: not null } leftTermNode)
             childTerms.Add(leftTermNode.Term);
@@ -32,9 +42,7 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
                 childTerms.Add(rightTermRangeNode.Max);
         }
 
-        node.Field = GetCustomFieldName(node.Field, childTerms.ToArray()) ?? node.Field;
-        foreach (var child in node.Children)
-            await child.AcceptAsync(this, context);
+        return childTerms.ToArray();
     }
 
     public override Task VisitAsync(TermNode node, IQueryVisitorContext context)
