@@ -38,6 +38,7 @@ public sealed class MessageBusBroker : IStartupAction
             _subscriber.SubscribeAsync<EntityChanged>(OnEntityChangedAsync, shutdownToken),
             _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync, shutdownToken),
             _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync, shutdownToken),
+            _subscriber.SubscribeAsync<BulkOperationUpdated>(OnBulkOperationUpdatedAsync, shutdownToken),
             _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, shutdownToken),
             _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync, shutdownToken),
             _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync, shutdownToken)
@@ -153,6 +154,17 @@ public sealed class MessageBusBroker : IStartupAction
         {
             _logger.LogTrace("Sending plan overage message to organization: {Organization}", planOverage.OrganizationId);
             return GroupSendAsync(planOverage.OrganizationId, planOverage);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    internal Task OnBulkOperationUpdatedAsync(BulkOperationUpdated bulkOperationUpdated, CancellationToken cancellationToken = default)
+    {
+        if (bulkOperationUpdated is not null)
+        {
+            _logger.LogTrace("Sending bulk operation {OperationId} update to organization: {Organization}", bulkOperationUpdated.Id, bulkOperationUpdated.OrganizationId);
+            return GroupSendAsync(bulkOperationUpdated.OrganizationId, bulkOperationUpdated);
         }
 
         return Task.CompletedTask;

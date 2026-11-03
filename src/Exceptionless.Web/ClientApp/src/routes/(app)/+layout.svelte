@@ -29,6 +29,7 @@
     import { getIntercomTokenQuery } from '#features/auth/api.svelte.ts';
     import { accessToken, gotoLogin } from '#features/auth/index.svelte.ts';
     import { ChangePlanDialogHost, UpgradeRequiredDialog } from '#features/billing/index.ts';
+    import BulkOperationPanel from '#features/bulk-operations/components/bulk-operation-panel.svelte';
     import {
         createOrganizationEventNotificationRefresher,
         invalidatePersistentEventQueries,
@@ -1008,6 +1009,7 @@
 
     <ChangePlanDialogHost />
     <UpgradeRequiredDialog />
+    <BulkOperationPanel />
 {/if}
 
 <Telemetry

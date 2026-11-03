@@ -1,7 +1,24 @@
+import type { BulkOperationStatus } from '#generated/api.ts';
+
 export enum ChangeType {
     Added = 0,
     Saved = 1,
     Removed = 2
+}
+
+export interface BulkOperationUpdated {
+    description: string;
+    failed: number;
+    id: string;
+    message?: string;
+    organization_id: string;
+    processed: number;
+    project_id?: string;
+    status: BulkOperationStatus;
+    succeeded: number;
+    total: number;
+    type: string;
+    updated_utc: string;
 }
 
 export interface EntityChanged {
@@ -49,19 +66,22 @@ export interface WebSocketMessage<T extends WebSocketMessageType> {
     type: T;
 }
 
-export type WebSocketMessageType = 'PlanChanged' | 'PlanOverage' | 'ReleaseNotification' | 'SystemNotification' | 'UserMembershipChanged' | `${string}Changed`;
+export type WebSocketMessageType =
+    'BulkOperationUpdated' | 'PlanChanged' | 'PlanOverage' | 'ReleaseNotification' | 'SystemNotification' | 'UserMembershipChanged' | `${string}Changed`;
 
-export type WebSocketMessageValue<T extends WebSocketMessageType> = T extends 'PlanChanged'
-    ? PlanChanged
-    : T extends 'PlanOverage'
-      ? PlanOverage
-      : T extends 'UserMembershipChanged'
-        ? UserMembershipChanged
-        : T extends 'ReleaseNotification'
-          ? ReleaseNotification
-          : T extends 'SystemNotification'
-            ? SystemNotification
-            : EntityChanged;
+export type WebSocketMessageValue<T extends WebSocketMessageType> = T extends 'BulkOperationUpdated'
+    ? BulkOperationUpdated
+    : T extends 'PlanChanged'
+      ? PlanChanged
+      : T extends 'PlanOverage'
+        ? PlanOverage
+        : T extends 'UserMembershipChanged'
+          ? UserMembershipChanged
+          : T extends 'ReleaseNotification'
+            ? ReleaseNotification
+            : T extends 'SystemNotification'
+              ? SystemNotification
+              : EntityChanged;
 
 export function isEntityChangedType(message: { message: unknown; type: WebSocketMessageType }): message is WebSocketMessage<`${string}Changed`> {
     return message.type !== 'PlanChanged' && message.type !== 'UserMembershipChanged' && message.type.endsWith('Changed');
@@ -73,7 +93,7 @@ export function isPlanOverageType(message: { message: unknown; type: WebSocketMe
 
 export function isWebSocketMessageType(type: string): type is WebSocketMessageType {
     return (
-        (['PlanChanged', 'PlanOverage', 'UserMembershipChanged', 'ReleaseNotification', 'SystemNotification'] as const).includes(
+        (['BulkOperationUpdated', 'PlanChanged', 'PlanOverage', 'UserMembershipChanged', 'ReleaseNotification', 'SystemNotification'] as const).includes(
             type as Exclude<WebSocketMessageType, `${string}Changed`>
         ) || type.endsWith('Changed')
     );

@@ -26,6 +26,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Seed;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
@@ -93,6 +94,7 @@ public class Bootstrapper
         services.AddSingleton<WorkItemHandlers>(s =>
         {
             var handlers = new WorkItemHandlers();
+            handlers.Register<BulkOperationWorkItem>(s.GetRequiredService<BulkOperationWorkItemHandler>);
             handlers.Register<FixStackStatsWorkItem>(s.GetRequiredService<FixStackStatsWorkItemHandler>);
             handlers.Register<ForcePredefinedSavedViewsWorkItem>(s.GetRequiredService<ForcePredefinedSavedViewsWorkItemHandler>);
             handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
@@ -234,6 +236,11 @@ public class Bootstrapper
             });
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
+        services.AddSingleton<EventDeletionService>();
+        services.AddSingleton<BulkOperationOptions>();
+        services.AddSingleton<BulkOperationService>();
+        services.AddSingleton(typeof(IBulkOperationHandler), typeof(Bootstrapper).Assembly);
+        services.AddSingleton(typeof(IBulkSelectionResolver), typeof(Bootstrapper).Assembly);
         services.AddSingleton<IAssistantUsageRecorder>(provider => provider.GetRequiredService<UsageService>());
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
