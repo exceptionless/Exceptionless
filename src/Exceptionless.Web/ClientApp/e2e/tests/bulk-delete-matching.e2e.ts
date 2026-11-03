@@ -26,7 +26,7 @@ test('deleting everything matching the filter runs in the background and shows p
 
     await page.goto(`/event?project=${e2eScenario.projectId}&time=all&limit=${PAGE_SIZE}`);
     const table = page.locator('table:has(thead [role="checkbox"])').first();
-    await expect(table.locator('tbody tr')).toHaveCount(PAGE_SIZE, { timeout: 30_000 });
+    await expect(table.getByRole('checkbox', { name: 'Select row' })).toHaveCount(PAGE_SIZE, { timeout: 30_000 });
 
     await test.step('selecting the page offers to select everything matching the filter', async () => {
         // Act
