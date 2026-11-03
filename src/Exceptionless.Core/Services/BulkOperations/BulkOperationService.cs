@@ -272,13 +272,33 @@ public class BulkOperationService
                 continue;
             }
 
-            if (utcNow - existing.UpdatedUtc >= StaleAfter || GetHandler(existing.Type) is not { IsDestructive: true })
+            if (GetHandler(existing.Type) is not { IsDestructive: true })
                 continue;
 
             // An organization wide operation can touch every project, so it conflicts with any project's operation.
             bool overlaps = existing.ProjectId is null || candidate.ProjectId is null || String.Equals(existing.ProjectId, candidate.ProjectId, StringComparison.Ordinal);
-            if (overlaps)
-                conflict ??= existing;
+            if (!overlaps)
+                continue;
+
+            if (utcNow - existing.UpdatedUtc >= StaleAfter)
+            {
+                // Retire it before admitting a replacement, so a delayed delivery cannot run it alongside the new one.
+                var retired = await UpdateAsync(existing.Id, current =>
+                {
+                    if (!current.IsActive || utcNow - current.UpdatedUtc < StaleAfter)
+                        return false;
+
+                    Finish(current, BulkOperationStatus.Failed, "Stopped because it made no progress for two hours.");
+                    return true;
+                });
+
+                if (retired is null || !retired.IsActive)
+                    continue;
+
+                existing = retired;
+            }
+
+            conflict ??= existing;
         }
 
         if (finished.Count > 0)

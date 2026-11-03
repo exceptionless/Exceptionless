@@ -67,7 +67,10 @@ public class EventFieldsQueryVisitor : ChainableQueryVisitor
         return Task.CompletedTask;
     }
 
-    private string? GetCustomFieldName(string? field, string?[] terms)
+    /// <summary>
+    /// Maps a custom data or reference field to the stored idx field. The suffix is the stored type, picked from the terms.
+    /// </summary>
+    internal static string? GetCustomFieldName(string? field, string?[] terms)
     {
         if (String.IsNullOrEmpty(field))
             return null;

@@ -399,17 +399,20 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task Create_WhileTheActiveOperationHasStoppedReportingProgress_IsAllowed()
+    public async Task Create_WhileTheActiveOperationHasStoppedReportingProgress_RetiresItAndIsAllowed()
     {
         // Arrange
-        await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, ""));
+        var stale = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, ""));
 
         // Act
         TimeProvider.Advance(BulkOperationService.StaleAfter + TimeSpan.FromMinutes(1));
         var next = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, ""));
+        var retired = await GetOperationAsync(stale.Id);
 
         // Assert
         Assert.Equal(BulkOperationStatus.Queued, next.Status);
+        // A delayed delivery of the stale operation must not run alongside its replacement.
+        Assert.Equal(BulkOperationStatus.Failed, retired.Status);
     }
 
     [Fact]

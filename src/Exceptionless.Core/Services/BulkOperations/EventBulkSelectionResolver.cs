@@ -1,3 +1,4 @@
+using Elastic.Clients.Elasticsearch.Mapping;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Queries.Validation;
@@ -27,15 +28,22 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
     private readonly IProjectRepository _projectRepository;
     private readonly PersistentEventQueryValidator _validator;
     private readonly ITextSerializer _serializer;
+    private readonly ExceptionlessElasticConfiguration _configuration;
 
     public EventBulkSelectionResolver(IEventRepository eventRepository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository,
-        PersistentEventQueryValidator validator, ITextSerializer serializer)
+        PersistentEventQueryValidator validator, ITextSerializer serializer, ExceptionlessElasticConfiguration configuration)
     {
         _eventRepository = eventRepository;
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
         _validator = validator;
         _serializer = serializer;
+        _configuration = configuration;
+    }
+
+    private ValueTask<bool> IsDateFieldAsync(string field)
+    {
+        return ValueTask.FromResult(_configuration.Events.MappingResolver.GetMappingProperty(field, followAlias: true) is DateProperty);
     }
 
     public BulkOperationEntity Entity => BulkOperationEntity.Events;
@@ -77,7 +85,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         var pinned = new PinnedEventSelection
         {
             // Relative dates in the filter are pinned to the creation time, like the outer time window.
-            EventFilter = await RelativeDateFreezer.FreezeAsync(query.GetFilterExpression(), operation.Selection.UtcCreatedBefore ?? operation.CreatedUtc),
+            EventFilter = await RelativeDateFreezer.FreezeAsync(query.GetFilterExpression(), operation.Selection.UtcCreatedBefore ?? operation.CreatedUtc, IsDateFieldAsync),
             ExcludedStackIds = query.GetExcludedStacks().ToArray(),
             StackIds = query.GetStacks().ToArray()
         };

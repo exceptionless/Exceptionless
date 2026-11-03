@@ -413,7 +413,7 @@ public partial class BulkOperationEndpointTests
     private EventBulkSelectionResolver CreateResolver(IEventRepository eventRepository)
     {
         return new EventBulkSelectionResolver(eventRepository, GetService<IOrganizationRepository>(), GetService<IProjectRepository>(),
-            GetService<PersistentEventQueryValidator>(), GetService<ITextSerializer>());
+            GetService<PersistentEventQueryValidator>(), GetService<ITextSerializer>(), GetService<Exceptionless.Core.Repositories.Configuration.ExceptionlessElasticConfiguration>());
     }
 
     private BulkOperation NewIdsOperation(string type)
