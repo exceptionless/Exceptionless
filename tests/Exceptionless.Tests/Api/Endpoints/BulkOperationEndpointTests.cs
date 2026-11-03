@@ -697,7 +697,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
     private Task RunWorkItemAsync(BulkOperationService service, BulkOperationWorkItem workItem, int batchSize, CancellationToken shutdownToken)
     {
         var handler = new Exceptionless.Core.Jobs.WorkItemHandlers.BulkOperationWorkItemHandler(service, [GetService<EventBulkSelectionResolver>()],
-            new BulkOperationOptions { BatchSize = batchSize }, GetService<ILockProvider>(), TimeProvider, Log);
+            new BulkOperationOptions { BatchSize = batchSize, RetryDelay = TimeSpan.Zero }, GetService<ILockProvider>(), TimeProvider, Log);
         var context = new WorkItemContext(workItem, "test-job", EmptyLock.Empty, shutdownToken, static (_, _) => Task.CompletedTask);
 
         return handler.HandleItemAsync(context);

@@ -16,8 +16,7 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 public class BulkOperationWorkItemHandler : WorkItemHandlerBase
 {
     /// <summary>
-    /// How many consecutive batches may fail before the operation fails for good. Matches the queue, which delivers a
-    /// work item three times in total.
+    /// How many temporary errors in a row (without a batch completing in between) end the operation.
     /// </summary>
     public const int MaxTransientFailures = 3;
 
@@ -170,8 +169,9 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         }
         catch (Exception ex) when (!IsPermanent(ex))
         {
-            // Elasticsearch, cache and network hiccups: let the queue deliver the work item again. The saved counts and
-            // cursor mean the retry continues where this run stopped. After MaxTransientFailures in a row, give up.
+            // Elasticsearch, cache and network hiccups: continue in a new work item from the saved counts and cursor. Rethrowing
+            // would use the queue's retries, which cover the whole work item, so an operation that makes progress between errors
+            // would run out of deliveries while still marked running. After MaxTransientFailures in a row, give up.
             var failed = await _service.UpdateAsync(workItem.OperationId, current =>
             {
                 if (!current.IsActive)
@@ -191,8 +191,14 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
                 return;
             }
 
-            Log.LogWarning(ex, "Bulk operation {OperationId} hit a temporary error and will be retried: {Message}", workItem.OperationId, ex.Message);
-            throw;
+            Log.LogWarning(ex, "Bulk operation {OperationId} hit a temporary error and will continue in a new run: {Message}", workItem.OperationId, ex.Message);
+            if (failed is null)
+                return;
+
+            if (_options.RetryDelay > TimeSpan.Zero)
+                await Task.Delay(_options.RetryDelay * failed.RetryCount, _timeProvider, context.CancellationToken);
+
+            await _service.ContinueAsync(workItem);
         }
         catch (Exception ex)
         {

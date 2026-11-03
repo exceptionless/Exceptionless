@@ -15,6 +15,9 @@ public class BulkOperationOptions
 {
     /// <summary>How many ids are resolved and executed per batch.</summary>
     public int BatchSize { get; set; } = 500;
+
+    /// <summary>How long to wait before continuing after a temporary error. Multiplied by the number of errors in a row.</summary>
+    public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(5);
 }
 
 /// <summary>
@@ -56,6 +59,15 @@ public class BulkOperationService
     }
 
     public IBulkOperationHandler? GetHandler(string type) => _handlers.GetValueOrDefault(type);
+
+    /// <summary>
+    /// Queues another run that continues from the saved cursor. The queue's retries cover a whole work item, so a long operation
+    /// continues in a new work item after a temporary error instead of using up the retries of the current one.
+    /// </summary>
+    public Task ContinueAsync(BulkOperationWorkItem workItem)
+    {
+        return _workItemQueue.EnqueueAsync(workItem);
+    }
 
     public async Task<BulkOperation?> GetAsync(string id)
     {

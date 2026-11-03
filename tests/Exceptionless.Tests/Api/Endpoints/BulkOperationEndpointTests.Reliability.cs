@@ -12,6 +12,7 @@ using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
 using Foundatio.Jobs;
 using Foundatio.Messaging;
+using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
@@ -154,14 +155,18 @@ public partial class BulkOperationEndpointTests
         var service = CreateService(recorder);
         var created = await CreateRecordingOperationAsync(service);
 
+        long enqueuedBefore = await GetEnqueuedWorkItemCountAsync();
+
         // Act
         var thrown = await Record.ExceptionAsync(() => RunOperationAsync(service, created.Id, 2, TestCancellationToken));
+        long continuations = await GetEnqueuedWorkItemCountAsync() - enqueuedBefore;
         var interrupted = await service.GetAsync(created.Id);
         await RunOperationAsync(service, created.Id, 2, TestCancellationToken);
         var finished = await service.GetAsync(created.Id);
 
         // Assert
-        Assert.IsType<TimeoutException>(thrown);
+        Assert.Null(thrown);
+        Assert.Equal(1, continuations);
         Assert.NotNull(interrupted);
         Assert.Equal(BulkOperationStatus.Running, interrupted.Status);
         Assert.Equal(2, interrupted.Processed);
@@ -188,12 +193,49 @@ public partial class BulkOperationEndpointTests
         var finished = await service.GetAsync(created.Id);
 
         // Assert
-        Assert.IsType<ApplicationException>(first);
-        Assert.IsType<ApplicationException>(second);
+        Assert.Null(first);
+        Assert.Null(second);
         Assert.Null(third);
         Assert.NotNull(finished);
         Assert.Equal(BulkOperationStatus.Failed, finished.Status);
         Assert.Equal(3, finished.RetryCount);
+    }
+
+    [Fact]
+    public async Task Execute_TemporaryErrorsBetweenProgress_ContinueInNewRunsUntilDone()
+    {
+        // Arrange
+        var now = TimeProvider.GetUtcNow();
+        var (_, events) = await CreateDataAsync(d =>
+        {
+            for (int i = 0; i < 6; i++)
+                d.Event().TestProject().Date(now.AddMinutes(-i - 1));
+        });
+        // A temporary error after every completed batch: more errors in total than the queue's retries for one work item.
+        var recorder = new RecordingHandler { Failure = call => call % 2 == 0 ? new TimeoutException("Elasticsearch timed out") : null };
+        var service = CreateService(recorder);
+        var created = await CreateRecordingOperationAsync(service);
+        long enqueuedBefore = await GetEnqueuedWorkItemCountAsync();
+        var thrown = new List<Exception?>();
+
+        // Act
+        for (int run = 0; run < 10 && (await service.GetAsync(created.Id))!.IsActive; run++)
+            thrown.Add(await Record.ExceptionAsync(() => RunOperationAsync(service, created.Id, 1, TestCancellationToken)));
+
+        long continuations = await GetEnqueuedWorkItemCountAsync() - enqueuedBefore;
+        var finished = await service.GetAsync(created.Id);
+
+        // Assert
+        Assert.All(thrown, Assert.Null);
+        Assert.Equal(thrown.Count - 1, continuations);
+        Assert.NotNull(finished);
+        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(events.OrderByDescending(e => e.Date).Select(e => e.Id).ToArray(), recorder.Batches.SelectMany(b => b).ToArray());
+    }
+
+    private async Task<long> GetEnqueuedWorkItemCountAsync()
+    {
+        return (await GetService<IQueue<WorkItemData>>().GetQueueStatsAsync()).Enqueued;
     }
 
     [Fact]
