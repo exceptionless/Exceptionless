@@ -130,7 +130,7 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
             string? name = environment?.Name;
             if (name is null || !String.Equals(ProjectEnvironment.NormalizeName(name), name, StringComparison.Ordinal))
             {
-                yield return new ValidationResult("Environment names must be 1 to 64 characters, without leading or trailing whitespace or control characters.", [nameof(Environments)]);
+                yield return new ValidationResult("Environment names must be 1 to 64 letters, digits, periods, underscores, or hyphens, and start with a letter or digit.", [nameof(Environments)]);
                 continue;
             }
 

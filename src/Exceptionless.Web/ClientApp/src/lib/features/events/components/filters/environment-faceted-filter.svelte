@@ -8,7 +8,7 @@
     import { getOrganizationCountQuery } from '#features/events/api.svelte.ts';
     import { organization } from '#features/organizations/context.svelte.ts';
     import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
-    import { getEnvironmentKey, getListedEnvironmentNames, hasControlCharacters } from '#features/projects/environments.ts';
+    import { getEnvironmentKey, getListedEnvironmentNames, normalizeEnvironmentName } from '#features/projects/environments.ts';
     import { terms } from '#features/shared/api/aggregations.ts';
 
     import { getProjectScopeFilter } from './helpers.svelte';
@@ -64,8 +64,8 @@
     ]);
 
     function createOption(search: string) {
-        const value = search.trim().toLowerCase();
-        return value && value.length <= 64 && !hasControlCharacters(value)
+        const value = normalizeEnvironmentName(search)?.toLowerCase();
+        return value
             ? {
                   label: listedNames.get(value) ?? value,
                   value

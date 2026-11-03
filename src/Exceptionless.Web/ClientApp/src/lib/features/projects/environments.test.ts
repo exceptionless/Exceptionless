@@ -75,8 +75,15 @@ describe('getListedEnvironmentNames', () => {
 describe('normalizeEnvironmentName', () => {
     it.each([
         [' Production ', 'Production'],
-        ['qa west', 'qa west'],
+        ['Staging-EU.2', 'Staging-EU.2'],
+        ['dev_local', 'dev_local'],
         ['a'.repeat(64), 'a'.repeat(64)],
+        ['qa west', undefined],
+        ['prod/eu', undefined],
+        ['prod:eu', undefined],
+        ['-prod', undefined],
+        ['.prod', undefined],
+        ['produção', undefined],
         ['', undefined],
         ['   ', undefined],
         [undefined, undefined],

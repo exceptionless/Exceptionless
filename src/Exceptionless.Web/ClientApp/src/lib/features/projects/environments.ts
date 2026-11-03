@@ -1,6 +1,7 @@
 import type { DiscardedEnvironment, ProjectEnvironment } from '#generated/api.ts';
 
-export const MAX_ENVIRONMENT_NAME_LENGTH = 64;
+/** Environment names are identifiers: 1 to 64 ASCII letters, digits, periods, underscores, or hyphens, starting with a letter or digit. */
+export const ENVIRONMENT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 export const MAX_LISTED_ENVIRONMENTS = 100;
 
 export type DiscardUnlistedWarning = 'empty-list' | 'no-recent-events';
@@ -112,15 +113,10 @@ export function getListedEnvironmentNames(projects: ProjectWithEnvironments[], p
     return names;
 }
 
-export function hasControlCharacters(value: string): boolean {
-    // eslint-disable-next-line no-control-regex -- Environment names cannot contain control characters.
-    return /[\u0000-\u001f\u007f-\u009f]/u.test(value);
-}
-
-/** Applies the same rules as the server: trimmed, 1 to 64 characters, no control characters. */
+/** Applies the same rules as the server: the trimmed name, or undefined when it is not a valid identifier. */
 export function normalizeEnvironmentName(value: null | string | undefined): string | undefined {
     const name = value?.trim();
-    return name && name.length <= MAX_ENVIRONMENT_NAME_LENGTH && !hasControlCharacters(name) ? name : undefined;
+    return name && ENVIRONMENT_NAME_PATTERN.test(name) ? name : undefined;
 }
 
 /** Discarded names with a name, most discarded first. The bucket without an environment has no name. */

@@ -40,7 +40,7 @@ For direct API submissions:
 }
 ```
 
-Names are trimmed, with a maximum of 64 characters. Events preserve the supplied casing: `" Production "` is stored and returned as `"Production"`. Filtering is case-insensitive, and aggregation keys are normalized to lowercase, so `Production` and `production` share one environment bucket. Custom names such as `qa-west` are supported. Empty, oversized, control-character, and non-string values are treated as unspecified. Historical events and older clients without this field remain unspecified; they are never assumed to be production.
+Names are identifiers, so they can be used in filters and scripts: 1 to 64 ASCII letters, digits, periods (`.`), underscores (`_`), or hyphens (`-`), starting with a letter or digit. Surrounding whitespace is trimmed. Events preserve the supplied casing: `" Production "` is stored and returned as `"Production"`. Filtering is case-insensitive, and aggregation keys are normalized to lowercase, so `Production` and `production` share one environment bucket. Custom names such as `qa-west`, `staging.eu`, or `dev_local` are supported. Names with spaces or other characters (for example `Staging West` or `prod/eu`), empty or oversized names, and non-string values are treated as unspecified; they are never rewritten. Historical events and older clients without this field remain unspecified; they are never assumed to be production.
 
 ## Filter your data
 
@@ -64,7 +64,7 @@ The **New** view is not environment-aware. A stack is dated from its first event
 
 ## Manage environments
 
-Open **Project Settings → Environments** to list the environments a project uses. Listed names are shown in the casing you type (for example `Production`) in the Environment filter, event details, and notification emails, while matching stays case-insensitive. Adding or removing a name never changes or deletes events, and the server never adds names to the list on its own: environments that appear in your data show up in the table marked **Not added**, with an **Add** action. A project can list up to 100 environments, and a name follows the same rules as an event's environment: 1 to 64 characters after trimming, with no control characters.
+Open **Project Settings → Environments** to list the environments a project uses. Listed names are shown in the casing you type (for example `Production`) in the Environment filter, event details, and notification emails, while matching stays case-insensitive. Adding or removing a name never changes or deletes events, and the server never adds names to the list on its own: environments that appear in your data show up in the table marked **Not added**, with an **Add** action. A project can list up to 100 environments, and a name follows the same rules as an event's environment.
 
 These settings control what happens to events from environments that are not listed. Projects with no list and default settings behave exactly as before.
 

@@ -269,7 +269,7 @@ export interface NewProject {
 }
 
 export interface NewProjectEnvironment {
-  /** The environment name. It is trimmed, limited to 64 characters, and is matched case-insensitively against event environments. */
+  /** The environment name: 1 to 64 letters, digits, periods, underscores, or hyphens, starting with a letter or digit. It is matched case-insensitively against event environments. */
   name: string;
   /** If true, events from this environment can send notifications. */
   notify: boolean;
@@ -470,6 +470,7 @@ export interface PersistentEvent {
   /**
    * The deployment environment, such as production, staging, or development.
    * Missing or invalid names remain unspecified. Machine and runtime information is stored separately in data.@environment.
+   * @pattern ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$
    */
   environment?: null | string;
   /**

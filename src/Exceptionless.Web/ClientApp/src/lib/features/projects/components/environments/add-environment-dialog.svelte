@@ -38,7 +38,7 @@
                 if (!normalized) {
                     return {
                         fields: {
-                            name: 'Use 1 to 64 characters, without control characters.'
+                            name: 'Use 1 to 64 letters, digits, periods, underscores, or hyphens, starting with a letter or digit.'
                         }
                     };
                 }

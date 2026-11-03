@@ -652,7 +652,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are identifiers of 1 to 64 letters, digits, periods, underscores, or hyphens that start with a letter or digit; casing is preserved and missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -823,7 +823,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are identifiers of 1 to 64 letters, digits, periods, underscores, or hyphens that start with a letter or digit; casing is preserved and missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -994,7 +994,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are identifiers of 1 to 64 letters, digits, periods, underscores, or hyphens that start with a letter or digit; casing is preserved and missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -1174,7 +1174,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are identifiers of 1 to 64 letters, digits, periods, underscores, or hyphens that start with a letter or digit; casing is preserved and missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -11100,7 +11100,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are identifiers of 1 to 64 letters, digits, periods, underscores, or hyphens that start with a letter or digit; casing is preserved and missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -11273,7 +11273,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are identifiers of 1 to 64 letters, digits, periods, underscores, or hyphens that start with a letter or digit; casing is preserved and missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -11453,7 +11453,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are identifiers of 1 to 64 letters, digits, periods, underscores, or hyphens that start with a letter or digit; casing is preserved and missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -11636,7 +11636,7 @@
           {
             "name": "environment",
             "in": "query",
-            "description": "The deployment environment (for example, production or staging). Names are trimmed and limited to 64 characters, preserving the supplied casing; missing or invalid names remain unspecified.",
+            "description": "The deployment environment (for example, production or staging). Names are identifiers of 1 to 64 letters, digits, periods, underscores, or hyphens that start with a letter or digit; casing is preserved and missing or invalid names remain unspecified.",
             "schema": {
               "type": "string"
             }
@@ -12869,7 +12869,7 @@
         "properties": {
           "name": {
             "type": "string",
-            "description": "The environment name. It is trimmed, limited to 64 characters, and is matched case-insensitively against event environments."
+            "description": "The environment name: 1 to 64 letters, digits, periods, underscores, or hyphens, starting with a letter or digit. It is matched case-insensitively against event environments."
           },
           "notify": {
             "type": "boolean",
@@ -13605,6 +13605,7 @@
           "environment": {
             "maxLength": 64,
             "minLength": 0,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
             "type": [
               "null",
               "string"

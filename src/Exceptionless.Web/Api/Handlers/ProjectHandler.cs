@@ -471,7 +471,7 @@ public class ProjectHandler(
 
         string? name = ProjectEnvironment.NormalizeName(message.Environment.Name);
         if (name is null)
-            return Result.Invalid(ValidationError.Create("name", "Environment names must be 1 to 64 characters and cannot contain control characters."));
+            return Result.Invalid(ValidationError.Create("name", "Environment names must be 1 to 64 letters, digits, periods, underscores, or hyphens, and start with a letter or digit."));
 
         if (project.FindEnvironment(name) is not null)
             return Result.Conflict($"The environment '{name}' is already listed. Names are case-insensitive.");

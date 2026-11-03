@@ -70,6 +70,8 @@ public sealed partial class ProjectEndpointTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("prod\tuction")]
+    [InlineData("Staging West")]
+    [InlineData("prod/eu")]
     [InlineData("0123456789012345678901234567890123456789012345678901234567890123456789")]
     public async Task AddEnvironmentAsync_WithInvalidName_ReturnsUnprocessableEntity(string name)
     {

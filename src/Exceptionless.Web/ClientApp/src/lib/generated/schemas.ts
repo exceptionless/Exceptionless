@@ -600,6 +600,10 @@ export const PersistentEventSchema = object({
   environment: string()
     .min(1, "Environment is required")
     .max(64, "Environment must be at most 64 characters")
+    .regex(
+      /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,
+      "Environment has invalid format",
+    )
     .nullable()
     .optional(),
   type: string()

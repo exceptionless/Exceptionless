@@ -30,7 +30,7 @@ public sealed class ProjectValidatorTests : TestWithServices
     {
         // Arrange
         var project = CreateValidProject();
-        project.Environments = [new ProjectEnvironment { Name = "Production" }, new ProjectEnvironment { Name = "qa west", Notify = false }];
+        project.Environments = [new ProjectEnvironment { Name = "Production" }, new ProjectEnvironment { Name = "qa-west.2", Notify = false }];
 
         // Act
         var (isValid, _) = await _validator.ValidateAsync(project);
@@ -46,6 +46,9 @@ public sealed class ProjectValidatorTests : TestWithServices
     [InlineData("production ")]
     [InlineData("prod\tuction")]
     [InlineData("prod\nuction")]
+    [InlineData("Staging West")]
+    [InlineData("prod/eu")]
+    [InlineData("-prod")]
     public async Task Validate_WhenEnvironmentNameIsInvalid_ReturnsError(string name)
     {
         // Arrange

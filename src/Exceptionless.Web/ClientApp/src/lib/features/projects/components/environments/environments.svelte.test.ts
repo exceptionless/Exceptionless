@@ -181,10 +181,10 @@ describe('AddEnvironmentDialog', () => {
         render(AddEnvironmentDialog, { add, listedNames: ['Production'], open: true });
 
         // Act
-        await submit('  Staging West ');
+        await submit('  Staging-West ');
 
         // Assert
-        await waitFor(() => expect(add).toHaveBeenCalledWith({ name: 'Staging West', notify: true }));
+        await waitFor(() => expect(add).toHaveBeenCalledWith({ name: 'Staging-West', notify: true }));
     });
 
     it.each([
@@ -217,6 +217,19 @@ describe('AddEnvironmentDialog', () => {
         await waitFor(() => expect(add).toHaveBeenCalledWith({ name: 'QA-West', notify: true }));
     });
 
+    it.each(['Staging West', 'prod/eu', '-prod'])('rejects %j because names are identifiers', async (name) => {
+        // Arrange
+        const add = vi.fn();
+        render(AddEnvironmentDialog, { add, listedNames: [], open: true });
+
+        // Act
+        await submit(name);
+
+        // Assert
+        expect(await screen.findByText(/Use 1 to 64 letters, digits, periods, underscores, or hyphens/)).toBeTruthy();
+        expect(add).not.toHaveBeenCalled();
+    });
+
     it('rejects a name that is only whitespace', async () => {
         // Arrange
         const add = vi.fn();
@@ -226,7 +239,7 @@ describe('AddEnvironmentDialog', () => {
         await submit('   ');
 
         // Assert
-        expect(await screen.findByText(/Use 1 to 64 characters/)).toBeTruthy();
+        expect(await screen.findByText(/Use 1 to 64 letters, digits, periods, underscores, or hyphens/)).toBeTruthy();
         expect(add).not.toHaveBeenCalled();
     });
 

@@ -75,13 +75,14 @@ public sealed class NotificationEnvironmentFormattingTests(ITestOutputHelper out
         var message = GetService<FormattingPluginManager>().GetSlackEventNotificationMessage(ev, project, false, true, false);
 
         // Assert
+        // Environment names are identifiers, so a hostile name never reaches the message.
+        Assert.Null(ev.Environment);
         int linkStart = message.Text.IndexOf("*<", StringComparison.Ordinal);
         string text = message.Text[..linkStart];
         Assert.DoesNotContain("<", text);
         Assert.DoesNotContain(">", text);
         Assert.Contains("&lt;!here&gt; project", text);
-        if (type != Event.KnownTypes.FeatureUsage)
-            Assert.Contains("&lt;!channel&gt; &lt;https://evil.example|login&gt; &amp; more", text);
+        Assert.DoesNotContain("channel", text);
 
         // The only real link is the event link.
         Assert.Equal(1, message.Text.Count(c => c == '<'));

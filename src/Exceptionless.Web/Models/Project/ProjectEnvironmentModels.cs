@@ -6,7 +6,7 @@ namespace Exceptionless.Web.Models;
 public record NewProjectEnvironment
 {
     /// <summary>
-    /// The environment name. It is trimmed, limited to 64 characters, and is matched case-insensitively against event environments.
+    /// The environment name: 1 to 64 letters, digits, periods, underscores, or hyphens, starting with a letter or digit. It is matched case-insensitively against event environments.
     /// </summary>
     [Required]
     public string Name { get; set; } = null!;
