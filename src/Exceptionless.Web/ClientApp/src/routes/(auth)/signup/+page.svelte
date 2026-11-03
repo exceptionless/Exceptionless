@@ -36,6 +36,11 @@
     const inviteToken = page.url.searchParams.get('token');
     const redirectUrl = inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add');
 
+    const externalLoginOptions = {
+        inviteToken,
+        redirectUrl
+    };
+
     // Only an invitation ends the current session: it must be accepted as the invited user. Every login shares one
     // server token, so ending the session on any visit would sign out the user's other tabs and devices.
     const isEndingSessionForInvite = !!inviteToken && !!accessToken.current;
@@ -83,17 +88,17 @@
                 <P class="text-center">Sign up with</P>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Sign up with Microsoft" onclick={() => microsoftLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with Microsoft" onclick={() => microsoftLogin(externalLoginOptions)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(externalLoginOptions)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(externalLoginOptions)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}

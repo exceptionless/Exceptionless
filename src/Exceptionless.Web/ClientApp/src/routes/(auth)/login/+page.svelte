@@ -40,6 +40,11 @@
     const canSignup = enableAccountCreation || !!inviteToken;
     const signupUrl = inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup');
 
+    const externalLoginOptions = {
+        inviteToken,
+        redirectUrl
+    };
+
     // Only an invitation ends the current session: it must be accepted as the invited user. Every login shares one
     // server token, so ending the session on any visit would sign out the user's other tabs and devices.
     const isEndingSessionForInvite = !!inviteToken && !!accessToken.current;
@@ -179,17 +184,17 @@
                 </div>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => microsoftLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => microsoftLogin(externalLoginOptions)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(externalLoginOptions)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(externalLoginOptions)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}

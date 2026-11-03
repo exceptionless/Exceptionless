@@ -59,15 +59,22 @@ test('reloading a login or signup tab keeps the session in other tabs', async ({
         if (new URL(request.url()).pathname.endsWith('/auth/logout')) logouts.push(request.url());
     });
     await page.goto('/stack/all');
-    await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('heading', { name: 'All' }).waitFor({ timeout: 30_000 });
     const authPage = await page.context().newPage();
 
-    // Act
-    for (const path of ['/login', '/signup']) {
+    for (const [path, submitLabel] of [
+        ['/login', 'Login'],
+        ['/signup', 'Create My Account']
+    ]) {
+        // Act
         await authPage.goto(path);
         await authPage.reload();
-        await expect(authPage.getByRole('button', { exact: true, name: path === '/login' ? 'Login' : 'Create My Account' })).toBeVisible();
+
+        // Assert
+        await expect(authPage.getByRole('button', { exact: true, name: submitLabel })).toBeVisible();
     }
+
+    // Act
     await page.reload();
 
     // Assert
