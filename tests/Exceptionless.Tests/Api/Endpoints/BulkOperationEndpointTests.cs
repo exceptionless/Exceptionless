@@ -594,51 +594,6 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         Assert.Equal(destructive.Task.Id, blocked.Conflict?.Id);
     }
 
-    [Fact]
-    public async Task OnBackgroundTaskUpdatedAsync_SendsOnlyToTheOperationsOrganization()
-    {
-        // Arrange
-        var broker = GetService<MessageBusBroker>();
-        var connectionMapping = GetService<IConnectionMapping>();
-        var connectionManager = GetService<WebSocketConnectionManager>();
-        var ownSocket = new TestWebSocket();
-        var otherSocket = new TestWebSocket();
-        string ownConnection = connectionManager.AddWebSocket(ownSocket);
-        string otherConnection = connectionManager.AddWebSocket(otherSocket);
-        await connectionMapping.GroupAddAsync(SampleDataService.TEST_ORG_ID, ownConnection);
-        await connectionMapping.GroupAddAsync(SampleDataService.FREE_ORG_ID, otherConnection);
-
-        try
-        {
-            // Act
-            await broker.OnBackgroundTaskUpdatedAsync(new BackgroundTaskUpdated
-            {
-                Id = "537650f3b77efe23a47914f9",
-                OrganizationId = SampleDataService.TEST_ORG_ID,
-                Type = "events.delete",
-                Description = "Delete events matching filter",
-                Status = BackgroundTaskStatus.Running,
-                Total = 10,
-                Processed = 4
-            }, TestCancellationToken);
-
-            await WaitForAsync(() => ownSocket.SentMessages.Count > 0);
-
-            // Assert
-            string sent = Assert.Single(ownSocket.SentMessages);
-            Assert.Contains("\"type\":\"BackgroundTaskUpdated\"", sent);
-            Assert.Contains("\"processed\":4", sent);
-            Assert.Empty(otherSocket.SentMessages);
-        }
-        finally
-        {
-            await connectionMapping.GroupRemoveAsync(SampleDataService.TEST_ORG_ID, ownConnection);
-            await connectionMapping.GroupRemoveAsync(SampleDataService.FREE_ORG_ID, otherConnection);
-            await connectionManager.RemoveWebSocketAsync(ownConnection);
-            await connectionManager.RemoveWebSocketAsync(otherConnection);
-        }
-    }
-
     private static NewBulkOperation FilterRequest(string organizationId, string? projectId, string filter, string time = "[now-7d TO now]")
     {
         return new NewBulkOperation

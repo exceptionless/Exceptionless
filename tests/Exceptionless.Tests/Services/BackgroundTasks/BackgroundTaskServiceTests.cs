@@ -1,0 +1,493 @@
+using Exceptionless.Core.Models.BackgroundTasks;
+using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Services.BackgroundTasks;
+using Exceptionless.Tests.Utility;
+using Foundatio.Jobs;
+using Foundatio.Lock;
+using Foundatio.Queues;
+using Foundatio.Repositories.Utility;
+using Foundatio.Serializer;
+using Foundatio.Xunit;
+using Microsoft.Extensions.Time.Testing;
+using Moq;
+using Xunit;
+
+namespace Exceptionless.Tests.Services.BackgroundTasks;
+
+public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
+{
+    private const string OrganizationId = "537650f3b77efe23a47914f4";
+    private const string OtherOrganizationId = "537650f3b77efe23a47914f5";
+    private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 11, 3, 4, 5, 6, TimeSpan.Zero));
+    private readonly BackgroundTaskTestHarness _harness;
+
+    public BackgroundTaskServiceTests(ITestOutputHelper output) : base(output)
+    {
+        _harness = new BackgroundTaskTestHarness(_time, Log);
+    }
+
+    public void Dispose()
+    {
+        _harness.Dispose();
+    }
+
+    private BackgroundTaskService Tasks => _harness.Tasks;
+
+    [Fact]
+    public async Task AddAsync_NewTask_StoresItQueuedAndIndexesIt()
+    {
+        // Arrange
+        var task = NewTask();
+
+        // Act
+        await Tasks.AddAsync(task);
+        var stored = await Tasks.GetAsync(task.Id);
+        var listed = await Tasks.GetByOrganizationAsync(OrganizationId);
+        var active = await Tasks.GetActiveIdsAsync(OrganizationId);
+
+        // Assert
+        Assert.True(ObjectId.TryParse(task.Id, out _));
+        Assert.NotNull(stored);
+        Assert.Equal(BackgroundTaskStatus.Queued, stored.Status);
+        Assert.Equal(_time.GetUtcNow().UtcDateTime, stored.CreatedUtc);
+        Assert.Equal(stored.CreatedUtc, stored.UpdatedUtc);
+        Assert.Equal([task.Id], listed.Select(t => t.Id).ToArray());
+        Assert.Equal([task.Id], active.ToArray());
+        Assert.Empty(_harness.Publisher.Updates);
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_ManyTasks_ReturnsTheNewestFirstUpToTheLimit()
+    {
+        // Arrange
+        var ids = new List<string>();
+        for (int index = 0; index < 4; index++)
+        {
+            var task = NewTask();
+            await Tasks.AddAsync(task);
+            ids.Add(task.Id);
+            _time.Advance(TimeSpan.FromSeconds(5));
+        }
+
+        // Act
+        var newestTwo = await Tasks.GetByOrganizationAsync(OrganizationId, limit: 2);
+
+        // Assert
+        Assert.Equal([ids[3], ids[2]], newestTwo.Select(t => t.Id).ToArray());
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_ExpiredAndForeignIds_AreSkippedAndExpiredIdsCleanedFromTheIndex()
+    {
+        // Arrange
+        var kept = NewTask();
+        var expired = NewTask();
+        var foreign = NewTask(OtherOrganizationId);
+        await Tasks.AddAsync(kept);
+        _time.Advance(TimeSpan.FromSeconds(1));
+        await Tasks.AddAsync(expired);
+        _time.Advance(TimeSpan.FromSeconds(1));
+        await Tasks.AddAsync(foreign);
+        await _harness.Cache.RemoveAsync(BackgroundTaskService.GetTaskCacheKey(expired.Id));
+        // A stray id from another organization must never be listed.
+        await _harness.Cache.ListAddAsync(BackgroundTaskService.GetOrganizationIndexCacheKey(OrganizationId), [foreign.Id]);
+
+        // Act
+        var listed = await Tasks.GetByOrganizationAsync(OrganizationId);
+        var indexed = await _harness.Cache.GetListAsync<string>(BackgroundTaskService.GetOrganizationIndexCacheKey(OrganizationId));
+
+        // Assert
+        Assert.Equal([kept.Id], listed.Select(t => t.Id).ToArray());
+        Assert.DoesNotContain(expired.Id, indexed.Value);
+        Assert.Contains(kept.Id, indexed.Value);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_UpdateReturnsFalse_SavesAndPublishesNothing()
+    {
+        // Arrange
+        var task = NewTask();
+        await Tasks.AddAsync(task);
+        _time.Advance(TimeSpan.FromMinutes(1));
+
+        // Act
+        var result = await Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Progress = 50;
+            return false;
+        });
+        var stored = await Tasks.GetAsync(task.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(0, stored!.Progress);
+        Assert.Equal(stored.CreatedUtc, stored.UpdatedUtc);
+        Assert.Empty(_harness.Publisher.Updates);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ChangeThatLeavesTheTaskActive_SavesStampsAndPublishesIt()
+    {
+        // Arrange
+        var task = NewTask();
+        await Tasks.AddAsync(task);
+        _time.Advance(TimeSpan.FromMinutes(1));
+
+        // Act
+        var result = await Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Start(_time.GetUtcNow().UtcDateTime);
+            current.Progress = 40;
+            current.Message = "Working";
+            return true;
+        });
+        var stored = await Tasks.GetAsync(task.Id);
+        var active = await Tasks.GetActiveIdsAsync(OrganizationId);
+
+        // Assert
+        Assert.Equal(40, stored!.Progress);
+        Assert.Equal(_time.GetUtcNow().UtcDateTime, result!.UpdatedUtc);
+        Assert.Equal(result.UpdatedUtc, stored.UpdatedUtc);
+        Assert.Equal([task.Id], active.ToArray());
+        var update = Assert.Single(_harness.Publisher.Updates);
+        Assert.Equal(task.Id, update.Id);
+        Assert.Equal(OrganizationId, update.OrganizationId);
+        Assert.Equal(BackgroundTaskStatus.Running, update.Status);
+        Assert.Equal(40, update.Progress);
+        Assert.Equal("Working", update.Message);
+        Assert.Equal(task.CanCancel, update.CanCancel);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_TaskFinishes_RemovesItFromTheActiveIndexAndPublishesTheFinalState()
+    {
+        // Arrange
+        var task = NewTask();
+        await Tasks.AddAsync(task);
+
+        // Act
+        await Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Finish(BackgroundTaskStatus.Completed, "Done", _time.GetUtcNow().UtcDateTime);
+            return true;
+        });
+        var active = await Tasks.GetActiveIdsAsync(OrganizationId);
+        var listed = await Tasks.GetByOrganizationAsync(OrganizationId);
+
+        // Assert
+        Assert.Empty(active);
+        Assert.Equal(BackgroundTaskStatus.Completed, Assert.Single(listed).Status);
+        var update = Assert.Single(_harness.Publisher.Updates);
+        Assert.Equal(BackgroundTaskStatus.Completed, update.Status);
+        Assert.Equal(100, update.Progress);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_UnknownTask_ReturnsNullWithoutRunningTheUpdate()
+    {
+        // Arrange
+        bool called = false;
+
+        // Act
+        var result = await Tasks.UpdateAsync(ObjectId.GenerateNewId().ToString(), _ =>
+        {
+            called = true;
+            return true;
+        });
+
+        // Assert
+        Assert.Null(result);
+        Assert.False(called);
+        Assert.Empty(_harness.Publisher.Updates);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PublisherIsDown_StillSavesTheChange()
+    {
+        // Arrange
+        var task = NewTask();
+        await Tasks.AddAsync(task);
+        _harness.Publisher.Failure = new TimeoutException("Message bus unavailable");
+
+        // Act
+        var result = await Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Progress = 10;
+            return true;
+        });
+
+        // Assert
+        Assert.Equal(10, (await Tasks.GetAsync(task.Id))!.Progress);
+        Assert.Equal(10, result!.Progress);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_LockBusyAtFirst_RetriesWithThePolicyAndSucceeds()
+    {
+        // Arrange
+        var counting = new CountingLockProvider();
+        using var harness = new BackgroundTaskTestHarness(TimeProvider.System, Log, decorateLockProvider: counting.Wrap);
+        var task = NewTask();
+        await harness.Tasks.AddAsync(task);
+        var held = await harness.LockProvider.AcquireAsync(BackgroundTaskService.GetUpdateLockResource(task.Id), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(1));
+        counting.Reset();
+        counting.OnAttempt = attempts =>
+        {
+            // Release only after one attempt gave up, so the update can only succeed through a retry.
+            if (attempts == 2)
+                held.ReleaseAsync().GetAwaiter().GetResult();
+        };
+
+        // Act
+        var result = await harness.Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Progress = 25;
+            return true;
+        });
+
+        // Assert
+        Assert.Equal(25, result!.Progress);
+        Assert.Equal(2, counting.Attempts);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_LockNeverReleased_GivesUpAfterTheConfiguredAttempts()
+    {
+        // Arrange
+        var counting = new CountingLockProvider();
+        using var harness = new BackgroundTaskTestHarness(TimeProvider.System, Log, decorateLockProvider: counting.Wrap, lockAttempts: 3);
+        var task = NewTask();
+        await harness.Tasks.AddAsync(task);
+        await using var held = await harness.LockProvider.AcquireAsync(BackgroundTaskService.GetUpdateLockResource(task.Id), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(1));
+        counting.Reset();
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await harness.Tasks.UpdateAsync(task.Id, _ => true));
+
+        // Assert
+        Assert.IsType<LockAcquisitionTimeoutException>(thrown);
+        Assert.Equal(3, counting.Attempts);
+    }
+
+    [Fact]
+    public async Task CancelAsync_QueuedTask_CancelsImmediatelyAndRemembersTheRequest()
+    {
+        // Arrange
+        var task = NewTask(canCancel: true);
+        await Tasks.AddAsync(task);
+
+        // Act
+        var result = await Tasks.CancelAsync(task.Id);
+
+        // Assert
+        Assert.False(result.IsNotCancellable);
+        Assert.Equal(BackgroundTaskStatus.Cancelled, result.Task!.Status);
+        Assert.NotNull(result.Task.CompletedUtc);
+        Assert.True(await Tasks.IsCancelRequestedAsync(task.Id));
+        Assert.Empty(await Tasks.GetActiveIdsAsync(OrganizationId));
+        Assert.Equal(BackgroundTaskStatus.Cancelled, Assert.Single(_harness.Publisher.Updates).Status);
+    }
+
+    [Fact]
+    public async Task CancelAsync_RunningTaskWithRecentProgress_OnlyRequestsCancellationForTheNextBatch()
+    {
+        // Arrange
+        var task = NewTask(canCancel: true);
+        await Tasks.AddAsync(task);
+        await Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Start(_time.GetUtcNow().UtcDateTime);
+            return true;
+        });
+        _time.Advance(BackgroundTaskService.StaleAfter - TimeSpan.FromMinutes(1));
+
+        // Act
+        var result = await Tasks.CancelAsync(task.Id);
+
+        // Assert
+        Assert.Equal(BackgroundTaskStatus.Running, result.Task!.Status);
+        Assert.True(await Tasks.IsCancelRequestedAsync(task.Id));
+        Assert.Equal([task.Id], (await Tasks.GetActiveIdsAsync(OrganizationId)).ToArray());
+    }
+
+    [Fact]
+    public async Task CancelAsync_RunningTaskThatStoppedReportingProgress_CancelsImmediately()
+    {
+        // Arrange
+        var task = NewTask(canCancel: true);
+        await Tasks.AddAsync(task);
+        await Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Start(_time.GetUtcNow().UtcDateTime);
+            return true;
+        });
+        _time.Advance(BackgroundTaskService.StaleAfter + TimeSpan.FromMinutes(1));
+
+        // Act
+        var result = await Tasks.CancelAsync(task.Id);
+
+        // Assert
+        Assert.Equal(BackgroundTaskStatus.Cancelled, result.Task!.Status);
+        Assert.Empty(await Tasks.GetActiveIdsAsync(OrganizationId));
+    }
+
+    [Fact]
+    public async Task CancelAsync_TaskThatCannotBeCancelled_IsRejectedAndLeftRunning()
+    {
+        // Arrange
+        var task = NewTask(canCancel: false);
+        await Tasks.AddAsync(task);
+
+        // Act
+        var result = await Tasks.CancelAsync(task.Id);
+
+        // Assert
+        Assert.True(result.IsNotCancellable);
+        Assert.Equal(BackgroundTaskStatus.Queued, (await Tasks.GetAsync(task.Id))!.Status);
+        Assert.False(await Tasks.IsCancelRequestedAsync(task.Id));
+        Assert.Empty(_harness.Publisher.Updates);
+    }
+
+    [Fact]
+    public async Task CancelAsync_AbandonedTaskThatCannotBeCancelled_CanStillBeCleared()
+    {
+        // Arrange
+        var task = NewTask(canCancel: false);
+        await Tasks.AddAsync(task);
+        _time.Advance(BackgroundTaskService.StaleAfter + TimeSpan.FromMinutes(1));
+
+        // Act
+        var result = await Tasks.CancelAsync(task.Id);
+
+        // Assert
+        Assert.False(result.IsNotCancellable);
+        Assert.Equal(BackgroundTaskStatus.Cancelled, result.Task!.Status);
+    }
+
+    [Fact]
+    public async Task CancelAsync_FinishedOrUnknownTask_ChangesNothing()
+    {
+        // Arrange
+        var task = NewTask(canCancel: true);
+        await Tasks.AddAsync(task);
+        await Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Finish(BackgroundTaskStatus.Completed, "Done", _time.GetUtcNow().UtcDateTime);
+            return true;
+        });
+        int publishedBefore = _harness.Publisher.Updates.Count;
+
+        // Act
+        var finished = await Tasks.CancelAsync(task.Id);
+        var unknown = await Tasks.CancelAsync(ObjectId.GenerateNewId().ToString());
+
+        // Assert
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Task!.Status);
+        Assert.False(await Tasks.IsCancelRequestedAsync(task.Id));
+        Assert.Null(unknown.Task);
+        Assert.Equal(publishedBefore, _harness.Publisher.Updates.Count);
+    }
+
+    [Fact]
+    public async Task CreateAndEnqueueAsync_Success_QueuesTheWorkItemWithTheTaskIdAndPublishesQueued()
+    {
+        // Arrange
+        var task = NewTask();
+
+        // Act
+        var created = await Tasks.CreateAndEnqueueAsync(task, t => new ResetProjectDataWorkItem { OrganizationId = OrganizationId, ProjectId = "p1", TaskId = t.Id });
+        var entry = await _harness.Queue.DequeueAsync(TestCancellationToken);
+
+        // Assert
+        Assert.Same(task, created);
+        var workItem = Assert.IsType<ResetProjectDataWorkItem>(_harness.Queue.Serializer.Deserialize(entry!.Value.Data, typeof(ResetProjectDataWorkItem)));
+        Assert.Equal(task.Id, workItem.TaskId);
+        var update = Assert.Single(_harness.Publisher.Updates);
+        Assert.Equal(BackgroundTaskStatus.Queued, update.Status);
+        Assert.Equal(task.Id, update.Id);
+    }
+
+    [Fact]
+    public async Task EnqueueAsync_QueueRejectsTheWorkItem_FailsTheTaskSoItIsNotLeftWaiting()
+    {
+        // Arrange
+        var queue = new Mock<IQueue<WorkItemData>>();
+        queue.SetupGet(q => q.Serializer).Returns(_harness.Queue.Serializer);
+        queue.Setup(q => q.EnqueueAsync(It.IsAny<WorkItemData>(), It.IsAny<QueueEntryOptions>())).ThrowsAsync(new TimeoutException("Queue unavailable"));
+        using var harness = new BackgroundTaskTestHarness(_time, Log, queue: queue.Object);
+        var task = NewTask();
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await harness.Tasks.CreateAndEnqueueAsync(task, t => new ResetProjectDataWorkItem { OrganizationId = OrganizationId, ProjectId = "p1", TaskId = t.Id }));
+
+        // Assert
+        Assert.IsType<TimeoutException>(thrown);
+        var stored = await harness.Tasks.GetAsync(task.Id);
+        Assert.Equal(BackgroundTaskStatus.Failed, stored!.Status);
+        Assert.NotNull(stored.CompletedUtc);
+        Assert.Empty(await harness.Tasks.GetActiveIdsAsync(OrganizationId));
+        Assert.Equal(BackgroundTaskStatus.Failed, Assert.Single(harness.Publisher.Updates).Status);
+    }
+
+    [Fact]
+    public void CacheKeysAndLockResources_ShareThePrefixAndAreNamedByKind()
+    {
+        // Arrange
+        string[] cacheKeys =
+        [
+            BackgroundTaskService.GetTaskCacheKey("a"),
+            BackgroundTaskService.GetCancelCacheKey("a"),
+            BackgroundTaskService.GetOrganizationIndexCacheKey("o"),
+            BackgroundTaskService.GetActiveIndexCacheKey("o"),
+            BulkOperationService_GetPinnedSelectionCacheKey("a")
+        ];
+        string[] lockResources = [BackgroundTaskService.GetUpdateLockResource("a"), BackgroundTaskService.GetCreateLockResource("o")];
+
+        // Act
+        var all = cacheKeys.Concat(lockResources).ToList();
+
+        // Assert
+        Assert.All(all, key => Assert.StartsWith(BackgroundTaskService.KeyPrefix + ":", key));
+        Assert.Equal(all.Count, all.Distinct().Count());
+    }
+
+    private static string BulkOperationService_GetPinnedSelectionCacheKey(string id) => Exceptionless.Core.Services.BulkOperations.BulkOperationService.GetPinnedSelectionCacheKey(id);
+
+    private static BackgroundTask NewTask(string organizationId = OrganizationId, bool canCancel = false)
+    {
+        return new BackgroundTask
+        {
+            OrganizationId = organizationId,
+            ProjectId = "537650f3b77efe23a47914f6",
+            Type = BackgroundTaskTypes.ResetProjectData,
+            Description = "Reset data for Test",
+            CreatedByUserId = "537650f3b77efe23a47914f8",
+            CanCancel = canCancel
+        };
+    }
+
+    private sealed class CountingLockProvider
+    {
+        private int _attempts;
+
+        public int Attempts => Volatile.Read(ref _attempts);
+
+        /// <summary>Called with the attempt number (since the last reset) as an attempt to acquire a lock starts.</summary>
+        public Action<int>? OnAttempt { get; set; }
+
+        public void Reset() => Volatile.Write(ref _attempts, 0);
+
+        public ILockProvider Wrap(ILockProvider inner)
+        {
+            var mock = new Mock<ILockProvider>();
+            mock.Setup(p => p.AcquireAsync(It.IsAny<string>(), It.IsAny<TimeSpan?>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+                .Returns<string, TimeSpan?, bool, CancellationToken>(async (resource, expires, releaseOnDispose, cancellationToken) =>
+                {
+                    int attempt = Interlocked.Increment(ref _attempts);
+                    OnAttempt?.Invoke(attempt);
+                    return await inner.AcquireAsync(resource, expires, releaseOnDispose, cancellationToken);
+                });
+            return mock.Object;
+        }
+    }
+}
