@@ -1,11 +1,12 @@
 import { FetchClient } from '@foundatiofx/fetchclient';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { accessToken, goto, postJSON, toastError } = vi.hoisted(() => ({
+const { accessToken, goto, postJSON, toastError, useFetchClient } = vi.hoisted(() => ({
     accessToken: { current: null as null | string },
     goto: vi.fn(),
     postJSON: vi.fn(),
-    toastError: vi.fn()
+    toastError: vi.fn(),
+    useFetchClient: vi.fn()
 }));
 
 vi.mock('$app/navigation', () => ({ goto }));
@@ -19,7 +20,7 @@ vi.mock('$app/env/public', () => ({
     PUBLIC_SLACK_APPID: ''
 }));
 vi.mock('#features/navigation/redirect.ts', () => ({ gotoRedirect: goto }));
-vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({ ...(await importOriginal<object>()), useFetchClient: () => ({ postJSON }) }));
+vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({ ...(await importOriginal<object>()), useFetchClient }));
 vi.mock('svelte-sonner', () => ({ toast: { error: toastError } }));
 vi.mock('./api.svelte', () => ({}));
 vi.mock('./state.svelte', () => ({ accessToken }));
@@ -37,6 +38,7 @@ describe('microsoftLogin', () => {
         accessToken.current = null;
         popup.location = new URL('https://login.microsoftonline.com/');
         postJSON.mockResolvedValue({ data: { token: 'session-token' }, ok: true });
+        useFetchClient.mockReturnValue({ postJSON });
         vi.stubGlobal('window', { location: new URL('http://localhost:7131/login'), open, outerHeight: 900, outerWidth: 1200, screenX: 0, screenY: 0 });
     });
 
@@ -49,7 +51,7 @@ describe('microsoftLogin', () => {
         const getRandomValues = vi.fn((bytes: Uint8Array) => bytes.fill(10));
         vi.stubGlobal('crypto', { getRandomValues, randomUUID: hasRandomUUID ? () => 'oauth-state' : undefined });
 
-        const login = microsoftLogin('/organization/invited', 'invitation-token');
+        const login = microsoftLogin({ inviteToken: 'invitation-token', redirectUrl: '/organization/invited' });
         const authorizationUrl = new URL(open.mock.calls[0]![0]);
         expect(authorizationUrl.origin + authorizationUrl.pathname).toBe('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
         expect(authorizationUrl.searchParams.get('client_id')).toBe('microsoft-client-id');
@@ -77,6 +79,39 @@ describe('microsoftLogin', () => {
         expect(accessToken.current).toBe('session-token');
         expect(goto).toHaveBeenCalledExactlyOnceWith('/organization/invited');
         expect(popup.close).toHaveBeenCalledOnce();
+    });
+
+    it('signs in without sending the existing session', async () => {
+        // Arrange
+        vi.stubGlobal('crypto', { randomUUID: () => 'expected-state' });
+        accessToken.current = 'existing-session';
+
+        // Act
+        const login = microsoftLogin();
+        popup.location = new URL('http://localhost:7131/?code=authorization-code&state=expected-state');
+        await vi.advanceTimersByTimeAsync(500);
+        await login;
+
+        // Assert
+        const [fetchClientOptions] = useFetchClient.mock.calls[0]! as [{ accessTokenFunc: () => null | string }];
+        expect(fetchClientOptions.accessTokenFunc()).toBeNull();
+        expect(postJSON).toHaveBeenCalledOnce();
+    });
+
+    it('links with the existing session', async () => {
+        // Arrange
+        vi.stubGlobal('crypto', { randomUUID: () => 'expected-state' });
+        accessToken.current = 'existing-session';
+
+        // Act
+        const login = microsoftLogin({ linkToCurrentUser: true });
+        popup.location = new URL('http://localhost:7131/?code=authorization-code&state=expected-state');
+        await vi.advanceTimersByTimeAsync(500);
+        await login;
+
+        // Assert
+        expect(useFetchClient).toHaveBeenCalledExactlyOnceWith(undefined);
+        expect(postJSON).toHaveBeenCalledOnce();
     });
 
     it.each([

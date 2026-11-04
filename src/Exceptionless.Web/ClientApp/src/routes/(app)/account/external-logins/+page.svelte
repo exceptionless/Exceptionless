@@ -39,6 +39,9 @@
         }
     }
 
+    const linkOptions = {
+        linkToCurrentUser: true
+    };
     const oauthAccounts = $derived(meQuery.data?.o_auth_accounts ?? []);
     const hasLocalAccount = $derived(meQuery.data?.has_local_account ?? false);
     const activeOAuthAccounts = $derived(oauthAccounts.filter((account) => !['facebook', 'windowslive'].includes(account.provider.toLowerCase())));
@@ -55,17 +58,17 @@
             <H4>Add an external login</H4>
             <div class="mt-2 flex flex-wrap gap-2">
                 {#if microsoftClientId}
-                    <Button aria-label="Link Microsoft account" onclick={() => microsoftLogin()} variant="outline">
+                    <Button aria-label="Link Microsoft account" onclick={() => microsoftLogin(linkOptions)} variant="outline">
                         <MicrosoftIcon class="size-4" /> Microsoft
                     </Button>
                 {/if}
                 {#if googleClientId}
-                    <Button aria-label="Link Google account" onclick={() => googleLogin()} variant="outline">
+                    <Button aria-label="Link Google account" onclick={() => googleLogin(linkOptions)} variant="outline">
                         <GoogleIcon class="size-4" /> Google
                     </Button>
                 {/if}
                 {#if gitHubClientId}
-                    <Button aria-label="Link GitHub account" onclick={() => githubLogin()} variant="outline">
+                    <Button aria-label="Link GitHub account" onclick={() => githubLogin(linkOptions)} variant="outline">
                         <GitHubIcon class="size-4" /> GitHub
                     </Button>
                 {/if}
