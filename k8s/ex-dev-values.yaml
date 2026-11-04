@@ -21,6 +21,9 @@ jobs:
   image:
     repository: exceptionless/job-ci
 
+storage:
+  storageClassName: managed-csi-premium
+
 config:
   # Public client-scoped ingestion key for the hosted-dev Exceptionless project.
   EX_ExceptionlessApiKey: "sdyW9LA7y2MbRGkdwTV8Ufdqw2250O0LGZuW1nV4"

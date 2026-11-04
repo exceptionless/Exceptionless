@@ -216,6 +216,15 @@ spec:
                     fieldRef:
                       fieldPath: metadata.uid
 {{- include "exceptionless.otel-env" . | indent 16 }}
+{{- if (empty .Values.storage.connectionString) }}
+              volumeMounts:
+                - mountPath: "/app/storage"
+                  name: storage
+          volumes:
+            - name: storage
+              persistentVolumeClaim:
+                claimName: {{ template "exceptionless.fullname" . }}-storage
+{{- end }}
           restartPolicy: OnFailure
 
 ---
@@ -381,6 +390,15 @@ spec:
                 fieldRef:
                   fieldPath: metadata.uid
 {{- include "exceptionless.otel-env" . | indent 12 }}
+{{- if (empty .Values.storage.connectionString) }}
+          volumeMounts:
+            - mountPath: "/app/storage"
+              name: storage
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: {{ template "exceptionless.fullname" . }}-storage
+{{- end }}
 
 {{- if not (kindIs "invalid" ( .Values.jobs.eventPosts | default dict ).maxReplicaCount) }}
 ---
@@ -417,7 +435,8 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
-  schedule: "0 0 29 2 1" # never, only manually
+  schedule: "0 0 29 2 1" # never, only manually (create a job with kubectl)
+  suspend: true
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -730,6 +749,15 @@ spec:
                     fieldRef:
                       fieldPath: metadata.uid
 {{- include "exceptionless.otel-env" . | indent 16 }}
+{{- if (empty .Values.storage.connectionString) }}
+              volumeMounts:
+                - mountPath: "/app/storage"
+                  name: storage
+          volumes:
+            - name: storage
+              persistentVolumeClaim:
+                claimName: {{ template "exceptionless.fullname" . }}-storage
+{{- end }}
           restartPolicy: OnFailure
 
 ---
