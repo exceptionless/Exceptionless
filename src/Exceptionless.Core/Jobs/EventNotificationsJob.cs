@@ -78,9 +78,9 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         {
             if (shouldLog) _logger.LogTrace("Loaded project: name={ProjectName}", project.Name);
 
-            // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
+            // after the first 2 occurrences, don't send a notification for the same stack more then once every 15 minutes
             var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", ev.StackId), DateTime.MinValue);
-            if (wi is { TotalOccurrences: > 2, IsRegression: false } && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(-30))
+            if (wi is { TotalOccurrences: > 2, IsRegression: false } && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(-15))
             {
                 if (shouldLog) _logger.LogInformation("Skipping message because of stack throttling: last sent={LastSentUtc} occurrences={TotalOccurrences}", lastTimeSentUtc, wi.TotalOccurrences);
                 return JobResult.Success;
