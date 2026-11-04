@@ -960,6 +960,43 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal("1.0.1-rc3", regressedEvent.GetVersion());
     }
 
+    [Fact]
+    public async Task EnsureOnlyOlderVersionEventsAreDiscardedWhenBatchRegressesAsync()
+    {
+        // Arrange
+        var utcNow = DateTime.UtcNow;
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        organization.HasPremiumFeatures = true;
+        var project = _projectData.GenerateSampleProject();
+        var ev = _eventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow);
+        var context = new EventContext(ev, organization, project);
+        await _pipeline.RunAsync(context);
+        await RefreshDataAsync();
+
+        ev = await _eventRepository.GetByIdAsync(ev.Id);
+        Assert.NotNull(ev);
+
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        stack.MarkFixed(new SemanticVersion(1, 0, 1), TimeProvider);
+        await _stackRepository.SaveAsync(stack, o => o.Cache());
+
+        var olderContext = new EventContext(_eventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-2), semver: "1.0.0"), organization, project);
+        var newerContext = new EventContext(_eventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: utcNow.AddMinutes(-1), semver: "1.0.2"), organization, project);
+        await RefreshDataAsync();
+
+        // Act
+        await _pipeline.RunAsync([olderContext, newerContext]);
+
+        // Assert
+        Assert.False(olderContext.HasError, olderContext.ErrorMessage);
+        Assert.False(newerContext.HasError, newerContext.ErrorMessage);
+        Assert.True(olderContext.IsDiscarded);
+        Assert.False(newerContext.IsDiscarded);
+        Assert.True(newerContext.IsRegression);
+        Assert.True(newerContext.IsProcessed);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
