@@ -21,8 +21,12 @@ public class RelativeDateFreezerTests : TestWithLoggingBase
     [InlineData("data.date:[now/d-4d TO now/d+1d}", "idx.date-d:[\"2026-11-03T04:05:06.789Z||/d-4d\" TO \"2026-11-03T04:05:06.789Z||/d+1d\"}")]
     public async Task FreezeAsync_RelativeDatesOnDateFields_AreAnchoredToTheGivenTime(string filter, string expected)
     {
+        // Arrange
+        var createdUtc = UtcNow;
+        Func<string, ValueTask<bool>> isDateFieldAsync = IsDateFieldAsync;
+
         // Act
-        string? frozen = await RelativeDateFreezer.FreezeAsync(filter, UtcNow, IsDateFieldAsync);
+        string? frozen = await RelativeDateFreezer.FreezeAsync(filter, createdUtc, isDateFieldAsync);
 
         // Assert
         Assert.Equal(expected, frozen);
@@ -43,8 +47,12 @@ public class RelativeDateFreezerTests : TestWithLoggingBase
     [InlineData("ref.parent:[now TO z]")]
     public async Task FreezeAsync_WithoutRelativeDatesOnDateFields_LeavesTheFilterAlone(string? filter)
     {
+        // Arrange
+        var createdUtc = UtcNow;
+        Func<string, ValueTask<bool>> isDateFieldAsync = IsDateFieldAsync;
+
         // Act
-        string? frozen = await RelativeDateFreezer.FreezeAsync(filter, UtcNow, IsDateFieldAsync);
+        string? frozen = await RelativeDateFreezer.FreezeAsync(filter, createdUtc, isDateFieldAsync);
 
         // Assert
         Assert.DoesNotContain("||", frozen ?? String.Empty);
