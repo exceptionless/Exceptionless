@@ -43,6 +43,7 @@ public class EmailOptions
         options.TestEmailAddress = config.GetValue(nameof(options.TestEmailAddress), appOptions.AppMode == AppMode.Development ? "admin@exceptionless.test" : null);
         options.ContactEmailAddress = config.GetValue<string>(nameof(options.ContactEmailAddress));
 
+        bool isSecure = false;
         string? emailConnectionString = config.GetConnectionString("Email");
         if (!String.IsNullOrEmpty(emailConnectionString))
         {
@@ -51,10 +52,11 @@ public class EmailOptions
             options.SmtpPort = uri.Port;
             options.SmtpUser = uri.User;
             options.SmtpPassword = uri.Password;
+            isSecure = uri.IsSecure;
         }
 
         options.SmtpFrom = config.GetValue(nameof(options.SmtpFrom), appOptions.AppMode == AppMode.Development ? "Exceptionless <noreply@localhost>" : null);
-        options.SmtpEncryption = config.GetValue(nameof(options.SmtpEncryption), GetDefaultSmtpEncryption(options.SmtpPort));
+        options.SmtpEncryption = config.GetValue(nameof(options.SmtpEncryption), GetDefaultSmtpEncryption(options.SmtpPort, isSecure));
 
         if (String.IsNullOrWhiteSpace(options.SmtpUser) != String.IsNullOrWhiteSpace(options.SmtpPassword))
             throw new ArgumentException("Must specify both the SmtpUser and the SmtpPassword, or neither.");
@@ -62,8 +64,12 @@ public class EmailOptions
         return options;
     }
 
-    private static SmtpEncryption GetDefaultSmtpEncryption(int port)
+    private static SmtpEncryption GetDefaultSmtpEncryption(int port, bool isSecure)
     {
+        // The smtps scheme always selects TLS: implicit on 465, STARTTLS on other ports.
+        if (isSecure && port != 465)
+            return SmtpEncryption.StartTLS;
+
         return port switch
         {
             465 => SmtpEncryption.SSL,

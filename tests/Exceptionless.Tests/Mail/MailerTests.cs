@@ -74,6 +74,20 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Theory]
+    [InlineData("smtp://smtp.test.com", 25, false)]
+    [InlineData("smtps://smtp.test.com", 465, true)]
+    [InlineData("smtps://smtp.test.com:587", 587, true)]
+    public void Constructor_WithOrWithoutPort_UsesSchemeDefaultPort(string value, int expectedPort, bool expectedSecure)
+    {
+        // Arrange & Act
+        var uri = new SmtpUri(value);
+
+        // Assert
+        Assert.Equal(expectedPort, uri.Port);
+        Assert.Equal(expectedSecure, uri.IsSecure);
+    }
+
+    [Theory]
     [InlineData("http://localhost:9001", "http://localhost:9001/organization/organization-1/billing")]
     [InlineData("http://localhost:9001/#!", "http://localhost:9001/organization/organization-1/billing")]
     public void OrganizationBilling_BaseUrlVariant_MatchesExistingTemplate(string baseUrl, string expected)
