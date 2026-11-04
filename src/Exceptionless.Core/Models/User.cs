@@ -58,6 +58,11 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     /// </summary>
     public DateTime? TrialStartedUtc { get; set; }
 
+    /// <summary>
+    /// Normalized email address that claimed the trial, so aliases of the same mailbox can't each start one.
+    /// </summary>
+    public string? TrialEmailAddress { get; set; }
+
     public DateTime VerifyEmailAddressTokenExpiration { get; set; }
 
     /// <summary>

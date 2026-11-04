@@ -10,6 +10,7 @@ import type {
     AdminAssistantUsage,
     AdminEventSubmissionSettings,
     AdminStats,
+    AdminTrialSettings,
     ElasticsearchInfo,
     ElasticsearchSnapshotsResponse,
     MigrationRerunOperation,
@@ -20,7 +21,8 @@ import type {
     UpdateAssistantConversationSharingSettingsRequest,
     UpdateAssistantEnabledSettingsRequest,
     UpdateAssistantSettingsRequest,
-    UpdateEventSubmissionSettingsRequest
+    UpdateEventSubmissionSettingsRequest,
+    UpdateTrialSettingsRequest
 } from './models';
 
 export type GetOAuthApplicationsParams = {
@@ -52,7 +54,8 @@ export const queryKeys = {
     oauthApplication: (id: string | undefined) => [...queryKeys.oauthApplications, id] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
     snapshots: ['admin', 'elasticsearch', 'snapshots'] as const,
-    stats: ['admin', 'stats'] as const
+    stats: ['admin', 'stats'] as const,
+    trialSettings: ['admin', 'trial-settings'] as const
 };
 
 export function deleteOAuthApplicationMutation() {
@@ -290,6 +293,25 @@ export function getPredefinedSavedViewsMutation() {
     }));
 }
 
+export function getTrialSettingsQuery() {
+    return createQuery<AdminTrialSettings, ProblemDetails>(() => ({
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<AdminTrialSettings>('admin/trial-settings', {
+                signal
+            });
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        queryKey: queryKeys.trialSettings,
+        staleTime: 30 * 1000
+    }));
+}
+
 export function postForceUpdatePredefinedSavedViewsMutation() {
     return createMutation<void, ProblemDetails, void>(() => ({
         mutationFn: async () => {
@@ -454,6 +476,26 @@ export function putPredefinedSavedViewsMutation() {
             const response = await client.putJSON<PredefinedSavedViewDefinition[]>('saved-views/predefined', definitions);
 
             return JSON.stringify(response.data ?? [], null, 2);
+        }
+    }));
+}
+
+export function putTrialSettingsMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<AdminTrialSettings, ProblemDetails, UpdateTrialSettingsRequest>(() => ({
+        mutationFn: async (request) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<AdminTrialSettings>('admin/trial-settings', request);
+
+            if (!response.ok) {
+                throw response.problem;
+            }
+
+            return response.data!;
+        },
+        onSuccess: (settings) => {
+            queryClient.setQueryData(queryKeys.trialSettings, settings);
         }
     }));
 }

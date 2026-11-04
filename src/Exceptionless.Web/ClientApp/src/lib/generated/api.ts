@@ -644,6 +644,12 @@ export interface TokenResult {
   token: string;
 }
 
+export interface TrialSettings {
+  blocked_email_domains: string[];
+  default_blocked_email_domains: string[];
+  is_default: boolean;
+}
+
 export interface UpdateAssistantConversationSharing {
   enabled?: null | boolean;
 }
@@ -708,6 +714,11 @@ export interface UpdateSavedViewOrder {
 export interface UpdateToken {
   is_disabled: boolean;
   notes?: null | string;
+}
+
+export interface UpdateTrialSettings {
+  /** Email domains that can't start a free trial. Subdomains are blocked too. Null restores the built-in list. */
+  blocked_email_domains?: string[] | null;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -785,6 +796,8 @@ export interface User {
    * @format date-time
    */
   trial_started_utc?: null | string;
+  /** Normalized email address that claimed the trial, so aliases of the same mailbox can't each start one. */
+  trial_email_address?: null | string;
   /** @format date-time */
   verify_email_address_token_expiration: string;
   /** Gets or sets the users active state. */

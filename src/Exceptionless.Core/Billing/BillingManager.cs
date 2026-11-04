@@ -3,6 +3,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 
@@ -13,14 +14,25 @@ public class BillingManager
     private static readonly TimeSpan BillingLockDuration = TimeSpan.FromMinutes(5);
     private readonly ILockProvider _lockProvider;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly SystemSettingsService _systemSettingsService;
     private readonly BillingPlans _plans;
     private readonly BillingOptions _billingOptions;
     private readonly TimeProvider _timeProvider;
 
-    public BillingManager(ILockProvider lockProvider, IOrganizationRepository organizationRepository, BillingPlans plans, AppOptions appOptions, TimeProvider timeProvider)
+    public BillingManager(
+        ILockProvider lockProvider,
+        IOrganizationRepository organizationRepository,
+        IUserRepository userRepository,
+        SystemSettingsService systemSettingsService,
+        BillingPlans plans,
+        AppOptions appOptions,
+        TimeProvider timeProvider)
     {
         _lockProvider = lockProvider;
         _organizationRepository = organizationRepository;
+        _userRepository = userRepository;
+        _systemSettingsService = systemSettingsService;
         _plans = plans;
         _billingOptions = appOptions.BillingOptions;
         _timeProvider = timeProvider;
@@ -43,6 +55,15 @@ public class BillingManager
         return _lockProvider.AcquireAsync($"User:{userId}:free-organization", BillingLockDuration, TimeSpan.FromSeconds(30));
     }
 
+    /// <summary>
+    /// Serializes trial starts for one mailbox, so two aliases of it can't both claim a trial at once.
+    /// </summary>
+    public Task<ILock> AcquireTrialEmailLockAsync(User user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+        return _lockProvider.AcquireAsync($"Trial:{TrialEmailAddress.Normalize(user.EmailAddress)}", BillingLockDuration, TimeSpan.FromSeconds(30));
+    }
+
     public Task<ILock?> TryAcquireOrganizationLockAsync(string organizationId)
         => _lockProvider.TryAcquireAsync(GetOrganizationLockKey(organizationId), BillingLockDuration, TimeSpan.Zero);
 
@@ -51,21 +72,29 @@ public class BillingManager
         if (user is null)
             return false;
 
-        return (await GetOwnedFreeOrTrialOrganizationsAsync(user.Id)).Count == 0;
+        return (await GetFreeOrTrialOrganizationsCountedForAsync(user)).Count == 0;
     }
 
     /// <summary>
-    /// A user gets one no-card trial, and only for the first organization they own. Being a member of
-    /// someone else's organization doesn't count.
+    /// A no-card trial is only for someone new to Exceptionless: a user who belongs to no organization and created
+    /// none, whose mailbox hasn't claimed a trial under another alias, and whose email isn't on a blocked disposable
+    /// domain. Call it while holding <see cref="AcquireTrialEmailLockAsync"/>.
     /// </summary>
     public async Task<bool> CanStartTrialAsync(User user)
     {
         ArgumentNullException.ThrowIfNull(user);
-        if (_billingOptions.TrialDays <= 0 || user.TrialStartedUtc is not null)
+        if (_billingOptions.TrialDays <= 0 || user.TrialStartedUtc is not null || user.OrganizationIds.Count > 0)
             return false;
 
-        var owned = await _organizationRepository.CountAsync(q => q.FieldEquals(o => o.CreatedByUserId, user.Id));
-        return owned.Total == 0;
+        if (TrialEmailAddress.IsBlockedDomain(user.EmailAddress, await _systemSettingsService.GetTrialBlockedEmailDomainsAsync()))
+            return false;
+
+        var created = await _organizationRepository.CountAsync(q => q.FieldEquals(o => o.CreatedByUserId, user.Id));
+        if (created.Total > 0)
+            return false;
+
+        var claimed = await _userRepository.CountAsync(q => q.FieldEquals(u => u.TrialEmailAddress, TrialEmailAddress.Normalize(user.EmailAddress)));
+        return claimed.Total == 0;
     }
 
     public void StartTrial(Organization organization, User user)
@@ -75,6 +104,7 @@ public class BillingManager
 
         ApplyTrialPlan(organization, user);
         user.TrialStartedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        user.TrialEmailAddress = TrialEmailAddress.Normalize(user.EmailAddress);
     }
 
     /// <summary>
@@ -168,15 +198,37 @@ public class BillingManager
 
     private async Task<bool> OwnerHasOtherFreeOrTrialOrganizationAsync(Organization organization, User actingUser)
     {
-        var ownedOrganizations = await GetOwnedFreeOrTrialOrganizationsAsync(organization.CreatedByUserId ?? actingUser.Id);
-        return ownedOrganizations.Any(o => !String.Equals(o.Id, organization.Id, StringComparison.Ordinal));
+        // Organizations created before creators were recorded have no owner, so the member downgrading them is held to the rule.
+        var owner = organization.CreatedByUserId is null || String.Equals(organization.CreatedByUserId, actingUser.Id, StringComparison.Ordinal)
+            ? actingUser
+            : await _userRepository.GetByIdAsync(organization.CreatedByUserId, o => o.Cache(false));
+
+        var counted = owner is not null
+            ? await GetFreeOrTrialOrganizationsCountedForAsync(owner)
+            : await GetCreatedFreeOrTrialOrganizationsAsync(organization.CreatedByUserId!);
+        return counted.Any(o => !String.Equals(o.Id, organization.Id, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The free and trial organizations that count toward a user's one-free-organization limit: the ones they created,
+    /// plus, for organizations created before creators were recorded, the ones they're a member of.
+    /// </summary>
+    private async Task<IReadOnlyCollection<Organization>> GetFreeOrTrialOrganizationsCountedForAsync(User user)
+    {
+        var created = await GetCreatedFreeOrTrialOrganizationsAsync(user.Id);
+        if (user.OrganizationIds.Count == 0)
+            return created;
+
+        var legacy = (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray()))
+            .Where(o => o.CreatedByUserId is null && _plans.IsFreeOrTrialPlan(o.PlanId));
+        return created.Concat(legacy).DistinctBy(o => o.Id).ToList();
     }
 
     /// <summary>
     /// The free and trial organizations a user created, including ones they're no longer a member of. The
     /// one-free-organization rule keeps this to a handful, so a single page is enough.
     /// </summary>
-    private async Task<IReadOnlyCollection<Organization>> GetOwnedFreeOrTrialOrganizationsAsync(string userId)
+    private async Task<IReadOnlyCollection<Organization>> GetCreatedFreeOrTrialOrganizationsAsync(string userId)
     {
         var results = await _organizationRepository.FindAsync(q => q
             .FieldEquals(o => o.CreatedByUserId, userId)

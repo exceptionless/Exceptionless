@@ -27,7 +27,7 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
     }
 
     [Fact]
-    public async Task RunAsync_LegacyOrganizations_BecomeUnlimitedAndGetQueryableCreator()
+    public async Task RunAsync_LegacyOrganizations_BecomeUnlimitedWithoutGuessingCreator()
     {
         // Arrange
         var limited = new Organization { Name = "Legacy Free Organization", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = 1, MaxProjects = 1, BillingChangedByUserId = TestConstants.UserId };
@@ -48,7 +48,11 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
             Assert.Equal(-1, organization.MaxProjects);
         }
 
+        // The last user to change billing isn't necessarily the creator, so legacy organizations stay ownerless.
+        var legacy = await _organizationRepository.GetByIdAsync(limited.Id);
+        Assert.NotNull(legacy);
+        Assert.Null(legacy.CreatedByUserId);
         var created = await _organizationRepository.FindAsync(q => q.FieldEquals(o => o.CreatedByUserId, TestConstants.UserId));
-        Assert.Equal(limited.Id, Assert.Single(created.Documents).Id);
+        Assert.Empty(created.Documents);
     }
 }
