@@ -11,9 +11,9 @@
 
     import { Button } from '#comp/ui/button/index.ts';
     import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
-    import { postBulkOperation } from '#features/bulk-operations/api.svelte.ts';
-    import { BulkOperationSelectionKind, EVENTS_DELETE_OPERATION } from '#features/bulk-operations/models.ts';
     import { deleteEvent } from '#features/events/api.svelte.ts';
+    import { postBulkOperation } from '#features/tasks/api.svelte.ts';
+    import { BulkOperationSelectionKind, EVENTS_DELETE_OPERATION } from '#features/tasks/models.ts';
 
     import type { AllMatchingTarget } from './all-matching-selection.svelte';
 

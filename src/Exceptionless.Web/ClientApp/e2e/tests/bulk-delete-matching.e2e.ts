@@ -76,7 +76,7 @@ test('deleting everything matching the filter runs in the background and shows p
             .click();
 
         // Assert
-        const panel = page.getByRole('region', { name: 'Bulk operations' });
+        const panel = page.getByRole('region', { name: 'Background tasks' });
         await expect(panel).toContainText(/Delete \d+ events matching filter/, { timeout: 30_000 });
         await expect(panel).toContainText(`Completed · ${EVENT_COUNT} processed`, { timeout: 60_000 });
         await expect(table.getByRole('checkbox', { name: 'Select row' })).toHaveCount(0, { timeout: 30_000 });

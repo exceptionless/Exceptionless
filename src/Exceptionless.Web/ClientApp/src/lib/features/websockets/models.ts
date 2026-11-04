@@ -1,4 +1,4 @@
-import type { BulkOperationStatus } from '#generated/api.ts';
+import type { BackgroundTaskStatus } from '#generated/api.ts';
 
 export enum ChangeType {
     Added = 0,
@@ -6,15 +6,17 @@ export enum ChangeType {
     Removed = 2
 }
 
-export interface BulkOperationUpdated {
+export interface BackgroundTaskUpdated {
+    can_cancel: boolean;
     description: string;
     failed: number;
     id: string;
     message?: string;
     organization_id: string;
     processed: number;
+    progress: number;
     project_id?: string;
-    status: BulkOperationStatus;
+    status: BackgroundTaskStatus;
     succeeded: number;
     total: number;
     type: string;
@@ -67,10 +69,10 @@ export interface WebSocketMessage<T extends WebSocketMessageType> {
 }
 
 export type WebSocketMessageType =
-    'BulkOperationUpdated' | 'PlanChanged' | 'PlanOverage' | 'ReleaseNotification' | 'SystemNotification' | 'UserMembershipChanged' | `${string}Changed`;
+    'BackgroundTaskUpdated' | 'PlanChanged' | 'PlanOverage' | 'ReleaseNotification' | 'SystemNotification' | 'UserMembershipChanged' | `${string}Changed`;
 
-export type WebSocketMessageValue<T extends WebSocketMessageType> = T extends 'BulkOperationUpdated'
-    ? BulkOperationUpdated
+export type WebSocketMessageValue<T extends WebSocketMessageType> = T extends 'BackgroundTaskUpdated'
+    ? BackgroundTaskUpdated
     : T extends 'PlanChanged'
       ? PlanChanged
       : T extends 'PlanOverage'
@@ -93,7 +95,7 @@ export function isPlanOverageType(message: { message: unknown; type: WebSocketMe
 
 export function isWebSocketMessageType(type: string): type is WebSocketMessageType {
     return (
-        (['BulkOperationUpdated', 'PlanChanged', 'PlanOverage', 'UserMembershipChanged', 'ReleaseNotification', 'SystemNotification'] as const).includes(
+        (['BackgroundTaskUpdated', 'PlanChanged', 'PlanOverage', 'UserMembershipChanged', 'ReleaseNotification', 'SystemNotification'] as const).includes(
             type as Exclude<WebSocketMessageType, `${string}Changed`>
         ) || type.endsWith('Changed')
     );

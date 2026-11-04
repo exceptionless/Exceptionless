@@ -1,0 +1,93 @@
+<script lang="ts">
+    import { useQueryClient } from '@tanstack/svelte-query';
+    import { useEventListener } from 'runed';
+    import { toast } from 'svelte-sonner';
+    import { SvelteSet } from 'svelte/reactivity';
+
+    import type { BackgroundTaskUpdated } from '#features/websockets/models.ts';
+
+    import { organization } from '#features/organizations/context.svelte.ts';
+
+    import { cancelTask, getTasksQuery, invalidateTaskAffectedQueries, updateTaskFromMessage } from '../api.svelte';
+    import { isTaskActive, selectVisibleTasks, type ViewBackgroundTask } from '../models';
+    import TaskItem from './task-item.svelte';
+
+    const queryClient = useQueryClient();
+    const tasksQuery = getTasksQuery({
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
+    const cancelTaskMutation = cancelTask();
+
+    const dismissedIds = new SvelteSet<string>();
+    const activeSeenIds = new SvelteSet<string>();
+    const cancellingIds = new SvelteSet<string>();
+    let now = $state(Date.now());
+
+    const visibleTasks = $derived(selectVisibleTasks(tasksQuery.data ?? [], dismissedIds, now));
+
+    // Finished tasks fade out of the panel on their own, so re-evaluate time while any of them is shown.
+    $effect(() => {
+        if (visibleTasks.length === 0) {
+            return;
+        }
+
+        const timer = window.setInterval(() => (now = Date.now()), 15_000);
+        return () => window.clearInterval(timer);
+    });
+
+    // An task that was seen running and is now finished changed events and stacks, whichever way the update arrived.
+    $effect(() => {
+        for (const task of tasksQuery.data ?? []) {
+            if (isTaskActive(task.status)) {
+                activeSeenIds.add(task.id);
+                continue;
+            }
+
+            if (!activeSeenIds.delete(task.id)) {
+                continue;
+            }
+
+            cancellingIds.delete(task.id);
+            void invalidateTaskAffectedQueries(queryClient);
+        }
+    });
+
+    useEventListener(document, 'BackgroundTaskUpdated', (event) => {
+        const update = (event as CustomEvent<BackgroundTaskUpdated>).detail;
+        if (update.organization_id !== organization.current) {
+            return;
+        }
+
+        updateTaskFromMessage(queryClient, update);
+    });
+
+    async function onCancel(task: ViewBackgroundTask) {
+        cancellingIds.add(task.id);
+        try {
+            await cancelTaskMutation.mutateAsync(task.id);
+        } catch {
+            cancellingIds.delete(task.id);
+            toast.error('Unable to cancel the task.');
+        }
+    }
+
+    function onDismiss(task: ViewBackgroundTask) {
+        dismissedIds.add(task.id);
+    }
+</script>
+
+{#if visibleTasks.length > 0}
+    <div
+        aria-label="Background tasks"
+        class="fixed bottom-4 left-4 z-40 flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2 md:left-[calc(var(--sidebar-width,16rem)+1rem)]"
+        role="region"
+    >
+        {#each visibleTasks as task (task.id)}
+            <TaskItem isCancelling={cancellingIds.has(task.id)} {onCancel} {onDismiss} {task} />
+        {/each}
+    </div>
+{/if}

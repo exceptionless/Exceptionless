@@ -8,7 +8,7 @@ const startBulkOperation = vi.hoisted(() => vi.fn());
 const postBulkOperation = vi.hoisted(() => vi.fn(() => ({ mutateAsync: startBulkOperation })));
 
 vi.mock('#features/events/api.svelte.ts', () => ({ deleteEvent }));
-vi.mock('#features/bulk-operations/api.svelte.ts', () => ({ postBulkOperation }));
+vi.mock('#features/tasks/api.svelte.ts', () => ({ postBulkOperation }));
 vi.mock('svelte-sonner', () => ({ toast }));
 
 import EventsBulkActionsDropdownMenu from './events-bulk-actions-dropdown-menu.svelte';

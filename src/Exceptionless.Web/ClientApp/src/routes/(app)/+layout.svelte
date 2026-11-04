@@ -29,7 +29,6 @@
     import { getIntercomTokenQuery } from '#features/auth/api.svelte.ts';
     import { accessToken, gotoLogin } from '#features/auth/index.svelte.ts';
     import { ChangePlanDialogHost, UpgradeRequiredDialog } from '#features/billing/index.ts';
-    import BulkOperationPanel from '#features/bulk-operations/components/bulk-operation-panel.svelte';
     import {
         createOrganizationEventNotificationRefresher,
         invalidatePersistentEventQueries,
@@ -63,6 +62,7 @@
     import { savedViewHref } from '#features/saved-views/slugs.ts';
     import { appKeyboardShortcuts, isKeyboardShortcut } from '#features/shared/keyboard-shortcuts.ts';
     import { createProjectStackNotificationRefresher, invalidateStackQueries, type ProjectStackNotificationRefresher } from '#features/stacks/api.svelte.ts';
+    import TaskPanel from '#features/tasks/components/task-panel.svelte';
     import { invalidateTokenQueries } from '#features/tokens/api.svelte.ts';
     import { getMeQuery, invalidateUserQueries } from '#features/users/api.svelte.ts';
     import { getGravatarFromCurrentUser } from '#features/users/gravatar.svelte.ts';
@@ -1009,7 +1009,7 @@
 
     <ChangePlanDialogHost />
     <UpgradeRequiredDialog />
-    <BulkOperationPanel />
+    <TaskPanel />
 {/if}
 
 <Telemetry
