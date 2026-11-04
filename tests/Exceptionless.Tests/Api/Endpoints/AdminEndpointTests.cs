@@ -333,6 +333,61 @@ public class AdminEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task TrialSettingsAsync_AsGlobalAdmin_SavesNormalizedDomainsAndRestoresDefaults()
+    {
+        var initial = await SendRequestAsAsync<TrialSettings>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "trial-settings")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(initial);
+        Assert.True(initial.IsDefault);
+        Assert.Contains("mailinator.com", initial.BlockedEmailDomains);
+        Assert.Equal(initial.DefaultBlockedEmailDomains, initial.BlockedEmailDomains);
+
+        var updated = await SendRequestAsAsync<TrialSettings>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "trial-settings")
+            .Content(new UpdateTrialSettings { BlockedEmailDomains = [" Spam.Test ", "@spam.test", "other.test"] })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(updated);
+        Assert.False(updated.IsDefault);
+        Assert.Equal(["other.test", "spam.test"], updated.BlockedEmailDomains);
+
+        await GetService<ICacheClient>().RemoveAllAsync();
+        var afterCacheClear = await SendRequestAsAsync<TrialSettings>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "trial-settings")
+            .StatusCodeShouldBeOk());
+        Assert.Equal(updated.BlockedEmailDomains, afterCacheClear?.BlockedEmailDomains);
+
+        var restored = await SendRequestAsAsync<TrialSettings>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "trial-settings")
+            .Content(new UpdateTrialSettings { BlockedEmailDomains = null })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(restored);
+        Assert.True(restored.IsDefault);
+        Assert.Equal(initial.BlockedEmailDomains, restored.BlockedEmailDomains);
+    }
+
+    [Fact]
+    public Task TrialSettingsAsync_InvalidDomain_ReturnsUnprocessableEntity() => SendRequestAsync(request => request
+        .Put().AsGlobalAdminUser().AppendPaths("admin", "trial-settings")
+        .Content(new UpdateTrialSettings { BlockedEmailDomains = ["not a domain"] })
+        .StatusCodeShouldBeUnprocessableEntity());
+
+    [Fact]
+    public Task TrialSettingsAsync_AsUser_ReturnsForbidden() => SendRequestAsync(request => request
+        .Put().AsTestOrganizationUser().AppendPaths("admin", "trial-settings")
+        .Content(new UpdateTrialSettings { BlockedEmailDomains = ["spam.test"] })
+        .StatusCodeShouldBeForbidden());
+
+    [Fact]
     public async Task RuntimeSettingsAsync_LegacyDocumentUsesDeploymentDefaults()
     {
         await GetService<ISystemSettingsRepository>().SaveAsync(new SystemSettings

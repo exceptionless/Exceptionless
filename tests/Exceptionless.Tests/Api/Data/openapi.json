@@ -490,6 +490,81 @@
         }
       }
     },
+    "/api/v2/admin/trial-settings": {
+      "get": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Get free trial settings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Update free trial settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTrialSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTrialSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/admin/assistant-usage": {
       "get": {
         "tags": [
@@ -13819,6 +13894,31 @@
           }
         }
       },
+      "TrialSettings": {
+        "required": [
+          "blocked_email_domains",
+          "default_blocked_email_domains",
+          "is_default"
+        ],
+        "type": "object",
+        "properties": {
+          "blocked_email_domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default_blocked_email_domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "is_default": {
+            "type": "boolean"
+          }
+        }
+      },
       "UpdateAssistantConversationSharing": {
         "required": [
           "enabled"
@@ -14035,6 +14135,22 @@
           }
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
+      },
+      "UpdateTrialSettings": {
+        "type": "object",
+        "properties": {
+          "blocked_email_domains": {
+            "maxItems": 10000,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Email domains that can\u0027t start a free trial. Subdomains are blocked too. Null restores the built-in list."
+          }
+        }
       },
       "UpdateUser": {
         "type": "object",
@@ -14254,6 +14370,13 @@
             ],
             "description": "Date the user started their one no-card trial.",
             "format": "date-time"
+          },
+          "trial_email_address": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Normalized email address that claimed the trial, so aliases of the same mailbox can\u0027t each start one."
           },
           "verify_email_address_token_expiration": {
             "type": "string",

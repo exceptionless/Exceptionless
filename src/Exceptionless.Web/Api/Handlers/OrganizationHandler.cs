@@ -119,6 +119,9 @@ public class OrganizationHandler(
         if (user is null)
             return Result.Unauthorized("User not found.");
 
+        // Aliases of one mailbox are different users, so the trial claim is serialized on the mailbox too.
+        await using var trialEmailLock = await billingManager.AcquireTrialEmailLockAsync(user);
+
         var error = await CanAddAsync(model, user);
         if (error is not null)
             return error;
@@ -691,20 +694,18 @@ public class OrganizationHandler(
 
     private async Task<Result<User>?> CheckInviteLimitAsync(Organization organization, HttpContext httpContext)
     {
-        if (!options.StripeOptions.EnableBilling || httpContext.Request.IsGlobalAdmin())
+        // Paid organizations keep inviting as before. Free and trial organizations are where throwaway signups would
+        // send invite spam, so only they need a verified inviter and a daily limit.
+        if (!options.StripeOptions.EnableBilling || httpContext.Request.IsGlobalAdmin() || !plans.IsFreeOrTrialPlan(organization.PlanId))
             return null;
 
         var currentUser = GetCurrentUser(httpContext);
         if (!currentUser.IsEmailAddressVerified)
             return Result.Forbidden("Please verify your email address before inviting users.");
 
-        bool isFreeOrTrial = plans.IsFreeOrTrialPlan(organization.PlanId);
-        int dailyLimit = isFreeOrTrial
-            ? options.BillingOptions.FreeInviteDailyLimit
-            : options.BillingOptions.PaidInviteDailyLimit;
-
+        int dailyLimit = options.BillingOptions.FreeInviteDailyLimit;
         var utcNow = timeProvider.GetUtcNow().UtcDateTime;
-        string cacheKey = $"user:{currentUser.Id}:organization-invites:{(isFreeOrTrial ? "free" : "paid")}:{utcNow:yyyyMMdd}";
+        string cacheKey = $"user:{currentUser.Id}:organization-invites:free:{utcNow:yyyyMMdd}";
         long invites = await cacheClient.IncrementAsync(cacheKey, 1, utcNow.Date.AddDays(1));
         if (invites <= dailyLimit)
             return null;

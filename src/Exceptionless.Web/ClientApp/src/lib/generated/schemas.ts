@@ -754,6 +754,13 @@ export const TokenResultSchema = object({
 });
 export type TokenResultFormData = Infer<typeof TokenResultSchema>;
 
+export const TrialSettingsSchema = object({
+  blocked_email_domains: array(string()),
+  default_blocked_email_domains: array(string()),
+  is_default: boolean(),
+});
+export type TrialSettingsFormData = Infer<typeof TrialSettingsSchema>;
+
 export const UpdateAssistantConversationSharingSchema = object({
   enabled: boolean().nullable(),
 });
@@ -858,6 +865,13 @@ export const UpdateTokenSchema = object({
 });
 export type UpdateTokenFormData = Infer<typeof UpdateTokenSchema>;
 
+export const UpdateTrialSettingsSchema = object({
+  blocked_email_domains: array(string()).nullable().optional(),
+});
+export type UpdateTrialSettingsFormData = Infer<
+  typeof UpdateTrialSettingsSchema
+>;
+
 export const UpdateUserSchema = object({
   full_name: string().min(1, "Full name is required").optional(),
   email_notifications_enabled: boolean().optional(),
@@ -917,6 +931,10 @@ export const UserSchema = object({
     .nullable()
     .optional(),
   trial_started_utc: iso.datetime().nullable().optional(),
+  trial_email_address: string()
+    .min(1, "Trial email address is required")
+    .nullable()
+    .optional(),
   verify_email_address_token_expiration: iso.datetime(),
   is_active: boolean(),
   roles: array(string()),

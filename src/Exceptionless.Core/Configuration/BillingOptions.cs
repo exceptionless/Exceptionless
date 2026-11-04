@@ -24,11 +24,6 @@ public class BillingOptions
     /// </summary>
     public int FreeInviteDailyLimit { get; internal set; } = 10;
 
-    /// <summary>
-    /// Maximum organization invites a user can send per UTC day from paid organizations.
-    /// </summary>
-    public int PaidInviteDailyLimit { get; internal set; } = 50;
-
     public static BillingOptions ReadFromConfiguration(IConfiguration config)
     {
         var options = new BillingOptions();
@@ -36,7 +31,6 @@ public class BillingOptions
         options.TrialReminderDays = Math.Max(0, config.GetValue("Billing:TrialReminderDays", 3));
         options.TrialAssistantDailyCostLimitUsd = config.GetValue("Billing:TrialAssistantDailyCostLimitUsd", 25m);
         options.FreeInviteDailyLimit = Math.Max(0, config.GetValue("Billing:FreeInviteDailyLimit", 10));
-        options.PaidInviteDailyLimit = Math.Max(0, config.GetValue("Billing:PaidInviteDailyLimit", 50));
         return options;
     }
 }

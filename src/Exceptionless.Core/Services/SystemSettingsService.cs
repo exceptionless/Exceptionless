@@ -1,3 +1,4 @@
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Lock;
@@ -91,6 +92,12 @@ public sealed class SystemSettingsService
     {
         var settings = await _getSettingsAsync();
         return settings?.EventSubmissionEnabled ?? !_appOptions.EventSubmissionDisabled;
+    }
+
+    public async Task<IReadOnlyList<string>> GetTrialBlockedEmailDomainsAsync()
+    {
+        var settings = await _getSettingsAsync();
+        return settings?.TrialBlockedEmailDomains ?? TrialEmailAddress.DefaultBlockedDomains;
     }
 
     public async Task<bool> IsAssistantConversationSharingDefaultEnabledAsync()
