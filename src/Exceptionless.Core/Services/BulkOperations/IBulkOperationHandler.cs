@@ -1,4 +1,5 @@
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.BulkOperations;
 
 namespace Exceptionless.Core.Services.BulkOperations;
@@ -15,7 +16,7 @@ public interface IBulkOperationHandler
     /// <summary>The kind of item the action targets. Selects the <see cref="IBulkSelectionResolver"/> that pages ids.</summary>
     BulkOperationEntity Entity { get; }
 
-    /// <summary>Destructive actions are limited to one active operation per project.</summary>
+    /// <summary>Destructive actions are limited to one active task per project.</summary>
     bool IsDestructive { get; }
 
     /// <summary>Checks that the actor may run this action against the organization and project.</summary>
@@ -24,14 +25,14 @@ public interface IBulkOperationHandler
     /// <summary>Checks the action specific parameters and the selection shape.</summary>
     Task<BulkOperationCheckResult> ValidateAsync(BulkOperationRequest request);
 
-    /// <summary>A short, human readable description shown while the operation runs.</summary>
-    string Describe(BulkOperation operation);
+    /// <summary>A short, human readable description shown while the task runs.</summary>
+    string Describe(BackgroundTask task);
 
     /// <summary>
     /// Executes one batch of ids through the same code path as the single-item action, so side effects stay identical.
-    /// Ids that cannot be processed (missing, or outside the operation's organization and project) must be reported as failed.
+    /// Ids that cannot be processed (missing, or outside the task's organization and project) must be reported as failed.
     /// </summary>
-    Task<BulkBatchResult> ExecuteBatchAsync(BulkOperation operation, IReadOnlyCollection<string> ids, CancellationToken cancellationToken);
+    Task<BulkBatchResult> ExecuteBatchAsync(BackgroundTask task, IReadOnlyCollection<string> ids, CancellationToken cancellationToken);
 }
 
 /// <summary>Pages the ids that match a filter selection. One implementation per <see cref="BulkOperationEntity"/>.</summary>
@@ -43,17 +44,17 @@ public interface IBulkSelectionResolver
     Task<BulkOperationCheckResult> ValidateSelectionAsync(Organization organization, BulkOperationSelection selection);
 
     /// <summary>
-    /// Runs once when the operation is created. Counts what matches and pins every part of the selection that could
-    /// otherwise change while the operation runs (for events, the stack level filter), so the selection stays exactly
-    /// what the user confirmed and pages stay cheap. The pinned state is stored with the operation for its lifetime.
+    /// Runs once when the task is created. Counts what matches and pins every part of the selection that could
+    /// otherwise change while the task runs (for events, the stack level filter), so the selection stays exactly
+    /// what the user confirmed and pages stay cheap. The pinned state is stored with the task for its lifetime.
     /// </summary>
-    Task<BulkSelectionPreparation> PrepareAsync(BulkOperation operation, CancellationToken cancellationToken);
+    Task<BulkSelectionPreparation> PrepareAsync(BackgroundTask task, CancellationToken cancellationToken);
 
     /// <summary>
     /// Returns the next page of ids after <paramref name="cursor"/>. The cursor is a value based position, so
     /// paging stays correct while earlier items are being deleted or changed. Paging must not count totals.
     /// </summary>
-    Task<BulkSelectionPage> GetPageAsync(BulkOperation operation, string? pinnedState, string? cursor, int size, CancellationToken cancellationToken);
+    Task<BulkSelectionPage> GetPageAsync(BackgroundTask task, string? pinnedState, string? cursor, int size, CancellationToken cancellationToken);
 }
 
 public record BulkSelectionPreparation(BulkOperationCheckResult Check, long Total = 0, string? PinnedState = null)

@@ -3995,10 +3995,10 @@
     "/api/v2/bulk-operations": {
       "post": {
         "tags": [
-          "BulkOperation"
+          "BackgroundTask"
         ],
         "summary": "Create",
-        "description": "Starts an action, such as \u0060events.delete\u0060, on everything that matches a selection. The selection is either a list of ids\nor a filter with a time range. The time range is resolved to absolute UTC dates when the operation is created, and events\nstored after that moment are never included. The operation runs in the background; poll it or listen for\n\u0060BulkOperationUpdated\u0060 messages to follow its progress.",
+        "description": "Starts an action, such as \u0060events.delete\u0060, on everything that matches a selection. The selection is either a list of ids\nor a filter with a time range. The time range is resolved to absolute UTC dates when the operation is created, and events\nstored after that moment are never included. The operation runs in the background and is returned as a task; poll\n\u0060GET api/v2/tasks/{id}\u0060 or listen for \u0060BackgroundTaskUpdated\u0060 messages to follow its progress.",
         "requestBody": {
           "description": "The bulk operation to start.",
           "content": {
@@ -4021,7 +4021,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ViewBulkOperation"
+                  "$ref": "#/components/schemas/ViewBackgroundTask"
                 }
               }
             }
@@ -4079,18 +4079,19 @@
         }
       }
     },
-    "/api/v2/bulk-operations/{id}": {
+    "/api/v2/tasks/{id}": {
       "get": {
         "tags": [
-          "BulkOperation"
+          "BackgroundTask"
         ],
         "summary": "Get by id",
-        "operationId": "GetBulkOperationById",
+        "description": "Returns the progress of a task, such as a bulk action, a project data reset or sample data generation. Tasks are kept for seven days.",
+        "operationId": "GetBackgroundTaskById",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "The identifier of the bulk operation.",
+            "description": "The identifier of the task.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4104,13 +4105,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ViewBulkOperation"
+                  "$ref": "#/components/schemas/ViewBackgroundTask"
                 }
               }
             }
           },
           "404": {
-            "description": "The bulk operation could not be found.",
+            "description": "The task could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4122,13 +4123,13 @@
         }
       }
     },
-    "/api/v2/organizations/{organizationId}/bulk-operations": {
+    "/api/v2/organizations/{organizationId}/tasks": {
       "get": {
         "tags": [
-          "BulkOperation"
+          "BackgroundTask"
         ],
         "summary": "Get by organization",
-        "description": "Returns the active and recently finished bulk operations of the organization, newest first. Finished operations are kept for seven days.",
+        "description": "Returns the active and recently finished tasks of the organization, newest first. Finished tasks are kept for seven days.",
         "parameters": [
           {
             "name": "organizationId",
@@ -4149,7 +4150,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ViewBulkOperation"
+                    "$ref": "#/components/schemas/ViewBackgroundTask"
                   }
                 }
               }
@@ -4168,18 +4169,18 @@
         }
       }
     },
-    "/api/v2/bulk-operations/{id}/cancel": {
+    "/api/v2/tasks/{id}/cancel": {
       "post": {
         "tags": [
-          "BulkOperation"
+          "BackgroundTask"
         ],
         "summary": "Cancel",
-        "description": "Requests cancellation. A running operation stops after the batch it is processing; work already done is not undone. Cancelling a finished operation has no effect.",
+        "description": "Requests cancellation. A running bulk action stops after the batch it is processing; work already done is not undone. Cancelling a finished task has no effect. Tasks that cannot be stopped, such as a project data reset, are rejected.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "The identifier of the bulk operation.",
+            "description": "The identifier of the task.",
             "required": true,
             "schema": {
               "pattern": "^[a-zA-Z\\d]{24,36}$",
@@ -4193,13 +4194,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ViewBulkOperation"
+                  "$ref": "#/components/schemas/ViewBackgroundTask"
                 }
               }
             }
           },
           "404": {
-            "description": "The bulk operation could not be found.",
+            "description": "The task could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The task cannot be cancelled.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12263,6 +12274,22 @@
           }
         }
       },
+      "BackgroundTaskStatus": {
+        "enum": [
+          "Queued",
+          "Running",
+          "Completed",
+          "Failed",
+          "Cancelled"
+        ],
+        "x-enumNames": [
+          "Queued",
+          "Running",
+          "Completed",
+          "Failed",
+          "Cancelled"
+        ]
+      },
       "BillingPlan": {
         "required": [
           "id",
@@ -12340,22 +12367,6 @@
         "x-enumNames": [
           "Ids",
           "Filter"
-        ]
-      },
-      "BulkOperationStatus": {
-        "enum": [
-          "Queued",
-          "Running",
-          "Completed",
-          "Failed",
-          "Cancelled"
-        ],
-        "x-enumNames": [
-          "Queued",
-          "Running",
-          "Completed",
-          "Failed",
-          "Cancelled"
         ]
       },
       "ChangePasswordModel": {
@@ -14664,18 +14675,19 @@
           }
         }
       },
-      "ViewBulkOperation": {
+      "ViewBackgroundTask": {
         "required": [
           "id",
           "organization_id",
           "type",
           "description",
           "status",
-          "selection",
+          "progress",
           "total",
           "processed",
           "succeeded",
           "failed",
+          "can_cancel",
           "created_by_user_id",
           "created_utc",
           "updated_utc"
@@ -14704,19 +14716,23 @@
             ]
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "description": "What the task does, e.g. events.delete, projects.reset-data or projects.sample-data."
           },
           "description": {
             "type": "string"
           },
           "status": {
-            "$ref": "#/components/schemas/BulkOperationStatus"
+            "$ref": "#/components/schemas/BackgroundTaskStatus"
           },
-          "selection": {
-            "$ref": "#/components/schemas/ViewBulkOperationSelection"
+          "progress": {
+            "type": "integer",
+            "description": "Percent complete, 0 to 100.",
+            "format": "int32"
           },
           "total": {
             "type": "integer",
+            "description": "The item counts. All zero for tasks that only report a percent.",
             "format": "int64"
           },
           "processed": {
@@ -14730,6 +14746,21 @@
           "failed": {
             "type": "integer",
             "format": "int64"
+          },
+          "can_cancel": {
+            "type": "boolean",
+            "description": "Whether the task can be stopped with the cancel endpoint."
+          },
+          "selection": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "What a bulk action applies to. Only set for bulk actions.",
+                "$ref": "#/components/schemas/ViewBulkOperationSelection"
+              }
+            ]
           },
           "created_by_user_id": {
             "maxLength": 24,
@@ -14809,10 +14840,11 @@
               "null",
               "string"
             ],
-            "description": "The absolute end of the resolved time window, never later than when the operation was created.",
+            "description": "The absolute end of the resolved time window, never later than when the task was created.",
             "format": "date-time"
           }
-        }
+        },
+        "description": "What a bulk action applies to. Only set for bulk actions."
       },
       "ViewCurrentUser": {
         "required": [
@@ -15697,7 +15729,7 @@
       "name": "SavedView"
     },
     {
-      "name": "BulkOperation"
+      "name": "BackgroundTask"
     },
     {
       "name": "User"

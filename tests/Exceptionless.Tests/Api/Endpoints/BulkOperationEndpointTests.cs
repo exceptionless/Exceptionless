@@ -1,10 +1,12 @@
 using System.Net;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -29,12 +31,14 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
 {
     private readonly IEventRepository _eventRepository;
     private readonly BulkOperationService _bulkOperationService;
+    private readonly BackgroundTaskService _taskService;
     private readonly WorkItemJob _workItemJob;
 
     public BulkOperationEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _eventRepository = GetService<IEventRepository>();
         _bulkOperationService = GetService<BulkOperationService>();
+        _taskService = GetService<BackgroundTaskService>();
         _workItemJob = GetService<WorkItemJob>();
     }
 
@@ -62,11 +66,11 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         var finished = await GetOperationAsync(created.Id);
 
         // Assert
-        Assert.Equal(BulkOperationStatus.Queued, created.Status);
+        Assert.Equal(BackgroundTaskStatus.Queued, created.Status);
         Assert.Equal("events.delete", created.Type);
         Assert.Equal(3, created.Total);
         Assert.Equal("Delete 3 events matching filter", created.Description);
-        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
         Assert.Equal(3, finished.Processed);
         Assert.Equal(3, finished.Succeeded);
         Assert.Equal(0, finished.Failed);
@@ -95,7 +99,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         Assert.DoesNotContain("now", pinned, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("||-2h", pinned);
         Assert.Equal(1, created.Total);
-        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
         Assert.Equal(1, finished.Succeeded);
         Assert.Equal(["outside"], (await GetRemainingMessagesAsync(events)).ToArray());
     }
@@ -161,10 +165,10 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
         // Assert
-        Assert.NotNull(created.Selection.UtcEnd);
-        Assert.True(created.Selection.UtcEnd <= created.CreatedUtc, "The window end must not be later than the moment the operation was created.");
-        Assert.True(created.Selection.UtcStart < created.Selection.UtcEnd);
-        Assert.Equal(created.Selection.UtcStart, reloaded.Selection.UtcStart);
+        Assert.NotNull(created.Selection!.UtcEnd);
+        Assert.True(created.Selection!.UtcEnd <= created.CreatedUtc, "The window end must not be later than the moment the operation was created.");
+        Assert.True(created.Selection!.UtcStart < created.Selection!.UtcEnd);
+        Assert.Equal(created.Selection!.UtcStart, reloaded.Selection!.UtcStart);
         Assert.Equal(created.Selection.UtcEnd, reloaded.Selection.UtcEnd);
         Assert.Equal(["future dated"], (await GetRemainingMessagesAsync(events)).ToArray());
     }
@@ -184,7 +188,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
 
         // Assert
         var finished = await GetOperationAsync(created.Id);
-        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
         Assert.Equal(1, finished.Succeeded);
         Assert.NotNull(await _eventRepository.GetByIdAsync(lateEvents.Single().Id));
     }
@@ -211,7 +215,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
 
         // Assert
         var finished = await GetOperationAsync(created.Id);
-        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
         Assert.Equal(2, finished.Succeeded);
         Assert.Null(await _eventRepository.GetByIdAsync(events[0].Id));
         Assert.Null(await _eventRepository.GetByIdAsync(events[1].Id));
@@ -292,8 +296,8 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
             .Content(FilterRequest(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, "")).StatusCodeShouldBeNotFound());
 
         // Assert
-        Assert.Empty(await _bulkOperationService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
-        Assert.Empty(await _bulkOperationService.GetByOrganizationAsync(SampleDataService.FREE_ORG_ID));
+        Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
+        Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.FREE_ORG_ID));
     }
 
     [Fact]
@@ -307,7 +311,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         await SendRequestAsync(r => r.Post().AsTestOrganizationClientUser().AppendPath("bulk-operations").Content(request).StatusCodeShouldBeForbidden());
 
         // Assert
-        Assert.Empty(await _bulkOperationService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
+        Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
     }
 
     [Fact]
@@ -317,7 +321,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         var request = FilterRequest(SampleDataService.FREE_ORG_ID, null, "");
 
         // Act
-        var created = await SendRequestAsAsync<ViewBulkOperation>(r => r.Post().AsGlobalAdminUser().AppendPath("bulk-operations").Content(request).StatusCodeShouldBeAccepted());
+        var created = await SendRequestAsAsync<ViewBackgroundTask>(r => r.Post().AsGlobalAdminUser().AppendPath("bulk-operations").Content(request).StatusCodeShouldBeAccepted());
 
         // Assert
         Assert.NotNull(created);
@@ -331,14 +335,14 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         var created = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, null, ""));
 
         // Act
-        await SendRequestAsync(r => r.AsFreeOrganizationUser().AppendPaths("bulk-operations", created.Id).StatusCodeShouldBeNotFound());
-        await SendRequestAsync(r => r.Post().AsFreeOrganizationUser().AppendPaths("bulk-operations", created.Id, "cancel").StatusCodeShouldBeNotFound());
-        await SendRequestAsync(r => r.AsFreeOrganizationUser().AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "bulk-operations").StatusCodeShouldBeNotFound());
-        var asAdmin = await SendRequestAsAsync<ViewBulkOperation>(r => r.AsGlobalAdminUser().AppendPaths("bulk-operations", created.Id).StatusCodeShouldBeOk());
+        await SendRequestAsync(r => r.AsFreeOrganizationUser().AppendPaths("tasks", created.Id).StatusCodeShouldBeNotFound());
+        await SendRequestAsync(r => r.Post().AsFreeOrganizationUser().AppendPaths("tasks", created.Id, "cancel").StatusCodeShouldBeNotFound());
+        await SendRequestAsync(r => r.AsFreeOrganizationUser().AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "tasks").StatusCodeShouldBeNotFound());
+        var asAdmin = await SendRequestAsAsync<ViewBackgroundTask>(r => r.AsGlobalAdminUser().AppendPaths("tasks", created.Id).StatusCodeShouldBeOk());
 
         // Assert
         Assert.Equal(created.Id, asAdmin?.Id);
-        Assert.Equal(BulkOperationStatus.Queued, (await GetOperationAsync(created.Id)).Status);
+        Assert.Equal(BackgroundTaskStatus.Queued, (await GetOperationAsync(created.Id)).Status);
     }
 
     [Fact]
@@ -351,14 +355,14 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         var second = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, ""));
 
         // Act
-        var list = await SendRequestAsAsync<IReadOnlyCollection<ViewBulkOperation>>(r => r.AsTestOrganizationUser()
-            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "bulk-operations").StatusCodeShouldBeOk());
+        var list = await SendRequestAsAsync<IReadOnlyCollection<ViewBackgroundTask>>(r => r.AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "tasks").StatusCodeShouldBeOk());
 
         // Assert
         Assert.NotNull(list);
         Assert.Equal([second.Id, first.Id], list.Select(o => o.Id).ToArray());
-        Assert.Equal(BulkOperationStatus.Queued, list.First().Status);
-        Assert.Equal(BulkOperationStatus.Completed, list.Last().Status);
+        Assert.Equal(BackgroundTaskStatus.Queued, list.First().Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, list.Last().Status);
     }
 
     [Fact]
@@ -389,12 +393,12 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         var second = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, ""));
 
         // Act
-        var cancelled = await SendRequestAsAsync<ViewBulkOperation>(r => r.Post().AsTestOrganizationUser().AppendPaths("bulk-operations", second.Id, "cancel").StatusCodeShouldBeAccepted());
+        var cancelled = await SendRequestAsAsync<ViewBackgroundTask>(r => r.Post().AsTestOrganizationUser().AppendPaths("tasks", second.Id, "cancel").StatusCodeShouldBeAccepted());
         var third = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, ""));
 
         // Assert
-        Assert.Equal(BulkOperationStatus.Completed, (await GetOperationAsync(first.Id)).Status);
-        Assert.Equal(BulkOperationStatus.Cancelled, cancelled?.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, (await GetOperationAsync(first.Id)).Status);
+        Assert.Equal(BackgroundTaskStatus.Cancelled, cancelled?.Status);
         Assert.NotEqual(second.Id, third.Id);
     }
 
@@ -405,14 +409,14 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         var stale = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, ""));
 
         // Act
-        TimeProvider.Advance(BulkOperationService.StaleAfter + TimeSpan.FromMinutes(1));
+        TimeProvider.Advance(BackgroundTaskService.StaleAfter + TimeSpan.FromMinutes(1));
         var next = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID, ""));
         var retired = await GetOperationAsync(stale.Id);
 
         // Assert
-        Assert.Equal(BulkOperationStatus.Queued, next.Status);
+        Assert.Equal(BackgroundTaskStatus.Queued, next.Status);
         // A delayed delivery of the stale operation must not run alongside its replacement.
-        Assert.Equal(BulkOperationStatus.Failed, retired.Status);
+        Assert.Equal(BackgroundTaskStatus.Failed, retired.Status);
     }
 
     [Fact]
@@ -440,7 +444,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
             await SendRequestAsync(r => r.Post().AsTestOrganizationUser().AppendPath("bulk-operations").Content(request).StatusCodeShouldBeUnprocessableEntity());
 
         // Assert
-        Assert.Empty(await _bulkOperationService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
+        Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
     }
 
     [Fact]
@@ -453,7 +457,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         await SendRequestAsync(r => r.Post().AsFreeOrganizationUser().AppendPath("bulk-operations").Content(request).StatusCodeShouldBeUpgradeRequired());
 
         // Assert
-        Assert.Empty(await _bulkOperationService.GetByOrganizationAsync(SampleDataService.FREE_ORG_ID));
+        Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.FREE_ORG_ID));
     }
 
     [Fact]
@@ -464,12 +468,12 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         var created = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, null, ""));
 
         // Act
-        var response = await SendRequestAsAsync<ViewBulkOperation>(r => r.Post().AsTestOrganizationUser().AppendPaths("bulk-operations", created.Id, "cancel").StatusCodeShouldBeAccepted());
+        var response = await SendRequestAsAsync<ViewBackgroundTask>(r => r.Post().AsTestOrganizationUser().AppendPaths("tasks", created.Id, "cancel").StatusCodeShouldBeAccepted());
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
         // Assert
-        Assert.Equal(BulkOperationStatus.Cancelled, response?.Status);
-        Assert.Equal(BulkOperationStatus.Cancelled, (await GetOperationAsync(created.Id)).Status);
+        Assert.Equal(BackgroundTaskStatus.Cancelled, response?.Status);
+        Assert.Equal(BackgroundTaskStatus.Cancelled, (await GetOperationAsync(created.Id)).Status);
         Assert.NotNull(await _eventRepository.GetByIdAsync(events.Single().Id));
     }
 
@@ -483,27 +487,27 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
             for (int i = 0; i < 5; i++)
                 d.Event().TestProject().Date(now.AddMinutes(-i - 1));
         });
-        var messages = new System.Collections.Concurrent.ConcurrentQueue<BulkOperationUpdated>();
-        await GetService<IMessageSubscriber>().SubscribeAsync<BulkOperationUpdated>(m => messages.Enqueue(m), TestCancellationToken);
+        var messages = new System.Collections.Concurrent.ConcurrentQueue<BackgroundTaskUpdated>();
+        await GetService<IMessageSubscriber>().SubscribeAsync<BackgroundTaskUpdated>(m => messages.Enqueue(m), TestCancellationToken);
         var created = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, null, ""));
 
         // Act
         await RunOperationAsync(_bulkOperationService, created.Id, batchSize: 2, TestCancellationToken);
-        await WaitForAsync(() => messages.Any(m => m.Status == BulkOperationStatus.Completed));
+        await WaitForAsync(() => messages.Any(m => m.Status == BackgroundTaskStatus.Completed));
 
         // Assert
         var finished = await GetOperationAsync(created.Id);
-        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
         Assert.Equal(5, finished.Processed);
         Assert.Equal(5, finished.Succeeded);
         Assert.Empty(await GetRemainingMessagesAsync(events));
 
         var forOperation = messages.Where(m => m.Id == created.Id).ToList();
-        Assert.Contains(forOperation, m => m.Status == BulkOperationStatus.Running && m.Processed == 2);
-        Assert.Contains(forOperation, m => m.Status == BulkOperationStatus.Running && m.Processed == 4);
-        Assert.Contains(forOperation, m => m.Status == BulkOperationStatus.Running && m.Processed == 5);
+        Assert.Contains(forOperation, m => m.Status == BackgroundTaskStatus.Running && m.Processed == 2);
+        Assert.Contains(forOperation, m => m.Status == BackgroundTaskStatus.Running && m.Processed == 4);
+        Assert.Contains(forOperation, m => m.Status == BackgroundTaskStatus.Running && m.Processed == 5);
         var last = forOperation.OrderBy(m => m.UpdatedUtc).ThenBy(m => m.Processed).Last();
-        Assert.Equal(BulkOperationStatus.Completed, last.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, last.Status);
         Assert.All(forOperation, m => Assert.Equal(SampleDataService.TEST_ORG_ID, m.OrganizationId));
     }
 
@@ -525,18 +529,18 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
 
         // Act
         await RunOperationAsync(service, created.Id, batchSize: 2, shutdown.Token);
-        var interrupted = await service.GetAsync(created.Id);
+        var interrupted = await _taskService.GetAsync(created.Id);
         recorder.AfterBatch = null;
         await RunOperationAsync(service, created.Id, batchSize: 2, TestCancellationToken);
-        var finished = await service.GetAsync(created.Id);
+        var finished = await _taskService.GetAsync(created.Id);
 
         // Assert
         Assert.NotNull(interrupted);
-        Assert.Equal(BulkOperationStatus.Running, interrupted.Status);
+        Assert.Equal(BackgroundTaskStatus.Running, interrupted.Status);
         Assert.Equal(2, interrupted.Processed);
-        Assert.NotNull(interrupted.Cursor);
+        Assert.NotNull(interrupted.Bulk!.Cursor);
         Assert.NotNull(finished);
-        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
         Assert.Equal(5, finished.Processed);
         Assert.Equal(events.OrderByDescending(e => e.Date).Select(e => e.Id).ToArray(), recorder.Batches.SelectMany(b => b).ToArray());
         Assert.Equal([2, 2, 1], recorder.Batches.Select(b => b.Count).ToArray());
@@ -555,15 +559,15 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         var recorder = new RecordingHandler();
         var service = CreateService(recorder);
         var created = await CreateRecordingOperationAsync(service);
-        recorder.AfterBatch = () => service.CancelAsync(created.Id).GetAwaiter().GetResult();
+        recorder.AfterBatch = () => _taskService.CancelAsync(created.Id).GetAwaiter().GetResult();
 
         // Act
         await RunOperationAsync(service, created.Id, batchSize: 2, TestCancellationToken);
 
         // Assert
-        var finished = await service.GetAsync(created.Id);
+        var finished = await _taskService.GetAsync(created.Id);
         Assert.NotNull(finished);
-        Assert.Equal(BulkOperationStatus.Cancelled, finished.Status);
+        Assert.Equal(BackgroundTaskStatus.Cancelled, finished.Status);
         Assert.Equal(2, finished.Processed);
         Assert.NotNull(finished.CompletedUtc);
         Assert.Single(recorder.Batches);
@@ -583,15 +587,15 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         var blocked = await service.CreateAsync(NewRecordingOperation("test.destructive"));
 
         // Assert
-        Assert.NotNull(first.Operation);
-        Assert.NotNull(second.Operation);
-        Assert.NotNull(destructive.Operation);
-        Assert.Null(blocked.Operation);
-        Assert.Equal(destructive.Operation.Id, blocked.Conflict?.Id);
+        Assert.NotNull(first.Task);
+        Assert.NotNull(second.Task);
+        Assert.NotNull(destructive.Task);
+        Assert.Null(blocked.Task);
+        Assert.Equal(destructive.Task.Id, blocked.Conflict?.Id);
     }
 
     [Fact]
-    public async Task OnBulkOperationUpdatedAsync_SendsOnlyToTheOperationsOrganization()
+    public async Task OnBackgroundTaskUpdatedAsync_SendsOnlyToTheOperationsOrganization()
     {
         // Arrange
         var broker = GetService<MessageBusBroker>();
@@ -607,13 +611,13 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         try
         {
             // Act
-            await broker.OnBulkOperationUpdatedAsync(new BulkOperationUpdated
+            await broker.OnBackgroundTaskUpdatedAsync(new BackgroundTaskUpdated
             {
                 Id = "537650f3b77efe23a47914f9",
                 OrganizationId = SampleDataService.TEST_ORG_ID,
                 Type = "events.delete",
                 Description = "Delete events matching filter",
-                Status = BulkOperationStatus.Running,
+                Status = BackgroundTaskStatus.Running,
                 Total = 10,
                 Processed = 4
             }, TestCancellationToken);
@@ -622,7 +626,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
 
             // Assert
             string sent = Assert.Single(ownSocket.SentMessages);
-            Assert.Contains("\"type\":\"BulkOperationUpdated\"", sent);
+            Assert.Contains("\"type\":\"BackgroundTaskUpdated\"", sent);
             Assert.Contains("\"processed\":4", sent);
             Assert.Empty(otherSocket.SentMessages);
         }
@@ -646,9 +650,9 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         };
     }
 
-    private async Task<ViewBulkOperation> CreateOperationAsync(NewBulkOperation request, Action<AppSendBuilder>? authorize = null)
+    private async Task<ViewBackgroundTask> CreateOperationAsync(NewBulkOperation request, Action<AppSendBuilder>? authorize = null)
     {
-        var created = await SendRequestAsAsync<ViewBulkOperation>(r =>
+        var created = await SendRequestAsAsync<ViewBackgroundTask>(r =>
         {
             r.Post().AppendPath("bulk-operations").Content(request).StatusCodeShouldBeAccepted();
             if (authorize is null)
@@ -661,9 +665,9 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         return created;
     }
 
-    private async Task<ViewBulkOperation> GetOperationAsync(string id)
+    private async Task<ViewBackgroundTask> GetOperationAsync(string id)
     {
-        var operation = await SendRequestAsAsync<ViewBulkOperation>(r => r.AsTestOrganizationUser().AppendPaths("bulk-operations", id).StatusCodeShouldBeOk());
+        var operation = await SendRequestAsAsync<ViewBackgroundTask>(r => r.AsTestOrganizationUser().AppendPaths("tasks", id).StatusCodeShouldBeOk());
         Assert.NotNull(operation);
         return operation;
     }
@@ -687,48 +691,50 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         return CreateService(handlers, [GetService<EventBulkSelectionResolver>()]);
     }
 
-    private BulkOperationService CreateService(IBulkOperationHandler[] handlers, IBulkSelectionResolver[] resolvers, IQueue<WorkItemData>? workItemQueue = null)
+    private BulkOperationService CreateService(IBulkOperationHandler[] handlers, IBulkSelectionResolver[] resolvers, BackgroundTaskService? taskService = null)
     {
-        return new BulkOperationService(GetService<ICacheClient>(), GetService<ILockProvider>(), GetService<IMessagePublisher>(), workItemQueue ?? GetService<IQueue<WorkItemData>>(),
-            handlers, resolvers, TimeProvider, GetService<ILogger<BulkOperationService>>());
+        return new BulkOperationService(taskService ?? _taskService, GetService<ICacheClient>(), GetService<ILockProvider>(), handlers, resolvers, TimeProvider);
     }
 
-    private async Task<BulkOperation> CreateRecordingOperationAsync(BulkOperationService service)
+    private async Task<BackgroundTask> CreateRecordingOperationAsync(BulkOperationService service)
     {
         var result = await service.CreateAsync(NewRecordingOperation("test.record"));
-        Assert.NotNull(result.Operation);
-        return result.Operation;
+        Assert.NotNull(result.Task);
+        return result.Task;
     }
 
-    private BulkOperation NewRecordingOperation(string type)
+    private BackgroundTask NewRecordingOperation(string type)
     {
         var now = TimeProvider.GetUtcNow().UtcDateTime;
-        return new BulkOperation
+        return new BackgroundTask
         {
             OrganizationId = SampleDataService.TEST_ORG_ID,
             ProjectId = SampleDataService.TEST_PROJECT_ID,
             Type = type,
             Description = "Record events",
             CreatedByUserId = "537650f3b77efe23a47914f8",
-            Selection = new BulkOperationSelection
+            Bulk = new BulkOperationDetails
             {
-                Kind = BulkOperationSelectionKind.Filter,
-                Filter = String.Empty,
-                UtcStart = now.AddDays(-7),
-                UtcEnd = now,
-                UtcCreatedBefore = now
+                Selection = new BulkOperationSelection
+                {
+                    Kind = BulkOperationSelectionKind.Filter,
+                    Filter = String.Empty,
+                    UtcStart = now.AddDays(-7),
+                    UtcEnd = now,
+                    UtcCreatedBefore = now
+                }
             }
         };
     }
 
     private Task RunOperationAsync(BulkOperationService service, string operationId, int batchSize, CancellationToken shutdownToken)
     {
-        return RunWorkItemAsync(service, new BulkOperationWorkItem { OperationId = operationId, OrganizationId = SampleDataService.TEST_ORG_ID }, batchSize, shutdownToken);
+        return RunWorkItemAsync(service, new BulkOperationWorkItem { TaskId = operationId, OrganizationId = SampleDataService.TEST_ORG_ID }, batchSize, shutdownToken);
     }
 
     private Task RunWorkItemAsync(BulkOperationService service, BulkOperationWorkItem workItem, int batchSize, CancellationToken shutdownToken)
     {
-        var handler = new Exceptionless.Core.Jobs.WorkItemHandlers.BulkOperationWorkItemHandler(service, [GetService<EventBulkSelectionResolver>()],
+        var handler = new Exceptionless.Core.Jobs.WorkItemHandlers.BulkOperationWorkItemHandler(service, _taskService, [GetService<EventBulkSelectionResolver>()],
             new BulkOperationOptions { BatchSize = batchSize, RetryDelay = TimeSpan.Zero }, GetService<ILockProvider>(), TimeProvider, Log);
         var context = new WorkItemContext(workItem, "test-job", EmptyLock.Empty, shutdownToken, static (_, _) => Task.CompletedTask);
 
@@ -751,9 +757,9 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
 
         public Task<BulkOperationCheckResult> AuthorizeAsync(BulkOperationRequest request) => Task.FromResult(BulkOperationCheckResult.Ok);
         public Task<BulkOperationCheckResult> ValidateAsync(BulkOperationRequest request) => Task.FromResult(BulkOperationCheckResult.Ok);
-        public string Describe(BulkOperation operation) => "Record events";
+        public string Describe(BackgroundTask operation) => "Record events";
 
-        public Task<BulkBatchResult> ExecuteBatchAsync(BulkOperation operation, IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
+        public Task<BulkBatchResult> ExecuteBatchAsync(BackgroundTask operation, IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
         {
             var failure = Failure?.Invoke(++_calls);
             if (failure is not null)

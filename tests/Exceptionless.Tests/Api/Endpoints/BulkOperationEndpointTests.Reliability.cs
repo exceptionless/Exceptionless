@@ -1,11 +1,13 @@
 using System.Collections.Concurrent;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
+using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Extensions;
@@ -18,6 +20,10 @@ using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Foundatio.Repositories.Utility;
 using Foundatio.Serializer;
+using Foundatio.Caching;
+using Foundatio.Lock;
+using Foundatio.Resilience;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -57,12 +63,12 @@ public partial class BulkOperationEndpointTests
         var result = await service.CreateAsync(NewRecordingOperation("events.delete"));
 
         // Assert
-        Assert.Null(result.Operation);
+        Assert.Null(result.Task);
         Assert.NotNull(result.Rejection);
         Assert.Equal(BulkOperationCheckStatus.Invalid, result.Rejection.Status);
         Assert.Equal("selection.filter", result.Rejection.Field);
         Assert.Equal(message, result.Rejection.Message);
-        Assert.Empty(await service.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
+        Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
     }
 
     [Fact]
@@ -99,31 +105,31 @@ public partial class BulkOperationEndpointTests
         // Arrange
         var service = CreateService(new RecordingHandler(), new RecordingHandler("test.destructive", true));
         for (int index = 0; index < 500; index++)
-            Assert.NotNull((await service.CreateAsync(NewIdsOperation("test.record"))).Operation);
+            Assert.NotNull((await service.CreateAsync(NewIdsOperation("test.record"))).Task);
 
         // Act
         var newest = await service.CreateAsync(NewIdsOperation("test.destructive"));
         var blocked = await service.CreateAsync(NewIdsOperation("test.destructive"));
-        var list = await service.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID);
+        var list = await _taskService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID);
 
         // Assert
-        Assert.NotNull(newest.Operation);
-        Assert.Null(blocked.Operation);
-        Assert.Equal(newest.Operation.Id, blocked.Conflict?.Id);
-        Assert.Equal(BulkOperationService.ListLimit, list.Count);
-        Assert.Equal(newest.Operation.Id, list[0].Id);
+        Assert.NotNull(newest.Task);
+        Assert.Null(blocked.Task);
+        Assert.Equal(newest.Task.Id, blocked.Conflict?.Id);
+        Assert.Equal(BackgroundTaskService.ListLimit, list.Count);
+        Assert.Equal(newest.Task.Id, list[0].Id);
     }
 
     [Fact]
     public async Task Execute_RecordMissingWhenTheJobRuns_PublishesAFinalFailedUpdate()
     {
         // Arrange
-        var messages = new ConcurrentQueue<BulkOperationUpdated>();
-        await GetService<IMessageSubscriber>().SubscribeAsync<BulkOperationUpdated>(m => messages.Enqueue(m), TestCancellationToken);
+        var messages = new ConcurrentQueue<BackgroundTaskUpdated>();
+        await GetService<IMessageSubscriber>().SubscribeAsync<BackgroundTaskUpdated>(m => messages.Enqueue(m), TestCancellationToken);
         var workItem = new BulkOperationWorkItem
         {
             Description = "Delete 7 events matching filter",
-            OperationId = ObjectId.GenerateNewId().ToString(),
+            TaskId = ObjectId.GenerateNewId().ToString(),
             OrganizationId = SampleDataService.TEST_ORG_ID,
             Type = "events.delete"
         };
@@ -134,10 +140,10 @@ public partial class BulkOperationEndpointTests
 
         // Assert
         var update = Assert.Single(messages);
-        Assert.Equal(workItem.OperationId, update.Id);
+        Assert.Equal(workItem.TaskId, update.Id);
         Assert.Equal(SampleDataService.TEST_ORG_ID, update.OrganizationId);
         Assert.Equal("Delete 7 events matching filter", update.Description);
-        Assert.Equal(BulkOperationStatus.Failed, update.Status);
+        Assert.Equal(BackgroundTaskStatus.Failed, update.Status);
         Assert.False(String.IsNullOrEmpty(update.Message));
     }
 
@@ -160,20 +166,20 @@ public partial class BulkOperationEndpointTests
         // Act
         var thrown = await Record.ExceptionAsync(() => RunOperationAsync(service, created.Id, 2, TestCancellationToken));
         long continuations = await GetEnqueuedWorkItemCountAsync() - enqueuedBefore;
-        var interrupted = await service.GetAsync(created.Id);
+        var interrupted = await _taskService.GetAsync(created.Id);
         await RunOperationAsync(service, created.Id, 2, TestCancellationToken);
-        var finished = await service.GetAsync(created.Id);
+        var finished = await _taskService.GetAsync(created.Id);
 
         // Assert
         Assert.Null(thrown);
         Assert.Equal(1, continuations);
         Assert.NotNull(interrupted);
-        Assert.Equal(BulkOperationStatus.Running, interrupted.Status);
+        Assert.Equal(BackgroundTaskStatus.Running, interrupted.Status);
         Assert.Equal(2, interrupted.Processed);
-        Assert.Equal(1, interrupted.RetryCount);
+        Assert.Equal(1, interrupted.Bulk!.RetryCount);
         Assert.NotNull(finished);
-        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
-        Assert.Equal(0, finished.RetryCount);
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
+        Assert.Equal(0, finished.Bulk!.RetryCount);
         Assert.Equal(events.OrderByDescending(e => e.Date).Select(e => e.Id).ToArray(), recorder.Batches.SelectMany(b => b).ToArray());
     }
 
@@ -190,15 +196,15 @@ public partial class BulkOperationEndpointTests
         var first = await Record.ExceptionAsync(() => RunOperationAsync(service, created.Id, 2, TestCancellationToken));
         var second = await Record.ExceptionAsync(() => RunOperationAsync(service, created.Id, 2, TestCancellationToken));
         var third = await Record.ExceptionAsync(() => RunOperationAsync(service, created.Id, 2, TestCancellationToken));
-        var finished = await service.GetAsync(created.Id);
+        var finished = await _taskService.GetAsync(created.Id);
 
         // Assert
         Assert.Null(first);
         Assert.Null(second);
         Assert.Null(third);
         Assert.NotNull(finished);
-        Assert.Equal(BulkOperationStatus.Failed, finished.Status);
-        Assert.Equal(3, finished.RetryCount);
+        Assert.Equal(BackgroundTaskStatus.Failed, finished.Status);
+        Assert.Equal(3, finished.Bulk!.RetryCount);
     }
 
     [Fact]
@@ -219,17 +225,17 @@ public partial class BulkOperationEndpointTests
         var thrown = new List<Exception?>();
 
         // Act
-        for (int run = 0; run < 10 && (await service.GetAsync(created.Id))!.IsActive; run++)
+        for (int run = 0; run < 10 && (await _taskService.GetAsync(created.Id))!.IsActive; run++)
             thrown.Add(await Record.ExceptionAsync(() => RunOperationAsync(service, created.Id, 1, TestCancellationToken)));
 
         long continuations = await GetEnqueuedWorkItemCountAsync() - enqueuedBefore;
-        var finished = await service.GetAsync(created.Id);
+        var finished = await _taskService.GetAsync(created.Id);
 
         // Assert
         Assert.All(thrown, Assert.Null);
         Assert.Equal(thrown.Count - 1, continuations);
         Assert.NotNull(finished);
-        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
         Assert.Equal(events.OrderByDescending(e => e.Date).Select(e => e.Id).ToArray(), recorder.Batches.SelectMany(b => b).ToArray());
     }
 
@@ -246,28 +252,28 @@ public partial class BulkOperationEndpointTests
         var recorder = new RecordingHandler();
         var service = CreateService(recorder);
         var operation = NewRecordingOperation("test.record");
-        operation.Selection = new BulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = events.Select(e => e.Id).ToList() };
+        operation.Bulk!.Selection = new BulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = events.Select(e => e.Id).ToList() };
         var result = await service.CreateAsync(operation);
-        var created = result.Operation;
+        var created = result.Task;
         Assert.NotNull(created);
         await RunOperationAsync(service, created.Id, 2, TestCancellationToken);
         int batchesBefore = recorder.Batches.Count;
         // The worker stopped after saving the last batch but before saving the completed status.
-        await service.UpdateAsync(created.Id, current =>
+        await _taskService.UpdateAsync(created.Id, current =>
         {
-            current.Status = BulkOperationStatus.Running;
+            current.Status = BackgroundTaskStatus.Running;
             current.CompletedUtc = null;
             return true;
         });
 
         // Act
         await RunOperationAsync(service, created.Id, 2, TestCancellationToken);
-        var finished = await service.GetAsync(created.Id);
+        var finished = await _taskService.GetAsync(created.Id);
 
         // Assert
         Assert.Equal(batchesBefore, recorder.Batches.Count);
         Assert.NotNull(finished);
-        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
         Assert.Equal(5, finished.Processed);
     }
 
@@ -279,27 +285,29 @@ public partial class BulkOperationEndpointTests
         var unavailableQueue = new Mock<IQueue<WorkItemData>>();
         unavailableQueue.SetupGet(q => q.Serializer).Returns(GetService<IQueue<WorkItemData>>().Serializer);
         unavailableQueue.Setup(q => q.EnqueueAsync(It.IsAny<WorkItemData>(), It.IsAny<QueueEntryOptions>())).ThrowsAsync(new TimeoutException("Queue unavailable"));
+        var failingTasks = new BackgroundTaskService(GetService<ICacheClient>(), GetService<ILockProvider>(), GetService<IMessagePublisher>(), unavailableQueue.Object,
+            GetService<IResiliencePolicyProvider>(), new BackgroundTaskOptions(), TimeProvider, GetService<ILogger<BackgroundTaskService>>());
         var recorder = new RecordingHandler("test.destroy", isDestructive: true);
-        var failingService = CreateService([recorder], [GetService<EventBulkSelectionResolver>()], unavailableQueue.Object);
+        var failingService = CreateService([recorder], [GetService<EventBulkSelectionResolver>()], failingTasks);
         var service = CreateService([recorder], [GetService<EventBulkSelectionResolver>()]);
 
         // Act
         var thrown = await Record.ExceptionAsync(async () => await failingService.CreateAsync(NewRecordingOperation("test.destroy")));
-        var orphan = (await service.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID)).Single();
+        var orphan = (await _taskService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID)).Single();
         var retry = await service.CreateAsync(NewRecordingOperation("test.destroy"));
 
         // Assert
         Assert.IsType<TimeoutException>(thrown);
-        Assert.Equal(BulkOperationStatus.Failed, orphan.Status);
-        Assert.NotNull(retry.Operation);
-        Assert.Equal(BulkOperationStatus.Queued, retry.Operation.Status);
+        Assert.Equal(BackgroundTaskStatus.Failed, orphan.Status);
+        Assert.NotNull(retry.Task);
+        Assert.Equal(BackgroundTaskStatus.Queued, retry.Task.Status);
     }
 
     [Fact]
     public void Handler_RenewsTheQueueEntryAndLockOnEveryBatch()
     {
         // Arrange
-        var handler = new Exceptionless.Core.Jobs.WorkItemHandlers.BulkOperationWorkItemHandler(CreateService(new RecordingHandler()), [GetService<EventBulkSelectionResolver>()],
+        var handler = new Exceptionless.Core.Jobs.WorkItemHandlers.BulkOperationWorkItemHandler(CreateService(new RecordingHandler()), _taskService, [GetService<EventBulkSelectionResolver>()],
             new BulkOperationOptions(), GetService<Foundatio.Lock.ILockProvider>(), TimeProvider, Log);
 
         // Act
@@ -325,13 +333,13 @@ public partial class BulkOperationEndpointTests
 
         // Act
         var thrown = await Record.ExceptionAsync(() => RunOperationAsync(service, created.Id, 2, TestCancellationToken));
-        var finished = await service.GetAsync(created.Id);
+        var finished = await _taskService.GetAsync(created.Id);
 
         // Assert
         Assert.Null(thrown);
         Assert.NotNull(finished);
-        Assert.Equal(BulkOperationStatus.Failed, finished.Status);
-        Assert.Equal(0, finished.RetryCount);
+        Assert.Equal(BackgroundTaskStatus.Failed, finished.Status);
+        Assert.Equal(0, finished.Bulk!.RetryCount);
     }
 
     [Fact]
@@ -347,25 +355,25 @@ public partial class BulkOperationEndpointTests
         var deleteHandler = new InterceptingHandler(GetService<DeleteEventsBulkOperationHandler>());
         var service = CreateService(deleteHandler);
         var result = await service.CreateAsync(NewRecordingOperation("events.delete"));
-        Assert.NotNull(result.Operation);
+        Assert.NotNull(result.Task);
         using var shutdown = new CancellationTokenSource();
         deleteHandler.AfterBatch = () => shutdown.Cancel();
 
         // Act
-        await RunOperationAsync(service, result.Operation.Id, 2, shutdown.Token);
-        var interrupted = await service.GetAsync(result.Operation.Id);
+        await RunOperationAsync(service, result.Task.Id, 2, shutdown.Token);
+        var interrupted = await _taskService.GetAsync(result.Task.Id);
         var remainingWhileInterrupted = await GetRemainingMessagesAsync(events);
         deleteHandler.AfterBatch = null;
-        await RunOperationAsync(service, result.Operation.Id, 2, TestCancellationToken);
-        var finished = await service.GetAsync(result.Operation.Id);
+        await RunOperationAsync(service, result.Task.Id, 2, TestCancellationToken);
+        var finished = await _taskService.GetAsync(result.Task.Id);
 
         // Assert
         Assert.NotNull(interrupted);
-        Assert.Equal(BulkOperationStatus.Running, interrupted.Status);
+        Assert.Equal(BackgroundTaskStatus.Running, interrupted.Status);
         Assert.Equal(2, interrupted.Processed);
         Assert.Equal(3, remainingWhileInterrupted.Count);
         Assert.NotNull(finished);
-        Assert.Equal(BulkOperationStatus.Completed, finished.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
         Assert.Equal(5, finished.Processed);
         Assert.Equal(5, finished.Succeeded);
         Assert.Equal(0, finished.Failed);
@@ -378,19 +386,19 @@ public partial class BulkOperationEndpointTests
         // Arrange
         var service = CreateService(new RecordingHandler());
         var created = await CreateRecordingOperationAsync(service);
-        await service.UpdateAsync(created.Id, operation =>
+        await _taskService.UpdateAsync(created.Id, operation =>
         {
-            operation.Status = BulkOperationStatus.Running;
+            operation.Status = BackgroundTaskStatus.Running;
             return true;
         });
-        TimeProvider.Advance(BulkOperationService.StaleAfter + TimeSpan.FromMinutes(1));
+        TimeProvider.Advance(BackgroundTaskService.StaleAfter + TimeSpan.FromMinutes(1));
 
         // Act
-        var cancelled = await service.CancelAsync(created.Id);
+        var cancelled = (await _taskService.CancelAsync(created.Id)).Task;
 
         // Assert
         Assert.NotNull(cancelled);
-        Assert.Equal(BulkOperationStatus.Cancelled, cancelled.Status);
+        Assert.Equal(BackgroundTaskStatus.Cancelled, cancelled.Status);
         Assert.NotNull(cancelled.CompletedUtc);
     }
 
@@ -402,12 +410,12 @@ public partial class BulkOperationEndpointTests
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
 
         // Act
-        var response = await SendRequestAsAsync<ViewBulkOperation>(r => r.Post().AsTestOrganizationUser().AppendPaths("bulk-operations", created.Id, "cancel").StatusCodeShouldBeAccepted());
+        var response = await SendRequestAsAsync<ViewBackgroundTask>(r => r.Post().AsTestOrganizationUser().AppendPaths("tasks", created.Id, "cancel").StatusCodeShouldBeAccepted());
 
         // Assert
-        Assert.Equal(BulkOperationStatus.Completed, response?.Status);
-        Assert.Equal(BulkOperationStatus.Completed, (await GetOperationAsync(created.Id)).Status);
-        Assert.False(await _bulkOperationService.IsCancelRequestedAsync(created.Id));
+        Assert.Equal(BackgroundTaskStatus.Completed, response?.Status);
+        Assert.Equal(BackgroundTaskStatus.Completed, (await GetOperationAsync(created.Id)).Status);
+        Assert.False(await _taskService.IsCancelRequestedAsync(created.Id));
     }
 
     private EventBulkSelectionResolver CreateResolver(IEventRepository eventRepository)
@@ -416,10 +424,10 @@ public partial class BulkOperationEndpointTests
             GetService<PersistentEventQueryValidator>(), GetService<ITextSerializer>(), GetService<Exceptionless.Core.Repositories.Configuration.ExceptionlessElasticConfiguration>());
     }
 
-    private BulkOperation NewIdsOperation(string type)
+    private BackgroundTask NewIdsOperation(string type)
     {
         var operation = NewRecordingOperation(type);
-        operation.Selection = new BulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = [SampleDataService.TEST_ORG_ID] };
+        operation.Bulk!.Selection = new BulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = [SampleDataService.TEST_ORG_ID] };
         return operation;
     }
 
@@ -434,9 +442,9 @@ public partial class BulkOperationEndpointTests
 
         public Task<BulkOperationCheckResult> AuthorizeAsync(BulkOperationRequest request) => inner.AuthorizeAsync(request);
         public Task<BulkOperationCheckResult> ValidateAsync(BulkOperationRequest request) => inner.ValidateAsync(request);
-        public string Describe(BulkOperation operation) => inner.Describe(operation);
+        public string Describe(BackgroundTask operation) => inner.Describe(operation);
 
-        public async Task<BulkBatchResult> ExecuteBatchAsync(BulkOperation operation, IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
+        public async Task<BulkBatchResult> ExecuteBatchAsync(BackgroundTask operation, IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
         {
             var result = await inner.ExecuteBatchAsync(operation, ids, cancellationToken);
             AfterBatch?.Invoke();

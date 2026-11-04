@@ -38,7 +38,7 @@ public sealed class MessageBusBroker : IStartupAction
             _subscriber.SubscribeAsync<EntityChanged>(OnEntityChangedAsync, shutdownToken),
             _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync, shutdownToken),
             _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync, shutdownToken),
-            _subscriber.SubscribeAsync<BulkOperationUpdated>(OnBulkOperationUpdatedAsync, shutdownToken),
+            _subscriber.SubscribeAsync<BackgroundTaskUpdated>(OnBackgroundTaskUpdatedAsync, shutdownToken),
             _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, shutdownToken),
             _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync, shutdownToken),
             _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync, shutdownToken)
@@ -159,12 +159,12 @@ public sealed class MessageBusBroker : IStartupAction
         return Task.CompletedTask;
     }
 
-    internal Task OnBulkOperationUpdatedAsync(BulkOperationUpdated bulkOperationUpdated, CancellationToken cancellationToken = default)
+    internal Task OnBackgroundTaskUpdatedAsync(BackgroundTaskUpdated backgroundTaskUpdated, CancellationToken cancellationToken = default)
     {
-        if (bulkOperationUpdated is not null)
+        if (backgroundTaskUpdated is not null)
         {
-            _logger.LogTrace("Sending bulk operation {OperationId} update to organization: {Organization}", bulkOperationUpdated.Id, bulkOperationUpdated.OrganizationId);
-            return GroupSendAsync(bulkOperationUpdated.OrganizationId, bulkOperationUpdated);
+            _logger.LogTrace("Sending background task {TaskId} update to organization: {Organization}", backgroundTaskUpdated.Id, backgroundTaskUpdated.OrganizationId);
+            return GroupSendAsync(backgroundTaskUpdated.OrganizationId, backgroundTaskUpdated);
         }
 
         return Task.CompletedTask;

@@ -7,14 +7,6 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
-export enum BulkOperationStatus {
-  Queued = "Queued",
-  Running = "Running",
-  Completed = "Completed",
-  Failed = "Failed",
-  Cancelled = "Cancelled",
-}
-
 export enum BulkOperationSelectionKind {
   Ids = "Ids",
   Filter = "Filter",
@@ -26,6 +18,14 @@ export enum BillingStatus {
   PastDue = 2,
   Canceled = 3,
   Unpaid = 4,
+}
+
+export enum BackgroundTaskStatus {
+  Queued = "Queued",
+  Running = "Running",
+  Completed = "Completed",
+  Failed = "Failed",
+  Cancelled = "Cancelled",
 }
 
 export interface AdminAssistantOrganizationUsage {
@@ -855,18 +855,26 @@ export interface UserSavedViewOrderPreference {
   saved_view_ids: string[];
 }
 
-export interface ViewBulkOperation {
+export interface ViewBackgroundTask {
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   organization_id: string;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   project_id?: null | string;
+  /** What the task does, e.g. events.delete, projects.reset-data or projects.sample-data. */
   type: string;
   description: string;
-  status: BulkOperationStatus;
-  selection: ViewBulkOperationSelection;
-  /** @format int64 */
+  status: BackgroundTaskStatus;
+  /**
+   * Percent complete, 0 to 100.
+   * @format int32
+   */
+  progress: number;
+  /**
+   * The item counts. All zero for tasks that only report a percent.
+   * @format int64
+   */
   total: number;
   /** @format int64 */
   processed: number;
@@ -874,6 +882,10 @@ export interface ViewBulkOperation {
   succeeded: number;
   /** @format int64 */
   failed: number;
+  /** Whether the task can be stopped with the cancel endpoint. */
+  can_cancel: boolean;
+  /** What a bulk action applies to. Only set for bulk actions. */
+  selection?: null | ViewBulkOperationSelection;
   /** @pattern ^[a-fA-F0-9]{24}$ */
   created_by_user_id: string;
   /** @format date-time */
@@ -887,6 +899,7 @@ export interface ViewBulkOperation {
   message?: null | string;
 }
 
+/** What a bulk action applies to. Only set for bulk actions. */
 export interface ViewBulkOperationSelection {
   kind: BulkOperationSelectionKind;
   /**
@@ -902,7 +915,7 @@ export interface ViewBulkOperationSelection {
    */
   utc_start?: null | string;
   /**
-   * The absolute end of the resolved time window, never later than when the operation was created.
+   * The absolute end of the resolved time window, never later than when the task was created.
    * @format date-time
    */
   utc_end?: null | string;

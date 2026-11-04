@@ -27,13 +27,6 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
-export const BulkOperationStatusSchema = zodEnum([
-  "Queued",
-  "Running",
-  "Completed",
-  "Failed",
-  "Cancelled",
-]);
 export const BulkOperationSelectionKindSchema = zodEnum(["Ids", "Filter"]);
 export const BillingStatusSchema = union([
   literal(0),
@@ -41,6 +34,13 @@ export const BillingStatusSchema = union([
   literal(2),
   literal(3),
   literal(4),
+]);
+export const BackgroundTaskStatusSchema = zodEnum([
+  "Queued",
+  "Running",
+  "Completed",
+  "Failed",
+  "Cancelled",
 ]);
 
 export const AdminAssistantOrganizationUsageSchema = object({
@@ -1001,7 +1001,7 @@ export type UserSavedViewOrderPreferenceFormData = Infer<
   typeof UserSavedViewOrderPreferenceSchema
 >;
 
-export const ViewBulkOperationSchema = object({
+export const ViewBackgroundTaskSchema = object({
   id: string()
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),
@@ -1015,12 +1015,14 @@ export const ViewBulkOperationSchema = object({
     .optional(),
   type: string().min(1, "Type is required"),
   description: string().min(1, "Description is required"),
-  status: BulkOperationStatusSchema,
-  selection: lazy(() => ViewBulkOperationSelectionSchema),
+  status: BackgroundTaskStatusSchema,
+  progress: int32(),
   total: int(),
   processed: int(),
   succeeded: int(),
   failed: int(),
+  can_cancel: boolean(),
+  selection: lazy(() => ViewBulkOperationSelectionSchema).optional(),
   created_by_user_id: string()
     .length(24, "Created by user id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Created by user id has invalid format"),
@@ -1030,7 +1032,7 @@ export const ViewBulkOperationSchema = object({
   updated_utc: iso.datetime(),
   message: string().min(1, "Message is required").nullable().optional(),
 });
-export type ViewBulkOperationFormData = Infer<typeof ViewBulkOperationSchema>;
+export type ViewBackgroundTaskFormData = Infer<typeof ViewBackgroundTaskSchema>;
 
 export const ViewBulkOperationSelectionSchema = object({
   kind: BulkOperationSelectionKindSchema,

@@ -1,5 +1,6 @@
 using Elastic.Clients.Elasticsearch.Mapping;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
@@ -60,16 +61,16 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         return BulkOperationCheckResult.Ok;
     }
 
-    public async Task<BulkSelectionPreparation> PrepareAsync(BulkOperation operation, CancellationToken cancellationToken)
+    public async Task<BulkSelectionPreparation> PrepareAsync(BackgroundTask task, CancellationToken cancellationToken)
     {
-        var appFilter = await GetAppFilterAsync(operation);
+        var appFilter = await GetAppFilterAsync(task);
         if (appFilter is null)
             return new BulkSelectionPreparation(BulkOperationCheckResult.Ok);
 
         // The events list resolves stack level terms (for example status:open) and removes deleted stacks by looking up
         // matching stack ids. Do that once, here, and keep the result so every page uses the same stacks.
-        var query = ApplyScope(new RepositoryQuery<PersistentEvent>(), appFilter, operation.Selection)
-            .FilterExpression(operation.Selection.Filter)
+        var query = ApplyScope(new RepositoryQuery<PersistentEvent>(), appFilter, task.Bulk!.Selection)
+            .FilterExpression(task.Bulk!.Selection.Filter)
             .EnforceEventStackFilter();
 
         CountResult count;
@@ -85,7 +86,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         var pinned = new PinnedEventSelection
         {
             // Relative dates in the filter are pinned to the creation time, like the outer time window.
-            EventFilter = await RelativeDateFreezer.FreezeAsync(query.GetFilterExpression(), operation.Selection.UtcCreatedBefore ?? operation.CreatedUtc, IsDateFieldAsync),
+            EventFilter = await RelativeDateFreezer.FreezeAsync(query.GetFilterExpression(), task.Bulk!.Selection.UtcCreatedBefore ?? task.CreatedUtc, IsDateFieldAsync),
             ExcludedStackIds = query.GetExcludedStacks().ToArray(),
             StackIds = query.GetStacks().ToArray()
         };
@@ -93,14 +94,14 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         return new BulkSelectionPreparation(BulkOperationCheckResult.Ok, count.Total, _serializer.SerializeToString(pinned));
     }
 
-    public async Task<BulkSelectionPage> GetPageAsync(BulkOperation operation, string? pinnedState, string? cursor, int size, CancellationToken cancellationToken)
+    public async Task<BulkSelectionPage> GetPageAsync(BackgroundTask task, string? pinnedState, string? cursor, int size, CancellationToken cancellationToken)
     {
-        var appFilter = await GetAppFilterAsync(operation);
+        var appFilter = await GetAppFilterAsync(task);
         if (appFilter is null || pinnedState is null)
             return new BulkSelectionPage([], null);
 
         var pinned = _serializer.Deserialize<PinnedEventSelection>(pinnedState) ?? new PinnedEventSelection();
-        var query = ApplyScope(new RepositoryQuery<PersistentEvent>(), appFilter, operation.Selection)
+        var query = ApplyScope(new RepositoryQuery<PersistentEvent>(), appFilter, task.Bulk!.Selection)
             .FilterExpression(pinned.EventFilter)
             .Include(e => e.Id)
             .SortExpression($"-{EventIndex.Alias.Date}");
@@ -111,7 +112,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         if (pinned.ExcludedStackIds.Length > 0)
             query.ExcludeStack(pinned.ExcludedStackIds);
 
-        // Paging only needs the next ids; the total was counted once when the operation was created.
+        // Paging only needs the next ids; the total was counted once when the task was created.
         var options = new CommandOptions<PersistentEvent>().SearchAfterToken(cursor, _serializer).PageLimit(size).TrackTotalHits(false);
         var results = await _eventRepository.FindAsync(query, options);
 
@@ -130,24 +131,24 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
                 .Index(selection.UtcStart, selection.UtcEnd);
         }
 
-        // The event date is chosen by the client, so an old-dated event can still arrive after the operation was created.
+        // The event date is chosen by the client, so an old-dated event can still arrive after the task was created.
         if (selection.UtcCreatedBefore.HasValue)
             query.DateRange(null, selection.UtcCreatedBefore, CreatedUtcField);
 
         return query;
     }
 
-    private async Task<AppFilter?> GetAppFilterAsync(BulkOperation operation)
+    private async Task<AppFilter?> GetAppFilterAsync(BackgroundTask task)
     {
-        var organization = await _organizationRepository.GetByIdAsync(operation.OrganizationId, o => o.Cache());
+        var organization = await _organizationRepository.GetByIdAsync(task.OrganizationId, o => o.Cache());
         if (organization is null)
             return null;
 
-        var validation = await _validator.ValidateQueryAsync(operation.Selection.Filter);
+        var validation = await _validator.ValidateQueryAsync(task.Bulk!.Selection.Filter);
         AppFilter appFilter;
-        if (!String.IsNullOrEmpty(operation.ProjectId))
+        if (!String.IsNullOrEmpty(task.ProjectId))
         {
-            var project = await _projectRepository.GetByIdAsync(operation.ProjectId, o => o.Cache());
+            var project = await _projectRepository.GetByIdAsync(task.ProjectId, o => o.Cache());
             if (project is null || !String.Equals(project.OrganizationId, organization.Id, StringComparison.Ordinal))
                 return null;
 
@@ -162,7 +163,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         return appFilter;
     }
 
-    /// <summary>What the stack level filter resolved to when the operation was created.</summary>
+    /// <summary>What the stack level filter resolved to when the task was created.</summary>
     private sealed class PinnedEventSelection
     {
         public string? EventFilter { get; set; }

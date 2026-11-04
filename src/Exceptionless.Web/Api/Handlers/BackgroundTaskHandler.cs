@@ -1,9 +1,11 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
@@ -16,7 +18,8 @@ using Foundatio.Repositories.Utility;
 
 namespace Exceptionless.Web.Api.Handlers;
 
-public class BulkOperationHandler(
+public class BackgroundTaskHandler(
+    BackgroundTaskService backgroundTaskService,
     BulkOperationService bulkOperationService,
     IEnumerable<IBulkSelectionResolver> resolvers,
     IOrganizationRepository organizationRepository,
@@ -24,14 +27,14 @@ public class BulkOperationHandler(
     AppOptions appOptions,
     TimeProvider timeProvider,
     IHttpContextAccessor httpContextAccessor,
-    ILogger<BulkOperationHandler> logger)
+    ILogger<BackgroundTaskHandler> logger)
 {
     private const int MaxIds = 1000;
     private static readonly ICollection<string> _allowedDateFields = new List<string> { EventIndex.Alias.Date };
 
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
-    public async Task<Result<AcceptedResponse<ViewBulkOperation>>> Handle(CreateBulkOperation message)
+    public async Task<Result<AcceptedResponse<ViewBackgroundTask>>> Handle(CreateBulkOperation message)
     {
         var request = HttpContext.Request;
         var model = message.Operation;
@@ -69,20 +72,23 @@ public class BulkOperationHandler(
 
         var authorized = await handler.AuthorizeAsync(bulkRequest);
         if (!authorized.IsOk)
-            return ToResult<AcceptedResponse<ViewBulkOperation>>(authorized);
+            return ToResult<AcceptedResponse<ViewBackgroundTask>>(authorized);
 
         var validated = await handler.ValidateAsync(bulkRequest);
         if (!validated.IsOk)
-            return ToResult<AcceptedResponse<ViewBulkOperation>>(validated);
+            return ToResult<AcceptedResponse<ViewBackgroundTask>>(validated);
 
-        var operation = new BulkOperation
+        var task = new BackgroundTask
         {
             OrganizationId = organization.Id,
             ProjectId = project?.Id,
             Type = handler.Type,
-            Selection = selection,
-            Parameters = new Dictionary<string, string>(parameters),
-            CreatedByUserId = user.Id
+            CreatedByUserId = user.Id,
+            Bulk = new BulkOperationDetails
+            {
+                Selection = selection,
+                Parameters = new Dictionary<string, string>(parameters)
+            }
         };
 
         if (selection.Kind is BulkOperationSelectionKind.Filter)
@@ -93,65 +99,68 @@ public class BulkOperationHandler(
 
             var selectionCheck = await resolver.ValidateSelectionAsync(organization, selection);
             if (!selectionCheck.IsOk)
-                return ToResult<AcceptedResponse<ViewBulkOperation>>(selectionCheck);
+                return ToResult<AcceptedResponse<ViewBackgroundTask>>(selectionCheck);
         }
 
         // Counting and pinning the selection (and describing the operation) happens while it is created.
-        var created = await bulkOperationService.CreateAsync(operation);
+        var created = await bulkOperationService.CreateAsync(task);
         if (created.Rejection is not null)
-            return ToResult<AcceptedResponse<ViewBulkOperation>>(created.Rejection);
+            return ToResult<AcceptedResponse<ViewBackgroundTask>>(created.Rejection);
 
         if (created.Conflict is not null)
             return Result.Conflict("Another destructive operation is already running for this project. Wait for it to finish or cancel it first.");
 
-        if (created.Operation is null)
+        if (created.Task is null)
             return Result.Conflict("Another bulk operation is being started for this organization. Please try again.");
 
         using var _ = logger.BeginScope(new ExceptionlessState().Organization(organization.Id).Tag("BulkOperation").Identity(user.EmailAddress));
-        logger.LogInformation("User {User} started bulk operation {OperationId} {Type} for {Total} items", user.Id, created.Operation.Id, created.Operation.Type, created.Operation.Total);
+        logger.LogInformation("User {User} started bulk operation {TaskId} {Type} for {Total} items", user.Id, created.Task.Id, created.Task.Type, created.Task.Total);
 
-        return new AcceptedResponse<ViewBulkOperation>(MapToViewModel(created.Operation));
+        return new AcceptedResponse<ViewBackgroundTask>(MapToViewModel(created.Task));
     }
 
-    public async Task<Result<ViewBulkOperation>> Handle(GetBulkOperationById message)
+    public async Task<Result<ViewBackgroundTask>> Handle(GetBackgroundTaskById message)
     {
-        var operation = await GetAccessibleAsync(message.Id);
-        if (operation is null)
-            return Result.NotFound("Bulk operation not found.");
+        var task = await GetAccessibleAsync(message.Id);
+        if (task is null)
+            return Result.NotFound("Task not found.");
 
-        return MapToViewModel(operation);
+        return MapToViewModel(task);
     }
 
-    public async Task<Result<IReadOnlyCollection<ViewBulkOperation>>> Handle(GetBulkOperationsByOrganization message)
+    public async Task<Result<IReadOnlyCollection<ViewBackgroundTask>>> Handle(GetBackgroundTasksByOrganization message)
     {
         if (!HttpContext.Request.CanAccessOrganization(message.OrganizationId))
             return Result.NotFound("Organization not found.");
 
-        var operations = await bulkOperationService.GetByOrganizationAsync(message.OrganizationId);
-        return Result<IReadOnlyCollection<ViewBulkOperation>>.Success(operations.Select(MapToViewModel).ToList());
+        var tasks = await backgroundTaskService.GetByOrganizationAsync(message.OrganizationId);
+        return Result<IReadOnlyCollection<ViewBackgroundTask>>.Success(tasks.Select(MapToViewModel).ToList());
     }
 
-    public async Task<Result<AcceptedResponse<ViewBulkOperation>>> Handle(CancelBulkOperation message)
+    public async Task<Result<AcceptedResponse<ViewBackgroundTask>>> Handle(CancelBackgroundTask message)
     {
-        var operation = await GetAccessibleAsync(message.Id);
-        if (operation is null)
-            return Result.NotFound("Bulk operation not found.");
+        var task = await GetAccessibleAsync(message.Id);
+        if (task is null)
+            return Result.NotFound("Task not found.");
 
-        var cancelled = await bulkOperationService.CancelAsync(operation.Id);
-        if (cancelled is null)
-            return Result.NotFound("Bulk operation not found.");
+        var cancelled = await backgroundTaskService.CancelAsync(task.Id);
+        if (cancelled.Task is null)
+            return Result.NotFound("Task not found.");
 
-        logger.LogInformation("User {User} requested cancellation of bulk operation {OperationId}", HttpContext.Request.GetUser().Id, cancelled.Id);
-        return new AcceptedResponse<ViewBulkOperation>(MapToViewModel(cancelled));
+        if (cancelled.IsNotCancellable)
+            return Result.Invalid(ValidationError.Create("task", "This task cannot be cancelled."));
+
+        logger.LogInformation("User {User} requested cancellation of task {TaskId}", HttpContext.Request.GetUser().Id, cancelled.Task.Id);
+        return new AcceptedResponse<ViewBackgroundTask>(MapToViewModel(cancelled.Task));
     }
 
-    private async Task<BulkOperation?> GetAccessibleAsync(string id)
+    private async Task<BackgroundTask?> GetAccessibleAsync(string id)
     {
-        var operation = await bulkOperationService.GetAsync(id);
-        if (operation is null || !HttpContext.Request.CanAccessOrganization(operation.OrganizationId))
+        var task = await backgroundTaskService.GetAsync(id);
+        if (task is null || !HttpContext.Request.CanAccessOrganization(task.OrganizationId))
             return null;
 
-        return operation;
+        return task;
     }
 
     private (BulkOperationSelection? Selection, Result? Result) ResolveSelection(NewBulkOperationSelection model, Organization organization)
@@ -215,35 +224,38 @@ public class BulkOperationHandler(
         };
     }
 
-    private static ViewBulkOperation MapToViewModel(BulkOperation operation)
+    private static ViewBackgroundTask MapToViewModel(BackgroundTask task)
     {
-        return new ViewBulkOperation
+        var selection = task.Bulk?.Selection;
+        return new ViewBackgroundTask
         {
-            Id = operation.Id,
-            OrganizationId = operation.OrganizationId,
-            ProjectId = operation.ProjectId,
-            Type = operation.Type,
-            Description = operation.Description,
-            Status = operation.Status,
-            Selection = new ViewBulkOperationSelection
+            Id = task.Id,
+            OrganizationId = task.OrganizationId,
+            ProjectId = task.ProjectId,
+            Type = task.Type,
+            Description = task.Description,
+            Status = task.Status,
+            Progress = task.Progress,
+            Total = task.Total,
+            Processed = task.Processed,
+            Succeeded = task.Succeeded,
+            Failed = task.Failed,
+            CanCancel = task.CanCancel,
+            Selection = selection is null ? null : new ViewBulkOperationSelection
             {
-                Kind = operation.Selection.Kind,
-                IdCount = operation.Selection.Kind is BulkOperationSelectionKind.Ids ? operation.Selection.Ids?.Count : null,
-                Filter = operation.Selection.Filter,
-                Time = operation.Selection.Time,
-                UtcStart = operation.Selection.UtcStart,
-                UtcEnd = operation.Selection.UtcEnd
+                Kind = selection.Kind,
+                IdCount = selection.Kind is BulkOperationSelectionKind.Ids ? selection.Ids?.Count : null,
+                Filter = selection.Filter,
+                Time = selection.Time,
+                UtcStart = selection.UtcStart,
+                UtcEnd = selection.UtcEnd
             },
-            Total = operation.Total,
-            Processed = operation.Processed,
-            Succeeded = operation.Succeeded,
-            Failed = operation.Failed,
-            CreatedByUserId = operation.CreatedByUserId,
-            CreatedUtc = operation.CreatedUtc,
-            StartedUtc = operation.StartedUtc,
-            CompletedUtc = operation.CompletedUtc,
-            UpdatedUtc = operation.UpdatedUtc,
-            Message = operation.Message
+            CreatedByUserId = task.CreatedByUserId,
+            CreatedUtc = task.CreatedUtc,
+            StartedUtc = task.StartedUtc,
+            CompletedUtc = task.CompletedUtc,
+            UpdatedUtc = task.UpdatedUtc,
+            Message = task.Message
         };
     }
 }

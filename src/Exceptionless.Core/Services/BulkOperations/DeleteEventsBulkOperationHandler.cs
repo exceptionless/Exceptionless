@@ -1,3 +1,4 @@
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Repositories;
 using Foundatio.Repositories;
@@ -45,21 +46,21 @@ public class DeleteEventsBulkOperationHandler : IBulkOperationHandler
         return Task.FromResult(BulkOperationCheckResult.Ok);
     }
 
-    public string Describe(BulkOperation operation)
+    public string Describe(BackgroundTask task)
     {
-        return operation.Selection.Kind is BulkOperationSelectionKind.Ids
-            ? $"Delete {operation.Total:N0} selected events"
-            : $"Delete {operation.Total:N0} events matching filter";
+        return task.Bulk!.Selection.Kind is BulkOperationSelectionKind.Ids
+            ? $"Delete {task.Total:N0} selected events"
+            : $"Delete {task.Total:N0} events matching filter";
     }
 
-    public async Task<BulkBatchResult> ExecuteBatchAsync(BulkOperation operation, IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
+    public async Task<BulkBatchResult> ExecuteBatchAsync(BackgroundTask task, IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
     {
         var events = await _eventRepository.GetByIdsAsync(ids.ToArray(), o => o.Cache(false));
 
-        // The operation may only touch its own organization (and project), no matter what ids it was given.
+        // The task may only touch its own organization (and project), no matter what ids it was given.
         var inScope = events
-            .Where(e => String.Equals(e.OrganizationId, operation.OrganizationId, StringComparison.Ordinal)
-                && (operation.ProjectId is null || String.Equals(e.ProjectId, operation.ProjectId, StringComparison.Ordinal)))
+            .Where(e => String.Equals(e.OrganizationId, task.OrganizationId, StringComparison.Ordinal)
+                && (task.ProjectId is null || String.Equals(e.ProjectId, task.ProjectId, StringComparison.Ordinal)))
             .ToList();
 
         await _eventDeletionService.DeleteAsync(inScope);
