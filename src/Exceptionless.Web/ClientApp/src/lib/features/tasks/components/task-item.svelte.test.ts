@@ -36,7 +36,7 @@ describe('TaskItem', () => {
         // Arrange
         const onCancel = vi.fn();
         const task = createTask();
-        render(TaskItem, { props: { onCancel, onDismiss: vi.fn(), task } });
+        render(TaskItem, { props: { canCancel: true, onCancel, onDismiss: vi.fn(), task } });
 
         // Act
         await fireEvent.click(screen.getByRole('button', { name: /^Cancel / }));
@@ -69,7 +69,7 @@ describe('TaskItem', () => {
 
     it('labels Cancel with the task it cancels', () => {
         // Arrange & Act
-        render(TaskItem, { props: { onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask() } });
+        render(TaskItem, { props: { canCancel: true, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask() } });
 
         // Assert
         expect(screen.getByRole('button', { name: 'Cancel Delete 1,234 events matching filter' })).toBeTruthy();
@@ -78,7 +78,7 @@ describe('TaskItem', () => {
     it('shows the queued state without a count', () => {
         // Arrange & Act
         render(TaskItem, {
-            props: { onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask({ processed: 0, status: BackgroundTaskStatus.Queued }) }
+            props: { canCancel: true, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask({ processed: 0, status: BackgroundTaskStatus.Queued }) }
         });
 
         // Assert
@@ -88,7 +88,7 @@ describe('TaskItem', () => {
 
     it('disables Cancel once cancellation was requested', () => {
         // Arrange & Act
-        render(TaskItem, { props: { isCancelling: true, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask() } });
+        render(TaskItem, { props: { canCancel: true, isCancelling: true, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask() } });
 
         // Assert
         expect((screen.getByRole('button', { name: /^Cancel / }) as HTMLButtonElement).disabled).toBe(true);
@@ -147,9 +147,9 @@ describe('TaskItem', () => {
         expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('50');
     });
 
-    it('does not offer Cancel for a running task that cannot be cancelled', () => {
+    it('does not offer Cancel for a running task when cancelling is not allowed', () => {
         // Arrange & Act
-        render(TaskItem, { props: { onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask({ can_cancel: false }) } });
+        render(TaskItem, { props: { canCancel: false, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask({ can_cancel: false }) } });
 
         // Assert
         expect(screen.queryByRole('button', { name: /^Cancel / })).toBeNull();

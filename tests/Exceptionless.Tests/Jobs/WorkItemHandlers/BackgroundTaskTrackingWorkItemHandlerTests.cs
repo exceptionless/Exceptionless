@@ -110,7 +110,7 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
         // Assert
         Assert.IsType<InvalidOperationException>(thrown);
         Assert.Equal(BackgroundTaskStatus.Failed, failed!.Status);
-        Assert.Contains("Elasticsearch unavailable", failed.Message);
+        Assert.DoesNotContain("Elasticsearch unavailable", failed.Message);
         Assert.Empty(activeAfterFailure);
         Assert.Equal(BackgroundTaskStatus.Running, duringRetry!.Status);
         Assert.Null(duringRetry.CompletedUtc);

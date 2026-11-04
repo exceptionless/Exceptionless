@@ -4,9 +4,11 @@ import {
     applyTaskUpdate,
     BackgroundTaskStatus,
     BulkOperationSelectionKind,
+    canCancelTask,
     FINISHED_TASK_VISIBLE_MS,
     getProgressPercent,
     selectVisibleTasks,
+    STALE_TASK_MS,
     type ViewBackgroundTask
 } from './models';
 
@@ -98,6 +100,26 @@ describe('getProgressPercent', () => {
 
         // Assert
         expect(percent).toBe(expected);
+    });
+});
+
+describe('canCancelTask', () => {
+    const updated = new Date('2026-01-01T10:00:00Z').getTime();
+
+    it.each([
+        ['a cancellable running task', { can_cancel: true }, updated, true],
+        ['a running task that cannot be cancelled', { can_cancel: false }, updated + STALE_TASK_MS - 1, false],
+        ['an abandoned task that cannot be cancelled', { can_cancel: false }, updated + STALE_TASK_MS, true],
+        ['a finished task', { can_cancel: true, status: BackgroundTaskStatus.Completed }, updated, false]
+    ])('%s: %j', (_name, overrides, now, expected) => {
+        // Arrange
+        const task = createTask(overrides);
+
+        // Act
+        const result = canCancelTask(task, now);
+
+        // Assert
+        expect(result).toBe(expected);
     });
 });
 

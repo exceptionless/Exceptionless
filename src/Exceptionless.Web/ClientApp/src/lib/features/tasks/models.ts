@@ -56,6 +56,18 @@ export function hasCounts(task: Pick<ViewBackgroundTask, 'total'>): boolean {
     return task.total > 0;
 }
 
+/** An active task that has not reported progress for this long is abandoned, and the server lets anyone clear it. */
+export const STALE_TASK_MS = 2 * 60 * 60 * 1000;
+
+/** Whether the panel offers Cancel: the task can be stopped, or it is abandoned and only needs clearing. */
+export function canCancelTask(task: Pick<ViewBackgroundTask, 'can_cancel' | 'status' | 'updated_utc'>, now: number): boolean {
+    if (!isTaskActive(task.status)) {
+        return false;
+    }
+
+    return task.can_cancel || now - new Date(task.updated_utc).getTime() >= STALE_TASK_MS;
+}
+
 export function isTaskActive(status: BackgroundTaskStatus): boolean {
     return status === BackgroundTaskStatus.Queued || status === BackgroundTaskStatus.Running;
 }

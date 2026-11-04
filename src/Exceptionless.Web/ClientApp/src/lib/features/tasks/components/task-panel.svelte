@@ -9,7 +9,7 @@
     import { organization } from '#features/organizations/context.svelte.ts';
 
     import { cancelTask, getTasksQuery, invalidateTaskAffectedQueries, updateTaskFromMessage } from '../api.svelte';
-    import { isTaskActive, selectVisibleTasks, type ViewBackgroundTask } from '../models';
+    import { canCancelTask, isTaskActive, selectVisibleTasks, type ViewBackgroundTask } from '../models';
     import TaskItem from './task-item.svelte';
 
     const queryClient = useQueryClient();
@@ -39,7 +39,7 @@
         return () => window.clearInterval(timer);
     });
 
-    // An task that was seen running and is now finished changed events and stacks, whichever way the update arrived.
+    // A task that was seen running and is now finished changed events and stacks, whichever way the update arrived.
     $effect(() => {
         for (const task of tasksQuery.data ?? []) {
             if (isTaskActive(task.status)) {
@@ -87,7 +87,7 @@
         role="region"
     >
         {#each visibleTasks as task (task.id)}
-            <TaskItem isCancelling={cancellingIds.has(task.id)} {onCancel} {onDismiss} {task} />
+            <TaskItem canCancel={canCancelTask(task, now)} isCancelling={cancellingIds.has(task.id)} {onCancel} {onDismiss} {task} />
         {/each}
     </div>
 {/if}

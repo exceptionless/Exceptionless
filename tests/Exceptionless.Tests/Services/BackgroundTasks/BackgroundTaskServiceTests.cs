@@ -365,6 +365,27 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
     }
 
     [Fact]
+    public async Task CancelAsync_AbandonedRunningTask_SaysItStoppedResponding()
+    {
+        // Arrange
+        var task = NewTask(canCancel: false);
+        await Tasks.AddAsync(task);
+        await Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Start(_time.GetUtcNow().UtcDateTime);
+            return true;
+        });
+        _time.Advance(BackgroundTaskService.StaleAfter + TimeSpan.FromMinutes(1));
+
+        // Act
+        var result = await Tasks.CancelAsync(task.Id);
+
+        // Assert
+        Assert.Equal(BackgroundTaskStatus.Cancelled, result.Task!.Status);
+        Assert.Equal("Cancelled after it stopped responding.", result.Task.Message);
+    }
+
+    [Fact]
     public async Task CancelAsync_FinishedOrUnknownTask_ChangesNothing()
     {
         // Arrange

@@ -12,6 +12,8 @@
     import { BackgroundTaskStatus, getProgressPercent, hasCounts, isTaskActive, type ViewBackgroundTask } from '../models';
 
     interface Props {
+        /** Whether to offer Cancel while the task is active. */
+        canCancel?: boolean;
         isCancelling?: boolean;
         onCancel: (task: ViewBackgroundTask) => void;
         onDismiss: (task: ViewBackgroundTask) => void;
@@ -26,7 +28,7 @@
         [BackgroundTaskStatus.Running]: 'in progress'
     };
 
-    let { isCancelling = false, onCancel, onDismiss, task }: Props = $props();
+    let { canCancel = false, isCancelling = false, onCancel, onDismiss, task }: Props = $props();
 
     const isActive = $derived(isTaskActive(task.status));
     const percent = $derived(getProgressPercent(task));
@@ -80,7 +82,7 @@
             </p>
         </div>
         {#if isActive}
-            {#if task.can_cancel}
+            {#if canCancel}
                 <Button aria-label={`Cancel ${task.description}`} disabled={isCancelling} onclick={() => onCancel(task)} size="sm" variant="outline"
                     >Cancel</Button
                 >

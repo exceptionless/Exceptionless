@@ -242,7 +242,7 @@ public class BackgroundTaskService
             if (isRunningNow)
                 return false;
 
-            current.Finish(BackgroundTaskStatus.Cancelled, "Cancelled before it started.", utcNow);
+            current.Finish(BackgroundTaskStatus.Cancelled, current.Status is BackgroundTaskStatus.Queued ? "Cancelled before it started." : "Cancelled after it stopped responding.", utcNow);
             return true;
         });
 

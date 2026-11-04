@@ -86,14 +86,15 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
         {
             await _inner.HandleItemAsync(tracked);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await TryUpdateAsync(taskId, task =>
             {
                 if (!task.IsActive)
                     return false;
 
-                task.Finish(BackgroundTaskStatus.Failed, $"Failed: {ex.Message}", UtcNow);
+                // The exception is logged by the job; its message can contain internal details, so the user sees a generic one.
+                task.Finish(BackgroundTaskStatus.Failed, "An error occurred. It will be retried automatically if possible.", UtcNow);
                 return true;
             });
 
