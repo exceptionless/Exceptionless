@@ -58,6 +58,8 @@ public sealed class ThrottlingMiddlewareTests : TestWithServices
         // Assert
         Assert.Equal(1, nextCallCount);
         Assert.Equal(StatusCodes.Status429TooManyRequests, secondContext.Response.StatusCode);
+        Assert.True(Int32.TryParse(secondContext.Response.Headers.RetryAfter, out int retryAfterSeconds));
+        Assert.InRange(retryAfterSeconds, 1, 60);
     }
 
     [Fact]

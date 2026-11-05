@@ -31,6 +31,37 @@ public static class ByteArrayExtensions
         return decompressedData;
     }
 
+    /// <summary>
+    /// Decompresses <paramref name="data"/>, stopping as soon as the output would exceed
+    /// <paramref name="maximumBytes"/>.
+    /// </summary>
+    /// <returns>The decompressed bytes, or <see langword="null"/> when they exceed <paramref name="maximumBytes"/>.</returns>
+    public static byte[]? Decompress(this byte[] data, string encoding, long maximumBytes)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(maximumBytes);
+
+        using var inputStream = new MemoryStream(data);
+        using Stream decompressionStream = encoding switch
+        {
+            "gzip" => new GZipStream(inputStream, CompressionMode.Decompress),
+            "deflate" => new DeflateStream(inputStream, CompressionMode.Decompress),
+            _ => throw new InvalidOperationException($"Unsupported encoding type \"{encoding}\".")
+        };
+
+        using var outputStream = new MemoryStream();
+        byte[] buffer = new byte[81920];
+        int bytesRead;
+        while ((bytesRead = decompressionStream.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            if (outputStream.Length + bytesRead > maximumBytes)
+                return null;
+
+            outputStream.Write(buffer, 0, bytesRead);
+        }
+
+        return outputStream.ToArray();
+    }
+
     public static byte[] Compress(this byte[] data)
     {
         byte[] compressesData;

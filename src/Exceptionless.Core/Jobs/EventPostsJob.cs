@@ -72,7 +72,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
         AppDiagnostics.PostsMessageSize.Record(payload.LongLength);
         if (payload.LongLength > _maximumEventPostFileSize)
         {
-            await Task.WhenAll(AppDiagnostics.PostsCompleteTime.TimeAsync(() => entry.CompleteAsync()), projectTask, organizationTask);
+            await Task.WhenAll(CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime), projectTask, organizationTask);
             return JobResult.FailedWithMessage($"Unable to process payload '{payloadPath}' ({payload.LongLength} bytes): Maximum event post size limit ({_appOptions.MaximumEventPostSize} bytes) reached.");
         }
 
@@ -95,7 +95,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
         }
 
         long maxEventPostSize = _appOptions.MaximumEventPostSize;
-        byte[] uncompressedData = payload;
+        byte[]? uncompressedData = payload;
         if (!String.IsNullOrEmpty(ep.ContentEncoding))
         {
             if (!isInternalProject && isDebugLogLevelEnabled)
@@ -107,9 +107,11 @@ public class EventPostsJob : QueueJobBase<EventPost>
             maxEventPostSize = _maximumUncompressedEventPostSize;
             try
             {
+                // Stop decompressing at the limit so a highly compressed payload cannot expand
+                // into an unbounded amount of memory before its size is checked.
                 AppDiagnostics.PostsDecompressionTime.Time(() =>
                 {
-                    uncompressedData = uncompressedData.Decompress(ep.ContentEncoding);
+                    uncompressedData = payload.Decompress(ep.ContentEncoding, maxEventPostSize);
                 });
             }
             catch (Exception ex)
@@ -120,8 +122,10 @@ public class EventPostsJob : QueueJobBase<EventPost>
             }
         }
 
-        AppDiagnostics.PostsUncompressedSize.Record(payload.LongLength);
-        if (uncompressedData.Length > maxEventPostSize)
+        if (uncompressedData is not null)
+            AppDiagnostics.PostsUncompressedSize.Record(uncompressedData.LongLength);
+
+        if (uncompressedData is null || uncompressedData.Length > maxEventPostSize)
         {
             var org = await organizationTask;
             if (org is not null)
@@ -129,7 +133,7 @@ public class EventPostsJob : QueueJobBase<EventPost>
             else
                 _logger.LogWarning("Organization {OrganizationId} not found, skipping too-big usage increment for event post {EventPostId}", ep.OrganizationId, entry.Id);
             await CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime);
-            return JobResult.FailedWithMessage($"Unable to process decompressed EventPost data '{payloadPath}' ({payload.Length} bytes compressed, {uncompressedData.Length} bytes): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
+            return JobResult.FailedWithMessage($"Unable to process decompressed EventPost data '{payloadPath}' ({payload.Length} bytes compressed): Maximum uncompressed event post size limit ({maxEventPostSize} bytes) reached.");
         }
 
         if (!isInternalProject && isDebugLogLevelEnabled)

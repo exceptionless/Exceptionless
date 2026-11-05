@@ -57,6 +57,7 @@ public class EventHandler(
     private readonly ILogger _logger = loggerFactory.CreateLogger<EventHandler>();
     private static readonly ICollection<string> _allowedDateFields = new List<string> { EventIndex.Alias.Date };
     private const string DefaultDateField = EventIndex.Alias.Date;
+    private const string EventQueueRetryAfterSeconds = "30";
     private static Result<T> PlanLimitResult<T>(string message) => Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, message));
     private static bool ShouldIncludeTotal(string? include) => ShouldInclude(include, "total");
 
@@ -531,7 +532,7 @@ public class EventHandler(
             }
 
             using var stream = new MemoryStream(ev.GetBytes(serializer));
-            await eventPostService.EnqueueAsync(new EventPost(appOptions.EnableArchive)
+            string? queueEntryId = await eventPostService.EnqueueAsync(new EventPost(appOptions.EnableArchive)
             {
                 ApiVersion = message.ApiVersion,
                 CharSet = charSet,
@@ -543,6 +544,9 @@ public class EventHandler(
                 ClientKeyHash = httpContext.Request.GetClientKeyHash(),
                 UserAgent = message.UserAgent
             }, stream);
+
+            if (String.IsNullOrEmpty(queueEntryId))
+                return EventQueueUnavailable(httpContext);
         }
         catch (Exception ex)
         {
@@ -621,6 +625,9 @@ public class EventHandler(
 
                 return Result.BadRequest(result.RejectionReason ?? "Request body was rejected.");
             }
+
+            if (!result.IsQueued)
+                return EventQueueUnavailable(httpContext);
         }
         catch (Exception ex)
         {
@@ -1088,4 +1095,11 @@ public class EventHandler(
     }
 
     #endregion
+
+    private static Result EventQueueUnavailable(HttpContext httpContext)
+    {
+        // Events that were not queued will never be processed, so ask the client to resend them.
+        httpContext.Response.Headers.RetryAfter = EventQueueRetryAfterSeconds;
+        return Result.Unavailable("Unable to queue the events. Try again later.");
+    }
 }
