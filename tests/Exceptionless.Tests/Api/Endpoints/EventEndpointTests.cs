@@ -420,6 +420,37 @@ public partial class EventEndpointTests : IntegrationTestsBase
         Assert.Equal(TestConstants.UserEmail, description.EmailAddress);
     }
 
+    [Theory]
+    [InlineData(false, null)]
+    [InlineData(true, TestConstants.UserEmail)]
+    public async Task PostUserDescription_WithIncludePrivateInformationSetting_QueuesExpectedEmailAddressAsync(bool includePrivateInformation, string? expectedEmailAddress)
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        project.Configuration.Settings[SettingsDictionary.KnownKeys.IncludePrivateInformation] = includePrivateInformation.ToString();
+        await _projectRepository.SaveAsync(project, o => o.ImmediateConsistency().Cache());
+        await _eventUserDescriptionQueue.DeleteQueueAsync();
+
+        // Act
+        await SendRequestAsync(r => r
+            .Post()
+            .AsTestOrganizationClientUser()
+            .AppendPath("events/by-ref/TestReferenceId/user-description")
+            .Content(new UserDescription { Description = "Test Description", EmailAddress = TestConstants.UserEmail })
+            .StatusCodeShouldBeAccepted()
+        );
+
+        // Assert
+        var entry = await _eventUserDescriptionQueue.DequeueAsync(TestCancellationToken);
+        Assert.NotNull(entry);
+        Assert.Equal(expectedEmailAddress, entry.Value.EmailAddress);
+        Assert.Equal("Test Description", entry.Value.Description);
+
+        await entry.AbandonAsync();
+        await _eventUserDescriptionQueue.DeleteQueueAsync();
+    }
+
     [Fact]
     public async Task PostEvent_WithNoMatchingEvent_UserDescriptionIsAbandonedAsync()
     {

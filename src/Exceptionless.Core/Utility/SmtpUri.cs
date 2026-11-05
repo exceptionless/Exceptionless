@@ -38,7 +38,6 @@ public class SmtpUri
         }
 
         Host = uri.Host;
-        Port = uri.IsDefaultPort ? 25 : uri.Port;
     }
 
     public string Host { get; }

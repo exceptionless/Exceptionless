@@ -53,6 +53,14 @@ redis:
 
 storage:
   connectionString:
+  # Used for the folder storage claim when no connectionString is set. Leave
+  # storageClassName empty to use the cluster default. Pods on more than one node
+  # need a ReadWriteMany capable class (NFS, Azure Files, EFS) or an object
+  # storage connectionString.
+  storageClassName:
+  accessModes:
+    - ReadWriteMany
+  size: 5Gi
 
 cache:
   connectionString:

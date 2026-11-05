@@ -362,11 +362,13 @@ public class EventHandler(
         // Set the project for the configuration response filter.
         httpContext.Request.SetProject(project);
 
+        // Match RemovePrivateInformationPlugin: drop the email address when private information is not collected.
+        bool includePrivateInformation = project.Configuration.Settings.GetBoolean(SettingsDictionary.KnownKeys.IncludePrivateInformation, true);
         var eventUserDescription = new EventUserDescription
         {
             ProjectId = project.Id,
             ReferenceId = message.ReferenceId,
-            EmailAddress = message.Description.EmailAddress,
+            EmailAddress = includePrivateInformation ? message.Description.EmailAddress : null,
             Description = message.Description.Description,
             Data = message.Description.Data
         };
