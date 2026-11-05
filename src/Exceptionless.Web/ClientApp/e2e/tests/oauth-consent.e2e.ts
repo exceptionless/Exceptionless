@@ -59,7 +59,7 @@ test('AuthorizeConsent_InvalidAndRestartedRequests_UsesOnlyCurrentValidation', a
     });
     try {
         // Act
-        await page.goto(`/oauth/authorize?${parameters}`);
+        await page.goto(`/next/oauth/authorize?${parameters}`);
         // Assert
         await expect(page.getByText(errorDescription, { exact: true })).toBeVisible();
         await expect(page.getByText('Required', { exact: true })).toHaveCount(1);
@@ -74,7 +74,7 @@ test('AuthorizeConsent_InvalidAndRestartedRequests_UsesOnlyCurrentValidation', a
 
         // Act: restart with an allowed request.
         parameters.set('scope', 'mcp:read');
-        await page.goto(`/oauth/authorize?${parameters}`);
+        await page.goto(`/next/oauth/authorize?${parameters}`);
         // Assert
         await expect(page.getByText('Test Client', { exact: true })).toBeVisible();
         await expect(page.getByRole('checkbox', { name: 'Test Organization' })).toBeEnabled();
@@ -94,7 +94,7 @@ test('AuthorizeConsent_InvalidAndRestartedRequests_UsesOnlyCurrentValidation', a
                 link.href = href;
                 link.textContent = 'Change authorization request';
                 document.body.append(link);
-            }, `/oauth/authorize?${parameters}`);
+            }, `/next/oauth/authorize?${parameters}`);
             await page.getByRole('link', { name: 'Change authorization request' }).click();
         }
 

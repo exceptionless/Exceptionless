@@ -69,19 +69,16 @@ describe('getProblemMessage', () => {
 });
 
 describe('problemDetailsToFormErrors', () => {
-    it.each([{ status: 400 }])(
-        'ProblemDetailsToFormErrors_NoFieldErrors_ReturnsProblemMessage: %j',
-        (details) => {
-            // Arrange
-            const problem = { ...details, title: 'An organization cannot be deleted if it has a subscription.' };
+    it.each([{ status: 400 }])('ProblemDetailsToFormErrors_NoFieldErrors_ReturnsProblemMessage: %j', (details) => {
+        // Arrange
+        const problem = { ...details, title: 'An organization cannot be deleted if it has a subscription.' };
 
-            // Act
-            const actual = problemDetailsToFormErrors(problem as never);
+        // Act
+        const actual = problemDetailsToFormErrors(problem as never);
 
-            // Assert
-            expect(actual).toEqual({ form: 'An organization cannot be deleted if it has a subscription.' });
-        }
-    );
+        // Assert
+        expect(actual).toEqual({ form: 'An organization cannot be deleted if it has a subscription.' });
+    });
 
     it('ProblemDetailsToFormErrors_SpecificFieldErrors_OmitsGenericTitle', () => {
         // Arrange
