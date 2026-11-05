@@ -63,23 +63,15 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.OfflineAccess
     ];
 
-    /// <summary>
-    /// Scopes added after applications were already registered. Clients often request everything discovery advertises,
-    /// so an application that was never allowed these still authorizes, and its grant simply leaves them out.
-    /// </summary>
-    private static readonly IReadOnlyCollection<string> s_scopesOmittedWhenNotAllowed =
-    [
-        AuthorizationRoles.SavedViewsRead,
-        AuthorizationRoles.SavedViewsWrite
-    ];
-
     public static readonly IReadOnlyCollection<string> DefaultScopes =
     [
         AuthorizationRoles.McpRead,
         AuthorizationRoles.ProjectsRead,
         AuthorizationRoles.StacksRead,
+        AuthorizationRoles.StacksWrite,
         AuthorizationRoles.EventsRead,
         AuthorizationRoles.SavedViewsRead,
+        AuthorizationRoles.SavedViewsWrite,
         AuthorizationRoles.OfflineAccess
     ];
 
@@ -221,7 +213,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     private async Task<OAuthApplication> RefreshObservedApplicationAsync(OAuthApplication application)
     {
-        if (!String.Equals(application.CreatedByUserId, OAuthApplication.SystemUserId, StringComparison.Ordinal)
+        // Once an administrator saves an application, a metadata change must not replace their settings or reclassify it.
+        if (!IsSelfRegistered(application)
             || !String.Equals(application.Notes, ClientMetadataNotes, StringComparison.Ordinal)
             || !options.EnableClientIdMetadataDocuments
             || !OAuthClientMetadataService.TryCreateClientMetadataDocumentUri(application.ClientId, out _))
@@ -307,9 +300,17 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             ClientId = application.ClientId,
             Name = application.Name,
             RedirectUris = application.RedirectUris,
-            Scopes = application.Scopes,
+            // A self-registered client chose its own scopes, and could register again with all of them, so that list
+            // restricts nothing. The signed-in user's consent limits its grant. Scopes an administrator saved stay enforced.
+            Scopes = IsSelfRegistered(application) ? SupportedScopes : application.Scopes,
             IsDisabled = application.IsDisabled
         }.Normalize();
+    }
+
+    private static bool IsSelfRegistered(OAuthApplication application)
+    {
+        return String.Equals(application.CreatedByUserId, OAuthApplication.SystemUserId, StringComparison.Ordinal)
+            && String.Equals(application.UpdatedByUserId, OAuthApplication.SystemUserId, StringComparison.Ordinal);
     }
 
     private static string NormalizeClientName(string? clientName, string clientId)
@@ -338,13 +339,6 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return client.Scopes;
     }
 
-    private IReadOnlyCollection<string> GetGrantableScopes(string? scopes, IReadOnlyCollection<string> allowedScopes)
-    {
-        return NormalizeScopes(scopes)
-            .Where(scope => allowedScopes.Contains(scope, StringComparer.Ordinal) || !s_scopesOmittedWhenNotAllowed.Contains(scope, StringComparer.Ordinal))
-            .ToArray();
-    }
-
     public IReadOnlyCollection<string> NormalizeScopes(string? scopes)
     {
         if (String.IsNullOrWhiteSpace(scopes))
@@ -356,7 +350,10 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             .ToArray();
     }
 
-    public async Task<OAuthValidationResult> ValidateAuthorizationRequestAsync(OAuthAuthorizeRequest request, string expectedResource, OAuthResourceDefinition resourceDefinition)
+    // narrowToClientScopes drops optional supported scopes an administrator has not allowed for this client, for building
+    // the consent page, because clients commonly request everything discovery advertises. Leave it false when issuing a
+    // code, which stores the scopes from the request as submitted.
+    public async Task<OAuthValidationResult> ValidateAuthorizationRequestAsync(OAuthAuthorizeRequest request, string expectedResource, OAuthResourceDefinition resourceDefinition, bool narrowToClientScopes = false)
     {
         if (String.IsNullOrWhiteSpace(request.ClientId))
             return OAuthValidationResult.Invalid("invalid_request", "Missing client_id.");
@@ -377,10 +374,19 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!IsExpectedResource(request.Resource, expectedResource))
             return OAuthValidationResult.Invalid("invalid_target", "The requested resource is not supported.");
 
-        var allowedScopes = GetAllowedScopes(client);
-        var requestedScopes = GetGrantableScopes(request.Scope, allowedScopes);
+        var requestedScopes = NormalizeScopes(request.Scope);
         if (requestedScopes.Count == 0)
             return OAuthValidationResult.Invalid("invalid_scope", "At least one scope is required.");
+
+        var allowedScopes = GetAllowedScopes(client);
+        if (narrowToClientScopes)
+        {
+            requestedScopes = requestedScopes
+                .Where(s => allowedScopes.Contains(s, StringComparer.Ordinal)
+                    || !SupportedScopes.Contains(s, StringComparer.Ordinal)
+                    || resourceDefinition.RequiredScopes.Contains(s, StringComparer.Ordinal))
+                .ToArray();
+        }
 
         if (requestedScopes.Any(s => !allowedScopes.Contains(s, StringComparer.Ordinal)))
         {
@@ -414,7 +420,6 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         await oauthApplicationRepository.AddOrganizationIdsAsync(request.ClientId, organizationIds, o => o.ImmediateConsistency().Notifications(false));
 
-        var client = await GetClientAsync(request.ClientId);
         string code = StringExtensions.GetNewToken();
         var authorizationCode = new OAuthAuthorizationCode
         {
@@ -424,7 +429,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             AuthenticationVersion = user.AuthenticationVersion,
             CodeChallenge = request.CodeChallenge,
             Resource = request.Resource ?? throw new InvalidOperationException("OAuth resource must be validated before creating an authorization code."),
-            Scopes = client is null ? NormalizeScopes(request.Scope) : GetGrantableScopes(request.Scope, GetAllowedScopes(client)),
+            Scopes = NormalizeScopes(request.Scope),
             OrganizationIds = organizationIds,
             CreatedUtc = timeProvider.GetUtcNow().UtcDateTime
         };

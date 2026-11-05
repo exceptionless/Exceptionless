@@ -16,13 +16,15 @@ For the MCP resource, `mcp:read` is required to connect. `projects:read`, `stack
 
 `offline_access` permits refresh token issuance so the client can obtain another access token without a new interactive authorization. It adds no read or write permission. Access tokens default to one hour and refresh tokens to 30 days; these lifetimes are configured with `OAuthServer:AccessTokenLifetimeMinutes` and `OAuthServer:RefreshTokenLifetimeDays`.
 
-Dynamic registration without a scope uses `mcp:read projects:read stacks:read events:read saved-views:read offline_access`. It excludes `stacks:write` and `saved-views:write`. An explicit registration scope is retained, so a client registered with only the four read scopes also lacks `offline_access`.
+Dynamic registration without a scope uses every supported scope. A self-registered client can request any supported scope whatever it registered, because the user decides on the consent page what to grant. Once an administrator saves an application's scopes, that list is enforced.
 
-An application registered before `saved-views:read` and `saved-views:write` existed is not allowed them. Requesting them does not fail authorization, but the grant leaves them out and the saved view tools report a `forbidden` error. To use those tools, register the client again requesting these scopes, then authorize it again. An administrator can instead add the scopes to the application, and the user still needs to authorize it again.
+A token only carries the scopes it was granted, so a client authorized before `saved-views:read` and `saved-views:write` existed gets a `forbidden` error from the saved view tools until the user authorizes it again. If an administrator has saved the application's scopes, the administrator must add these scopes first.
 
-### Resolving a scope error after registration
+### Requesting scopes the application does not allow
 
-If authorization reports scopes that are not allowed for the application, restart the client's authorization flow requesting an allowed subset. Keep `mcp:read` for MCP access. Changing checkboxes on a failed consent page does not validate a new request.
+When an administrator has restricted an application, the consent page offers the requested scopes that list allows and omits the rest, so a client that requests everything discovery advertises can still be approved. The token response's `scope` lists what was granted.
+
+Authorization still fails when the application does not allow a required scope such as `mcp:read`, or when the request includes a scope the server does not support. Restart the client's authorization flow with a valid request. Changing checkboxes on a failed consent page does not validate a new request.
 
 Client software should register the scopes it will request. Each grant remains limited to the scopes and organizations approved by the user. Account **Applications** lists and revokes the user's grants.
 
