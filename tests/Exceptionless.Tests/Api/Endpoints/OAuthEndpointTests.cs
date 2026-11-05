@@ -775,6 +775,41 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CompleteAuthorizeAsync_AdministratorEditedMetadataClient_KeepsRestrictionWhenMetadataDiffers()
+    {
+        // Arrange: the saved name differs from the metadata document, which would otherwise trigger a refresh.
+        await CreateAuthorizationCodeAsync(PkceVerifier, ClaudeLoopbackRedirectUri, clientId: ClaudeMetadataClientId);
+        string[] restrictedScopes = [AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead];
+        var application = await _oauthApplicationRepository.GetByClientIdAsync(ClaudeMetadataClientId, o => o.ImmediateConsistency());
+        Assert.NotNull(application);
+        application.Name = "Administrator Reviewed Client";
+        application.Scopes = restrictedScopes;
+        application.UpdatedByUserId = TestConstants.UserId;
+        await _oauthApplicationRepository.SaveAsync(application, o => o.ImmediateConsistency());
+
+        using var client = CreateHttpClient();
+        using var request = CreateAuthorizeJsonRequest(
+            PkceVerifier,
+            ClaudeLoopbackRedirectUri,
+            clientId: ClaudeMetadataClientId,
+            scope: String.Join(' ', OAuthService.SupportedScopes));
+
+        // Act
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_scope", error.Error);
+        var savedApplication = await _oauthApplicationRepository.GetByClientIdAsync(ClaudeMetadataClientId, o => o.ImmediateConsistency());
+        Assert.NotNull(savedApplication);
+        Assert.Equal("Administrator Reviewed Client", savedApplication.Name);
+        Assert.Equal(restrictedScopes, savedApplication.Scopes);
+        Assert.Equal(TestConstants.UserId, savedApplication.UpdatedByUserId);
+    }
+
+    [Fact]
     public async Task CompleteAuthorizeAsync_ClientMetadataDocumentLoopbackRedirectUriWithPort_ReturnsRedirectUri()
     {
         using var client = CreateHttpClient();

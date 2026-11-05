@@ -207,7 +207,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     private async Task<OAuthApplication> RefreshObservedApplicationAsync(OAuthApplication application)
     {
-        if (!String.Equals(application.CreatedByUserId, OAuthApplication.SystemUserId, StringComparison.Ordinal)
+        // Once an administrator saves an application, a metadata change must not replace their settings or reclassify it.
+        if (!IsSelfRegistered(application)
             || !String.Equals(application.Notes, ClientMetadataNotes, StringComparison.Ordinal)
             || !options.EnableClientIdMetadataDocuments
             || !OAuthClientMetadataService.TryCreateClientMetadataDocumentUri(application.ClientId, out _))
