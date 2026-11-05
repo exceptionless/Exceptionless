@@ -132,7 +132,11 @@
         try {
             await updateSlackNotificationSettingsResponse.mutateAsync(settings);
             toastId = toast.success('Successfully updated Slack notification settings.');
-        } catch {
+        } catch (error) {
+            if (showBillingDialogOnUpgradeProblem(error, organization.current, () => updateSlackNotificationSettings(settings))) {
+                return;
+            }
+
             toastId = toast.error('Error updating Slack notification settings. Please try again.');
         }
     }

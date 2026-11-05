@@ -201,7 +201,7 @@ public class TokenHandler(
         var model = await AddModelAsync(mapped);
         var viewModel = mapper.MapToViewToken(model);
         AfterResultMap([viewModel]);
-        string location = linkGenerator.GetUriByName(HttpContext, "GetTokenById", new { id = model.Id })
+        string location = linkGenerator.GetUriByName(HttpContext, "GetTokenById", new { id = model.Id }, options: new LinkOptions { LowercaseUrls = false })
             ?? throw new InvalidOperationException("Unable to generate token location.");
         return Result<ViewToken>.Created(viewModel, location);
     }
