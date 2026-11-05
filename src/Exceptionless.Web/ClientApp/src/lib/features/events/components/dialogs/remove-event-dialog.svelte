@@ -5,11 +5,13 @@
 
     interface Props {
         count?: number;
+        /** The delete runs against everything matching the current filter instead of the selected rows. */
+        matchingFilter?: boolean;
         open: boolean;
         remove: () => Promise<void>;
     }
 
-    let { count = 1, open = $bindable(), remove }: Props = $props();
+    let { count = 1, matchingFilter = false, open = $bindable(), remove }: Props = $props();
 
     async function onSubmit() {
         await remove();
@@ -29,12 +31,17 @@
                 {/if}
             </AlertDialog.Title>
             <AlertDialog.Description>
-                Are you sure you want to delete
-                {#if count === 1}
-                    this event
+                {#if matchingFilter}
+                    Delete <Number value={count} />
+                    {count === 1 ? 'event' : 'events'} matching this filter? This can't be undone.
                 {:else}
-                    <Number value={count} /> events
-                {/if}?
+                    Are you sure you want to delete
+                    {#if count === 1}
+                        this event
+                    {:else}
+                        <Number value={count} /> events
+                    {/if}?
+                {/if}
             </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>

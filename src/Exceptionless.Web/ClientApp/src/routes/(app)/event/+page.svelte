@@ -51,8 +51,10 @@
     } from '#features/events/components/filters/index.ts';
     import OrganizationDefaultsFacetedFilterBuilder from '#features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
+    import { createAllMatchingSelection, getEventsQueryIdentity } from '#features/events/components/table/all-matching-selection.svelte.ts';
     import EventsBulkActionsDropdownMenu from '#features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
     import EventsDataTable from '#features/events/components/table/events-data-table.svelte';
+    import EventsSelectAllBanner from '#features/events/components/table/events-select-all-banner.svelte';
     import { defaultEventColumnVisibility, getColumns } from '#features/events/components/table/options.svelte.ts';
     import InvestigationListTour from '#features/events/components/tours/investigation-list.svelte';
     import { filterUsesPremiumFeatures } from '#features/events/premium-filter.ts';
@@ -767,6 +769,60 @@
         })
     );
 
+    // Gmail-style "select everything matching the filter". It belongs to the query it was made for, so a different
+    // filter, time range, project or saved view drops it.
+    const allMatching = createAllMatchingSelection(() =>
+        getEventsQueryIdentity({
+            filter: eventsQueryParameters.filter,
+            organizationId: organization.current,
+            savedViewId: savedViewsState.activeSavedView?.id,
+            time: eventsQueryParameters.time
+        })
+    );
+    const pageRowCount = $derived(table.getRowModel().rows.length);
+    const isPageSelected = $derived(pageRowCount > 0 && table.getIsAllRowsSelected());
+
+    // The same request the list makes, asking only for the total, so the count always agrees with the list.
+    const matchingTotalQuery = getOrganizationEventsQuery({
+        enabled: () => !isSavedViewRoutePending && isPageSelected,
+        get params() {
+            return {
+                filter: eventsQueryParameters.filter,
+                include: 'total' as const,
+                limit: 1,
+                mode: 'summary' as const,
+                offset: DEFAULT_OFFSET,
+                time: eventsQueryParameters.time
+            };
+        },
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
+    const totalMatching = $derived((matchingTotalQuery.data?.meta.total ?? eventsQuery.data?.meta.total) as number | undefined);
+    const allMatchingTarget = $derived.by(() => {
+        const selection = allMatching.active;
+        if (!selection || !organization.current) {
+            return undefined;
+        }
+
+        return {
+            count: selection.count,
+            filter: eventsQueryParameters.filter ?? '',
+            offset: DEFAULT_OFFSET,
+            organizationId: organization.current,
+            time: eventsQueryParameters.time
+        };
+    });
+
+    $effect(() => {
+        if (!allMatching.active || !isPageSelected) {
+            untrack(() => allMatching.clear());
+        }
+    });
+
     async function handleRefresh() {
         table.resetRowSelection();
         await eventsQuery.refetch();
@@ -820,6 +876,17 @@
     function reset() {
         table.resetRowSelection();
         table.setPageIndex(0);
+    }
+
+    async function selectAllMatching() {
+        // Count again right now, so the number the user confirms is current. If the filter changes while the count is
+        // loading, the count belongs to the old filter and must not be bound to the new one.
+        const identity = allMatching.identity;
+        const result = await matchingTotalQuery.refetch();
+        const count = (result.data?.meta.total ?? totalMatching) as number | undefined;
+        if (count !== undefined) {
+            allMatching.select(count, identity);
+        }
     }
 
     let reconcileTotalRequested = false;
@@ -1038,6 +1105,18 @@
             />
         {/if}
 
+        <EventsSelectAllBanner
+            allMatchingCount={allMatching.active?.count}
+            {isPageSelected}
+            onClear={() => {
+                allMatching.clear();
+                table.resetRowSelection();
+            }}
+            onSelectAllMatching={selectAllMatching}
+            pageCount={pageRowCount}
+            {totalMatching}
+        />
+
         <div data-tour="event-list">
             <EventsDataTable
                 autoFillColumnId={savedViewsState.autoFillColumnId}
@@ -1051,7 +1130,7 @@
             >
                 {#snippet footerChildren()}
                     <div class="flex min-w-0 items-center gap-3">
-                        <EventsBulkActionsDropdownMenu {table} />
+                        <EventsBulkActionsDropdownMenu allMatching={allMatchingTarget} onAllMatchingStarted={() => allMatching.clear()} {table} />
                         <DataTable.Selection {table} />
                     </div>
 

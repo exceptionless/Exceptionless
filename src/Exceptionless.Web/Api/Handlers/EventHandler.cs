@@ -49,6 +49,7 @@ public class EventHandler(
     AppOptions appOptions,
     SystemSettingsService systemSettingsService,
     UsageService usageService,
+    EventDeletionService eventDeletionService,
     TimeProvider timeProvider,
     LinkGenerator linkGenerator,
     ILoggerFactory loggerFactory)
@@ -665,23 +666,7 @@ public class EventHandler(
             _logger.LogInformation("User {User} deleted {RemovedCount} events in project ({ProjectId})", currentUser.Id, projectGroup.Count(), ev.ProjectId);
         }
 
-        await eventRepository.RemoveAsync(list);
-
-        foreach (var projectGroup in projectGroups)
-        {
-            try
-            {
-                await usageService.IncrementDeletedAsync(projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, projectGroup.Count());
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to increment deleted usage metrics for org {OrganizationId} project {ProjectId}: {Message}", projectGroup.Key.OrganizationId, projectGroup.Key.ProjectId, ex.Message);
-            }
-        }
+        await eventDeletionService.DeleteAsync(list.ToList());
 
         if (results.Failure.Count == 0)
             return new WorkInProgressResult();
