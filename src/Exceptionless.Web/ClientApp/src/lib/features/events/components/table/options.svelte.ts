@@ -190,7 +190,8 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                 cell: (prop) =>
                     renderComponent(EventEnvironmentCell, {
                         changed: options?.onEnvironmentClick,
-                        environment: prop.getValue<string | undefined>()
+                        environment: prop.getValue<string | undefined>(),
+                        projectId: getProjectId(prop.row.original)
                     }),
                 header: 'Environment',
                 id: 'environment',
@@ -376,6 +377,10 @@ function formatTextColumn(value: unknown): string {
 function getProject<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(summary: TSummaryModel): string | undefined {
     const eventSummary = summary as Partial<Pick<EventSummaryModel<SummaryTemplateKeys>, 'project_id' | 'project_name'>> & TSummaryModel;
     return eventSummary.project_name ?? eventSummary.project_id;
+}
+
+function getProjectId<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(summary: TSummaryModel): string | undefined {
+    return (summary as Partial<Pick<EventSummaryModel<SummaryTemplateKeys>, 'project_id'>> & TSummaryModel).project_id;
 }
 
 function getSource<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(summary: TSummaryModel): string | undefined {

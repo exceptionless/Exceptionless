@@ -40,6 +40,8 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
         var originalStack = _stackData.GenerateStack();
         originalStack.Id = ObjectId.GenerateNewId().ToString();
         originalStack.TotalOccurrences = 100;
+        originalStack.IsNewNotificationPending = true;
+        originalStack.IsRegressionNotificationPending = true;
         var duplicateStack = originalStack.DeepClone();
         duplicateStack.Id = ObjectId.GenerateNewId().ToString();
         duplicateStack.Status = StackStatus.Fixed;
@@ -79,6 +81,8 @@ public class FixDuplicateStacksMigrationTests : IntegrationTestsBase
         Assert.Equal(originalStack.CreatedUtc, updatedOriginalStack.CreatedUtc);
         Assert.Equal(110, updatedOriginalStack.TotalOccurrences);
         Assert.Equal(StackStatus.Fixed, updatedOriginalStack.Status);
+        Assert.False(updatedOriginalStack.IsNewNotificationPending);
+        Assert.False(updatedOriginalStack.IsRegressionNotificationPending);
         Assert.Equal(duplicateStack.LastOccurrence, updatedOriginalStack.LastOccurrence);
         Assert.Null(updatedOriginalStack.SnoozeUntilUtc);
         Assert.Equal(duplicateStack.DateFixed, updatedOriginalStack.DateFixed);

@@ -74,7 +74,7 @@ public class Mailer : IMailer
     public async Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences)
     {
         bool isCritical = ev.IsCritical();
-        var result = _pluginManager.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
+        var result = _pluginManager.GetEventNotificationMailMessageData(ev, project, isCritical, isNew, isRegression);
         if (result is null || result.Data.Count == 0)
         {
             _logger.LogWarning("Unable to create event notification mail message for event \"{UserId}\". User: \"{EmailAddress}\"", ev.Id, user.EmailAddress);

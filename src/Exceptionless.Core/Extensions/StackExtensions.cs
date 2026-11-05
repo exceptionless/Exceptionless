@@ -7,7 +7,7 @@ public static class StackExtensions
 {
     public static void MarkFixed(this Stack stack, SemanticVersion? version, TimeProvider timeProvider)
     {
-        stack.Status = StackStatus.Fixed;
+        stack.SetStatus(StackStatus.Fixed);
         stack.DateFixed = timeProvider.GetUtcNow().UtcDateTime;
         stack.FixedInVersion = version?.ToString();
         stack.SnoozeUntilUtc = null;
@@ -15,10 +15,21 @@ public static class StackExtensions
 
     public static void MarkOpen(this Stack stack)
     {
-        stack.Status = StackStatus.Open;
+        stack.SetStatus(StackStatus.Open);
         stack.DateFixed = null;
         stack.FixedInVersion = null;
         stack.SnoozeUntilUtc = null;
+    }
+
+    /// <summary>
+    /// Changes the status. A status change settles any notification that was waiting for a notifying environment, so every place that
+    /// changes a stack's status must use this instead of assigning <see cref="Stack.Status"/>.
+    /// </summary>
+    public static void SetStatus(this Stack stack, StackStatus status)
+    {
+        stack.Status = status;
+        stack.IsNewNotificationPending = false;
+        stack.IsRegressionNotificationPending = false;
     }
 
     public static Stack ApplyOffset(this Stack stack, TimeSpan offset)

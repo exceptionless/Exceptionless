@@ -208,6 +208,16 @@ export const CountResultSchema = object({
 });
 export type CountResultFormData = Infer<typeof CountResultSchema>;
 
+export const DiscardedEnvironmentSchema = object({
+  key: string().min(1, "Key is required").nullable().optional(),
+  name: string().min(1, "Name is required").nullable().optional(),
+  count: int(),
+  last_seen_utc: iso.datetime(),
+});
+export type DiscardedEnvironmentFormData = Infer<
+  typeof DiscardedEnvironmentSchema
+>;
+
 export const EventSubmissionSettingsSchema = object({
   enabled: boolean(),
   configured_enabled: boolean(),
@@ -308,6 +318,14 @@ export const NewProjectSchema = object({
   promoted_tabs: array(string()).nullable().optional(),
 });
 export type NewProjectFormData = Infer<typeof NewProjectSchema>;
+
+export const NewProjectEnvironmentSchema = object({
+  name: string().min(1, "Name is required"),
+  notify: boolean(),
+});
+export type NewProjectEnvironmentFormData = Infer<
+  typeof NewProjectEnvironmentSchema
+>;
 
 export const NewSavedViewSchema = object({
   organization_id: string()
@@ -582,6 +600,10 @@ export const PersistentEventSchema = object({
   environment: string()
     .min(1, "Environment is required")
     .max(64, "Environment must be at most 64 characters")
+    .regex(
+      /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/,
+      "Environment has invalid format",
+    )
     .nullable()
     .optional(),
   type: string()
@@ -641,6 +663,36 @@ export const ProblemDetailsSchema = object({
   instance: string().min(1, "Instance is required").nullable().optional(),
 });
 export type ProblemDetailsFormData = Infer<typeof ProblemDetailsSchema>;
+
+export const ProjectDiscardedEnvironmentsSchema = object({
+  retention_days: int32(),
+  environments: array(lazy(() => DiscardedEnvironmentSchema)),
+  other_events: int(),
+  other_names: int32(),
+  other_names_capped: boolean(),
+});
+export type ProjectDiscardedEnvironmentsFormData = Infer<
+  typeof ProjectDiscardedEnvironmentsSchema
+>;
+
+export const ProjectEnvironmentSchema = object({
+  name: string()
+    .min(1, "Name is required")
+    .max(64, "Name must be at most 64 characters"),
+  notify: boolean(),
+  created_utc: iso.datetime(),
+});
+export type ProjectEnvironmentFormData = Infer<typeof ProjectEnvironmentSchema>;
+
+export const ProjectEnvironmentSettingsSchema = object({
+  environments: array(lazy(() => ProjectEnvironmentSchema)),
+  discard_unlisted_environments: boolean(),
+  discard_events_without_environment: boolean(),
+  notify_other_environments: boolean(),
+});
+export type ProjectEnvironmentSettingsFormData = Infer<
+  typeof ProjectEnvironmentSettingsSchema
+>;
 
 export const RecordProductTourResultSchema = object({
   recorded_utc: iso.datetime(),
@@ -731,6 +783,8 @@ export const StackSchema = object({
   last_occurrence: iso.datetime(),
   description: string().min(1, "Description is required").nullable().optional(),
   occurrences_are_critical: boolean(),
+  is_new_notification_pending: boolean(),
+  is_regression_notification_pending: boolean(),
   references: array(string()),
   tags: array(string()),
   duplicate_signature: string().min(1, "Duplicate signature is required"),
@@ -812,6 +866,22 @@ export const UpdateProjectSchema = object({
 });
 export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
 
+export const UpdateProjectEnvironmentSchema = object({
+  notify: boolean().nullable(),
+});
+export type UpdateProjectEnvironmentFormData = Infer<
+  typeof UpdateProjectEnvironmentSchema
+>;
+
+export const UpdateProjectEnvironmentSettingsSchema = object({
+  discard_unlisted_environments: boolean().nullable().optional(),
+  discard_events_without_environment: boolean().nullable().optional(),
+  notify_other_environments: boolean().nullable().optional(),
+});
+export type UpdateProjectEnvironmentSettingsFormData = Infer<
+  typeof UpdateProjectEnvironmentSettingsSchema
+>;
+
 export const UpdateSavedViewSchema = object({
   name: string().min(1, "Name is required").nullable().optional(),
   filter: string().min(1, "Filter is required").nullable().optional(),
@@ -889,6 +959,7 @@ export const UserSchema = object({
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),
   organization_ids: array(string()),
+  authentication_version: string().nullable().optional(),
   password: string().min(1, "Password is required").nullable().optional(),
   salt: string().min(1, "Salt is required").nullable().optional(),
   password_reset_token: string()
@@ -1066,6 +1137,10 @@ export const ViewProjectSchema = object({
   organization_name: string().min(1, "Organization name is required"),
   name: string().min(1, "Name is required"),
   delete_bot_data_enabled: boolean(),
+  environments: array(lazy(() => ProjectEnvironmentSchema)),
+  discard_unlisted_environments: boolean(),
+  discard_events_without_environment: boolean(),
+  notify_other_environments: boolean(),
   data: record(string(), unknown()).nullable().optional(),
   promoted_tabs: array(string()),
   is_configured: boolean().nullable().optional(),

@@ -203,6 +203,35 @@ public class StackEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
+    [InlineData("status")]
+    [InlineData("snooze")]
+    public async Task StatusChange_WithPendingNotifications_DropsThem(string action)
+    {
+        // Arrange
+        var ev = await SubmitErrorEventAsync();
+        var pending = (await _stackRepository.GetByIdAsync(ev.StackId))!;
+        pending.IsNewNotificationPending = true;
+        pending.IsRegressionNotificationPending = true;
+        await _stackRepository.SaveAsync(pending, o => o.ImmediateConsistency());
+
+        // Act
+        if (action == "status")
+        {
+            await SendRequestAsync(r => r.Post().AsGlobalAdminUser().AppendPath($"stacks/{ev.StackId}/change-status").QueryString("status", "fixed").StatusCodeShouldBeOk());
+        }
+        else
+        {
+            await SendRequestAsync(r => r.Post().AsGlobalAdminUser().AppendPath($"stacks/{ev.StackId}/mark-snoozed").QueryString("snoozeUntilUtc", TimeProvider.GetUtcNow().AddDays(1).ToString("o")).StatusCodeShouldBeOk());
+        }
+
+        // Assert
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        Assert.False(stack.IsNewNotificationPending);
+        Assert.False(stack.IsRegressionNotificationPending);
+    }
+
+    [Theory]
     [InlineData("ignored", StackStatus.Ignored)]
     [InlineData("DISCARDED", StackStatus.Discarded)]
     [InlineData("OpEn", StackStatus.Open)]

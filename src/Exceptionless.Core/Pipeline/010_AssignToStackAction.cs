@@ -90,7 +90,9 @@ public class AssignToStackAction : EventPipelineActionBase
                             Type = ctx.Event.Type ?? Event.KnownTypes.Log,
                             TotalOccurrences = 1,
                             FirstOccurrence = ctx.Event.Date.UtcDateTime,
-                            LastOccurrence = ctx.Event.Date.UtcDateTime
+                            LastOccurrence = ctx.Event.Date.UtcDateTime,
+                            // A stack that starts in an environment that does not notify is reported as new when it first reaches one that does.
+                            IsNewNotificationPending = !ctx.Project.ShouldNotifyForEnvironment(ctx.Event.Environment)
                         };
 
                         if (ctx.Event.Type == Event.KnownTypes.Session)
@@ -167,9 +169,8 @@ public class AssignToStackAction : EventPipelineActionBase
             });
         }
 
-        var stacksToSave = stacks.Where(s => s.Value.ShouldSave).Select(kvp => kvp.Value.Stack).ToList();
-        if (stacksToSave.Count > 0)
-            await _stackRepository.SaveAsync(stacksToSave, o => o.Cache().Notifications(false)); // notification will get sent later in the update stats step
+        // Only the tags changed, so update just those. Saving the whole stack could overwrite a notification another batch just claimed.
+        await Task.WhenAll(stacks.Where(s => s.Value.ShouldSave).Select(kvp => _stackRepository.UpdateTagsAsync(kvp.Value.Stack)));
 
         // Set stack ids after they have been saved and created
         contexts.ForEach(ctx =>
