@@ -67,7 +67,7 @@ public sealed class OAuthHandler(
     public async Task<IResult> Handle(GetOAuthAuthorizeConsent message)
     {
         var request = message.Form.ToRequest();
-        var validation = await ValidateAuthorizeRequestAsync(request);
+        var validation = await ValidateAuthorizeRequestAsync(request, narrowToClientScopes: true);
         if (!validation.IsValid)
             return OAuthError(validation.Error, validation.ErrorDescription);
 
@@ -170,13 +170,13 @@ public sealed class OAuthHandler(
         });
     }
 
-    private async Task<AuthorizeRequestValidationResult> ValidateAuthorizeRequestAsync(OAuthAuthorizeRequest request)
+    private async Task<AuthorizeRequestValidationResult> ValidateAuthorizeRequestAsync(OAuthAuthorizeRequest request, bool narrowToClientScopes = false)
     {
         if (!OAuthService.TryGetProtectedResource(request.Resource, GetOrigin(), out var resourceDefinition))
             return AuthorizeRequestValidationResult.Invalid("invalid_target", "The requested resource is not supported.");
 
         string resource = GetResource(resourceDefinition);
-        var validation = await oauthService.ValidateAuthorizationRequestAsync(request, resource, resourceDefinition);
+        var validation = await oauthService.ValidateAuthorizationRequestAsync(request, resource, resourceDefinition, narrowToClientScopes);
         if (!validation.IsValid)
             return AuthorizeRequestValidationResult.Invalid(validation.Error, validation.ErrorDescription);
 

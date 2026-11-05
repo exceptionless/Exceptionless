@@ -15,6 +15,7 @@
     import { clearAuthenticationSession } from '$features/auth/session.svelte';
     import { getOrganizationsQuery } from '$features/organizations/api.svelte';
     import { getMeQuery } from '$features/users/api.svelte';
+    import { getProblemMessage } from '$shared/validation';
     import { useFetchClient } from '@foundatiofx/fetchclient';
     import { SvelteSet } from 'svelte/reactivity';
 
@@ -57,6 +58,7 @@
     let isLoadingConsent = $state(false);
     let loadedConsentKey = $state<null | string>(null);
     let initializedOrganizationSelectionKey = $state<null | string>(null);
+    let consentRequestId = 0;
     const selectedOrganizationIds = new SvelteSet<string>();
     const selectedScopes = new SvelteSet<string>();
 
@@ -85,7 +87,10 @@
     const hasSelectedOrganizations = $derived(selectedOrganizationIds.size > 0);
     const hasSelectedResourceScope = $derived(selectedScopeValues.some((scope) => scope !== offlineAccessScope));
     const hasRequiredScopes = $derived(missingRequiredScopes.length === 0 && requiredScopes.every((scope) => selectedScopes.has(scope)));
-    const canApprove = $derived(!isLoadingConsent && !consentErrorMessage && hasSelectedOrganizations && hasSelectedResourceScope && hasRequiredScopes);
+    const canSelectConsent = $derived(Boolean(consentDetails) && !isLoadingConsent && !consentErrorMessage && !isAuthorizing);
+    const canApprove = $derived(
+        Boolean(consentDetails) && !isLoadingConsent && !consentErrorMessage && hasSelectedOrganizations && hasSelectedResourceScope && hasRequiredScopes
+    );
 
     $effect(() => {
         if (!browser || accessToken.current) {
@@ -194,12 +199,7 @@
             return;
         }
 
-        errorMessage =
-            response.data?.error_description ||
-            response.data?.error ||
-            response.problem?.detail ||
-            response.problem?.title ||
-            'Unable to authorize application.';
+        errorMessage = getProblemMessage(response.data, getProblemMessage(response.problem, 'Unable to authorize application.'));
     }
 
     function cancelAuthorization() {
@@ -252,7 +252,7 @@
 
     function getRequiredScopes(resourceValue: string): string[] {
         if (resourceValue.endsWith('/mcp')) {
-            return [mcpReadScope, offlineAccessScope];
+            return [mcpReadScope];
         }
 
         return [];
@@ -267,7 +267,12 @@
     }
 
     async function loadConsentDetails(): Promise<void> {
+        // A → B → A navigation can leave an older request with the same query; only the newest response owns this state.
+        const requestId = ++consentRequestId;
+        const consentKey = page.url.search;
         isLoadingConsent = true;
+        consentDetails = null;
+        errorMessage = null;
         consentErrorMessage = null;
         const client = useFetchClient();
         const response = await client.postJSON<OAuthAuthorizeConsentResponse>(
@@ -277,6 +282,10 @@
                 expectedStatusCodes: [400, 401]
             }
         );
+
+        if (requestId !== consentRequestId || consentKey !== page.url.search) {
+            return;
+        }
 
         isLoadingConsent = false;
         if (response.ok && response.data) {
@@ -290,12 +299,7 @@
         }
 
         consentDetails = null;
-        consentErrorMessage =
-            response.data?.error_description ||
-            response.data?.error ||
-            response.problem?.detail ||
-            response.problem?.title ||
-            'Unable to load application details.';
+        consentErrorMessage = getProblemMessage(response.data, getProblemMessage(response.problem, 'Unable to load application details.'));
     }
 
     async function redirectToLogin(): Promise<void> {
@@ -365,6 +369,7 @@
                                 <label class="hover:bg-muted/50 flex min-h-8 items-center gap-2 rounded-sm px-2 text-sm">
                                     <Checkbox
                                         checked={selectedOrganizationIds.has(organization.id)}
+                                        disabled={!canSelectConsent}
                                         onCheckedChange={(checked) => toggleOrganization(organization.id, checked)}
                                     />
                                     <span class="min-w-0 flex-1 truncate font-medium">{organization.name}</span>
@@ -416,7 +421,11 @@
                         {/each}
                         {#each requestedOptionalScopes as scope (scope)}
                             <label class="hover:bg-muted/50 flex min-h-12 items-center gap-2 rounded-sm border px-2 py-1.5 text-sm">
-                                <Checkbox checked={selectedScopes.has(scope)} onCheckedChange={(checked) => toggleScope(scope, checked)} />
+                                <Checkbox
+                                    checked={selectedScopes.has(scope)}
+                                    disabled={!canSelectConsent}
+                                    onCheckedChange={(checked) => toggleScope(scope, checked)}
+                                />
                                 <span class="min-w-0 flex-1">
                                     <span class="block truncate font-medium">{formatScope(scope)}</span>
                                     <span class="text-muted-foreground block truncate font-mono text-xs">{scope}</span>
