@@ -158,7 +158,7 @@ public class EndpointDocumentationOperationTransformer : IOpenApiOperationTransf
             requestBody.Required = true;
             if (requestBody.Content is not null)
             {
-                foreach (var mediaType in requestBody.Content.Values)
+                foreach (var mediaType in requestBody.Content.Values.OfType<OpenApiMediaType>())
                     mediaType.Schema = RemoveNullAlternative(mediaType.Schema);
             }
         }

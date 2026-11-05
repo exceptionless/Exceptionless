@@ -1,5 +1,5 @@
 {
-  "openapi": "3.1.1",
+  "openapi": "3.1.2",
   "info": {
     "title": "Exceptionless API",
     "termsOfService": "https://exceptionless.com/terms/",
@@ -16,7 +16,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost/"
+      "url": "http://localhost"
     }
   ],
   "paths": {
@@ -1434,9 +1434,6 @@
           "202": {
             "description": "Accepted"
           },
-          "413": {
-            "description": "Payload Too Large"
-          },
           "400": {
             "description": "No project id specified and no default project was found.",
             "content": {
@@ -1456,6 +1453,9 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Payload Too Large"
           }
         },
         "deprecated": true
@@ -1510,9 +1510,6 @@
           "202": {
             "description": "Accepted"
           },
-          "413": {
-            "description": "Payload Too Large"
-          },
           "400": {
             "description": "No project id specified and no default project was found.",
             "content": {
@@ -1532,6 +1529,9 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Payload Too Large"
           }
         },
         "deprecated": true
@@ -3444,8 +3444,8 @@
               }
             }
           },
-          "409": {
-            "description": "The saved view preferences could not be updated due to a concurrent request.",
+          "404": {
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3454,8 +3454,8 @@
               }
             }
           },
-          "404": {
-            "description": "The organization could not be found.",
+          "409": {
+            "description": "The saved view preferences could not be updated due to a concurrent request.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3541,8 +3541,8 @@
               }
             }
           },
-          "409": {
-            "description": "The saved view preferences could not be updated due to a concurrent request.",
+          "404": {
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3551,8 +3551,8 @@
               }
             }
           },
-          "404": {
-            "description": "The organization could not be found.",
+          "409": {
+            "description": "The saved view preferences could not be updated due to a concurrent request.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4078,8 +4078,8 @@
               }
             }
           },
-          "422": {
-            "description": "The product tour name is invalid.",
+          "404": {
+            "description": "The current user could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4088,8 +4088,8 @@
               }
             }
           },
-          "404": {
-            "description": "The current user could not be found.",
+          "422": {
+            "description": "The product tour name is invalid.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7744,22 +7744,22 @@
           "200": {
             "description": "OK"
           },
-          "422": {
-            "description": "The requested status is invalid.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "One or more stacks could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The requested status is invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -9070,9 +9070,6 @@
           "202": {
             "description": "Accepted"
           },
-          "413": {
-            "description": "Payload Too Large"
-          },
           "400": {
             "description": "No project id specified and no default project was found.",
             "content": {
@@ -9092,6 +9089,9 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Payload Too Large"
           }
         }
       }
@@ -9442,9 +9442,6 @@
           "202": {
             "description": "Accepted"
           },
-          "413": {
-            "description": "Payload Too Large"
-          },
           "400": {
             "description": "No project id specified and no default project was found.",
             "content": {
@@ -9464,6 +9461,9 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Payload Too Large"
           }
         }
       }
@@ -15185,43 +15185,43 @@
   },
   "tags": [
     {
-      "name": "AssistantEndpoints"
-    },
-    {
-      "name": "Project"
-    },
-    {
       "name": "AdminEndpoints"
     },
     {
-      "name": "OAuth"
-    },
-    {
-      "name": "Event"
+      "name": "AssistantEndpoints"
     },
     {
       "name": "Auth"
     },
     {
-      "name": "Token"
+      "name": "Event"
     },
     {
-      "name": "WebHook"
-    },
-    {
-      "name": "SavedView"
-    },
-    {
-      "name": "User"
+      "name": "OAuth"
     },
     {
       "name": "Organization"
     },
     {
-      "name": "Stack"
+      "name": "Project"
+    },
+    {
+      "name": "SavedView"
     },
     {
       "name": "Source Map"
+    },
+    {
+      "name": "Stack"
+    },
+    {
+      "name": "Token"
+    },
+    {
+      "name": "User"
+    },
+    {
+      "name": "WebHook"
     }
   ]
 }
