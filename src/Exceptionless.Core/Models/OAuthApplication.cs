@@ -72,6 +72,8 @@ public class OAuthApplication : IIdentity, IHaveDates, IValidatableObject
         AuthorizationRoles.StacksRead,
         AuthorizationRoles.StacksWrite,
         AuthorizationRoles.EventsRead,
+        AuthorizationRoles.SavedViewsRead,
+        AuthorizationRoles.SavedViewsWrite,
         AuthorizationRoles.OfflineAccess
     ];
 

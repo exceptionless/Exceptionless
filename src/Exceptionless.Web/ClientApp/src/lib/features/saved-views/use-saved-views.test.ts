@@ -25,6 +25,7 @@ import {
     getSavedViewOverrideSignature,
     getSavedViewStateSignature,
     hasMissingSavedView,
+    hasOpenSavedViewBeenRemoved,
     hasSavedViewAutoFillChange,
     hasSavedViewColumnChanges,
     isSavedViewDraftFilterHistoryEntry,
@@ -1036,5 +1037,30 @@ describe('useSavedViews', () => {
             // Assert
             expect(updated).toBeUndefined();
         });
+    });
+});
+
+describe('hasOpenSavedViewBeenRemoved', () => {
+    const opened = { id: 'view-1', key: 'production-errors', organizationId: 'organization-1' };
+
+    it.each([
+        ['the server reported it removed', opened.key, opened.organizationId, true, true],
+        ['it was not reported removed, even if it left a page of the list', opened.key, opened.organizationId, false, false],
+        ['the route moved to another view', 'other-view', opened.organizationId, true, false],
+        ['the organization changed', opened.key, 'organization-2', true, false]
+    ])('when %s', (_, key, organizationId, removed, expected) => {
+        // Act
+        const result = hasOpenSavedViewBeenRemoved(opened, key, organizationId, () => removed);
+
+        // Assert
+        expect(result).toBe(expected);
+    });
+
+    it('is false before a view has been opened', () => {
+        // Act
+        const result = hasOpenSavedViewBeenRemoved(undefined, opened.key, opened.organizationId, () => true);
+
+        // Assert
+        expect(result).toBe(false);
     });
 });

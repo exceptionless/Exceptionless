@@ -29,6 +29,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.StacksRead,
         AuthorizationRoles.StacksWrite,
         AuthorizationRoles.EventsRead,
+        AuthorizationRoles.SavedViewsRead,
+        AuthorizationRoles.SavedViewsWrite,
         AuthorizationRoles.OfflineAccess
     ],
     [
@@ -56,7 +58,19 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.StacksRead,
         AuthorizationRoles.StacksWrite,
         AuthorizationRoles.EventsRead,
+        AuthorizationRoles.SavedViewsRead,
+        AuthorizationRoles.SavedViewsWrite,
         AuthorizationRoles.OfflineAccess
+    ];
+
+    /// <summary>
+    /// Scopes added after applications were already registered. Clients often request everything discovery advertises,
+    /// so an application that was never allowed these still authorizes, and its grant simply leaves them out.
+    /// </summary>
+    private static readonly IReadOnlyCollection<string> s_scopesOmittedWhenNotAllowed =
+    [
+        AuthorizationRoles.SavedViewsRead,
+        AuthorizationRoles.SavedViewsWrite
     ];
 
     public static readonly IReadOnlyCollection<string> DefaultScopes =
@@ -65,6 +79,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.ProjectsRead,
         AuthorizationRoles.StacksRead,
         AuthorizationRoles.EventsRead,
+        AuthorizationRoles.SavedViewsRead,
         AuthorizationRoles.OfflineAccess
     ];
 
@@ -323,6 +338,13 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         return client.Scopes;
     }
 
+    private IReadOnlyCollection<string> GetGrantableScopes(string? scopes, IReadOnlyCollection<string> allowedScopes)
+    {
+        return NormalizeScopes(scopes)
+            .Where(scope => allowedScopes.Contains(scope, StringComparer.Ordinal) || !s_scopesOmittedWhenNotAllowed.Contains(scope, StringComparer.Ordinal))
+            .ToArray();
+    }
+
     public IReadOnlyCollection<string> NormalizeScopes(string? scopes)
     {
         if (String.IsNullOrWhiteSpace(scopes))
@@ -355,11 +377,11 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         if (!IsExpectedResource(request.Resource, expectedResource))
             return OAuthValidationResult.Invalid("invalid_target", "The requested resource is not supported.");
 
-        var requestedScopes = NormalizeScopes(request.Scope);
+        var allowedScopes = GetAllowedScopes(client);
+        var requestedScopes = GetGrantableScopes(request.Scope, allowedScopes);
         if (requestedScopes.Count == 0)
             return OAuthValidationResult.Invalid("invalid_scope", "At least one scope is required.");
 
-        var allowedScopes = GetAllowedScopes(client);
         if (requestedScopes.Any(s => !allowedScopes.Contains(s, StringComparer.Ordinal)))
         {
             // Only name server-supported scopes; do not reflect arbitrary request values.
@@ -392,6 +414,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
         await oauthApplicationRepository.AddOrganizationIdsAsync(request.ClientId, organizationIds, o => o.ImmediateConsistency().Notifications(false));
 
+        var client = await GetClientAsync(request.ClientId);
         string code = StringExtensions.GetNewToken();
         var authorizationCode = new OAuthAuthorizationCode
         {
@@ -401,7 +424,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             AuthenticationVersion = user.AuthenticationVersion,
             CodeChallenge = request.CodeChallenge,
             Resource = request.Resource ?? throw new InvalidOperationException("OAuth resource must be validated before creating an authorization code."),
-            Scopes = NormalizeScopes(request.Scope),
+            Scopes = client is null ? NormalizeScopes(request.Scope) : GetGrantableScopes(request.Scope, GetAllowedScopes(client)),
             OrganizationIds = organizationIds,
             CreatedUtc = timeProvider.GetUtcNow().UtcDateTime
         };

@@ -24,15 +24,19 @@ public sealed class AssistantService(
 {
     private const string AddStackReferenceLinkTool = "add_stack_reference_link";
     private const string CountEventsTool = "count_events";
+    private const string CreateSavedViewTool = "create_saved_view";
+    private const string DeleteSavedViewTool = "delete_saved_view";
     private const string GetEventTool = "get_event";
     private const string GetProjectSetupTool = "get_project_setup";
     private const string GetStackTool = "get_stack";
     private const string GetStackEventsTool = "get_stack_events";
     private const string ListProjectsTool = "list_projects";
+    private const string ListSavedViewsTool = "list_saved_views";
     private const string RemoveStackReferenceLinkTool = "remove_stack_reference_link";
     private const string SearchStacksTool = "search_stacks";
     private const string SetStackCriticalTool = "set_stack_critical";
     private const string SnoozeStackTool = "snooze_stack";
+    private const string UpdateSavedViewTool = "update_saved_view";
     private const string UpdateStackStatusTool = "update_stack_status";
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
 
@@ -626,6 +630,42 @@ public sealed class AssistantService(
                 GetString(root, "stackId", "stack_id") ?? currentStackId ?? String.Empty,
                 GetString(root, "url") ?? String.Empty,
                 GetString(root, "projectId", "project_id") ?? request.ProjectId),
+            ListSavedViewsTool => await tools.ListSavedViewsAsync(
+                request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
+                GetString(root, "viewType", "view_type"),
+                GetString(root, "name")),
+            CreateSavedViewTool => await tools.CreateSavedViewAsync(
+                GetString(root, "name") ?? String.Empty,
+                GetString(root, "viewType", "view_type") ?? String.Empty,
+                request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
+                GetStrings(root, "projectIds", "project_ids") ?? (request.ProjectId is { } currentProjectId ? [currentProjectId] : null),
+                GetBoolean(root, "allProjects", "all_projects") ?? false,
+                GetStrings(root, "types"),
+                GetStrings(root, "statuses"),
+                GetStrings(root, "environments"),
+                GetStrings(root, "levels"),
+                GetStrings(root, "tags"),
+                GetString(root, "query"),
+                GetString(root, "time"),
+                GetUserTimeZoneId(request.TimeZone),
+                GetString(root, "sort"),
+                GetBoolean(root, "shared") ?? false),
+            UpdateSavedViewTool => await tools.UpdateSavedViewAsync(
+                GetString(root, "savedViewId", "saved_view_id") ?? String.Empty,
+                GetString(root, "name"),
+                GetStrings(root, "projectIds", "project_ids"),
+                GetBoolean(root, "allProjects", "all_projects") ?? false,
+                GetStrings(root, "types"),
+                GetStrings(root, "statuses"),
+                GetStrings(root, "environments"),
+                GetStrings(root, "levels"),
+                GetStrings(root, "tags"),
+                GetString(root, "query"),
+                GetStrings(root, "clearCriteria", "clear_criteria"),
+                GetString(root, "time"),
+                GetUserTimeZoneId(request.TimeZone),
+                GetString(root, "sort")),
+            DeleteSavedViewTool => await tools.DeleteSavedViewAsync(GetString(root, "savedViewId", "saved_view_id") ?? String.Empty),
             _ => new { ok = false, error = $"Unknown tool '{name}'." }
         };
 
@@ -931,6 +971,29 @@ public sealed class AssistantService(
 
     private static int GetBoundedInt32(JsonElement element, int defaultValue, int maximum, params string[] names)
         => Math.Clamp(GetInt32(element, names) ?? defaultValue, 1, maximum);
+
+    /// <summary>Gets a list of strings, treating a missing or empty list as not supplied.</summary>
+    private static string[]? GetStrings(JsonElement element, params string[] names)
+    {
+        foreach (string name in names)
+        {
+            if (!element.TryGetProperty(name, out var value))
+                continue;
+
+            string?[] values = value.ValueKind switch
+            {
+                JsonValueKind.Array => value.EnumerateArray().Where(item => item.ValueKind == JsonValueKind.String).Select(item => item.GetString()).ToArray(),
+                JsonValueKind.String => [value.GetString()],
+                _ => []
+            };
+
+            string[] supplied = values.Where(item => !String.IsNullOrWhiteSpace(item)).Select(item => item!).ToArray();
+            if (supplied.Length > 0)
+                return supplied;
+        }
+
+        return null;
+    }
 
     private static bool? GetBoolean(JsonElement element, params string[] names)
     {

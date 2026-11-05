@@ -260,3 +260,19 @@ Use [API](/project/api).`);
         expect(addAssistantResourceLinks(content, tools)).toBe(content);
     });
 });
+
+describe('addAssistantResourceLinks', () => {
+    it('does not link ordinary words that match a listed saved view name', () => {
+        // Arrange
+        const tool: AssistantToolActivity = {
+            ...toolResult([{ id: 'view-1', name: 'Errors', webUrl: '/event/errors' }]),
+            name: 'list_saved_views'
+        };
+
+        // Act
+        const content = addAssistantResourceLinks('Errors are down this week.', [tool]);
+
+        // Assert
+        expect(content).toBe('Errors are down this week.');
+    });
+});

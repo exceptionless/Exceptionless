@@ -49,6 +49,9 @@ internal static class AssistantToolResultSerializer
             "get_stack" or "search_stacks" => AssistantRoutes.Stack(id),
             "get_project_setup" => AssistantRoutes.ProjectConfigure(id),
             "list_projects" => AssistantRoutes.ProjectStacks(id),
+            "list_saved_views" or "create_saved_view" or "update_saved_view"
+                when item["view_type"]?.GetValue<string>() is { Length: > 0 } viewType && item["slug"]?.GetValue<string>() is { Length: > 0 } slug
+                => AssistantRoutes.SavedView(viewType, slug, id),
             _ => null
         };
 

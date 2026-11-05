@@ -251,7 +251,8 @@ function findInlineLinkRanges(content: string): Array<{ end: number; start: numb
 }
 
 function getAssistantResourceLinks(tools: AssistantToolActivity[]): AssistantResourceLink[] {
-    const urlsByLabel = collectAssistantResourceUrlsByLabel(tools);
+    // Saved views can be named after ordinary words such as Errors, which should not become links wherever they appear.
+    const urlsByLabel = collectAssistantResourceUrlsByLabel(tools.filter((tool) => tool.name !== 'list_saved_views'));
 
     return [...urlsByLabel]
         .filter(([label, urls]) => /[\p{L}\p{N}]/u.test(label) && urls.size === 1)

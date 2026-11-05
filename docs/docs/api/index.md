@@ -12,11 +12,13 @@ To view the full API documentation, visit <https://api.exceptionless.io> and cli
 
 OAuth discovery advertises the scopes the server supports. Each OAuth application has its own allowed scopes, and each authorization grant contains only the scopes and organizations approved by the user. Discovery does not grant every advertised permission to an application.
 
-For the MCP resource, `mcp:read` is required to connect. `projects:read`, `stacks:read`, and `events:read` permit the corresponding read tools. `stacks:write` permits changing stack status (open, fixed, ignored, or discarded), snoozing stacks, changing whether future occurrences are critical, and adding or removing reference links. Access remains limited to the organizations in the grant and the user's current membership.
+For the MCP resource, `mcp:read` is required to connect. `projects:read`, `stacks:read`, and `events:read` permit the corresponding read tools. `stacks:write` permits changing stack status (open, fixed, ignored, or discarded), snoozing stacks, changing whether future occurrences are critical, and adding or removing reference links. `saved-views:read` permits listing the saved views the user can see, and `saved-views:write` permits creating, changing, and deleting them, including shared views that everyone in the organization sees. Access remains limited to the organizations in the grant and the user's current membership.
 
 `offline_access` permits refresh token issuance so the client can obtain another access token without a new interactive authorization. It adds no read or write permission. Access tokens default to one hour and refresh tokens to 30 days; these lifetimes are configured with `OAuthServer:AccessTokenLifetimeMinutes` and `OAuthServer:RefreshTokenLifetimeDays`.
 
-Dynamic registration without a scope uses `mcp:read projects:read stacks:read events:read offline_access`. It excludes `stacks:write`. An explicit registration scope is retained, so a client registered with only the four read scopes also lacks `offline_access`.
+Dynamic registration without a scope uses `mcp:read projects:read stacks:read events:read saved-views:read offline_access`. It excludes `stacks:write` and `saved-views:write`. An explicit registration scope is retained, so a client registered with only the four read scopes also lacks `offline_access`.
+
+An application registered before `saved-views:read` and `saved-views:write` existed is not allowed them. Requesting them does not fail authorization, but the grant leaves them out and the saved view tools report a `forbidden` error. To use those tools, register the client again requesting these scopes, then authorize it again. An administrator can instead add the scopes to the application, and the user still needs to authorize it again.
 
 ### Resolving a scope error after registration
 

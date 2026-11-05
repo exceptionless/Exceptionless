@@ -13,6 +13,7 @@
     import Settings2 from '@lucide/svelte/icons/settings-2';
 
     import * as Trace from '#comp/ui/trace/index.ts';
+    import { savedViewHref } from '#features/saved-views/slugs.ts';
 
     import type { AssistantToolActivity } from '../models';
 
@@ -20,6 +21,7 @@
     import {
         getAssistantToolDetail,
         getAssistantToolLabel,
+        getAssistantToolSavedView,
         getAssistantToolStackId,
         getAssistantToolStackTitle,
         isHiddenAssistantTool,
@@ -126,6 +128,7 @@
     {@const isChange = isMutationTool(tool)}
     {@const stackId = isChange ? getAssistantToolStackId(tool) : undefined}
     {@const stackTitle = isChange ? getAssistantToolStackTitle(tool) : undefined}
+    {@const savedView = getAssistantToolSavedView(tool)}
     {@const detail = getAssistantToolDetail(tool, projectNames)}
     {#if tool.status === 'running' || tool.status === 'cancelled'}
         <Trace.Line class={isChange ? 'text-foreground' : undefined} data-tool={tool.name} status={getToolStatus(tool)}>
@@ -165,6 +168,9 @@
                         >
                             Open {stackTitle ?? 'the stack'}
                         </a>
+                    {/if}
+                    {#if savedView}
+                        <a class="text-foreground w-fit font-medium underline underline-offset-2" href={savedViewHref(savedView)}>Open {savedView.name}</a>
                     {/if}
                     <AssistantJsonBlock title="Request" value={tool.arguments} />
                     {#if tool.result}

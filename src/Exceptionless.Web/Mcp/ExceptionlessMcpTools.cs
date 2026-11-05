@@ -18,6 +18,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Assistant;
+using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
@@ -29,7 +30,7 @@ using ModelContextProtocol.Server;
 namespace Exceptionless.Web.Mcp;
 
 [McpServerToolType]
-public sealed class ExceptionlessMcpTools
+public sealed partial class ExceptionlessMcpTools
 {
     private const int DefaultLimit = 10;
     private const int MaxSummaryLimit = 100;
@@ -62,6 +63,7 @@ public sealed class ExceptionlessMcpTools
     private readonly ITextSerializer _serializer;
     private readonly ILogger<ExceptionlessMcpTools> _logger;
     private readonly TimeProvider _timeProvider;
+    private readonly IMediator _mediator;
     private readonly AssistantToolContext? _assistantToolContext;
 
     public ExceptionlessMcpTools(
@@ -78,6 +80,7 @@ public sealed class ExceptionlessMcpTools
         ITextSerializer serializer,
         ILogger<ExceptionlessMcpTools> logger,
         TimeProvider timeProvider,
+        IMediator mediator,
         AssistantToolContext? assistantToolContext = null)
     {
         _httpContextAccessor = httpContextAccessor;
@@ -92,6 +95,7 @@ public sealed class ExceptionlessMcpTools
         _serializer = serializer;
         _logger = logger;
         _timeProvider = timeProvider;
+        _mediator = mediator;
         _mcpContextService = mcpContextService;
         _assistantToolContext = assistantToolContext;
     }
@@ -1161,19 +1165,29 @@ public sealed class ExceptionlessMcpTools
         if (!TryValidateSort(sort, allowedSortFields, out string? sortError))
             return SearchValidationResult.Failed(McpErrors.InvalidSort(sortError ?? "Invalid sort.", sort, allowedSortFields));
 
-        var queryValidation = await queryValidator.ValidateQueryAsync(filter);
-        if (!queryValidation.IsValid)
-            return SearchValidationResult.Failed(McpErrors.InvalidFilter($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}"));
-
-        // Elasticsearch rejects leading wildcards, which would otherwise fail the whole search.
-        if (filter is not null && s_leadingWildcardPattern.IsMatch(filter))
-            return SearchValidationResult.Failed(McpErrors.InvalidFilter("Invalid filter: leading wildcards such as *timeout* are not supported. Search for a whole word instead, such as title:timeout or timeout."));
+        var filterError = await ValidateFilterExpressionAsync(filter, queryValidator);
+        if (filterError is not null)
+            return SearchValidationResult.Failed(filterError);
 
         var filterFieldError = GetFilterFieldError(filter, allowedFilterFields, allowIndexedDataFields);
         if (filterFieldError is not null)
             return SearchValidationResult.Failed(filterFieldError);
 
         return new SearchValidationResult(resolvedLimit, warning);
+    }
+
+    /// <summary>Checks that a filter will run, without limiting the fields it may use.</summary>
+    private static async Task<McpErrorInfo?> ValidateFilterExpressionAsync(string? filter, AppQueryValidator queryValidator)
+    {
+        var queryValidation = await queryValidator.ValidateQueryAsync(filter);
+        if (!queryValidation.IsValid)
+            return McpErrors.InvalidFilter($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}");
+
+        // Elasticsearch rejects leading wildcards, which would otherwise fail the whole search.
+        if (filter is not null && s_leadingWildcardPattern.IsMatch(filter))
+            return McpErrors.InvalidFilter("Invalid filter: leading wildcards such as *timeout* are not supported. Search for a whole word instead, such as title:timeout or timeout.");
+
+        return null;
     }
 
     private static bool TryValidateSort(string? sort, IReadOnlySet<string> allowedSortFields, out string? error)
