@@ -66,7 +66,6 @@ public sealed class OAuthAuthorizationValidationTests
     }
 
     [Theory]
-    [InlineData(null, AllScopes, "stacks:write")]
     [InlineData(FourReadScopes, AllScopes, "stacks:write, offline_access")]
     [InlineData(AllScopes, AllScopes, null)]
     [InlineData(FourReadScopes, FourReadScopes, null)]
@@ -89,6 +88,28 @@ public sealed class OAuthAuthorizationValidationTests
             Assert.Equal($"Scopes not allowed for this application: {deniedScopes}. Restart authorization with scopes allowed for this application.", result.ErrorDescription);
             Assert.Empty(result.Scopes);
         }
+    }
+
+    [Theory]
+    [InlineData(FourReadScopes, AllScopes, FourReadScopes, null)]
+    [InlineData(AllScopes, AllScopes, AllScopes, null)]
+    [InlineData("projects:read", "mcp:read projects:read", null, "Scopes not allowed for this application: mcp:read.")]
+    [InlineData("mcp:read", "projects:read offline_access", null, "One or more required resource scopes are missing.")]
+    [InlineData(AllScopes, "mcp:read unknown", null, "One or more scopes are not allowed for this application.")]
+    public async Task ValidateAuthorizationRequestAsync_NarrowToClientScopes_DropsOnlyOptionalSupportedScopes(string? clientScopes, string requestScopes, string? expectedScopes, string? expectedError)
+    {
+        // Arrange
+        var (service, _) = CreateService(clientScopes);
+
+        // Act
+        var result = await service.ValidateAuthorizationRequestAsync(CreateRequest(requestScopes), Resource, OAuthService.McpResource, narrowToClientScopes: true);
+
+        // Assert
+        Assert.Equal(expectedScopes is not null, result.IsValid);
+        if (expectedScopes is not null)
+            Assert.Equal(expectedScopes.Split(' '), result.Scopes);
+        else
+            Assert.StartsWith(expectedError!, result.ErrorDescription);
     }
 
     [Theory]

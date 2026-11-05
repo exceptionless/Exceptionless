@@ -119,7 +119,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task RegisterAsync_WithoutScope_DefaultsToReadOnlyScopes()
+    public async Task RegisterAsync_WithoutScope_DefaultsToAllScopes()
     {
         using var client = CreateHttpClient();
 
@@ -139,7 +139,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Contains(AuthorizationRoles.ProjectsRead, registration.Scope);
         Assert.Contains(AuthorizationRoles.StacksRead, registration.Scope);
         Assert.Contains(AuthorizationRoles.EventsRead, registration.Scope);
-        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, registration.Scope);
+        Assert.Contains(AuthorizationRoles.StacksWrite, registration.Scope);
         Assert.Contains(AuthorizationRoles.OfflineAccess, registration.Scope);
 
         var application = await _oauthApplicationRepository.GetByClientIdAsync(registration.ClientId, o => o.ImmediateConsistency());
@@ -148,7 +148,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Contains(AuthorizationRoles.ProjectsRead, application.Scopes);
         Assert.Contains(AuthorizationRoles.StacksRead, application.Scopes);
         Assert.Contains(AuthorizationRoles.EventsRead, application.Scopes);
-        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, application.Scopes);
+        Assert.Contains(AuthorizationRoles.StacksWrite, application.Scopes);
         Assert.Contains(AuthorizationRoles.OfflineAccess, application.Scopes);
     }
 
@@ -472,53 +472,99 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData(null, "stacks:write")]
-    [InlineData("mcp:read projects:read stacks:read events:read", "stacks:write, offline_access")]
-    [InlineData("mcp:read projects:read stacks:read stacks:write events:read offline_access", null)]
-    public async Task AuthorizeAsync_DynamicClientScopes_ValidatesConsentAndFinalRequest(string? registeredScopes, string? deniedScopes)
+    [InlineData(null)]
+    [InlineData("mcp:read projects:read stacks:read events:read")]
+    public async Task AuthorizeAsync_SelfRegisteredClient_GrantsEveryApprovedScopeAndKeepsThemOnRefresh(string? registeredScopes)
     {
-        // Arrange: reproduce both omitted registration scope and an explicit read-only client.
+        // Arrange: a client's own registration, including one saved before stacks:write was a default.
         using var client = CreateHttpClient();
-        var registrationResponse = await client.PostAsJsonAsync("oauth/register", new OAuthClientRegistrationRequest
+        var registration = await RegisterScopeTestClientAsync(client, registeredScopes);
+        string requestedScopes = String.Join(' ', OAuthService.SupportedScopes);
+
+        // Act
+        var consent = await GetConsentAsync(client, registration.ClientId, requestedScopes);
+        var token = await IssueTokenAsync(clientId: registration.ClientId, scope: requestedScopes, organizationIds: [SampleDataService.TEST_ORG_ID]);
+
+        // Assert
+        Assert.Equal(OAuthService.SupportedScopes, consent.Scopes);
+        Assert.Contains(AuthorizationRoles.StacksWrite, token.Scope);
+        Assert.NotNull(token.RefreshToken);
+
+        // Act: refresh limits a grant to the client's allowed scopes, so it must not strip what was approved.
+        using var refreshContent = CreateRefreshTokenContent(token.RefreshToken, registration.ClientId);
+        var refreshResponse = await client.PostAsync("oauth/token", refreshContent, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
+        var refreshed = await DeserializeResponseAsync<OAuthTokenResponse>(refreshResponse);
+        Assert.NotNull(refreshed);
+        Assert.Equal(token.Scope, refreshed.Scope);
+    }
+
+    [Fact]
+    public async Task AuthorizeAsync_AdministratorRestrictedClient_NarrowsConsentAndRejectsDisallowedScopes()
+    {
+        // Arrange: an administrator saved a read-only list for a client that requests everything discovery advertises.
+        using var client = CreateHttpClient();
+        var registration = await RegisterScopeTestClientAsync(client, registeredScopes: null);
+        string[] restrictedScopes = [AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead, AuthorizationRoles.StacksRead, AuthorizationRoles.EventsRead];
+        var application = await _oauthApplicationRepository.GetByClientIdAsync(registration.ClientId, o => o.ImmediateConsistency());
+        Assert.NotNull(application);
+        application.Scopes = restrictedScopes;
+        application.UpdatedByUserId = TestConstants.UserId;
+        await _oauthApplicationRepository.SaveAsync(application, o => o.ImmediateConsistency());
+        string requestedScopes = String.Join(' ', OAuthService.SupportedScopes);
+
+        // Act
+        var consent = await GetConsentAsync(client, registration.ClientId, requestedScopes);
+
+        // Assert
+        Assert.Equal(restrictedScopes, consent.Scopes);
+
+        // Act: issuing a code stores the submitted scopes, so the final request is never narrowed.
+        using var finalRequest = CreateAuthorizeJsonRequest(PkceVerifier, clientId: registration.ClientId, scope: requestedScopes, organizationIds: [SampleDataService.TEST_ORG_ID]);
+        var finalResponse = await client.SendAsync(finalRequest, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, finalResponse.StatusCode);
+        var error = await finalResponse.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
+        Assert.NotNull(error);
+        Assert.Equal("invalid_scope", error.Error);
+        Assert.Equal("Scopes not allowed for this application: stacks:write, offline_access. Restart authorization with scopes allowed for this application.", error.ErrorDescription);
+        Assert.DoesNotContain("redirect_uri", await finalResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        // Act: approve what consent offered.
+        string approvedScopes = String.Join(' ', consent.Scopes);
+        var token = await IssueTokenAsync(clientId: registration.ClientId, scope: approvedScopes, organizationIds: [SampleDataService.TEST_ORG_ID]);
+
+        // Assert
+        Assert.Null(token.RefreshToken);
+        Assert.Equal(approvedScopes, token.Scope);
+    }
+
+    private async Task<OAuthClientRegistrationResponse> RegisterScopeTestClientAsync(HttpClient client, string? registeredScopes)
+    {
+        var response = await client.PostAsJsonAsync("oauth/register", new OAuthClientRegistrationRequest
         {
             ClientName = "Scope Regression Client",
             RedirectUris = [RedirectUri],
             Scope = registeredScopes
         }, TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.Created, registrationResponse.StatusCode);
-        var registration = await DeserializeResponseAsync<OAuthClientRegistrationResponse>(registrationResponse);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var registration = await DeserializeResponseAsync<OAuthClientRegistrationResponse>(response);
         Assert.NotNull(registration);
-        string requestedScopes = String.Join(' ', OAuthService.SupportedScopes);
+        return registration;
+    }
 
-        // Both endpoints enforce the same client policy before issuing a code.
-        foreach (string endpoint in new[] { "oauth/authorize/consent", "oauth/authorize" })
-        {
-            using var request = CreateAuthorizeJsonRequest(PkceVerifier, clientId: registration.ClientId, scope: requestedScopes, organizationIds: [SampleDataService.TEST_ORG_ID]);
-            request.RequestUri = new Uri(endpoint, UriKind.Relative);
-            // Act
-            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
-
-            // Assert
-            Assert.Equal(deniedScopes is null ? HttpStatusCode.OK : HttpStatusCode.BadRequest, response.StatusCode);
-            if (deniedScopes is not null)
-            {
-                var error = await response.DeserializeAsync<OAuthErrorResponse>(ensureSuccess: false);
-                Assert.NotNull(error);
-                Assert.Equal("invalid_scope", error.Error);
-                Assert.Equal($"Scopes not allowed for this application: {deniedScopes}. Restart authorization with scopes allowed for this application.", error.ErrorDescription);
-                Assert.DoesNotContain("redirect_uri", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
-            }
-        }
-
-        // Act: authorize an allowed subset without changing the registration.
-        var token = await IssueTokenAsync(clientId: registration.ClientId, scope: AuthorizationRoles.McpRead, organizationIds: [SampleDataService.TEST_ORG_ID]);
-
-        // Assert
-        Assert.Null(token.RefreshToken);
-        Assert.Equal(AuthorizationRoles.McpRead, token.Scope);
-        var application = await _oauthApplicationRepository.GetByClientIdAsync(registration.ClientId, o => o.ImmediateConsistency());
-        Assert.NotNull(application);
-        Assert.Equal(registration.Scope.Split(' '), application.Scopes);
+    private async Task<OAuthAuthorizeConsentResponse> GetConsentAsync(HttpClient client, string clientId, string scope)
+    {
+        using var request = CreateAuthorizeJsonRequest(PkceVerifier, clientId: clientId, scope: scope, organizationIds: [SampleDataService.TEST_ORG_ID]);
+        request.RequestUri = new Uri("oauth/authorize/consent", UriKind.Relative);
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var consent = await DeserializeResponseAsync<OAuthAuthorizeConsentResponse>(response);
+        Assert.NotNull(consent);
+        return consent;
     }
 
     [Fact]
@@ -683,7 +729,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CompleteAuthorizeAsync_ClientMetadataDocumentWithoutScope_DefaultsToReadOnlyScopes()
+    public async Task CompleteAuthorizeAsync_ClientMetadataDocumentWithoutScope_DefaultsToAllScopes()
     {
         await CreateAuthorizationCodeAsync(
             PkceVerifier,
@@ -698,7 +744,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Contains(AuthorizationRoles.ProjectsRead, application.Scopes);
         Assert.Contains(AuthorizationRoles.StacksRead, application.Scopes);
         Assert.Contains(AuthorizationRoles.EventsRead, application.Scopes);
-        Assert.DoesNotContain(AuthorizationRoles.StacksWrite, application.Scopes);
+        Assert.Contains(AuthorizationRoles.StacksWrite, application.Scopes);
         Assert.Contains(AuthorizationRoles.OfflineAccess, application.Scopes);
     }
 
