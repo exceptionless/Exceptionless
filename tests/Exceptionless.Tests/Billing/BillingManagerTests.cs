@@ -1,5 +1,7 @@
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models;
+using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace Exceptionless.Tests.Billing;
@@ -96,5 +98,38 @@ public class BillingManagerTests : TestWithServices
 
         // Assert
         Assert.Equal(eventWatermarkUtc, organization.StripeSubscriptionEventDate);
+    }
+
+    [Fact]
+    public void ReadFromConfiguration_NoTrialSettings_UsesFourteenDayTrialWithThreeDayReminder()
+    {
+        // Arrange
+        var configuration = new ConfigurationBuilder().Build();
+
+        // Act
+        var options = BillingOptions.ReadFromConfiguration(configuration);
+
+        // Assert
+        Assert.Equal(14, options.TrialDays);
+        Assert.Equal(3, options.TrialReminderDays);
+    }
+
+    [Fact]
+    public void ApplyTrialPlan_DefaultOptions_EndsTrialInFourteenDays()
+    {
+        // Arrange
+        var billingManager = GetService<BillingManager>();
+        var plans = GetService<BillingPlans>();
+        var utcNow = new DateTime(2026, 10, 22, 12, 0, 0, DateTimeKind.Utc);
+        TimeProvider.SetUtcNow(utcNow);
+        var organization = new Organization { TrialReminderSentUtc = utcNow };
+
+        // Act
+        billingManager.ApplyTrialPlan(organization);
+
+        // Assert
+        Assert.Equal(plans.TrialPlan.Id, organization.PlanId);
+        Assert.Equal(utcNow.AddDays(14), organization.TrialEndsUtc);
+        Assert.Null(organization.TrialReminderSentUtc);
     }
 }

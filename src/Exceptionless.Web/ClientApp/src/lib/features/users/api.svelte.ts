@@ -1,6 +1,7 @@
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
+import type { TrialEndedNoticeKey } from '#features/billing/trial.ts';
 import type { ProductTourKey } from '#features/product-tours/models.ts';
 import type { WebSocketMessageValue } from '#features/websockets/models.ts';
 import type { WorkInProgressResult } from '#shared/models/index.ts';
@@ -263,7 +264,7 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
 
 export function putCurrentUserProductTour() {
     const queryClient = useQueryClient();
-    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey; userId: string }>(() => ({
+    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey | TrialEndedNoticeKey; userId: string }>(() => ({
         enabled: () => !!accessToken.current,
         mutationFn: async ({ tourName, userId }) => {
             if (queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.id !== userId) {
@@ -291,6 +292,24 @@ export function resendVerificationEmail(request: ResendVerificationEmailRequest)
         },
         mutationKey: [...queryKeys.id(request.route.id), 'resend-verification-email']
     }));
+}
+
+/**
+ * Records a product tour entry on the cached current user before the API call finishes,
+ * using the same underscore key the API stores, so the UI doesn't wait on a refetch.
+ */
+export function setCurrentUserProductTourRecorded(queryClient: QueryClient, tourName: ProductTourKey | TrialEndedNoticeKey, recordedUtc: string): void {
+    const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
+    if (!currentUser) {
+        return;
+    }
+
+    setCurrentUser(queryClient, currentUser, {
+        product_tours: {
+            ...currentUser.product_tours,
+            [tourName.replaceAll('-', '_')]: recordedUtc
+        }
+    });
 }
 
 export function setCurrentUserSavedViewDefault(queryClient: QueryClient, organizationId: string, savedViewId: null | string) {

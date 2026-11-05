@@ -242,4 +242,30 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
         var names = results.Documents.Select(d => d.Name).ToList();
         Assert.Equal(names.OrderBy(n => n), names);
     }
+
+    [Fact]
+    public async Task GetBillingPlanStatsAsync_MoreOrganizationsThanOnePage_CountsEveryOrganization()
+    {
+        // Arrange
+        int trialCount = OrganizationRepository.BillingPlanStatsPageLimit + 1;
+        var organizations = Enumerable.Range(0, trialCount).Select(index => new Organization
+        {
+            Name = $"Trial Organization {index}",
+            PlanId = _plans.TrialPlan.Id,
+            PlanName = _plans.TrialPlan.Name,
+            PlanDescription = _plans.TrialPlan.Description,
+            HasPremiumFeatures = true,
+            TrialEndsUtc = DateTime.UtcNow.AddDays(3)
+        }).ToList();
+        organizations.Add(new Organization { Name = "Expired Trial", PlanId = _plans.FreePlan.Id, PlanName = "Free", PlanDescription = "Free", TrialEndsUtc = DateTime.UtcNow.AddDays(-1) });
+        await _repository.AddAsync(organizations, o => o.ImmediateConsistency());
+
+        // Act
+        var stats = await _repository.GetBillingPlanStatsAsync();
+
+        // Assert
+        Assert.Equal(trialCount, stats.TrialAccounts);
+        Assert.Equal(1, stats.ExpiredTrialAccounts);
+        Assert.Equal(0, stats.PaidAccounts);
+    }
 }

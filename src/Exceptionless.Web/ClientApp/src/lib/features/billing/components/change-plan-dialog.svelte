@@ -27,9 +27,10 @@
     import { Spinner } from '#comp/ui/spinner/index.ts';
     import * as Tabs from '#comp/ui/tabs/index.ts';
     import { submitFeatureUsage } from '#features/auth/exceptionless-session.ts';
-    import { FREE_PLAN_ID, isStripeEnabled, StripeProvider } from '#features/billing/index.ts';
+    import { FREE_PLAN_ID, isStripeEnabled, StripeProvider, TRIAL_EQUIVALENT_PLAN_ID, TRIAL_PLAN_ID } from '#features/billing/index.ts';
     import { resolveInitialPlanTierId } from '#features/billing/plan-selection.ts';
     import { type ChangePlanFormData, ChangePlanSchema } from '#features/billing/schemas.ts';
+    import { getTrialDaysRemaining } from '#features/billing/trial.ts';
     import { changePlanMutation, getPlansQuery } from '#features/organizations/api.svelte.ts';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
@@ -80,7 +81,7 @@
             return false;
         }
 
-        return plan.id !== FREE_PLAN_ID;
+        return plan.id !== FREE_PLAN_ID && plan.id !== TRIAL_PLAN_ID;
     }
 
     function tierOf(planId: string): string {
@@ -135,6 +136,9 @@
 
     const freePlan = $derived(plansQuery.data?.find((plan: BillingPlan) => plan.id === FREE_PLAN_ID) ?? null);
     const isFreeCurrent = $derived(organization.plan_id === FREE_PLAN_ID);
+    const isTrialCurrent = $derived(organization.plan_id === TRIAL_PLAN_ID);
+    const isFreeOrTrialCurrent = $derived(isFreeCurrent || isTrialCurrent);
+    const trialDaysRemaining = $derived(getTrialDaysRemaining(organization.trial_ends_utc));
     const currentInterval = $derived<'month' | 'year'>(intervalOf(organization.plan_id));
     const currentTierId = $derived(tierOf(organization.plan_id));
     const currentTierIndex = $derived(tiers.findIndex((t) => t.id === currentTierId));
@@ -322,13 +326,13 @@
             untrack(() => {
                 selectedTierId = resolveInitialPlanTierId(
                     tiers.map((tier) => tier.id),
-                    initialPlanId,
+                    initialPlanId ?? (isTrialCurrent ? TRIAL_EQUIVALENT_PLAN_ID : undefined),
                     currentTierId,
-                    isFreeCurrent
+                    isFreeOrTrialCurrent
                 );
 
                 // Always default to yearly to promote savings (especially for free→paid upgrades)
-                interval = isFreeCurrent ? 'year' : currentInterval;
+                interval = isFreeOrTrialCurrent ? 'year' : currentInterval;
                 paymentExpanded = false;
                 couponOpen = initialCouponOpen ?? false;
                 couponApplied = initialCouponCode ?? null;
@@ -341,14 +345,6 @@
 
     function formatRetention(days: number): string {
         return `${days} day${days === 1 ? '' : 's'}`;
-    }
-
-    function formatUsers(n: number): string {
-        if (n < 0) {
-            return 'Unlimited users';
-        }
-
-        return `${n} user${n === 1 ? '' : 's'}`;
     }
 
     function handleCancel() {
@@ -473,6 +469,10 @@
             return 'Free';
         }
 
+        if (planId === TRIAL_PLAN_ID) {
+            return 'Trial';
+        }
+
         const tier = tiers.find((t) => t.id === tierOf(planId));
         if (!tier) {
             return planId;
@@ -486,6 +486,15 @@
             return {
                 isFree: true as const,
                 label: 'Free plan',
+                period: '',
+                price: 0
+            };
+        }
+
+        if (isTrialCurrent) {
+            return {
+                isFree: true as const,
+                label: trialDaysRemaining > 0 ? `Free trial · ${trialDaysRemaining === 1 ? '1 day' : `${trialDaysRemaining} days`} left` : 'Free trial · ended',
                 period: '',
                 price: 0
             };
@@ -513,7 +522,7 @@
             return 'Downgrade to Free';
         }
 
-        if (planDirty && organization.plan_id === FREE_PLAN_ID) {
+        if (planDirty && isFreeOrTrialCurrent) {
             return `Start ${planLabel(selectedPlanId, {
                 includeInterval: true
             })}`;
@@ -644,8 +653,6 @@
                                                     /> events/mo{/if}
                                                 <span class="text-muted-foreground/60 mx-1">·</span>
                                                 {formatRetention(planForInterval.retention_days)}
-                                                <span class="text-muted-foreground/60 mx-1">·</span>
-                                                {formatUsers(planForInterval.max_users)}
                                             </Muted>
                                         {/if}
                                     </div>
@@ -678,6 +685,8 @@
                                         <span class="text-muted-foreground text-sm font-medium">Free</span>
                                         {#if isFreeCurrent}
                                             <Badge variant="secondary" class="px-1.5 py-0 text-[10px] uppercase">Current</Badge>
+                                        {:else if isTrialCurrent}
+                                            <Muted class="text-xs">— end trial</Muted>
                                         {:else}
                                             <Muted class="text-xs">— cancel paid plan</Muted>
                                         {/if}
@@ -689,8 +698,6 @@
                                                 /> events/mo{/if}
                                             <span class="text-muted-foreground/60 mx-1">·</span>
                                             {formatRetention(freePlan.retention_days)}
-                                            <span class="text-muted-foreground/60 mx-1">·</span>
-                                            {formatUsers(freePlan.max_users)}
                                         </Muted>
                                     {/if}
                                 </div>
@@ -835,11 +842,16 @@
                         {/if}
                         {#if planDirty}
                             {@const intervalChanged = intervalOf(organization.plan_id) !== intervalOf(selectedPlanId)}
-                            {@const includeInt = intervalChanged || organization.plan_id === FREE_PLAN_ID || isFreeSelected}
+                            {@const includeInt = intervalChanged || isFreeOrTrialCurrent || isFreeSelected}
                             <div class="flex items-baseline gap-2 text-xs leading-snug">
                                 <Muted class="min-w-16 text-[10px] font-semibold tracking-wider uppercase">Plan</Muted>
                                 <Muted class="text-xs">
-                                    {#if isFreeSelected}
+                                    {#if isFreeSelected && isTrialCurrent}
+                                        <Small class="text-foreground text-xs">Trial</Small>
+                                        <span class="text-muted-foreground/60 mx-1">→</span>
+                                        <Small class="text-foreground text-xs">Free</Small>
+                                        · ends your trial now
+                                    {:else if isFreeSelected}
                                         <Small class="text-foreground text-xs"
                                             >{planLabel(organization.plan_id, {
                                                 includeInterval: true
@@ -848,13 +860,14 @@
                                         <span class="text-muted-foreground/60 mx-1">→</span>
                                         <Small class="text-foreground text-xs">Free</Small>
                                         · immediate, prorated credit
-                                    {:else if organization.plan_id === FREE_PLAN_ID}
+                                    {:else if isFreeOrTrialCurrent}
                                         Start <Small class="text-foreground text-xs"
                                             >{planLabel(selectedPlanId, {
                                                 includeInterval: true
                                             })}</Small
                                         >
                                         {#if selectedPlan}· <Currency value={selectedPlan.price} />{interval === 'year' ? '/yr' : '/mo'}{/if}
+                                        {#if isTrialCurrent}· your trial ends now and billing starts today{/if}
                                     {:else}
                                         <Small class="text-foreground text-xs"
                                             >{planLabel(organization.plan_id, {

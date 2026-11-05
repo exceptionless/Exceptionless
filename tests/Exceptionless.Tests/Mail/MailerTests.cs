@@ -566,6 +566,24 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
+    public async Task SendOrganizationTrialEndingAsync_WithTrialOrganization_RendersUpgradeLink()
+    {
+        // Arrange
+        var user = _userData.GenerateSampleUser();
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        _billingManager.ApplyTrialPlan(organization);
+
+        // Act
+        await _mailer.SendOrganizationTrialEndingAsync(user, organization);
+        var body = await RunMailJobAsync();
+
+        // Assert
+        Assert.Contains("Your trial ends soon", body, StringComparison.Ordinal);
+        Assert.Contains($"organization/{organization.Id}/upgrade", body, StringComparison.Ordinal);
+        Assert.Contains("Events older than 3 days will be deleted", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SendProjectDailySummaryAsync_WithSubmittedEvents_RendersTimelineLinks()
     {
         // Arrange

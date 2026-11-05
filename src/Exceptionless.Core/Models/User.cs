@@ -52,6 +52,17 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public bool? AssistantConversationSharingEnabled { get; set; }
     public bool IsEmailAddressVerified { get; set; }
     public string? VerifyEmailAddressToken { get; set; }
+
+    /// <summary>
+    /// Date the user started their one no-card trial.
+    /// </summary>
+    public DateTime? TrialStartedUtc { get; set; }
+
+    /// <summary>
+    /// Normalized email address that claimed the trial, so aliases of the same mailbox can't each start one.
+    /// </summary>
+    public string? TrialEmailAddress { get; set; }
+
     public DateTime VerifyEmailAddressTokenExpiration { get; set; }
 
     /// <summary>

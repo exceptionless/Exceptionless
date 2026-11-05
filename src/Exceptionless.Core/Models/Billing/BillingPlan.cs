@@ -27,4 +27,14 @@ public sealed record AssistantPlanOptions
     public int MaximumTurnsPerMinute { get; init; }
     public long MaximumMonthlyTokens { get; init; }
     public decimal MaximumMonthlyCostUsd { get; init; }
+
+    /// <summary>
+    /// Groups organizations whose combined daily Exie cost is limited by <see cref="MaximumSharedDailyCostUsd"/>.
+    /// </summary>
+    public string? SharedDailyCostLimitKey { get; init; }
+
+    /// <summary>
+    /// Combined daily Exie cost limit for every organization sharing <see cref="SharedDailyCostLimitKey"/>. Zero or less disables the limit.
+    /// </summary>
+    public decimal MaximumSharedDailyCostUsd { get; init; }
 }

@@ -82,6 +82,7 @@ public class AppOptions
     public IntercomOptions IntercomOptions { get; internal set; } = null!;
     public SlackOptions SlackOptions { get; internal set; } = null!;
     public StripeOptions StripeOptions { get; internal set; } = null!;
+    public BillingOptions BillingOptions { get; internal set; } = null!;
     public AuthOptions AuthOptions { get; internal set; } = null!;
     public OAuthServerOptions OAuthServerOptions { get; internal set; } = null!;
     public SourceMapOptions SourceMapOptions { get; internal set; } = null!;
@@ -139,6 +140,7 @@ public class AppOptions
         options.IntercomOptions = IntercomOptions.ReadFromConfiguration(config);
         options.SlackOptions = SlackOptions.ReadFromConfiguration(config);
         options.StripeOptions = StripeOptions.ReadFromConfiguration(config);
+        options.BillingOptions = BillingOptions.ReadFromConfiguration(config);
         options.AuthOptions = AuthOptions.ReadFromConfiguration(config);
         options.OAuthServerOptions = OAuthServerOptions.ReadFromConfiguration(config);
         options.SourceMapOptions = SourceMapOptions.ReadFromConfiguration(config);

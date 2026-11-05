@@ -333,6 +333,61 @@ public class AdminEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task TrialSettingsAsync_AsGlobalAdmin_SavesNormalizedDomainsAndRestoresDefaults()
+    {
+        var initial = await SendRequestAsAsync<TrialSettings>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "trial-settings")
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(initial);
+        Assert.True(initial.IsDefault);
+        Assert.Contains("mailinator.com", initial.BlockedEmailDomains);
+        Assert.Equal(initial.DefaultBlockedEmailDomains, initial.BlockedEmailDomains);
+
+        var updated = await SendRequestAsAsync<TrialSettings>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "trial-settings")
+            .Content(new UpdateTrialSettings { BlockedEmailDomains = [" Spam.Test ", "@spam.test", "other.test"] })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(updated);
+        Assert.False(updated.IsDefault);
+        Assert.Equal(["other.test", "spam.test"], updated.BlockedEmailDomains);
+
+        await GetService<ICacheClient>().RemoveAllAsync();
+        var afterCacheClear = await SendRequestAsAsync<TrialSettings>(request => request
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "trial-settings")
+            .StatusCodeShouldBeOk());
+        Assert.Equal(updated.BlockedEmailDomains, afterCacheClear?.BlockedEmailDomains);
+
+        var restored = await SendRequestAsAsync<TrialSettings>(request => request
+            .Put()
+            .AsGlobalAdminUser()
+            .AppendPaths("admin", "trial-settings")
+            .Content(new UpdateTrialSettings { BlockedEmailDomains = null })
+            .StatusCodeShouldBeOk());
+
+        Assert.NotNull(restored);
+        Assert.True(restored.IsDefault);
+        Assert.Equal(initial.BlockedEmailDomains, restored.BlockedEmailDomains);
+    }
+
+    [Fact]
+    public Task TrialSettingsAsync_InvalidDomain_ReturnsUnprocessableEntity() => SendRequestAsync(request => request
+        .Put().AsGlobalAdminUser().AppendPaths("admin", "trial-settings")
+        .Content(new UpdateTrialSettings { BlockedEmailDomains = ["not a domain"] })
+        .StatusCodeShouldBeUnprocessableEntity());
+
+    [Fact]
+    public Task TrialSettingsAsync_AsUser_ReturnsForbidden() => SendRequestAsync(request => request
+        .Put().AsTestOrganizationUser().AppendPaths("admin", "trial-settings")
+        .Content(new UpdateTrialSettings { BlockedEmailDomains = ["spam.test"] })
+        .StatusCodeShouldBeForbidden());
+
+    [Fact]
     public async Task RuntimeSettingsAsync_LegacyDocumentUsesDeploymentDefaults()
     {
         await GetService<ISystemSettingsRepository>().SaveAsync(new SystemSettings
@@ -1284,6 +1339,61 @@ public class AdminEndpointTests : IntegrationTestsBase
         var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationAfter);
         Assert.Equal(plans.SmallPlan.Id, organizationAfter.PlanId);
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_TrialPlanOnFreeOrganization_StartsTrial()
+    {
+        // Arrange
+        var plans = GetService<BillingPlans>();
+        var organizationRepository = GetService<IOrganizationRepository>();
+
+        // Act
+        var result = await SendRequestAsAsync<ChangePlanResponse>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "change-plan")
+            .QueryString("organizationId", SampleDataService.FREE_ORG_ID)
+            .QueryString("planId", plans.TrialPlan.Id)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Success, result.Message);
+
+        var organization = await organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+        Assert.Equal(plans.TrialPlan.Id, organization.PlanId);
+        Assert.NotNull(organization.TrialEndsUtc);
+        Assert.True(organization.TrialEndsUtc > TimeProvider.GetUtcNow().UtcDateTime.AddDays(6));
+    }
+
+    [Fact]
+    public async Task ChangePlanAsync_TrialPlanOnPaidOrganization_ReturnsFailure()
+    {
+        // Arrange
+        var plans = GetService<BillingPlans>();
+        var organizationRepository = GetService<IOrganizationRepository>();
+        var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+        string originalPlanId = organization.PlanId;
+
+        // Act
+        var result = await SendRequestAsAsync<ChangePlanResponse>(r => r
+            .AsGlobalAdminUser()
+            .Post()
+            .AppendPaths("admin", "change-plan")
+            .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
+            .QueryString("planId", plans.TrialPlan.Id)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.False(result.Success);
+
+        var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organizationAfter);
+        Assert.Equal(originalPlanId, organizationAfter.PlanId);
     }
 
     [Fact]
