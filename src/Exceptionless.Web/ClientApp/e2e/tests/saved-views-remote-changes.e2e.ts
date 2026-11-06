@@ -4,8 +4,9 @@ import { expect, test } from '../fixtures/e2e-test';
 
 const SAVED_VIEW_NOT_FOUND_HEADING = "We couldn't find that page";
 
-function askExieButton(page: Page) {
-    return page.getByRole('button', { exact: true, name: 'Ask Exie' });
+// The navbar search is part of the app layout whether or not Exie is enabled. The full-page error has no layout.
+function appLayout(page: Page) {
+    return page.getByRole('button', { exact: true, name: 'Search Exceptionless' });
 }
 
 async function createStackView(request: APIRequestContext, organizationId: string, token: string, name: string, environment = 'production') {
@@ -98,7 +99,7 @@ test('going back to a view deleted elsewhere keeps the app open', async ({ e2eSc
     // Assert
     await expect(page).toHaveURL(/\/stack(?:[?#]|$)/);
     await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible({ timeout: 30_000 });
-    await expect(askExieButton(page)).toBeVisible();
+    await expect(appLayout(page)).toBeVisible();
 });
 
 test('an old link to a deleted view keeps the app open', async ({ e2eScenario, page }) => {
@@ -117,7 +118,7 @@ test('an old link to a deleted view keeps the app open', async ({ e2eScenario, p
 
     // Assert
     await expect(page.getByRole('heading', { name: SAVED_VIEW_NOT_FOUND_HEADING })).toBeVisible({ timeout: 30_000 });
-    await expect(askExieButton(page)).toBeVisible();
+    await expect(appLayout(page)).toBeVisible();
 });
 
 test('a view deleted while disconnected keeps the app open after reconnecting', async ({ e2eScenario, page, request }) => {
@@ -149,5 +150,5 @@ test('a view deleted while disconnected keeps the app open after reconnecting', 
 
     // Assert
     await expect(page.getByRole('heading', { name: SAVED_VIEW_NOT_FOUND_HEADING })).toBeVisible({ timeout: 30_000 });
-    await expect(askExieButton(page)).toBeVisible();
+    await expect(appLayout(page)).toBeVisible();
 });
