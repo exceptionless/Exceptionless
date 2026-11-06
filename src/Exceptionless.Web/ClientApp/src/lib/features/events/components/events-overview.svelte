@@ -137,6 +137,7 @@
 
     const event = $derived(eventQuery.data?.event);
     const navigation = $derived(eventQuery.data?.navigation);
+    const isCurrentEvent = $derived(event?.id.toLowerCase() === id.toLowerCase());
 
     const projectQuery = getProjectQuery({
         route: {
@@ -252,13 +253,13 @@
     }
 
     function navigateToNext(): void {
-        if (navigation?.nextId && onNavigate) {
+        if (isCurrentEvent && navigation?.nextId && onNavigate) {
             onNavigate(navigation.nextId);
         }
     }
 
     function navigateToPrevious(): void {
-        if (navigation?.previousId && onNavigate) {
+        if (isCurrentEvent && navigation?.previousId && onNavigate) {
             onNavigate(navigation.previousId);
         }
     }
@@ -374,7 +375,7 @@
             {#if onNavigate && (navigation?.previousId || navigation?.nextId)}
                 <Button
                     aria-label="Older event"
-                    disabled={!navigation?.previousId}
+                    disabled={!isCurrentEvent || !navigation?.previousId}
                     onclick={navigateToPrevious}
                     size="icon-sm"
                     title="Older event"
@@ -382,7 +383,14 @@
                 >
                     <ChevronLeft class="size-4" />
                 </Button>
-                <Button aria-label="Newer event" disabled={!navigation?.nextId} onclick={navigateToNext} size="icon-sm" title="Newer event" variant="outline">
+                <Button
+                    aria-label="Newer event"
+                    disabled={!isCurrentEvent || !navigation?.nextId}
+                    onclick={navigateToNext}
+                    size="icon-sm"
+                    title="Newer event"
+                    variant="outline"
+                >
                     <ChevronRight class="size-4" />
                 </Button>
             {/if}
