@@ -54,6 +54,16 @@
             value: 'events:read'
         },
         {
+            description: 'Allows reading saved views.',
+            label: 'Saved Views',
+            value: 'saved-views:read'
+        },
+        {
+            description: 'Allows creating, changing, and deleting saved views.',
+            label: 'Saved Views Write',
+            value: 'saved-views:write'
+        },
+        {
             description: 'Allows refresh token issuance.',
             label: 'Offline Access',
             value: 'offline_access'

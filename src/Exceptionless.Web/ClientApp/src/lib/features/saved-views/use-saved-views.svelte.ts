@@ -4,6 +4,7 @@ import type { ColumnOrderState, ColumnSizingState, ColumnVisibilityState } from 
 import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 import { page } from '$app/state';
 import { tick, untrack } from 'svelte';
+import { toast } from 'svelte-sonner';
 import { SvelteSet, SvelteURL } from 'svelte/reactivity';
 
 import type { IFilter } from '#comp/faceted-filter/index.ts';
@@ -23,7 +24,7 @@ import { getMeQuery } from '#features/users/api.svelte.ts';
 import type { AutoFillColumnSelection, WrappedColumnIds } from './column-settings';
 import type { SavedView } from './models';
 
-import { getSavedViewsByViewQuery } from './api.svelte';
+import { getSavedViewsByViewQuery, isSavedViewDeleted, isSavedViewRemoved } from './api.svelte';
 import {
     columnOrdersEqual,
     filterAvailableColumnIds,
@@ -164,6 +165,12 @@ const SAVED_VIEW_QUERY_PARAMETER_FILTER_KEYS: readonly string[] = [
     'version-version'
 ];
 const savedViewDraftFilterHistoryStateKey = '__exceptionlessSavedViewDraftFilter';
+
+interface OpenedSavedView {
+    id: string;
+    key: string;
+    organizationId: null | string | undefined;
+}
 
 export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
     queryParams.filter = null;
@@ -346,6 +353,15 @@ export function hasMissingSavedView(options: {
     return !!options.savedViewKey && !options.activeSavedView && !!options.savedViews && !options.isLoading;
 }
 
+export function hasOpenSavedViewBeenRemoved(
+    opened: OpenedSavedView | undefined,
+    savedViewKey: null | string | undefined,
+    organizationId: null | string | undefined,
+    wasRemovedElsewhere: (id: string) => boolean
+): boolean {
+    return !!opened && opened.key === savedViewKey && opened.organizationId === organizationId && wasRemovedElsewhere(opened.id);
+}
+
 export function hasSavedViewAutoFillChange(
     current: AutoFillColumnSelection,
     view: Pick<SavedView, 'columns'>,
@@ -426,6 +442,11 @@ export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null
     if (supportsTimeQueryParam(queryParams)) {
         queryParams.time = value;
     }
+}
+
+/** A list that doesn't include a view may just predate it, so it only counts as missing once a newer list agrees. */
+export function shouldRecheckMissingSavedView(isMissing: boolean, isFetching: boolean, recheckedKey: string | undefined, key: string): boolean {
+    return isMissing && !isFetching && recheckedKey !== key;
 }
 
 export function shouldTrackPendingSavedViewDraft(trackerViewId: string, activeViewId: string | undefined, appliedDraftKey: string): boolean {
@@ -1163,14 +1184,71 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         void persistDraftAfterStateSettles(view.id, identity, draftKey, currentDraft, draftPersistenceGeneration);
     });
 
-    const isMissing = $derived(
-        hasMissingSavedView({
-            activeSavedView,
-            isLoading: savedViewsListQuery.isLoading,
-            savedViewKey: options.slug ?? options.queryParams.saved,
-            savedViews
-        })
+    // The open view can be deleted from elsewhere, such as by Exie or a teammate. That is not a bad link, so return to the
+    // page instead of showing not found, which would also take down an Exie conversation that is still answering.
+    let openedSavedView = $state.raw<OpenedSavedView>();
+
+    $effect(() => {
+        const view = activeSavedView;
+        const key = options.slug ?? options.queryParams.saved;
+        if (view && key) {
+            openedSavedView = {
+                id: view.id,
+                key,
+                organizationId: organization.current
+            };
+        }
+    });
+
+    const wasOpenSavedViewRemoved = $derived(
+        hasOpenSavedViewBeenRemoved(
+            openedSavedView,
+            options.slug ?? options.queryParams.saved,
+            organization.current,
+            (id) =>
+                isSavedViewRemoved(id) &&
+                !isSavedViewDeleted({
+                    id
+                } as SavedView)
+        )
     );
+
+    const isAbsentFromList = $derived(
+        !wasOpenSavedViewRemoved &&
+            hasMissingSavedView({
+                activeSavedView,
+                isLoading: savedViewsListQuery.isLoading,
+                savedViewKey: options.slug ?? options.queryParams.saved,
+                savedViews
+            })
+    );
+    const savedViewListKey = $derived(`${organization.current}:${options.slug ?? options.queryParams.saved}`);
+    let recheckedSavedViewListKey = $state<string>();
+    const isMissing = $derived(isAbsentFromList && !savedViewsListQuery.isFetching && recheckedSavedViewListKey === savedViewListKey);
+
+    // Exie can link to a view moments after creating it, before the list on this page has caught up.
+    $effect(() => {
+        const key = savedViewListKey;
+        if (shouldRecheckMissingSavedView(isAbsentFromList, savedViewsListQuery.isFetching, recheckedSavedViewListKey, key)) {
+            untrack(() => {
+                void savedViewsListQuery.refetch().finally(() => {
+                    recheckedSavedViewListKey = key;
+                });
+            });
+        }
+    });
+
+    $effect(() => {
+        if (wasOpenSavedViewRemoved) {
+            untrack(() => {
+                toast.info('This view was deleted.');
+                // Replace the entry, so going back doesn't return to a view that no longer exists.
+                void clearSavedView({
+                    replaceState: true
+                });
+            });
+        }
+    });
 
     function handleLoadView(view: SavedView) {
         if (options.baseHref) {
@@ -1296,14 +1374,18 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         serverHydratedSavedViewId = normalizedView.id;
     }
 
-    async function handleClearSavedView(): Promise<void> {
+    async function clearSavedView(navigation?: { replaceState: boolean }): Promise<void> {
         clearSavedViewQueryParams(options.queryParams);
         applyColumnState(undefined);
         applyDisplayState(undefined);
 
         if (options.baseHref) {
-            await goto(options.baseHref);
+            await goto(options.baseHref, navigation);
         }
+    }
+
+    function handleClearSavedView(): Promise<void> {
+        return clearSavedView();
     }
 
     return {

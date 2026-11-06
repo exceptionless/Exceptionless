@@ -111,6 +111,8 @@ public sealed class AssistantServiceTests
     [InlineData(AuthorizationRoles.ProjectsRead, true)]
     [InlineData(AuthorizationRoles.StacksRead, true)]
     [InlineData(AuthorizationRoles.StacksWrite, true)]
+    [InlineData(AuthorizationRoles.SavedViewsRead, true)]
+    [InlineData(AuthorizationRoles.SavedViewsWrite, true)]
     [InlineData(AuthorizationRoles.McpRead, false)]
     [InlineData(AuthorizationRoles.SourceMapsWrite, false)]
     [InlineData(AuthorizationRoles.User, false)]
@@ -166,7 +168,7 @@ public sealed class AssistantServiceTests
         var request = new AssistantChatRequest(
             [new AssistantChatMessage("user", "Say hello")],
             ProjectId: "project-id",
-            Path: "/stack/stack-id/event/event-id?tab=details");
+            Path: "/stack/537650f3b77efe23a47914aa/event/537650f3b77efe23a47914ab?tab=details");
         var planOptions = CreatePlanOptions();
         var events = new List<AssistantStreamEvent>();
 
@@ -191,8 +193,12 @@ public sealed class AssistantServiceTests
         Assert.Contains("set_stack_critical", handler.RequestBody);
         Assert.Contains("add_stack_reference_link", handler.RequestBody);
         Assert.Contains("remove_stack_reference_link", handler.RequestBody);
-        Assert.Contains("Current stack id: stack-id", handler.RequestBody);
-        Assert.Contains("Current event id: event-id", handler.RequestBody);
+        Assert.Contains("list_saved_views", handler.RequestBody);
+        Assert.Contains("create_saved_view", handler.RequestBody);
+        Assert.Contains("update_saved_view", handler.RequestBody);
+        Assert.Contains("delete_saved_view", handler.RequestBody);
+        Assert.Contains("Current stack id: 537650f3b77efe23a47914aa", handler.RequestBody);
+        Assert.Contains("Current event id: 537650f3b77efe23a47914ab", handler.RequestBody);
         Assert.Contains("Current project id: project-id", handler.RequestBody);
         Assert.Contains("Your name is Exie", handler.RequestBody);
         Assert.Contains("Only perform a write action when the user explicitly requests that exact change", handler.RequestBody);
@@ -2052,6 +2058,7 @@ public sealed class AssistantServiceTests
         null!,
         NullLogger<ExceptionlessMcpTools>.Instance,
         TimeProvider.System,
+        null!,
         assistantToolContext);
 
     private static AssistantService CreateAssistantService(

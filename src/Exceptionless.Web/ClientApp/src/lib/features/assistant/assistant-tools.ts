@@ -1,4 +1,8 @@
+import type { savedViewHref } from '#features/saved-views/slugs.ts';
+
 import type { AssistantToolActivity } from './models';
+
+import { assistantToolNeedsConfirmation } from './assistant-tool-result';
 
 interface AssistantToolLabels {
     complete: string;
@@ -9,6 +13,8 @@ interface AssistantToolLabels {
 const toolLabels: Record<string, AssistantToolLabels> = {
     add_stack_reference_link: { complete: 'Added a reference link', failed: 'Couldn’t add the reference link', running: 'Adding a reference link' },
     count_events: { complete: 'Counted events', failed: 'Couldn’t count events', running: 'Counting events' },
+    create_saved_view: { complete: 'Created a saved view', failed: 'Couldn’t create the saved view', running: 'Creating a saved view' },
+    delete_saved_view: { complete: 'Deleted a saved view', failed: 'Couldn’t delete the saved view', running: 'Deleting a saved view' },
     get_client_setup_instructions: {
         complete: 'Read client setup instructions',
         failed: 'Couldn’t read setup instructions',
@@ -22,17 +28,28 @@ const toolLabels: Record<string, AssistantToolLabels> = {
     get_stack_events: { complete: 'Listed stack events', failed: 'Couldn’t list stack events', running: 'Listing stack events' },
     list_organizations: { complete: 'Listed organizations', failed: 'Couldn’t list organizations', running: 'Listing organizations' },
     list_projects: { complete: 'Listed projects', failed: 'Couldn’t list projects', running: 'Listing projects' },
+    list_saved_views: { complete: 'Listed saved views', failed: 'Couldn’t list saved views', running: 'Listing saved views' },
     remove_stack_reference_link: { complete: 'Removed a reference link', failed: 'Couldn’t remove the reference link', running: 'Removing a reference link' },
     resolve_project: { complete: 'Found the project', failed: 'Couldn’t find the project', running: 'Finding the project' },
     search_events: { complete: 'Searched events', failed: 'Couldn’t search events', running: 'Searching events' },
     search_stacks: { complete: 'Searched error stacks', failed: 'Couldn’t search error stacks', running: 'Searching error stacks' },
     set_stack_critical: { complete: 'Updated the critical setting', failed: 'Couldn’t update the critical setting', running: 'Updating the critical setting' },
     snooze_stack: { complete: 'Snoozed the stack', failed: 'Couldn’t snooze the stack', running: 'Snoozing the stack' },
+    update_saved_view: { complete: 'Updated a saved view', failed: 'Couldn’t update the saved view', running: 'Updating a saved view' },
     update_stack_status: { complete: 'Updated the stack status', failed: 'Couldn’t update the stack status', running: 'Updating the stack status' }
 };
 
 /** Tools that change data. Their results are always shown so a change is never silent. */
-const mutationTools = new Set(['add_stack_reference_link', 'remove_stack_reference_link', 'set_stack_critical', 'snooze_stack', 'update_stack_status']);
+const mutationTools = new Set([
+    'add_stack_reference_link',
+    'create_saved_view',
+    'delete_saved_view',
+    'remove_stack_reference_link',
+    'set_stack_critical',
+    'snooze_stack',
+    'update_saved_view',
+    'update_stack_status'
+]);
 
 /** Tools that drive UI rather than research, so they never appear in the trace. */
 const hiddenTools = new Set(['suggest_followups']);
@@ -87,7 +104,7 @@ export function getAssistantToolLabel(tool: AssistantToolActivity, isStreaming: 
     }
 
     if (tool.status === 'failed') {
-        return labels?.failed ?? `Couldn’t finish ${name}`;
+        return assistantToolNeedsConfirmation(tool.result) ? 'Waiting for your confirmation' : (labels?.failed ?? `Couldn’t finish ${name}`);
     }
 
     if (tool.status === 'cancelled') {
@@ -116,6 +133,20 @@ export function getAssistantToolProjectNames(tools: AssistantToolActivity[]): Ma
     }
 
     return names;
+}
+
+/** The saved view a mutation created or changed, so the change can link to it. A deleted view has nothing to open. */
+export function getAssistantToolSavedView(tool: AssistantToolActivity): Parameters<typeof savedViewHref>[0] | undefined {
+    if (tool.status !== 'complete' || (tool.name !== 'create_saved_view' && tool.name !== 'update_saved_view')) {
+        return undefined;
+    }
+
+    const data = parseRecord(parseRecord(tool.result)?.data);
+    if (typeof data?.id !== 'string' || typeof data.name !== 'string' || typeof data.slug !== 'string' || typeof data.view_type !== 'string') {
+        return undefined;
+    }
+
+    return { id: data.id, name: data.name, slug: data.slug, view_type: data.view_type as Parameters<typeof savedViewHref>[0]['view_type'] };
 }
 
 /** The stack a mutation changed, so the change can link to it. */

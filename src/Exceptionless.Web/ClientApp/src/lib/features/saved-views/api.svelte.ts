@@ -21,6 +21,10 @@ export async function invalidateSavedViewQueries(queryClient: QueryClient, messa
 
     // Removals: evict from cache immediately without a refetch.
     if (change_type === ChangeType.Removed) {
+        if (id && !removedSavedViewIds.includes(id)) {
+            removedSavedViewIds = [...removedSavedViewIds, id];
+        }
+
         if (id && organization_id) {
             const cached = queryClient.getQueryData<SavedView[]>(queryKeys.organization(organization_id));
             const savedView = cached?.find((v) => v.id === id);
@@ -90,6 +94,8 @@ export const queryKeys = {
 };
 
 let deletedSavedViewIds = $state<string[]>([]);
+// Views the server reported as removed, wherever that happened. A view missing from a list may only be on another page.
+let removedSavedViewIds = $state<string[]>([]);
 
 type UpdateUserSavedViewOrder = UpdateSavedViewOrder & {
     view_type: string;
@@ -169,6 +175,10 @@ export function getSavedViewsQuery(request: { route: { organizationId: string | 
 
 export function isSavedViewDeleted(savedView: SavedView): boolean {
     return !!savedView.id && deletedSavedViewIds.includes(savedView.id);
+}
+
+export function isSavedViewRemoved(id: string): boolean {
+    return removedSavedViewIds.includes(id);
 }
 
 export function markSavedViewDeleted(savedView: SavedView): void {

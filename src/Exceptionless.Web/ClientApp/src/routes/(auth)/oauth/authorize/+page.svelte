@@ -217,6 +217,10 @@
                 return 'Offline Access';
             case 'projects:read':
                 return 'Projects Read';
+            case 'saved-views:read':
+                return 'Saved Views Read';
+            case 'saved-views:write':
+                return 'Saved Views Write';
             case 'stacks:read':
                 return 'Stacks Read';
             case 'stacks:write':

@@ -168,13 +168,14 @@ internal sealed class AssistantTurnDiagnostics : IDisposable
     private static string GetToolName(string name) => name switch
     {
         "count_events" or "get_event" or "get_stack" or "get_project_setup" or "get_stack_events" or "list_projects" or "search_stacks"
-            or "update_stack_status" or "snooze_stack" or "set_stack_critical" or "add_stack_reference_link" or "remove_stack_reference_link" => name,
+            or "update_stack_status" or "snooze_stack" or "set_stack_critical" or "add_stack_reference_link" or "remove_stack_reference_link"
+            or "list_saved_views" or "create_saved_view" or "update_saved_view" or "delete_saved_view" => name,
         _ => "unknown"
     };
 
     private static string GetToolErrorCode(string? code) => code switch
     {
-        McpErrorCodes.ContextMismatch or McpErrorCodes.ContextRequired or McpErrorCodes.Forbidden or McpErrorCodes.InvalidClientPlatform
+        McpErrorCodes.Conflict or McpErrorCodes.ContextMismatch or McpErrorCodes.ContextRequired or McpErrorCodes.Forbidden or McpErrorCodes.InvalidArgument or McpErrorCodes.InvalidClientPlatform
             or McpErrorCodes.InvalidCursor or McpErrorCodes.InvalidDetailSize or McpErrorCodes.InvalidFilter or McpErrorCodes.InvalidGroupBy
             or McpErrorCodes.InvalidId or McpErrorCodes.InvalidInterval or McpErrorCodes.InvalidLimit or McpErrorCodes.InvalidReferenceUrl
             or McpErrorCodes.InvalidSnooze or McpErrorCodes.InvalidSort or McpErrorCodes.InvalidStatus or McpErrorCodes.InvalidTimeRange

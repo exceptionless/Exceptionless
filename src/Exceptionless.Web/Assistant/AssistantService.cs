@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Web;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models.Billing;
@@ -24,15 +25,19 @@ public sealed class AssistantService(
 {
     private const string AddStackReferenceLinkTool = "add_stack_reference_link";
     private const string CountEventsTool = "count_events";
+    private const string CreateSavedViewTool = "create_saved_view";
+    private const string DeleteSavedViewTool = "delete_saved_view";
     private const string GetEventTool = "get_event";
     private const string GetProjectSetupTool = "get_project_setup";
     private const string GetStackTool = "get_stack";
     private const string GetStackEventsTool = "get_stack_events";
     private const string ListProjectsTool = "list_projects";
+    private const string ListSavedViewsTool = "list_saved_views";
     private const string RemoveStackReferenceLinkTool = "remove_stack_reference_link";
     private const string SearchStacksTool = "search_stacks";
     private const string SetStackCriticalTool = "set_stack_critical";
     private const string SnoozeStackTool = "snooze_stack";
+    private const string UpdateSavedViewTool = "update_saved_view";
     private const string UpdateStackStatusTool = "update_stack_status";
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
 
@@ -378,7 +383,7 @@ public sealed class AssistantService(
             var conversationToolResults = new List<AssistantConversationToolResult>();
             foreach (var toolCall in executableToolCalls)
             {
-                string arguments = toolCall.Arguments.ToString();
+                string arguments = AssistantConfirmation.ResolveProjectScope(toolCall.Name, toolCall.Arguments.ToString(), request.ProjectId);
                 diagnostics?.StartTool(toolCall.Name);
                 yield return AssistantStreamEvent.ToolCall(toolCall.Id, toolCall.Name, arguments);
 
@@ -407,6 +412,11 @@ public sealed class AssistantService(
                             message = "The maximum project searches for one turn has been reached. Answer using the available results and tell the user which projects were not searched."
                         }
                     }, s_jsonOptions);
+                    remainingToolCalls--;
+                }
+                else if (AssistantConfirmation.IsRequired(toolCall.Name, arguments) && !AssistantConfirmation.IsConfirmed(toolCall.Name, arguments, request, conversationState))
+                {
+                    result = AssistantConfirmation.CreateRequiredResult(toolCall.Name, s_jsonOptions);
                     remainingToolCalls--;
                 }
                 else
@@ -549,8 +559,8 @@ public sealed class AssistantService(
         using var _ = assistantToolContext.BeginTools(request.OrganizationId);
         using var document = ParseArguments(arguments);
         var root = document.RootElement;
-        string? currentEventId = GetRouteValue(request.Path, "event");
-        string? currentStackId = GetRouteValue(request.Path, "stack");
+        string? currentEventId = GetCurrentResourceId(request.Path, "event");
+        string? currentStackId = GetCurrentResourceId(request.Path, "stack");
         string? setupProjectId = GetString(root, "projectId", "project_id");
         string? setupProjectName = GetString(root, "projectName", "project_name");
         bool? critical = GetBoolean(root, "critical");
@@ -626,10 +636,58 @@ public sealed class AssistantService(
                 GetString(root, "stackId", "stack_id") ?? currentStackId ?? String.Empty,
                 GetString(root, "url") ?? String.Empty,
                 GetString(root, "projectId", "project_id") ?? request.ProjectId),
+            ListSavedViewsTool => await tools.ListSavedViewsAsync(
+                request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
+                GetString(root, "viewType", "view_type"),
+                GetString(root, "name")),
+            CreateSavedViewTool => await CreateSavedViewAsync(tools, root, request),
+            UpdateSavedViewTool => await tools.UpdateSavedViewAsync(
+                GetString(root, "savedViewId", "saved_view_id") ?? String.Empty,
+                GetString(root, "name"),
+                GetStrings(root, "projectIds", "project_ids"),
+                GetBoolean(root, "allProjects", "all_projects") ?? false,
+                GetStrings(root, "types"),
+                GetStrings(root, "statuses"),
+                GetStrings(root, "environments"),
+                GetStrings(root, "levels"),
+                GetStrings(root, "tags"),
+                GetString(root, "query"),
+                GetStrings(root, "clearCriteria", "clear_criteria"),
+                GetString(root, "time"),
+                GetString(root, "sort")),
+            DeleteSavedViewTool => await tools.DeleteSavedViewAsync(GetString(root, "savedViewId", "saved_view_id") ?? String.Empty),
             _ => new { ok = false, error = $"Unknown tool '{name}'." }
         };
 
         return AssistantToolResultSerializer.Serialize(name, result, s_jsonOptions);
+    }
+
+    /// <summary>
+    /// Without this check, leaving out the project on a page with no current project would quietly include every project,
+    /// which is not what "a view for this project" means.
+    /// </summary>
+    private static async Task<McpResponse<McpSavedViewResult>> CreateSavedViewAsync(ExceptionlessMcpTools tools, JsonElement root, AssistantChatRequest request)
+    {
+        bool allProjects = GetBoolean(root, "allProjects", "all_projects") ?? false;
+        string[]? projectIds = GetStrings(root, "projectIds", "project_ids") ?? (request.ProjectId is { } currentProjectId ? [currentProjectId] : null);
+        if (projectIds is null && !allProjects)
+            return McpResponse<McpSavedViewResult>.Failed(new McpErrorInfo(McpErrorCodes.InvalidArgument, "No current project is selected. Pass projectIds with the project the user wants, or allProjects as true if they asked for every project."));
+
+        return await tools.CreateSavedViewAsync(
+            GetString(root, "name") ?? String.Empty,
+            GetString(root, "viewType", "view_type") ?? String.Empty,
+            request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
+            projectIds,
+            allProjects,
+            GetStrings(root, "types"),
+            GetStrings(root, "statuses"),
+            GetStrings(root, "environments"),
+            GetStrings(root, "levels"),
+            GetStrings(root, "tags"),
+            GetString(root, "query"),
+            GetString(root, "time"),
+            GetString(root, "sort"),
+            GetBoolean(root, "shared") ?? false);
     }
 
     internal static string? GetProjectSetupProjectId(string? requestedProjectId, string? requestedProjectName, string? currentProjectId)
@@ -649,7 +707,7 @@ public sealed class AssistantService(
         DateTimeOffset utcNow)
     {
         // The model has no clock; without the current time it guesses absolute dates for relative questions.
-        string context = $"Current UTC time: {FormatUtc(utcNow)}. {GetUserCalendarContext(request.TimeZone, utcNow)} Current organization id: {request.OrganizationId ?? "not selected"}. Current project id: {request.ProjectId ?? "not selected"}. Current stack id: {GetRouteValue(request.Path, "stack") ?? "not selected"}. Current event id: {GetRouteValue(request.Path, "event") ?? "not selected"}. Current page: {request.Path ?? "unknown"}.";
+        string context = $"Current UTC time: {FormatUtc(utcNow)}. {GetUserCalendarContext(request.TimeZone, utcNow)} Current organization id: {request.OrganizationId ?? "not selected"}. Current project id: {request.ProjectId ?? "not selected"}. Current stack id: {GetCurrentResourceId(request.Path, "stack") ?? "not selected"}. Current event id: {GetCurrentResourceId(request.Path, "event") ?? "not selected"}. Current saved view: {GetCurrentSavedView(request.Path) ?? "not selected"}. Current page: {request.Path ?? "unknown"}.";
         var messages = new List<object>
         {
             new
@@ -842,6 +900,29 @@ public sealed class AssistantService(
         return limited;
     }
 
+    /// <summary>A stack or event page has an id in its path. Anything else there is the URL name of a saved view.</summary>
+    internal static string? GetCurrentResourceId(string? path, string segment)
+        => GetRouteValue(path, segment) is { } value && IsObjectId(value) ? value : null;
+
+    private static bool IsObjectId(string value) => value.Length == 24 && value.All(Char.IsAsciiHexDigit);
+
+    internal static string? GetCurrentSavedView(string? path)
+    {
+        foreach (string segment in new[] { "stack", "event", "sessions" })
+        {
+            if (GetRouteValue(path, segment) is { } value && !IsObjectId(value))
+                return value;
+        }
+
+        // Pages without a saved view route, and links that predate them, carry the view in the query string.
+        int queryIndex = path?.IndexOf('?') ?? -1;
+        if (queryIndex < 0)
+            return null;
+
+        string? saved = HttpUtility.ParseQueryString(path![(queryIndex + 1)..])["saved"];
+        return String.IsNullOrWhiteSpace(saved) ? null : saved;
+    }
+
     internal static string? GetRouteValue(string? path, string segment)
     {
         if (String.IsNullOrWhiteSpace(path))
@@ -931,6 +1012,29 @@ public sealed class AssistantService(
 
     private static int GetBoundedInt32(JsonElement element, int defaultValue, int maximum, params string[] names)
         => Math.Clamp(GetInt32(element, names) ?? defaultValue, 1, maximum);
+
+    /// <summary>Gets a list of strings, treating a missing or empty list as not supplied.</summary>
+    private static string[]? GetStrings(JsonElement element, params string[] names)
+    {
+        foreach (string name in names)
+        {
+            if (!element.TryGetProperty(name, out var value))
+                continue;
+
+            string?[] values = value.ValueKind switch
+            {
+                JsonValueKind.Array => value.EnumerateArray().Where(item => item.ValueKind == JsonValueKind.String).Select(item => item.GetString()).ToArray(),
+                JsonValueKind.String => [value.GetString()],
+                _ => []
+            };
+
+            string[] supplied = values.Where(item => !String.IsNullOrWhiteSpace(item)).Select(item => item!).ToArray();
+            if (supplied.Length > 0)
+                return supplied;
+        }
+
+        return null;
+    }
 
     private static bool? GetBoolean(JsonElement element, params string[] names)
     {
