@@ -59,6 +59,22 @@ public sealed class SavedViewFilterDefinitionsTests(ITestOutputHelper output) : 
     }
 
     [Fact]
+    public void Parse_ClearedFilterWithOldChips_DoesNotBringThemBack()
+    {
+        // Arrange
+        const string definitions = """[{"type":"status","value":["open"]},{"type":"date","term":"date","value":"[now-7d TO now]"}]""";
+
+        // Act
+        var cleared = SavedViewFilterDefinitions.Parse(definitions, String.Empty);
+        var chipsOnly = SavedViewFilterDefinitions.Parse(definitions, null);
+
+        // Assert
+        Assert.Null(SavedViewFilterDefinitions.ToFilter(cleared));
+        Assert.Equal("date", cleared.Single()!["type"]!.GetValue<string>());
+        Assert.Equal("status:open", SavedViewFilterDefinitions.ToFilter(chipsOnly));
+    }
+
+    [Fact]
     public void Set_NewChip_GoesBeforeTheSearchSoAnOrCannotWidenIt()
     {
         // Arrange

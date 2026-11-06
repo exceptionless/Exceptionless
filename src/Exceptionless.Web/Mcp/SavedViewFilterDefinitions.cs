@@ -57,8 +57,9 @@ internal static partial class SavedViewFilterDefinitions
     }
 
     /// <summary>Chips are rewritten when a view changes, so a filter they do not produce would otherwise be lost.</summary>
+    /// <remarks>A null filter means the chips are the view's only criteria, while an empty one means its filter was cleared.</remarks>
     private static bool AgreesWithFilter(JsonArray definitions, string? filter)
-        => String.IsNullOrWhiteSpace(filter) || String.Equals(ToFilter(definitions), filter.Trim(), StringComparison.Ordinal);
+        => filter is null || String.Equals(ToFilter(definitions) ?? String.Empty, filter.Trim(), StringComparison.Ordinal);
 
     private static JsonArray ReplaceWithSearch(JsonArray definitions, string filter)
     {
@@ -66,7 +67,9 @@ internal static partial class SavedViewFilterDefinitions
         foreach (var definition in definitions.OfType<JsonObject>().Where(definition => GetText(definition["type"]) == "date"))
             replacement.Add(definition.DeepClone());
 
-        Set(replacement, "keyword", JsonValue.Create(filter));
+        if (!String.IsNullOrWhiteSpace(filter))
+            Set(replacement, "keyword", JsonValue.Create(filter));
+
         return replacement;
     }
 
