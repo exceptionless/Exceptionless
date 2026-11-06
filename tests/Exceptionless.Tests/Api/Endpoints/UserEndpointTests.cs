@@ -1057,8 +1057,8 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Theory]
-    [InlineData("Microsoft")]
-    [InlineData("Google")]
+    [InlineData(OAuthAccount.KnownProviders.Microsoft)]
+    [InlineData(OAuthAccount.KnownProviders.Google)]
     public async Task UpdateEmailAddressAsync_LinkedProviderEmail_MarksAddressVerified(string provider)
     {
         // Arrange

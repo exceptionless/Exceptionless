@@ -49,7 +49,7 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
         user.MarkEmailAddressVerified();
-        user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
+        user.AddOAuthAccount(OAuthAccount.KnownProviders.WindowsLive, "legacy-user", user.EmailAddress);
         await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
 
         // Act
@@ -72,8 +72,8 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         const string code = "existing-microsoft-user";
         var user = CreateUser(TestOAuthProviderClient.GetEmailAddress(code));
         user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
-        user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
-        user.AddOAuthAccount("Microsoft", code, user.EmailAddress);
+        user.AddOAuthAccount(OAuthAccount.KnownProviders.WindowsLive, "legacy-user", user.EmailAddress);
+        user.AddOAuthAccount(OAuthAccount.KnownProviders.Microsoft, code, user.EmailAddress);
         await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
         // Act
@@ -163,7 +163,7 @@ public sealed class MicrosoftAuthEndpointTests : IntegrationTestsBase
         var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
         Assert.NotNull(user);
         user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
-        user.AddOAuthAccount("WindowsLive", "legacy-user", user.EmailAddress);
+        user.AddOAuthAccount(OAuthAccount.KnownProviders.WindowsLive, "legacy-user", user.EmailAddress);
         await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
 
         // Act

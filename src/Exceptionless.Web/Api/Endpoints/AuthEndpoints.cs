@@ -28,6 +28,7 @@ public static class AuthEndpoints
         .Accepts<Login>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Login")
         .WithDescription("""
@@ -86,6 +87,7 @@ public static class AuthEndpoints
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign up")
         .WithMetadata(new EndpointDocumentation {
@@ -104,13 +106,17 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with GitHub")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
+                ["401"] = "Unauthorized",
                 ["403"] = "Account Creation is currently disabled",
+                ["409"] = "The account changed while the request was being processed.",
                 ["422"] = "Validation error",
             }
         });
@@ -122,13 +128,17 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with Google")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
+                ["401"] = "Unauthorized",
                 ["403"] = "Account Creation is currently disabled",
+                ["409"] = "The account changed while the request was being processed.",
                 ["422"] = "Validation error",
             }
         });
@@ -140,31 +150,41 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Accepts<ExternalAuthInfo>("application/json", "application/*+json")
         .Produces<TokenResult>()
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Sign in with Microsoft")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
+                ["401"] = "Unauthorized",
                 ["403"] = "Account Creation is currently disabled",
+                ["409"] = "The account changed while the request was being processed.",
                 ["422"] = "Validation error",
             }
         });
 
-        group.MapPost("unlink/{providerName:minlength(1)}", async (string providerName, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext, [FromBody] ValueFromBody<string> providerUserId)
-            => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.RemoveExternalLogin(providerName, providerUserId, httpContext))).ToHttpResult(resultMapper))
+        group.MapPost("unlink/{providerName:minlength(1)}", async ([AsParameters] RemoveExternalLoginRequest request, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, HttpContext httpContext)
+            => (await mediator.InvokeAsync<Result<TokenResult>>(new AuthMessages.RemoveExternalLogin(request.ProviderName, request.ProviderUserId?.Value, httpContext))).ToHttpResult(resultMapper))
         .Accepts<ValueFromBody<string>>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Removes an external login provider from the account")
         .WithMetadata(new EndpointDocumentation {
             RequestBodyDescription = "The provider user id.",
             ParameterDescriptions = new() {
-                ["providerName"] = "The provider name.",
+                ["providerName"] = "The provider name: github, google, microsoft, facebook, or windowslive (case sensitive).",
             },
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
-                ["400"] = "Invalid provider name.",
+                ["400"] = "Invalid provider user id, or the account would have no sign-in method.",
+                ["401"] = "Unauthorized",
+                ["409"] = "The account changed while the request was being processed.",
+                ["422"] = "Validation error",
             }
         });
 
@@ -175,10 +195,12 @@ public static class AuthEndpoints
         .Accepts<ChangePasswordModel>("application/json", "application/*+json")
         .Produces<TokenResult>()
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Change password")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "User Authentication Token",
+                ["409"] = "The account changed while the request was being processed.",
                 ["422"] = "Validation error",
             }
         });
@@ -212,10 +234,12 @@ public static class AuthEndpoints
         .Accepts<ResetPasswordModel>("application/json", "application/*+json")
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Reset password")
         .WithMetadata(new EndpointDocumentation {
             ResponseDescriptions = new() {
                 ["200"] = "Password reset email was sent.",
+                ["409"] = "The account changed while the request was being processed.",
                 ["422"] = "Invalid reset password model.",
             }
         });
@@ -231,6 +255,7 @@ public static class AuthEndpoints
         .AllowAnonymous()
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Cancel reset password")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {
@@ -239,6 +264,7 @@ public static class AuthEndpoints
             ResponseDescriptions = new() {
                 ["200"] = "Password reset email was cancelled.",
                 ["400"] = "Invalid password reset token.",
+                ["409"] = "The account changed while the request was being processed.",
             }
         });
 

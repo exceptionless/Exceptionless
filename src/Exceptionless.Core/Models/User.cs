@@ -6,7 +6,7 @@ using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Models;
 
-public record User : IIdentity, IHaveDates, IValidatableObject
+public record User : IIdentity, IHaveDates, IVersioned, IValidatableObject
 {
     /// <summary>
     /// Unique id that identifies an user.
@@ -53,6 +53,12 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public bool IsEmailAddressVerified { get; set; }
     public string? VerifyEmailAddressToken { get; set; }
     public DateTime VerifyEmailAddressTokenExpiration { get; set; }
+
+    /// <summary>
+    /// Repository concurrency metadata used to reject stale writes, preserved in cached snapshots.
+    /// New users have an empty version until persisted.
+    /// </summary>
+    public string Version { get; set; } = String.Empty;
 
     /// <summary>
     /// Gets or sets the users active state.
