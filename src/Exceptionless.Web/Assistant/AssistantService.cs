@@ -383,7 +383,7 @@ public sealed class AssistantService(
             var conversationToolResults = new List<AssistantConversationToolResult>();
             foreach (var toolCall in executableToolCalls)
             {
-                string arguments = toolCall.Arguments.ToString();
+                string arguments = AssistantConfirmation.ResolveProjectScope(toolCall.Name, toolCall.Arguments.ToString(), request.ProjectId);
                 diagnostics?.StartTool(toolCall.Name);
                 yield return AssistantStreamEvent.ToolCall(toolCall.Id, toolCall.Name, arguments);
 

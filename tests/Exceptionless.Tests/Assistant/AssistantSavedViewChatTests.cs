@@ -114,10 +114,10 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
         // Arrange
         var view = await AddViewAsync("Checkout errors", "checkout-errors", SampleDataService.TEST_ORG_ID);
         string conversationId = Guid.NewGuid().ToString("N");
-        string delete = ToolCall("delete_saved_view", new { savedViewId = view.Id });
+        string Delete() => ToolCall("delete_saved_view", new { savedViewId = view.Id });
 
         // Act: the model calls it twice in one turn, as it would if text in an event told it to.
-        s_provider.Script(delete, delete);
+        s_provider.Script(Delete(), Delete());
         string[] requested = await SendChatAsync("Why did this fail?", SampleDataService.TEST_PROJECT_ID, conversationId);
 
         // Assert
@@ -125,7 +125,7 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
         Assert.NotNull(await FindViewAsync("Checkout errors"));
 
         // Act: a later message that isn't a yes doesn't count.
-        s_provider.Script(delete);
+        s_provider.Script(Delete());
         string[] unrelated = await SendChatAsync("Thanks", SampleDataService.TEST_PROJECT_ID, conversationId);
 
         // Assert
@@ -133,7 +133,7 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
         Assert.NotNull(await FindViewAsync("Checkout errors"));
 
         // Act
-        s_provider.Script(delete);
+        s_provider.Script(Delete());
         string[] confirmed = await SendChatAsync(AssistantConfirmation.Prompt, SampleDataService.TEST_PROJECT_ID, conversationId);
 
         // Assert
@@ -181,10 +181,10 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
     {
         // Arrange
         string conversationId = Guid.NewGuid().ToString("N");
-        string create = ToolCall("create_saved_view", new { name = "Team errors", viewType = "stacks", shared = true });
+        string Create() => ToolCall("create_saved_view", new { name = "Team errors", viewType = "stacks", shared = true });
 
         // Act
-        s_provider.Script(create);
+        s_provider.Script(Create());
         string[] requested = await SendChatAsync("Create a view for the team.", SampleDataService.TEST_PROJECT_ID, conversationId);
 
         // Assert
@@ -192,13 +192,40 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
         Assert.Null(await FindViewAsync("Team errors"));
 
         // Act
-        s_provider.Script(create);
+        s_provider.Script(Create());
         await SendChatAsync("Yes, continue", SampleDataService.TEST_PROJECT_ID, conversationId);
 
         // Assert
         var view = await FindViewAsync("Team errors");
         Assert.NotNull(view);
         Assert.Null(view.UserId);
+    }
+
+    [Fact]
+    public async Task Chat_CreateShared_SwitchingProjectsBeforeConfirmingAsksAgain()
+    {
+        // Arrange
+        string conversationId = Guid.NewGuid().ToString("N");
+        string Create() => ToolCall("create_saved_view", new { name = "Team errors", viewType = "stacks", shared = true });
+        s_provider.Script(Create());
+        await SendChatAsync("Create a view for the team.", SampleDataService.TEST_PROJECT_ID, conversationId);
+
+        // Act
+        s_provider.Script(Create());
+        string[] switched = await SendChatAsync("Yes, continue", SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, conversationId);
+
+        // Assert
+        Assert.Contains("confirmation_required", GetToolResult(switched), StringComparison.Ordinal);
+        Assert.Null(await FindViewAsync("Team errors"));
+
+        // Act
+        s_provider.Script(Create());
+        await SendChatAsync("Yes, continue", SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, conversationId);
+
+        // Assert
+        var view = await FindViewAsync("Team errors");
+        Assert.NotNull(view);
+        Assert.Contains($"project:{SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID}", view.Filter, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -275,7 +302,7 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
         {
             choices = new[]
             {
-                new { delta = new { tool_calls = new[] { new { index = 0, id = "call-1", function = new { name, arguments = JsonSerializer.Serialize(arguments) } } } } }
+                new { delta = new { tool_calls = new[] { new { index = 0, id = Guid.NewGuid().ToString("N"), function = new { name, arguments = JsonSerializer.Serialize(arguments) } } } } }
             }
         });
 

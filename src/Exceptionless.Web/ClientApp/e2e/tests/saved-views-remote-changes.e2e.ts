@@ -56,11 +56,15 @@ test('an open saved view changed elsewhere shows the new filters without unsaved
         data: { filter: viewFilter('staging'), filter_definitions: viewDefinitions('staging'), time: '[now-30d TO now]' },
         headers: { Authorization: `Bearer ${token}` }
     });
-    expect(updated.ok()).toBe(true);
 
     // Assert
+    expect(updated.ok()).toBe(true);
     await expect(page.getByRole('button', { name: /staging/ }).first()).toBeVisible({ timeout: 30_000 });
+
+    // Act
     await page.getByRole('button', { exact: true, name: 'View' }).click();
+
+    // Assert
     await expect(page.getByRole('menuitem', { name: 'Reset to Saved' })).toBeDisabled();
     await expect(page.getByLabel('Unsaved view changes')).toHaveCount(0);
 });
@@ -144,11 +148,11 @@ test('a view deleted while disconnected keeps the app open after reconnecting', 
     // Act
     dropServerMessages = true;
     const deleted = await request.delete(`/api/v2/saved-views/${savedView.id}`, { headers: { Authorization: `Bearer ${token}` } });
-    expect(deleted.ok()).toBe(true);
     dropServerMessages = false;
     await closeSocket();
 
     // Assert
+    expect(deleted.ok()).toBe(true);
     await expect(page.getByRole('heading', { name: SAVED_VIEW_NOT_FOUND_HEADING })).toBeVisible({ timeout: 30_000 });
     await expect(appLayout(page)).toBeVisible();
 });

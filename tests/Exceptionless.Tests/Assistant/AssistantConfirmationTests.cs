@@ -13,6 +13,9 @@ public sealed class AssistantConfirmationTests(ITestOutputHelper output) : TestW
     [InlineData("Yes, delete it.", true)]
     [InlineData("ok", true)]
     [InlineData("delete it", true)]
+    [InlineData("Yes please", true)]
+    [InlineData("Yes?", false)]
+    [InlineData("Yes, but don't delete it yet", false)]
     [InlineData("no", false)]
     [InlineData("yesterday's errors", false)]
     [InlineData("ok, what does that view show?", false)]
@@ -39,6 +42,22 @@ public sealed class AssistantConfirmationTests(ITestOutputHelper output) : TestW
     {
         // Act
         bool result = AssistantConfirmation.IsRequired(toolName, arguments);
+
+        // Assert
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("create_saved_view", "{\"shared\":true}", "{\"shared\":true,\"projectIds\":[\"current\"]}")]
+    [InlineData("create_saved_view", "{\"shared\":true,\"projectIds\":[]}", "{\"shared\":true,\"projectIds\":[\"current\"]}")]
+    [InlineData("create_saved_view", "{\"shared\":true,\"projectIds\":[\"named\"]}", "{\"shared\":true,\"projectIds\":[\"named\"]}")]
+    [InlineData("create_saved_view", "{\"shared\":true,\"allProjects\":true}", "{\"shared\":true,\"allProjects\":true}")]
+    [InlineData("create_saved_view", "{\"shared\":false}", "{\"shared\":false}")]
+    [InlineData("delete_saved_view", "{\"savedViewId\":\"a\"}", "{\"savedViewId\":\"a\"}")]
+    public void ResolveProjectScope_SharedView_WritesTheCurrentProjectIntoItsArguments(string toolName, string arguments, string expected)
+    {
+        // Act
+        string result = AssistantConfirmation.ResolveProjectScope(toolName, arguments, "current");
 
         // Assert
         Assert.Equal(expected, result);

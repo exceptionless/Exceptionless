@@ -19,7 +19,8 @@ internal static class AssistantConfirmation
 
     private static readonly HashSet<string> s_confirmations = new(StringComparer.OrdinalIgnoreCase)
     {
-        "y", "yep", "yeah", "ok", "okay", "sure", "confirm", "confirmed", "go ahead", "do it", "please do", "delete it", "create it"
+        "y", "yes", "yep", "yeah", "ok", "okay", "sure", "confirm", "confirmed", "go ahead", "do it", "please do", "delete it", "create it",
+        "yes please", "yes continue", "yes go ahead", "yes do it", "yes delete it", "yes create it"
     };
 
     public static bool IsRequired(string toolName, string arguments)
@@ -50,17 +51,33 @@ internal static class AssistantConfirmation
         }, options);
     }
 
+    /// <summary>Only a complete, plain yes counts, so "yes?" or "yes, but not yet" can't approve the action.</summary>
     internal static bool IsConfirmation(string? message)
-    {
-        string normalized = message?.Trim().TrimEnd('.', '!') ?? String.Empty;
-        if (s_confirmations.Contains(normalized))
-            return true;
+        => message is not null && s_confirmations.Contains(message.Trim().TrimEnd('.', '!').Replace(",", String.Empty, StringComparison.Ordinal));
 
-        return normalized.StartsWith("yes", StringComparison.OrdinalIgnoreCase) && (normalized.Length == 3 || !Char.IsLetter(normalized[3]));
+    /// <summary>
+    /// Writes the current project into a shared view's arguments. Otherwise the same arguments would mean a different
+    /// project if the user switched projects before confirming, and they would approve something they were never asked about.
+    /// </summary>
+    public static string ResolveProjectScope(string toolName, string arguments, string? currentProjectId)
+    {
+        if (toolName != CreateSavedViewTool || String.IsNullOrWhiteSpace(currentProjectId) || !IsShared(arguments))
+            return arguments;
+
+        var parsed = TryParse(arguments);
+        if (parsed is null || IsTrue(parsed["allProjects"]) || IsTrue(parsed["all_projects"]) || HasValues(parsed["projectIds"]) || HasValues(parsed["project_ids"]))
+            return arguments;
+
+        parsed.Remove("project_ids");
+        parsed["projectIds"] = new JsonArray(currentProjectId);
+        return parsed.ToJsonString();
     }
 
-    private static bool IsShared(string arguments)
-        => TryParse(arguments)?["shared"] is JsonValue shared && shared.TryGetValue(out bool value) && value;
+    private static bool IsShared(string arguments) => IsTrue(TryParse(arguments)?["shared"]);
+
+    private static bool IsTrue(JsonNode? node) => node is JsonValue value && value.TryGetValue(out bool result) && result;
+
+    private static bool HasValues(JsonNode? node) => node is JsonArray { Count: > 0 };
 
     private static bool HasSameArguments(string first, string second)
         => JsonNode.DeepEquals(TryParse(first), TryParse(second));
