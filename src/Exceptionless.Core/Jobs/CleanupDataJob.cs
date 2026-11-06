@@ -1,3 +1,4 @@
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -34,6 +35,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     private readonly IOrganizationRepository _organizationRepository;
     private readonly OrganizationService _organizationService;
     private readonly IUserRepository _userRepository;
+    private readonly ISavedViewRepository _savedViewRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
     private readonly IEventRepository _eventRepository;
@@ -55,6 +57,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         IOrganizationRepository organizationRepository,
         OrganizationService organizationService,
         IUserRepository userRepository,
+        ISavedViewRepository savedViewRepository,
         IProjectRepository projectRepository,
         IStackRepository stackRepository,
         IEventRepository eventRepository,
@@ -78,6 +81,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _organizationRepository = organizationRepository;
         _organizationService = organizationService;
         _userRepository = userRepository;
+        _savedViewRepository = savedViewRepository;
         _projectRepository = projectRepository;
         _stackRepository = stackRepository;
         _eventRepository = eventRepository;
@@ -112,6 +116,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await CleanupSyntheticOrganizationsAsync(context);
         await CleanupSyntheticUsersAsync(context);
         await CleanupSoftDeletedOrganizationsAsync(context);
+        await CleanupOrphanedPrivateSavedViewsAsync(context);
         await CleanupSoftDeletedProjectsAsync(context);
         await CleanupSoftDeletedStacksAsync(context);
 
@@ -120,6 +125,59 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         _logger.CleanupFinished();
 
         return JobResult.Success;
+    }
+
+    private async Task CleanupOrphanedPrivateSavedViewsAsync(JobContext context)
+    {
+        var views = await _savedViewRepository.FindAsync(
+            query => query.FieldHasValue(view => view.UserId!)
+                .FieldNotEquals(view => view.UserId!, String.Empty)
+                .Include(view => view.Id, view => view.OrganizationId, view => view.UserId!)
+                .SortAscending(view => view.Id),
+            options => options.SearchAfterPaging().PageLimit(500));
+
+        long removed = 0;
+        while (views.Documents.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        {
+            string[] userIds = views.Documents.Select(view => view.UserId!).Distinct(StringComparer.Ordinal).ToArray();
+            string[] organizationIds = views.Documents.Select(view => view.OrganizationId).Distinct(StringComparer.Ordinal).ToArray();
+            var users = await _userRepository.GetByIdsAsync(userIds, options => options.Cache(false));
+            var usersById = users.ToDictionary(user => user.Id, StringComparer.Ordinal);
+            var organizations = await _organizationRepository.GetByIdsAsync(organizationIds, options => options.Cache(false));
+            var existingOrganizationIds = organizations.Select(organization => organization.Id).ToHashSet(StringComparer.Ordinal);
+
+            var orphaned = views.Documents.Where(view =>
+                !existingOrganizationIds.Contains(view.OrganizationId)
+                || !usersById.TryGetValue(view.UserId!, out var user)
+                || (!user.OrganizationIds.Contains(view.OrganizationId) && !user.Roles.Contains(AuthorizationRoles.GlobalAdmin)));
+            foreach (var group in orphaned.GroupBy(view => (view.OrganizationId, view.UserId)))
+            {
+                context.CancellationToken.ThrowIfCancellationRequested();
+
+                await using var membershipLock = await _organizationService.TryAcquireUserMembershipLockAsync(group.Key.UserId!);
+                if (membershipLock is null)
+                    continue;
+
+                var currentOrganization = await _organizationRepository.GetByIdAsync(group.Key.OrganizationId, options => options.Cache(false));
+                var currentUser = await _userRepository.GetByIdAsync(group.Key.UserId!, options => options.Cache(false));
+                if (currentUser is not null && currentOrganization is not null
+                    && (currentUser.OrganizationIds.Contains(group.Key.OrganizationId) || currentUser.Roles.Contains(AuthorizationRoles.GlobalAdmin)))
+                    continue;
+
+                // Recheck ownership and visibility so a view changed since the scan is retained.
+                removed += await _savedViewRepository.RemoveAllAsync(
+                    query => query.Id(group.Select(view => view.Id).ToArray())
+                        .Organization(group.Key.OrganizationId)
+                        .FieldEquals(view => view.UserId!, group.Key.UserId!),
+                    options => options.Cache(false).ImmediateConsistency());
+            }
+
+            await RenewLockAsync(context);
+            if (!await views.NextPageAsync())
+                break;
+        }
+
+        _logger.LogInformation("Removed {SavedViewCount} orphaned private saved views", removed);
     }
 
     private async Task MarkTokensSuspended(JobContext context)
