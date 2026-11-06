@@ -15,6 +15,7 @@ public partial class ProjectMapper
 
     [MapperIgnoreTarget(nameof(ViewProject.HasSlackIntegration))]
     [MapperIgnoreTarget(nameof(ViewProject.HasPremiumFeatures))]
+    [MapperIgnoreTarget(nameof(ViewProject.HasRateNotifications))]
     [MapperIgnoreTarget(nameof(ViewProject.OrganizationName))]
     [MapperIgnoreTarget(nameof(ViewProject.StackCount))]
     [MapperIgnoreTarget(nameof(ViewProject.EventCount))]
