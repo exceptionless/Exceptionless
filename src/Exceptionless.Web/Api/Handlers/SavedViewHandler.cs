@@ -427,7 +427,7 @@ public partial class SavedViewHandler(
         mapped.CreatedByUserId = GetCurrentUserId();
         mapped.Version = 1;
 
-        var model = await repository.AddAsync(mapped, o => o.Cache());
+        var model = await repository.AddAsync(mapped, o => o.Cache().ImmediateConsistency());
         var viewModel = MapToViewModel(model);
         string location = linkGenerator.GetUriByName(HttpContext, "GetSavedViewById", new { id = model.Id })
             ?? throw new InvalidOperationException("Unable to generate saved view location.");
