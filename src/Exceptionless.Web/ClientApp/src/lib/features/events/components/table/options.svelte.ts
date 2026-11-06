@@ -15,6 +15,7 @@ import Summary from '../summary/summary.svelte';
 import EventEnvironmentCell from './event-environment-cell.svelte';
 import EventTagsSummaryCell from './event-tags-summary-cell.svelte';
 import EventsUserIdentitySummaryCell from './events-user-identity-summary-cell.svelte';
+import StackSortHeader from './stack-sort-header.svelte';
 import StackStatusCell from './stack-status-cell.svelte';
 import StackUsersSummaryCell from './stack-users-summary-cell.svelte';
 
@@ -36,9 +37,16 @@ export const defaultStackColumnVisibility: ColumnVisibilityState = {
     tags: false
 };
 
+export type StackSortMode = Extract<GetEventsMode, 'stack_frequent' | 'stack_recent'>;
+
 export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKeys>>(
     mode: GetEventsMode = 'summary',
-    options?: { onEnvironmentClick?: (environment: string) => Promise<void> | void; onTagClick?: (tag: string) => Promise<void> | void; showType?: boolean }
+    options?: {
+        onEnvironmentClick?: (environment: string) => Promise<void> | void;
+        onStackSort?: (mode: StackSortMode) => void;
+        onTagClick?: (tag: string) => Promise<void> | void;
+        showType?: boolean;
+    }
 ): ColumnDef<StockFeatures, TSummaryModel, unknown>[] {
     const showType = options?.showType ?? true;
     const columns: ColumnDef<StockFeatures, TSummaryModel, unknown>[] = [
@@ -322,7 +330,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                         value: prop.getValue<number>()
                     }),
                 enableSorting: false,
-                header: 'Events',
+                header: () =>
+                    renderComponent(StackSortHeader, {
+                        active: mode === 'stack_frequent',
+                        label: 'Events',
+                        onclick: () => options?.onStackSort?.('stack_frequent')
+                    }),
                 id: 'events',
                 maxSize: 320,
                 meta: {
@@ -354,7 +367,12 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
                         value: prop.getValue<string>()
                     }),
                 enableSorting: false,
-                header: 'Last',
+                header: () =>
+                    renderComponent(StackSortHeader, {
+                        active: mode === 'stack_recent',
+                        label: 'Last',
+                        onclick: () => options?.onStackSort?.('stack_recent')
+                    }),
                 id: 'last',
                 maxSize: 480,
                 meta: {
@@ -367,6 +385,18 @@ export function getColumns<TSummaryModel extends SummaryModel<SummaryTemplateKey
     }
 
     return columns;
+}
+
+export function getStackSortMode(value: null | string | undefined): StackSortMode | undefined {
+    if (value === 'stack_frequent' || value === '-events') {
+        return 'stack_frequent';
+    }
+
+    if (value === 'stack_recent' || value === '-last') {
+        return 'stack_recent';
+    }
+
+    return undefined;
 }
 
 function formatTextColumn(value: unknown): string {
