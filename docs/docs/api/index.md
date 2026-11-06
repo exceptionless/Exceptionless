@@ -18,7 +18,7 @@ For the MCP resource, `mcp:read` is required to connect. `projects:read`, `stack
 
 Dynamic registration without a scope uses every supported scope. A self-registered client can request any supported scope whatever it registered, because the user decides on the consent page what to grant. Once an administrator saves an application's scopes, that list is enforced.
 
-A token only carries the scopes it was granted, so a client authorized before `saved-views:read` and `saved-views:write` existed gets a `forbidden` error from the saved view tools until the user authorizes it again. If an administrator has saved the application's scopes, the administrator must add these scopes first.
+A token only carries the scopes it was granted, so a client authorized before `saved-views:read` and `saved-views:write` existed gets a `forbidden` error from the saved view tools until the user authorizes it again. The client must request these scopes in that authorization, so a client with a fixed scope list needs to add them. If an administrator has saved the application's scopes, the administrator must add these scopes first.
 
 ### Requesting scopes the application does not allow
 

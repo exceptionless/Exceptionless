@@ -34,6 +34,28 @@ internal static partial class SavedViewFilterDefinitions
         return legacyDefinitions;
     }
 
+    /// <summary>
+    /// True when <see cref="Parse"/> can only keep the view's filter as one search chip. Its criteria are not separate
+    /// chips then, so setting a criteria would be combined with the old value instead of replacing it.
+    /// </summary>
+    public static bool IsRawFilter(string? filterDefinitions, string? filter)
+    {
+        if (String.IsNullOrWhiteSpace(filter))
+            return false;
+
+        if (String.IsNullOrWhiteSpace(filterDefinitions))
+            return true;
+
+        try
+        {
+            return JsonNode.Parse(filterDefinitions) is not JsonArray definitions || !AgreesWithFilter(definitions, filter);
+        }
+        catch (JsonException)
+        {
+            return true;
+        }
+    }
+
     /// <summary>Chips are rewritten when a view changes, so a filter they do not produce would otherwise be lost.</summary>
     private static bool AgreesWithFilter(JsonArray definitions, string? filter)
         => String.IsNullOrWhiteSpace(filter) || String.Equals(ToFilter(definitions), filter.Trim(), StringComparison.Ordinal);
@@ -48,7 +70,10 @@ internal static partial class SavedViewFilterDefinitions
         return replacement;
     }
 
-    /// <summary>Replaces the chip of a type in place, so the other chips and their order are not disturbed.</summary>
+    /// <summary>
+    /// Replaces the chip of a type in place, so the other chips and their order are not disturbed. A new chip goes before
+    /// the search chip: filter terms AND together up to an OR, so "a OR b project:c" would not limit a to that project.
+    /// </summary>
     public static void Set(JsonArray definitions, string type, JsonNode? value, bool hidden = false, string? term = null)
     {
         var definition = new JsonObject { ["type"] = type };
@@ -61,7 +86,12 @@ internal static partial class SavedViewFilterDefinitions
         int index = Find(definitions, type, term);
         if (index < 0)
         {
-            definitions.Add(definition);
+            int searchIndex = type == "keyword" ? -1 : Find(definitions, "keyword", term: null);
+            if (searchIndex < 0)
+                definitions.Add(definition);
+            else
+                definitions.Insert(searchIndex, definition);
+
             return;
         }
 

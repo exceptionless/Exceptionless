@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { AssistantToolActivity } from './models';
+
 import { describeTimeRange, getAssistantToolDetail, getAssistantToolLabel, getAssistantToolSavedView, isMutationTool } from './assistant-tools';
 
 describe('describeTimeRange', () => {
@@ -99,5 +101,22 @@ describe('saved view tools', () => {
         // Assert
         expect(createdView).toEqual({ id: 'view-1', name: 'Production errors', slug: 'production-errors', view_type: 'stacks' });
         expect(deletedView).toBeUndefined();
+    });
+
+    it('shows an action held for confirmation as waiting rather than failed', () => {
+        // Arrange
+        const tool = {
+            arguments: '{"savedViewId":"view-1"}',
+            id: 'call-1',
+            name: 'delete_saved_view',
+            result: '{"ok":false,"error":{"code":"confirmation_required","message":"Deleting this saved view needs the user\'s confirmation."}}',
+            status: 'failed'
+        } as AssistantToolActivity;
+
+        // Act
+        const label = getAssistantToolLabel(tool, false);
+
+        // Assert
+        expect(label).toBe('Waiting for your confirmation');
     });
 });

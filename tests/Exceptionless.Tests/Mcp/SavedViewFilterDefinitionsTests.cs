@@ -1,11 +1,12 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using Exceptionless.Web.Mcp;
+using Foundatio.Xunit;
 using Xunit;
 
 namespace Exceptionless.Tests.Mcp;
 
-public sealed class SavedViewFilterDefinitionsTests
+public sealed class SavedViewFilterDefinitionsTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
     [Fact]
     public void ToFilter_ContractCases_MatchesTheApp()
@@ -22,6 +23,54 @@ public sealed class SavedViewFilterDefinitionsTests
         // Assert
         Assert.NotEmpty(results);
         Assert.All(results, result => Assert.True(result.Expected == result.Actual, $"{result.Name}: expected '{result.Expected}' but got '{result.Actual}'."));
+    }
+
+    [Fact]
+    public void IsRawFilter_ContractCases_ChipsAgreeWithTheirFilter()
+    {
+        // Arrange
+        var cases = JsonNode.Parse(File.ReadAllText(GetContractPath()))!.AsArray();
+
+        // Act
+        var rawCases = cases
+            .Where(item => SavedViewFilterDefinitions.IsRawFilter(item!["definitions"]!.ToJsonString(), item["filter"]!.GetValue<string>()))
+            .Select(item => item!["name"]!.GetValue<string>())
+            .ToList();
+
+        // Assert
+        Assert.Empty(rawCases);
+    }
+
+    [Theory]
+    [InlineData(null, null, false)]
+    [InlineData(null, "project:a", true)]
+    [InlineData("[]", "project:a", true)]
+    [InlineData("not json", "project:a", true)]
+    [InlineData("""[{"type":"status","value":["open"]}]""", "status:fixed", true)]
+    [InlineData("""[{"type":"status","value":["open"]}]""", "status:open", false)]
+    [InlineData("""[{"type":"status","value":["open"]}]""", null, false)]
+    public void IsRawFilter_View_OnlyWhenChipsCannotRepresentTheFilter(string? definitions, string? filter, bool expected)
+    {
+        // Act
+        bool result = SavedViewFilterDefinitions.IsRawFilter(definitions, filter);
+
+        // Assert
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public void Set_NewChip_GoesBeforeTheSearchSoAnOrCannotWidenIt()
+    {
+        // Arrange
+        var definitions = new JsonArray();
+        SavedViewFilterDefinitions.Set(definitions, "keyword", JsonValue.Create("status:open OR type:error"));
+
+        // Act
+        SavedViewFilterDefinitions.Set(definitions, "project", new JsonArray("a"));
+        SavedViewFilterDefinitions.Set(definitions, "tag", new JsonArray("b"));
+
+        // Assert
+        Assert.Equal("project:a tag:b status:open OR type:error", SavedViewFilterDefinitions.ToFilter(definitions));
     }
 
     [Fact]

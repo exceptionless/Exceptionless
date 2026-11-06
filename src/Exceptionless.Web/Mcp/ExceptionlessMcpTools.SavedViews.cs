@@ -52,7 +52,7 @@ public sealed partial class ExceptionlessMcpTools
         string? organizationId = null,
         [Description("Optional page to list views for: stacks, events, sessions, or stream.")]
         string? viewType = null,
-        [Description("Optional text the view name must contain, ignoring case.")]
+        [Description("Optional text the view's name or URL name must contain, ignoring case.")]
         string? name = null)
     {
         try
@@ -78,7 +78,7 @@ public sealed partial class ExceptionlessMcpTools
 
             var matches = views
                 .Where(view => viewType is null || String.Equals(view.ViewType, viewType, StringComparison.OrdinalIgnoreCase))
-                .Where(view => name is null || view.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
+                .Where(view => name is null || view.Name.Contains(name, StringComparison.OrdinalIgnoreCase) || view.Slug.Contains(name, StringComparison.OrdinalIgnoreCase))
                 .OrderBy(view => view.ViewType, StringComparer.Ordinal)
                 .ThenBy(view => view.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -126,8 +126,6 @@ public sealed partial class ExceptionlessMcpTools
         string? query = null,
         [Description(SavedViewTimeDescription + " Defaults to the last 7 days.")]
         string? time = null,
-        [Description(TimeZoneDescription)]
-        string? timeZone = null,
         [Description(SavedViewSortDescription + " Defaults to -date.")]
         string? sort = null,
         [Description("Set to true only when the user asks for everyone in the organization to see the view. This cannot be changed after the view is created.")]
@@ -146,7 +144,7 @@ public sealed partial class ExceptionlessMcpTools
             if (!NewSavedView.ValidViewTypes.Contains(normalizedViewType))
                 return McpResponse<McpSavedViewResult>.Failed(InvalidSavedViewArgument($"viewType must be one of: {String.Join(", ", NewSavedView.ValidViewTypes)}."));
 
-            var displayError = ValidateSavedViewDisplay(normalizedViewType, types, time, timeZone, sort);
+            var displayError = ValidateSavedViewDisplay(normalizedViewType, types, time, sort);
             if (displayError is not null)
                 return McpResponse<McpSavedViewResult>.Failed(displayError);
 
@@ -239,8 +237,6 @@ public sealed partial class ExceptionlessMcpTools
         string[]? clearCriteria = null,
         [Description(SavedViewTimeDescription)]
         string? time = null,
-        [Description(TimeZoneDescription)]
-        string? timeZone = null,
         [Description(SavedViewSortDescription)]
         string? sort = null)
     {
@@ -254,9 +250,12 @@ public sealed partial class ExceptionlessMcpTools
             if (view is null)
                 return McpResponse<McpSavedViewResult>.Failed(viewError!);
 
-            var displayError = ValidateSavedViewDisplay(view.ViewType, types, time, timeZone, sort);
+            var displayError = ValidateSavedViewDisplay(view.ViewType, types, time, sort);
             if (displayError is not null)
                 return McpResponse<McpSavedViewResult>.Failed(displayError);
+
+            if (SavedViewFilterDefinitions.IsRawFilter(view.FilterDefinitions, view.Filter) && ChangesSeparateCriteria(projectIds, allProjects, types, statuses, environments, levels, tags, clearCriteria))
+                return McpResponse<McpSavedViewResult>.Failed(InvalidSavedViewArgument($"This view uses a custom filter, so its criteria cannot be changed one at a time. Pass query with the complete new filter to replace it: {view.Filter}"));
 
             var definitions = SavedViewFilterDefinitions.Parse(view.FilterDefinitions, view.Filter);
             string originalDefinitions = definitions.ToJsonString();
@@ -291,7 +290,8 @@ public sealed partial class ExceptionlessMcpTools
                 if (filterError is not null)
                     return McpResponse<McpSavedViewResult>.Failed(filterError);
 
-                changes.TrySetPropertyValue(nameof(UpdateSavedView.Filter), filter);
+                // Patching skips nulls, so an empty filter is what removes the last criteria.
+                changes.TrySetPropertyValue(nameof(UpdateSavedView.Filter), filter ?? String.Empty);
                 changes.TrySetPropertyValue(nameof(UpdateSavedView.FilterDefinitions), definitions.ToJsonString());
             }
 
@@ -446,7 +446,12 @@ public sealed partial class ExceptionlessMcpTools
         return null;
     }
 
-    private McpErrorInfo? ValidateSavedViewDisplay(string viewType, string[]? types, string? time, string? timeZone, string? sort)
+    private static bool ChangesSeparateCriteria(string[]? projectIds, bool allProjects, string[]? types, string[]? statuses, string[]? environments, string[]? levels, string[]? tags, string[]? clearCriteria)
+        => allProjects
+            || new[] { projectIds, types, statuses, environments, levels, tags }.Any(values => values is { Length: > 0 })
+            || clearCriteria?.Any(criteria => !String.Equals(criteria.Trim(), "query", StringComparison.OrdinalIgnoreCase)) is true;
+
+    private McpErrorInfo? ValidateSavedViewDisplay(string viewType, string[]? types, string? time, string? sort)
     {
         if (viewType == "sessions" && types is { Length: > 0 })
             return InvalidSavedViewArgument("Sessions views always show sessions, so they cannot filter by event type.");
@@ -454,9 +459,9 @@ public sealed partial class ExceptionlessMcpTools
         if (time is not null)
         {
             if (viewType == "stream")
-                return McpErrors.InvalidTimeRange("Stream views show live events, so they have no time range.", time, timeZone);
+                return McpErrors.InvalidTimeRange("Stream views show live events, so they have no time range.", time, timeZone: null);
 
-            if (!TryResolveTimeRange(time, timeZone, out _, out var timeError))
+            if (!TryResolveTimeRange(time, timeZone: null, out _, out var timeError))
                 return timeError;
         }
 
@@ -488,7 +493,7 @@ public sealed partial class ExceptionlessMcpTools
     private static JsonArray ToJsonArray(IEnumerable<string> values)
         => new(values.Select(value => (JsonNode?)JsonValue.Create(value)).ToArray());
 
-    /// <summary>The app quotes these values without escaping, so a quote or control character would break the filter.</summary>
+    /// <summary>The app quotes tags without escaping, so a quote or control character would break the filter.</summary>
     private static bool IsPlainSavedViewValue(string value)
         => value.Length > 0 && !value.Any(character => character is '"' or '\\' || Char.IsControl(character));
 
@@ -504,7 +509,7 @@ public sealed partial class ExceptionlessMcpTools
         view.UserId is not null,
         view.PredefinedKey is not null,
         $"/api/v2/saved-views/{view.Id}",
-        view.Filter,
+        String.IsNullOrEmpty(view.Filter) ? null : view.Filter,
         view.Time,
         view.Sort,
         changed,

@@ -11,6 +11,7 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Assistant;
+using Foundatio.Repositories;
 using Xunit;
 
 namespace Exceptionless.Tests.Assistant;
@@ -218,7 +219,7 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.DoesNotContain("list_projects", create.ToolCalls);
 
         await RefreshDataAsync();
-        var savedViews = await GetService<ISavedViewRepository>().GetByOrganizationIdAsync(SampleDataService.TEST_ORG_ID);
+        var savedViews = await GetService<ISavedViewRepository>().GetByOrganizationIdAsync(SampleDataService.TEST_ORG_ID, o => o.PageLimit(100));
         var savedView = Assert.Single(savedViews.Documents, view => view.PredefinedKey is null);
         Assert.NotNull(savedView.UserId);
         Assert.Equal("[now-30d TO now]", savedView.Time);

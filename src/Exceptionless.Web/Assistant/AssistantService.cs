@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Web;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models.Billing;
@@ -413,6 +414,11 @@ public sealed class AssistantService(
                     }, s_jsonOptions);
                     remainingToolCalls--;
                 }
+                else if (AssistantConfirmation.IsRequired(toolCall.Name, arguments) && !AssistantConfirmation.IsConfirmed(toolCall.Name, arguments, request, conversationState))
+                {
+                    result = AssistantConfirmation.CreateRequiredResult(toolCall.Name, s_jsonOptions);
+                    remainingToolCalls--;
+                }
                 else
                 {
                     remainingToolCalls--;
@@ -553,8 +559,8 @@ public sealed class AssistantService(
         using var _ = assistantToolContext.BeginTools(request.OrganizationId);
         using var document = ParseArguments(arguments);
         var root = document.RootElement;
-        string? currentEventId = GetRouteValue(request.Path, "event");
-        string? currentStackId = GetRouteValue(request.Path, "stack");
+        string? currentEventId = GetCurrentResourceId(request.Path, "event");
+        string? currentStackId = GetCurrentResourceId(request.Path, "stack");
         string? setupProjectId = GetString(root, "projectId", "project_id");
         string? setupProjectName = GetString(root, "projectName", "project_name");
         bool? critical = GetBoolean(root, "critical");
@@ -634,22 +640,7 @@ public sealed class AssistantService(
                 request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
                 GetString(root, "viewType", "view_type"),
                 GetString(root, "name")),
-            CreateSavedViewTool => await tools.CreateSavedViewAsync(
-                GetString(root, "name") ?? String.Empty,
-                GetString(root, "viewType", "view_type") ?? String.Empty,
-                request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
-                GetStrings(root, "projectIds", "project_ids") ?? (request.ProjectId is { } currentProjectId ? [currentProjectId] : null),
-                GetBoolean(root, "allProjects", "all_projects") ?? false,
-                GetStrings(root, "types"),
-                GetStrings(root, "statuses"),
-                GetStrings(root, "environments"),
-                GetStrings(root, "levels"),
-                GetStrings(root, "tags"),
-                GetString(root, "query"),
-                GetString(root, "time"),
-                GetUserTimeZoneId(request.TimeZone),
-                GetString(root, "sort"),
-                GetBoolean(root, "shared") ?? false),
+            CreateSavedViewTool => await CreateSavedViewAsync(tools, root, request),
             UpdateSavedViewTool => await tools.UpdateSavedViewAsync(
                 GetString(root, "savedViewId", "saved_view_id") ?? String.Empty,
                 GetString(root, "name"),
@@ -663,13 +654,40 @@ public sealed class AssistantService(
                 GetString(root, "query"),
                 GetStrings(root, "clearCriteria", "clear_criteria"),
                 GetString(root, "time"),
-                GetUserTimeZoneId(request.TimeZone),
                 GetString(root, "sort")),
             DeleteSavedViewTool => await tools.DeleteSavedViewAsync(GetString(root, "savedViewId", "saved_view_id") ?? String.Empty),
             _ => new { ok = false, error = $"Unknown tool '{name}'." }
         };
 
         return AssistantToolResultSerializer.Serialize(name, result, s_jsonOptions);
+    }
+
+    /// <summary>
+    /// Without this check, leaving out the project on a page with no current project would quietly include every project,
+    /// which is not what "a view for this project" means.
+    /// </summary>
+    private static async Task<McpResponse<McpSavedViewResult>> CreateSavedViewAsync(ExceptionlessMcpTools tools, JsonElement root, AssistantChatRequest request)
+    {
+        bool allProjects = GetBoolean(root, "allProjects", "all_projects") ?? false;
+        string[]? projectIds = GetStrings(root, "projectIds", "project_ids") ?? (request.ProjectId is { } currentProjectId ? [currentProjectId] : null);
+        if (projectIds is null && !allProjects)
+            return McpResponse<McpSavedViewResult>.Failed(new McpErrorInfo(McpErrorCodes.InvalidArgument, "No current project is selected. Pass projectIds with the project the user wants, or allProjects as true if they asked for every project."));
+
+        return await tools.CreateSavedViewAsync(
+            GetString(root, "name") ?? String.Empty,
+            GetString(root, "viewType", "view_type") ?? String.Empty,
+            request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
+            projectIds,
+            allProjects,
+            GetStrings(root, "types"),
+            GetStrings(root, "statuses"),
+            GetStrings(root, "environments"),
+            GetStrings(root, "levels"),
+            GetStrings(root, "tags"),
+            GetString(root, "query"),
+            GetString(root, "time"),
+            GetString(root, "sort"),
+            GetBoolean(root, "shared") ?? false);
     }
 
     internal static string? GetProjectSetupProjectId(string? requestedProjectId, string? requestedProjectName, string? currentProjectId)
@@ -689,7 +707,7 @@ public sealed class AssistantService(
         DateTimeOffset utcNow)
     {
         // The model has no clock; without the current time it guesses absolute dates for relative questions.
-        string context = $"Current UTC time: {FormatUtc(utcNow)}. {GetUserCalendarContext(request.TimeZone, utcNow)} Current organization id: {request.OrganizationId ?? "not selected"}. Current project id: {request.ProjectId ?? "not selected"}. Current stack id: {GetRouteValue(request.Path, "stack") ?? "not selected"}. Current event id: {GetRouteValue(request.Path, "event") ?? "not selected"}. Current page: {request.Path ?? "unknown"}.";
+        string context = $"Current UTC time: {FormatUtc(utcNow)}. {GetUserCalendarContext(request.TimeZone, utcNow)} Current organization id: {request.OrganizationId ?? "not selected"}. Current project id: {request.ProjectId ?? "not selected"}. Current stack id: {GetCurrentResourceId(request.Path, "stack") ?? "not selected"}. Current event id: {GetCurrentResourceId(request.Path, "event") ?? "not selected"}. Current saved view: {GetCurrentSavedView(request.Path) ?? "not selected"}. Current page: {request.Path ?? "unknown"}.";
         var messages = new List<object>
         {
             new
@@ -880,6 +898,29 @@ public sealed class AssistantService(
 
         remainingCharacters -= limited.Length;
         return limited;
+    }
+
+    /// <summary>A stack or event page has an id in its path. Anything else there is the URL name of a saved view.</summary>
+    internal static string? GetCurrentResourceId(string? path, string segment)
+        => GetRouteValue(path, segment) is { } value && IsObjectId(value) ? value : null;
+
+    private static bool IsObjectId(string value) => value.Length == 24 && value.All(Char.IsAsciiHexDigit);
+
+    internal static string? GetCurrentSavedView(string? path)
+    {
+        foreach (string segment in new[] { "stack", "event" })
+        {
+            if (GetRouteValue(path, segment) is { } value && !IsObjectId(value))
+                return value;
+        }
+
+        // Pages without a saved view route, and links that predate them, carry the view in the query string.
+        int queryIndex = path?.IndexOf('?') ?? -1;
+        if (queryIndex < 0)
+            return null;
+
+        string? saved = HttpUtility.ParseQueryString(path![(queryIndex + 1)..])["saved"];
+        return String.IsNullOrWhiteSpace(saved) ? null : saved;
     }
 
     internal static string? GetRouteValue(string? path, string segment)

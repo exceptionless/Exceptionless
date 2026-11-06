@@ -244,6 +244,8 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.NotNull(registration);
         Assert.Contains(AuthorizationRoles.McpRead, registration.Scope);
         Assert.Contains(AuthorizationRoles.ProjectsRead, registration.Scope);
+        Assert.Contains(AuthorizationRoles.SavedViewsRead, registration.Scope);
+        Assert.Contains(AuthorizationRoles.SavedViewsWrite, registration.Scope);
         Assert.Contains(AuthorizationRoles.StacksRead, registration.Scope);
         Assert.Contains(AuthorizationRoles.EventsRead, registration.Scope);
         Assert.Contains(AuthorizationRoles.StacksWrite, registration.Scope);
@@ -1493,6 +1495,180 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         Assert.Equal("not_found", deletedOtherOrganization.GetProperty("error").GetProperty("code").GetString());
         Assert.NotNull(await repository.GetByIdAsync(otherUsersView.Id, o => o.Cache(false)));
         Assert.NotNull(await repository.GetByIdAsync(otherOrganizationsView.Id, o => o.Cache(false)));
+    }
+
+    [Theory]
+    [MemberData(nameof(SeparateCriteriaChanges))]
+    public async Task McpSavedViews_FilterOnlyView_RejectsCriteriaChangesInsteadOfCombiningThem(Dictionary<string, object?> change)
+    {
+        // Arrange
+        await using var client = await CreateSavedViewMcpClientAsync(AuthorizationRoles.SavedViewsWrite);
+        var repository = GetService<ISavedViewRepository>();
+        var view = CreateSavedView(TestConstants.OrganizationId, "Filter only", userId: null);
+        view.Filter = $"project:{TestConstants.ProjectId} status:open";
+        view = await repository.AddAsync(view, o => o.ImmediateConsistency());
+
+        // Act
+        var result = await CallSavedViewToolAsync(client, "update_saved_view", new(change) { ["savedViewId"] = view.Id });
+
+        // Assert
+        Assert.Equal("invalid_argument", result.GetProperty("error").GetProperty("code").GetString());
+        Assert.Contains(view.Filter!, result.GetProperty("error").GetProperty("message").GetString(), StringComparison.Ordinal);
+        var stored = await repository.GetByIdAsync(view.Id, o => o.Cache(false));
+        Assert.Equal(view.Filter, stored?.Filter);
+    }
+
+    public static TheoryData<Dictionary<string, object?>> SeparateCriteriaChanges => new()
+    {
+        new Dictionary<string, object?> { ["allProjects"] = true },
+        new Dictionary<string, object?> { ["projectIds"] = new[] { TestConstants.ProjectId } },
+        new Dictionary<string, object?> { ["statuses"] = new[] { "fixed" } },
+        new Dictionary<string, object?> { ["clearCriteria"] = new[] { "status" } }
+    };
+
+    [Fact]
+    public async Task McpSavedViews_FilterOnlyView_QueryReplacesTheWholeFilter()
+    {
+        // Arrange
+        await using var client = await CreateSavedViewMcpClientAsync(AuthorizationRoles.SavedViewsWrite);
+        var view = CreateSavedView(TestConstants.OrganizationId, "Filter only", userId: null);
+        view.Filter = $"project:{TestConstants.ProjectId} status:open";
+        view = await GetService<ISavedViewRepository>().AddAsync(view, o => o.ImmediateConsistency());
+
+        // Act
+        var result = await CallSavedViewToolAsync(client, "update_saved_view", new() { ["savedViewId"] = view.Id, ["query"] = "status:fixed" });
+
+        // Assert
+        Assert.True(result.GetProperty("ok").GetBoolean(), result.ToString());
+        Assert.Equal("status:fixed", result.GetProperty("data").GetProperty("filter").GetString());
+    }
+
+    [Fact]
+    public async Task McpSavedViews_CreateWithSearch_KeepsItLastSoAnOrCannotWidenTheOtherCriteria()
+    {
+        // Arrange
+        await using var client = await CreateSavedViewMcpClientAsync(AuthorizationRoles.SavedViewsWrite);
+
+        // Act
+        var result = await CallSavedViewToolAsync(client, "create_saved_view", new()
+        {
+            ["name"] = "Search view",
+            ["viewType"] = "stacks",
+            ["projectIds"] = new[] { TestConstants.ProjectId },
+            ["query"] = "type:error OR type:log"
+        });
+
+        // Assert
+        Assert.Equal(
+            $"project:{TestConstants.ProjectId} (status:open OR status:regressed) type:error OR type:log",
+            result.GetProperty("data").GetProperty("filter").GetString());
+    }
+
+    [Fact]
+    public async Task McpSavedViews_CreateThenList_ShowsTheViewWithoutWaiting()
+    {
+        // Arrange
+        await using var client = await CreateSavedViewMcpClientAsync($"{AuthorizationRoles.SavedViewsRead} {AuthorizationRoles.SavedViewsWrite}");
+        var arguments = new Dictionary<string, object?> { ["name"] = "Fresh view", ["viewType"] = "events" };
+
+        // Act
+        var created = await CallSavedViewToolAsync(client, "create_saved_view", arguments);
+        var listed = await CallSavedViewToolAsync(client, "list_saved_views", new() { ["name"] = "Fresh view" });
+        var duplicate = await CallSavedViewToolAsync(client, "create_saved_view", arguments);
+        var deleted = await CallSavedViewToolAsync(client, "delete_saved_view", new() { ["savedViewId"] = created.GetProperty("data").GetProperty("id").GetString() });
+        var recreated = await CallSavedViewToolAsync(client, "create_saved_view", arguments);
+
+        // Assert
+        Assert.Single(listed.GetProperty("data").GetProperty("items").EnumerateArray());
+        Assert.Equal("conflict", duplicate.GetProperty("error").GetProperty("code").GetString());
+        Assert.True(deleted.GetProperty("ok").GetBoolean(), deleted.ToString());
+        Assert.True(recreated.GetProperty("ok").GetBoolean(), recreated.ToString());
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidSavedViewUpdates))]
+    public async Task McpSavedViews_InvalidUpdate_ReturnsErrorWithoutChanging(string expectedCode, Dictionary<string, object?> change)
+    {
+        // Arrange
+        await using var client = await CreateSavedViewMcpClientAsync(AuthorizationRoles.SavedViewsWrite);
+        var repository = GetService<ISavedViewRepository>();
+        await repository.AddAsync(CreateSavedView(TestConstants.OrganizationId, "Taken name", userId: null), o => o.ImmediateConsistency());
+        var view = await repository.AddAsync(CreateSavedView(TestConstants.OrganizationId, "Original name", userId: null), o => o.ImmediateConsistency());
+
+        // Act
+        var result = await CallSavedViewToolAsync(client, "update_saved_view", new(change) { ["savedViewId"] = view.Id });
+
+        // Assert
+        Assert.Equal(expectedCode, result.GetProperty("error").GetProperty("code").GetString());
+        var stored = await repository.GetByIdAsync(view.Id, o => o.Cache(false));
+        Assert.Equal("Original name", stored?.Name);
+    }
+
+    public static TheoryData<string, Dictionary<string, object?>> InvalidSavedViewUpdates => new()
+    {
+        { "conflict", new() { ["name"] = "Taken name" } },
+        { "invalid_argument", new() { ["clearCriteria"] = new[] { "project" } } },
+        { "invalid_time_range", new() { ["time"] = "whenever" } },
+        { "invalid_sort", new() { ["sort"] = "-summary" } },
+        { "invalid_filter", new() { ["query"] = "*timeout*" } },
+        { "not_found", new() { ["projectIds"] = new[] { SampleDataService.FREE_PROJECT_ID } } }
+    };
+
+    [Fact]
+    public async Task McpSavedViews_ClearingTheLastCriteria_LeavesNoFilter()
+    {
+        // Arrange
+        await using var client = await CreateSavedViewMcpClientAsync(AuthorizationRoles.SavedViewsWrite);
+        var created = await CallSavedViewToolAsync(client, "create_saved_view", new() { ["name"] = "Only status", ["viewType"] = "sessions", ["statuses"] = new[] { "open" } });
+
+        // Act
+        var updated = await CallSavedViewToolAsync(client, "update_saved_view", new() { ["savedViewId"] = created.GetProperty("data").GetProperty("id").GetString(), ["clearCriteria"] = new[] { "status" } });
+
+        // Assert
+        Assert.True(updated.GetProperty("ok").GetBoolean(), updated.ToString());
+        Assert.False(updated.GetProperty("data").TryGetProperty("filter", out var filter) && filter.ValueKind != System.Text.Json.JsonValueKind.Null, updated.ToString());
+    }
+
+    [Fact]
+    public async Task McpSavedViews_SharedViewFromAnotherMember_CanBeChangedAndDeleted()
+    {
+        // Arrange
+        await using var client = await CreateSavedViewMcpClientAsync(AuthorizationRoles.SavedViewsWrite);
+        var repository = GetService<ISavedViewRepository>();
+        var view = await repository.AddAsync(CreateSavedView(TestConstants.OrganizationId, "Team view", userId: null), o => o.ImmediateConsistency());
+
+        // Act
+        var updated = await CallSavedViewToolAsync(client, "update_saved_view", new() { ["savedViewId"] = view.Id, ["name"] = "Team view renamed" });
+        var deleted = await CallSavedViewToolAsync(client, "delete_saved_view", new() { ["savedViewId"] = view.Id });
+
+        // Assert
+        Assert.Equal("Team view renamed", updated.GetProperty("data").GetProperty("name").GetString());
+        Assert.True(deleted.GetProperty("ok").GetBoolean(), deleted.ToString());
+        Assert.Null(await repository.GetByIdAsync(view.Id, o => o.Cache(false)));
+    }
+
+    [Fact]
+    public async Task McpSavedViews_OrganizationOutsideTheGrant_IsOutOfReach()
+    {
+        // Arrange: the user belongs to the second organization, but this token was not granted it.
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_USER_EMAIL);
+        Assert.NotNull(user);
+        user.OrganizationIds.Add(SampleDataService.FREE_ORG_ID);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        await using var client = await CreateSavedViewMcpClientAsync($"{AuthorizationRoles.SavedViewsRead} {AuthorizationRoles.SavedViewsWrite}");
+        var repository = GetService<ISavedViewRepository>();
+        var view = await repository.AddAsync(CreateSavedView(SampleDataService.FREE_ORG_ID, "Outside the grant", userId: null), o => o.ImmediateConsistency());
+
+        // Act
+        var listed = await CallSavedViewToolAsync(client, "list_saved_views", new() { ["organizationId"] = SampleDataService.FREE_ORG_ID });
+        var created = await CallSavedViewToolAsync(client, "create_saved_view", new() { ["name"] = "Should not exist", ["viewType"] = "events", ["organizationId"] = SampleDataService.FREE_ORG_ID });
+        var deleted = await CallSavedViewToolAsync(client, "delete_saved_view", new() { ["savedViewId"] = view.Id });
+
+        // Assert
+        Assert.False(listed.GetProperty("ok").GetBoolean(), listed.ToString());
+        Assert.False(created.GetProperty("ok").GetBoolean(), created.ToString());
+        Assert.False(deleted.GetProperty("ok").GetBoolean(), deleted.ToString());
+        Assert.NotNull(await repository.GetByIdAsync(view.Id, o => o.Cache(false)));
     }
 
     private SavedView CreateSavedView(string organizationId, string name, string? userId)

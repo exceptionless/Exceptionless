@@ -444,6 +444,11 @@ export function setTimeQueryParam(queryParams: SavedViewQueryParams, value: null
     }
 }
 
+/** A list that doesn't include a view may just predate it, so it only counts as missing once a newer list agrees. */
+export function shouldRecheckMissingSavedView(isMissing: boolean, isFetching: boolean, recheckedKey: string | undefined, key: string): boolean {
+    return isMissing && !isFetching && recheckedKey !== key;
+}
+
 export function shouldTrackPendingSavedViewDraft(trackerViewId: string, activeViewId: string | undefined, appliedDraftKey: string): boolean {
     return trackerViewId === activeViewId && !appliedDraftKey;
 }
@@ -1208,7 +1213,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         )
     );
 
-    const isMissing = $derived(
+    const isAbsentFromList = $derived(
         !wasOpenSavedViewRemoved &&
             hasMissingSavedView({
                 activeSavedView,
@@ -1217,12 +1222,30 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 savedViews
             })
     );
+    const savedViewListKey = $derived(`${organization.current}:${options.slug ?? options.queryParams.saved}`);
+    let recheckedSavedViewListKey = $state<string>();
+    const isMissing = $derived(isAbsentFromList && !savedViewsListQuery.isFetching && recheckedSavedViewListKey === savedViewListKey);
+
+    // Exie can link to a view moments after creating it, before the list on this page has caught up.
+    $effect(() => {
+        const key = savedViewListKey;
+        if (shouldRecheckMissingSavedView(isAbsentFromList, savedViewsListQuery.isFetching, recheckedSavedViewListKey, key)) {
+            untrack(() => {
+                void savedViewsListQuery.refetch().finally(() => {
+                    recheckedSavedViewListKey = key;
+                });
+            });
+        }
+    });
 
     $effect(() => {
         if (wasOpenSavedViewRemoved) {
             untrack(() => {
                 toast.info('This view was deleted.');
-                void handleClearSavedView();
+                // Replace the entry, so going back doesn't return to a view that no longer exists.
+                void clearSavedView({
+                    replaceState: true
+                });
             });
         }
     });
@@ -1351,14 +1374,18 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         serverHydratedSavedViewId = normalizedView.id;
     }
 
-    async function handleClearSavedView(): Promise<void> {
+    async function clearSavedView(navigation?: { replaceState: boolean }): Promise<void> {
         clearSavedViewQueryParams(options.queryParams);
         applyColumnState(undefined);
         applyDisplayState(undefined);
 
         if (options.baseHref) {
-            await goto(options.baseHref);
+            await goto(options.baseHref, navigation);
         }
+    }
+
+    function handleClearSavedView(): Promise<void> {
+        return clearSavedView();
     }
 
     return {

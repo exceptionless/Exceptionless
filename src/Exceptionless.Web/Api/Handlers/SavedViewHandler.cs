@@ -400,7 +400,7 @@ public partial class SavedViewHandler(
             return results.Failure.Count == 1 ? Result<ModelActionResults>.FromResult(PermissionToResult(results.Failure.First())) : results;
 
         await ClearDefaultReferencesAsync(deletableItems);
-        await repository.RemoveAsync(deletableItems);
+        await repository.RemoveAsync(deletableItems, o => o.ImmediateConsistency());
 
         if (results.Failure.Count == 0)
             return new ModelActionResults();
@@ -427,7 +427,7 @@ public partial class SavedViewHandler(
         mapped.CreatedByUserId = GetCurrentUserId();
         mapped.Version = 1;
 
-        var model = await repository.AddAsync(mapped, o => o.Cache());
+        var model = await repository.AddAsync(mapped, o => o.Cache().ImmediateConsistency());
         var viewModel = MapToViewModel(model);
         string location = linkGenerator.GetUriByName(HttpContext, "GetSavedViewById", new { id = model.Id })
             ?? throw new InvalidOperationException("Unable to generate saved view location.");

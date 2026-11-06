@@ -35,6 +35,7 @@ import {
     type SavedViewQueryParams,
     setSortQueryParam,
     setTimeQueryParam,
+    shouldRecheckMissingSavedView,
     shouldTrackPendingSavedViewDraft,
     supportsSortQueryParam,
     supportsTimeQueryParam,
@@ -1037,6 +1038,22 @@ describe('useSavedViews', () => {
             // Assert
             expect(updated).toBeUndefined();
         });
+    });
+});
+
+describe('shouldRecheckMissingSavedView', () => {
+    it.each([
+        { expected: true, isFetching: false, isMissing: true, recheckedKey: undefined, scenario: 'first absent from the list' },
+        { expected: true, isFetching: false, isMissing: true, recheckedKey: 'org:other', scenario: 'a different view was rechecked' },
+        { expected: false, isFetching: false, isMissing: true, recheckedKey: 'org:view', scenario: 'already rechecked' },
+        { expected: false, isFetching: true, isMissing: true, recheckedKey: undefined, scenario: 'a newer list is on its way' },
+        { expected: false, isFetching: false, isMissing: false, recheckedKey: undefined, scenario: 'the view is in the list' }
+    ])('returns $expected when $scenario', ({ expected, isFetching, isMissing, recheckedKey }) => {
+        // Act
+        const result = shouldRecheckMissingSavedView(isMissing, isFetching, recheckedKey, 'org:view');
+
+        // Assert
+        expect(result).toBe(expected);
     });
 });
 

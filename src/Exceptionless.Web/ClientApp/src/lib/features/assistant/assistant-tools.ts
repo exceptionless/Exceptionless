@@ -2,6 +2,8 @@ import type { savedViewHref } from '#features/saved-views/slugs.ts';
 
 import type { AssistantToolActivity } from './models';
 
+import { assistantToolNeedsConfirmation } from './assistant-tool-result';
+
 interface AssistantToolLabels {
     complete: string;
     failed: string;
@@ -102,7 +104,7 @@ export function getAssistantToolLabel(tool: AssistantToolActivity, isStreaming: 
     }
 
     if (tool.status === 'failed') {
-        return labels?.failed ?? `Couldn’t finish ${name}`;
+        return assistantToolNeedsConfirmation(tool.result) ? 'Waiting for your confirmation' : (labels?.failed ?? `Couldn’t finish ${name}`);
     }
 
     if (tool.status === 'cancelled') {

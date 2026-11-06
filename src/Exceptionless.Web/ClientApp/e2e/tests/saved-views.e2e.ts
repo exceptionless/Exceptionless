@@ -116,10 +116,10 @@ test('home navigation honors personal and organization saved views and survives 
             },
             { organizationId: e2eScenario.organizationId, token: e2eScenario.userToken, viewName }
         );
-        // Assert: the open view no longer exists. The full-page error replaces the app shell,
-        // which cancels the shell's in-flight requests.
+        // Assert: the open view no longer exists, so its page returns to the unfiltered list.
         expect(deletion).toBe(202);
-        await expect(page.getByRole('heading', { name: "We couldn't find that page" })).toBeVisible();
+        await expect(page).toHaveURL(/\/event(?:[?#]|$)/, { timeout: 30_000 });
+        await expect(page.getByText('This view was deleted.')).toBeVisible();
 
         // Act
         await page.goto('/');
@@ -364,6 +364,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
 });
 
 test('an open saved view deleted elsewhere returns to the page instead of showing not found', async ({ e2eScenario, page, request }) => {
+    // Arrange
     const viewName = `E2E Removed View ${e2eScenario.run.slice(-28)}`;
     const authorizationHeaders = { Authorization: `Bearer ${e2eScenario.userToken}` };
     const created = await request.post(`/api/v2/organizations/${e2eScenario.organizationId}/saved-views`, {
@@ -376,9 +377,11 @@ test('an open saved view deleted elsewhere returns to the page instead of showin
     await page.goto(`/event/${savedView.slug}`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible({ timeout: 30_000 });
 
+    // Act
     const deleted = await request.delete(`/api/v2/saved-views/${savedView.id}`, { headers: authorizationHeaders });
-    expect(deleted.ok()).toBe(true);
 
+    // Assert
+    expect(deleted.ok()).toBe(true);
     await expect(page).toHaveURL(/\/event(?:[?#]|$)/, { timeout: 30_000 });
     await expect(page.getByRole('heading', { name: 'Events' })).toBeVisible();
     await expect(page.getByText('This view was deleted.')).toBeVisible();

@@ -17,7 +17,7 @@
 
     import type { AssistantToolActivity } from '../models';
 
-    import { assistantToolErrorMessage } from '../assistant-tool-result';
+    import { assistantToolErrorMessage, assistantToolNeedsConfirmation } from '../assistant-tool-result';
     import {
         getAssistantToolDetail,
         getAssistantToolLabel,
@@ -99,7 +99,7 @@
         }
 
         if (tool.status === 'failed') {
-            return 'error';
+            return assistantToolNeedsConfirmation(tool.result) ? 'pending' : 'error';
         }
 
         return tool.status === 'cancelled' ? 'pending' : undefined;
