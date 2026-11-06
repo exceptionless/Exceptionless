@@ -162,6 +162,28 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Chat_Delete_ANewerRequestReplacesAnOlderOne()
+    {
+        // Arrange
+        var first = await AddViewAsync("First view", "first-view", SampleDataService.TEST_ORG_ID);
+        var second = await AddViewAsync("Second view", "second-view", SampleDataService.TEST_ORG_ID);
+        string conversationId = Guid.NewGuid().ToString("N");
+        s_provider.Script(ToolCall("delete_saved_view", new { savedViewId = first.Id }));
+        await SendChatAsync("Delete the first view.", SampleDataService.TEST_PROJECT_ID, conversationId);
+        s_provider.Script(ToolCall("delete_saved_view", new { savedViewId = second.Id }));
+        await SendChatAsync("Actually, delete the second view instead.", SampleDataService.TEST_PROJECT_ID, conversationId);
+
+        // Act: the yes answers the question about the second view, but the model goes back to the first.
+        s_provider.Script(ToolCall("delete_saved_view", new { savedViewId = first.Id }));
+        string[] events = await SendChatAsync("Yes", SampleDataService.TEST_PROJECT_ID, conversationId);
+
+        // Assert
+        Assert.Contains("confirmation_required", GetToolResult(events), StringComparison.Ordinal);
+        Assert.NotNull(await FindViewAsync("First view"));
+        Assert.NotNull(await FindViewAsync("Second view"));
+    }
+
+    [Fact]
     public async Task Chat_Delete_YesWithoutAnEarlierRequestIsNotEnough()
     {
         // Arrange

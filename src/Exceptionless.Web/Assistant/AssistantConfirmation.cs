@@ -32,9 +32,12 @@ internal static class AssistantConfirmation
         if (!IsConfirmation(latestUserMessage))
             return false;
 
-        // Only the latest attempt at this exact action counts, so confirming one view can't approve a different one.
-        var previousAttempt = conversationState?.ToolResults.LastOrDefault(result => result.ToolName == toolName && HasSameArguments(result.Arguments, arguments));
-        return previousAttempt?.Result.Contains(RequiredCode, StringComparison.Ordinal) is true;
+        // A yes answers the latest question, so it can't approve this exact action if anything has happened since it was asked.
+        var latest = conversationState?.ToolResults.LastOrDefault();
+        return latest is not null
+            && latest.ToolName == toolName
+            && HasSameArguments(latest.Arguments, arguments)
+            && latest.Result.Contains(RequiredCode, StringComparison.Ordinal);
     }
 
     public static string CreateRequiredResult(string toolName, JsonSerializerOptions options)
