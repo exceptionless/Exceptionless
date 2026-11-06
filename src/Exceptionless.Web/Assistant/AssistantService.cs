@@ -908,7 +908,7 @@ public sealed class AssistantService(
 
     internal static string? GetCurrentSavedView(string? path)
     {
-        foreach (string segment in new[] { "stack", "event" })
+        foreach (string segment in new[] { "stack", "event", "sessions" })
         {
             if (GetRouteValue(path, segment) is { } value && !IsObjectId(value))
                 return value;

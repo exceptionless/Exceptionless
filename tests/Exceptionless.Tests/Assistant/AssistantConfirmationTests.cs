@@ -66,6 +66,8 @@ public sealed class AssistantConfirmationTests(ITestOutputHelper output) : TestW
     [Theory]
     [InlineData("/stack/prod-errors", "prod-errors", null)]
     [InlineData("/event/checkout?time=all", "checkout", null)]
+    [InlineData("/sessions/checkout-users", "checkout-users", null)]
+    [InlineData("/sessions", null, null)]
     [InlineData("/stream?saved=537650f3b77efe23a47914aa", "537650f3b77efe23a47914aa", null)]
     [InlineData("/stack/537650f3b77efe23a47914aa", null, "537650f3b77efe23a47914aa")]
     [InlineData("/stack", null, null)]

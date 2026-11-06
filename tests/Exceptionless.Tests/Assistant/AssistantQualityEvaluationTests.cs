@@ -208,18 +208,21 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
     [Trait("Category", "AssistantEvaluation")]
     public async Task ProjectPage_CreatesASavedViewForTheCurrentProject()
     {
+        // Arrange
         RequireEvaluationConfiguration();
 
+        // Act
         var create = await SendAssistantTurnAsync(
             "Create a view of production errors from the last 30 days.",
             $"/project/{SampleDataService.TEST_PROJECT_ID}/stacks",
             SampleDataService.TEST_PROJECT_ID);
+        await RefreshDataAsync();
+        var savedViews = await GetService<ISavedViewRepository>().GetByOrganizationIdAsync(SampleDataService.TEST_ORG_ID, o => o.PageLimit(100));
+
+        // Assert
         AssertSuccessfulAnswer(create);
         Assert.Equal(1, create.ToolCalls.Count(call => call == "create_saved_view"));
         Assert.DoesNotContain("list_projects", create.ToolCalls);
-
-        await RefreshDataAsync();
-        var savedViews = await GetService<ISavedViewRepository>().GetByOrganizationIdAsync(SampleDataService.TEST_ORG_ID, o => o.PageLimit(100));
         var savedView = Assert.Single(savedViews.Documents, view => view.PredefinedKey is null);
         Assert.NotNull(savedView.UserId);
         Assert.Equal("[now-30d TO now]", savedView.Time);
