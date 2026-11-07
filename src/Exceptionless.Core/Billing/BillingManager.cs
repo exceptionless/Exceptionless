@@ -4,6 +4,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 
@@ -12,8 +13,10 @@ namespace Exceptionless.Core.Billing;
 public class BillingManager
 {
     private static readonly TimeSpan BillingLockDuration = TimeSpan.FromMinutes(5);
+    private readonly ICacheClient _cacheClient;
     private readonly ILockProvider _lockProvider;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly ITrialClaimRepository _trialClaimRepository;
     private readonly IUserRepository _userRepository;
     private readonly SystemSettingsService _systemSettingsService;
     private readonly BillingPlans _plans;
@@ -21,16 +24,20 @@ public class BillingManager
     private readonly TimeProvider _timeProvider;
 
     public BillingManager(
+        ICacheClient cacheClient,
         ILockProvider lockProvider,
         IOrganizationRepository organizationRepository,
+        ITrialClaimRepository trialClaimRepository,
         IUserRepository userRepository,
         SystemSettingsService systemSettingsService,
         BillingPlans plans,
         AppOptions appOptions,
         TimeProvider timeProvider)
     {
+        _cacheClient = cacheClient;
         _lockProvider = lockProvider;
         _organizationRepository = organizationRepository;
+        _trialClaimRepository = trialClaimRepository;
         _userRepository = userRepository;
         _systemSettingsService = systemSettingsService;
         _plans = plans;
@@ -42,17 +49,15 @@ public class BillingManager
         => _lockProvider.AcquireAsync(GetOrganizationLockKey(organizationId), BillingLockDuration, TimeSpan.FromSeconds(30));
 
     /// <summary>
-    /// Serializes changes that can give an owner a free or trial organization (creating one, or downgrading to Free),
-    /// so concurrent requests can't both pass the one-free-organization rule.
-    /// </summary>
-    /// <summary>
-    /// Serializes creating Free or trial organizations and downgrades to Free for one owner. It lasts as long as the
-    /// billing lock because a downgrade holds it across the same Stripe calls.
+    /// Serializes creating Free or trial organizations and downgrades to Free for one owner, so concurrent requests
+    /// can't both pass the one-free-organization rule. It lasts as long as the billing lock because a downgrade holds
+    /// it across the same Stripe calls.
     /// </summary>
     public Task<ILock> AcquireOwnerFreeOrganizationLockAsync(string userId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userId);
-        return _lockProvider.AcquireAsync($"User:{userId}:free-organization", BillingLockDuration, TimeSpan.FromSeconds(30));
+
+        return _lockProvider.AcquireAsync(GetOwnerFreeOrganizationLockKey(userId), BillingLockDuration, TimeSpan.FromSeconds(30));
     }
 
     /// <summary>
@@ -61,7 +66,8 @@ public class BillingManager
     public Task<ILock> AcquireTrialEmailLockAsync(User user)
     {
         ArgumentNullException.ThrowIfNull(user);
-        return _lockProvider.AcquireAsync($"Trial:{TrialEmailAddress.Normalize(user.EmailAddress)}", BillingLockDuration, TimeSpan.FromSeconds(30));
+
+        return _lockProvider.AcquireAsync(GetTrialEmailLockKey(user.EmailAddress), BillingLockDuration, TimeSpan.FromSeconds(30));
     }
 
     public Task<ILock?> TryAcquireOrganizationLockAsync(string organizationId)
@@ -77,12 +83,13 @@ public class BillingManager
 
     /// <summary>
     /// A no-card trial is only for someone new to Exceptionless: a user who belongs to no organization and created
-    /// none, whose mailbox hasn't claimed a trial under another alias, and whose email isn't on a blocked disposable
-    /// domain. Call it while holding <see cref="AcquireTrialEmailLockAsync"/>.
+    /// none, whose mailbox hasn't claimed a trial (under another alias or a deleted account), and whose email isn't
+    /// on a blocked disposable domain. Call it while holding <see cref="AcquireTrialEmailLockAsync"/>.
     /// </summary>
     public async Task<bool> CanStartTrialAsync(User user)
     {
         ArgumentNullException.ThrowIfNull(user);
+
         if (_billingOptions.TrialDays <= 0 || user.TrialStartedUtc is not null || user.OrganizationIds.Count > 0)
             return false;
 
@@ -93,8 +100,7 @@ public class BillingManager
         if (created.Total > 0)
             return false;
 
-        var claimed = await _userRepository.CountAsync(q => q.FieldEquals(u => u.TrialEmailAddress, TrialEmailAddress.Normalize(user.EmailAddress)));
-        return claimed.Total == 0;
+        return !await _trialClaimRepository.ExistsAsync(TrialEmailAddress.GetClaimId(user.EmailAddress));
     }
 
     public void StartTrial(Organization organization, User user)
@@ -104,7 +110,21 @@ public class BillingManager
 
         ApplyTrialPlan(organization, user);
         user.TrialStartedUtc = _timeProvider.GetUtcNow().UtcDateTime;
-        user.TrialEmailAddress = TrialEmailAddress.Normalize(user.EmailAddress);
+    }
+
+    /// <summary>
+    /// Records that the user's mailbox used its trial. Call it once the trial organization is saved, while still
+    /// holding <see cref="AcquireTrialEmailLockAsync"/>.
+    /// </summary>
+    public async Task ClaimTrialAsync(User user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        string claimId = TrialEmailAddress.GetClaimId(user.EmailAddress);
+        if (await _trialClaimRepository.ExistsAsync(claimId))
+            return;
+
+        await _trialClaimRepository.AddAsync(new TrialClaim { Id = claimId });
     }
 
     /// <summary>
@@ -123,6 +143,7 @@ public class BillingManager
     public void EndTrial(Organization organization)
     {
         ArgumentNullException.ThrowIfNull(organization);
+
         ApplyBillingPlan(organization, _plans.FreePlan);
     }
 
@@ -189,6 +210,7 @@ public class BillingManager
     internal void SetStripeSubscriptionId(Organization organization, string? subscriptionId)
     {
         ArgumentNullException.ThrowIfNull(organization);
+
         if (String.Equals(organization.StripeSubscriptionId, subscriptionId, StringComparison.Ordinal))
             return;
 
@@ -236,9 +258,32 @@ public class BillingManager
         return results.Documents;
     }
 
+    /// <summary>
+    /// Counts an invite from a Free or trial organization toward the inviter's daily limit, and returns whether it's
+    /// within <see cref="BillingOptions.FreeInviteDailyLimit"/>.
+    /// </summary>
+    public async Task<bool> TryCountFreeInviteAsync(string userId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        long invites = await _cacheClient.IncrementAsync(GetFreeInviteCountCacheKey(userId, utcNow), 1, utcNow.Date.AddDays(1));
+        return invites <= _billingOptions.FreeInviteDailyLimit;
+    }
+
+    private static string GetFreeInviteCountCacheKey(string userId, DateTime utcNow)
+        => $"User:{userId}:free-invites:{utcNow:yyyyMMdd}";
+
+    private static string GetOwnerFreeOrganizationLockKey(string userId)
+        => $"User:{userId}:free-organization";
+
+    private static string GetTrialEmailLockKey(string emailAddress)
+        => $"Trial:{TrialEmailAddress.GetClaimId(emailAddress)}";
+
     private static string GetOrganizationLockKey(string organizationId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(organizationId);
+
         return $"Organization:{organizationId}:billing-plan";
     }
 }

@@ -19,6 +19,11 @@ public class CountingMailer : IMailer
     /// </summary>
     public bool ShouldThrow { get; set; }
 
+    /// <summary>
+    /// Runs after each recorded <see cref="SendOrganizationTrialEndingAsync"/> call. Reset by <see cref="Reset"/>.
+    /// </summary>
+    public Action? OnOrganizationTrialEnding { get; set; }
+
     public Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
     {
         return Task.FromResult(true);
@@ -63,6 +68,8 @@ public class CountingMailer : IMailer
         {
             OrganizationTrialEndingCalls.Add(new OrganizationTrialEndingCall(user.Id, organization.Id));
         }
+
+        OnOrganizationTrialEnding?.Invoke();
         return Task.CompletedTask;
     }
 
@@ -93,6 +100,7 @@ public class CountingMailer : IMailer
             OrganizationTrialEndingCalls.Clear();
         }
         ShouldThrow = false;
+        OnOrganizationTrialEnding = null;
     }
 }
 

@@ -6,6 +6,11 @@ namespace Exceptionless.Core.Models.Billing;
 [DebuggerDisplay("Id: {Id} Name: {Name} Price: {Price}")]
 public record BillingPlan
 {
+    /// <summary>
+    /// Limit value that means no limit.
+    /// </summary>
+    public const int Unlimited = -1;
+
     public required string Id { get; init; }
     public required string Name { get; init; }
     public required string Description { get; init; }

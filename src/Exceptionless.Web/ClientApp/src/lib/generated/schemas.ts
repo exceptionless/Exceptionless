@@ -931,10 +931,6 @@ export const UserSchema = object({
     .nullable()
     .optional(),
   trial_started_utc: iso.datetime().nullable().optional(),
-  trial_email_address: string()
-    .min(1, "Trial email address is required")
-    .nullable()
-    .optional(),
   verify_email_address_token_expiration: iso.datetime(),
   is_active: boolean(),
   roles: array(string()),
@@ -971,6 +967,13 @@ export const UserSavedViewOrderPreferenceSchema = object({
 });
 export type UserSavedViewOrderPreferenceFormData = Infer<
   typeof UserSavedViewOrderPreferenceSchema
+>;
+
+export const VerifyEmailAddressResultSchema = object({
+  email_address: email(),
+});
+export type VerifyEmailAddressResultFormData = Infer<
+  typeof VerifyEmailAddressResultSchema
 >;
 
 export const ViewCurrentUserSchema = object({

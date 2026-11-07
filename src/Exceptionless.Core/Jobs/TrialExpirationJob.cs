@@ -65,9 +65,17 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
         {
             foreach (string organizationId in results.Hits.Where(h => h.Id is not null).Select(h => h.Id!))
             {
+                if (context.CancellationToken.IsCancellationRequested)
+                    return JobResult.Cancelled;
+
                 try
                 {
                     await ProcessOrganizationAsync(organizationId);
+                }
+                catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+                {
+                    // Stop here instead of fetching the next page and renewing the lock; the next run picks up the rest.
+                    return JobResult.Cancelled;
                 }
                 catch (Exception ex)
                 {
@@ -75,7 +83,7 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
                 }
             }
 
-            if (!await results.NextPageAsync())
+            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
                 break;
 
             await context.RenewLockAsync();
@@ -87,7 +95,7 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
     private async Task ProcessOrganizationAsync(string organizationId)
     {
         await using var billingLock = await _billingManager.AcquireOrganizationLockAsync(organizationId);
-        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(false));
+        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
         if (organization is null || !_plans.IsTrialPlan(organization.PlanId))
             return;
 

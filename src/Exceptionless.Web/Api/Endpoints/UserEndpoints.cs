@@ -245,8 +245,8 @@ public static class UserEndpoints
         });
 
         group.MapGet("users/verify-email-address/{token:token}", async (string token, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
-            => (await mediator.InvokeAsync<Result>(new UserMessages.VerifyEmailAddress(token))).ToHttpResult(resultMapper))
-        .Produces(StatusCodes.Status200OK)
+            => (await mediator.InvokeAsync<Result<VerifyEmailAddressResult>>(new UserMessages.VerifyEmailAddress(token))).ToHttpResult(resultMapper))
+        .Produces<VerifyEmailAddressResult>()
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Verify email address")

@@ -257,9 +257,7 @@ public sealed class AssistantUsageService(
         if (String.IsNullOrWhiteSpace(organizationId) || !reservation.HasValue)
             return;
 
-        var usageDate = reservation.UsageDateUtc is { } date
-            ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
-            : timeProvider.GetUtcNow();
+        var usageDate = GetUsageDate(reservation);
         var month = reservation is { MonthId: not null, ExpiresAtUtc: not null }
             ? new UsageWindow(reservation.MonthId, reservation.ExpiresAtUtc.Value)
             : GetMonthWindow(usageDate);
@@ -289,9 +287,7 @@ public sealed class AssistantUsageService(
         if (reservation is { MonthId: not null, ExpiresAtUtc: not null })
         {
             month = new UsageWindow(reservation.MonthId, reservation.ExpiresAtUtc.Value);
-            usageDate = reservation.UsageDateUtc is { } date
-                ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
-                : timeProvider.GetUtcNow();
+            usageDate = GetUsageDate(reservation);
         }
         else
         {
@@ -347,9 +343,7 @@ public sealed class AssistantUsageService(
         if (reservation.SharedDailyCostLimitKey is not { } sharedDailyCostLimitKey || costInMicrodollars == 0)
             return null;
 
-        var usageDate = reservation.UsageDateUtc is { } date
-            ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
-            : timeProvider.GetUtcNow();
+        var usageDate = GetUsageDate(reservation);
         var day = GetDayWindow(usageDate);
 
         // The shared counter is a guardrail on top of each organization's own limits. It runs after durable usage is
@@ -568,6 +562,13 @@ public sealed class AssistantUsageService(
         long id = now.ToUnixTimeSeconds() / 60;
         return new UsageWindow(id.ToString(), DateTimeOffset.FromUnixTimeSeconds((id + 1) * 60));
     }
+
+    /// <summary>
+    /// When the reserved provider request started, so its cost lands in that day and month even if it finishes after
+    /// midnight.
+    /// </summary>
+    private DateTimeOffset GetUsageDate(AssistantProviderReservation reservation)
+        => reservation.UsageDateUtc is { } usageDateUtc ? new DateTimeOffset(usageDateUtc.Ticks, TimeSpan.Zero) : timeProvider.GetUtcNow();
 
     private static UsageWindow GetDayWindow(DateTimeOffset now)
     {

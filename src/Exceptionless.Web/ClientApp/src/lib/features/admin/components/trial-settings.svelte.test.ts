@@ -39,30 +39,37 @@ describe('Free trial settings', () => {
     });
 
     it('saves the entered domains normalized, deduplicated, and sorted', async () => {
+        // Arrange
         render(TrialSettings);
         const domains = screen.getByRole('textbox', { name: 'Blocked trial email domains' });
         await waitFor(() => expect(domains).toHaveValue('mailinator.com\nyopmail.com'));
         expect(screen.getByRole('button', { name: 'Save blocked trial domains' })).toBeDisabled();
 
+        // Act
         await fireEvent.input(domains, { target: { value: 'Spam.Test\n@spam.test, other.test\n\n' } });
         await fireEvent.click(screen.getByRole('button', { name: 'Save blocked trial domains' }));
 
+        // Assert
         await waitFor(() => expect(state.update).toHaveBeenCalledWith({ blocked_email_domains: ['other.test', 'spam.test'] }));
         expect(state.success).toHaveBeenCalledWith('Blocked trial domains saved.');
     });
 
     it('resets a custom list to the built-in list', async () => {
+        // Arrange
         state.domains = ['spam.test'];
         state.isDefault = false;
         render(TrialSettings);
 
+        // Act
         await fireEvent.click(screen.getByRole('button', { name: 'Reset blocked trial domains to the built-in list' }));
 
+        // Assert
         await waitFor(() => expect(state.update).toHaveBeenCalledWith({ blocked_email_domains: null }));
         expect(screen.getByRole('textbox', { name: 'Blocked trial email domains' })).toHaveValue('mailinator.com\nyopmail.com');
     });
 
     it('shows validation errors from the API', async () => {
+        // Arrange
         state.update.mockImplementation(async () => {
             const problem = new ProblemDetails();
             problem.title = 'Validation failed';
@@ -72,9 +79,11 @@ describe('Free trial settings', () => {
         render(TrialSettings);
         const domains = screen.getByRole('textbox', { name: 'Blocked trial email domains' });
 
+        // Act
         await fireEvent.input(domains, { target: { value: 'not_a_domain' } });
         await fireEvent.click(screen.getByRole('button', { name: 'Save blocked trial domains' }));
 
+        // Assert
         expect(await screen.findByText('Every blocked email domain must be a domain name, such as example.com.')).toBeTruthy();
     });
 });

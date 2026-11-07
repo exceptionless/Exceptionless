@@ -185,109 +185,156 @@ describe('OrganizationNotifications', () => {
         });
 
         it('does not show a trial banner before the last three days', () => {
+            // Arrange
             state.organization = createOrganization();
 
+            // Act
             renderNotifications();
 
+            // Assert
             expect(screen.queryByText(/free trial/)).toBeNull();
         });
 
         it('shows a dismissible trial banner in the last three days until the next day', async () => {
+            // Arrange
             state.organization = createOrganization({ trial_ends_utc: new Date(Date.now() + 2 * DAY).toISOString() });
 
+            // Act
             const { unmount } = renderNotifications();
+
+            // Assert
             expect(screen.getByText('2 days left in the Acme free trial.')).toBeTruthy();
 
+            // Act
             await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
+
+            // Assert
             expect(screen.queryByText(/free trial/)).toBeNull();
 
+            // Act
             unmount();
             renderNotifications();
+
+            // Assert
             expect(screen.queryByText(/free trial/)).toBeNull();
         });
 
         it('does not show a banner for a Free organization that never had a trial', () => {
+            // Arrange
             state.organization = createOrganization({ plan_id: 'EX_FREE', trial_ends_utc: null });
 
+            // Act
             renderNotifications();
 
+            // Assert
             expect(screen.queryByRole('alert')).toBeNull();
         });
 
         it('shows the trial-ended notice with the organization limits and records the dismissal', async () => {
+            // Arrange
             state.organization = createOrganization({
                 has_premium_features: false,
                 plan_id: 'EX_FREE',
                 trial_ends_utc: new Date(Date.now() - DAY).toISOString()
             });
 
+            // Act
             renderNotifications();
+
+            // Assert
             expect(screen.getByText('Your trial has ended. Acme is now on the Free plan.')).toBeTruthy();
             expect(screen.getByText(/3,000 events per month and 3 days of data retention/)).toBeTruthy();
 
+            // Act
             await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
 
+            // Assert
             expect(recordProductTour).toHaveBeenCalledWith({ tourName: 'trial-ended-organization-id', userId: 'user-id' }, expect.anything());
             expect(screen.queryByText(/Your trial has ended/)).toBeNull();
         });
 
         it('reloads the current user when the trial-ended dismissal fails to save', async () => {
+            // Arrange
             state.organization = createOrganization({ plan_id: 'EX_FREE', trial_ends_utc: new Date(Date.now() - DAY).toISOString() });
-
             renderNotifications();
+
+            // Act
             await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
             recordProductTour.mock.calls[0]![1].onError();
 
+            // Assert
             expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['User', 'me'] });
         });
 
         it('does not show the trial-ended notice to a global admin impersonating the organization', () => {
+            // Arrange
             state.me.organization_ids = ['admin-organization-id'];
             state.me.roles = ['global'];
             state.organization = createOrganization({ plan_id: 'EX_FREE', trial_ends_utc: new Date(Date.now() - DAY).toISOString() });
 
+            // Act
             renderNotifications();
 
+            // Assert
             expect(screen.queryByText(/Your trial has ended/)).toBeNull();
         });
 
         it('does not show the trial-ended notice once the user dismissed it on any device', () => {
+            // Arrange
             state.me.product_tours = { trial_ended_organization_id: '2026-10-20T00:00:00Z' };
             state.organization = createOrganization({ plan_id: 'EX_FREE', trial_ends_utc: new Date(Date.now() - DAY).toISOString() });
 
+            // Act
             renderNotifications();
 
+            // Assert
             expect(screen.queryByText(/Your trial has ended/)).toBeNull();
         });
 
         it('shows a dismissible usage warning at 80% of the monthly limit', async () => {
+            // Arrange
             state.organization = createOrganization({ plan_id: 'EX_SMALL', trial_ends_utc: null, usage: createUsage(2550) });
 
+            // Act
             const { unmount } = renderNotifications();
+
+            // Assert
             expect(screen.getByText('Acme has used 85% of its monthly events.')).toBeTruthy();
 
+            // Act
             await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
+
+            // Assert
             expect(screen.queryByText(/monthly events/)).toBeNull();
 
+            // Act
             unmount();
             renderNotifications();
+
+            // Assert
             expect(screen.queryByText(/monthly events/)).toBeNull();
         });
 
         it('shows the usage warning ahead of the trial banner', () => {
+            // Arrange
             state.organization = createOrganization({ trial_ends_utc: new Date(Date.now() + DAY).toISOString(), usage: createUsage(2700) });
 
+            // Act
             renderNotifications();
 
+            // Assert
             expect(screen.getByText('Acme has used 90% of its monthly events.')).toBeTruthy();
             expect(screen.queryByText(/free trial/)).toBeNull();
         });
 
         it('shows the monthly overage banner instead of the usage warning at the limit', () => {
+            // Arrange
             state.organization = createOrganization({ is_over_monthly_limit: true, plan_id: 'EX_SMALL', trial_ends_utc: null, usage: createUsage(3000) });
 
+            // Act
             renderNotifications();
 
+            // Assert
             expect(screen.getByText('Acme has reached its monthly plan limit.')).toBeTruthy();
             expect(screen.queryByText(/of its monthly events/)).toBeNull();
             expect(screen.queryByRole('button', { name: 'Dismiss notification' })).toBeNull();

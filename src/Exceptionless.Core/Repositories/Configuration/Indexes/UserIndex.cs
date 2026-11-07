@@ -33,7 +33,6 @@ public sealed class UserIndex : VersionedIndex<User>
                 .Keyword(e => e.PasswordResetToken)
                 .Date(e => e.PasswordResetTokenExpiration)
                 .Keyword(e => e.Roles)
-                .Keyword(e => e.TrialEmailAddress)
                 .Object(e => e.OAuthAccounts, o => o.Properties(mp => mp
                     .Keyword("provider")
                     .Keyword("provider_user_id")

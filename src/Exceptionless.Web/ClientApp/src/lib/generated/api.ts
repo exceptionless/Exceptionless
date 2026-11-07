@@ -796,8 +796,6 @@ export interface User {
    * @format date-time
    */
   trial_started_utc?: null | string;
-  /** Normalized email address that claimed the trial, so aliases of the same mailbox can't each start one. */
-  trial_email_address?: null | string;
   /** @format date-time */
   verify_email_address_token_expiration: string;
   /** Gets or sets the users active state. */
@@ -829,6 +827,11 @@ export interface UserSavedViewOrderPreference {
   organization_id: string;
   view_type: string;
   saved_view_ids: string[];
+}
+
+/** The account whose email address the link verified, which may not be the account that's signed in. */
+export interface VerifyEmailAddressResult {
+  email_address: string;
 }
 
 export interface ViewCurrentUser {

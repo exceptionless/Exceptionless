@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Text;
+
 namespace Exceptionless.Core.Billing;
 
 /// <summary>
@@ -75,6 +78,13 @@ public static class TrialEmailAddress
 
         return $"{localPart}@{domain}";
     }
+
+    /// <summary>
+    /// Identifies a mailbox's trial claim: a lowercase hex SHA-256 of the normalized address, so the claim can outlive
+    /// the account without keeping the address itself.
+    /// </summary>
+    public static string GetClaimId(string emailAddress)
+        => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(Normalize(emailAddress))));
 
     /// <summary>
     /// Whether the address is on a blocked domain or one of its subdomains.

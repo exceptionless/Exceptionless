@@ -3173,6 +3173,27 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PostAsync_MailboxRegisteredAgainAfterDeletingTrialAccount_GetsFreePlan()
+    {
+        // Arrange
+        const string password = "Returning password";
+        var original = await CreateUserAsync("returning@exceptionless.test", password, isEmailAddressVerified: true);
+        var trialOrganization = await WithBillingEnabledAsync(() => CreateOrganizationAsync(original, password, "Original Organization"));
+        Assert.Equal(_plans.TrialPlan.Id, trialOrganization?.PlanId);
+
+        // Deleting the account removes the user and its organization, which used to be the only record of the trial.
+        await _organizationRepository.RemoveAsync(trialOrganization!.Id, o => o.ImmediateConsistency());
+        await _userRepository.RemoveAsync(original.Id, o => o.ImmediateConsistency());
+        var returning = await CreateUserAsync("returning+again@exceptionless.test", password, isEmailAddressVerified: true);
+
+        // Act
+        var organization = await WithBillingEnabledAsync(() => CreateOrganizationAsync(returning, password, "Returning Organization"));
+
+        // Assert
+        Assert.Equal(_plans.FreePlan.Id, organization?.PlanId);
+    }
+
+    [Fact]
     public async Task PostAsync_ConcurrentAliasesOfOneMailbox_StartsOnlyOneTrial()
     {
         // Arrange

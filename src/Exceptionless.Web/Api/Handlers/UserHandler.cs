@@ -306,14 +306,14 @@ public class UserHandler(
         return new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified };
     }
 
-    public async Task<Result> Handle(VerifyEmailAddress message)
+    public async Task<Result<VerifyEmailAddressResult>> Handle(VerifyEmailAddress message)
     {
         var user = await repository.GetByVerifyEmailAddressTokenAsync(message.Token);
         if (user is null)
         {
             var currentUser = HttpContext.Request.GetUser();
             if (currentUser.IsEmailAddressVerified)
-                return Result.Success();
+                return new VerifyEmailAddressResult { EmailAddress = currentUser.EmailAddress };
 
             return Result.NotFound("User not found.");
         }
@@ -324,7 +324,7 @@ public class UserHandler(
         user.MarkEmailAddressVerified();
         await repository.SaveAsync(user, o => o.Cache());
 
-        return Result.Success();
+        return new VerifyEmailAddressResult { EmailAddress = user.EmailAddress };
     }
 
     public async Task<Result> Handle(ResendVerificationEmail message)

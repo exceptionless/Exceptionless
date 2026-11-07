@@ -12,6 +12,7 @@ describe('getTrialDaysRemaining', () => {
         ['no trial', null, 0],
         ['an invalid date', 'not-a-date', 0]
     ])('returns the days left for %s', (_, trialEndsUtc, expected) => {
+        // Act & Assert
         expect(getTrialDaysRemaining(trialEndsUtc, now)).toBe(expected);
     });
 });
@@ -23,6 +24,7 @@ describe('hasTrialEndedWithoutSubscribing', () => {
         ['a legacy empty subscribe date', { subscribe_date: '0001-01-01T00:00:00', trial_ends_utc: '2026-10-21T12:00:00Z' }, true],
         ['an organization that never had a trial', { subscribe_date: null, trial_ends_utc: null }, false]
     ])('returns the result for %s', (_, organization, expected) => {
+        // Act & Assert
         expect(hasTrialEndedWithoutSubscribing(organization)).toBe(expected);
     });
 });
@@ -35,14 +37,17 @@ describe('isTrialEndingSoon', () => {
         [1, true],
         [0, true]
     ])('returns whether %i days left is the end of the trial', (daysRemaining, expected) => {
+        // Act & Assert
         expect(isTrialEndingSoon(daysRemaining)).toBe(expected);
     });
 });
 
 describe('getTrialEndedNoticeKey', () => {
     it('returns a product tour record name the API accepts', () => {
+        // Act
         const key = getTrialEndedNoticeKey('5f8e1b2c3d4e5f6a7b8c9d0e');
 
+        // Assert
         expect(key).toBe('trial-ended-5f8e1b2c3d4e5f6a7b8c9d0e');
         expect(key).toMatch(/^[a-z0-9-]{1,64}$/);
     });

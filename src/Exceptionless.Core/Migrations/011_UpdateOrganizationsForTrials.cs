@@ -1,4 +1,5 @@
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
@@ -9,9 +10,11 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Migrations;
 
 /// <summary>
-/// Prepares for free trials: maps <see cref="Organization.CreatedByUserId"/> and <see cref="User.TrialEmailAddress"/>
-/// so they can be queried, and, because plans no longer limit users or projects, sets the stored limits to unlimited.
-/// Existing organizations keep no creator: their real creator isn't recorded, so ownership rules fall back to membership.
+/// Prepares for free trials: maps <see cref="Organization.CreatedByUserId"/> so it can be queried, and, because plans
+/// no longer limit users or projects, sets the stored limits to unlimited. Existing organizations keep no creator: their
+/// real creator isn't recorded, so ownership rules fall back to membership.
+/// The mapping is put explicitly because the job host that runs migrations skips index configuration, so this can run
+/// before a web host updates the organization mapping on startup. Putting one new field leaves the rest untouched.
 /// </summary>
 public sealed class UpdateOrganizationsForTrials : MigrationBase
 {
@@ -37,13 +40,6 @@ public sealed class UpdateOrganizationsForTrials : MigrationBase
         if (!mappingResponse.IsValidResponse)
             throw new InvalidOperationException("Unable to map the organization created by user id.");
 
-        var userMappingResponse = await _configuration.Client.Indices.PutMappingAsync<User>(mapping => mapping
-            .Indices(_configuration.Users.VersionedName)
-            .Properties(properties => properties.Keyword(user => user.TrialEmailAddress)), context.CancellationToken);
-        _logger.LogRequest(userMappingResponse);
-        if (!userMappingResponse.IsValidResponse)
-            throw new InvalidOperationException("Unable to map the user trial email address.");
-
         var organizations = await _organizationRepository.FindAsync(
             query => query.SortAscending(organization => organization.Id),
             options => options
@@ -57,14 +53,14 @@ public sealed class UpdateOrganizationsForTrials : MigrationBase
             context.CancellationToken.ThrowIfCancellationRequested();
 
             var organizationsToMigrate = organizations.Documents
-                .Where(organization => organization.MaxUsers != -1 || organization.MaxProjects != -1)
+                .Where(organization => organization.MaxUsers is not BillingPlan.Unlimited || organization.MaxProjects is not BillingPlan.Unlimited)
                 .ToList();
             if (organizationsToMigrate.Count > 0)
             {
                 foreach (var organization in organizationsToMigrate)
                 {
-                    organization.MaxUsers = -1;
-                    organization.MaxProjects = -1;
+                    organization.MaxUsers = BillingPlan.Unlimited;
+                    organization.MaxProjects = BillingPlan.Unlimited;
                 }
 
                 await _organizationRepository.SaveAsync(organizationsToMigrate, options => options.Cache().Notifications(false));

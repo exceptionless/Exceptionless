@@ -4795,7 +4795,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyEmailAddressResult"
+                }
+              }
+            }
           },
           "404": {
             "description": "The user could not be found.",
@@ -14371,13 +14378,6 @@
             "description": "Date the user started their one no-card trial.",
             "format": "date-time"
           },
-          "trial_email_address": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "description": "Normalized email address that claimed the trial, so aliases of the same mailbox can\u0027t each start one."
-          },
           "verify_email_address_token_expiration": {
             "type": "string",
             "format": "date-time"
@@ -14474,6 +14474,18 @@
             }
           }
         }
+      },
+      "VerifyEmailAddressResult": {
+        "required": [
+          "email_address"
+        ],
+        "type": "object",
+        "properties": {
+          "email_address": {
+            "type": "string"
+          }
+        },
+        "description": "The account whose email address the link verified, which may not be the account that\u0027s signed in."
       },
       "ViewCurrentUser": {
         "required": [

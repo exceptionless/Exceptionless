@@ -25,6 +25,7 @@ describe('resolveAssistantAccessState', () => {
         ],
         ['organization', { enabled: false, has_access: false, upgrade_required: false }, false, false, false, 'disabled']
     ] as const)('resolves an access-query state', (organizationId, access, isPending, isError, isFetching, expected) => {
+        // Act & Assert
         expect(resolveAssistantAccessState(organizationId, access, isPending, isError, isFetching)).toBe(expected);
     });
 });

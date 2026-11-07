@@ -472,7 +472,9 @@
                     await invalidateTokenQueries(queryClient, data.message);
                     break;
                 case 'UserChanged':
-                    await invalidateUserQueries(queryClient, data.message);
+                    if (await invalidateUserQueries(queryClient, data.message)) {
+                        await invalidateAssistantAccessQueries(queryClient);
+                    }
                     break;
                 case 'WebHookChanged':
                     await invalidateWebhookQueries(queryClient, data.message);

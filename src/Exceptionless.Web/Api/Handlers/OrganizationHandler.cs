@@ -703,14 +703,10 @@ public class OrganizationHandler(
         if (!currentUser.IsEmailAddressVerified)
             return Result.Forbidden("Please verify your email address before inviting users.");
 
-        int dailyLimit = options.BillingOptions.FreeInviteDailyLimit;
-        var utcNow = timeProvider.GetUtcNow().UtcDateTime;
-        string cacheKey = $"user:{currentUser.Id}:organization-invites:free:{utcNow:yyyyMMdd}";
-        long invites = await cacheClient.IncrementAsync(cacheKey, 1, utcNow.Date.AddDays(1));
-        if (invites <= dailyLimit)
+        if (await billingManager.TryCountFreeInviteAsync(currentUser.Id))
             return null;
 
-        _logger.LogWarning("User {UserId} reached the daily invite limit of {DailyLimit} for organization {OrganizationId}", currentUser.Id, dailyLimit, organization.Id);
+        _logger.LogWarning("User {UserId} reached the daily invite limit of {DailyLimit} for organization {OrganizationId}", currentUser.Id, options.BillingOptions.FreeInviteDailyLimit, organization.Id);
         return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.RateLimit, "You've sent the maximum number of invites for today. Please try again tomorrow or contact support."));
     }
 
@@ -871,12 +867,20 @@ public class OrganizationHandler(
     private async Task<Organization> AddModelAsync(Organization value, User user)
     {
         value.CreatedByUserId = user.Id;
+        bool isTrial = false;
         if (!options.StripeOptions.EnableBilling || user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+        {
             billingManager.ApplyBillingPlan(value, plans.UnlimitedPlan, user);
+        }
         else if (await billingManager.CanStartTrialAsync(user))
+        {
             billingManager.StartTrial(value, user);
+            isTrial = true;
+        }
         else
+        {
             billingManager.ApplyBillingPlan(value, plans.FreePlan, user);
+        }
 
         var organization = await repository.AddAsync(value, o => o.ImmediateConsistency().Cache());
 
@@ -892,6 +896,21 @@ public class OrganizationHandler(
             await repository.RemoveAsync(organization, o => o.ImmediateConsistency());
             throw;
         }
+
+        if (isTrial)
+        {
+            try
+            {
+                await billingManager.ClaimTrialAsync(user);
+            }
+            catch (Exception ex)
+            {
+                // The organization is already saved. While this account exists it still can't start another trial; only
+                // a deleted and recreated account could.
+                _logger.LogError(ex, "Unable to record the trial claim for user {UserId}: {Message}", user.Id, ex.Message);
+            }
+        }
+
         await messagePublisher.PublishAsync(new UserMembershipChanged
         {
             UserId = user.Id,

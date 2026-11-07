@@ -120,6 +120,33 @@ public class TrialExpirationJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task RunAsync_CancelledMidPage_StopsBeforeTheNextOrganization()
+    {
+        // Arrange
+        const string secondTrialOrganizationId = "664ec4c1f12e4f2b7a0d3003";
+        var secondTrialOrganization = new Organization { Id = secondTrialOrganizationId, Name = "Second Trial Organization" };
+        BillingManager.ApplyTrialPlan(secondTrialOrganization);
+        await OrganizationRepository.AddAsync(secondTrialOrganization, options => options.ImmediateConsistency());
+        var secondOwner = UserData.GenerateUser(generateId: true, organizationId: secondTrialOrganizationId, emailAddress: "second-trial-owner@example.org");
+        secondOwner.MarkEmailAddressVerified();
+        await UserRepository.AddAsync(secondOwner, options => options.ImmediateConsistency());
+        TimeProvider.Advance(TimeUntilReminder);
+
+        using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        Mailer.OnOrganizationTrialEnding = cancellationTokenSource.Cancel;
+
+        // Act
+        await Job.RunAsync(cancellationTokenSource.Token);
+
+        // Assert
+        var reminder = Assert.Single(Mailer.OrganizationTrialEndingCalls);
+        Assert.Equal(new OrganizationTrialEndingCall(VerifiedUserId, TrialOrganizationId), reminder);
+        var skippedOrganization = await OrganizationRepository.GetByIdAsync(secondTrialOrganizationId);
+        Assert.NotNull(skippedOrganization);
+        Assert.Null(skippedOrganization.TrialReminderSentUtc);
+    }
+
+    [Fact]
     public async Task RunAsync_TrialWithoutEndDate_MovesToFreePlan()
     {
         // Arrange
