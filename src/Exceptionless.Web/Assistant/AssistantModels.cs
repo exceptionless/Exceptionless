@@ -27,7 +27,11 @@ public sealed record AssistantConversationToolResult(
     DateTimeOffset CapturedAtUtc,
     IReadOnlyCollection<string>? ProjectIds = null);
 
-public sealed record AssistantConversationState(IReadOnlyCollection<AssistantConversationToolResult> ToolResults);
+public sealed record AssistantConversationState(IReadOnlyCollection<AssistantConversationToolResult> ToolResults)
+{
+    public string? TurnId { get; init; }
+    public AssistantConversationToolResult? PendingConfirmation { get; init; }
+}
 
 public sealed record AssistantAccessResponse(
     bool Enabled,

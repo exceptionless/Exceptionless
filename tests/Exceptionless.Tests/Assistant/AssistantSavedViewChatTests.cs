@@ -184,6 +184,49 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task Chat_Delete_AReplyWithoutToolsExpiresThePendingConfirmation()
+    {
+        // Arrange
+        var view = await AddViewAsync("Keep this view", "keep-this-view", SampleDataService.TEST_ORG_ID);
+        string conversationId = Guid.NewGuid().ToString("N");
+        string Delete() => ToolCall("delete_saved_view", new { savedViewId = view.Id });
+        s_provider.Script(Delete());
+        await SendChatAsync("Delete this view.", SampleDataService.TEST_PROJECT_ID, conversationId);
+
+        // Act: cancellation changes the conversation even when the assistant makes no tool call.
+        s_provider.Script();
+        await SendChatAsync("Never mind, keep it. Can you explain what a stack is instead?", SampleDataService.TEST_PROJECT_ID, conversationId);
+        s_provider.Script(Delete());
+        string[] events = await SendChatAsync("Yes", SampleDataService.TEST_PROJECT_ID, conversationId);
+
+        // Assert
+        Assert.Contains("confirmation_required", GetToolResult(events), StringComparison.Ordinal);
+        Assert.NotNull(await FindViewAsync("Keep this view"));
+    }
+
+    [Fact]
+    public async Task Chat_Delete_ANewerQuestionWithinTheTurnExpiresTheConfirmedAction()
+    {
+        // Arrange
+        var first = await AddViewAsync("First view", "first-view", SampleDataService.TEST_ORG_ID);
+        var second = await AddViewAsync("Second view", "second-view", SampleDataService.TEST_ORG_ID);
+        string conversationId = Guid.NewGuid().ToString("N");
+        string DeleteFirst() => ToolCall("delete_saved_view", new { savedViewId = first.Id });
+        s_provider.Script(DeleteFirst());
+        await SendChatAsync("Delete the first view.", SampleDataService.TEST_PROJECT_ID, conversationId);
+
+        // Act
+        s_provider.Script(ToolCall("delete_saved_view", new { savedViewId = second.Id }), DeleteFirst());
+        string[] events = await SendChatAsync("Yes", SampleDataService.TEST_PROJECT_ID, conversationId);
+
+        // Assert
+        Assert.Equal(2, GetToolResults(events).Length);
+        Assert.All(GetToolResults(events), result => Assert.Contains("confirmation_required", result, StringComparison.Ordinal));
+        Assert.NotNull(await FindViewAsync("First view"));
+        Assert.NotNull(await FindViewAsync("Second view"));
+    }
+
+    [Fact]
     public async Task Chat_Delete_YesWithoutAnEarlierRequestIsNotEnough()
     {
         // Arrange
@@ -214,21 +257,27 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
         Assert.Null(await FindViewAsync("Team errors"));
 
         // Act
-        s_provider.Script(Create());
-        await SendChatAsync("Yes, continue", SampleDataService.TEST_PROJECT_ID, conversationId);
+        s_provider.Script(Create(), Create());
+        string[] confirmed = await SendChatAsync("Yes, continue", SampleDataService.TEST_PROJECT_ID, conversationId);
 
         // Assert
         var view = await FindViewAsync("Team errors");
         Assert.NotNull(view);
         Assert.Null(view.UserId);
+        string[] results = GetToolResults(confirmed);
+        Assert.Equal(2, results.Length);
+        Assert.Contains("was created", results[0], StringComparison.Ordinal);
+        Assert.Contains("confirmation_required", results[1], StringComparison.Ordinal);
     }
 
-    [Fact]
-    public async Task Chat_CreateShared_SwitchingProjectsBeforeConfirmingAsksAgain()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Chat_CreateShared_SwitchingProjectsBeforeConfirmingAsksAgain(bool blankProjectIds)
     {
         // Arrange
         string conversationId = Guid.NewGuid().ToString("N");
-        string Create() => ToolCall("create_saved_view", new { name = "Team errors", viewType = "stacks", shared = true });
+        string Create() => ToolCall("create_saved_view", new { name = "Team errors", viewType = "stacks", shared = true, projectIds = blankProjectIds ? new[] { String.Empty } : Array.Empty<string>() });
         s_provider.Script(Create());
         await SendChatAsync("Create a view for the team.", SampleDataService.TEST_PROJECT_ID, conversationId);
 

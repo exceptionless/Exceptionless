@@ -172,18 +172,33 @@ interface OpenedSavedView {
     organizationId: null | string | undefined;
 }
 
-export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams): void {
-    queryParams.filter = null;
+export function clearSavedViewQueryParams(queryParams: SavedViewQueryParams, history?: 'push' | 'replace'): void {
+    const values: Partial<SavedViewQueryParams> = {
+        filter: null
+    };
 
     if (supportsFiltersQueryParam(queryParams)) {
-        queryParams.filters = null;
+        values.filters = null;
     }
 
-    setSortQueryParam(queryParams, null);
-    setTimeQueryParam(queryParams, null);
+    if (supportsSortQueryParam(queryParams)) {
+        values.sort = null;
+    }
+
+    if (supportsTimeQueryParam(queryParams)) {
+        values.time = null;
+    }
 
     if (supportsSavedQueryParam(queryParams)) {
-        queryParams.saved = null;
+        values.saved = null;
+    }
+
+    if (queryParams.update) {
+        queryParams.update(values, {
+            history
+        });
+    } else {
+        Object.assign(queryParams, values);
     }
 }
 
@@ -1244,7 +1259,7 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
                 toast.info('This view was deleted.');
                 // Replace the entry, so going back doesn't return to a view that no longer exists.
                 void clearSavedView({
-                    replaceState: true
+                    replace: true
                 });
             });
         }
@@ -1374,8 +1389,8 @@ export function useSavedViews(options: UseSavedViewsOptions): UseSavedViewsRetur
         serverHydratedSavedViewId = normalizedView.id;
     }
 
-    async function clearSavedView(navigation?: { replaceState: boolean }): Promise<void> {
-        clearSavedViewQueryParams(options.queryParams);
+    async function clearSavedView(navigation?: { replace: boolean }): Promise<void> {
+        clearSavedViewQueryParams(options.queryParams, navigation?.replace ? 'replace' : undefined);
         applyColumnState(undefined);
         applyDisplayState(undefined);
 

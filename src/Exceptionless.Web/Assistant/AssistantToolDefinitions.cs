@@ -31,8 +31,8 @@ internal static class AssistantToolDefinitions
 
     public static object[] Create(ExceptionlessMcpTools tools, AssistantChatRequest request)
     {
-        string? currentEventId = AssistantService.GetRouteValue(request.Path, "event");
-        string? currentStackId = AssistantService.GetRouteValue(request.Path, "stack");
+        string? currentEventId = AssistantService.GetCurrentResourceId(request.Path, "event");
+        string? currentStackId = AssistantService.GetCurrentResourceId(request.Path, "stack");
 
         var definitions = s_methodNames.Select(methodName =>
         {

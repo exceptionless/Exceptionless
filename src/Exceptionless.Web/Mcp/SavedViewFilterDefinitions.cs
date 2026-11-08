@@ -74,8 +74,8 @@ internal static partial class SavedViewFilterDefinitions
     }
 
     /// <summary>
-    /// Replaces the chip of a type in place, so the other chips and their order are not disturbed. A new chip goes before
-    /// the search chip: filter terms AND together up to an OR, so "a OR b project:c" would not limit a to that project.
+    /// Replaces every chip matching the type and term, preserving other criteria. Filter edits keep structured criteria
+    /// before the search chip: filter terms AND together up to an OR, so "a OR b project:c" would not limit a to that project.
     /// </summary>
     public static void Set(JsonArray definitions, string type, JsonNode? value, bool hidden = false, string? term = null)
     {
@@ -90,16 +90,20 @@ internal static partial class SavedViewFilterDefinitions
         if (index < 0)
         {
             int searchIndex = type == "keyword" ? -1 : Find(definitions, "keyword", term: null);
-            if (searchIndex < 0)
-                definitions.Add(definition);
-            else
-                definitions.Insert(searchIndex, definition);
-
-            return;
+            index = searchIndex < 0 ? definitions.Count : searchIndex;
+        }
+        else
+        {
+            int duplicateIndex;
+            while ((duplicateIndex = Find(definitions, type, term)) >= 0)
+                definitions.RemoveAt(duplicateIndex);
         }
 
-        definitions.RemoveAt(index);
         definitions.Insert(index, definition);
+
+        // Changing the time range must not change the meaning of an existing query.
+        if (type != "date")
+            MoveCriteriaBeforeSearch(definitions);
     }
 
     public static void Remove(JsonArray definitions, string type)
@@ -132,6 +136,26 @@ internal static partial class SavedViewFilterDefinitions
         }
 
         return -1;
+    }
+
+    private static void MoveCriteriaBeforeSearch(JsonArray definitions)
+    {
+        int searchIndex = Find(definitions, "keyword", term: null);
+        if (searchIndex < 0)
+            return;
+
+        for (int index = searchIndex + 1; index < definitions.Count; index++)
+        {
+            if (definitions[index] is not JsonObject definition
+                || GetText(definition["type"]) == "keyword"
+                || ToClause(definition).Length == 0)
+            {
+                continue;
+            }
+
+            definitions.RemoveAt(index);
+            definitions.Insert(searchIndex++, definition);
+        }
     }
 
     private static string ToClause(JsonObject definition)

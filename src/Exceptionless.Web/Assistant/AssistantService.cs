@@ -62,13 +62,14 @@ public sealed class AssistantService(
         AssistantConversationState? conversationState = null;
         if (!String.IsNullOrWhiteSpace(request.OrganizationId) && !String.IsNullOrWhiteSpace(request.ConversationId))
         {
-            conversationState = await assistantConversationService.GetAsync(
+            conversationState = await assistantConversationService.BeginTurnAsync(
                 userId,
                 request.OrganizationId,
-                request.ConversationId);
-            if (conversationState is not null)
-                conversationState = await RemoveToolResultsFromMissingProjectsAsync(conversationState, request.OrganizationId);
+                request.ConversationId,
+                cancellationToken);
+            conversationState = await RemoveToolResultsFromMissingProjectsAsync(conversationState, request.OrganizationId);
         }
+        var pendingConfirmation = conversationState?.PendingConfirmation;
 
         // Visible conversation text comes from the browser. Tool results are loaded only from the
         // server-owned distributed cache so a later request can be handled by any app replica
@@ -414,25 +415,38 @@ public sealed class AssistantService(
                     }, s_jsonOptions);
                     remainingToolCalls--;
                 }
-                else if (AssistantConfirmation.IsRequired(toolCall.Name, arguments) && !AssistantConfirmation.IsConfirmed(toolCall.Name, arguments, request, conversationState))
-                {
-                    result = AssistantConfirmation.CreateRequiredResult(toolCall.Name, s_jsonOptions);
-                    remainingToolCalls--;
-                }
                 else
                 {
                     remainingToolCalls--;
                     if (toolCall.Name is SearchStacksTool or CountEventsTool)
                         remainingProjectSearches--;
 
-                    try
+                    bool confirmationRequired = AssistantConfirmation.IsRequired(toolCall.Name, arguments);
+                    bool confirmed = false;
+                    if (confirmationRequired)
                     {
-                        result = await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
+                        confirmed = AssistantConfirmation.IsConfirmed(toolCall.Name, arguments, request, pendingConfirmation)
+                            && conversationState?.TurnId is { } turnId
+                            && await assistantConversationService.IsCurrentTurnAsync(userId, request.OrganizationId!, request.ConversationId!, turnId);
+                        // A confirmation can authorize one attempt. Asking about another action also supersedes it.
+                        pendingConfirmation = null;
                     }
-                    catch (Exception ex)
+
+                    if (confirmationRequired && !confirmed)
                     {
-                        diagnostics?.RecordToolException(ex, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds, cancellationToken);
-                        throw;
+                        result = AssistantConfirmation.CreateRequiredResult(toolCall.Name, s_jsonOptions);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            result = await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            diagnostics?.RecordToolException(ex, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds, cancellationToken);
+                            throw;
+                        }
                     }
                 }
 
@@ -457,7 +471,8 @@ public sealed class AssistantService(
 
             if (conversationToolResults.Count > 0
                 && !String.IsNullOrWhiteSpace(request.OrganizationId)
-                && !String.IsNullOrWhiteSpace(request.ConversationId))
+                && !String.IsNullOrWhiteSpace(request.ConversationId)
+                && conversationState?.TurnId is { } activeTurnId)
             {
                 if (diagnostics is not null)
                     diagnostics.Stage = "conversation_save";
@@ -465,6 +480,7 @@ public sealed class AssistantService(
                     userId,
                     request.OrganizationId,
                     request.ConversationId,
+                    activeTurnId,
                     conversationToolResults,
                     cancellationToken);
             }
@@ -765,7 +781,10 @@ public sealed class AssistantService(
     private async Task<AssistantConversationState> RemoveToolResultsFromMissingProjectsAsync(AssistantConversationState state, string organizationId)
     {
         var tracked = state.ToolResults.Where(result => result.ProjectIds is not null).ToList();
-        string[] projectIds = tracked.SelectMany(result => result.ProjectIds!).Distinct(StringComparer.Ordinal).ToArray();
+        string[] projectIds = tracked.SelectMany(result => result.ProjectIds!)
+            .Concat(state.PendingConfirmation?.ProjectIds ?? [])
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
         IReadOnlySet<string> existing;
         try
         {
@@ -774,13 +793,18 @@ public sealed class AssistantService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "Unable to check the projects of cached assistant tool results for organization {OrganizationId}: {Message}", organizationId, ex.Message);
-            return new AssistantConversationState([]);
+            return state with { ToolResults = [], PendingConfirmation = null };
         }
 
         // A successful result with no recorded project, such as a count whose project the tool resolved implicitly,
         // cannot be checked, so only failed results, which hold no project data, are kept without one.
         var kept = tracked.Where(result => result.ProjectIds!.Count > 0 ? result.ProjectIds!.All(existing.Contains) : IsFailedToolResult(result.Result)).ToList();
-        return kept.Count == state.ToolResults.Count ? state : new AssistantConversationState(kept);
+        return state with
+        {
+            ToolResults = kept,
+            PendingConfirmation = state.PendingConfirmation is { ProjectIds: { } pendingProjectIds } pending
+                && pendingProjectIds.All(existing.Contains) ? pending : null
+        };
     }
 
     private static bool IsFailedToolResult(string result)

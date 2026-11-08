@@ -1062,7 +1062,8 @@ public sealed class AssistantServiceTests
         var lockProvider = CreateLockProvider(cache, TimeProvider.System);
         const string conversationId = "1d4f0c6a1a6b4d61a0f7a2b4c1e9d8f3";
         var conversations = new AssistantConversationService(cache, lockProvider, NullLogger<AssistantConversationService>.Instance);
-        await conversations.AppendToolResultsAsync("user-id", "organization-id", conversationId,
+        var turn = await conversations.BeginTurnAsync("user-id", "organization-id", conversationId, TestContext.Current.CancellationToken);
+        await conversations.AppendToolResultsAsync("user-id", "organization-id", conversationId, turn.TurnId!,
         [
             new AssistantConversationToolResult("call-kept", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Kept stack"}]}}""", null, DateTimeOffset.UtcNow, ["project-1"]),
             new AssistantConversationToolResult("call-deleted", "search_stacks", "{}", """{"ok":true,"data":{"items":[{"title":"Deleted project stack"}]}}""", null, DateTimeOffset.UtcNow, ["project-1", "deleted-project"]),

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Exceptionless.Web.Assistant;
 using Foundatio.Xunit;
 using Xunit;
@@ -50,6 +51,9 @@ public sealed class AssistantConfirmationTests(ITestOutputHelper output) : TestW
     [Theory]
     [InlineData("create_saved_view", "{\"shared\":true}", "{\"shared\":true,\"projectIds\":[\"current\"]}")]
     [InlineData("create_saved_view", "{\"shared\":true,\"projectIds\":[]}", "{\"shared\":true,\"projectIds\":[\"current\"]}")]
+    [InlineData("create_saved_view", "{\"shared\":true,\"projectIds\":[\"\",\" \"]}", "{\"shared\":true,\"projectIds\":[\"current\"]}")]
+    [InlineData("create_saved_view", "{\"shared\":true,\"project_ids\":[null]}", "{\"shared\":true,\"projectIds\":[\"current\"]}")]
+    [InlineData("create_saved_view", "{\"shared\":true,\"projectIds\":\"named\"}", "{\"shared\":true,\"projectIds\":\"named\"}")]
     [InlineData("create_saved_view", "{\"shared\":true,\"projectIds\":[\"named\"]}", "{\"shared\":true,\"projectIds\":[\"named\"]}")]
     [InlineData("create_saved_view", "{\"shared\":true,\"allProjects\":true}", "{\"shared\":true,\"allProjects\":true}")]
     [InlineData("create_saved_view", "{\"shared\":false}", "{\"shared\":false}")]
@@ -61,6 +65,45 @@ public sealed class AssistantConfirmationTests(ITestOutputHelper output) : TestW
 
         // Assert
         Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData("""{"ok":false,"error":{"code":"confirmation_required"}}""", true)]
+    [InlineData("""{"ok":true,"data":{"name":"confirmation_required"}}""", false)]
+    [InlineData("""{"ok":false,"error":{"code":"conflict","message":"A view named confirmation_required exists"}}""", false)]
+    [InlineData("""{"error":{"code":"confirmation_required"}}""", false)]
+    [InlineData("confirmation_required", false)]
+    public void IsConfirmed_Result_RequiresTheConfirmationErrorCode(string result, bool expected)
+    {
+        // Arrange
+        const string arguments = """{"savedViewId":"view-id"}""";
+        var pending = new AssistantConversationToolResult("call-id", "delete_saved_view", arguments, result, null, DateTimeOffset.UtcNow, []);
+        var request = new AssistantChatRequest([new AssistantChatMessage("user", "Yes")]);
+
+        // Act
+        bool confirmed = AssistantConfirmation.IsConfirmed("delete_saved_view", arguments, request, pending);
+
+        // Assert
+        Assert.Equal(expected, confirmed);
+    }
+
+    [Theory]
+    [InlineData("delete_saved_view", "Yes, delete it.", true)]
+    [InlineData("delete_saved_view", "Create it", false)]
+    [InlineData("create_saved_view", "Yes, create it.", true)]
+    [InlineData("create_saved_view", "Delete it", false)]
+    public void IsConfirmed_ActionNamedInReply_MustMatchThePendingAction(string toolName, string prompt, bool expected)
+    {
+        // Arrange
+        const string arguments = "{}";
+        var pending = new AssistantConversationToolResult("call-id", toolName, arguments, AssistantConfirmation.CreateRequiredResult(toolName, JsonSerializerOptions.Web), null, DateTimeOffset.UtcNow, []);
+        var request = new AssistantChatRequest([new AssistantChatMessage("user", prompt)]);
+
+        // Act
+        bool confirmed = AssistantConfirmation.IsConfirmed(toolName, arguments, request, pending);
+
+        // Assert
+        Assert.Equal(expected, confirmed);
     }
 
     [Theory]
