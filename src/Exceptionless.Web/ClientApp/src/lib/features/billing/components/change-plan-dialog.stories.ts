@@ -222,7 +222,7 @@ export const ExieUpgrade: Story = {
     name: 'Exie upgrade to Medium'
 };
 
-/** Trial org — shows days left, preselects Medium, and notes that billing starts today. */
+/** Trial organization — shows days left, preselects Medium, and notes that billing starts today. */
 export const Trial: Story = {
     args: {
         organization: makeOrg({
