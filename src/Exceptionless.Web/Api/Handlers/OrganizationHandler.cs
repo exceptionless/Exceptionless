@@ -867,15 +867,15 @@ public class OrganizationHandler(
     private async Task<Organization> AddModelAsync(Organization value, User user)
     {
         value.CreatedByUserId = user.Id;
-        bool isTrial = false;
         if (!options.StripeOptions.EnableBilling || user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
         {
             billingManager.ApplyBillingPlan(value, plans.UnlimitedPlan, user);
         }
         else if (await billingManager.CanStartTrialAsync(user))
         {
+            // Persist the mailbox claim before granting a trial so a failed claim cannot leave untracked entitlements.
+            await billingManager.ClaimTrialAsync(user);
             billingManager.StartTrial(value, user);
-            isTrial = true;
         }
         else
         {
@@ -895,20 +895,6 @@ public class OrganizationHandler(
             _logger.LogError(ex, "Unable to add user {UserId} to new organization {OrganizationId}, removing it: {Message}", user.Id, organization.Id, ex.Message);
             await repository.RemoveAsync(organization, o => o.ImmediateConsistency());
             throw;
-        }
-
-        if (isTrial)
-        {
-            try
-            {
-                await billingManager.ClaimTrialAsync(user);
-            }
-            catch (Exception ex)
-            {
-                // The organization is already saved. While this account exists it still can't start another trial; only
-                // a deleted and recreated account could.
-                _logger.LogError(ex, "Unable to record the trial claim for user {UserId}: {Message}", user.Id, ex.Message);
-            }
         }
 
         await messagePublisher.PublishAsync(new UserMembershipChanged

@@ -1,5 +1,6 @@
 <script lang="ts">
     import Hourglass from '@lucide/svelte/icons/hourglass';
+    import { useInterval } from 'runed';
 
     import type { ViewOrganization } from '#features/organizations/models.ts';
 
@@ -14,7 +15,12 @@
 
     let { organization }: Props = $props();
 
-    const daysRemaining = $derived(organization?.plan_id === TRIAL_PLAN_ID ? getTrialDaysRemaining(organization.trial_ends_utc) : 0);
+    let now = $state(new Date());
+    useInterval(60 * 1000, {
+        callback: () => (now = new Date())
+    });
+
+    const daysRemaining = $derived(organization?.plan_id === TRIAL_PLAN_ID ? getTrialDaysRemaining(organization.trial_ends_utc, now) : 0);
     const label = $derived(daysRemaining === 1 ? '1 day left in trial' : `${daysRemaining} days left in trial`);
 </script>
 

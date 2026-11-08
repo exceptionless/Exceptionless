@@ -123,26 +123,60 @@ public sealed class AssistantUsageServiceTests
     }
 
     [Fact]
-    public async Task StartProviderRequestAsync_SharedDailyCostIncrementFails_DoesNotRemoveUncountedEstimate()
+    public async Task StartProviderRequestAsync_SharedDailyCostReservationFails_RejectsRequestAndReleasesMonthlyEstimate()
     {
         // Arrange
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
         using var cache = new SharedCostFailingCacheClient(timeProvider);
         var service = CreateService(cache, CreateOptions(), timeProvider);
         var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 0.000001m };
-
-        cache.FailSharedCostIncrements = true;
-        var uncountedRequest = await service.StartProviderRequestAsync("first-organization", 1_000, sharedPlanOptions);
-        cache.FailSharedCostIncrements = false;
-        await using var countedRequest = await service.StartProviderRequestAsync("second-organization", 1_000, sharedPlanOptions);
+        await using var countedRequest = await service.StartProviderRequestAsync("counted-organization", 1_000, sharedPlanOptions);
+        cache.FailNextSharedCostIncrement = true;
 
         // Act
-        await uncountedRequest.DisposeAsync();
-        await using var whileSecondInFlight = await service.TryStartTurnAsync("third-organization", sharedPlanOptions);
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            await using var failedRequest = await service.StartProviderRequestAsync("failed-organization", 1_000, sharedPlanOptions);
+        });
+        var failedOrganizationUsage = await service.GetMonthlyUsageAsync("failed-organization");
+        await using var whileCountedRequestInFlight = await service.TryStartTurnAsync("another-organization", sharedPlanOptions);
 
         // Assert
-        Assert.False(whileSecondInFlight.Allowed);
-        Assert.Equal(AssistantUsageLimit.SharedDailyCost, whileSecondInFlight.Limit);
+        var providerException = Assert.IsType<AssistantProviderException>(exception);
+        Assert.Equal("usage_unavailable", providerException.FailureCode);
+        Assert.Contains("temporarily unavailable", providerException.Message);
+        Assert.Equal(0, failedOrganizationUsage.PromptTokens);
+        Assert.Equal(0, failedOrganizationUsage.CompletionTokens);
+        Assert.Equal(0, failedOrganizationUsage.CostInMicrodollars);
+        Assert.False(whileCountedRequestInFlight.Allowed);
+        Assert.Equal(AssistantUsageLimit.SharedDailyCost, whileCountedRequestInFlight.Limit);
+    }
+
+    [Fact]
+    public async Task StartProviderRequestAsync_SharedDailyCostReconciliationFails_DoesNotRecordUsageAgain()
+    {
+        // Arrange
+        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        using var cache = new SharedCostFailingCacheClient(timeProvider);
+        var recorder = new RecordingAssistantUsageRecorder();
+        var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
+        var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 0.000001m };
+        var providerRequest = await service.StartProviderRequestAsync("organization-id", 1_000, sharedPlanOptions);
+        providerRequest.MarkAccepted();
+        cache.FailNextSharedCostIncrement = true;
+
+        // Act
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            await using (providerRequest)
+                await providerRequest.ReconcileAsync(new AssistantProviderUsage(250, 50, 0.001m));
+        });
+        var usage = await service.GetMonthlyUsageAsync("organization-id");
+
+        // Assert
+        Assert.Null(exception);
+        Assert.Equal(new AssistantMonthlyUsage(0, 250, 50, 1_000), usage);
+        Assert.Single(recorder.Records, record => record.Increment.PromptTokens > 0);
     }
 
     [Fact]
@@ -603,12 +637,15 @@ internal sealed class SharedCostFailingCacheClient(TimeProvider timeProvider) : 
     TimeProvider = timeProvider
 }), ICacheClient
 {
-    public bool FailSharedCostIncrements { get; set; }
+    public bool FailNextSharedCostIncrement { get; set; }
 
     Task<long> ICacheClient.IncrementAsync(string key, long amount, TimeSpan? expiresIn)
     {
-        if (FailSharedCostIncrements && key.Contains("shared:", StringComparison.Ordinal))
+        if (FailNextSharedCostIncrement && key.Contains("shared:", StringComparison.Ordinal))
+        {
+            FailNextSharedCostIncrement = false;
             throw new InvalidOperationException("The cache is unavailable.");
+        }
 
         return IncrementAsync(key, amount, expiresIn);
     }

@@ -192,9 +192,14 @@ public sealed class AssistantUsageService(
             var sharedReservation = reservation with { SharedDailyCostLimitKey = sharedDailyCostLimitKey };
             long? sharedDailyCost = await IncrementSharedDailyCostAsync(sharedReservation, sharedReservation.CostInMicrodollars);
 
-            // Only a reservation that was counted may later adjust or remove its estimate.
-            if (sharedDailyCost is not null)
-                reservation = sharedReservation;
+            if (sharedDailyCost is null)
+            {
+                // The shared increment may not have been applied, so only release the monthly reservation.
+                await ReleaseProviderReservationAsync(organizationId, reservation);
+                throw new AssistantProviderException("Exie is temporarily unavailable. Try again in a moment.") { FailureCode = "usage_unavailable" };
+            }
+
+            reservation = sharedReservation;
 
             // Increments are atomic, so only the request that crosses the limit sees a total below it before its own
             // estimate. Every later request is rejected, which keeps a burst within one estimate of the limit.
@@ -337,7 +342,7 @@ public sealed class AssistantUsageService(
     /// Adjusts the shared daily cost counter for a reservation's day. The estimate is added when the provider
     /// request starts, then replaced by the actual cost or removed when the reservation is released.
     /// </summary>
-    /// <returns>The new shared daily cost, or null when nothing was counted.</returns>
+    /// <returns>The new shared daily cost, or null when the adjustment was skipped or could not be confirmed.</returns>
     private async Task<long?> IncrementSharedDailyCostAsync(AssistantProviderReservation reservation, long costInMicrodollars)
     {
         if (reservation.SharedDailyCostLimitKey is not { } sharedDailyCostLimitKey || costInMicrodollars == 0)
@@ -346,8 +351,8 @@ public sealed class AssistantUsageService(
         var usageDate = GetUsageDate(reservation);
         var day = GetDayWindow(usageDate);
 
-        // The shared counter is a guardrail on top of each organization's own limits. It runs after durable usage is
-        // recorded, so a failure here must not fail the request and cause the usage to be recorded again.
+        // Reconciliation runs after durable usage is recorded, so a failure here must not cause that usage to be
+        // recorded again. Return null so admission can reject a request whose reservation could not be confirmed.
         try
         {
             return await _cache.IncrementAsync(GetSharedDailyCostKey(sharedDailyCostLimitKey, day.Id), costInMicrodollars, day.ResetAtUtc.UtcDateTime);

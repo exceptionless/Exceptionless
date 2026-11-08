@@ -113,8 +113,9 @@ public class BillingManager
     }
 
     /// <summary>
-    /// Records that the user's mailbox used its trial. Call it once the trial organization is saved, while still
-    /// holding <see cref="AcquireTrialEmailLockAsync"/>.
+    /// Records the user's mailbox trial claim after confirming eligibility and before granting the trial, while
+    /// still holding <see cref="AcquireTrialEmailLockAsync"/>. The claim remains if subsequent organization creation
+    /// fails because the outcome of those writes may be uncertain.
     /// </summary>
     public async Task ClaimTrialAsync(User user)
     {

@@ -7,7 +7,9 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
+using Foundatio.Repositories.Models;
 using Foundatio.Utility;
+using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Migrations;
@@ -59,6 +61,72 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
         Assert.Equal(TestConstants.UserId, legacy.BillingChangedByUserId);
         var created = await _organizationRepository.FindAsync(q => q.FieldEquals(o => o.CreatedByUserId, TestConstants.UserId));
         Assert.Empty(created.Documents);
+    }
+
+    [Fact]
+    public async Task RunAsync_ConcurrentBillingAndUsageChanges_PreservesChangesAndInvalidatesCache()
+    {
+        // Arrange
+        var organization = new Organization
+        {
+            Name = "Migrating Organization",
+            PlanId = "EX_FREE",
+            PlanName = "Free",
+            PlanDescription = "Free",
+            MaxUsers = 1,
+            MaxProjects = 1
+        };
+        await _organizationRepository.AddAsync(organization, options => options.ImmediateConsistency());
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
+        var concurrentUsage = new AssistantUsageInfo
+        {
+            Date = new DateTime(utcNow.Year, utcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc),
+            PlanId = "EX_MEDIUM",
+            PromptTokens = 1_000,
+            CompletionTokens = 250,
+            CostInMicrodollars = 250_000,
+            LastUsedUtc = utcNow
+        };
+        var repository = new Mock<IOrganizationRepository>(MockBehavior.Strict);
+        repository.Setup(value => value.FindAsync(It.IsAny<RepositoryQueryDescriptor<Organization>>(), It.IsAny<CommandOptionsDescriptor<Organization>>()))
+            .Returns(async (RepositoryQueryDescriptor<Organization> query, CommandOptionsDescriptor<Organization> options) =>
+            {
+                var page = await _organizationRepository.FindAsync(query, options);
+                await _organizationRepository.PatchAsync(organization.Id, new PartialPatch(new
+                {
+                    plan_id = "EX_MEDIUM",
+                    billing_status = BillingStatus.Active,
+                    billing_price = 49m,
+                    stripe_subscription_id = "sub_concurrent",
+                    assistant_usage = new[] { concurrentUsage }
+                }), command => command.ImmediateConsistency());
+                await _organizationRepository.GetByIdAsync(organization.Id, command => command.Cache());
+                return page;
+            });
+        repository.Setup(value => value.SaveAsync(It.IsAny<IEnumerable<Organization>>(), It.IsAny<CommandOptionsDescriptor<Organization>>()))
+            .Returns((IEnumerable<Organization> documents, CommandOptionsDescriptor<Organization> options) => _organizationRepository.SaveAsync(documents, options));
+        repository.Setup(value => value.PatchAsync(It.IsAny<Ids>(), It.IsAny<IPatchOperation>(), It.IsAny<CommandOptionsDescriptor<Organization>>()))
+            .Returns((Ids ids, IPatchOperation operation, CommandOptionsDescriptor<Organization> options) => _organizationRepository.PatchAsync(ids, operation, options));
+        var migration = new UpdateOrganizationsForTrials(repository.Object, GetService<ExceptionlessElasticConfiguration>(), Log);
+
+        // Act
+        await migration.RunAsync(new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken));
+        await RefreshDataAsync();
+        var persistedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache(false));
+        var cachedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache());
+
+        // Assert
+        foreach (var migrated in new[] { persistedOrganization, cachedOrganization })
+        {
+            Assert.NotNull(migrated);
+            Assert.Equal(-1, migrated.MaxUsers);
+            Assert.Equal(-1, migrated.MaxProjects);
+            Assert.Equal("EX_MEDIUM", migrated.PlanId);
+            Assert.Equal(BillingStatus.Active, migrated.BillingStatus);
+            Assert.Equal(49m, migrated.BillingPrice);
+            Assert.Equal("sub_concurrent", migrated.StripeSubscriptionId);
+            Assert.Equal(concurrentUsage, Assert.Single(migrated.AssistantUsage));
+        }
     }
 
     [Fact]

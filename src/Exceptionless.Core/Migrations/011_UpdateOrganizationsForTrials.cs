@@ -5,6 +5,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Migrations;
+using Foundatio.Repositories.Models;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Migrations;
@@ -57,13 +58,10 @@ public sealed class UpdateOrganizationsForTrials : MigrationBase
                 .ToList();
             if (organizationsToMigrate.Count > 0)
             {
-                foreach (var organization in organizationsToMigrate)
-                {
-                    organization.MaxUsers = BillingPlan.Unlimited;
-                    organization.MaxProjects = BillingPlan.Unlimited;
-                }
-
-                await _organizationRepository.SaveAsync(organizationsToMigrate, options => options.Cache().Notifications(false));
+                await _organizationRepository.PatchAsync(
+                    organizationsToMigrate.Select(organization => organization.Id).ToArray(),
+                    new PartialPatch(new { max_users = BillingPlan.Unlimited, max_projects = BillingPlan.Unlimited }),
+                    options => options.Cache().Notifications(false));
                 migrated += organizationsToMigrate.Count;
             }
 
