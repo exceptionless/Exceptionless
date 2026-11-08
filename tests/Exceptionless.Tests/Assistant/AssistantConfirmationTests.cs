@@ -25,6 +25,9 @@ public sealed class AssistantConfirmationTests(ITestOutputHelper output) : TestW
     [InlineData(null, false)]
     public void IsConfirmation_UserMessage_OnlyAcceptsAClearYes(string? message, bool expected)
     {
+        // Arrange
+        // The theory data supplies the user message and expected confirmation result.
+
         // Act
         bool result = AssistantConfirmation.IsConfirmation(message);
 
@@ -41,6 +44,9 @@ public sealed class AssistantConfirmationTests(ITestOutputHelper output) : TestW
     [InlineData("update_saved_view", "{}", false)]
     public void IsRequired_Tool_CoversDeletesAndSharedViews(string toolName, string arguments, bool expected)
     {
+        // Arrange
+        // The theory data supplies the tool, arguments, and expected confirmation requirement.
+
         // Act
         bool result = AssistantConfirmation.IsRequired(toolName, arguments);
 
@@ -60,6 +66,9 @@ public sealed class AssistantConfirmationTests(ITestOutputHelper output) : TestW
     [InlineData("delete_saved_view", "{\"savedViewId\":\"a\"}", "{\"savedViewId\":\"a\"}")]
     public void ResolveProjectScope_SharedView_WritesTheCurrentProjectIntoItsArguments(string toolName, string arguments, string expected)
     {
+        // Arrange
+        // The theory data supplies the tool, arguments, and expected scope for the current project.
+
         // Act
         string result = AssistantConfirmation.ResolveProjectScope(toolName, arguments, "current");
 
@@ -117,6 +126,9 @@ public sealed class AssistantConfirmationTests(ITestOutputHelper output) : TestW
     [InlineData(null, null, null)]
     public void GetCurrentSavedView_PagePath_TellsViewsFromStacks(string? path, string? expectedView, string? expectedStack)
     {
+        // Arrange
+        // The theory data supplies the page path and expected saved view and stack identifiers.
+
         // Act
         string? view = AssistantService.GetCurrentSavedView(path);
         string? stack = AssistantService.GetCurrentResourceId(path, "stack");

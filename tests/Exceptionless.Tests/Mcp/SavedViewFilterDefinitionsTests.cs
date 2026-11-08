@@ -53,6 +53,9 @@ public sealed class SavedViewFilterDefinitionsTests(ITestOutputHelper output) : 
     [InlineData("""[{"type":"status","value":["open"]}]""", null, false)]
     public void IsRawFilter_View_OnlyWhenChipsCannotRepresentTheFilter(string? definitions, string? filter, bool expected)
     {
+        // Arrange
+        // The theory data supplies the definitions, filter, and expected raw-filter result.
+
         // Act
         bool result = SavedViewFilterDefinitions.IsRawFilter(definitions, filter);
 
@@ -180,6 +183,9 @@ public sealed class SavedViewFilterDefinitionsTests(ITestOutputHelper output) : 
     [InlineData(null, null, null)]
     public void Parse_NoUsableDefinitions_KeepsTheFilterAsASearch(string? definitions, string? filter, string? expected)
     {
+        // Arrange
+        // The theory data supplies the unusable definitions, fallback filter, and expected search.
+
         // Act
         var result = SavedViewFilterDefinitions.Parse(definitions, filter);
 
