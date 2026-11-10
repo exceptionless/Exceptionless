@@ -8,8 +8,10 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -162,6 +164,36 @@ public class TrialExpirationJobTests : IntegrationTestsBase
         var expiredOrganization = await OrganizationRepository.GetByIdAsync(TrialOrganizationId);
         Assert.NotNull(expiredOrganization);
         Assert.Equal(BillingPlans.FreePlan.Id, expiredOrganization.PlanId);
+        Assert.Empty(Mailer.OrganizationTrialEndingCalls);
+    }
+
+    [Fact]
+    public async Task RunAsync_StaleExpiredTrialInCache_PreservesExtendedTrial()
+    {
+        // Arrange
+        TimeProvider.Advance(TimeSpan.FromDays(BillingOptions.TrialDays + 1));
+        await OrganizationRepository.GetByIdAsync(TrialOrganizationId, options => options.Cache());
+        var cache = GetService<ICacheClient>();
+        string cacheKey = $"Organization:{TrialOrganizationId}";
+        var cached = await cache.GetAsync<ICollection<FindHit<Organization>>>(cacheKey);
+        Assert.True(cached.HasValue);
+
+        var extended = await OrganizationRepository.GetByIdAsync(TrialOrganizationId, options => options.Cache(false));
+        Assert.NotNull(extended);
+        BillingManager.ApplyTrialPlan(extended);
+        await OrganizationRepository.SaveAsync(extended, options => options.ImmediateConsistency().Cache());
+
+        // Model an older cache fill arriving after the extension was saved.
+        await cache.SetAsync(cacheKey, cached.Value);
+
+        // Act
+        await Job.RunAsync(TestCancellationToken);
+
+        // Assert
+        var actual = await OrganizationRepository.GetByIdAsync(TrialOrganizationId, options => options.Cache(false));
+        Assert.NotNull(actual);
+        Assert.Equal(BillingPlans.TrialPlan.Id, actual.PlanId);
+        Assert.Equal(extended.TrialEndsUtc, actual.TrialEndsUtc);
         Assert.Empty(Mailer.OrganizationTrialEndingCalls);
     }
 }

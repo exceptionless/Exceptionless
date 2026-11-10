@@ -95,7 +95,8 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
     private async Task ProcessOrganizationAsync(string organizationId)
     {
         await using var billingLock = await _billingManager.AcquireOrganizationLockAsync(organizationId);
-        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache());
+        // The billing lock serializes writers, but a stale cache entry can still predate a trial extension.
+        var organization = await _organizationRepository.GetByIdAsync(organizationId, o => o.Cache(false));
         if (organization is null || !_plans.IsTrialPlan(organization.PlanId))
             return;
 
