@@ -28,7 +28,7 @@ public class BackgroundTaskService
     /// <summary>An active task that has not reported progress for this long is considered abandoned.</summary>
     public static readonly TimeSpan StaleAfter = TimeSpan.FromHours(2);
 
-    /// <summary>How many tasks the list shows, newest first.</summary>
+    /// <summary>How many finished tasks the list shows, in addition to all active tasks.</summary>
     public const int ListLimit = 50;
 
     /// <summary>Every cache key and lock resource of background tasks starts with this prefix.</summary>
@@ -77,26 +77,34 @@ public class BackgroundTaskService
     }
 
     /// <summary>
-    /// The newest tasks of the organization that are still stored, newest first. Every indexed id is read so a busy
-    /// organization cannot push recent tasks out of the list; only the history that is shown is limited.
+    /// All active tasks and the newest finished tasks of the organization, newest first. Only finished history is limited.
     /// </summary>
     public async Task<IReadOnlyList<BackgroundTask>> GetByOrganizationAsync(string organizationId, int limit = ListLimit)
     {
+        var activeIds = (await GetActiveIdsAsync(organizationId)).ToHashSet(StringComparer.Ordinal);
         // Ids are ObjectIds, so descending order is newest first no matter how the cache orders its list.
         var newestIds = (await GetIndexedIdsAsync(GetOrganizationIndexCacheKey(organizationId)))
+            .Concat(activeIds)
             .Distinct(StringComparer.Ordinal)
-            .OrderByDescending(id => id, StringComparer.Ordinal)
-            .Take(limit);
+            .OrderByDescending(id => id, StringComparer.Ordinal);
 
         var tasks = new List<BackgroundTask>();
         var expired = new List<string>();
+        int finishedCount = 0;
         foreach (string id in newestIds)
         {
+            if (finishedCount >= limit && !activeIds.Contains(id))
+                continue;
+
             var task = await GetAsync(id);
             if (task is null)
                 expired.Add(id);
-            else if (String.Equals(task.OrganizationId, organizationId, StringComparison.Ordinal))
+            else if (String.Equals(task.OrganizationId, organizationId, StringComparison.Ordinal) && (task.IsActive || finishedCount < limit))
+            {
                 tasks.Add(task);
+                if (!task.IsActive)
+                    finishedCount++;
+            }
         }
 
         if (expired.Count > 0)

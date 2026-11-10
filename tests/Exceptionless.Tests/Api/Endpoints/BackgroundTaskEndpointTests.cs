@@ -189,6 +189,31 @@ public class BackgroundTaskEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ResetData_CancelledBeforeDelayedDelivery_PreservesTheProjectEvents()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject().Date(TimeProvider.GetUtcNow().AddHours(-1)));
+        var accepted = await SendRequestAsAsync<WorkInProgressResult>(r => r.Post().AsTestOrganizationUser()
+            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "reset-data").StatusCodeShouldBeAccepted());
+        string taskId = accepted!.Workers.Single();
+        TimeProvider.Advance(BackgroundTaskService.StaleAfter + TimeSpan.FromSeconds(1));
+
+        // Act
+        var cancelled = await SendRequestAsAsync<ViewBackgroundTask>(r => r.Post().AsTestOrganizationUser()
+            .AppendPaths("tasks", taskId, "cancel").StatusCodeShouldBeAccepted());
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        var stored = await GetTaskAsync(taskId);
+        await RefreshDataAsync();
+        var remaining = await GetService<IEventRepository>().GetByIdsAsync(events.Select(e => e.Id).ToArray(), o => o.Cache(false));
+
+        // Assert
+        Assert.Equal(BackgroundTaskStatus.Cancelled, cancelled!.Status);
+        Assert.Equal(BackgroundTaskStatus.Cancelled, stored.Status);
+        Assert.Null(stored.StartedUtc);
+        Assert.Equal(events.Select(e => e.Id), remaining.Select(e => e.Id));
+    }
+
+    [Fact]
     public async Task SampleData_ReturnsATaskIdThatTracksTheJobUntilItCompletes()
     {
         // Act

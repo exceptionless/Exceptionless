@@ -80,7 +80,8 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
             await context.ReportProgressAsync(progress, message);
         });
 
-        await StartAsync(taskId);
+        if (!await StartAsync(taskId))
+            return;
 
         try
         {
@@ -121,9 +122,9 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
 
     /// <summary>
     /// Marks the task running. A queue retry runs the work item again after it failed, which brings the task back to running
-    /// and back into the active index. A cancelled or completed task stays as it is.
+    /// and back into the active index. A cancelled or completed task must not run again.
     /// </summary>
-    private async Task StartAsync(string taskId)
+    private async Task<bool> StartAsync(string taskId)
     {
         bool wasFinished = false;
         var task = await TryUpdateAsync(taskId, current =>
@@ -145,6 +146,8 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
 
         if (wasFinished && task is not null)
             await TryAsync(taskId, () => _taskService.AddToActiveIndexAsync(task.OrganizationId, task.Id));
+
+        return task is not { Status: BackgroundTaskStatus.Cancelled or BackgroundTaskStatus.Completed };
     }
 
     private async Task<BackgroundTask?> TryUpdateAsync(string taskId, Func<BackgroundTask, bool> update)

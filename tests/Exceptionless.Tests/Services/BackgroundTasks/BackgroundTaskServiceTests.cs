@@ -57,7 +57,7 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
     }
 
     [Fact]
-    public async Task GetByOrganizationAsync_ManyTasks_ReturnsTheNewestFirstUpToTheLimit()
+    public async Task GetByOrganizationAsync_FinishedTasks_ReturnsTheNewestFirstUpToTheLimit()
     {
         // Arrange
         var ids = new List<string>();
@@ -65,6 +65,11 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         {
             var task = NewTask();
             await Tasks.AddAsync(task);
+            await Tasks.UpdateAsync(task.Id, current =>
+            {
+                current.Finish(BackgroundTaskStatus.Completed, "Done", _time.GetUtcNow().UtcDateTime);
+                return true;
+            });
             ids.Add(task.Id);
             _time.Advance(TimeSpan.FromSeconds(5));
         }
@@ -74,6 +79,41 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
 
         // Assert
         Assert.Equal([ids[3], ids[2]], newestTwo.Select(t => t.Id).ToArray());
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_ActiveTasks_DoNotConsumeTheFinishedHistoryLimit()
+    {
+        // Arrange
+        var oldest = NewTask();
+        await Tasks.AddAsync(oldest);
+        var finishedIds = new List<string>();
+        for (int index = 0; index <= BackgroundTaskService.ListLimit; index++)
+        {
+            _time.Advance(TimeSpan.FromSeconds(1));
+            var task = NewTask();
+            await Tasks.AddAsync(task);
+            await Tasks.UpdateAsync(task.Id, current =>
+            {
+                current.Finish(BackgroundTaskStatus.Completed, "Done", _time.GetUtcNow().UtcDateTime);
+                return true;
+            });
+            finishedIds.Add(task.Id);
+        }
+
+        _time.Advance(TimeSpan.FromSeconds(1));
+        var newest = NewTask();
+        await Tasks.AddAsync(newest);
+
+        // Act
+        var listed = await Tasks.GetByOrganizationAsync(OrganizationId);
+
+        // Assert
+        Assert.Equal(BackgroundTaskService.ListLimit + 2, listed.Count);
+        Assert.Equal(newest.Id, listed[0].Id);
+        Assert.Equal(oldest.Id, listed[^1].Id);
+        Assert.Equal(finishedIds.Skip(1).Reverse(), listed.Where(task => !task.IsActive).Select(task => task.Id));
+        Assert.Equal(listed.Count, listed.Select(task => task.Id).Distinct().Count());
     }
 
     [Fact]
