@@ -23,8 +23,11 @@ describe('organization notification dismissals', () => {
     });
 
     it('hides the usage warning for the rest of the UTC month', () => {
+        // Arrange
+        const utcNow = new Date('2026-10-02T12:00:00Z');
+
         // Act
-        dismissOrganizationNotification('usage-warning', 'organization-id', new Date('2026-10-02T12:00:00Z'));
+        dismissOrganizationNotification('usage-warning', 'organization-id', utcNow);
 
         // Assert
         expect(isOrganizationNotificationDismissed('usage-warning', 'organization-id', new Date('2026-10-31T23:59:00Z'))).toBe(true);
@@ -41,12 +44,21 @@ describe('organization notification dismissals', () => {
             'usage-warning:old': '2026-10'
         };
 
-        // Act & Assert
-        expect(pruneExpiredDismissals(current, now)).toEqual({ 'usage-warning:current': getDismissalPeriod('usage-warning', now) });
+        // Act
+        const dismissals = pruneExpiredDismissals(current, now);
+
+        // Assert
+        expect(dismissals).toEqual({ 'usage-warning:current': getDismissalPeriod('usage-warning', now) });
     });
 
     it('ignores a missing organization', () => {
-        // Act & Assert
-        expect(isOrganizationNotificationDismissed('usage-warning', undefined)).toBe(false);
+        // Arrange
+        const organizationId = undefined;
+
+        // Act
+        const dismissed = isOrganizationNotificationDismissed('usage-warning', organizationId);
+
+        // Assert
+        expect(dismissed).toBe(false);
     });
 });

@@ -49,14 +49,15 @@ describe('AssistantUpgradeRequired', () => {
     });
 
     it('sends trial users without a verified email to verify it instead of upgrading', () => {
+        // Arrange
+        const props = {
+            accessState: 'verification-required' as const,
+            message: 'Verify your email address to use Exie during your trial.',
+            organizationId: 'organization-id'
+        };
+
         // Act
-        render(AssistantUpgradeRequired, {
-            props: {
-                accessState: 'verification-required',
-                message: 'Verify your email address to use Exie during your trial.',
-                organizationId: 'organization-id'
-            }
-        });
+        render(AssistantUpgradeRequired, { props });
 
         // Assert
         expect(screen.getByText('Verify your email address to use Exie during your trial.')).toBeTruthy();

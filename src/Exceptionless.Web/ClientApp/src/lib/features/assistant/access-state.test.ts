@@ -24,8 +24,14 @@ describe('resolveAssistantAccessState', () => {
             'verification-required'
         ],
         ['organization', { enabled: false, has_access: false, upgrade_required: false }, false, false, false, 'disabled']
-    ] as const)('resolves an access-query state', (organizationId, access, isPending, isError, isFetching, expected) => {
-        // Act & Assert
-        expect(resolveAssistantAccessState(organizationId, access, isPending, isError, isFetching)).toBe(expected);
+    ] as const)('resolves an access-query state', (...testCase) => {
+        // Arrange
+        const [organizationId, access, isPending, isError, isFetching, expected] = testCase;
+
+        // Act
+        const state = resolveAssistantAccessState(organizationId, access, isPending, isError, isFetching);
+
+        // Assert
+        expect(state).toBe(expected);
     });
 });

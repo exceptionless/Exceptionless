@@ -21,18 +21,36 @@ describe('getMonthlyEventUsage', () => {
     }
 
     it('returns the current month usage against the limit', () => {
-        // Act & Assert
-        expect(getMonthlyEventUsage(organizationWithUsage([{ total: 2400 }]), now)).toEqual({ limit: 3000, percent: 0.8, total: 2400 });
+        // Arrange
+        const organization = organizationWithUsage([{ total: 2400 }]);
+
+        // Act
+        const usage = getMonthlyEventUsage(organization, now);
+
+        // Assert
+        expect(usage).toEqual({ limit: 3000, percent: 0.8, total: 2400 });
     });
 
     it('ignores usage from an earlier month', () => {
-        // Act & Assert
-        expect(getMonthlyEventUsage(organizationWithUsage([{ date: '2026-09-01T00:00:00Z', total: 2900 }]), now)).toBeUndefined();
+        // Arrange
+        const organization = organizationWithUsage([{ date: '2026-09-01T00:00:00Z', total: 2900 }]);
+
+        // Act
+        const usage = getMonthlyEventUsage(organization, now);
+
+        // Assert
+        expect(usage).toBeUndefined();
     });
 
     it('ignores unlimited plans', () => {
-        // Act & Assert
-        expect(getMonthlyEventUsage(organizationWithUsage([{ limit: -1, total: 2900 }]), now)).toBeUndefined();
+        // Arrange
+        const organization = organizationWithUsage([{ limit: -1, total: 2900 }]);
+
+        // Act
+        const usage = getMonthlyEventUsage(organization, now);
+
+        // Assert
+        expect(usage).toBeUndefined();
     });
 
     it.each([
@@ -40,7 +58,13 @@ describe('getMonthlyEventUsage', () => {
         [2400, true],
         [3000, true]
     ])('warns at 80%% of the limit (%i of 3000 events: %s)', (total, expected) => {
-        // Act & Assert
-        expect(isApproachingMonthlyEventLimit(organizationWithUsage([{ total }]), now)).toBe(expected);
+        // Arrange
+        const organization = organizationWithUsage([{ total }]);
+
+        // Act
+        const approachingLimit = isApproachingMonthlyEventLimit(organization, now);
+
+        // Assert
+        expect(approachingLimit).toBe(expected);
     });
 });
