@@ -2,6 +2,7 @@
     import { resolve } from '$app/paths';
     import CircleAlert from '@lucide/svelte/icons/circle-alert';
     import CircleCheck from '@lucide/svelte/icons/circle-check';
+    import CircleQuestionMark from '@lucide/svelte/icons/circle-question-mark';
     import CircleSlash from '@lucide/svelte/icons/circle-slash';
     import FileSearch from '@lucide/svelte/icons/file-search';
     import FileText from '@lucide/svelte/icons/file-text';
@@ -30,13 +31,15 @@
     import AssistantJsonBlock from './assistant-json-block.svelte';
 
     interface Props {
+        /** False once the user has replied, so a question Exie asked earlier no longer reads as waiting. */
+        isAwaitingReply?: boolean;
         isStreaming?: boolean;
         /** Project names from the whole response, so a step can name the project it searched. */
         projectNames?: ReadonlyMap<string, string>;
         tools: AssistantToolActivity[];
     }
 
-    let { isStreaming = false, projectNames = new Map(), tools }: Props = $props();
+    let { isAwaitingReply = true, isStreaming = false, projectNames = new Map(), tools }: Props = $props();
     type TraceSegment = { id: string; kind: 'change'; tool: AssistantToolActivity } | { id: string; kind: 'research'; tools: AssistantToolActivity[] };
 
     let visibleTools = $derived(tools.filter((tool) => !isHiddenAssistantTool(tool)));
@@ -98,8 +101,12 @@
             return isStreaming ? 'running' : 'error';
         }
 
+        if (tool.status === 'failed' && assistantToolNeedsConfirmation(tool.result)) {
+            return isAwaitingReply ? 'pending' : undefined;
+        }
+
         if (tool.status === 'failed') {
-            return assistantToolNeedsConfirmation(tool.result) ? 'pending' : 'error';
+            return 'error';
         }
 
         return tool.status === 'cancelled' ? 'pending' : undefined;
@@ -111,6 +118,8 @@
     <Trace.Icon>
         {#if tool.status === 'running' && isStreaming}
             <LoaderCircle class="animate-spin" />
+        {:else if tool.status === 'failed' && assistantToolNeedsConfirmation(tool.result)}
+            <CircleQuestionMark />
         {:else if tool.status === 'failed' || (tool.status === 'running' && !isStreaming)}
             <CircleAlert />
         {:else if tool.status === 'cancelled'}
@@ -124,7 +133,7 @@
 {/snippet}
 
 {#snippet toolRow(tool: AssistantToolActivity)}
-    {@const label = getAssistantToolLabel(tool, isStreaming)}
+    {@const label = getAssistantToolLabel(tool, isStreaming, isAwaitingReply)}
     {@const isChange = isMutationTool(tool)}
     {@const stackId = isChange ? getAssistantToolStackId(tool) : undefined}
     {@const stackTitle = isChange ? getAssistantToolStackTitle(tool) : undefined}
@@ -140,6 +149,7 @@
         </Trace.Line>
     {:else}
         {@const errorMessage = tool.status === 'failed' ? assistantToolErrorMessage(tool.result) : undefined}
+        {@const needsConfirmation = tool.status === 'failed' && assistantToolNeedsConfirmation(tool.result)}
         <Trace.Collapsible onOpenChange={(open) => (openToolIds[tool.id] = open)} open={openToolIds[tool.id] ?? false}>
             <Trace.CollapsibleTrigger aria-label={`${label}${detail ? `, ${detail}` : ''}. Show details`}>
                 <Trace.Line
@@ -157,7 +167,7 @@
             <Trace.CollapsibleContent class="flex flex-col gap-2">
                 {#if openToolIds[tool.id]}
                     {#if errorMessage}
-                        <p class="text-destructive">{errorMessage}</p>
+                        <p class={needsConfirmation ? 'text-muted-foreground' : 'text-destructive'}>{errorMessage}</p>
                     {/if}
                     {#if stackId}
                         <a
@@ -184,7 +194,7 @@
 
 {#snippet researchSummary(id: string, researchTools: AssistantToolActivity[])}
     {@const isResearching = isStreaming && researchTools.some((tool) => tool.status === 'running')}
-    {@const failedResearchCount = researchTools.filter((tool) => tool.status === 'failed').length}
+    {@const failedResearchCount = researchTools.filter((tool) => tool.status === 'failed' && !assistantToolNeedsConfirmation(tool.result)).length}
     {@const currentTool = isResearching ? researchTools.findLast((tool) => tool.status === 'running') : undefined}
     <!-- The summary stays collapsed until the reader opens it, so its height never changes while Exie works and the chat does not jump. -->
     <Trace.Collapsible onOpenChange={(open) => (summaryOpen[id] = open)} open={summaryOpen[id] ?? false}>
@@ -207,7 +217,7 @@
                     {/if}
                 </Trace.Title>
                 {#if currentTool}
-                    <Trace.Description class="min-w-0 shrink truncate">{getAssistantToolLabel(currentTool, isStreaming)}</Trace.Description>
+                    <Trace.Description class="min-w-0 shrink truncate">{getAssistantToolLabel(currentTool, isStreaming, isAwaitingReply)}</Trace.Description>
                 {:else if !isResearching && failedResearchCount > 0}
                     <Trace.Description>{failedResearchCount} failed</Trace.Description>
                 {/if}

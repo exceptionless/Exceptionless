@@ -1,12 +1,12 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace Exceptionless.Web.Assistant;
 
 /// <summary>
-/// Actions that can't be undone or that everyone in the organization sees need the user's say-so in a later message.
-/// The model reads text from events and tool results, so it can be talked into calling a tool, but it can't write the
-/// user's next message. The prompt asking for this is only the courtesy; these checks are what enforce it.
+/// Deleting a view can't be undone, and changing a shared view changes it for everyone in the organization, so both
+/// need the user's say-so in a later message. The model reads text from events and tool results, so it can be talked
+/// into calling a tool, but it can't write the user's next message. The prompt asking for this is only the courtesy;
+/// these checks are what enforce it.
 /// </summary>
 internal static class AssistantConfirmation
 {
@@ -14,30 +14,32 @@ internal static class AssistantConfirmation
     public const string Prompt = "Yes, continue";
 
     private const string DeleteSavedViewTool = "delete_saved_view";
-    private const string CreateSavedViewTool = "create_saved_view";
+    private const string UpdateSavedViewTool = "update_saved_view";
     private const string RequiredCode = "confirmation_required";
 
     private static readonly HashSet<string> s_confirmations = new(StringComparer.OrdinalIgnoreCase)
     {
-        "y", "yes", "yep", "yeah", "ok", "okay", "sure", "confirm", "confirmed", "go ahead", "do it", "please do", "delete it", "create it",
-        "yes please", "yes continue", "yes go ahead", "yes do it", "yes delete it", "yes create it"
+        "y", "yes", "yep", "yeah", "ok", "okay", "sure", "confirm", "confirmed", "go ahead", "do it", "do that", "please do",
+        "delete it", "delete them", "change it", "update it",
+        "yes please", "yes continue", "yes go ahead", "yes do it", "yes do that", "yes please do", "yes delete it", "yes delete them", "yes change it", "yes update it"
     };
 
-    public static bool IsRequired(string toolName, string arguments)
-        => toolName == DeleteSavedViewTool || (toolName == CreateSavedViewTool && IsShared(arguments));
+    /// <summary>Deleting a view always asks first, and changing one asks only when it is shared.</summary>
+    public static bool IsRequired(string toolName, bool isSharedView)
+        => toolName == DeleteSavedViewTool || (toolName == UpdateSavedViewTool && isSharedView);
 
-    public static bool IsConfirmed(string toolName, string arguments, AssistantChatRequest request, AssistantConversationToolResult? pendingConfirmation)
+    /// <summary>The pending action this call repeats, when the user's latest message confirms it.</summary>
+    public static AssistantConversationToolResult? FindConfirmed(string toolName, string arguments, AssistantChatRequest request, IEnumerable<AssistantConversationToolResult> pendingConfirmations)
     {
         string? latestUserMessage = request.Messages.LastOrDefault(message => message.Role == "user")?.Content;
         if (!IsConfirmation(latestUserMessage)
-            || (toolName == DeleteSavedViewTool && latestUserMessage!.Contains("create", StringComparison.OrdinalIgnoreCase))
-            || (toolName == CreateSavedViewTool && latestUserMessage!.Contains("delete", StringComparison.OrdinalIgnoreCase)))
-            return false;
+            || (toolName == UpdateSavedViewTool && latestUserMessage!.Contains("delete", StringComparison.OrdinalIgnoreCase))
+            || (toolName == DeleteSavedViewTool && (latestUserMessage!.Contains("change", StringComparison.OrdinalIgnoreCase) || latestUserMessage.Contains("update", StringComparison.OrdinalIgnoreCase))))
+            return null;
 
-        return pendingConfirmation is not null
-            && pendingConfirmation.ToolName == toolName
-            && HasSameArguments(pendingConfirmation.Arguments, arguments)
-            && IsRequiredResult(pendingConfirmation.Result);
+        return pendingConfirmations.FirstOrDefault(pending => pending.ToolName == toolName
+            && HasSameArguments(pending.Arguments, arguments)
+            && IsRequiredResult(pending.Result));
     }
 
     public static bool IsRequiredResult(string result)
@@ -60,14 +62,16 @@ internal static class AssistantConfirmation
 
     public static string CreateRequiredResult(string toolName, JsonSerializerOptions options)
     {
-        string action = toolName == DeleteSavedViewTool ? "Deleting this saved view" : "Creating a shared view";
+        string action = toolName == DeleteSavedViewTool
+            ? "Deleting this saved view"
+            : "Changing a shared view changes it for everyone in the organization, so it";
         return JsonSerializer.Serialize(new
         {
             ok = false,
             error = new
             {
                 code = RequiredCode,
-                message = $"{action} needs the user's confirmation. Nothing has changed yet."
+                message = $"{action} needs the user's confirmation. Nothing has changed yet. Ask the user, and when they confirm, call this tool again with the same arguments."
             }
         }, options);
     }
@@ -76,45 +80,18 @@ internal static class AssistantConfirmation
     internal static bool IsConfirmation(string? message)
         => message is not null && s_confirmations.Contains(message.Trim().TrimEnd('.', '!').Replace(",", String.Empty, StringComparison.Ordinal));
 
-    /// <summary>
-    /// Writes the current project into a shared view's arguments. Otherwise the same arguments would mean a different
-    /// project if the user switched projects before confirming, and they would approve something they were never asked about.
-    /// </summary>
-    public static string ResolveProjectScope(string toolName, string arguments, string? currentProjectId)
-    {
-        if (toolName != CreateSavedViewTool || String.IsNullOrWhiteSpace(currentProjectId) || !IsShared(arguments))
-            return arguments;
-
-        var parsed = TryParse(arguments);
-        if (parsed is null || (GetBoolean(parsed["allProjects"]) ?? GetBoolean(parsed["all_projects"])) is true || HasValues(parsed["projectIds"]) || HasValues(parsed["project_ids"]))
-            return arguments;
-
-        parsed.Remove("project_ids");
-        parsed["projectIds"] = new JsonArray(currentProjectId);
-        return parsed.ToJsonString();
-    }
-
-    private static bool IsShared(string arguments) => GetBoolean(TryParse(arguments)?["shared"]) is true;
-
-    private static bool? GetBoolean(JsonNode? node) => node is JsonValue value && value.TryGetValue(out bool result) ? result : null;
-
-    // Match argument execution: blank strings and non-string array entries do not override the current project.
-    private static bool HasValues(JsonNode? node) => node is JsonArray values ? values.Any(HasValue) : HasValue(node);
-
-    private static bool HasValue(JsonNode? node) => node is JsonValue value && value.TryGetValue(out string? result) && !String.IsNullOrWhiteSpace(result);
-
+    /// <summary>Compared the way tool execution reads arguments, which accepts repeated property names instead of throwing.</summary>
     private static bool HasSameArguments(string first, string second)
-        => TryParse(first) is { } firstArguments && TryParse(second) is { } secondArguments && JsonNode.DeepEquals(firstArguments, secondArguments);
-
-    private static JsonObject? TryParse(string arguments)
     {
         try
         {
-            return JsonNode.Parse(arguments) as JsonObject;
+            using var firstArguments = JsonDocument.Parse(first);
+            using var secondArguments = JsonDocument.Parse(second);
+            return firstArguments.RootElement.ValueKind == JsonValueKind.Object && JsonElement.DeepEquals(firstArguments.RootElement, secondArguments.RootElement);
         }
         catch (JsonException)
         {
-            return null;
+            return false;
         }
     }
 }

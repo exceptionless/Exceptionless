@@ -1432,7 +1432,11 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         long countBefore = await GetService<ISavedViewRepository>().CountByOrganizationIdAsync(TestConstants.OrganizationId);
 
         // Act
-        var result = await CallSavedViewToolAsync(client, "create_saved_view", new(arguments) { ["name"] = arguments.GetValueOrDefault("name") ?? "Invalid view" });
+        var result = await CallSavedViewToolAsync(client, "create_saved_view", new(arguments)
+        {
+            ["name"] = arguments.GetValueOrDefault("name") ?? "Invalid view",
+            ["allProjects"] = arguments.GetValueOrDefault("allProjects") ?? !arguments.ContainsKey("projectIds")
+        });
 
         // Assert
         Assert.Equal(expectedCode, result.GetProperty("error").GetProperty("code").GetString());
@@ -1443,6 +1447,9 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     public static TheoryData<string, Dictionary<string, object?>> InvalidSavedViews => new()
     {
         { "invalid_filter", new() { ["viewType"] = "events", ["query"] = "*timeout*" } },
+        { "unknown_filter_field", new() { ["viewType"] = "stacks", ["query"] = "is_critical:true" } },
+        { "invalid_argument", new() { ["viewType"] = "stacks", ["allProjects"] = false } },
+        { "invalid_argument", new() { ["viewType"] = "stacks", ["projectIds"] = new[] { "" } } },
         { "invalid_time_range", new() { ["viewType"] = "events", ["time"] = "whenever" } },
         { "invalid_time_range", new() { ["viewType"] = "stream", ["time"] = "[now-1d TO now]" } },
         { "invalid_sort", new() { ["viewType"] = "stacks", ["sort"] = "-date" } },
@@ -1462,7 +1469,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     {
         // Arrange
         await using var client = await CreateSavedViewMcpClientAsync(AuthorizationRoles.SavedViewsWrite);
-        var arguments = new Dictionary<string, object?> { ["name"] = "Duplicate view", ["viewType"] = "events" };
+        var arguments = new Dictionary<string, object?> { ["name"] = "Duplicate view", ["viewType"] = "events", ["allProjects"] = true };
         await CallSavedViewToolAsync(client, "create_saved_view", arguments);
         await RefreshDataAsync();
 
@@ -1523,7 +1530,8 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         new Dictionary<string, object?> { ["allProjects"] = true },
         new Dictionary<string, object?> { ["projectIds"] = new[] { TestConstants.ProjectId } },
         new Dictionary<string, object?> { ["statuses"] = new[] { "fixed" } },
-        new Dictionary<string, object?> { ["clearCriteria"] = new[] { "status" } }
+        new Dictionary<string, object?> { ["clearCriteria"] = new[] { "status" } },
+        new Dictionary<string, object?> { ["query"] = "status:fixed" }
     };
 
     [Fact]
@@ -1536,11 +1544,51 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
         view = await GetService<ISavedViewRepository>().AddAsync(view, o => o.ImmediateConsistency());
 
         // Act
-        var result = await CallSavedViewToolAsync(client, "update_saved_view", new() { ["savedViewId"] = view.Id, ["query"] = "status:fixed" });
+        var result = await CallSavedViewToolAsync(client, "update_saved_view", new() { ["savedViewId"] = view.Id, ["query"] = "status:fixed", ["clearCriteria"] = new[] { "query" } });
 
         // Assert
         Assert.True(result.GetProperty("ok").GetBoolean(), result.ToString());
         Assert.Equal("status:fixed", result.GetProperty("data").GetProperty("filter").GetString());
+    }
+
+    [Fact]
+    public async Task McpSavedViews_CreateWithStackField_AcceptsFieldsTheStackFilterResolves()
+    {
+        // Arrange
+        await using var client = await CreateSavedViewMcpClientAsync(AuthorizationRoles.SavedViewsWrite);
+
+        // Act
+        var result = await CallSavedViewToolAsync(client, "create_saved_view", new()
+        {
+            ["name"] = "Critical errors",
+            ["viewType"] = "stacks",
+            ["projectIds"] = new[] { TestConstants.ProjectId },
+            ["query"] = "critical:true data.region:us"
+        });
+
+        // Assert
+        Assert.True(result.GetProperty("ok").GetBoolean(), result.ToString());
+        Assert.EndsWith("critical:true data.region:us", result.GetProperty("data").GetProperty("filter").GetString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task McpSavedViews_ListByExactNameOrId_ReturnsOnlyThatView()
+    {
+        // Arrange
+        await using var client = await CreateSavedViewMcpClientAsync(AuthorizationRoles.SavedViewsRead);
+        var repository = GetService<ISavedViewRepository>();
+        var view = await repository.AddAsync(CreateSavedView(TestConstants.OrganizationId, "Production errors", userId: null), o => o.ImmediateConsistency());
+        await repository.AddAsync(CreateSavedView(TestConstants.OrganizationId, "Production errors weekly", userId: null), o => o.ImmediateConsistency());
+
+        // Act
+        var byName = await CallSavedViewToolAsync(client, "list_saved_views", new() { ["name"] = "production ERRORS" });
+        var byId = await CallSavedViewToolAsync(client, "list_saved_views", new() { ["name"] = view.Id });
+        var byText = await CallSavedViewToolAsync(client, "list_saved_views", new() { ["name"] = "production" });
+
+        // Assert
+        Assert.Equal(view.Id, Assert.Single(byName.GetProperty("data").GetProperty("items").EnumerateArray()).GetProperty("id").GetString());
+        Assert.Equal(view.Id, Assert.Single(byId.GetProperty("data").GetProperty("items").EnumerateArray()).GetProperty("id").GetString());
+        Assert.Equal(2, byText.GetProperty("data").GetProperty("items").GetArrayLength());
     }
 
     [Fact]
@@ -1569,7 +1617,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     {
         // Arrange
         await using var client = await CreateSavedViewMcpClientAsync($"{AuthorizationRoles.SavedViewsRead} {AuthorizationRoles.SavedViewsWrite}");
-        var arguments = new Dictionary<string, object?> { ["name"] = "Fresh view", ["viewType"] = "events" };
+        var arguments = new Dictionary<string, object?> { ["name"] = "Fresh view", ["viewType"] = "events", ["allProjects"] = true };
 
         // Act
         var created = await CallSavedViewToolAsync(client, "create_saved_view", arguments);
@@ -1619,7 +1667,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
     {
         // Arrange
         await using var client = await CreateSavedViewMcpClientAsync(AuthorizationRoles.SavedViewsWrite);
-        var created = await CallSavedViewToolAsync(client, "create_saved_view", new() { ["name"] = "Only status", ["viewType"] = "sessions", ["statuses"] = new[] { "open" } });
+        var created = await CallSavedViewToolAsync(client, "create_saved_view", new() { ["name"] = "Only status", ["viewType"] = "sessions", ["allProjects"] = true, ["statuses"] = new[] { "open" } });
 
         // Act
         var updated = await CallSavedViewToolAsync(client, "update_saved_view", new() { ["savedViewId"] = created.GetProperty("data").GetProperty("id").GetString(), ["clearCriteria"] = new[] { "status" } });
@@ -1661,7 +1709,7 @@ public sealed class OAuthEndpointTests : IntegrationTestsBase
 
         // Act
         var listed = await CallSavedViewToolAsync(client, "list_saved_views", new() { ["organizationId"] = SampleDataService.FREE_ORG_ID });
-        var created = await CallSavedViewToolAsync(client, "create_saved_view", new() { ["name"] = "Should not exist", ["viewType"] = "events", ["organizationId"] = SampleDataService.FREE_ORG_ID });
+        var created = await CallSavedViewToolAsync(client, "create_saved_view", new() { ["name"] = "Should not exist", ["viewType"] = "events", ["allProjects"] = true, ["organizationId"] = SampleDataService.FREE_ORG_ID });
         var deleted = await CallSavedViewToolAsync(client, "delete_saved_view", new() { ["savedViewId"] = view.Id });
 
         // Assert

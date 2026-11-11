@@ -37,7 +37,9 @@ public sealed record AssistantConversationState(IReadOnlyCollection<AssistantCon
     public IReadOnlyCollection<AssistantConversationToolResult> ToolResults { get; init; } = ToolResults ?? [];
 
     public string? TurnId { get; init; }
-    public AssistantConversationToolResult? PendingConfirmation { get; init; }
+
+    /// <summary>The actions the previous turn asked the user to confirm, which this turn may run once each.</summary>
+    public IReadOnlyCollection<AssistantConversationToolResult> PendingConfirmations { get; init; } = [];
 }
 
 public sealed record AssistantAccessResponse(

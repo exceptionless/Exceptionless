@@ -95,7 +95,8 @@ export function getAssistantToolDetail(tool: AssistantToolActivity, projectNames
     return details.length > 0 ? details.join(' · ') : undefined;
 }
 
-export function getAssistantToolLabel(tool: AssistantToolActivity, isStreaming: boolean): string {
+/** `isAwaitingReply` is false once the user has answered, so an older confirmation no longer reads as waiting. */
+export function getAssistantToolLabel(tool: AssistantToolActivity, isStreaming: boolean, isAwaitingReply = true): string {
     const labels = toolLabels[tool.name];
     const name = humanizeToolName(tool.name);
 
@@ -104,7 +105,11 @@ export function getAssistantToolLabel(tool: AssistantToolActivity, isStreaming: 
     }
 
     if (tool.status === 'failed') {
-        return assistantToolNeedsConfirmation(tool.result) ? 'Waiting for your confirmation' : (labels?.failed ?? `Couldn’t finish ${name}`);
+        if (assistantToolNeedsConfirmation(tool.result)) {
+            return isAwaitingReply ? 'Waiting for your confirmation' : 'Asked for your confirmation';
+        }
+
+        return labels?.failed ?? `Couldn’t finish ${name}`;
     }
 
     if (tool.status === 'cancelled') {

@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -31,7 +32,7 @@ public sealed partial class ExceptionlessMcpTools
     private const string SavedViewEnvironmentsDescription = "Environments to include, such as production.";
     private const string SavedViewLevelsDescription = "Log levels to include: trace, debug, info, warn, error, or fatal.";
     private const string SavedViewTagsDescription = "Tags to include. The view matches events with any of them.";
-    private const string SavedViewQueryDescription = "Exceptionless search for anything the other arguments cannot express, such as error.type:\"System.TimeoutException\" or user.email:jane@example.com.";
+    private const string SavedViewQueryDescription = "Exceptionless search for anything the other arguments cannot express, such as critical:true for stacks marked critical, error.type:\"System.TimeoutException\", or user.email:jane@example.com. Unknown fields are rejected.";
     private const string SavedViewTimeDescription = "Date range the view shows, in date math such as [now-24h TO now] or [now-30d TO now]. Not available for stream views.";
     private const string SavedViewSortDescription = "Sort for events and sessions views: -date for newest first or date for oldest first. Stacks views are ranked by frequency and stream views show newest first, so neither can be sorted.";
 
@@ -40,6 +41,27 @@ public sealed partial class ExceptionlessMcpTools
     private static readonly string[] s_savedViewLevels = ["trace", "debug", "info", "warn", "error", "fatal", "off"];
     private static readonly HashSet<string> s_savedViewSorts = new(StringComparer.Ordinal) { DefaultSavedViewSort, "date" };
     private static readonly string[] s_clearableSavedViewCriteria = ["type", "status", "environment", "level", "tag", "query"];
+
+    /// <summary>A view's filter runs as an event search, which also accepts the stack fields its stack filter resolves.</summary>
+    private static readonly HashSet<string> SavedViewFilterFields = new(EventFilterFields, StringComparer.OrdinalIgnoreCase)
+    {
+        "_missing_",
+        "_exists_",
+        StackIndex.Alias.LastOccurrence, "last_occurrence",
+        "first_occurrence",
+        StackIndex.Alias.References, "references",
+        "snooze_until_utc",
+        StackIndex.Alias.SignatureHash, "signature_hash",
+        StackIndex.Alias.Title, "title",
+        StackIndex.Alias.Description, "description",
+        StackIndex.Alias.DateFixed, "date_fixed",
+        StackIndex.Alias.FixedInVersion, "fixed_in_version",
+        StackIndex.Alias.OccurrencesAreCritical, "occurrences_are_critical",
+        StackIndex.Alias.TotalOccurrences, "total_occurrences",
+        StackIndex.Alias.IsFixed, "is_fixed",
+        StackIndex.Alias.IsRegressed, "is_regressed",
+        StackIndex.Alias.IsHidden, "is_hidden"
+    };
 
     // The app writes event types into the filter unquoted.
     [GeneratedRegex(@"^[A-Za-z0-9_.-]+$", RegexOptions.CultureInvariant)]
@@ -52,7 +74,7 @@ public sealed partial class ExceptionlessMcpTools
         string? organizationId = null,
         [Description("Optional page to list views for: stacks, events, sessions, or stream.")]
         string? viewType = null,
-        [Description("Optional text the view's name or URL name must contain, ignoring case.")]
+        [Description("Optional view id, or text the view's name or URL name must contain, ignoring case. A view whose id, name, or URL name matches exactly is returned on its own.")]
         string? name = null)
     {
         try
@@ -76,9 +98,10 @@ public sealed partial class ExceptionlessMcpTools
                     break;
             }
 
-            var matches = views
-                .Where(view => viewType is null || String.Equals(view.ViewType, viewType, StringComparison.OrdinalIgnoreCase))
-                .Where(view => name is null || view.Name.Contains(name, StringComparison.OrdinalIgnoreCase) || view.Slug.Contains(name, StringComparison.OrdinalIgnoreCase))
+            var pageViews = views.Where(view => viewType is null || String.Equals(view.ViewType, viewType, StringComparison.OrdinalIgnoreCase)).ToList();
+            // "Production errors" names one view even when "Production errors (7 days)" also contains it.
+            var exactMatches = name is null ? [] : pageViews.Where(view => IsExactSavedViewMatch(view, name)).ToList();
+            var matches = (exactMatches.Count > 0 ? exactMatches : pageViews.Where(view => name is null || view.Name.Contains(name, StringComparison.OrdinalIgnoreCase) || view.Slug.Contains(name, StringComparison.OrdinalIgnoreCase)))
                 .OrderBy(view => view.ViewType, StringComparer.Ordinal)
                 .ThenBy(view => view.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -110,7 +133,7 @@ public sealed partial class ExceptionlessMcpTools
         string? organizationId = null,
         [Description(SavedViewProjectIdsDescription)]
         string[]? projectIds = null,
-        [Description("Set to true to include every project, overriding projectIds and any current project.")]
+        [Description("Set to true to include every project, overriding projectIds. Either projectIds or this is required.")]
         bool allProjects = false,
         [Description(SavedViewTypesDescription)]
         string[]? types = null,
@@ -147,6 +170,10 @@ public sealed partial class ExceptionlessMcpTools
             var displayError = ValidateSavedViewDisplay(normalizedViewType, types, time, sort);
             if (displayError is not null)
                 return McpResponse<McpSavedViewResult>.Failed(displayError);
+
+            // Leaving out the projects would quietly include every one, which is rarely what was meant.
+            if (!allProjects && projectIds?.Any(projectId => !String.IsNullOrWhiteSpace(projectId)) is not true)
+                return McpResponse<McpSavedViewResult>.Failed(InvalidSavedViewArgument("Pass projectIds with the projects the view is for, or allProjects as true to include every project."));
 
             var definitions = new JsonArray();
             SetSavedViewProjects(definitions, []);
@@ -254,8 +281,11 @@ public sealed partial class ExceptionlessMcpTools
             if (displayError is not null)
                 return McpResponse<McpSavedViewResult>.Failed(displayError);
 
-            if (SavedViewFilterDefinitions.IsRawFilter(view.FilterDefinitions, view.Filter) && ChangesSeparateCriteria(projectIds, allProjects, types, statuses, environments, levels, tags, clearCriteria))
-                return McpResponse<McpSavedViewResult>.Failed(InvalidSavedViewArgument($"This view uses a custom filter, so its criteria cannot be changed one at a time. Pass query with the complete new filter to replace it: {view.Filter}"));
+            // The whole custom filter is one search, so changing a criteria or the search alone would combine with or
+            // silently replace the rest of it. Replacing it has to be asked for.
+            if (SavedViewFilterDefinitions.IsRawFilter(view.FilterDefinitions, view.Filter)
+                && (ChangesSeparateCriteria(projectIds, allProjects, types, statuses, environments, levels, tags, clearCriteria) || (NullIfBlank(query) is not null && !ClearsQuery(clearCriteria))))
+                return McpResponse<McpSavedViewResult>.Failed(InvalidSavedViewArgument($"This view uses a custom filter, so its criteria cannot be changed one at a time: {view.Filter}. To replace the whole filter, pass query with the complete new filter and clearCriteria [\"query\"]."));
 
             var definitions = SavedViewFilterDefinitions.Parse(view.FilterDefinitions, view.Filter);
             string originalDefinitions = definitions.ToJsonString();
@@ -375,6 +405,20 @@ public sealed partial class ExceptionlessMcpTools
         return (result.Value, null);
     }
 
+    /// <summary>True when everyone in the organization sees the view, so changing it changes it for all of them.</summary>
+    internal async Task<bool> IsSharedSavedViewAsync(string savedViewId)
+    {
+        try
+        {
+            var (view, _) = await GetSavedViewAsync(savedViewId);
+            return view is { UserId: null };
+        }
+        catch (Exception ex) when (IsLookupError(ex) || IsExpectedToolError(ex))
+        {
+            return false;
+        }
+    }
+
     private async Task<McpErrorInfo?> ApplySavedViewCriteriaAsync(
         JsonArray definitions,
         string organizationId,
@@ -441,10 +485,25 @@ public sealed partial class ExceptionlessMcpTools
         }
 
         if (!String.IsNullOrWhiteSpace(query))
+        {
+            // An unknown field parses and runs, but matches nothing, so the view would always be empty.
+            var fieldError = GetFilterFieldError(query, SavedViewFilterFields, allowIndexedDataFields: true);
+            if (fieldError is not null)
+                return fieldError;
+
             SavedViewFilterDefinitions.Set(definitions, "keyword", JsonValue.Create(query.Trim()));
+        }
 
         return null;
     }
+
+    private static bool ClearsQuery(string[]? clearCriteria)
+        => clearCriteria?.Any(criteria => String.Equals(criteria.Trim(), "query", StringComparison.OrdinalIgnoreCase)) is true;
+
+    private static bool IsExactSavedViewMatch(ViewSavedView view, string name)
+        => String.Equals(view.Id, name, StringComparison.Ordinal)
+            || String.Equals(view.Name, name, StringComparison.OrdinalIgnoreCase)
+            || String.Equals(view.Slug, name, StringComparison.OrdinalIgnoreCase);
 
     private static bool ChangesSeparateCriteria(string[]? projectIds, bool allProjects, string[]? types, string[]? statuses, string[]? environments, string[]? levels, string[]? tags, string[]? clearCriteria)
         => allProjects

@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Web;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
@@ -12,7 +13,7 @@ using Exceptionless.Web.Mcp;
 
 namespace Exceptionless.Web.Assistant;
 
-public sealed class AssistantService(
+public sealed partial class AssistantService(
     IHttpClientFactory httpClientFactory,
     AppOptions appOptions,
     ExceptionlessMcpTools tools,
@@ -69,7 +70,7 @@ public sealed class AssistantService(
                 cancellationToken);
             conversationState = await RemoveToolResultsFromMissingProjectsAsync(conversationState, request.OrganizationId);
         }
-        var pendingConfirmation = conversationState?.PendingConfirmation;
+        var pendingConfirmations = conversationState?.PendingConfirmations.ToList() ?? [];
 
         // Visible conversation text comes from the browser. Tool results are loaded only from the
         // server-owned distributed cache so a later request can be handled by any app replica
@@ -384,7 +385,7 @@ public sealed class AssistantService(
             var conversationToolResults = new List<AssistantConversationToolResult>();
             foreach (var toolCall in executableToolCalls)
             {
-                string arguments = AssistantConfirmation.ResolveProjectScope(toolCall.Name, toolCall.Arguments.ToString(), request.ProjectId);
+                string arguments = toolCall.Arguments.ToString();
                 diagnostics?.StartTool(toolCall.Name);
                 yield return AssistantStreamEvent.ToolCall(toolCall.Id, toolCall.Name, arguments);
 
@@ -421,15 +422,14 @@ public sealed class AssistantService(
                     if (toolCall.Name is SearchStacksTool or CountEventsTool)
                         remainingProjectSearches--;
 
-                    bool confirmationRequired = AssistantConfirmation.IsRequired(toolCall.Name, arguments);
+                    bool confirmationRequired = AssistantConfirmation.IsRequired(toolCall.Name, toolCall.Name == UpdateSavedViewTool && await IsSharedSavedViewAsync(arguments, request));
                     bool confirmed = false;
-                    if (confirmationRequired)
+                    if (confirmationRequired && AssistantConfirmation.FindConfirmed(toolCall.Name, arguments, request, pendingConfirmations) is { } confirmedAction)
                     {
-                        confirmed = AssistantConfirmation.IsConfirmed(toolCall.Name, arguments, request, pendingConfirmation)
-                            && conversationState?.TurnId is { } turnId
+                        // A confirmation authorizes one attempt.
+                        pendingConfirmations.Remove(confirmedAction);
+                        confirmed = conversationState?.TurnId is { } turnId
                             && await assistantConversationService.IsCurrentTurnAsync(userId, request.OrganizationId!, request.ConversationId!, turnId);
-                        // A confirmation can authorize one attempt. Asking about another action also supersedes it.
-                        pendingConfirmation = null;
                     }
 
                     if (confirmationRequired && !confirmed)
@@ -678,6 +678,15 @@ public sealed class AssistantService(
         return AssistantToolResultSerializer.Serialize(name, result, s_jsonOptions);
     }
 
+    /// <summary>A view that can't be read isn't treated as shared, because the update reports that error itself.</summary>
+    private async Task<bool> IsSharedSavedViewAsync(string arguments, AssistantChatRequest request)
+    {
+        using var _ = assistantToolContext.BeginTools(request.OrganizationId);
+        using var document = ParseArguments(arguments);
+        string? savedViewId = GetString(document.RootElement, "savedViewId", "saved_view_id");
+        return !String.IsNullOrWhiteSpace(savedViewId) && await tools.IsSharedSavedViewAsync(savedViewId);
+    }
+
     /// <summary>
     /// Without this check, leaving out the project on a page with no current project would quietly include every project,
     /// which is not what "a view for this project" means.
@@ -781,7 +790,7 @@ public sealed class AssistantService(
     private async Task<AssistantConversationState> RemoveToolResultsFromMissingProjectsAsync(AssistantConversationState state, string organizationId)
     {
         string[] projectIds = state.ToolResults.SelectMany(result => result.ProjectIds)
-            .Concat(state.PendingConfirmation?.ProjectIds ?? [])
+            .Concat(state.PendingConfirmations.SelectMany(pending => pending.ProjectIds))
             .Distinct(StringComparer.Ordinal)
             .ToArray();
         IReadOnlySet<string> existing;
@@ -792,7 +801,7 @@ public sealed class AssistantService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "Unable to check the projects of cached assistant tool results for organization {OrganizationId}: {Message}", organizationId, ex.Message);
-            return state with { ToolResults = [], PendingConfirmation = null };
+            return state with { ToolResults = [], PendingConfirmations = [] };
         }
 
         // A successful result with no recorded project, such as a count whose project the tool resolved implicitly,
@@ -801,7 +810,7 @@ public sealed class AssistantService(
         return state with
         {
             ToolResults = kept,
-            PendingConfirmation = state.PendingConfirmation is { } pending && pending.ProjectIds.All(existing.Contains) ? pending : null
+            PendingConfirmations = state.PendingConfirmations.Where(pending => pending.ProjectIds.All(existing.Contains)).ToList()
         };
     }
 
@@ -928,22 +937,44 @@ public sealed class AssistantService(
 
     private static bool IsObjectId(string value) => value.Length == 24 && value.All(Char.IsAsciiHexDigit);
 
+    /// <summary>
+    /// The open saved view and its page, such as "errors (viewType stacks)". The URL name alone is ambiguous, because
+    /// views on different pages can share one. Only a URL name or id is accepted, so a crafted link can't add text to the prompt.
+    /// </summary>
     internal static string? GetCurrentSavedView(string? path)
     {
-        foreach (string segment in new[] { "stack", "event", "sessions" })
+        foreach (var (segment, viewType) in s_savedViewRouteTypes)
         {
             if (GetRouteValue(path, segment) is { } value && !IsObjectId(value))
-                return value;
+                return SavedViewSlugRegex().IsMatch(value) ? $"{value} (viewType {viewType})" : null;
         }
 
-        // Pages without a saved view route, and links that predate them, carry the view in the query string.
+        // Pages without a saved view route, and links that predate them, carry the view's id in the query string.
         int queryIndex = path?.IndexOf('?') ?? -1;
         if (queryIndex < 0)
             return null;
 
         string? saved = HttpUtility.ParseQueryString(path![(queryIndex + 1)..])["saved"];
-        return String.IsNullOrWhiteSpace(saved) ? null : saved;
+        if (String.IsNullOrWhiteSpace(saved) || (!IsObjectId(saved) && !SavedViewSlugRegex().IsMatch(saved)))
+            return null;
+
+        string page = path[..queryIndex].Trim('/').Split('/')[0];
+        return s_savedViewPageTypes.TryGetValue(page, out string? pageViewType) ? $"{saved} (viewType {pageViewType})" : saved;
     }
+
+    private static readonly (string Segment, string ViewType)[] s_savedViewRouteTypes = [("stack", "stacks"), ("event", "events"), ("sessions", "sessions")];
+
+    private static readonly Dictionary<string, string> s_savedViewPageTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["stack"] = "stacks",
+        ["event"] = "events",
+        ["sessions"] = "sessions",
+        ["stream"] = "stream"
+    };
+
+    // Matches the app's savedview route parameter.
+    [GeneratedRegex("^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant)]
+    private static partial Regex SavedViewSlugRegex();
 
     internal static string? GetRouteValue(string? path, string segment)
     {

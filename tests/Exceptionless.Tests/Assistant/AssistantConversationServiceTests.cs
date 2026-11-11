@@ -30,8 +30,8 @@ public sealed class AssistantConversationServiceTests(ITestOutputHelper output) 
         var next = await service.BeginTurnAsync("user", "organization", "conversation", TestCancellationToken);
 
         // Assert
-        Assert.Equal(pending.ToolCallId, unanswered.PendingConfirmation?.ToolCallId);
-        Assert.Null(next.PendingConfirmation);
+        Assert.Equal(pending.ToolCallId, Assert.Single(unanswered.PendingConfirmations).ToolCallId);
+        Assert.Empty(next.PendingConfirmations);
         Assert.Equal(pending.ToolCallId, Assert.Single(next.ToolResults).ToolCallId);
         Assert.False(await service.IsCurrentTurnAsync("user", "organization", "conversation", unanswered.TurnId!));
         Assert.True(await service.IsCurrentTurnAsync("user", "organization", "conversation", next.TurnId!));
@@ -54,7 +54,7 @@ public sealed class AssistantConversationServiceTests(ITestOutputHelper output) 
             secondService.BeginTurnAsync("user", "organization", "conversation", TestCancellationToken));
 
         // Assert
-        Assert.Single(turns, turn => turn.PendingConfirmation is not null);
+        Assert.Single(turns, turn => turn.PendingConfirmations.Count > 0);
         Assert.NotEqual(turns[0].TurnId, turns[1].TurnId);
     }
 
@@ -74,7 +74,7 @@ public sealed class AssistantConversationServiceTests(ITestOutputHelper output) 
         var next = await service.BeginTurnAsync("user", "organization", "conversation", TestCancellationToken);
 
         // Assert
-        Assert.Equal("current", next.PendingConfirmation?.ToolCallId);
+        Assert.Equal("current", Assert.Single(next.PendingConfirmations).ToolCallId);
         Assert.Equal("current", Assert.Single(next.ToolResults).ToolCallId);
     }
 
@@ -92,8 +92,26 @@ public sealed class AssistantConversationServiceTests(ITestOutputHelper output) 
         var turn = await service.BeginTurnAsync("user", "organization", "conversation", TestCancellationToken);
 
         // Assert
-        Assert.Null(turn.PendingConfirmation);
+        Assert.Empty(turn.PendingConfirmations);
         Assert.Equal("legacy", Assert.Single(turn.ToolResults).ToolCallId);
+    }
+
+    [Fact]
+    public async Task AppendToolResultsAsync_SeveralActionsHeldBackInOneTurn_KeepsThemAllPending()
+    {
+        // Arrange
+        using var cache = CreateCache();
+        using var messageBus = CreateMessageBus();
+        var service = CreateService(cache, messageBus);
+        var turn = await service.BeginTurnAsync("user", "organization", "conversation", TestCancellationToken);
+
+        // Act
+        await service.AppendToolResultsAsync("user", "organization", "conversation", turn.TurnId!, [CreateConfirmation("first"), CreateConfirmation("second")], TestCancellationToken);
+        await service.AppendToolResultsAsync("user", "organization", "conversation", turn.TurnId!, [CreateLookup("lookup")], TestCancellationToken);
+        var next = await service.BeginTurnAsync("user", "organization", "conversation", TestCancellationToken);
+
+        // Assert
+        Assert.Equal(["first", "second"], next.PendingConfirmations.Select(pending => pending.ToolCallId));
     }
 
     [Fact]
@@ -102,7 +120,7 @@ public sealed class AssistantConversationServiceTests(ITestOutputHelper output) 
         // Arrange
         // Redis stores state with these options, which omit empty collections.
         var serializer = new SystemTextJsonSerializer(new JsonSerializerOptions().ConfigureExceptionlessDefaults());
-        var state = new AssistantConversationState([]) { TurnId = "turn", PendingConfirmation = CreateConfirmation("pending") };
+        var state = new AssistantConversationState([]) { TurnId = "turn", PendingConfirmations = [CreateConfirmation("pending")] };
 
         // Act
         var restored = serializer.Deserialize<AssistantConversationState>(serializer.SerializeToString(state));
@@ -111,8 +129,7 @@ public sealed class AssistantConversationServiceTests(ITestOutputHelper output) 
         Assert.NotNull(restored);
         Assert.Equal("turn", restored.TurnId);
         Assert.Empty(restored.ToolResults);
-        Assert.Equal("pending", restored.PendingConfirmation?.ToolCallId);
-        Assert.Empty(restored.PendingConfirmation!.ProjectIds);
+        Assert.Empty(Assert.Single(restored.PendingConfirmations, pending => pending.ToolCallId == "pending").ProjectIds);
     }
 
     private static AssistantConversationToolResult CreateConfirmation(string id) => new(
@@ -120,6 +137,15 @@ public sealed class AssistantConversationServiceTests(ITestOutputHelper output) 
         "delete_saved_view",
         JsonSerializer.Serialize(new { savedViewId = id }),
         AssistantConfirmation.CreateRequiredResult("delete_saved_view", JsonSerializerOptions.Web),
+        null,
+        DateTimeOffset.UtcNow,
+        []);
+
+    private static AssistantConversationToolResult CreateLookup(string id) => new(
+        id,
+        "list_saved_views",
+        "{}",
+        """{"ok":true,"data":{"items":[]}}""",
         null,
         DateTimeOffset.UtcNow,
         []);

@@ -92,7 +92,7 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
     public async Task Chat_ListAndUpdate_FindsAViewByItsUrlNameAndChangesIt()
     {
         // Arrange
-        var view = await AddViewAsync("Production errors", "prod-errors", SampleDataService.TEST_ORG_ID);
+        var view = await AddViewAsync("Production errors", "prod-errors", SampleDataService.TEST_ORG_ID, await GetChatUserIdAsync());
         s_provider.Script(
             ToolCall("list_saved_views", new { name = "prod-errors", viewType = "", organizationId = "" }),
             ToolCall("update_saved_view", new { savedViewId = view.Id, name = "Staging errors", environments = new[] { "staging" }, tags = Array.Empty<string>(), clearCriteria = Array.Empty<string>(), allProjects = false }));
@@ -205,7 +205,7 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task Chat_Delete_ANewerQuestionWithinTheTurnExpiresTheConfirmedAction()
+    public async Task Chat_Delete_YesOnlyConfirmsTheActionsItWasAskedAbout()
     {
         // Arrange
         var first = await AddViewAsync("First view", "first-view", SampleDataService.TEST_ORG_ID);
@@ -220,10 +220,34 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
         string[] events = await SendChatAsync("Yes", SampleDataService.TEST_PROJECT_ID, conversationId);
 
         // Assert
-        Assert.Equal(2, GetToolResults(events).Length);
-        Assert.All(GetToolResults(events), result => Assert.Contains("confirmation_required", result, StringComparison.Ordinal));
-        Assert.NotNull(await FindViewAsync("First view"));
+        string[] results = GetToolResults(events);
+        Assert.Equal(2, results.Length);
+        Assert.Contains("confirmation_required", results[0], StringComparison.Ordinal);
+        Assert.Contains("was deleted", results[1], StringComparison.Ordinal);
+        Assert.Null(await FindViewAsync("First view"));
         Assert.NotNull(await FindViewAsync("Second view"));
+    }
+
+    [Fact]
+    public async Task Chat_Delete_OneYesConfirmsEveryViewInTheRequest()
+    {
+        // Arrange
+        var first = await AddViewAsync("First view", "first-view", SampleDataService.TEST_ORG_ID);
+        var second = await AddViewAsync("Second view", "second-view", SampleDataService.TEST_ORG_ID);
+        string conversationId = Guid.NewGuid().ToString("N");
+        string DeleteBoth() => ToolCalls(("delete_saved_view", new { savedViewId = first.Id }), ("delete_saved_view", new { savedViewId = second.Id }));
+        s_provider.Script(DeleteBoth(), ToolCall("list_saved_views", new { name = "view" }));
+        string[] requested = await SendChatAsync("Delete both views.", SampleDataService.TEST_PROJECT_ID, conversationId);
+
+        // Act
+        s_provider.Script(DeleteBoth());
+        string[] confirmed = await SendChatAsync(AssistantConfirmation.Prompt, SampleDataService.TEST_PROJECT_ID, conversationId);
+
+        // Assert
+        Assert.Equal(2, GetToolResults(requested).Count(result => result.Contains("confirmation_required", StringComparison.Ordinal)));
+        Assert.All(GetToolResults(confirmed), result => Assert.Contains("was deleted", result, StringComparison.Ordinal));
+        Assert.Null(await FindViewAsync("First view"));
+        Assert.Null(await FindViewAsync("Second view"));
     }
 
     [Fact]
@@ -242,61 +266,56 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task Chat_CreateShared_WaitsForTheUserToConfirm()
+    public async Task Chat_CreateShared_CreatesTheViewWithoutAsking()
     {
         // Arrange
-        string conversationId = Guid.NewGuid().ToString("N");
-        string Create() => ToolCall("create_saved_view", new { name = "Team errors", viewType = "stacks", shared = true });
+        s_provider.Script(ToolCall("create_saved_view", new { name = "Team errors", viewType = "stacks", shared = true }));
 
         // Act
-        s_provider.Script(Create());
-        string[] requested = await SendChatAsync("Create a view for the team.", SampleDataService.TEST_PROJECT_ID, conversationId);
+        string[] events = await SendChatAsync("Create a view for the team.", SampleDataService.TEST_PROJECT_ID);
 
         // Assert
-        Assert.Contains("confirmation_required", GetToolResult(requested), StringComparison.Ordinal);
-        Assert.Null(await FindViewAsync("Team errors"));
-
-        // Act
-        s_provider.Script(Create(), Create());
-        string[] confirmed = await SendChatAsync("Yes, continue", SampleDataService.TEST_PROJECT_ID, conversationId);
-
-        // Assert
+        Assert.Contains("was created", GetToolResult(events), StringComparison.Ordinal);
         var view = await FindViewAsync("Team errors");
         Assert.NotNull(view);
         Assert.Null(view.UserId);
-        string[] results = GetToolResults(confirmed);
-        Assert.Equal(2, results.Length);
-        Assert.Contains("was created", results[0], StringComparison.Ordinal);
-        Assert.Contains("confirmation_required", results[1], StringComparison.Ordinal);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Chat_CreateShared_SwitchingProjectsBeforeConfirmingAsksAgain(bool blankProjectIds)
+    [Fact]
+    public async Task Chat_UpdateShared_WaitsForTheUserToConfirm()
     {
         // Arrange
+        var view = await AddViewAsync("Team errors", "team-errors", SampleDataService.TEST_ORG_ID);
         string conversationId = Guid.NewGuid().ToString("N");
-        string Create() => ToolCall("create_saved_view", new { name = "Team errors", viewType = "stacks", shared = true, projectIds = blankProjectIds ? new[] { String.Empty } : Array.Empty<string>() });
-        s_provider.Script(Create());
-        await SendChatAsync("Create a view for the team.", SampleDataService.TEST_PROJECT_ID, conversationId);
+        string Rename() => ToolCall("update_saved_view", new { savedViewId = view.Id, name = "Team triage" });
+        s_provider.Script(Rename());
+        string[] requested = await SendChatAsync("Rename the team view.", SampleDataService.TEST_PROJECT_ID, conversationId);
+        bool renamedBeforeConfirming = await FindViewAsync("Team triage") is not null;
 
         // Act
-        s_provider.Script(Create());
-        string[] switched = await SendChatAsync("Yes, continue", SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, conversationId);
+        s_provider.Script(Rename());
+        string[] confirmed = await SendChatAsync(AssistantConfirmation.Prompt, SampleDataService.TEST_PROJECT_ID, conversationId);
 
         // Assert
-        Assert.Contains("confirmation_required", GetToolResult(switched), StringComparison.Ordinal);
-        Assert.Null(await FindViewAsync("Team errors"));
+        Assert.Contains("confirmation_required", GetToolResult(requested), StringComparison.Ordinal);
+        Assert.False(renamedBeforeConfirming);
+        Assert.Contains("was updated", GetToolResult(confirmed), StringComparison.Ordinal);
+        Assert.NotNull(await FindViewAsync("Team triage"));
+    }
+
+    [Fact]
+    public async Task Chat_UpdatePrivate_ChangesTheViewWithoutAsking()
+    {
+        // Arrange
+        var view = await AddViewAsync("My errors", "my-errors", SampleDataService.TEST_ORG_ID, await GetChatUserIdAsync());
+        s_provider.Script(ToolCall("update_saved_view", new { savedViewId = view.Id, name = "My triage" }));
 
         // Act
-        s_provider.Script(Create());
-        await SendChatAsync("Yes, continue", SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, conversationId);
+        string[] events = await SendChatAsync("Rename my view.", SampleDataService.TEST_PROJECT_ID);
 
         // Assert
-        var view = await FindViewAsync("Team errors");
-        Assert.NotNull(view);
-        Assert.Contains($"project:{SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID}", view.Filter, StringComparison.Ordinal);
+        Assert.Contains("was updated", GetToolResult(events), StringComparison.Ordinal);
+        Assert.NotNull(await FindViewAsync("My triage"));
     }
 
     [Fact]
@@ -320,13 +339,15 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
         Assert.Equal("Other organization", stored?.Name);
     }
 
-    private Task<SavedView> AddViewAsync(string name, string slug, string organizationId)
+    /// <summary>A view with no user is shared with the organization.</summary>
+    private Task<SavedView> AddViewAsync(string name, string slug, string organizationId, string? userId = null)
     {
         var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
         return GetService<ISavedViewRepository>().AddAsync(new SavedView
         {
             OrganizationId = organizationId,
-            CreatedByUserId = TestConstants.UserId,
+            CreatedByUserId = userId ?? TestConstants.UserId,
+            UserId = userId,
             Name = name,
             Slug = slug,
             ViewType = "stacks",
@@ -367,13 +388,29 @@ public sealed class AssistantSavedViewChatTests : IntegrationTestsBase
         return body.Split('\n', StringSplitOptions.RemoveEmptyEntries);
     }
 
-    private static string ToolCall(string name, object arguments)
+    private async Task<string> GetChatUserIdAsync()
+    {
+        var user = await GetService<IUserRepository>().GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        return user.Id;
+    }
+
+    private static string ToolCall(string name, object arguments) => ToolCalls((name, arguments));
+
+    /// <summary>One model response that calls each tool in parallel.</summary>
+    private static string ToolCalls(params (string Name, object Arguments)[] calls)
     {
         string payload = JsonSerializer.Serialize(new
         {
             choices = new[]
             {
-                new { delta = new { tool_calls = new[] { new { index = 0, id = Guid.NewGuid().ToString("N"), function = new { name, arguments = JsonSerializer.Serialize(arguments) } } } } }
+                new
+                {
+                    delta = new
+                    {
+                        tool_calls = calls.Select((call, index) => new { index, id = Guid.NewGuid().ToString("N"), function = new { name = call.Name, arguments = JsonSerializer.Serialize(call.Arguments) } }).ToArray()
+                    }
+                }
             }
         });
 

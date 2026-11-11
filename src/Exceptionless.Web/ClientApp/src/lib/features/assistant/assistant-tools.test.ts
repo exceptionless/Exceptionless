@@ -114,9 +114,11 @@ describe('saved view tools', () => {
         } as AssistantToolActivity;
 
         // Act
-        const label = getAssistantToolLabel(tool, false);
+        const waiting = getAssistantToolLabel(tool, false);
+        const answered = getAssistantToolLabel(tool, false, false);
 
         // Assert
-        expect(label).toBe('Waiting for your confirmation');
+        expect(waiting).toBe('Waiting for your confirmation');
+        expect(answered).toBe('Asked for your confirmation');
     });
 });

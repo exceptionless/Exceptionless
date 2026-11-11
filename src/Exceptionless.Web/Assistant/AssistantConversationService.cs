@@ -27,7 +27,7 @@ public sealed class AssistantConversationService(
 
             // Every user turn consumes the previous question, even when its answer produces no tool results.
             // Only this caller receives the pending action, so concurrent turns cannot share its approval.
-            if (!await _cache.SetAsync(key, turn with { PendingConfirmation = null }, TimeSpan.FromMinutes(AssistantLimits.ConversationRetentionMinutes)))
+            if (!await _cache.SetAsync(key, turn with { PendingConfirmations = [] }, TimeSpan.FromMinutes(AssistantLimits.ConversationRetentionMinutes)))
                 throw new InvalidOperationException("Unable to save the assistant conversation turn.");
         }, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5));
 
@@ -71,11 +71,12 @@ public sealed class AssistantConversationService(
             while (merged.Count > 0 && JsonSerializer.Serialize(merged).Length > AssistantLimits.MaximumToolContextCharacters)
                 merged.RemoveAt(0);
 
-            var latest = toolResults.Last();
-            var pendingConfirmation = AssistantConfirmation.IsRequired(latest.ToolName, latest.Arguments) && AssistantConfirmation.IsRequiredResult(latest.Result)
-                ? latest
-                : null;
-            var state = cached.Value with { ToolResults = merged, PendingConfirmation = pendingConfirmation };
+            // Every action this turn held back stays pending, so one yes can confirm a request that covered several views.
+            var pendingConfirmations = cached.Value.PendingConfirmations
+                .Concat(toolResults.Where(result => AssistantConfirmation.IsRequiredResult(result.Result)))
+                .DistinctBy(result => result.ToolCallId, StringComparer.Ordinal)
+                .ToList();
+            var state = cached.Value with { ToolResults = merged, PendingConfirmations = pendingConfirmations };
             await _cache.SetAsync(key, state, TimeSpan.FromMinutes(AssistantLimits.ConversationRetentionMinutes));
         }, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5));
 
