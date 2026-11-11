@@ -335,16 +335,22 @@ public class AdminEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task TrialSettingsAsync_AsGlobalAdmin_SavesNormalizedDomainsAndRestoresDefaults()
     {
+        // Arrange
+        var cache = GetService<ICacheClient>();
+
+        // Act
         var initial = await SendRequestAsAsync<TrialSettings>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "trial-settings")
             .StatusCodeShouldBeOk());
 
+        // Assert
         Assert.NotNull(initial);
         Assert.True(initial.IsDefault);
         Assert.Contains("mailinator.com", initial.BlockedEmailDomains);
         Assert.Equal(initial.DefaultBlockedEmailDomains, initial.BlockedEmailDomains);
 
+        // Act
         var updated = await SendRequestAsAsync<TrialSettings>(request => request
             .Put()
             .AsGlobalAdminUser()
@@ -352,17 +358,22 @@ public class AdminEndpointTests : IntegrationTestsBase
             .Content(new UpdateTrialSettings { BlockedEmailDomains = [" Spam.Test ", "@spam.test", "other.test"] })
             .StatusCodeShouldBeOk());
 
+        // Assert
         Assert.NotNull(updated);
         Assert.False(updated.IsDefault);
         Assert.Equal(["other.test", "spam.test"], updated.BlockedEmailDomains);
 
-        await GetService<ICacheClient>().RemoveAllAsync();
+        // Act
+        await cache.RemoveAllAsync();
         var afterCacheClear = await SendRequestAsAsync<TrialSettings>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "trial-settings")
             .StatusCodeShouldBeOk());
+
+        // Assert
         Assert.Equal(updated.BlockedEmailDomains, afterCacheClear?.BlockedEmailDomains);
 
+        // Act
         var restored = await SendRequestAsAsync<TrialSettings>(request => request
             .Put()
             .AsGlobalAdminUser()
@@ -370,22 +381,41 @@ public class AdminEndpointTests : IntegrationTestsBase
             .Content(new UpdateTrialSettings { BlockedEmailDomains = null })
             .StatusCodeShouldBeOk());
 
+        // Assert
         Assert.NotNull(restored);
         Assert.True(restored.IsDefault);
         Assert.Equal(initial.BlockedEmailDomains, restored.BlockedEmailDomains);
     }
 
     [Fact]
-    public Task TrialSettingsAsync_InvalidDomain_ReturnsUnprocessableEntity() => SendRequestAsync(request => request
-        .Put().AsGlobalAdminUser().AppendPaths("admin", "trial-settings")
-        .Content(new UpdateTrialSettings { BlockedEmailDomains = ["not a domain"] })
-        .StatusCodeShouldBeUnprocessableEntity());
+    public async Task TrialSettingsAsync_InvalidDomain_ReturnsUnprocessableEntity()
+    {
+        // Arrange
+        var update = new UpdateTrialSettings { BlockedEmailDomains = ["not a domain"] };
+
+        // Act
+        var problem = await SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(request => request
+            .Put().AsGlobalAdminUser().AppendPaths("admin", "trial-settings").Content(update)
+            .StatusCodeShouldBeUnprocessableEntity());
+
+        // Assert
+        Assert.Equal(422, problem?.Status);
+    }
 
     [Fact]
-    public Task TrialSettingsAsync_AsUser_ReturnsForbidden() => SendRequestAsync(request => request
-        .Put().AsTestOrganizationUser().AppendPaths("admin", "trial-settings")
-        .Content(new UpdateTrialSettings { BlockedEmailDomains = ["spam.test"] })
-        .StatusCodeShouldBeForbidden());
+    public async Task TrialSettingsAsync_AsUser_ReturnsForbidden()
+    {
+        // Arrange
+        var update = new UpdateTrialSettings { BlockedEmailDomains = ["spam.test"] };
+
+        // Act
+        var problem = await SendRequestAsAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>(request => request
+            .Put().AsTestOrganizationUser().AppendPaths("admin", "trial-settings").Content(update)
+            .StatusCodeShouldBeForbidden());
+
+        // Assert
+        Assert.Equal(403, problem?.Status);
+    }
 
     [Fact]
     public async Task RuntimeSettingsAsync_LegacyDocumentUsesDeploymentDefaults()

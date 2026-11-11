@@ -173,7 +173,8 @@ public class BillingManagerTests : TestWithServices
     {
         // Arrange
         var billingManager = GetService<BillingManager>();
-        GetService<Exceptionless.Core.AppOptions>().BillingOptions.TrialClaimSecret = null;
+        var options = GetService<Exceptionless.Core.AppOptions>();
+        options.BillingOptions.TrialClaimSecret = null;
 
         // Act
         bool eligible = await billingManager.CanStartTrialAsync(new User { EmailAddress = "new@example.test" });

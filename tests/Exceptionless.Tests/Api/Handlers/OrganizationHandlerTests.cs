@@ -31,6 +31,7 @@ public sealed class OrganizationHandlerTests : TestWithServices
     public async Task Handle_CreateOrganizationTrialClaimFails_DoesNotPersistTrialAndAllowsRetry()
     {
         // Arrange
+        var plans = GetService<BillingPlans>();
         var persistedUser = new User
         {
             Id = TestConstants.UserId,
@@ -41,7 +42,7 @@ public sealed class OrganizationHandlerTests : TestWithServices
         var context = new DefaultHttpContext { RequestAborted = TestCancellationToken };
         context.Request.SetUser(persistedUser);
         var users = new Mock<IUserRepository>(MockBehavior.Strict);
-        users.Setup(repository => repository.GetByIdAsync(persistedUser.Id, It.IsAny<CommandOptionsDescriptor<User>>()))
+        users.Setup(repository => repository.GetByIdAsync(persistedUser.Id, It.IsAny<ICommandOptions>()))
             .ReturnsAsync(() => persistedUser with { OrganizationIds = new HashSet<string>(persistedUser.OrganizationIds) });
         users.Setup(repository => repository.SaveAsync(It.IsAny<User>(), It.IsAny<CommandOptionsDescriptor<User>>()))
             .ReturnsAsync((User user, CommandOptionsDescriptor<User> _) => persistedUser = user);
@@ -66,7 +67,8 @@ public sealed class OrganizationHandlerTests : TestWithServices
         TrialClaim? persistedClaim = null;
         var claimFailure = new IOException("Trial claim store is unavailable.");
         var claims = new Mock<ITrialClaimRepository>(MockBehavior.Strict);
-        string claimId = TrialEmailAddress.GetClaimId(persistedUser.EmailAddress, GetService<AppOptions>().BillingOptions.TrialClaimSecret!);
+        var options = GetService<AppOptions>();
+        string claimId = TrialEmailAddress.GetClaimId(persistedUser.EmailAddress, options.BillingOptions.TrialClaimSecret!);
         claims.Setup(repository => repository.ExistsAsync(claimId, It.IsAny<ICommandOptions>()))
             .ReturnsAsync(() => persistedClaim is not null);
         claims.Setup(repository => repository.AddAsync(It.IsAny<TrialClaim>(), It.IsAny<ICommandOptions>()))
@@ -100,7 +102,7 @@ public sealed class OrganizationHandlerTests : TestWithServices
         // Assert
         Assert.Equal(ResultStatus.Created, result.Status);
         var organization = Assert.Single(persistedOrganizations);
-        Assert.Equal(GetService<BillingPlans>().TrialPlan.Id, organization.PlanId);
+        Assert.Equal(plans.TrialPlan.Id, organization.PlanId);
         Assert.Equal(organization.Id, Assert.Single(persistedUser.OrganizationIds));
         Assert.NotNull(persistedUser.TrialStartedUtc);
         Assert.Equal(claimId, Assert.IsType<TrialClaim>(persistedClaim).Id);
@@ -117,7 +119,9 @@ public sealed class OrganizationHandlerTests : TestWithServices
         var billingManager = new BillingManager(cache, locks, organizations, claims, users, settings, plans, options, TimeProvider);
         var projects = Mock.Of<IProjectRepository>();
         var publisher = GetService<IMessagePublisher>();
-        var usageService = new UsageService(organizations, projects, cache, publisher, GetService<NotificationService>(), TimeProvider, Log);
+        var notificationService = GetService<NotificationService>();
+        var mailer = GetService<IMailer>();
+        var usageService = new UsageService(organizations, projects, cache, publisher, notificationService, TimeProvider, Log);
         var stripeBillingClient = Mock.Of<IStripeBillingClient>();
         var organizationService = new OrganizationService(organizations, projects, Mock.Of<ISavedViewRepository>(),
             Mock.Of<ITokenRepository>(), users, Mock.Of<IWebHookRepository>(), stripeBillingClient, usageService, Log);
@@ -138,7 +142,7 @@ public sealed class OrganizationHandlerTests : TestWithServices
             plans,
             usageService,
             stripeBillingClient,
-            GetService<IMailer>(),
+            mailer,
             publisher,
             new ApiMapper(TimeProvider),
             options,

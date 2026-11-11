@@ -38,9 +38,11 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
         var deleted = new Organization { Name = "Deleted Small Organization", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = 10, MaxProjects = 5, IsDeleted = true };
         await _organizationRepository.AddAsync([limited, deleted], options => options.ImmediateConsistency());
 
-        // Act
         var migration = GetService<UpdateOrganizationsForTrials>();
-        await migration.RunAsync(new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken));
+        var migrationLock = GetService<ILock>();
+
+        // Act
+        await migration.RunAsync(new MigrationContext(migrationLock, _logger, TestCancellationToken));
 
         // Assert
         await RefreshDataAsync();
@@ -107,10 +109,12 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
             .Returns((IEnumerable<Organization> documents, CommandOptionsDescriptor<Organization> options) => _organizationRepository.SaveAsync(documents, options));
         repository.Setup(value => value.PatchAsync(It.IsAny<Ids>(), It.IsAny<IPatchOperation>(), It.IsAny<CommandOptionsDescriptor<Organization>>()))
             .Returns((Ids ids, IPatchOperation operation, CommandOptionsDescriptor<Organization> options) => _organizationRepository.PatchAsync(ids, operation, options));
-        var migration = new UpdateOrganizationsForTrials(repository.Object, GetService<ExceptionlessElasticConfiguration>(), Log);
+        var configuration = GetService<ExceptionlessElasticConfiguration>();
+        var migrationLock = GetService<ILock>();
+        var migration = new UpdateOrganizationsForTrials(repository.Object, configuration, Log);
 
         // Act
-        await migration.RunAsync(new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken));
+        await migration.RunAsync(new MigrationContext(migrationLock, _logger, TestCancellationToken));
         await RefreshDataAsync();
         var persistedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache(false));
         var cachedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache());
@@ -142,9 +146,11 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
         Assert.True(settingsBefore.IsValidResponse, settingsBefore.DebugInformation);
         var indexSettingsBefore = Assert.Single(settingsBefore.Settings).Value.Settings!;
 
-        // Act
         var migration = GetService<UpdateOrganizationsForTrials>();
-        var context = new MigrationContext(GetService<ILock>(), _logger, TestCancellationToken);
+        var migrationLock = GetService<ILock>();
+        var context = new MigrationContext(migrationLock, _logger, TestCancellationToken);
+
+        // Act
         await migration.RunAsync(context);
         await migration.RunAsync(context);
 

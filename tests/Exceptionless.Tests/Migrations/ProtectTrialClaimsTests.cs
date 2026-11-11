@@ -24,6 +24,8 @@ public sealed class ProtectTrialClaimsTests : IntegrationTestsBase
         // Arrange
         var repository = GetService<ITrialClaimRepository>();
         var options = GetService<AppOptions>();
+        var configuration = GetService<ExceptionlessElasticConfiguration>();
+        var billingManager = GetService<BillingManager>();
         var createdUtc = TimeProvider.GetUtcNow().UtcDateTime.AddDays(-30);
         var legacy = Enumerable.Range(0, 101).Select(index => new TrialClaim
         {
@@ -33,7 +35,7 @@ public sealed class ProtectTrialClaimsTests : IntegrationTestsBase
         await repository.AddAsync(legacy, command => command.ImmediateConsistency());
         string resumedId = TrialEmailAddress.ProtectLegacyClaimId(legacy[0].Id, options.BillingOptions.TrialClaimSecret!);
         await repository.AddAsync(new TrialClaim { Id = resumedId, CreatedUtc = createdUtc }, command => command.ImmediateConsistency());
-        var migration = new ProtectTrialClaims(repository, GetService<ExceptionlessElasticConfiguration>(), options, Log);
+        var migration = new ProtectTrialClaims(repository, configuration, options, Log);
         var context = new MigrationContext(EmptyLock.Empty, _logger, TestCancellationToken);
 
         // Act
@@ -41,7 +43,7 @@ public sealed class ProtectTrialClaimsTests : IntegrationTestsBase
         await RefreshDataAsync();
         await migration.RunAsync(context);
         var claims = await repository.GetAllAsync(command => command.PageLimit(200));
-        bool eligible = await GetService<BillingManager>().CanStartTrialAsync(new User { Id = TestConstants.UserId, EmailAddress = "legacy-0@example.test" });
+        bool eligible = await billingManager.CanStartTrialAsync(new User { Id = TestConstants.UserId, EmailAddress = "legacy-0@example.test" });
 
         // Assert
         Assert.Equal(legacy.Length, claims.Documents.Count);
@@ -59,9 +61,10 @@ public sealed class ProtectTrialClaimsTests : IntegrationTestsBase
         // Arrange
         var repository = GetService<ITrialClaimRepository>();
         var claim = new TrialClaim { Id = new string('a', 64) };
+        var configuration = GetService<ExceptionlessElasticConfiguration>();
         await repository.AddAsync(claim, command => command.ImmediateConsistency());
         var unconfigured = new AppOptions { BillingOptions = new Core.Configuration.BillingOptions() };
-        var migration = new ProtectTrialClaims(repository, GetService<ExceptionlessElasticConfiguration>(), unconfigured, Log);
+        var migration = new ProtectTrialClaims(repository, configuration, unconfigured, Log);
 
         // Act
         var exception = await Record.ExceptionAsync(() => migration.RunAsync(new MigrationContext(EmptyLock.Empty, _logger, TestCancellationToken)));

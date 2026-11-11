@@ -268,7 +268,7 @@ public class AdminHandler(
 
         // Share the billing lock with user plan changes and the trial expiration job, and reload inside it.
         await using var billingLock = await billingManager.AcquireOrganizationLockAsync(message.OrganizationId);
-        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId, o => o.Cache(false));
+        var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
         if (organization is null)
             return new ChangePlanResponse(false, "Invalid Organization Id.");
 

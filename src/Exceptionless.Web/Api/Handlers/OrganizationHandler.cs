@@ -116,7 +116,7 @@ public class OrganizationHandler(
         // one-free-organization and one-trial checks.
         string userId = GetCurrentUser(message.Context).Id;
         await using var ownerLock = await billingManager.AcquireOwnerFreeOrganizationLockAsync(userId);
-        var user = await userRepository.GetByIdAsync(userId, o => o.Cache(false));
+        var user = await userRepository.GetByIdAsync(userId);
         if (user is null)
             return Result.Unauthorized("User not found.");
 

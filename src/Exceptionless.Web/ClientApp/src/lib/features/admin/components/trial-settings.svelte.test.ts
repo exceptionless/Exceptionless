@@ -31,6 +31,7 @@ describe('Free trial settings', () => {
         state.isDefault = true;
         state.update.mockReset();
         state.success.mockClear();
+        state.error.mockClear();
         state.update.mockImplementation(async ({ blocked_email_domains }: { blocked_email_domains: null | string[] }) => ({
             blocked_email_domains: blocked_email_domains ?? ['mailinator.com', 'yopmail.com'],
             default_blocked_email_domains: ['mailinator.com', 'yopmail.com'],
@@ -86,5 +87,47 @@ describe('Free trial settings', () => {
         // Assert
         const validationError = await screen.findByText('Every blocked email domain must be a domain name, such as example.com.');
         expect(validationError).toBeTruthy();
+        expect(domains).toHaveValue('not_a_domain');
+    });
+
+    it('prevents a second save while submission is pending', async () => {
+        // Arrange
+        let finish!: (value: unknown) => void;
+        state.update.mockImplementation(() => new Promise((resolve) => (finish = resolve)));
+        render(TrialSettings);
+        const domains = screen.getByRole('textbox', { name: 'Blocked trial email domains' });
+        const save = screen.getByRole('button', { name: 'Save blocked trial domains' });
+
+        // Act
+        await fireEvent.input(domains, { target: { value: 'spam.test' } });
+        await fireEvent.click(save);
+        await waitFor(() => expect(state.update).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(save).toBeDisabled());
+        await fireEvent.click(save);
+
+        // Assert
+        expect(state.update).toHaveBeenCalledTimes(1);
+
+        // Act
+        finish({ blocked_email_domains: ['spam.test'], is_default: false });
+
+        // Assert
+        await waitFor(() => expect(state.success).toHaveBeenCalledWith('Blocked trial domains saved.'));
+    });
+
+    it('retains the edited list when resetting defaults fails', async () => {
+        // Arrange
+        state.isDefault = false;
+        state.update.mockRejectedValue(new Error('Unavailable'));
+        render(TrialSettings);
+        const domains = screen.getByRole('textbox', { name: 'Blocked trial email domains' });
+        await fireEvent.input(domains, { target: { value: 'edited.test' } });
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Reset blocked trial domains to the built-in list' }));
+
+        // Assert
+        await waitFor(() => expect(state.error).toHaveBeenCalledWith('Failed to reset blocked trial domains.'));
+        expect(domains).toHaveValue('edited.test');
     });
 });

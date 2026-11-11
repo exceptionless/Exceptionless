@@ -2431,6 +2431,34 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CanDownGradeAsync_MultipleUsersAndProjects_UnlimitedFreePlanAllowsDowngrade()
+    {
+        // Arrange
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(organization);
+        Assert.NotNull(user);
+        await _projectRepository.AddAsync(new Project
+        {
+            Name = "Additional project",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
+        }, command => command.ImmediateConsistency());
+        var members = await _userRepository.GetByOrganizationIdAsync(organization.Id);
+        var projects = await _projectRepository.GetByOrganizationIdAsync(organization.Id);
+
+        // Act
+        var result = await _billingManager.CanDownGradeAsync(organization, _plans.FreePlan, user);
+
+        // Assert
+        Assert.True(members.Total is > 1);
+        Assert.True(projects.Total is > 1);
+        Assert.Equal(BillingPlan.Unlimited, _plans.FreePlan.MaxUsers);
+        Assert.Equal(BillingPlan.Unlimited, _plans.FreePlan.MaxProjects);
+        Assert.True(result.Success, result.Message);
+    }
+
+    [Fact]
     public async Task CanDownGradeAsync_ValidDowngrade_ReturnsSuccess()
     {
         // Arrange — the free organization (1 user, 1 project) should be able to "downgrade" to small plan
@@ -2869,14 +2897,17 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         owner.OrganizationIds.Remove(trialOrganization.Id);
         await _userRepository.SaveAsync(owner, o => o.ImmediateConsistency());
 
-        // Act & Assert
-        await WithBillingEnabledAsync(() => SendRequestAsync(r => r
+        // Act
+        using var response = await WithBillingEnabledAsync(() => SendRequestAsync(r => r
             .BasicAuthorization(owner.EmailAddress, password)
             .Post()
             .AppendPath("organizations")
             .Content(new NewOrganization { Name = "Another Free Organization" })
             .StatusCodeShouldBeUpgradeRequired()
         ));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
     }
 
     [Fact]
@@ -2896,14 +2927,17 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         organizations.Add(freeOrganization);
         await _organizationRepository.AddAsync(organizations, o => o.ImmediateConsistency());
 
-        // Act & Assert
-        await WithBillingEnabledAsync(() => SendRequestAsync(r => r
+        // Act
+        using var response = await WithBillingEnabledAsync(() => SendRequestAsync(r => r
             .BasicAuthorization(owner.EmailAddress, password)
             .Post()
             .AppendPath("organizations")
             .Content(new NewOrganization { Name = "Second Free Organization" })
             .StatusCodeShouldBeUpgradeRequired()
         ));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
     }
 
     [Fact]
@@ -3105,15 +3139,21 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public Task AddUserAsync_UnverifiedInviterWithBillingEnabled_ReturnsForbidden()
+    public async Task AddUserAsync_UnverifiedInviterWithBillingEnabled_ReturnsForbidden()
     {
-        // Act & Assert
-        return WithBillingEnabledAsync(() => SendRequestAsync(r => r
+        // Arrange
+        const string emailAddress = "new.member@localhost";
+
+        // Act
+        using var response = await WithBillingEnabledAsync(() => SendRequestAsync(r => r
             .AsFreeOrganizationUser()
             .Post()
-            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "users", "new.member@localhost")
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "users", emailAddress)
             .StatusCodeShouldBeForbidden()
         ));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
@@ -3123,28 +3163,36 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         const string password = "Trial password";
         var user = await CreateUserAsync("trial-inviter@exceptionless.test", password, isEmailAddressVerified: true);
         var organization = await CreateTrialOrganizationAsync(user);
-        int dailyLimit = GetService<AppOptions>().BillingOptions.FreeInviteDailyLimit;
+        var options = GetService<AppOptions>();
+        int dailyLimit = options.BillingOptions.FreeInviteDailyLimit;
+        var statusCodes = new List<HttpStatusCode>();
 
-        // Act & Assert
+        // Act
         await WithBillingEnabledAsync(async () =>
         {
             for (int index = 0; index < dailyLimit; index++)
             {
-                await SendRequestAsync(r => r
+                using var response = await SendRequestAsync(r => r
                     .BasicAuthorization(user.EmailAddress, password)
                     .Post()
                     .AppendPaths("organizations", organization.Id, "users", $"invitee-{index}@exceptionless.test")
                     .StatusCodeShouldBeOk()
                 );
+                statusCodes.Add(response.StatusCode);
             }
 
-            await SendRequestAsync(r => r
+            using var rejected = await SendRequestAsync(r => r
                 .BasicAuthorization(user.EmailAddress, password)
                 .Post()
                 .AppendPaths("organizations", organization.Id, "users", "one-too-many@exceptionless.test")
                 .ExpectedStatus(HttpStatusCode.TooManyRequests)
             );
+            statusCodes.Add(rejected.StatusCode);
         });
+
+        // Assert
+        Assert.Equal(dailyLimit, statusCodes.Count(status => status is HttpStatusCode.OK));
+        Assert.Equal(HttpStatusCode.TooManyRequests, statusCodes[^1]);
     }
 
     [Theory]
@@ -3236,7 +3284,8 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     public async Task PostAsync_AdminBlockedEmailDomain_BlocksSubdomainsAndReplacesDefaults()
     {
         // Arrange
-        await GetService<SystemSettingsService>().UpdateAsync(TestConstants.UserId, settings => settings.TrialBlockedEmailDomains = ["blocked.test"]);
+        var settingsService = GetService<SystemSettingsService>();
+        await settingsService.UpdateAsync(TestConstants.UserId, settings => settings.TrialBlockedEmailDomains = ["blocked.test"]);
         const string password = "Blocked password";
         var blocked = await CreateUserAsync("someone@mail.blocked.test", password, isEmailAddressVerified: true);
         var previouslyBlocked = await CreateUserAsync("allowed@mailinator.com", password, isEmailAddressVerified: true);
@@ -3264,14 +3313,17 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         _billingManager.ApplyBillingPlan(legacy, _plans.FreePlan);
         await AddMemberOrganizationAsync(user, legacy);
 
-        // Act & Assert
-        await WithBillingEnabledAsync(() => SendRequestAsync(r => r
+        // Act
+        using var response = await WithBillingEnabledAsync(() => SendRequestAsync(r => r
             .BasicAuthorization(user.EmailAddress, password)
             .Post()
             .AppendPath("organizations")
             .Content(new NewOrganization { Name = "Second Free Organization" })
             .StatusCodeShouldBeUpgradeRequired()
         ));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
     }
 
     [Fact]
@@ -3311,21 +3363,28 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var organization = CreatePaidOrganization("Paid Organization");
         organization.CreatedByUserId = user.Id;
         organization = await AddMemberOrganizationAsync(user, organization);
-        int freeDailyLimit = GetService<AppOptions>().BillingOptions.FreeInviteDailyLimit;
+        var options = GetService<AppOptions>();
+        int freeDailyLimit = options.BillingOptions.FreeInviteDailyLimit;
+        var statusCodes = new List<HttpStatusCode>();
 
-        // Act & Assert
+        // Act
         await WithBillingEnabledAsync(async () =>
         {
             for (int index = 0; index <= freeDailyLimit; index++)
             {
-                await SendRequestAsync(r => r
+                using var response = await SendRequestAsync(r => r
                     .BasicAuthorization(user.EmailAddress, password)
                     .Post()
                     .AppendPaths("organizations", organization.Id, "users", $"paid-invitee-{index}@exceptionless.test")
                     .StatusCodeShouldBeOk()
                 );
+                statusCodes.Add(response.StatusCode);
             }
         });
+
+        // Assert
+        Assert.Equal(freeDailyLimit + 1, statusCodes.Count);
+        Assert.All(statusCodes, status => Assert.Equal(HttpStatusCode.OK, status));
     }
 
     private Organization CreatePaidOrganization(string name)

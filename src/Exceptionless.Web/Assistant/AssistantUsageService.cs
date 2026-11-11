@@ -367,12 +367,12 @@ public sealed class AssistantUsageService(
 
     private const string SharedDailyCostLimitMessage = "Exie is at capacity for trial organizations right now. Upgrade your plan for guaranteed access.";
 
-    private async Task<AssistantUsageDecision?> GetSharedDailyCostDecisionAsync(AssistantPlanOptions planOptions, DateTimeOffset now)
+    private async Task<AssistantUsageDecision?> GetSharedDailyCostDecisionAsync(AssistantPlanOptions planOptions, DateTimeOffset utcNow)
     {
         if (planOptions is not { SharedDailyCostLimitKey: { } sharedDailyCostLimitKey, MaximumSharedDailyCostUsd: > 0 })
             return null;
 
-        var day = GetDayWindow(now);
+        var day = GetDayWindow(utcNow);
         var cost = await _cache.GetAsync<long>(GetSharedDailyCostKey(sharedDailyCostLimitKey, day.Id));
         if (!cost.HasValue || cost.Value < ToMicrodollars(planOptions.MaximumSharedDailyCostUsd))
             return null;
@@ -576,10 +576,10 @@ public sealed class AssistantUsageService(
     private DateTimeOffset GetUsageDate(AssistantProviderReservation reservation)
         => reservation.UsageDateUtc is { } usageDateUtc ? new DateTimeOffset(usageDateUtc.Ticks, TimeSpan.Zero) : timeProvider.GetUtcNow();
 
-    private static UsageWindow GetDayWindow(DateTimeOffset now)
+    private static UsageWindow GetDayWindow(DateTimeOffset utcNow)
     {
-        var start = new DateTimeOffset(now.UtcDateTime.Date, TimeSpan.Zero);
-        return new UsageWindow(start.ToString("yyyyMMdd"), start.AddDays(1));
+        var utcStartDate = new DateTimeOffset(utcNow.UtcDateTime.Date, TimeSpan.Zero);
+        return new UsageWindow(utcStartDate.ToString("yyyyMMdd"), utcStartDate.AddDays(1));
     }
 
     private static UsageWindow GetMonthWindow(DateTimeOffset now)
