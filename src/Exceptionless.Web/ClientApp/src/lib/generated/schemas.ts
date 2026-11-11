@@ -930,8 +930,8 @@ export const UserSchema = object({
     .min(1, "Verify email address token is required")
     .nullable()
     .optional(),
-  trial_started_utc: iso.datetime().nullable().optional(),
   verify_email_address_token_expiration: iso.datetime(),
+  trial_started_utc: iso.datetime().nullable().optional(),
   is_active: boolean(),
   roles: array(string()),
   created_utc: iso.datetime(),

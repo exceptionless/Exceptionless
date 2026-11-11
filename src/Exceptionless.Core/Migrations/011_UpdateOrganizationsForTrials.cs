@@ -65,6 +65,7 @@ public sealed class UpdateOrganizationsForTrials : MigrationBase
                 migrated += organizationsToMigrate.Count;
             }
 
+            _logger.LogInformation("Updated {OrganizationCount} organizations for free trials so far", migrated);
             bool hasNextPage = await organizations.NextPageAsync();
             if (!hasNextPage)
                 break;

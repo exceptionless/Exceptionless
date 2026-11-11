@@ -8,6 +8,7 @@ using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Exceptions;
+using Foundatio.Utility;
 
 namespace Exceptionless.Core.Billing;
 
@@ -68,6 +69,9 @@ public class BillingManager
     {
         ArgumentNullException.ThrowIfNull(user);
 
+        if (_billingOptions.TrialClaimSecret is null)
+            return Task.FromResult<ILock>(EmptyLock.Empty);
+
         return _lockProvider.AcquireAsync(GetTrialEmailLockKey(user.EmailAddress), BillingLockDuration, TimeSpan.FromSeconds(30));
     }
 
@@ -92,7 +96,7 @@ public class BillingManager
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        if (_billingOptions.TrialDays is <= 0 || user.TrialStartedUtc is not null || user.OrganizationIds.Count is > 0)
+        if (_billingOptions.TrialClaimSecret is null || _billingOptions.TrialDays is <= 0 || user.TrialStartedUtc is not null || user.OrganizationIds.Count is > 0)
             return false;
 
         var blockedEmailDomains = await _systemSettingsService.GetTrialBlockedEmailDomainsAsync();
@@ -103,7 +107,7 @@ public class BillingManager
         if (created.Total is > 0)
             return false;
 
-        bool claimed = await _trialClaimRepository.ExistsAsync(TrialEmailAddress.GetClaimId(user.EmailAddress));
+        bool claimed = await _trialClaimRepository.ExistsAsync(TrialEmailAddress.GetClaimId(user.EmailAddress, _billingOptions.TrialClaimSecret));
         return !claimed;
     }
 
@@ -126,7 +130,8 @@ public class BillingManager
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        string claimId = TrialEmailAddress.GetClaimId(user.EmailAddress);
+        string secret = _billingOptions.TrialClaimSecret ?? throw new InvalidOperationException("Billing:TrialClaimSecret is required to claim a trial");
+        string claimId = TrialEmailAddress.GetClaimId(user.EmailAddress, secret);
         try
         {
             // Add is create-only: the normalized mailbox ID enforces uniqueness even without the lock.
@@ -295,8 +300,8 @@ public class BillingManager
     private static string GetOwnerFreeOrganizationLockKey(string userId)
         => $"User:{userId}:free-organization";
 
-    private static string GetTrialEmailLockKey(string emailAddress)
-        => $"Trial:{TrialEmailAddress.GetClaimId(emailAddress)}";
+    private string GetTrialEmailLockKey(string emailAddress)
+        => $"Trial:{TrialEmailAddress.GetClaimId(emailAddress, _billingOptions.TrialClaimSecret!)}";
 
     private static string GetOrganizationLockKey(string organizationId)
     {

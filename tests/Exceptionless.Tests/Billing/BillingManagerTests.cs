@@ -132,4 +132,58 @@ public class BillingManagerTests : TestWithServices
         Assert.Equal(utcNow.AddDays(14), organization.TrialEndsUtc);
         Assert.Null(organization.TrialReminderSentUtc);
     }
+
+    [Theory]
+    [InlineData("not base64")]
+    [InlineData("AA==")]
+    public void ReadFromConfiguration_InvalidTrialClaimSecret_RejectsWithoutDisclosingSecret(string secret)
+    {
+        // Arrange
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Billing:TrialClaimSecret"] = secret }).Build();
+
+        // Act
+        var exception = Record.Exception(() => BillingOptions.ReadFromConfiguration(config));
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(exception);
+        Assert.DoesNotContain(secret, exception.Message);
+    }
+
+    [Fact]
+    public void ReadFromConfiguration_HostedTrialsWithoutSecret_RejectsStartup()
+    {
+        // Arrange
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["BaseURL"] = "http://localhost",
+            ["StripeApiKey"] = "sk_test_local",
+            ["AppMode"] = "Staging"
+        }).Build();
+
+        // Act
+        var exception = Record.Exception(() => Exceptionless.Core.AppOptions.ReadFromConfiguration(config));
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(exception);
+        Assert.Contains("Billing:TrialClaimSecret", exception.Message);
+    }
+
+    [Fact]
+    public async Task CanStartTrialAsync_NoConfiguredSecret_DeniesTrial()
+    {
+        // Arrange
+        var billingManager = GetService<BillingManager>();
+        GetService<Exceptionless.Core.AppOptions>().BillingOptions.TrialClaimSecret = null;
+
+        // Act
+        bool eligible = await billingManager.CanStartTrialAsync(new User { EmailAddress = "new@example.test" });
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            _ = await billingManager.TryClaimTrialAsync(new User { EmailAddress = "new@example.test" });
+        });
+
+        // Assert
+        Assert.False(eligible);
+        Assert.IsType<InvalidOperationException>(exception);
+    }
 }

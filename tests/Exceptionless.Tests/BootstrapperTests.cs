@@ -113,6 +113,7 @@ public class BootstrapperTests
             new("ExceptionlessApiKey", "exceptionless-api-key-secret-canary"),
             new("ExceptionlessServerUrl", "https://collector-user:collector-password-secret-canary@collector.example.test/path?api_key=collector-query-secret-canary"),
             new("AppMode", "Staging"),
+            new("Billing:TrialClaimSecret", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="),
             new("AppScope", "tenant-a"),
             new("RunJobsInProcess", "true"),
             new("JobsIterationLimit", "42"),

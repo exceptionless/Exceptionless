@@ -15,13 +15,41 @@ public static class TrialEmailAddress
     /// </summary>
     public static IReadOnlyList<string> DefaultBlockedDomains { get; } =
     [
+        "10mail.org",
         "10minutemail.com",
+        "10minutemail.de",
+        "10minutemail.info",
+        "10minutemail.net",
+        "10minutemail.org",
+        "10minutes.email",
+        "1secmail.com",
+        "1secmail.net",
+        "1secmail.org",
+        "1t-mail.com",
+        "20mail.it",
+        "20minutemail.com",
+        "24mail.chacuo.net",
         "33mail.com",
+        "binkmail.com",
+        "byom.de",
+        "chacuo.net",
+        "crazymailing.com",
+        "discard.email",
+        "discardmail.com",
+        "disposablemail.com",
         "dispostable.com",
+        "dropmail.me",
+        "emailfake.com",
+        "emailnator.com",
         "emailondeck.com",
+        "emltmp.com",
+        "fake-mail.net",
         "fakeinbox.com",
+        "fakemail.net",
+        "femailtor.com",
         "getairmail.com",
         "getnada.com",
+        "grr.la",
         "guerrillamail.biz",
         "guerrillamail.com",
         "guerrillamail.de",
@@ -29,25 +57,90 @@ public static class TrialEmailAddress
         "guerrillamail.net",
         "guerrillamail.org",
         "guerrillamailblock.com",
+        "harakirimail.com",
+        "inboxkitten.com",
+        "instaddr.ch",
+        "instaddr.uk",
+        "instaddr.win",
+        "jourrapide.com",
+        "kuku.lu",
+        "linshiyou.com",
+        "linshiyouxiang.net",
+        "mail-temp.com",
+        "mail.gw",
+        "mail.tm",
+        "mailcatch.com",
         "maildrop.cc",
         "mailinator.com",
+        "mailinator.net",
+        "mailinator.org",
+        "mailinator2.com",
+        "mailme24.com",
+        "mailna.co",
+        "mailna.me",
         "mailnesia.com",
+        "mailsac.com",
         "mintemail.com",
+        "minuteinbox.com",
+        "minutemail.com",
+        "moakt.cc",
+        "moakt.com",
         "mohmal.com",
+        "mohmal.in",
         "mytemp.email",
+        "mytrashmail.com",
         "nada.email",
+        "nada.ltd",
+        "nimail.cn",
+        "nospamfor.us",
+        "one-time.email",
+        "pookmail.com",
+        "psnator.com",
+        "rhyta.com",
+        "safetymail.info",
         "sharklasers.com",
+        "smartnator.com",
+        "spamavert.com",
+        "spambog.com",
+        "spamcowboy.com",
         "spamgourmet.com",
+        "spamherelots.com",
+        "syinxun.com",
         "temp-mail.io",
         "temp-mail.org",
+        "temp.email",
         "tempail.com",
+        "tempforward.com",
+        "tempinbox.com",
+        "tempmail.cn",
         "tempmail.com",
         "tempmail.dev",
+        "tempmail.net",
+        "tempmail.org",
+        "tempmail.plus",
         "tempmailo.com",
         "tempr.email",
+        "throwaway.email",
         "throwawaymail.com",
+        "tmail.ws",
+        "tmailor.com",
+        "tmpbox.net",
+        "tmpeml.com",
+        "tmpmail.net",
+        "tmpmail.org",
+        "tmpmailtor.com",
+        "trash-mail.com",
         "trashmail.com",
-        "yopmail.com"
+        "trashmail.net",
+        "trashmail.org",
+        "trashmail.ws",
+        "vtmpj.com",
+        "vtmpj.net",
+        "yopmail.com",
+        "yopmail.fr",
+        "yopmail.net",
+        "youxiang.dev",
+        "zhimail.xyz"
     ];
 
     /// <summary>
@@ -80,11 +173,23 @@ public static class TrialEmailAddress
     }
 
     /// <summary>
-    /// Identifies a mailbox's trial claim: a lowercase hex SHA-256 of the normalized address, so the claim can outlive
-    /// the account without keeping the address itself.
+    /// Identifies a mailbox using a dedicated HMAC secret. Protecting the normalized address's SHA-256 digest also
+    /// allows existing digest-only claims to be migrated without recovering or retaining email addresses.
     /// </summary>
-    public static string GetClaimId(string emailAddress)
-        => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(Normalize(emailAddress))));
+    public static string GetClaimId(string emailAddress, string secret)
+    {
+        string digest = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(Normalize(emailAddress))));
+        return ProtectLegacyClaimId(digest, secret);
+    }
+
+    public static string ProtectLegacyClaimId(string digest, string secret)
+    {
+        byte[] key = Convert.FromBase64String(secret);
+        if (key.Length is < 32)
+            throw new ArgumentException("The trial claim secret must contain at least 32 random bytes", nameof(secret));
+
+        return "hmac-v1-" + Convert.ToHexStringLower(HMACSHA256.HashData(key, Convert.FromHexString(digest)));
+    }
 
     /// <summary>
     /// Whether the address is on a blocked domain or one of its subdomains.

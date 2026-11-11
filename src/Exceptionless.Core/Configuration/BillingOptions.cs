@@ -24,6 +24,11 @@ public class BillingOptions
     /// </summary>
     public int FreeInviteDailyLimit { get; internal set; } = 10;
 
+    /// <summary>
+    /// Dedicated base64-encoded secret of at least 32 random bytes for mailbox trial claims. Keep stable across hosts and deployments.
+    /// </summary>
+    public string? TrialClaimSecret { get; internal set; }
+
     public static BillingOptions ReadFromConfiguration(IConfiguration config)
     {
         var options = new BillingOptions();
@@ -31,6 +36,26 @@ public class BillingOptions
         options.TrialReminderDays = Math.Max(0, config.GetValue("Billing:TrialReminderDays", 3));
         options.TrialAssistantDailyCostLimitUsd = config.GetValue("Billing:TrialAssistantDailyCostLimitUsd", 25m);
         options.FreeInviteDailyLimit = Math.Max(0, config.GetValue("Billing:FreeInviteDailyLimit", 10));
+        options.TrialClaimSecret = config.GetValue<string>("Billing:TrialClaimSecret");
+        if (!String.IsNullOrEmpty(options.TrialClaimSecret))
+        {
+            byte[] key;
+            try
+            {
+                key = Convert.FromBase64String(options.TrialClaimSecret);
+            }
+            catch (FormatException)
+            {
+                throw new InvalidOperationException("Billing:TrialClaimSecret must be base64-encoded random bytes");
+            }
+
+            if (key.Length is < 32)
+                throw new InvalidOperationException("Billing:TrialClaimSecret must contain at least 32 random bytes");
+        }
+        else
+        {
+            options.TrialClaimSecret = null;
+        }
         return options;
     }
 }

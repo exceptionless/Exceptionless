@@ -65,6 +65,7 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
         {
             foreach (string organizationId in results.Hits.Where(h => h.Id is not null).Select(h => h.Id!))
             {
+                using var scope = _logger.BeginScope(new ExceptionlessState().Organization(organizationId));
                 if (context.CancellationToken.IsCancellationRequested)
                     return JobResult.Cancelled;
 

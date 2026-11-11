@@ -14370,16 +14370,16 @@
               "string"
             ]
           },
+          "verify_email_address_token_expiration": {
+            "type": "string",
+            "format": "date-time"
+          },
           "trial_started_utc": {
             "type": [
               "null",
               "string"
             ],
             "description": "Date the user started their one no-card trial.",
-            "format": "date-time"
-          },
-          "verify_email_address_token_expiration": {
-            "type": "string",
             "format": "date-time"
           },
           "is_active": {

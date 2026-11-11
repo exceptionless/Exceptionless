@@ -791,13 +791,13 @@ export interface User {
   assistant_conversation_sharing_enabled?: null | boolean;
   is_email_address_verified: boolean;
   verify_email_address_token?: null | string;
+  /** @format date-time */
+  verify_email_address_token_expiration: string;
   /**
    * Date the user started their one no-card trial.
    * @format date-time
    */
   trial_started_utc?: null | string;
-  /** @format date-time */
-  verify_email_address_token_expiration: string;
   /** Gets or sets the users active state. */
   is_active: boolean;
   roles: string[];

@@ -18,7 +18,7 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
         var repository = GetService<ITrialClaimRepository>();
         var first = new User { EmailAddress = "Some.One+first@gmail.com" };
         var alias = new User { EmailAddress = "s.o.m.e.o.n.e+second@googlemail.com" };
-        string claimId = TrialEmailAddress.GetClaimId(first.EmailAddress);
+        string claimId = TrialEmailAddress.GetClaimId(first.EmailAddress, GetService<Exceptionless.Core.AppOptions>().BillingOptions.TrialClaimSecret!);
         bool existedBefore = await repository.ExistsAsync(claimId);
 
         // Act: bypass the mailbox lock to exercise the durable uniqueness boundary directly.

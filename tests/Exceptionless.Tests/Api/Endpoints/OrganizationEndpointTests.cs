@@ -3183,10 +3183,12 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var trialOrganization = await WithBillingEnabledAsync(() => CreateOrganizationAsync(original, password, "Original Organization"));
         Assert.Equal(_plans.TrialPlan.Id, trialOrganization?.PlanId);
 
-        // Deleting the account removes the user and its organization, which used to be the only record of the trial.
-        await _organizationRepository.RemoveAsync(trialOrganization!.Id, o => o.ImmediateConsistency());
-        await _userRepository.RemoveAsync(original.Id, o => o.ImmediateConsistency());
-        var returning = await CreateUserAsync("returning+again@exceptionless.test", password, isEmailAddressVerified: true);
+        await SendRequestAsync(request => request.BasicAuthorization(original.EmailAddress, password).Delete()
+            .AppendPaths("organizations", trialOrganization!.Id).StatusCodeShouldBeAccepted());
+        await SendRequestAsync(request => request.BasicAuthorization(original.EmailAddress, password).Delete()
+            .AppendPaths("users", "me").StatusCodeShouldBeAccepted());
+        TimeProvider.Advance(TimeSpan.FromDays(730));
+        var returning = await CreateUserAsync("returning@exceptionless.test", password, isEmailAddressVerified: true);
 
         // Act
         var organization = await WithBillingEnabledAsync(() => CreateOrganizationAsync(returning, password, "Returning Organization"));

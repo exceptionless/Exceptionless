@@ -131,20 +131,23 @@ public class AppOptions
         }
         catch { }
 
-        options.CacheOptions = CacheOptions.ReadFromConfiguration(config, options);
-        options.MessageBusOptions = MessageBusOptions.ReadFromConfiguration(config, options);
-        options.QueueOptions = QueueOptions.ReadFromConfiguration(config, options);
-        options.StorageOptions = StorageOptions.ReadFromConfiguration(config, options);
-        options.EmailOptions = EmailOptions.ReadFromConfiguration(config, options);
-        options.ElasticsearchOptions = ElasticsearchOptions.ReadFromConfiguration(config, options);
-        options.IntercomOptions = IntercomOptions.ReadFromConfiguration(config);
-        options.SlackOptions = SlackOptions.ReadFromConfiguration(config);
-        options.StripeOptions = StripeOptions.ReadFromConfiguration(config);
-        options.BillingOptions = BillingOptions.ReadFromConfiguration(config);
-        options.AuthOptions = AuthOptions.ReadFromConfiguration(config);
-        options.OAuthServerOptions = OAuthServerOptions.ReadFromConfiguration(config);
-        options.SourceMapOptions = SourceMapOptions.ReadFromConfiguration(config);
         options.AssistantOptions = AssistantOptions.ReadFromConfiguration(config);
+        options.AuthOptions = AuthOptions.ReadFromConfiguration(config);
+        options.BillingOptions = BillingOptions.ReadFromConfiguration(config);
+        options.CacheOptions = CacheOptions.ReadFromConfiguration(config, options);
+        options.ElasticsearchOptions = ElasticsearchOptions.ReadFromConfiguration(config, options);
+        options.EmailOptions = EmailOptions.ReadFromConfiguration(config, options);
+        options.IntercomOptions = IntercomOptions.ReadFromConfiguration(config);
+        options.MessageBusOptions = MessageBusOptions.ReadFromConfiguration(config, options);
+        options.OAuthServerOptions = OAuthServerOptions.ReadFromConfiguration(config);
+        options.QueueOptions = QueueOptions.ReadFromConfiguration(config, options);
+        options.SlackOptions = SlackOptions.ReadFromConfiguration(config);
+        options.SourceMapOptions = SourceMapOptions.ReadFromConfiguration(config);
+        options.StorageOptions = StorageOptions.ReadFromConfiguration(config, options);
+        options.StripeOptions = StripeOptions.ReadFromConfiguration(config);
+
+        if (options.AppMode is not AppMode.Development && options.StripeOptions.EnableBilling && options.BillingOptions.TrialDays is > 0 && options.BillingOptions.TrialClaimSecret is null)
+            throw new InvalidOperationException("Billing:TrialClaimSecret is required when hosted trials are enabled");
 
         return options;
     }

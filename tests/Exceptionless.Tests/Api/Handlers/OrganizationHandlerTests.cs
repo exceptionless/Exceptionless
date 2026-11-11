@@ -66,7 +66,7 @@ public sealed class OrganizationHandlerTests : TestWithServices
         TrialClaim? persistedClaim = null;
         var claimFailure = new IOException("Trial claim store is unavailable.");
         var claims = new Mock<ITrialClaimRepository>(MockBehavior.Strict);
-        string claimId = TrialEmailAddress.GetClaimId(persistedUser.EmailAddress);
+        string claimId = TrialEmailAddress.GetClaimId(persistedUser.EmailAddress, GetService<AppOptions>().BillingOptions.TrialClaimSecret!);
         claims.Setup(repository => repository.ExistsAsync(claimId, It.IsAny<ICommandOptions>()))
             .ReturnsAsync(() => persistedClaim is not null);
         claims.Setup(repository => repository.AddAsync(It.IsAny<TrialClaim>(), It.IsAny<ICommandOptions>()))
