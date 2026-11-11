@@ -780,8 +780,7 @@ public sealed class AssistantService(
     /// </summary>
     private async Task<AssistantConversationState> RemoveToolResultsFromMissingProjectsAsync(AssistantConversationState state, string organizationId)
     {
-        var tracked = state.ToolResults.Where(result => result.ProjectIds is not null).ToList();
-        string[] projectIds = tracked.SelectMany(result => result.ProjectIds!)
+        string[] projectIds = state.ToolResults.SelectMany(result => result.ProjectIds)
             .Concat(state.PendingConfirmation?.ProjectIds ?? [])
             .Distinct(StringComparer.Ordinal)
             .ToArray();
@@ -798,12 +797,11 @@ public sealed class AssistantService(
 
         // A successful result with no recorded project, such as a count whose project the tool resolved implicitly,
         // cannot be checked, so only failed results, which hold no project data, are kept without one.
-        var kept = tracked.Where(result => result.ProjectIds!.Count > 0 ? result.ProjectIds!.All(existing.Contains) : IsFailedToolResult(result.Result)).ToList();
+        var kept = state.ToolResults.Where(result => result.ProjectIds.Count > 0 ? result.ProjectIds.All(existing.Contains) : IsFailedToolResult(result.Result)).ToList();
         return state with
         {
             ToolResults = kept,
-            PendingConfirmation = state.PendingConfirmation is { ProjectIds: { } pendingProjectIds } pending
-                && pendingProjectIds.All(existing.Contains) ? pending : null
+            PendingConfirmation = state.PendingConfirmation is { } pending && pending.ProjectIds.All(existing.Contains) ? pending : null
         };
     }
 

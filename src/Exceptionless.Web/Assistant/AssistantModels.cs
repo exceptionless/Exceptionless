@@ -17,7 +17,7 @@ public sealed record AssistantChatMessage(string Role, string Content)
 }
 
 // ProjectIds are the projects a result came from. A later turn reuses the result only while all of them still exist
-// in the organization; results recorded before this was tracked have none and are not reused.
+// in the organization; a successful result with none, such as one recorded before this was tracked, is not reused.
 public sealed record AssistantConversationToolResult(
     string ToolCallId,
     string ToolName,
@@ -25,10 +25,17 @@ public sealed record AssistantConversationToolResult(
     string Result,
     string? Path,
     DateTimeOffset CapturedAtUtc,
-    IReadOnlyCollection<string>? ProjectIds = null);
+    IReadOnlyCollection<string>? ProjectIds = null)
+{
+    /// <summary>The cache serializer omits empty collections, so no projects is read back as missing.</summary>
+    public IReadOnlyCollection<string> ProjectIds { get; init; } = ProjectIds ?? [];
+}
 
 public sealed record AssistantConversationState(IReadOnlyCollection<AssistantConversationToolResult> ToolResults)
 {
+    /// <summary>The cache serializer omits empty collections, so an empty history is read back as missing.</summary>
+    public IReadOnlyCollection<AssistantConversationToolResult> ToolResults { get; init; } = ToolResults ?? [];
+
     public string? TurnId { get; init; }
     public AssistantConversationToolResult? PendingConfirmation { get; init; }
 }

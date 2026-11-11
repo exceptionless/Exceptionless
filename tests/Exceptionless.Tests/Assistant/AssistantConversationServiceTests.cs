@@ -96,6 +96,25 @@ public sealed class AssistantConversationServiceTests(ITestOutputHelper output) 
         Assert.Equal("legacy", Assert.Single(turn.ToolResults).ToolCallId);
     }
 
+    [Fact]
+    public void Serialize_EmptyCollections_RoundTripAsEmpty()
+    {
+        // Arrange
+        // Redis stores state with these options, which omit empty collections.
+        var serializer = new SystemTextJsonSerializer(new JsonSerializerOptions().ConfigureExceptionlessDefaults());
+        var state = new AssistantConversationState([]) { TurnId = "turn", PendingConfirmation = CreateConfirmation("pending") };
+
+        // Act
+        var restored = serializer.Deserialize<AssistantConversationState>(serializer.SerializeToString(state));
+
+        // Assert
+        Assert.NotNull(restored);
+        Assert.Equal("turn", restored.TurnId);
+        Assert.Empty(restored.ToolResults);
+        Assert.Equal("pending", restored.PendingConfirmation?.ToolCallId);
+        Assert.Empty(restored.PendingConfirmation!.ProjectIds);
+    }
+
     private static AssistantConversationToolResult CreateConfirmation(string id) => new(
         id,
         "delete_saved_view",
