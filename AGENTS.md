@@ -1,6 +1,6 @@
 # Exceptionless
 
-Real-time error monitoring platform on .NET 10, Aspire, and Svelte 5. Keep changes readable, narrow, and backwards compatible.
+Real-time error monitoring platform on .NET 11, Aspire, and Svelte 5. Keep changes readable, narrow, and backwards compatible.
 
 This file is root-scope agent guidance. When working in a subtree, read any nested `AGENTS.md` there too. Prefer nearby repo skills for detailed backend, frontend, testing, repository, and dogfood workflows.
 
