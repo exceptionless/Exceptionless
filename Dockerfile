@@ -18,12 +18,13 @@ COPY . .
 RUN dotnet build ./src/Exceptionless.Web/Exceptionless.Web.csproj -c Release --no-restore /p:MinVerVersionOverride=${MinVerVersionOverride} \
     && dotnet build ./src/Exceptionless.Job/Exceptionless.Job.csproj -c Release --no-restore /p:MinVerVersionOverride=${MinVerVersionOverride}
 
+FROM node:24-bookworm-slim AS node
+
 FROM build AS build-node
-RUN apt-get update -yq \
-    && apt-get install -yq curl ca-certificates \
-    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -yq nodejs \
-    && rm -rf /var/lib/apt/lists/*
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules/ /usr/local/lib/node_modules/
+RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # testrunner
 
