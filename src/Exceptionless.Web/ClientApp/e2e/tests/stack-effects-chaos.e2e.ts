@@ -7,6 +7,7 @@ import {
     churnDocumentVisibility,
     dispatchWebSocketMessages,
     installWebSocketTestHarness,
+    isSseCancellation,
     setDocumentHidden,
     waitForWebSocketConnection
 } from '../support/web-socket';
@@ -27,6 +28,7 @@ interface RuntimeDiagnostics {
     countRequests: number;
     listRequests: number;
     networkFailures: { action: string; status: number; url: string }[];
+    pushCancellations: RuntimeDiagnostics['requestFailures'];
     requestFailures: { action: string; error: null | string; method: string; url: string }[];
     runtimeErrors: { action: string; message: string }[];
     savedViewRequests: number;
@@ -44,6 +46,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
         countRequests: 0,
         listRequests: 0,
         networkFailures: [],
+        pushCancellations: [],
         requestFailures: [],
         runtimeErrors: [],
         savedViewRequests: 0
@@ -74,7 +77,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
     await test.step('open a stack route without aborting detail requests', async () => {
         const failedDetailRequests: { failure: null | string; pageUrl: string; requestUrl: string }[] = [];
         const recordFailedDetailRequest = (request: Request) => {
-            if (new URL(request.url()).pathname.startsWith('/api/v2/')) {
+            if (new URL(request.url()).pathname.startsWith('/api/v2/') && !isSseCancellation(request)) {
                 failedDetailRequests.push({
                     failure: request.failure()?.errorText ?? null,
                     pageUrl: page.url(),
@@ -316,7 +319,10 @@ async function measureAction(diagnostics: RuntimeDiagnostics, name: string, acti
 
 function recordConsoleError(diagnostics: RuntimeDiagnostics, message: ConsoleMessage): void {
     const text = message.text();
-    if (message.type() === 'error' && /effect_update_depth_exceeded|maximum update depth|svelte\.dev\/e\/effect/i.test(text)) {
+    if (
+        (message.type() === 'error' && /effect_update_depth_exceeded|maximum update depth|svelte\.dev\/e\/effect/i.test(text)) ||
+        (message.type() === 'warning' && text.startsWith('[SseClient] Connection timeout'))
+    ) {
         diagnostics.runtimeErrors.push({ action: diagnostics.activeAction, message: text });
     }
 }
@@ -353,12 +359,18 @@ function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request)
         return;
     }
 
-    diagnostics.requestFailures.push({
+    const failure = {
         action: diagnostics.activeAction,
         error: request.failure()?.errorText ?? null,
         method: request.method(),
         url: request.url()
-    });
+    };
+    if (isSseCancellation(request) && ['background ingestion and resume', 'rapid visibility changes'].includes(diagnostics.activeAction)) {
+        // These actions deliberately close push; retain that evidence separately.
+        diagnostics.pushCancellations.push(failure);
+        return;
+    }
+    diagnostics.requestFailures.push(failure);
 }
 
 async function runAndWaitForDashboardRefresh(page: Page, organizationId: string, action: () => Promise<void>): Promise<void> {

@@ -1,3 +1,4 @@
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Validation;
@@ -92,5 +93,15 @@ public class OAuthTokenRepository : RepositoryBase<OAuthToken>, IOAuthTokenRepos
     public Task<long> RemoveAllByUserIdAsync(string userId, CommandOptionsDescriptor<OAuthToken>? options = null)
     {
         return RemoveAllAsync(q => q.FieldEquals(t => t.UserId, userId), options);
+    }
+
+    protected override Task PublishChangeTypeMessageAsync(ChangeType changeType, OAuthToken? document, IDictionary<string, object?>? data = null, TimeSpan? delay = null)
+    {
+        var items = new Dictionary<string, object?>(data ?? new Dictionary<string, object?>())
+        {
+            [ExtendedEntityChanged.KnownKeys.IsTokenRevoked] = document is { IsDisabled: true } or { IsSuspended: true }
+        };
+
+        return base.PublishChangeTypeMessageAsync(changeType, document, items, delay);
     }
 }
