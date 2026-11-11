@@ -755,6 +755,12 @@ export interface User {
   id: string;
   /** The organizations that the user has access to. */
   organization_ids: string[];
+  /**
+   * Session revocation generation, rotated when a password changes or resets, or an external login is removed or transferred away.
+   * Remains null until rotation; active users with a null generation accept only matching legacy null token generations.
+   * This value does not describe the password hashing format.
+   */
+  authentication_version?: null | string;
   password?: null | string;
   salt?: null | string;
   password_reset_token?: null | string;

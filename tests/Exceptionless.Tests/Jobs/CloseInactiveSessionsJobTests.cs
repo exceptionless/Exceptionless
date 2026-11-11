@@ -286,22 +286,30 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
     [InlineData(60, false, null, false)]
     public async Task CloseInactiveSessions(int defaultInactivePeriodInMinutes, bool willCloseSession, int? sessionHeartbeatUpdatedAgoInSeconds, bool heartbeatClosesSession)
     {
+        // Arrange
         const string userId = "blake@exceptionless.io";
         var ev = GenerateEvent(DateTimeOffset.Now.SubtractMinutes(5), userId);
 
+        // Act
         var context = await _pipeline.RunAsync(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject());
+
+        // Assert
         Assert.False(context.HasError, context.ErrorMessage);
         Assert.False(context.IsCancelled);
         Assert.True(context.IsProcessed);
 
+        // Arrange
         await RefreshDataAsync();
         var events = await _eventRepository.GetAllAsync();
+
+        // Assert
         Assert.Equal(2, events.Total);
         Assert.Single(events.Documents.Where(e => !String.IsNullOrEmpty(e.GetSessionId())).Select(e => e.GetSessionId()).Distinct());
         var sessionStart = events.Documents.First(e => e.IsSessionStart());
         Assert.Equal(0, sessionStart.Value);
         Assert.False(sessionStart.HasSessionEndTime());
 
+        // Arrange
         var utcNow = DateTime.UtcNow;
         if (sessionHeartbeatUpdatedAgoInSeconds.HasValue)
         {
@@ -311,25 +319,22 @@ public class CloseInactiveSessionsJobTests : IntegrationTestsBase
         }
 
         _job.DefaultInactivePeriod = TimeSpan.FromMinutes(defaultInactivePeriodInMinutes);
-        Assert.Equal(JobResult.Success, await _job.RunAsync(TestCancellationToken));
+
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
         await RefreshDataAsync();
         events = await _eventRepository.GetAllAsync();
+
+        // Assert
+        Assert.Equal(JobResult.Success, result);
         Assert.Equal(2, events.Total);
 
         sessionStart = events.Documents.First(e => e.IsSessionStart());
-        // Event values are persisted as doubles, so compare at that precision.
-        double sessionStartDuration = sessionHeartbeatUpdatedAgoInSeconds.HasValue ? (utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value) - sessionStart.Date.UtcDateTime).TotalSeconds : 0;
-        double? sessionStartValue = (double?)sessionStart.Value;
-        if (willCloseSession)
-        {
-            Assert.Equal(sessionStartDuration, sessionStartValue);
-            Assert.True(sessionStart.HasSessionEndTime());
-        }
-        else
-        {
-            Assert.Equal(sessionStartDuration, sessionStartValue);
-            Assert.False(sessionStart.HasSessionEndTime());
-        }
+        decimal sessionStartDuration = sessionHeartbeatUpdatedAgoInSeconds.HasValue
+            ? (utcNow.SubtractSeconds(sessionHeartbeatUpdatedAgoInSeconds.Value) - sessionStart.Date.UtcDateTime).Ticks / (decimal)TimeSpan.TicksPerSecond
+            : 0;
+        Assert.Equal(sessionStartDuration, sessionStart.Value);
+        Assert.Equal(willCloseSession, sessionStart.HasSessionEndTime());
     }
 
     private async Task CreateDataAsync(BillingPlan? plan = null)

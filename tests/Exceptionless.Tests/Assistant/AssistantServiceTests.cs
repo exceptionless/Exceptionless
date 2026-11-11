@@ -1687,6 +1687,7 @@ public sealed class AssistantServiceTests
     [InlineData("{\"usage\":{\"prompt_tokens\":\"private invalid token count\"}}")]
     public async Task StreamAsync_InvalidProviderShape_RecordsProviderAndTurnFailure(string payload)
     {
+        // Arrange
         var options = AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["BaseURL"] = "https://localhost", ["Assistant:ApiKey"] = "test-key" })
             .Build());
@@ -1701,17 +1702,23 @@ public sealed class AssistantServiceTests
         using var response = new MemoryStream();
         context.Response.Body = response;
 
+        // Act
         await AssistantEndpoints.WriteResponseAsync(context,
             service.StreamAsync(new AssistantChatRequest([new AssistantChatMessage("user", "private question")]),
                 "user-id", CreatePlanOptions(), diagnostics, TestContext.Current.CancellationToken),
             usageService, "organization-id", diagnostics, TestContext.Current.CancellationToken);
 
+        // Assert
         var providerEntry = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("ProviderOutcome"));
         var turnEntry = Assert.Single(logger.Entries, entry => entry.Properties.ContainsKey("Outcome"));
         Assert.Equal("invalid_provider_response", providerEntry.Properties["ProviderOutcome"]);
         Assert.Equal("invalid_provider_response", turnEntry.Properties["FailureReason"]);
         Assert.Equal("failed", turnEntry.Properties["Outcome"]);
-        Assert.All(logger.Entries, entry => Assert.DoesNotContain("private", entry.Message));
+        Assert.All(logger.Entries, entry =>
+        {
+            Assert.DoesNotContain("private question", entry.Message);
+            Assert.DoesNotContain("private invalid token count", entry.Message);
+        });
     }
 
     [Theory]

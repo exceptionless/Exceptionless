@@ -889,6 +889,7 @@ export const UserSchema = object({
     .length(24, "Id must be exactly 24 characters")
     .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),
   organization_ids: array(string()),
+  authentication_version: string().nullable().optional(),
   password: string().min(1, "Password is required").nullable().optional(),
   salt: string().min(1, "Salt is required").nullable().optional(),
   password_reset_token: string()
