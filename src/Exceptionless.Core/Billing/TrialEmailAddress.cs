@@ -60,14 +60,14 @@ public static class TrialEmailAddress
 
         string address = emailAddress.Trim().ToLowerInvariant();
         int at = address.LastIndexOf('@');
-        if (at <= 0 || at == address.Length - 1)
+        if (at is <= 0 || at == address.Length - 1)
             return address;
 
         string localPart = address[..at];
         string domain = address[(at + 1)..];
 
         int plus = localPart.IndexOf('+');
-        if (plus > 0)
+        if (plus is > 0)
             localPart = localPart[..plus];
 
         if (s_dotInsensitiveDomains.Contains(domain))
@@ -96,11 +96,11 @@ public static class TrialEmailAddress
 
         string address = emailAddress.Trim().ToLowerInvariant();
         int at = address.LastIndexOf('@');
-        if (at < 0 || at == address.Length - 1)
+        if (at is < 0 || at == address.Length - 1)
             return false;
 
         string domain = address[(at + 1)..];
-        return blockedDomains.Any(blocked => domain == blocked || domain.EndsWith($".{blocked}", StringComparison.Ordinal));
+        return blockedDomains.Any(blocked => String.Equals(domain, blocked, StringComparison.Ordinal) || domain.EndsWith($".{blocked}", StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -109,7 +109,7 @@ public static class TrialEmailAddress
     public static List<string> NormalizeDomains(IEnumerable<string>? domains)
         => (domains ?? [])
             .Select(domain => domain.Trim().TrimStart('@').ToLowerInvariant())
-            .Where(domain => domain.Length > 0)
+            .Where(domain => domain.Length is > 0)
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)
             .ToList();

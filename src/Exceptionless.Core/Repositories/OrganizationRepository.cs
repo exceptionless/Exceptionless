@@ -126,13 +126,14 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         decimal monthlyTotalPaid = 0, yearlyTotalPaid = 0;
 
         // Count page by page so memory stays bounded by the page size, not the number of organizations.
+        bool hasNextPage;
         do
         {
             foreach (var organization in page.Documents)
             {
                 bool isFree = _plans.IsFreePlan(organization.PlanId);
                 bool isFreeOrTrial = _plans.IsFreeOrTrialPlan(organization.PlanId);
-                bool isPaying = organization.BillingPrice > 0;
+                bool isPaying = organization.BillingPrice is > 0;
 
                 if (isFree)
                     freeAccounts++;
@@ -184,7 +185,8 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
                     yearlyTotalPaid += activePrice;
                 }
             }
-        } while (await page.NextPageAsync());
+            hasNextPage = await page.NextPageAsync();
+        } while (hasNextPage);
 
         return new BillingPlanStats
         {

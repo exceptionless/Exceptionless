@@ -118,7 +118,7 @@ public class TrialExpirationJobTests : IntegrationTestsBase
 
         // Assert
         Assert.Equal(members.Count + 1, Mailer.OrganizationTrialEndingCalls.Count);
-        Assert.All(members, member => Assert.Contains(Mailer.OrganizationTrialEndingCalls, call => call.UserId == member.Id));
+        Assert.All(members, member => Assert.Contains(Mailer.OrganizationTrialEndingCalls, call => String.Equals(call.UserId, member.Id, StringComparison.Ordinal)));
     }
 
     [Fact]

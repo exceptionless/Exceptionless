@@ -7,6 +7,7 @@ using Exceptionless.Core.Services;
 using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 
 namespace Exceptionless.Core.Billing;
 
@@ -78,7 +79,8 @@ public class BillingManager
         if (user is null)
             return false;
 
-        return (await GetFreeOrTrialOrganizationsCountedForAsync(user)).Count == 0;
+        var organizations = await GetFreeOrTrialOrganizationsCountedForAsync(user);
+        return organizations.Count is 0;
     }
 
     /// <summary>
@@ -90,17 +92,19 @@ public class BillingManager
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        if (_billingOptions.TrialDays <= 0 || user.TrialStartedUtc is not null || user.OrganizationIds.Count > 0)
+        if (_billingOptions.TrialDays is <= 0 || user.TrialStartedUtc is not null || user.OrganizationIds.Count is > 0)
             return false;
 
-        if (TrialEmailAddress.IsBlockedDomain(user.EmailAddress, await _systemSettingsService.GetTrialBlockedEmailDomainsAsync()))
+        var blockedEmailDomains = await _systemSettingsService.GetTrialBlockedEmailDomainsAsync();
+        if (TrialEmailAddress.IsBlockedDomain(user.EmailAddress, blockedEmailDomains))
             return false;
 
         var created = await _organizationRepository.CountAsync(q => q.FieldEquals(o => o.CreatedByUserId, user.Id));
-        if (created.Total > 0)
+        if (created.Total is > 0)
             return false;
 
-        return !await _trialClaimRepository.ExistsAsync(TrialEmailAddress.GetClaimId(user.EmailAddress));
+        bool claimed = await _trialClaimRepository.ExistsAsync(TrialEmailAddress.GetClaimId(user.EmailAddress));
+        return !claimed;
     }
 
     public void StartTrial(Organization organization, User user)
@@ -113,19 +117,26 @@ public class BillingManager
     }
 
     /// <summary>
-    /// Records the user's mailbox trial claim after confirming eligibility and before granting the trial, while
+    /// Tries to record the user's mailbox trial claim after confirming eligibility and before granting the trial, while
     /// still holding <see cref="AcquireTrialEmailLockAsync"/>. The claim remains if subsequent organization creation
     /// fails because the outcome of those writes may be uncertain.
     /// </summary>
-    public async Task ClaimTrialAsync(User user)
+    /// <returns>True only when this call created the mailbox claim; false when it was already claimed.</returns>
+    public async Task<bool> TryClaimTrialAsync(User user)
     {
         ArgumentNullException.ThrowIfNull(user);
 
         string claimId = TrialEmailAddress.GetClaimId(user.EmailAddress);
-        if (await _trialClaimRepository.ExistsAsync(claimId))
-            return;
-
-        await _trialClaimRepository.AddAsync(new TrialClaim { Id = claimId });
+        try
+        {
+            // Add is create-only: the normalized mailbox ID enforces uniqueness even without the lock.
+            await _trialClaimRepository.AddAsync(new TrialClaim { Id = claimId });
+            return true;
+        }
+        catch (DuplicateDocumentException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -135,7 +146,7 @@ public class BillingManager
     {
         ArgumentNullException.ThrowIfNull(organization);
 
-        int trialDays = _billingOptions.TrialDays > 0 ? _billingOptions.TrialDays : 14;
+        int trialDays = _billingOptions.TrialDays is > 0 ? _billingOptions.TrialDays : 14;
         ApplyBillingPlan(organization, _plans.TrialPlan, user);
         organization.TrialEndsUtc = _timeProvider.GetUtcNow().UtcDateTime.AddDays(trialDays);
         organization.TrialReminderSentUtc = null;
@@ -163,8 +174,12 @@ public class BillingManager
             return ChangePlanResult.FailWithMessage("Invalid Organization");
 
         // Ensure the organization's owner can't own more than one free or trial organization, no matter which member downgrades it.
-        if (_plans.IsFreePlan(plan.Id) && user is not null && await OwnerHasOtherFreeOrTrialOrganizationAsync(organization, user))
-            return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
+        if (_plans.IsFreePlan(plan.Id) && user is not null)
+        {
+            bool hasOtherFreeOrTrialOrganization = await OwnerHasOtherFreeOrTrialOrganizationAsync(organization, user);
+            if (hasOtherFreeOrTrialOrganization)
+                return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
+        }
 
         return new ChangePlanResult { Success = true };
     }
@@ -222,13 +237,15 @@ public class BillingManager
     private async Task<bool> OwnerHasOtherFreeOrTrialOrganizationAsync(Organization organization, User actingUser)
     {
         // Organizations created before creators were recorded have no owner, so the member downgrading them is held to the rule.
-        var owner = organization.CreatedByUserId is null || String.Equals(organization.CreatedByUserId, actingUser.Id, StringComparison.Ordinal)
-            ? actingUser
-            : await _userRepository.GetByIdAsync(organization.CreatedByUserId, o => o.Cache(false));
+        var owner = actingUser;
+        if (organization.CreatedByUserId is not null && !String.Equals(organization.CreatedByUserId, actingUser.Id, StringComparison.Ordinal))
+            owner = await _userRepository.GetByIdAsync(organization.CreatedByUserId, o => o.Cache(false));
 
-        var counted = owner is not null
-            ? await GetFreeOrTrialOrganizationsCountedForAsync(owner)
-            : await GetCreatedFreeOrTrialOrganizationsAsync(organization.CreatedByUserId!);
+        IReadOnlyCollection<Organization> counted;
+        if (owner is not null)
+            counted = await GetFreeOrTrialOrganizationsCountedForAsync(owner);
+        else
+            counted = await GetCreatedFreeOrTrialOrganizationsAsync(organization.CreatedByUserId!);
         return counted.Any(o => !String.Equals(o.Id, organization.Id, StringComparison.Ordinal));
     }
 
@@ -239,11 +256,11 @@ public class BillingManager
     private async Task<IReadOnlyCollection<Organization>> GetFreeOrTrialOrganizationsCountedForAsync(User user)
     {
         var created = await GetCreatedFreeOrTrialOrganizationsAsync(user.Id);
-        if (user.OrganizationIds.Count == 0)
+        if (user.OrganizationIds.Count is 0)
             return created;
 
-        var legacy = (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray()))
-            .Where(o => o.CreatedByUserId is null && _plans.IsFreeOrTrialPlan(o.PlanId));
+        var organizations = await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray());
+        var legacy = organizations.Where(o => o.CreatedByUserId is null && _plans.IsFreeOrTrialPlan(o.PlanId));
         return created.Concat(legacy).DistinctBy(o => o.Id).ToList();
     }
 

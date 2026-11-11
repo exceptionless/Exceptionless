@@ -83,8 +83,8 @@ public class JobRunnerOptions
         if (StackEventCount && args.Length != 0)
             JobName = nameof(StackEventCount);
 
-        TrialExpiration = args.Length == 0 || args.Contains(nameof(TrialExpiration), StringComparer.OrdinalIgnoreCase);
-        if (TrialExpiration && args.Length != 0)
+        TrialExpiration = args.Length is 0 || args.Contains(nameof(TrialExpiration), StringComparer.OrdinalIgnoreCase);
+        if (TrialExpiration && args.Length is not 0)
             JobName = nameof(TrialExpiration);
 
         WebHooks = args.Length == 0 || args.Contains(nameof(WebHooks), StringComparer.OrdinalIgnoreCase);

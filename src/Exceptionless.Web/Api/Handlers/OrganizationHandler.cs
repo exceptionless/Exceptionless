@@ -17,6 +17,7 @@ using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
@@ -400,9 +401,11 @@ public class OrganizationHandler(
             return ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan.");
 
         // Downgrades to Free share the owner's lock with organization creation so two can't both pass the one-free-organization rule.
-        await using var ownerLock = plans.IsFreePlan(plan.Id) && !String.Equals(organization.PlanId, plan.Id)
-            ? await billingManager.AcquireOwnerFreeOrganizationLockAsync(organization.CreatedByUserId ?? GetCurrentUser(message.Context).Id)
-            : null;
+        bool acquireOwnerLock = plans.IsFreePlan(plan.Id) && !String.Equals(organization.PlanId, plan.Id);
+        ILock? ownerLock = null;
+        if (acquireOwnerLock)
+            ownerLock = await billingManager.AcquireOwnerFreeOrganizationLockAsync(organization.CreatedByUserId ?? GetCurrentUser(message.Context).Id);
+        await using var ownerLockScope = ownerLock;
 
         if (!String.Equals(organization.PlanId, plan.Id))
         {
@@ -703,7 +706,8 @@ public class OrganizationHandler(
         if (!currentUser.IsEmailAddressVerified)
             return Result.Forbidden("Please verify your email address before inviting users.");
 
-        if (await billingManager.TryCountFreeInviteAsync(currentUser.Id))
+        bool withinInviteLimit = await billingManager.TryCountFreeInviteAsync(currentUser.Id);
+        if (withinInviteLimit)
             return null;
 
         _logger.LogWarning("User {UserId} reached the daily invite limit of {DailyLimit} for organization {OrganizationId}", currentUser.Id, options.BillingOptions.FreeInviteDailyLimit, organization.Id);
@@ -858,7 +862,8 @@ public class OrganizationHandler(
         if (String.IsNullOrEmpty(value.Name))
             return Result.BadRequest("Organization name is required.");
 
-        if (!await billingManager.CanAddOrganizationAsync(user))
+        bool canAddOrganization = await billingManager.CanAddOrganizationAsync(user);
+        if (!canAddOrganization)
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add an additional organization."));
 
         return null;
@@ -871,15 +876,16 @@ public class OrganizationHandler(
         {
             billingManager.ApplyBillingPlan(value, plans.UnlimitedPlan, user);
         }
-        else if (await billingManager.CanStartTrialAsync(user))
-        {
-            // Persist the mailbox claim before granting a trial so a failed claim cannot leave untracked entitlements.
-            await billingManager.ClaimTrialAsync(user);
-            billingManager.StartTrial(value, user);
-        }
         else
         {
-            billingManager.ApplyBillingPlan(value, plans.FreePlan, user);
+            bool startTrial = await billingManager.CanStartTrialAsync(user);
+            if (startTrial)
+                startTrial = await billingManager.TryClaimTrialAsync(user);
+
+            if (startTrial)
+                billingManager.StartTrial(value, user);
+            else
+                billingManager.ApplyBillingPlan(value, plans.FreePlan, user);
         }
 
         var organization = await repository.AddAsync(value, o => o.ImmediateConsistency().Cache());

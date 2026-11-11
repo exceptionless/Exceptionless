@@ -105,7 +105,8 @@ public sealed class AssistantUsageServiceTests
         {
             try
             {
-                return (Request: await service.StartProviderRequestAsync($"organization-{index}", 1_000, sharedPlanOptions), Error: (AssistantProviderException?)null);
+                var request = await service.StartProviderRequestAsync($"organization-{index}", 1_000, sharedPlanOptions);
+                return (Request: request, Error: (AssistantProviderException?)null);
             }
             catch (AssistantProviderException ex)
             {

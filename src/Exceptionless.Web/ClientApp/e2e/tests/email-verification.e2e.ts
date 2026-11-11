@@ -17,7 +17,8 @@ test('verification email verifies the account @signup', async ({ e2eApi, e2eScen
 
         await expect(page).toHaveURL(/\/account\/manage(?:[?#]|$)/);
         await expect(page.getByText('An error occurred while verifying your account.')).toBeVisible();
-        expect((await e2eApi.getCurrentUser(e2eScenario.userToken))?.is_email_address_verified).toBe(false);
+        const unverifiedUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
+        expect(unverifiedUser?.is_email_address_verified).toBe(false);
     });
 
     await test.step('follow the verification email in another tab', async () => {
@@ -25,7 +26,12 @@ test('verification email verifies the account @signup', async ({ e2eApi, e2eScen
         await confirmationPage.goto(verificationLink);
 
         await expect(confirmationPage).toHaveURL(/\/account\/manage(?:[?#]|$)/);
-        await expect.poll(async () => (await e2eApi.getCurrentUser(e2eScenario.userToken))?.is_email_address_verified).toBe(true);
+        await expect
+            .poll(async () => {
+                const verifiedUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
+                return verifiedUser?.is_email_address_verified;
+            })
+            .toBe(true);
         await expect(confirmationPage.getByText('Your account has been successfully verified.')).toBeVisible();
         await expect(confirmationPage.getByLabel('Email', { exact: true })).toHaveValue(e2eScenario.email);
         await expect(confirmationPage.getByText('Email not verified.')).toHaveCount(0);
@@ -37,7 +43,8 @@ test('verification email verifies the account @signup', async ({ e2eApi, e2eScen
 });
 
 test('a legacy verification link survives the login redirect @signup', async ({ e2eApi, e2eScenario, page }) => {
-    const verificationLink = new URL(await e2eApi.pollForMailLink(e2eScenario.email, 'verify-email'));
+    const deliveredLink = await e2eApi.pollForMailLink(e2eScenario.email, 'verify-email');
+    const verificationLink = new URL(deliveredLink);
     verificationLink.hash = `!${verificationLink.pathname}${verificationLink.search}`;
     verificationLink.pathname = '/';
     verificationLink.search = '';
@@ -49,6 +56,11 @@ test('a legacy verification link survives the login redirect @signup', async ({ 
     await page.getByRole('button', { exact: true, name: 'Login' }).click();
 
     await expect(page).toHaveURL(/\/account\/manage(?:[?#]|$)/);
-    await expect.poll(async () => (await e2eApi.getCurrentUser(e2eScenario.userToken))?.is_email_address_verified).toBe(true);
+    await expect
+        .poll(async () => {
+            const verifiedUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
+            return verifiedUser?.is_email_address_verified;
+        })
+        .toBe(true);
     await expect(page.getByText('Your account has been successfully verified.')).toBeVisible();
 });

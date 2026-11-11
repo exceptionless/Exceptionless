@@ -2799,7 +2799,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.Single(statusCodes, HttpStatusCode.Created);
-        Assert.Equal(2, statusCodes.Count(statusCode => statusCode == HttpStatusCode.UpgradeRequired));
+        Assert.Equal(2, statusCodes.Count(statusCode => statusCode is HttpStatusCode.UpgradeRequired));
 
         await RefreshDataAsync();
         var updatedUser = await _userRepository.GetByIdAsync(user.Id);
@@ -2917,7 +2917,8 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         {
             var paidOrganization = new Organization { Name = $"Concurrent Paid Organization {index}", CreatedByUserId = owner.Id, StripeCustomerId = $"cus_concurrent_{index}", CardLast4 = "4242", SubscribeDate = TimeProvider.GetUtcNow().UtcDateTime };
             _billingManager.ApplyBillingPlan(paidOrganization, _plans.SmallPlan, owner);
-            organizationIds.Add((await AddMemberOrganizationAsync(owner, paidOrganization)).Id);
+            var organization = await AddMemberOrganizationAsync(owner, paidOrganization);
+            organizationIds.Add(organization.Id);
         }
 
         // Act
@@ -2929,14 +2930,15 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             var responses = await Task.WhenAll(organizationIds.Select(organizationId => client.PostAsync($"organizations/{organizationId}/change-plan",
                 System.Net.Http.Json.JsonContent.Create(new { plan_id = _plans.FreePlan.Id }), TestCancellationToken)));
 
-            return await Task.WhenAll(responses.Select(response => response.DeserializeAsync<ChangePlanResult>()));
+            var results = await Task.WhenAll(responses.Select(response => response.DeserializeAsync<ChangePlanResult>()));
+            return results;
         });
 
         // Assert
         Assert.Single(results, result => result?.Success is true);
         await RefreshDataAsync();
         var organizations = await _organizationRepository.GetByIdsAsync(organizationIds);
-        Assert.Single(organizations, organization => organization.PlanId == _plans.FreePlan.Id);
+        Assert.Single(organizations, organization => String.Equals(organization.PlanId, _plans.FreePlan.Id, StringComparison.Ordinal));
     }
 
     [Fact]
@@ -3200,15 +3202,18 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         const string password = "Alias password";
         var users = new List<User>();
         foreach (string email in new[] { "burst@exceptionless.test", "burst+one@exceptionless.test", "burst+two@exceptionless.test" })
-            users.Add(await CreateUserAsync(email, password, isEmailAddressVerified: true));
+        {
+            var user = await CreateUserAsync(email, password, isEmailAddressVerified: true);
+            users.Add(user);
+        }
 
         // Act
         var organizations = await WithBillingEnabledAsync(() => Task.WhenAll(users.Select((user, index) => CreateOrganizationAsync(user, password, $"Burst Organization {index}"))));
 
         // Assert
         Assert.All(organizations, Assert.NotNull);
-        Assert.Single(organizations, organization => organization!.PlanId == _plans.TrialPlan.Id);
-        Assert.Equal(2, organizations.Count(organization => organization!.PlanId == _plans.FreePlan.Id));
+        Assert.Single(organizations, organization => String.Equals(organization!.PlanId, _plans.TrialPlan.Id, StringComparison.Ordinal));
+        Assert.Equal(2, organizations.Count(organization => String.Equals(organization!.PlanId, _plans.FreePlan.Id, StringComparison.Ordinal)));
     }
 
     [Fact]

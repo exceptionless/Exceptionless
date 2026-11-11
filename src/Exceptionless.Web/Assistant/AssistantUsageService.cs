@@ -186,7 +186,7 @@ public sealed class AssistantUsageService(
     public async Task<AssistantProviderUsageLifecycle> StartProviderRequestAsync(string? organizationId, int providerInputCharacters = 0, AssistantPlanOptions? planOptions = null)
     {
         var reservation = await RecordProviderRequestStartedAsync(organizationId, providerInputCharacters);
-        if (planOptions is { SharedDailyCostLimitKey: { } sharedDailyCostLimitKey, MaximumSharedDailyCostUsd: > 0 } && reservation.CostInMicrodollars > 0)
+        if (planOptions is { SharedDailyCostLimitKey: { } sharedDailyCostLimitKey, MaximumSharedDailyCostUsd: > 0 } && reservation.CostInMicrodollars is > 0)
         {
             // Count the estimate immediately so concurrent turns can't all pass the shared limit before any cost lands.
             var sharedReservation = reservation with { SharedDailyCostLimitKey = sharedDailyCostLimitKey };
@@ -345,7 +345,7 @@ public sealed class AssistantUsageService(
     /// <returns>The new shared daily cost, or null when the adjustment was skipped or could not be confirmed.</returns>
     private async Task<long?> IncrementSharedDailyCostAsync(AssistantProviderReservation reservation, long costInMicrodollars)
     {
-        if (reservation.SharedDailyCostLimitKey is not { } sharedDailyCostLimitKey || costInMicrodollars == 0)
+        if (reservation.SharedDailyCostLimitKey is not { } sharedDailyCostLimitKey || costInMicrodollars is 0)
             return null;
 
         var usageDate = GetUsageDate(reservation);
@@ -355,7 +355,8 @@ public sealed class AssistantUsageService(
         // recorded again. Return null so admission can reject a request whose reservation could not be confirmed.
         try
         {
-            return await _cache.IncrementAsync(GetSharedDailyCostKey(sharedDailyCostLimitKey, day.Id), costInMicrodollars, day.ResetAtUtc.UtcDateTime);
+            long total = await _cache.IncrementAsync(GetSharedDailyCostKey(sharedDailyCostLimitKey, day.Id), costInMicrodollars, day.ResetAtUtc.UtcDateTime);
+            return total;
         }
         catch (Exception ex)
         {

@@ -17,10 +17,13 @@ const recordProductTour = vi.hoisted(() => vi.fn());
 const invalidateQueries = vi.hoisted(() => vi.fn());
 const state = notificationTestState;
 
-vi.mock('@tanstack/svelte-query', async (importOriginal) => ({
-    ...(await importOriginal<typeof import('@tanstack/svelte-query')>()),
-    useQueryClient: () => ({ invalidateQueries })
-}));
+vi.mock('@tanstack/svelte-query', async (importOriginal) => {
+    const original = await importOriginal<typeof import('@tanstack/svelte-query')>();
+    return {
+        ...original,
+        useQueryClient: () => ({ invalidateQueries })
+    };
+});
 
 vi.mock('#features/organizations/api.svelte.ts', async () => {
     const { notificationTestState } = await import('./organization-notifications.test-fake.svelte');

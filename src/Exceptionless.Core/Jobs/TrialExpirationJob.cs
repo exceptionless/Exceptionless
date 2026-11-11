@@ -61,7 +61,7 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
             .FieldEquals(o => o.PlanId, _plans.TrialPlan.Id)
             .OnlyIds(), o => o.SearchAfterPaging().PageLimit(100));
 
-        while (results.Hits.Count > 0 && !context.CancellationToken.IsCancellationRequested)
+        while (results.Hits.Count is > 0 && !context.CancellationToken.IsCancellationRequested)
         {
             foreach (string organizationId in results.Hits.Where(h => h.Id is not null).Select(h => h.Id!))
             {
@@ -83,7 +83,11 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
                 }
             }
 
-            if (context.CancellationToken.IsCancellationRequested || !await results.NextPageAsync())
+            if (context.CancellationToken.IsCancellationRequested)
+                break;
+
+            bool hasNextPage = await results.NextPageAsync();
+            if (!hasNextPage)
                 break;
 
             await context.RenewLockAsync();
@@ -114,11 +118,13 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
             return;
 
         var users = await _userRepository.GetByOrganizationIdAsync(organization.Id, o => o.SearchAfterPaging().PageLimit(100));
+        bool hasMoreUsers;
         do
         {
             foreach (var user in users.Documents.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled))
                 await _mailer.SendOrganizationTrialEndingAsync(user, organization);
-        } while (await users.NextPageAsync());
+            hasMoreUsers = await users.NextPageAsync();
+        } while (hasMoreUsers);
 
         // Mark the reminder only after every email is queued, so a failure is retried on the next run.
         organization.TrialReminderSentUtc = utcNow;

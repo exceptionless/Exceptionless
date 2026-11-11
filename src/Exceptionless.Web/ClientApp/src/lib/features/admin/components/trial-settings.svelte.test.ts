@@ -84,6 +84,7 @@ describe('Free trial settings', () => {
         await fireEvent.click(screen.getByRole('button', { name: 'Save blocked trial domains' }));
 
         // Assert
-        expect(await screen.findByText('Every blocked email domain must be a domain name, such as example.com.')).toBeTruthy();
+        const validationError = await screen.findByText('Every blocked email domain must be a domain name, such as example.com.');
+        expect(validationError).toBeTruthy();
     });
 });

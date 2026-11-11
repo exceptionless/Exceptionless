@@ -49,14 +49,14 @@ public sealed class UpdateOrganizationsForTrials : MigrationBase
                 .PageLimit(BatchSize));
 
         int migrated = 0;
-        while (organizations.Documents.Count > 0)
+        while (organizations.Documents.Count is > 0)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
             var organizationsToMigrate = organizations.Documents
                 .Where(organization => organization.MaxUsers is not BillingPlan.Unlimited || organization.MaxProjects is not BillingPlan.Unlimited)
                 .ToList();
-            if (organizationsToMigrate.Count > 0)
+            if (organizationsToMigrate.Count is > 0)
             {
                 await _organizationRepository.PatchAsync(
                     organizationsToMigrate.Select(organization => organization.Id).ToArray(),
@@ -65,7 +65,8 @@ public sealed class UpdateOrganizationsForTrials : MigrationBase
                 migrated += organizationsToMigrate.Count;
             }
 
-            if (!await organizations.NextPageAsync())
+            bool hasNextPage = await organizations.NextPageAsync();
+            if (!hasNextPage)
                 break;
         }
 

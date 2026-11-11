@@ -271,8 +271,8 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
         // Assert
         Assert.Equal(expectedAccess, access.HasAccess);
         Assert.Equal(expectedReason, access.Reason);
-        Assert.Equal(expectedReason == AssistantAccessReason.UpgradeRequired, access.UpgradeRequired);
-        Assert.Equal(expectedReason == AssistantAccessReason.EmailVerificationRequired, access.ToResponse().EmailVerificationRequired);
+        Assert.Equal(expectedReason is AssistantAccessReason.UpgradeRequired, access.UpgradeRequired);
+        Assert.Equal(expectedReason is AssistantAccessReason.EmailVerificationRequired, access.ToResponse().EmailVerificationRequired);
     }
 
     private static void AssertPlan(AssistantPlanOptions? options, int concurrentTurns, int turnsPerMinute, long monthlyTokens, decimal monthlyCost)

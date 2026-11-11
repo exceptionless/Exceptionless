@@ -261,11 +261,12 @@ public class Mailer : IMailer
             organization.TrialEndsUtc.Value.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture),
             _appUrls.OrganizationUpgrade(organization.Id));
 
+        string body = await _templateRenderer.RenderAsync(message);
         await QueueMessageAsync(new MailMessage
         {
             To = user.EmailAddress,
             Subject = subject,
-            Body = await _templateRenderer.RenderAsync(message)
+            Body = body
         }, template);
     }
 
