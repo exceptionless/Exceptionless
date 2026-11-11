@@ -28,6 +28,7 @@
     import * as Tabs from '#comp/ui/tabs/index.ts';
     import { submitFeatureUsage } from '#features/auth/exceptionless-session.ts';
     import { FREE_PLAN_ID, isStripeEnabled, StripeProvider, TRIAL_EQUIVALENT_PLAN_ID, TRIAL_PLAN_ID } from '#features/billing/index.ts';
+    import { getDowngradeLosses } from '#features/billing/plan-downgrade.ts';
     import { resolveInitialPlanTierId } from '#features/billing/plan-selection.ts';
     import { type ChangePlanFormData, ChangePlanSchema } from '#features/billing/schemas.ts';
     import { getTrialDaysRemaining } from '#features/billing/trial.ts';
@@ -197,6 +198,9 @@
         const selectedIdx = tiers.findIndex((t) => t.id === selectedTierId);
         return selectedIdx >= 0 && currentTierIndex >= 0 && selectedIdx < currentTierIndex;
     });
+
+    // Organization limits reflect the current plan, including the hidden trial plan.
+    const downgradeLosses = $derived(isDowngrade && selectedPlan ? getDowngradeLosses(organization, selectedPlan) : []);
 
     let stripe = $state<null | Stripe>(null);
     let stripeElements = $state<StripeElements | undefined>(undefined);
@@ -883,6 +887,12 @@
                                         {#if selectedPlan}· <Currency value={selectedPlan.price} />{interval === 'year' ? '/yr' : '/mo'} · prorated today{/if}
                                     {/if}
                                 </Muted>
+                            </div>
+                        {/if}
+                        {#if downgradeLosses.length > 0}
+                            <div class="flex items-baseline gap-2 text-xs leading-snug">
+                                <Muted class="min-w-16 text-[10px] font-semibold tracking-wider uppercase">You lose</Muted>
+                                <span class="text-destructive text-xs" data-testid="downgrade-losses">{downgradeLosses.join(' · ')}</span>
                             </div>
                         {/if}
                         {#if paymentDirty}

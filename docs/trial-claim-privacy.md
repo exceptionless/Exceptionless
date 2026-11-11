@@ -1,12 +1,12 @@
 # Trial mailbox claims
 
-## Purpose and proposed retention
+## Purpose and retention
 
-Claims enforce one no-card trial per normalized mailbox. Account or organization deletion does not reset that eligibility. The record contains only a versioned keyed identifier and its creation time, with no email address, user ID, organization ID, IP address, or billing details. Treat it as restricted pseudonymous anti-abuse data, not anonymous data.
+Claims enforce one no-card trial per normalized mailbox per 12 months. Account or organization deletion does not reset that eligibility. The record contains only a versioned keyed identifier and its creation time, with no email address, user ID, organization ID, IP address, or billing details. Treat it as restricted pseudonymous anti-abuse data, not anonymous data.
 
-Proposed policy, pending Eric's confirmation on PR #2686: retain this minimal record for the lifetime of the one-trial-per-mailbox program, including after account deletion. There is no automatic TTL. Delete these records when that program is retired or when an approved erasure decision requires it; removing the claim makes that mailbox eligible again. A fixed retention period would instead intentionally permit another trial after expiry. Any future major-version retrial should be an explicit new eligibility program, not a secret change.
+Retention (approved by Eric on PR #2686): claims are kept for `Billing:TrialClaimRetentionDays`, 365 days by default, including after account deletion. After that the mailbox can start a new trial, and the trial expiration job deletes the expired claim. 12 months is long enough to stop people from repeatedly farming trials, while letting a returning user give us another try. Delete a claim earlier when an approved erasure request requires it; doing so makes that mailbox eligible again.
 
-The public privacy notice and the handling of erasure requests must reflect the approved retention decision before rollout. This proposal does not establish a legal basis or resolve that policy approval.
+The public privacy notice and the handling of erasure requests must reflect this retention period before rollout.
 
 ## Dedicated secret and deployment
 

@@ -4,6 +4,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Repositories;
@@ -89,14 +90,18 @@ public class BillingManager
 
     /// <summary>
     /// A no-card trial is only for someone new to Exceptionless: a user who belongs to no organization and created
-    /// none, whose mailbox hasn't claimed a trial (under another alias or a deleted account), and whose email isn't
-    /// on a blocked disposable domain. Call it while holding <see cref="AcquireTrialEmailLockAsync"/>.
+    /// none, whose mailbox hasn't claimed a trial in the last <see cref="BillingOptions.TrialClaimRetentionDays"/> (under
+    /// another alias or a deleted account), and whose email isn't on a blocked disposable domain. Call it while holding
+    /// <see cref="AcquireTrialEmailLockAsync"/>.
     /// </summary>
     public async Task<bool> CanStartTrialAsync(User user)
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        if (_billingOptions.TrialClaimSecret is null || _billingOptions.TrialDays is <= 0 || user.TrialStartedUtc is not null || user.OrganizationIds.Count is > 0)
+        if (_billingOptions.TrialClaimSecret is null || _billingOptions.TrialDays is <= 0 || user.OrganizationIds.Count is > 0)
+            return false;
+
+        if (user.TrialStartedUtc is { } trialStartedUtc && trialStartedUtc.IsAfter(GetTrialClaimCutoffUtc()))
             return false;
 
         var blockedEmailDomains = await _systemSettingsService.GetTrialBlockedEmailDomainsAsync();
@@ -107,8 +112,8 @@ public class BillingManager
         if (created.Total is > 0)
             return false;
 
-        bool claimed = await _trialClaimRepository.ExistsAsync(TrialEmailAddress.GetClaimId(user.EmailAddress, _billingOptions.TrialClaimSecret));
-        return !claimed;
+        var claim = await _trialClaimRepository.GetByIdAsync(TrialEmailAddress.GetClaimId(user.EmailAddress, _billingOptions.TrialClaimSecret));
+        return !IsActiveClaim(claim);
     }
 
     public void StartTrial(Organization organization, User user)
@@ -125,7 +130,7 @@ public class BillingManager
     /// still holding <see cref="AcquireTrialEmailLockAsync"/>. The claim remains if subsequent organization creation
     /// fails because the outcome of those writes may be uncertain.
     /// </summary>
-    /// <returns>True only when this call created the mailbox claim; false when it was already claimed.</returns>
+    /// <returns>True only when this call created or renewed the mailbox claim; false when an active claim already exists.</returns>
     public async Task<bool> TryClaimTrialAsync(User user)
     {
         ArgumentNullException.ThrowIfNull(user);
@@ -135,14 +140,30 @@ public class BillingManager
         try
         {
             // Add is create-only: the normalized mailbox ID enforces uniqueness even without the lock.
-            await _trialClaimRepository.AddAsync(new TrialClaim { Id = claimId });
+            await _trialClaimRepository.AddAsync(new TrialClaim { Id = claimId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime });
             return true;
         }
         catch (DuplicateDocumentException)
         {
-            return false;
+            // An expired claim that cleanup hasn't removed yet doesn't block a new trial. The mailbox lock serializes renewals.
+            var claim = await _trialClaimRepository.GetByIdAsync(claimId);
+            if (IsActiveClaim(claim))
+                return false;
+
+            await _trialClaimRepository.SaveAsync(new TrialClaim { Id = claimId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime });
+            return true;
         }
     }
+
+    /// <summary>
+    /// Removes trial claims older than <see cref="BillingOptions.TrialClaimRetentionDays"/>, so those mailboxes can trial again.
+    /// </summary>
+    public Task<long> RemoveExpiredTrialClaimsAsync()
+        => _trialClaimRepository.RemoveCreatedBeforeAsync(GetTrialClaimCutoffUtc());
+
+    private bool IsActiveClaim(TrialClaim? claim) => claim is not null && claim.CreatedUtc.IsAfter(GetTrialClaimCutoffUtc());
+
+    private DateTime GetTrialClaimCutoffUtc() => _timeProvider.GetUtcNow().UtcDateTime.AddDays(-_billingOptions.TrialClaimRetentionDays);
 
     /// <summary>
     /// Applies the trial plan and starts a full-length trial. Also used by admins to extend a trial.

@@ -3222,8 +3222,10 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         Assert.Null(aliasUser.TrialStartedUtc);
     }
 
-    [Fact]
-    public async Task PostAsync_MailboxRegisteredAgainAfterDeletingTrialAccount_GetsFreePlan()
+    [Theory]
+    [InlineData(364, "EX_FREE")]
+    [InlineData(366, "EX_TRIAL")]
+    public async Task PostAsync_MailboxRegisteredAgainAfterDeletingTrialAccount_GetsTrialOnlyAfterRetention(int daysLater, string expectedPlanId)
     {
         // Arrange
         const string password = "Returning password";
@@ -3235,14 +3237,14 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .AppendPaths("organizations", trialOrganization!.Id).StatusCodeShouldBeAccepted());
         await SendRequestAsync(request => request.BasicAuthorization(original.EmailAddress, password).Delete()
             .AppendPaths("users", "me").StatusCodeShouldBeAccepted());
-        TimeProvider.Advance(TimeSpan.FromDays(730));
-        var returning = await CreateUserAsync("returning@exceptionless.test", password, isEmailAddressVerified: true);
+        TimeProvider.Advance(TimeSpan.FromDays(daysLater));
+        var returning = await CreateUserAsync("returning+again@exceptionless.test", password, isEmailAddressVerified: true);
 
         // Act
         var organization = await WithBillingEnabledAsync(() => CreateOrganizationAsync(returning, password, "Returning Organization"));
 
         // Assert
-        Assert.Equal(_plans.FreePlan.Id, organization?.PlanId);
+        Assert.Equal(expectedPlanId, organization?.PlanId);
     }
 
     [Fact]

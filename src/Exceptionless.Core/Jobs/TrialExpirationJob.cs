@@ -15,7 +15,8 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Jobs;
 
 /// <summary>
-/// Sends the trial ending reminder and moves organizations whose no-card trial has ended to the free plan.
+/// Sends the trial ending reminder, moves organizations whose no-card trial has ended to the free plan, and removes
+/// expired mailbox trial claims.
 /// </summary>
 [Job(Description = "Sends trial reminders and moves expired trials to the free plan.", IsContinuous = false)]
 public class TrialExpirationJob : JobWithLockBase, IHealthCheck
@@ -56,6 +57,18 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
         _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
+
+        try
+        {
+            long removed = await _billingManager.RemoveExpiredTrialClaimsAsync();
+            if (removed is > 0)
+                _logger.LogInformation("Removed {Count} expired trial claims", removed);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Expired claims don't block trials, so a failed cleanup only delays removal until the next run.
+            _logger.LogError(ex, "Error removing expired trial claims: {Message}", ex.Message);
+        }
 
         var results = await _organizationRepository.FindAsync(q => q
             .FieldEquals(o => o.PlanId, _plans.TrialPlan.Id)

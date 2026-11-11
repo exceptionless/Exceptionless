@@ -38,6 +38,54 @@ public class TrialEmailAddressTests
         Assert.Equal(expected, blocked);
     }
 
+    [Theory]
+    [InlineData("gmail.com")]
+    [InlineData("googlemail.com")]
+    [InlineData("outlook.com")]
+    [InlineData("hotmail.com")]
+    [InlineData("live.com")]
+    [InlineData("msn.com")]
+    [InlineData("yahoo.com")]
+    [InlineData("ymail.com")]
+    [InlineData("icloud.com")]
+    [InlineData("me.com")]
+    [InlineData("mac.com")]
+    [InlineData("privaterelay.appleid.com")]
+    [InlineData("aol.com")]
+    [InlineData("proton.me")]
+    [InlineData("protonmail.com")]
+    [InlineData("pm.me")]
+    [InlineData("zoho.com")]
+    [InlineData("fastmail.com")]
+    [InlineData("hey.com")]
+    [InlineData("tuta.com")]
+    [InlineData("tutanota.com")]
+    [InlineData("mail.com")]
+    [InlineData("gmx.com")]
+    [InlineData("gmx.de")]
+    [InlineData("web.de")]
+    [InlineData("t-online.de")]
+    [InlineData("libero.it")]
+    [InlineData("orange.fr")]
+    [InlineData("yandex.ru")]
+    [InlineData("mail.ru")]
+    [InlineData("qq.com")]
+    [InlineData("163.com")]
+    [InlineData("126.com")]
+    [InlineData("naver.com")]
+    [InlineData("comcast.net")]
+    [InlineData("duck.com")]
+    [InlineData("simplelogin.com")]
+    [InlineData("addy.io")]
+    public void IsBlockedDomain_MajorMailboxProviders_AreNotBlocked(string domain)
+    {
+        // Act
+        bool blocked = TrialEmailAddress.IsBlockedDomain($"someone@{domain}", TrialEmailAddress.DefaultBlockedDomains);
+
+        // Assert
+        Assert.False(blocked);
+    }
+
     [Fact]
     public void NormalizeDomains_AdminInput_TrimsLowercasesDeduplicatesAndSorts()
     {

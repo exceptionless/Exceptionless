@@ -69,8 +69,8 @@ public sealed class OrganizationHandlerTests : TestWithServices
         var claims = new Mock<ITrialClaimRepository>(MockBehavior.Strict);
         var options = GetService<AppOptions>();
         string claimId = TrialEmailAddress.GetClaimId(persistedUser.EmailAddress, options.BillingOptions.TrialClaimSecret!);
-        claims.Setup(repository => repository.ExistsAsync(claimId, It.IsAny<ICommandOptions>()))
-            .ReturnsAsync(() => persistedClaim is not null);
+        claims.Setup(repository => repository.GetByIdAsync(claimId, It.IsAny<ICommandOptions>()))
+            .ReturnsAsync(() => persistedClaim);
         claims.Setup(repository => repository.AddAsync(It.IsAny<TrialClaim>(), It.IsAny<ICommandOptions>()))
             .Returns((TrialClaim claim, ICommandOptions _) =>
             {
