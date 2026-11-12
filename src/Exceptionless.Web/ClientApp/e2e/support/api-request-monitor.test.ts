@@ -1,7 +1,9 @@
-import { expect, type Page, type Request, test } from '@playwright/test';
-import { EventEmitter } from 'node:events';
+import type { Page, Request } from '@playwright/test';
 
-import { isApplicationApiRequest, trackPendingApiRequests } from '../support/api-request-monitor';
+import { EventEmitter } from 'node:events';
+import { expect, test } from 'vitest';
+
+import { isApplicationApiRequest, trackPendingApiRequests } from './api-request-monitor';
 
 test('tracks application requests until they settle without waiting for browser telemetry', async () => {
     // Arrange

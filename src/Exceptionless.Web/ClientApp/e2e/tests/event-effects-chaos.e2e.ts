@@ -191,8 +191,16 @@ test('event list and detail effects stay bounded through paging and background c
     await measureAction(diagnostics, 'event detail alias route remounts', async () => {
         for (let index = 0; index < 5; index++) {
             await pendingApiRequests.waitForPendingRequests();
+            const canonicalEventResponse = page.waitForResponse((response) => {
+                const url = new URL(response.url());
+                return url.pathname === `/api/v2/events/${journey.eventId}` && url.searchParams.get('expected_stack_id') === journey.stackId;
+            });
             await page.goto(`/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
+            await expect(page).toHaveURL(new RegExp(`/stack/${journey.stackId}/event/${journey.eventId}$`));
+            const response = await canonicalEventResponse;
+            expect(response.ok()).toBe(true);
+            await response.finished();
         }
     });
     expect(actionSample(diagnostics, 'event detail alias route remounts').eventDetails).toBeLessThanOrEqual(10);

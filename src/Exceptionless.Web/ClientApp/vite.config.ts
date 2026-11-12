@@ -221,7 +221,7 @@ export default defineConfig({
                 test: {
                     environment: 'node',
                     exclude: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-                    include: ['src/**/*.{test,spec}.{js,ts}'],
+                    include: ['src/**/*.{test,spec}.{js,ts}', 'e2e/support/**/*.{test,spec}.{js,ts}'],
                     name: 'server',
                     setupFiles: ['./vitest-setup-server.ts']
                 }
