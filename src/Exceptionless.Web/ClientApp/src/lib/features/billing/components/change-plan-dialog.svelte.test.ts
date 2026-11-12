@@ -77,6 +77,34 @@ describe('ChangePlanDialog loss warning', () => {
         queryState.userCount = 1;
     });
 
+    it('shows finite user limits on plan choices and omits unlimited limits', () => {
+        // Arrange
+        const organization = {
+            billing_price: 0,
+            id: 'trial-organization',
+            max_events_per_month: 75000,
+            plan_id: 'EX_TRIAL',
+            plan_name: 'Trial',
+            project_count: 1,
+            retention_days: 90
+        } as ViewOrganization;
+        plans[1]!.max_users = 10;
+        plans[2]!.max_users = 10;
+
+        try {
+            // Act
+            render(ChangePlanDialog, { initialPlanId: 'EX_SMALL', onclose: vi.fn(), organization });
+
+            // Assert
+            expect(screen.getByRole('button', { name: /^Free/ })).toHaveTextContent('1 user');
+            expect(screen.getByRole('button', { name: /^Small/ })).toHaveTextContent('10 users');
+            expect(screen.getByRole('button', { name: /^Medium/ })).not.toHaveTextContent('users');
+        } finally {
+            plans[1]!.max_users = -1;
+            plans[2]!.max_users = -1;
+        }
+    });
+
     it.each([
         { message: 'Remove users or pending invitations', projects: 1, users: 2 },
         { message: 'Remove projects', projects: 2, users: 1 }

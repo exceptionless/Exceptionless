@@ -375,6 +375,10 @@
         return `${days} day${days === 1 ? '' : 's'}`;
     }
 
+    function formatUsers(count: number): string {
+        return `${count} user${count === 1 ? '' : 's'}`;
+    }
+
     function handleCancel() {
         onclose(false);
     }
@@ -681,6 +685,10 @@
                                                     /> events/mo{/if}
                                                 <span class="text-muted-foreground/60 mx-1">·</span>
                                                 {formatRetention(planForInterval.retention_days)}
+                                                {#if planForInterval.max_users >= 0}
+                                                    <span class="text-muted-foreground/60 mx-1">·</span>
+                                                    {formatUsers(planForInterval.max_users)}
+                                                {/if}
                                             </Muted>
                                         {/if}
                                     </div>
@@ -726,6 +734,10 @@
                                                 /> events/mo{/if}
                                             <span class="text-muted-foreground/60 mx-1">·</span>
                                             {formatRetention(freePlan.retention_days)}
+                                            {#if freePlan.max_users >= 0}
+                                                <span class="text-muted-foreground/60 mx-1">·</span>
+                                                {formatUsers(freePlan.max_users)}
+                                            {/if}
                                         </Muted>
                                     {/if}
                                 </div>
