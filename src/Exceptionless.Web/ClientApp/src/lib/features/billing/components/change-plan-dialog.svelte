@@ -679,17 +679,19 @@
                                             {/if}
                                         </div>
                                         {#if planForInterval}
-                                            <Muted class="mt-0.5 text-xs">
-                                                {#if planForInterval.max_events_per_month < 0}Unlimited events{:else}<NumberCompact
-                                                        value={planForInterval.max_events_per_month}
-                                                    /> events/mo{/if}
-                                                <span class="text-muted-foreground/60 mx-1">·</span>
-                                                {formatRetention(planForInterval.retention_days)}
+                                            <div class="mt-0.5">
+                                                <Muted class="inline text-xs">
+                                                    {#if planForInterval.max_events_per_month < 0}Unlimited events{:else}<NumberCompact
+                                                            value={planForInterval.max_events_per_month}
+                                                        /> events/mo{/if}
+                                                </Muted>
+                                                <Muted class="text-muted-foreground/60 mx-1 inline text-xs">·</Muted>
+                                                <Muted class="inline text-xs">{formatRetention(planForInterval.retention_days)}</Muted>
                                                 {#if planForInterval.max_users >= 0}
-                                                    <span class="text-muted-foreground/60 mx-1">·</span>
-                                                    {formatUsers(planForInterval.max_users)}
+                                                    <Muted class="text-muted-foreground/60 mx-1 inline text-xs">·</Muted>
+                                                    <Muted class="inline text-xs">{formatUsers(planForInterval.max_users)}</Muted>
                                                 {/if}
-                                            </Muted>
+                                            </div>
                                         {/if}
                                     </div>
                                     <div class="text-right whitespace-nowrap">
@@ -728,17 +730,19 @@
                                         {/if}
                                     </div>
                                     {#if freePlan}
-                                        <Muted class="mt-0.5 text-xs">
-                                            {#if freePlan.max_events_per_month < 0}Unlimited events{:else}<NumberCompact
-                                                    value={freePlan.max_events_per_month}
-                                                /> events/mo{/if}
-                                            <span class="text-muted-foreground/60 mx-1">·</span>
-                                            {formatRetention(freePlan.retention_days)}
+                                        <div class="mt-0.5">
+                                            <Muted class="inline text-xs">
+                                                {#if freePlan.max_events_per_month < 0}Unlimited events{:else}<NumberCompact
+                                                        value={freePlan.max_events_per_month}
+                                                    /> events/mo{/if}
+                                            </Muted>
+                                            <Muted class="text-muted-foreground/60 mx-1 inline text-xs">·</Muted>
+                                            <Muted class="inline text-xs">{formatRetention(freePlan.retention_days)}</Muted>
                                             {#if freePlan.max_users >= 0}
-                                                <span class="text-muted-foreground/60 mx-1">·</span>
-                                                {formatUsers(freePlan.max_users)}
+                                                <Muted class="text-muted-foreground/60 mx-1 inline text-xs">·</Muted>
+                                                <Muted class="inline text-xs">{formatUsers(freePlan.max_users)}</Muted>
                                             {/if}
-                                        </Muted>
+                                        </div>
                                     {/if}
                                 </div>
                                 <div class="text-right whitespace-nowrap">
