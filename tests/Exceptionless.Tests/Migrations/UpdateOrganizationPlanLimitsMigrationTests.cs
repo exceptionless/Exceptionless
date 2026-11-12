@@ -32,18 +32,32 @@ public sealed class UpdateOrganizationPlanLimitsMigrationTests : IntegrationTest
     }
 
     [Fact]
-    public async Task RunAsync_ExistingOrganizations_ReceiveCurrentPlanLimitsWithoutGuessingCreator()
+    public async Task RunAsync_ExistingOrganizations_UpdatesAllPagesAndCacheWithoutRewritingUnchangedPlans()
     {
         // Arrange
         var limited = new Organization { Name = "Existing Free Organization", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = -1, MaxProjects = -1, BillingChangedByUserId = TestConstants.UserId };
         var deleted = new Organization { Name = "Deleted Small Organization", PlanId = "EX_SMALL", PlanName = "Small", PlanDescription = "Small", MaxUsers = 10, MaxProjects = 5, IsDeleted = true };
         var custom = new Organization { Name = "Custom limits", PlanId = "CUSTOM", PlanName = "Custom", PlanDescription = "Custom", MaxUsers = 17, MaxProjects = 9 };
-        await _organizationRepository.AddAsync([limited, deleted, custom], options => options.ImmediateConsistency());
+        var unchanged = new Organization { Name = "Current Free limits", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = 1, MaxProjects = 1 };
+        var otherOrganizations = Enumerable.Range(0, 97).Select(index => new Organization
+        {
+            Name = $"Existing Free Organization {index}", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = -1, MaxProjects = -1
+        }).ToArray();
+        await _organizationRepository.AddAsync([limited, deleted, custom, unchanged, .. otherOrganizations], options => options.ImmediateConsistency());
+        await _organizationRepository.GetByIdAsync(limited.Id, options => options.Cache());
+
+        var configuration = GetService<ExceptionlessElasticConfiguration>();
+        string indexName = configuration.Organizations.VersionedName;
+        var customBefore = await configuration.Client.GetAsync<Organization>(indexName, custom.Id, TestCancellationToken);
+        var unchangedBefore = await configuration.Client.GetAsync<Organization>(indexName, unchanged.Id, TestCancellationToken);
 
         var migration = GetService<UpdateOrganizationPlanLimits>();
         var migrationLock = GetService<ILock>();
 
         // Act
+        await migration.RunAsync(new MigrationContext(migrationLock, _logger, TestCancellationToken));
+        await RefreshDataAsync();
+        var limitedAfter = await configuration.Client.GetAsync<Organization>(indexName, limited.Id, TestCancellationToken);
         await migration.RunAsync(new MigrationContext(migrationLock, _logger, TestCancellationToken));
 
         // Assert
@@ -59,6 +73,28 @@ public sealed class UpdateOrganizationPlanLimitsMigrationTests : IntegrationTest
         var preservedCustom = await _organizationRepository.GetByIdAsync(custom.Id);
         Assert.Equal(17, preservedCustom?.MaxUsers);
         Assert.Equal(9, preservedCustom?.MaxProjects);
+        var customAfter = await configuration.Client.GetAsync<Organization>(indexName, custom.Id, TestCancellationToken);
+        var unchangedAfter = await configuration.Client.GetAsync<Organization>(indexName, unchanged.Id, TestCancellationToken);
+        var limitedAfterRerun = await configuration.Client.GetAsync<Organization>(indexName, limited.Id, TestCancellationToken);
+        Assert.All(new[] { customBefore, customAfter, unchangedBefore, unchangedAfter, limitedAfter, limitedAfterRerun }, response =>
+        {
+            Assert.True(response.IsValidResponse, response.DebugInformation);
+            Assert.True(response.Found);
+        });
+        Assert.Equal(customBefore.SeqNo, customAfter.SeqNo);
+        Assert.Equal(unchangedBefore.SeqNo, unchangedAfter.SeqNo);
+        Assert.Equal(limitedAfter.SeqNo, limitedAfterRerun.SeqNo);
+
+        var cached = await _organizationRepository.GetByIdAsync(limited.Id, options => options.Cache());
+        Assert.Equal(1, cached?.MaxUsers);
+        Assert.Equal(1, cached?.MaxProjects);
+        var migratedOrganizations = await _organizationRepository.GetByIdsAsync(otherOrganizations.Select(organization => organization.Id).ToArray());
+        Assert.Equal(97, migratedOrganizations.Count);
+        Assert.All(migratedOrganizations, organization =>
+        {
+            Assert.Equal(1, organization.MaxUsers);
+            Assert.Equal(1, organization.MaxProjects);
+        });
 
         // The last user to change billing isn't necessarily the creator, so legacy organizations stay ownerless.
         var withoutRecordedCreator = await _organizationRepository.GetByIdAsync(limited.Id);

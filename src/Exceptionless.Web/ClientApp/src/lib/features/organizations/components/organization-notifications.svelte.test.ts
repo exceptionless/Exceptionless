@@ -233,6 +233,22 @@ describe('OrganizationNotifications', () => {
             expect(screen.queryByRole('alert')).toBeNull();
         });
 
+        it('shows plan-limit suspension recovery links for the API suspension code', () => {
+            // Arrange
+            state.organization = createOrganization({ is_suspended: true, plan_id: 'EX_FREE', suspension_code: 'PlanLimit' });
+
+            // Act
+            renderNotifications();
+
+            // Assert
+            expect(screen.getByText('Acme has been suspended.')).toBeTruthy();
+            expect(screen.getByText(/The Free plan allows one user and one project/)).toBeTruthy();
+            expect(screen.getByText(/Event ingestion resumes automatically once both limits are met/)).toBeTruthy();
+            expect(screen.getByRole('link', { name: 'Upgrade your plan' }).getAttribute('href')).toBe('/organization/organization-id/billing?changePlan=true');
+            expect(screen.getByRole('link', { name: 'users and pending invitations' }).getAttribute('href')).toBe('/organization/organization-id/users');
+            expect(screen.getByRole('link', { name: 'projects' }).getAttribute('href')).toBe('/organization/organization-id/projects');
+        });
+
         it('restores the daily trial notice in an open tab without refetching organization state', async () => {
             // Arrange
             vi.useFakeTimers();

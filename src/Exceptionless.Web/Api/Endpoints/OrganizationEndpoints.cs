@@ -282,6 +282,7 @@ public static class OrganizationEndpoints
         .Produces<User>()
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .ProducesProblem(StatusCodes.Status429TooManyRequests)
         .WithSummary("Add user")
         .WithMetadata(new EndpointDocumentation {
@@ -292,6 +293,7 @@ public static class OrganizationEndpoints
             ResponseDescriptions = new() {
                 ["403"] = "Please verify your email address before inviting users.",
                 ["404"] = "The organization was not found.",
+                ["426"] = "The organization has reached its plan's user limit.",
                 ["429"] = "You've sent the maximum number of invites for today.",
             }
         });

@@ -62,6 +62,7 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
         await job.RunAsync(TestCancellationToken);
         var expired = await organizations.GetByIdAsync(organization.Id);
         var suspendedToken = await tokens.GetByIdAsync(token.Id);
+        bool repeatedCheckChangedSuspension = await billing.UpdatePlanLimitSuspensionAsync(expired!);
         await (removeProjectFirst ? removeProject() : removeMember());
         var partiallyRemediated = await organizations.GetByIdAsync(organization.Id);
         await (removeProjectFirst ? removeMember() : removeProject());
@@ -76,8 +77,10 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
         Assert.Equal(1, expired.MaxProjects);
         Assert.True(expired.IsSuspended);
         Assert.Equal(SuspensionCode.PlanLimit, expired.SuspensionCode);
+        Assert.False(repeatedCheckChangedSuspension);
         Assert.True(suspendedToken?.IsSuspended);
         Assert.True(partiallyRemediated?.IsSuspended);
+        Assert.Equal(removeProjectFirst ? "Please remove 1 user or pending invitation and try again." : "Please remove 1 project and try again.", partiallyRemediated?.SuspensionNotes);
         Assert.NotNull(remediated);
         Assert.False(remediated.IsSuspended);
         Assert.Null(remediated.SuspensionCode);
@@ -88,22 +91,45 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
     [Theory]
     [InlineData(SuspensionCode.Billing)]
     [InlineData(SuspensionCode.Abuse)]
+    [InlineData(SuspensionCode.Overage)]
+    [InlineData(SuspensionCode.Other)]
     public async Task RecheckPlanLimitSuspensionAsync_AnotherSuspensionReason_PreservesSuspension(SuspensionCode code)
     {
         // Arrange
         var organization = new Organization { Name = "Manual suspension", IsSuspended = true, SuspensionCode = code,
-            SuspendedByUserId = TestConstants.UserId, SuspensionDate = TimeProvider.GetUtcNow().UtcDateTime };
+            SuspendedByUserId = TestConstants.UserId, SuspensionDate = TimeProvider.GetUtcNow().UtcDateTime, SuspensionNotes = "Manual suspension reason" };
         var billing = GetService<BillingManager>();
         billing.ApplyBillingPlan(organization, GetService<BillingPlans>().FreePlan);
         var repository = GetService<IOrganizationRepository>();
         await repository.AddAsync(organization);
 
         // Act
+        bool changed = await billing.UpdatePlanLimitSuspensionAsync(organization);
         await billing.RecheckPlanLimitSuspensionAsync(organization.Id);
         var saved = await repository.GetByIdAsync(organization.Id);
 
         // Assert
+        Assert.False(changed);
         Assert.True(saved?.IsSuspended);
         Assert.Equal(code, saved?.SuspensionCode);
+        Assert.Equal("Manual suspension reason", saved?.SuspensionNotes);
+    }
+
+    [Fact]
+    public async Task UpdatePlanLimitSuspensionAsync_UnsuspendedOrganizationWithinLimits_DoesNotReportAChange()
+    {
+        // Arrange
+        var organization = new Organization { Name = "Within Free limits" };
+        var billing = GetService<BillingManager>();
+        billing.ApplyBillingPlan(organization, GetService<BillingPlans>().FreePlan);
+        await GetService<IOrganizationRepository>().AddAsync(organization);
+
+        // Act
+        bool changed = await billing.UpdatePlanLimitSuspensionAsync(organization);
+
+        // Assert
+        Assert.False(changed);
+        Assert.False(organization.IsSuspended);
+        Assert.Null(organization.SuspensionCode);
     }
 }

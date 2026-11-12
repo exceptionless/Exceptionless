@@ -286,7 +286,7 @@ public class BillingManager
         string? error = await GetPlanLimitErrorAsync(organization, organization.MaxUsers, organization.MaxProjects);
         if (error is null)
         {
-            if (organization.SuspensionCode is not SuspensionCode.PlanLimit)
+            if (!organization.IsSuspended)
                 return false;
 
             organization.RemoveSuspension();

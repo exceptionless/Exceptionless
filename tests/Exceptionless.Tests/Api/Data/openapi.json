@@ -7298,6 +7298,16 @@
               }
             }
           },
+          "426": {
+            "description": "The organization has reached its plan\u0027s user limit.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "429": {
             "description": "You\u0027ve sent the maximum number of invites for today.",
             "content": {

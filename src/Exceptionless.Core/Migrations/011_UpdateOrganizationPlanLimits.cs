@@ -47,28 +47,30 @@ public sealed class UpdateOrganizationPlanLimits : MigrationBase
                 .SearchAfterPaging()
                 .PageLimit(BatchSize));
 
-        int migrated = 0;
+        // Resolve the current plan inside the update, so a concurrent billing change isn't overwritten.
+        var limits = _plans.Plans.ToDictionary(plan => plan.Id,
+            plan => new { max_users = plan.MaxUsers, max_projects = plan.MaxProjects });
+        var patch = new ScriptPatch("""
+            def limits = params.limits[ctx._source.plan_id];
+            if (limits == null || (ctx._source.max_users == limits.max_users && ctx._source.max_projects == limits.max_projects)) {
+                ctx.op = 'noop';
+            } else {
+                ctx._source.max_users = limits.max_users;
+                ctx._source.max_projects = limits.max_projects;
+            }
+            """)
+        {
+            Params = new Dictionary<string, object> { ["limits"] = limits }
+        };
+
+        long migrated = 0;
         while (organizations.Documents.Count is > 0)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            // Resolve the current plan inside the update, so a concurrent billing change isn't overwritten.
-            var limits = _plans.Plans.ToDictionary(plan => plan.Id,
-                plan => new { max_users = plan.MaxUsers, max_projects = plan.MaxProjects });
-            var patch = new ScriptPatch("""
-                if (params.limits.containsKey(ctx._source.plan_id)) {
-                    def limits = params.limits[ctx._source.plan_id];
-                    ctx._source.max_users = limits.max_users;
-                    ctx._source.max_projects = limits.max_projects;
-                }
-                """)
-            {
-                Params = new Dictionary<string, object> { ["limits"] = limits }
-            };
-            await _organizationRepository.PatchAsync(
+            migrated += await _organizationRepository.PatchAsync(
                 organizations.Documents.Select(organization => organization.Id).ToArray(), patch,
                 options => options.Cache().Notifications(false));
-            migrated += organizations.Documents.Count;
 
             _logger.LogInformation("Refreshed plan limits for {OrganizationCount} organizations so far", migrated);
             bool hasNextPage = await organizations.NextPageAsync();
