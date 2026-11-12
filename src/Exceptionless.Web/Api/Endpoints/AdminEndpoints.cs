@@ -119,8 +119,8 @@ public static class AdminEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden);
 
-        group.MapPost("change-plan", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string organizationId, string planId)
-            => (await mediator.InvokeAsync<Result<object>>(new AdminChangePlan(organizationId, planId, httpContext))).ToHttpResult(resultMapper));
+        group.MapPost("change-plan", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string organizationId, string planId, DateTimeOffset? trialEndsUtc = null)
+            => (await mediator.InvokeAsync<Result<object>>(new AdminChangePlan(organizationId, planId, httpContext, trialEndsUtc))).ToHttpResult(resultMapper));
 
         group.MapPost("set-bonus", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string organizationId, int bonusEvents, DateTime? expires = null)
             => (await mediator.InvokeAsync<Result>(new AdminSetBonus(organizationId, bonusEvents, expires, httpContext))).ToHttpResult(resultMapper));

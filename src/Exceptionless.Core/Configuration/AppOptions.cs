@@ -73,20 +73,20 @@ public class AppOptions
 
     public int BulkBatchSize { get; internal set; }
 
-    public CacheOptions CacheOptions { get; internal set; } = null!;
-    public MessageBusOptions MessageBusOptions { get; internal set; } = null!;
-    public QueueOptions QueueOptions { get; internal set; } = null!;
-    public StorageOptions StorageOptions { get; internal set; } = null!;
-    public EmailOptions EmailOptions { get; internal set; } = null!;
-    public ElasticsearchOptions ElasticsearchOptions { get; internal set; } = null!;
-    public IntercomOptions IntercomOptions { get; internal set; } = null!;
-    public SlackOptions SlackOptions { get; internal set; } = null!;
-    public StripeOptions StripeOptions { get; internal set; } = null!;
-    public BillingOptions BillingOptions { get; internal set; } = null!;
-    public AuthOptions AuthOptions { get; internal set; } = null!;
-    public OAuthServerOptions OAuthServerOptions { get; internal set; } = null!;
-    public SourceMapOptions SourceMapOptions { get; internal set; } = null!;
     public AssistantOptions AssistantOptions { get; internal set; } = null!;
+    public AuthOptions AuthOptions { get; internal set; } = null!;
+    public BillingOptions BillingOptions { get; internal set; } = null!;
+    public CacheOptions CacheOptions { get; internal set; } = null!;
+    public ElasticsearchOptions ElasticsearchOptions { get; internal set; } = null!;
+    public EmailOptions EmailOptions { get; internal set; } = null!;
+    public IntercomOptions IntercomOptions { get; internal set; } = null!;
+    public MessageBusOptions MessageBusOptions { get; internal set; } = null!;
+    public OAuthServerOptions OAuthServerOptions { get; internal set; } = null!;
+    public QueueOptions QueueOptions { get; internal set; } = null!;
+    public SlackOptions SlackOptions { get; internal set; } = null!;
+    public SourceMapOptions SourceMapOptions { get; internal set; } = null!;
+    public StorageOptions StorageOptions { get; internal set; } = null!;
+    public StripeOptions StripeOptions { get; internal set; } = null!;
 
     public static AppOptions ReadFromConfiguration(IConfiguration config)
     {

@@ -86,7 +86,7 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
         var options = CreateOptions(new Dictionary<string, string?> { ["Assistant:ApiKey"] = "test-key" });
         var repository = new Mock<IOrganizationRepository>();
         var settings = new SystemSettings { AssistantEnabled = false };
-        var service = new AssistantAccessService(options, new BillingPlans(options), repository.Object, CreateSystemSettingsService(options, settings), System.TimeProvider.System);
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository.Object, CreateSystemSettingsService(options, settings), TimeProvider);
 
         var access = await service.GetAccessAsync(CreateRequest(TestConstants.OrganizationId), TestConstants.OrganizationId);
 
@@ -184,7 +184,7 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
             ["Assistant:ApiKey"] = "test-key"
         });
         var repository = new Mock<IOrganizationRepository>();
-        var service = new AssistantAccessService(options, new BillingPlans(options), repository.Object, CreateSystemSettingsService(options), System.TimeProvider.System);
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository.Object, CreateSystemSettingsService(options), TimeProvider);
         var request = CreateRequest(TestConstants.OrganizationId2);
 
         var access = await service.GetAccessAsync(request, TestConstants.OrganizationId);
@@ -206,7 +206,7 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
         var repository = new Mock<IOrganizationRepository>();
         repository.Setup(repository => repository.GetByIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Organization>>()))
             .ReturnsAsync(organization);
-        var service = new AssistantAccessService(options, new BillingPlans(options), repository.Object, CreateSystemSettingsService(options), System.TimeProvider.System);
+        var service = new AssistantAccessService(options, new BillingPlans(options), repository.Object, CreateSystemSettingsService(options), TimeProvider);
         var request = CreateRequest(organization.Id);
 
         var access = await service.GetAccessAsync(request, organization.Id);
@@ -230,7 +230,7 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
         repository.Setup(repository => repository.GetByIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Organization>>()))
             .ReturnsAsync(organization);
         var billingPlans = new BillingPlans(options);
-        var service = new AssistantAccessService(options, billingPlans, repository.Object, CreateSystemSettingsService(options), System.TimeProvider.System);
+        var service = new AssistantAccessService(options, billingPlans, repository.Object, CreateSystemSettingsService(options), TimeProvider);
         var request = CreateRequest(organization.Id);
 
         var access = await service.GetAccessAsync(request, organization.Id);
@@ -261,7 +261,7 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
         var repository = new Mock<IOrganizationRepository>();
         repository.Setup(repository => repository.GetByIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Organization>>()))
             .ReturnsAsync(organization);
-        var service = new AssistantAccessService(options, billingPlans, repository.Object, CreateSystemSettingsService(options), System.TimeProvider.System);
+        var service = new AssistantAccessService(options, billingPlans, repository.Object, CreateSystemSettingsService(options), TimeProvider);
         var request = CreateRequest(organization.Id);
         request.GetUser().IsEmailAddressVerified = isEmailAddressVerified;
 
@@ -284,13 +284,13 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
         Assert.Equal(monthlyCost, options.MaximumMonthlyCostUsd);
     }
 
-    private static SystemSettingsService CreateSystemSettingsService(AppOptions appOptions, SystemSettings? settings = null)
+    private SystemSettingsService CreateSystemSettingsService(AppOptions appOptions, SystemSettings? settings = null)
     {
         return new SystemSettingsService(
             () => Task.FromResult(settings),
             _ => Task.CompletedTask,
             appOptions,
-            System.TimeProvider.System);
+            TimeProvider);
     }
 
     private static AppOptions CreateOptions(Dictionary<string, string?>? values = null)

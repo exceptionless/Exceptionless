@@ -14,5 +14,10 @@ public sealed class TrialClaimRepository : RepositoryBase<TrialClaim>, ITrialCla
     }
 
     public Task<long> RemoveCreatedBeforeAsync(DateTime utcCutoff)
-        => RemoveAllAsync(q => q.DateRange(null, utcCutoff, InferField(c => c.CreatedUtc)));
+    {
+        if (utcCutoff.Kind is not DateTimeKind.Utc)
+            throw new ArgumentException("The trial claim cutoff must be UTC", nameof(utcCutoff));
+
+        return RemoveAllAsync(q => q.DateRange(null, utcCutoff, InferField(c => c.CreatedUtc)));
+    }
 }

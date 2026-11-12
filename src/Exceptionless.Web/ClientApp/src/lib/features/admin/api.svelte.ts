@@ -1,9 +1,10 @@
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import type { WorkInProgressResult } from '#generated/api.ts';
+import type { ChangePlanResult, WorkInProgressResult } from '#generated/api.ts';
 
 import { invalidateAssistantAccessQueries } from '#features/assistant/api.svelte.ts';
+import { queryKeys as organizationQueryKeys } from '#features/organizations/api.svelte.ts';
 
 import type {
     AdminAssistantSettings,
@@ -301,14 +302,9 @@ export function getTrialSettingsQuery() {
                 signal
             });
 
-            if (!response.ok) {
-                throw response.problem;
-            }
-
             return response.data!;
         },
-        queryKey: queryKeys.trialSettings,
-        staleTime: 30 * 1000
+        queryKey: queryKeys.trialSettings
     }));
 }
 
@@ -488,10 +484,6 @@ export function putTrialSettingsMutation() {
             const client = useFetchClient();
             const response = await client.putJSON<AdminTrialSettings>('admin/trial-settings', request);
 
-            if (!response.ok) {
-                throw response.problem;
-            }
-
             return response.data!;
         },
         onSuccess: (settings) => {
@@ -510,6 +502,31 @@ export function runMaintenanceJobMutation() {
                     utcEnd: params.utcEnd?.toISOString(),
                     utcStart: params.utcStart?.toISOString()
                 }
+            });
+        }
+    }));
+}
+
+export function setTrialEndMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<void, ProblemDetails, { organizationId: string; trialEndsUtc: string }>(() => ({
+        mutationFn: async ({ organizationId, trialEndsUtc }) => {
+            const client = useFetchClient();
+            const response = await client.postJSON<ChangePlanResult>('admin/change-plan', undefined, {
+                params: {
+                    organizationId,
+                    planId: 'EX_TRIAL',
+                    trialEndsUtc
+                }
+            });
+            if (!response.data?.success) {
+                throw new Error(response.data?.message ?? 'Failed to update the trial end date.');
+            }
+        },
+        onSuccess: async (_, { organizationId }) => {
+            await queryClient.invalidateQueries({
+                queryKey: organizationQueryKeys.id(organizationId, undefined)
             });
         }
     }));

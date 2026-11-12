@@ -15,6 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
+using Moq;
 
 namespace Exceptionless.Tests.Assistant;
 
@@ -131,11 +132,18 @@ public sealed class AssistantUsageServiceTests : TestWithLoggingBase
     {
         // Arrange
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
-        using var cache = new SharedCostFailingCacheClient(timeProvider);
+        bool failNextSharedCostIncrement = false;
+        var cacheMock = new Mock<InMemoryCacheClient>(new InMemoryCacheClientOptions { TimeProvider = timeProvider, LoggerFactory = Log }) { CallBase = true };
+        cacheMock.As<ICacheClient>().Setup(cache => cache.IncrementAsync(
+            It.Is<string>(key => failNextSharedCostIncrement && key.Contains("shared:", StringComparison.Ordinal)),
+            It.IsAny<long>(), It.IsAny<TimeSpan?>()))
+            .Callback(() => failNextSharedCostIncrement = false)
+            .ThrowsAsync(new IOException("Shared usage cache is unavailable"));
+        using var cache = cacheMock.Object;
         var service = CreateService(cache, CreateOptions(), timeProvider);
         var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 0.000001m };
         await using var countedRequest = await service.StartProviderRequestAsync("counted-organization", 1_000, sharedPlanOptions);
-        cache.FailNextSharedCostIncrement = true;
+        failNextSharedCostIncrement = true;
 
         // Act
         var exception = await Record.ExceptionAsync(async () =>
@@ -161,13 +169,20 @@ public sealed class AssistantUsageServiceTests : TestWithLoggingBase
     {
         // Arrange
         var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
-        using var cache = new SharedCostFailingCacheClient(timeProvider);
+        bool failNextSharedCostIncrement = false;
+        var cacheMock = new Mock<InMemoryCacheClient>(new InMemoryCacheClientOptions { TimeProvider = timeProvider, LoggerFactory = Log }) { CallBase = true };
+        cacheMock.As<ICacheClient>().Setup(cache => cache.IncrementAsync(
+            It.Is<string>(key => failNextSharedCostIncrement && key.Contains("shared:", StringComparison.Ordinal)),
+            It.IsAny<long>(), It.IsAny<TimeSpan?>()))
+            .Callback(() => failNextSharedCostIncrement = false)
+            .ThrowsAsync(new IOException("Shared usage cache is unavailable"));
+        using var cache = cacheMock.Object;
         var recorder = new RecordingAssistantUsageRecorder();
         var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
         var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 0.000001m };
         var providerRequest = await service.StartProviderRequestAsync("organization-id", 1_000, sharedPlanOptions);
         providerRequest.MarkAccepted();
-        cache.FailNextSharedCostIncrement = true;
+        failNextSharedCostIncrement = true;
 
         // Act
         var exception = await Record.ExceptionAsync(async () =>
@@ -632,25 +647,5 @@ public sealed class AssistantUsageServiceTests : TestWithLoggingBase
         return AppOptions.ReadFromConfiguration(new ConfigurationBuilder()
             .AddInMemoryCollection(configurationValues)
             .Build());
-    }
-}
-
-internal sealed class SharedCostFailingCacheClient(TimeProvider timeProvider) : InMemoryCacheClient(new InMemoryCacheClientOptions
-{
-    LoggerFactory = NullLoggerFactory.Instance,
-    TimeProvider = timeProvider
-}), ICacheClient
-{
-    public bool FailNextSharedCostIncrement { get; set; }
-
-    Task<long> ICacheClient.IncrementAsync(string key, long amount, TimeSpan? expiresIn)
-    {
-        if (FailNextSharedCostIncrement && key.Contains("shared:", StringComparison.Ordinal))
-        {
-            FailNextSharedCostIncrement = false;
-            throw new InvalidOperationException("The cache is unavailable.");
-        }
-
-        return IncrementAsync(key, amount, expiresIn);
     }
 }

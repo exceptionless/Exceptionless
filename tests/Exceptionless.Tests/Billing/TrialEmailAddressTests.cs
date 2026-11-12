@@ -11,6 +11,37 @@ public class TrialEmailAddressTests : TestWithLoggingBase
     public TrialEmailAddressTests(ITestOutputHelper output) : base(output) { }
 
     [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void Normalize_MissingMailbox_RejectsInput(string? email)
+    {
+        // Arrange
+        string? address = email;
+
+        // Act
+        var exception = Record.Exception(() => TrialEmailAddress.Normalize(address!));
+
+        // Assert
+        Assert.IsAssignableFrom<ArgumentException>(exception);
+    }
+
+    [Theory]
+    [InlineData("not base64", typeof(FormatException))]
+    [InlineData("c2hvcnQ=", typeof(ArgumentException))]
+    public void GetClaimId_InvalidSecret_RejectsInput(string secret, Type expectedException)
+    {
+        // Arrange
+        const string email = "someone@example.test";
+
+        // Act
+        var exception = Record.Exception(() => TrialEmailAddress.GetClaimId(email, secret));
+
+        // Assert
+        Assert.IsType(expectedException, exception);
+    }
+
+    [Theory]
     [InlineData("Someone@Example.com", "someone@example.com")]
     [InlineData("someone+trial@example.com", "someone@example.com")]
     [InlineData("some.one@example.com", "some.one@example.com")]
@@ -118,20 +149,18 @@ public class TrialEmailAddressTests : TestWithLoggingBase
         string firstKey = Convert.ToBase64String(new byte[32]);
         string secondKey = Convert.ToBase64String(Enumerable.Repeat((byte)1, 32).ToArray());
         const string email = "Some.One+first@gmail.com";
-        string legacyDigest = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes("someone@gmail.com")));
+        string unkeyedDigest = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes("someone@gmail.com")));
 
         // Act
         string first = TrialEmailAddress.GetClaimId(email, firstKey);
         string alias = TrialEmailAddress.GetClaimId("s.o.m.e.o.n.e+alias@googlemail.com", firstKey);
         string otherSecret = TrialEmailAddress.GetClaimId(email, secondKey);
-        string migrated = TrialEmailAddress.ProtectLegacyClaimId(legacyDigest, firstKey);
 
         // Assert
         Assert.Equal("hmac-v1-65a0093454a49ce28b1071316083b2ca23f73e235b6b99a621b044b8ebcccea9", first);
         Assert.Equal(first, alias);
-        Assert.Equal(first, migrated);
         Assert.NotEqual(first, otherSecret);
-        Assert.DoesNotContain(legacyDigest, first);
+        Assert.DoesNotContain(unkeyedDigest, first);
     }
 
     [Theory]

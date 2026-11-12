@@ -24,18 +24,30 @@ public class TrialExpirationJobTests : IntegrationTestsBase
     private const string VerifiedUserId = "664ec4c1f12e4f2b7a0d4001";
     private const string UnverifiedUserId = "664ec4c1f12e4f2b7a0d4002";
 
-    public TrialExpirationJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
+    private readonly CountingMailer _mailer;
+    private readonly TrialExpirationJob _job;
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly BillingManager _billingManager;
+    private readonly BillingPlans _billingPlans;
+    private readonly OrganizationData _organizationData;
+    private readonly UserData _userData;
+    private readonly BillingOptions _billingOptions;
 
-    private CountingMailer Mailer => GetService<CountingMailer>();
-    private TrialExpirationJob Job => GetService<TrialExpirationJob>();
-    private IOrganizationRepository OrganizationRepository => GetService<IOrganizationRepository>();
-    private IUserRepository UserRepository => GetService<IUserRepository>();
-    private BillingManager BillingManager => GetService<BillingManager>();
-    private BillingPlans BillingPlans => GetService<BillingPlans>();
-    private OrganizationData OrganizationData => GetService<OrganizationData>();
-    private UserData UserData => GetService<UserData>();
-    private BillingOptions BillingOptions => GetService<AppOptions>().BillingOptions;
-    private TimeSpan TimeUntilReminder => TimeSpan.FromDays(BillingOptions.TrialDays - BillingOptions.TrialReminderDays + 0.5);
+    public TrialExpirationJobTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
+        _mailer = GetService<CountingMailer>();
+        _job = GetService<TrialExpirationJob>();
+        _organizationRepository = GetService<IOrganizationRepository>();
+        _userRepository = GetService<IUserRepository>();
+        _billingManager = GetService<BillingManager>();
+        _billingPlans = GetService<BillingPlans>();
+        _organizationData = GetService<OrganizationData>();
+        _userData = GetService<UserData>();
+        _billingOptions = GetService<AppOptions>().BillingOptions;
+    }
+
+    private TimeSpan TimeUntilReminder => TimeSpan.FromDays(_billingOptions.TrialDays - _billingOptions.TrialReminderDays + 0.5);
 
     protected override void RegisterServices(IServiceCollection services)
     {
@@ -47,18 +59,18 @@ public class TrialExpirationJobTests : IntegrationTestsBase
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
-        Mailer.Reset();
+        _mailer.Reset();
 
         var trialOrganization = new Organization { Id = TrialOrganizationId, Name = "Trial Organization" };
-        BillingManager.ApplyTrialPlan(trialOrganization);
-        var paidOrganization = OrganizationData.GenerateOrganization(BillingManager, BillingPlans, id: PaidOrganizationId, name: "Paid Organization", plan: BillingPlans.MediumPlan);
-        await OrganizationRepository.AddAsync([trialOrganization, paidOrganization], options => options.ImmediateConsistency());
+        _billingManager.ApplyTrialPlan(trialOrganization);
+        var paidOrganization = _organizationData.GenerateOrganization(_billingManager, _billingPlans, id: PaidOrganizationId, name: "Paid Organization", plan: _billingPlans.MediumPlan);
+        await _organizationRepository.AddAsync([trialOrganization, paidOrganization], options => options.ImmediateConsistency());
 
-        var verifiedUser = UserData.GenerateUser(id: VerifiedUserId, organizationId: TrialOrganizationId, emailAddress: "trial-owner@example.org");
+        var verifiedUser = _userData.GenerateUser(id: VerifiedUserId, organizationId: TrialOrganizationId, emailAddress: "trial-owner@example.org");
         verifiedUser.MarkEmailAddressVerified();
-        var unverifiedUser = UserData.GenerateUser(id: UnverifiedUserId, organizationId: TrialOrganizationId, emailAddress: "trial-member@example.org");
+        var unverifiedUser = _userData.GenerateUser(id: UnverifiedUserId, organizationId: TrialOrganizationId, emailAddress: "trial-member@example.org");
         unverifiedUser.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
-        await UserRepository.AddAsync([verifiedUser, unverifiedUser], options => options.ImmediateConsistency());
+        await _userRepository.AddAsync([verifiedUser, unverifiedUser], options => options.ImmediateConsistency());
     }
 
     [Fact]
@@ -68,36 +80,30 @@ public class TrialExpirationJobTests : IntegrationTestsBase
         TimeProvider.Advance(TimeUntilReminder);
 
         // Act
-        await Job.RunAsync(TestCancellationToken);
-        await Job.RunAsync(TestCancellationToken);
+        await _job.RunAsync(TestCancellationToken);
+        await _job.RunAsync(TestCancellationToken);
+
+        var remindedOrganization = await _organizationRepository.GetByIdAsync(TrialOrganizationId);
+        var reminder = _mailer.OrganizationTrialEndingCalls.ToArray();
+        TimeProvider.Advance(TimeSpan.FromDays(_billingOptions.TrialReminderDays));
+        await _job.RunAsync(TestCancellationToken);
 
         // Assert
-        var remindedOrganization = await OrganizationRepository.GetByIdAsync(TrialOrganizationId);
         Assert.NotNull(remindedOrganization);
-        Assert.Equal(BillingPlans.TrialPlan.Id, remindedOrganization.PlanId);
+        Assert.Equal(_billingPlans.TrialPlan.Id, remindedOrganization.PlanId);
         Assert.NotNull(remindedOrganization.TrialReminderSentUtc);
-
-        var reminder = Assert.Single(Mailer.OrganizationTrialEndingCalls);
-        Assert.Equal(new OrganizationTrialEndingCall(VerifiedUserId, TrialOrganizationId), reminder);
-
-        // Arrange
-        TimeProvider.Advance(TimeSpan.FromDays(BillingOptions.TrialReminderDays));
-
-        // Act
-        await Job.RunAsync(TestCancellationToken);
-
-        // Assert
-        var expiredOrganization = await OrganizationRepository.GetByIdAsync(TrialOrganizationId);
+        Assert.Equal(new OrganizationTrialEndingCall(VerifiedUserId, TrialOrganizationId), Assert.Single(reminder));
+        var expiredOrganization = await _organizationRepository.GetByIdAsync(TrialOrganizationId);
         Assert.NotNull(expiredOrganization);
-        Assert.Equal(BillingPlans.FreePlan.Id, expiredOrganization.PlanId);
+        Assert.Equal(_billingPlans.FreePlan.Id, expiredOrganization.PlanId);
         Assert.False(expiredOrganization.HasPremiumFeatures);
-        Assert.Equal(BillingPlans.FreePlan.RetentionDays, expiredOrganization.RetentionDays);
+        Assert.Equal(_billingPlans.FreePlan.RetentionDays, expiredOrganization.RetentionDays);
         Assert.NotNull(expiredOrganization.TrialEndsUtc);
-        Assert.Single(Mailer.OrganizationTrialEndingCalls);
+        Assert.Single(_mailer.OrganizationTrialEndingCalls);
 
-        var paidOrganization = await OrganizationRepository.GetByIdAsync(PaidOrganizationId);
+        var paidOrganization = await _organizationRepository.GetByIdAsync(PaidOrganizationId);
         Assert.NotNull(paidOrganization);
-        Assert.Equal(BillingPlans.MediumPlan.Id, paidOrganization.PlanId);
+        Assert.Equal(_billingPlans.MediumPlan.Id, paidOrganization.PlanId);
     }
 
     [Fact]
@@ -106,19 +112,19 @@ public class TrialExpirationJobTests : IntegrationTestsBase
         // Arrange
         var members = Enumerable.Range(0, 101).Select(index =>
         {
-            var member = UserData.GenerateUser(generateId: true, organizationId: TrialOrganizationId, emailAddress: $"trial-member-{index}@example.org");
+            var member = _userData.GenerateUser(generateId: true, organizationId: TrialOrganizationId, emailAddress: $"trial-member-{index}@example.org");
             member.MarkEmailAddressVerified();
             return member;
         }).ToList();
-        await UserRepository.AddAsync(members, options => options.ImmediateConsistency());
+        await _userRepository.AddAsync(members, options => options.ImmediateConsistency());
         TimeProvider.Advance(TimeUntilReminder);
 
         // Act
-        await Job.RunAsync(TestCancellationToken);
+        await _job.RunAsync(TestCancellationToken);
 
         // Assert
-        Assert.Equal(members.Count + 1, Mailer.OrganizationTrialEndingCalls.Count);
-        Assert.All(members, member => Assert.Contains(Mailer.OrganizationTrialEndingCalls, call => String.Equals(call.UserId, member.Id, StringComparison.Ordinal)));
+        Assert.Equal(members.Count + 1, _mailer.OrganizationTrialEndingCalls.Count);
+        Assert.All(members, member => Assert.Contains(_mailer.OrganizationTrialEndingCalls, call => String.Equals(call.UserId, member.Id, StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -127,23 +133,23 @@ public class TrialExpirationJobTests : IntegrationTestsBase
         // Arrange
         const string secondTrialOrganizationId = "664ec4c1f12e4f2b7a0d3003";
         var secondTrialOrganization = new Organization { Id = secondTrialOrganizationId, Name = "Second Trial Organization" };
-        BillingManager.ApplyTrialPlan(secondTrialOrganization);
-        await OrganizationRepository.AddAsync(secondTrialOrganization, options => options.ImmediateConsistency());
-        var secondOwner = UserData.GenerateUser(generateId: true, organizationId: secondTrialOrganizationId, emailAddress: "second-trial-owner@example.org");
+        _billingManager.ApplyTrialPlan(secondTrialOrganization);
+        await _organizationRepository.AddAsync(secondTrialOrganization, options => options.ImmediateConsistency());
+        var secondOwner = _userData.GenerateUser(generateId: true, organizationId: secondTrialOrganizationId, emailAddress: "second-trial-owner@example.org");
         secondOwner.MarkEmailAddressVerified();
-        await UserRepository.AddAsync(secondOwner, options => options.ImmediateConsistency());
+        await _userRepository.AddAsync(secondOwner, options => options.ImmediateConsistency());
         TimeProvider.Advance(TimeUntilReminder);
 
         using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
-        Mailer.OnOrganizationTrialEnding = cancellationTokenSource.Cancel;
+        _mailer.OnOrganizationTrialEnding = cancellationTokenSource.Cancel;
 
         // Act
-        await Job.RunAsync(cancellationTokenSource.Token);
+        await _job.RunAsync(cancellationTokenSource.Token);
 
         // Assert
-        var reminder = Assert.Single(Mailer.OrganizationTrialEndingCalls);
+        var reminder = Assert.Single(_mailer.OrganizationTrialEndingCalls);
         Assert.Equal(new OrganizationTrialEndingCall(VerifiedUserId, TrialOrganizationId), reminder);
-        var skippedOrganization = await OrganizationRepository.GetByIdAsync(secondTrialOrganizationId);
+        var skippedOrganization = await _organizationRepository.GetByIdAsync(secondTrialOrganizationId);
         Assert.NotNull(skippedOrganization);
         Assert.Null(skippedOrganization.TrialReminderSentUtc);
     }
@@ -152,48 +158,48 @@ public class TrialExpirationJobTests : IntegrationTestsBase
     public async Task RunAsync_TrialWithoutEndDate_MovesToFreePlan()
     {
         // Arrange
-        var organization = await OrganizationRepository.GetByIdAsync(TrialOrganizationId);
+        var organization = await _organizationRepository.GetByIdAsync(TrialOrganizationId);
         Assert.NotNull(organization);
         organization.TrialEndsUtc = null;
-        await OrganizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
+        await _organizationRepository.SaveAsync(organization, options => options.ImmediateConsistency());
 
         // Act
-        await Job.RunAsync(TestCancellationToken);
+        await _job.RunAsync(TestCancellationToken);
 
         // Assert
-        var expiredOrganization = await OrganizationRepository.GetByIdAsync(TrialOrganizationId);
+        var expiredOrganization = await _organizationRepository.GetByIdAsync(TrialOrganizationId);
         Assert.NotNull(expiredOrganization);
-        Assert.Equal(BillingPlans.FreePlan.Id, expiredOrganization.PlanId);
-        Assert.Empty(Mailer.OrganizationTrialEndingCalls);
+        Assert.Equal(_billingPlans.FreePlan.Id, expiredOrganization.PlanId);
+        Assert.Empty(_mailer.OrganizationTrialEndingCalls);
     }
 
     [Fact]
     public async Task RunAsync_StaleExpiredTrialInCache_PreservesExtendedTrial()
     {
         // Arrange
-        TimeProvider.Advance(TimeSpan.FromDays(BillingOptions.TrialDays + 1));
-        await OrganizationRepository.GetByIdAsync(TrialOrganizationId, options => options.Cache());
+        TimeProvider.Advance(TimeSpan.FromDays(_billingOptions.TrialDays + 1));
+        await _organizationRepository.GetByIdAsync(TrialOrganizationId, options => options.Cache());
         var cache = GetService<ICacheClient>();
         string cacheKey = $"Organization:{TrialOrganizationId}";
         var cached = await cache.GetAsync<ICollection<FindHit<Organization>>>(cacheKey);
         Assert.True(cached.HasValue);
 
-        var extended = await OrganizationRepository.GetByIdAsync(TrialOrganizationId, options => options.Cache(false));
+        var extended = await _organizationRepository.GetByIdAsync(TrialOrganizationId, options => options.Cache(false));
         Assert.NotNull(extended);
-        BillingManager.ApplyTrialPlan(extended);
-        await OrganizationRepository.SaveAsync(extended, options => options.ImmediateConsistency().Cache());
+        _billingManager.ApplyTrialPlan(extended);
+        await _organizationRepository.SaveAsync(extended, options => options.ImmediateConsistency().Cache());
 
         // Model an older cache fill arriving after the extension was saved.
         await cache.SetAsync(cacheKey, cached.Value);
 
         // Act
-        await Job.RunAsync(TestCancellationToken);
+        await _job.RunAsync(TestCancellationToken);
 
         // Assert
-        var actual = await OrganizationRepository.GetByIdAsync(TrialOrganizationId, options => options.Cache(false));
+        var actual = await _organizationRepository.GetByIdAsync(TrialOrganizationId, options => options.Cache(false));
         Assert.NotNull(actual);
-        Assert.Equal(BillingPlans.TrialPlan.Id, actual.PlanId);
+        Assert.Equal(_billingPlans.TrialPlan.Id, actual.PlanId);
         Assert.Equal(extended.TrialEndsUtc, actual.TrialEndsUtc);
-        Assert.Empty(Mailer.OrganizationTrialEndingCalls);
+        Assert.Empty(_mailer.OrganizationTrialEndingCalls);
     }
 }

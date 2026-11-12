@@ -19,6 +19,7 @@ public class BillingManager
     private readonly ICacheClient _cacheClient;
     private readonly ILockProvider _lockProvider;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly IProjectRepository _projectRepository;
     private readonly ITrialClaimRepository _trialClaimRepository;
     private readonly IUserRepository _userRepository;
     private readonly SystemSettingsService _systemSettingsService;
@@ -30,6 +31,7 @@ public class BillingManager
         ICacheClient cacheClient,
         ILockProvider lockProvider,
         IOrganizationRepository organizationRepository,
+        IProjectRepository projectRepository,
         ITrialClaimRepository trialClaimRepository,
         IUserRepository userRepository,
         SystemSettingsService systemSettingsService,
@@ -40,6 +42,7 @@ public class BillingManager
         _cacheClient = cacheClient;
         _lockProvider = lockProvider;
         _organizationRepository = organizationRepository;
+        _projectRepository = projectRepository;
         _trialClaimRepository = trialClaimRepository;
         _userRepository = userRepository;
         _systemSettingsService = systemSettingsService;
@@ -202,6 +205,34 @@ public class BillingManager
         ApplyBillingPlan(organization, _plans.FreePlan);
     }
 
+    public async Task<bool> CanAddUserAsync(Organization organization)
+    {
+        if (String.IsNullOrWhiteSpace(organization?.Id))
+            return false;
+
+        if (organization.MaxUsers is BillingPlan.Unlimited)
+            return true;
+
+        var users = await _userRepository.GetByOrganizationIdAsync(organization.Id);
+        return users.Total + organization.Invites.Count < organization.MaxUsers;
+    }
+
+    public async Task<bool> CanAddProjectAsync(Project project)
+    {
+        if (String.IsNullOrWhiteSpace(project?.OrganizationId))
+            return false;
+
+        var organization = await _organizationRepository.GetByIdAsync(project.OrganizationId);
+        if (organization is null)
+            return false;
+
+        if (organization.MaxProjects is BillingPlan.Unlimited)
+            return true;
+
+        long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id);
+        return projectCount < organization.MaxProjects;
+    }
+
     public async Task<bool> HasPremiumFeaturesAsync(string organizationId)
     {
         var organization = await _organizationRepository.GetByIdAsync(organizationId);
@@ -224,7 +255,70 @@ public class BillingManager
                 return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
         }
 
+        string? limitError = await GetPlanLimitErrorAsync(organization, plan.MaxUsers, plan.MaxProjects);
+        if (limitError is not null)
+            return ChangePlanResult.FailWithMessage(limitError);
+
         return new ChangePlanResult { Success = true };
+    }
+
+    private async Task<string?> GetPlanLimitErrorAsync(Organization organization, int maxUsers, int maxProjects)
+    {
+        if (maxUsers is >= 0)
+        {
+            var users = await _userRepository.GetByOrganizationIdAsync(organization.Id);
+            long excessUsers = users.Total + organization.Invites.Count - maxUsers;
+            if (excessUsers is > 0)
+                return $"Please remove {excessUsers} {(excessUsers is 1 ? "user or pending invitation" : "users or pending invitations")} and try again.";
+        }
+
+        if (maxProjects is >= 0)
+        {
+            long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id);
+            long excessProjects = projectCount - maxProjects;
+            if (excessProjects is > 0)
+                return $"Please remove {excessProjects} {(excessProjects is 1 ? "project" : "projects")} and try again.";
+        }
+
+        return null;
+    }
+
+    public async Task<bool> UpdatePlanLimitSuspensionAsync(Organization organization)
+    {
+        if (organization.IsSuspended && organization.SuspensionCode is not SuspensionCode.PlanLimit)
+            return false;
+
+        string? error = await GetPlanLimitErrorAsync(organization, organization.MaxUsers, organization.MaxProjects);
+        if (error is null)
+        {
+            if (organization.SuspensionCode is not SuspensionCode.PlanLimit)
+                return false;
+
+            organization.RemoveSuspension();
+            return true;
+        }
+
+        if (organization.IsSuspended && String.Equals(organization.SuspensionNotes, error, StringComparison.Ordinal))
+            return false;
+
+        organization.IsSuspended = true;
+        organization.SuspensionCode = SuspensionCode.PlanLimit;
+        organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
+        organization.SuspendedByUserId = StripeConstants.SystemUserId;
+        organization.SuspensionNotes = error;
+        return true;
+    }
+
+    public async Task RecheckPlanLimitSuspensionAsync(string organizationId)
+    {
+        await using var billingLock = await AcquireOrganizationLockAsync(organizationId);
+        var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        if (organization is null || organization.SuspensionCode is not SuspensionCode.PlanLimit)
+            return;
+
+        bool changed = await UpdatePlanLimitSuspensionAsync(organization);
+        if (changed)
+            await _organizationRepository.SaveAsync(organization, command => command.Cache().Originals());
     }
 
     public BillingPlan? GetBillingPlan(string planId)
@@ -303,8 +397,8 @@ public class BillingManager
             return created;
 
         var organizations = await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray());
-        var legacy = organizations.Where(o => o.CreatedByUserId is null && _plans.IsFreeOrTrialPlan(o.PlanId));
-        return created.Concat(legacy).DistinctBy(o => o.Id).ToList();
+        var withoutRecordedCreators = organizations.Where(o => o.CreatedByUserId is null && _plans.IsFreeOrTrialPlan(o.PlanId));
+        return created.Concat(withoutRecordedCreators).DistinctBy(o => o.Id).ToList();
     }
 
     /// <summary>

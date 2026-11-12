@@ -1,9 +1,12 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Utility;
 using Xunit;
 
@@ -12,6 +15,68 @@ namespace Exceptionless.Tests.Billing;
 public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
 {
     public BillingManagerIntegrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TryClaimTrialAsync_ClaimDisappearsAfterConflict_RecreatesOnlyWhenNoCompetitorClaimsIt(bool competingClaim)
+    {
+        // Arrange
+        var repository = GetService<ITrialClaimRepository>();
+        var billing = GetService<BillingManager>();
+        var user = new User { EmailAddress = "cleanup-race@example.test" };
+        int attempts = 0;
+        using var handler = repository.DocumentsAdding.AddHandler(async (_, args) =>
+        {
+            int attempt = Interlocked.Increment(ref attempts);
+            if (attempt is 1)
+                throw new DuplicateDocumentException("The expired claim existed when create started");
+            if (attempt is 2 && competingClaim)
+                await repository.AddAsync(new TrialClaim { Id = args.Documents.Single().Id, CreatedUtc = TimeProvider.GetUtcNow().UtcDateTime });
+        });
+
+        // Act
+        bool acquired = await billing.TryClaimTrialAsync(user);
+        bool eligible = await billing.CanStartTrialAsync(user);
+
+        // Assert
+        Assert.Equal(!competingClaim, acquired);
+        Assert.False(eligible);
+    }
+
+    [Theory]
+    [InlineData(2, 0, 1, "user")]
+    [InlineData(1, 1, 1, "invitation")]
+    [InlineData(1, 0, 2, "project")]
+    public async Task CanDownGradeAsync_FinitePlanCountsMembersInvitesAndProjects_RejectsExcess(int memberCount, int inviteCount, int projectCount, string expectedMessage)
+    {
+        // Arrange
+        var billing = GetService<BillingManager>();
+        var plans = GetService<BillingPlans>();
+        var organization = new Organization { Name = "Finite custom plan" };
+        billing.ApplyTrialPlan(organization);
+        for (int index = 0; index < inviteCount; index++)
+            organization.Invites.Add(new Invite { EmailAddress = $"invite-{index}@example.test", Token = StringExtensions.GetNewToken(), DateAdded = TimeProvider.GetUtcNow().UtcDateTime });
+        await GetService<IOrganizationRepository>().AddAsync(organization);
+        var users = Enumerable.Range(0, memberCount).Select(index =>
+        {
+            var user = GetService<UserData>().GenerateUser(generateId: true, organizationId: organization.Id);
+            user.MarkEmailAddressVerified();
+            return user;
+        });
+        await GetService<IUserRepository>().AddAsync(users, command => command.ImmediateConsistency());
+        await GetService<IProjectRepository>().AddAsync(GetService<ProjectData>().GenerateProjects(projectCount, generateId: true, organizationId: organization.Id), command => command.ImmediateConsistency());
+        var customPlan = plans.SmallPlan with { Id = "CUSTOM_FINITE", MaxUsers = 1, MaxProjects = 1 };
+
+        // Act
+        var finite = await billing.CanDownGradeAsync(organization, customPlan, null);
+        var unlimited = await billing.CanDownGradeAsync(organization, plans.SmallPlan, null);
+
+        // Assert
+        Assert.False(finite.Success);
+        Assert.Contains(expectedMessage, finite.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(unlimited.Success, unlimited.Message);
+    }
 
     [Fact]
     public async Task TryClaimTrialAsync_ConcurrentMailboxAliases_OnlyOneAcquiresClaim()

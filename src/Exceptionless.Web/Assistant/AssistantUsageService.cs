@@ -578,7 +578,7 @@ public sealed class AssistantUsageService(
 
     private static UsageWindow GetDayWindow(DateTimeOffset utcNow)
     {
-        var utcStartDate = new DateTimeOffset(utcNow.UtcDateTime.Date, TimeSpan.Zero);
+        var utcStartDate = utcNow.UtcDateTime.Date;
         return new UsageWindow(utcStartDate.ToString("yyyyMMdd"), utcStartDate.AddDays(1));
     }
 

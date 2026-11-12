@@ -1,5 +1,5 @@
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Repositories;
@@ -11,22 +11,21 @@ using Microsoft.Extensions.Logging;
 namespace Exceptionless.Core.Migrations;
 
 /// <summary>
-/// Prepares for free trials: maps <see cref="Organization.CreatedByUserId"/> so it can be queried, and, because plans
-/// no longer limit users or projects, sets the stored limits to unlimited. Existing organizations keep no creator: their
-/// real creator isn't recorded, so ownership rules fall back to membership.
-/// The mapping is put explicitly because the job host that runs migrations skips index configuration, so this can run
-/// before a web host updates the organization mapping on startup. Putting one new field leaves the rest untouched.
+/// Maps the creator field and refreshes stored user/project limits from each organization's current plan.
+/// Existing organizations without a recorded creator retain membership-based eligibility.
 /// </summary>
-public sealed class UpdateOrganizationsForTrials : MigrationBase
+public sealed class UpdateOrganizationPlanLimits : MigrationBase
 {
     private const int BatchSize = 100;
     private readonly ExceptionlessElasticConfiguration _configuration;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly BillingPlans _plans;
 
-    public UpdateOrganizationsForTrials(IOrganizationRepository organizationRepository, ExceptionlessElasticConfiguration configuration, ILoggerFactory loggerFactory) : base(loggerFactory)
+    public UpdateOrganizationPlanLimits(IOrganizationRepository organizationRepository, ExceptionlessElasticConfiguration configuration, BillingPlans plans, ILoggerFactory loggerFactory) : base(loggerFactory)
     {
         _organizationRepository = organizationRepository;
         _configuration = configuration;
+        _plans = plans;
 
         MigrationType = MigrationType.VersionedAndResumable;
         Version = 11;
@@ -53,24 +52,29 @@ public sealed class UpdateOrganizationsForTrials : MigrationBase
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            var organizationsToMigrate = organizations.Documents
-                .Where(organization => organization.MaxUsers is not BillingPlan.Unlimited || organization.MaxProjects is not BillingPlan.Unlimited)
-                .ToList();
-            if (organizationsToMigrate.Count is > 0)
+            // Resolve the current plan inside the update, so a concurrent billing change isn't overwritten.
+            var limits = _plans.Plans.ToDictionary(plan => plan.Id,
+                plan => new { max_users = plan.MaxUsers, max_projects = plan.MaxProjects });
+            var patch = new ScriptPatch("""
+                if (params.limits.containsKey(ctx._source.plan_id)) {
+                    def limits = params.limits[ctx._source.plan_id];
+                    ctx._source.max_users = limits.max_users;
+                    ctx._source.max_projects = limits.max_projects;
+                }
+                """)
             {
-                await _organizationRepository.PatchAsync(
-                    organizationsToMigrate.Select(organization => organization.Id).ToArray(),
-                    new PartialPatch(new { max_users = BillingPlan.Unlimited, max_projects = BillingPlan.Unlimited }),
-                    options => options.Cache().Notifications(false));
-                migrated += organizationsToMigrate.Count;
-            }
+                Params = new Dictionary<string, object> { ["limits"] = limits }
+            };
+            await _organizationRepository.PatchAsync(
+                organizations.Documents.Select(organization => organization.Id).ToArray(), patch,
+                options => options.Cache().Notifications(false));
+            migrated += organizations.Documents.Count;
 
-            _logger.LogInformation("Updated {OrganizationCount} organizations for free trials so far", migrated);
-            bool hasNextPage = await organizations.NextPageAsync();
-            if (!hasNextPage)
+            _logger.LogInformation("Refreshed plan limits for {OrganizationCount} organizations so far", migrated);
+            if (!await organizations.NextPageAsync())
                 break;
         }
 
-        _logger.LogInformation("Updated {OrganizationCount} organizations for free trials", migrated);
+        _logger.LogInformation("Refreshed plan limits for {OrganizationCount} organizations", migrated);
     }
 }

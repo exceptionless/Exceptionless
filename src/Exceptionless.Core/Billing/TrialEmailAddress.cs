@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Billing;
 /// </summary>
 public static class TrialEmailAddress
 {
-    private static readonly HashSet<string> s_dotInsensitiveDomains = new(StringComparer.Ordinal) { "gmail.com", "googlemail.com" };
+    private static readonly HashSet<string> _dotInsensitiveDomains = new(StringComparer.Ordinal) { "gmail.com", "googlemail.com" };
 
     /// <summary>
     /// Disposable email providers blocked from trials until a system admin saves their own list.
@@ -160,7 +160,7 @@ public static class TrialEmailAddress
         if (plus is > 0)
             localPart = localPart[..plus];
 
-        if (s_dotInsensitiveDomains.Contains(domain))
+        if (_dotInsensitiveDomains.Contains(domain))
         {
             localPart = localPart.Replace(".", String.Empty);
             domain = "gmail.com";
@@ -170,22 +170,16 @@ public static class TrialEmailAddress
     }
 
     /// <summary>
-    /// Identifies a mailbox using a dedicated HMAC secret. Protecting the normalized address's SHA-256 digest also
-    /// allows existing digest-only claims to be migrated without recovering or retaining email addresses.
+    /// Identifies a normalized mailbox using a dedicated HMAC secret without retaining the address or unkeyed digest.
     /// </summary>
     public static string GetClaimId(string emailAddress, string secret)
-    {
-        string digest = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(Normalize(emailAddress))));
-        return ProtectLegacyClaimId(digest, secret);
-    }
-
-    public static string ProtectLegacyClaimId(string digest, string secret)
     {
         byte[] key = Convert.FromBase64String(secret);
         if (key.Length is < 32)
             throw new ArgumentException("The trial claim secret must contain at least 32 random bytes", nameof(secret));
 
-        return "hmac-v1-" + Convert.ToHexStringLower(HMACSHA256.HashData(key, Convert.FromHexString(digest)));
+        byte[] digest = SHA256.HashData(Encoding.UTF8.GetBytes(Normalize(emailAddress)));
+        return "hmac-v1-" + Convert.ToHexStringLower(HMACSHA256.HashData(key, digest));
     }
 
     /// <summary>

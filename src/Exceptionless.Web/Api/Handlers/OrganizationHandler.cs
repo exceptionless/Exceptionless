@@ -649,7 +649,8 @@ public class OrganizationHandler(
         if (String.IsNullOrEmpty(message.Id) || !message.Context.Request.CanAccessOrganization(message.Id) || String.IsNullOrEmpty(message.Email))
             return Result.NotFound("Organization not found.");
 
-        var organization = await GetModelAsync(message.Id);
+        await using var billingLock = await billingManager.AcquireOrganizationLockAsync(message.Id);
+        var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
             return Result.NotFound("Organization not found.");
 
@@ -657,13 +658,18 @@ public class OrganizationHandler(
         if (inviteLimitResult is not null)
             return inviteLimitResult;
 
+        bool canAddUser = await billingManager.CanAddUserAsync(organization);
+        if (!canAddUser)
+            return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add an additional user."));
+
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
         if (user is not null)
         {
             if (!user.OrganizationIds.Contains(organization.Id))
             {
                 user.OrganizationIds.Add(organization.Id);
-                await userRepository.SaveAsync(user, o => o.Cache());
+                // Finite user limits count memberships through search before the next admission.
+                await userRepository.SaveAsync(user, o => o.Cache().ImmediateConsistency());
                 await messagePublisher.PublishAsync(new UserMembershipChanged
                 {
                     ChangeType = ChangeType.Added,
@@ -716,10 +722,15 @@ public class OrganizationHandler(
 
     public async Task<Result> Handle(RemoveOrganizationUser message)
     {
+        if (String.IsNullOrEmpty(message.Id) || !message.Context.Request.CanAccessOrganization(message.Id))
+            return Result.NotFound("Organization not found.");
+
+        await using var billingLock = await billingManager.AcquireOrganizationLockAsync(message.Id);
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
             return Result.NotFound("Organization not found.");
 
+        bool inviteRemoved = false;
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
         if (user is null || !user.OrganizationIds.Contains(message.Id))
         {
@@ -728,7 +739,7 @@ public class OrganizationHandler(
                 return Result.Success();
 
             organization.Invites.Remove(invite);
-            await repository.SaveAsync(organization, o => o.Cache());
+            inviteRemoved = true;
         }
         else
         {
@@ -747,7 +758,8 @@ public class OrganizationHandler(
                 user.OrganizationPreferences.Remove(preference);
             foreach (var preference in user.SavedViewOrders.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
                 user.SavedViewOrders.Remove(preference);
-            await userRepository.SaveAsync(user, o => o.Cache());
+            // The following plan-limit check counts memberships through search.
+            await userRepository.SaveAsync(user, o => o.Cache().ImmediateConsistency());
             await messagePublisher.PublishAsync(new UserMembershipChanged
             {
                 ChangeType = ChangeType.Removed,
@@ -756,6 +768,9 @@ public class OrganizationHandler(
             });
         }
 
+        bool suspensionChanged = await billingManager.UpdatePlanLimitSuspensionAsync(organization);
+        if (inviteRemoved || suspensionChanged)
+            await repository.SaveAsync(organization, command => command.Cache().Originals());
         return Result.Success();
     }
 

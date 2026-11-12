@@ -1,5 +1,6 @@
 using Elastic.Clients.Elasticsearch.Mapping;
 using Exceptionless.Core.Migrations;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
@@ -14,31 +15,32 @@ using Xunit;
 
 namespace Exceptionless.Tests.Migrations;
 
-public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTestsBase
+public sealed class UpdateOrganizationPlanLimitsMigrationTests : IntegrationTestsBase
 {
     private readonly IOrganizationRepository _organizationRepository;
 
-    public UpdateOrganizationsForTrialsMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    public UpdateOrganizationPlanLimitsMigrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
         _organizationRepository = GetService<IOrganizationRepository>();
     }
 
     protected override void RegisterServices(IServiceCollection services)
     {
-        services.AddTransient<UpdateOrganizationsForTrials>();
+        services.AddTransient<UpdateOrganizationPlanLimits>();
         services.AddSingleton<ILock>(EmptyLock.Empty);
         base.RegisterServices(services);
     }
 
     [Fact]
-    public async Task RunAsync_LegacyOrganizations_BecomeUnlimitedWithoutGuessingCreator()
+    public async Task RunAsync_ExistingOrganizations_ReceiveCurrentPlanLimitsWithoutGuessingCreator()
     {
         // Arrange
-        var limited = new Organization { Name = "Legacy Free Organization", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = 1, MaxProjects = 1, BillingChangedByUserId = TestConstants.UserId };
-        var deleted = new Organization { Name = "Deleted Small Organization", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = 10, MaxProjects = 5, IsDeleted = true };
-        await _organizationRepository.AddAsync([limited, deleted], options => options.ImmediateConsistency());
+        var limited = new Organization { Name = "Existing Free Organization", PlanId = "EX_FREE", PlanName = "Free", PlanDescription = "Free", MaxUsers = -1, MaxProjects = -1, BillingChangedByUserId = TestConstants.UserId };
+        var deleted = new Organization { Name = "Deleted Small Organization", PlanId = "EX_SMALL", PlanName = "Small", PlanDescription = "Small", MaxUsers = 10, MaxProjects = 5, IsDeleted = true };
+        var custom = new Organization { Name = "Custom limits", PlanId = "CUSTOM", PlanName = "Custom", PlanDescription = "Custom", MaxUsers = 17, MaxProjects = 9 };
+        await _organizationRepository.AddAsync([limited, deleted, custom], options => options.ImmediateConsistency());
 
-        var migration = GetService<UpdateOrganizationsForTrials>();
+        var migration = GetService<UpdateOrganizationPlanLimits>();
         var migrationLock = GetService<ILock>();
 
         // Act
@@ -50,29 +52,35 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
         {
             var organization = await _organizationRepository.GetByIdAsync(id, options => options.SoftDeleteMode(SoftDeleteQueryMode.All));
             Assert.NotNull(organization);
-            Assert.Equal(-1, organization.MaxUsers);
-            Assert.Equal(-1, organization.MaxProjects);
+            Assert.Equal(id == limited.Id ? 1 : -1, organization.MaxUsers);
+            Assert.Equal(id == limited.Id ? 1 : -1, organization.MaxProjects);
         }
 
+        var preservedCustom = await _organizationRepository.GetByIdAsync(custom.Id);
+        Assert.Equal(17, preservedCustom?.MaxUsers);
+        Assert.Equal(9, preservedCustom?.MaxProjects);
+
         // The last user to change billing isn't necessarily the creator, so legacy organizations stay ownerless.
-        var legacy = await _organizationRepository.GetByIdAsync(limited.Id);
-        Assert.NotNull(legacy);
-        Assert.Null(legacy.CreatedByUserId);
-        Assert.Equal("Legacy Free Organization", legacy.Name);
-        Assert.Equal("EX_FREE", legacy.PlanId);
-        Assert.Equal(TestConstants.UserId, legacy.BillingChangedByUserId);
+        var withoutRecordedCreator = await _organizationRepository.GetByIdAsync(limited.Id);
+        Assert.NotNull(withoutRecordedCreator);
+        Assert.Null(withoutRecordedCreator.CreatedByUserId);
+        Assert.Equal("Existing Free Organization", withoutRecordedCreator.Name);
+        Assert.Equal("EX_FREE", withoutRecordedCreator.PlanId);
+        Assert.Equal(TestConstants.UserId, withoutRecordedCreator.BillingChangedByUserId);
         var created = await _organizationRepository.FindAsync(q => q.FieldEquals(o => o.CreatedByUserId, TestConstants.UserId));
         Assert.Empty(created.Documents);
     }
 
-    [Fact]
-    public async Task RunAsync_ConcurrentBillingAndUsageChanges_PreservesChangesAndInvalidatesCache()
+    [Theory]
+    [InlineData("EX_FREE", "EX_MEDIUM", -1)]
+    [InlineData("EX_MEDIUM", "EX_FREE", 1)]
+    public async Task RunAsync_ConcurrentBillingAndUsageChanges_PreservesChangesAndInvalidatesCache(string initialPlanId, string currentPlanId, int expectedLimit)
     {
         // Arrange
         var organization = new Organization
         {
             Name = "Migrating Organization",
-            PlanId = "EX_FREE",
+            PlanId = initialPlanId,
             PlanName = "Free",
             PlanDescription = "Free",
             MaxUsers = 1,
@@ -96,7 +104,7 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
                 var page = await _organizationRepository.FindAsync(query, options);
                 await _organizationRepository.PatchAsync(organization.Id, new PartialPatch(new
                 {
-                    plan_id = "EX_MEDIUM",
+                    plan_id = currentPlanId,
                     billing_status = BillingStatus.Active,
                     billing_price = 49m,
                     stripe_subscription_id = "sub_concurrent",
@@ -111,7 +119,7 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
             .Returns((Ids ids, IPatchOperation operation, CommandOptionsDescriptor<Organization> options) => _organizationRepository.PatchAsync(ids, operation, options));
         var configuration = GetService<ExceptionlessElasticConfiguration>();
         var migrationLock = GetService<ILock>();
-        var migration = new UpdateOrganizationsForTrials(repository.Object, configuration, Log);
+        var migration = new UpdateOrganizationPlanLimits(repository.Object, configuration, GetService<BillingPlans>(), Log);
 
         // Act
         await migration.RunAsync(new MigrationContext(migrationLock, _logger, TestCancellationToken));
@@ -123,9 +131,9 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
         foreach (var migrated in new[] { persistedOrganization, cachedOrganization })
         {
             Assert.NotNull(migrated);
-            Assert.Equal(-1, migrated.MaxUsers);
-            Assert.Equal(-1, migrated.MaxProjects);
-            Assert.Equal("EX_MEDIUM", migrated.PlanId);
+            Assert.Equal(expectedLimit, migrated.MaxUsers);
+            Assert.Equal(expectedLimit, migrated.MaxProjects);
+            Assert.Equal(currentPlanId, migrated.PlanId);
             Assert.Equal(BillingStatus.Active, migrated.BillingStatus);
             Assert.Equal(49m, migrated.BillingPrice);
             Assert.Equal("sub_concurrent", migrated.StripeSubscriptionId);
@@ -146,7 +154,7 @@ public sealed class UpdateOrganizationsForTrialsMigrationTests : IntegrationTest
         Assert.True(settingsBefore.IsValidResponse, settingsBefore.DebugInformation);
         var indexSettingsBefore = Assert.Single(settingsBefore.Settings).Value.Settings!;
 
-        var migration = GetService<UpdateOrganizationsForTrials>();
+        var migration = GetService<UpdateOrganizationPlanLimits>();
         var migrationLock = GetService<ILock>();
         var context = new MigrationContext(migrationLock, _logger, TestCancellationToken);
 

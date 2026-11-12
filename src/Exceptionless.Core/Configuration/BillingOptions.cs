@@ -62,6 +62,7 @@ public class BillingOptions
         {
             options.TrialClaimSecret = null;
         }
+
         return options;
     }
 }

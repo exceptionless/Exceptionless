@@ -4,6 +4,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Messaging;
@@ -29,7 +30,7 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
     private readonly IMailer _mailer;
     private readonly IMessagePublisher _messagePublisher;
     private readonly ILockProvider _lockProvider;
-    private DateTime? _lastRun;
+    private DateTime? _lastRunUtc;
 
     public TrialExpirationJob(IOrganizationRepository organizationRepository, IUserRepository userRepository,
         BillingManager billingManager, BillingPlans plans, AppOptions appOptions, IMailer mailer,
@@ -56,7 +57,10 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
 
     protected override async Task<JobResult> RunInternalAsync(JobContext context)
     {
-        _lastRun = _timeProvider.GetUtcNow().UtcDateTime;
+        _lastRunUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        context.CancellationToken.ThrowIfCancellationRequested();
+        int processed = 0;
+        int failed = 0;
 
         try
         {
@@ -85,6 +89,7 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
                 try
                 {
                     await ProcessOrganizationAsync(organizationId);
+                    processed++;
                 }
                 catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
                 {
@@ -93,6 +98,7 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
                 }
                 catch (Exception ex)
                 {
+                    failed++;
                     _logger.LogError(ex, "Error processing trial for organization {OrganizationId}: {Message}", organizationId, ex.Message);
                 }
             }
@@ -100,14 +106,14 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
             if (context.CancellationToken.IsCancellationRequested)
                 break;
 
-            bool hasNextPage = await results.NextPageAsync();
-            if (!hasNextPage)
+            if (!await results.NextPageAsync())
                 break;
 
             await context.RenewLockAsync();
         }
 
-        return JobResult.Success;
+        _logger.LogInformation("Processed {ProcessedCount} trial organizations with {FailedCount} failures", processed, failed);
+        return context.CancellationToken.IsCancellationRequested ? JobResult.Cancelled : JobResult.Success;
     }
 
     private async Task ProcessOrganizationAsync(string organizationId)
@@ -119,40 +125,39 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
             return;
 
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        if (organization.TrialEndsUtc is null || organization.TrialEndsUtc <= utcNow)
+        if (organization.TrialEndsUtc is null || !organization.TrialEndsUtc.Value.IsAfter(utcNow))
         {
             _logger.LogInformation("Trial ended for organization {OrganizationId}, moving to the free plan", organization.Id);
             _billingManager.EndTrial(organization);
-            await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+            await _billingManager.UpdatePlanLimitSuspensionAsync(organization);
+            await _organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
             await _messagePublisher.PublishAsync(new PlanChanged { OrganizationId = organization.Id });
             return;
         }
 
-        if (organization.TrialReminderSentUtc is not null || organization.TrialEndsUtc.Value.AddDays(-_billingOptions.TrialReminderDays) > utcNow)
+        if (organization.TrialReminderSentUtc is not null || organization.TrialEndsUtc.Value.AddDays(-_billingOptions.TrialReminderDays).IsAfter(utcNow))
             return;
 
         var users = await _userRepository.GetByOrganizationIdAsync(organization.Id, o => o.SearchAfterPaging().PageLimit(100));
-        bool hasMoreUsers;
         do
         {
             foreach (var user in users.Documents.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled))
                 await _mailer.SendOrganizationTrialEndingAsync(user, organization);
-            hasMoreUsers = await users.NextPageAsync();
-        } while (hasMoreUsers);
+        } while (await users.NextPageAsync());
 
         // Mark the reminder only after every email is queued, so a failure is retried on the next run.
         organization.TrialReminderSentUtc = utcNow;
-        await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
+        await _organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
 
         _logger.LogInformation("Sent trial ending reminder for organization {OrganizationId}", organization.Id);
     }
 
     public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        if (!_lastRun.HasValue)
+        if (!_lastRunUtc.HasValue)
             return Task.FromResult(HealthCheckResult.Healthy("Job has not been run yet."));
 
-        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRun.Value) > TimeSpan.FromMinutes(65))
+        if (_timeProvider.GetUtcNow().UtcDateTime.Subtract(_lastRunUtc.Value) > TimeSpan.FromMinutes(65))
             return Task.FromResult(HealthCheckResult.Unhealthy("Job has not run in the last 65 minutes."));
 
         return Task.FromResult(HealthCheckResult.Healthy("Job has run in the last 65 minutes."));

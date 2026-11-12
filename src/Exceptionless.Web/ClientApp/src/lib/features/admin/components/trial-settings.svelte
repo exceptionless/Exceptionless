@@ -4,6 +4,7 @@
     import { toast } from 'svelte-sonner';
 
     import ErrorMessage from '#comp/error-message.svelte';
+    import { Muted } from '#comp/typography/index.ts';
     import { Badge } from '#comp/ui/badge/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
     import * as Field from '#comp/ui/field/index.ts';
@@ -89,7 +90,7 @@
 {#if settingsQuery.isPending}
     <div class="flex items-center gap-2 p-4">
         <Spinner />
-        <span class="text-muted-foreground text-sm">Loading free trial settings...</span>
+        <Muted>Loading free trial settings...</Muted>
     </div>
 {:else if settingsQuery.isError}
     <div class="p-4">
@@ -128,7 +129,7 @@
                     {/snippet}
                 </form.Subscribe>
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="text-muted-foreground text-sm">{enteredDomains.length === 1 ? '1 domain' : `${enteredDomains.length} domains`}</span>
+                    <Muted>{enteredDomains.length === 1 ? '1 domain' : `${enteredDomains.length} domains`}</Muted>
                     <form.Subscribe selector={(state) => state.isSubmitting}>
                         {#snippet children(isSubmitting)}
                             <div class="flex flex-wrap items-center gap-2">

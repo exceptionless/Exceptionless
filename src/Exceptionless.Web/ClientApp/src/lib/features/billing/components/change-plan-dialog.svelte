@@ -34,6 +34,7 @@
     import { getTrialDaysRemaining } from '#features/billing/trial.ts';
     import { changePlanMutation, getPlansQuery } from '#features/organizations/api.svelte.ts';
     import { getFormErrorMessages, problemDetailsToFormErrors } from '#features/shared/validation.ts';
+    import { getOrganizationUsersQuery } from '#features/users/api.svelte.ts';
 
     interface Props {
         initialCouponCode?: string;
@@ -181,6 +182,29 @@
     const isCurrentPlan = $derived(selectedPlanId === organization.plan_id);
 
     const planDirty = $derived(!isCurrentPlan);
+    const usersQuery = getOrganizationUsersQuery({
+        route: {
+            get organizationId() {
+                return planDirty && selectedPlan && selectedPlan.max_users >= 0 ? organization.id : undefined;
+            }
+        }
+    });
+    const userCount = $derived((usersQuery.data?.meta.total as number | undefined) ?? usersQuery.data?.data?.length);
+    const capacityError = $derived.by(() => {
+        if (!planDirty || !selectedPlan) {
+            return undefined;
+        }
+
+        if (selectedPlan.max_users >= 0 && userCount !== undefined && userCount > selectedPlan.max_users) {
+            return `Remove users or pending invitations until there are at most ${selectedPlan.max_users}, then change plans.`;
+        }
+
+        if (selectedPlan.max_projects >= 0 && organization.project_count > selectedPlan.max_projects) {
+            return `Remove projects until there are at most ${selectedPlan.max_projects}, then change plans.`;
+        }
+
+        return undefined;
+    });
     const paymentDirty = $derived(paymentExpanded && hasExistingCard);
     const needsPayment = $derived(isPaidPlan && (!hasExistingCard || paymentExpanded));
     const couponDirty = $derived(!!couponApplied);
@@ -686,7 +710,7 @@
                                 {/if}
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center gap-2">
-                                        <span class="text-muted-foreground text-sm font-medium">Free</span>
+                                        <Muted class="font-medium">Free</Muted>
                                         {#if isFreeCurrent}
                                             <Badge variant="secondary" class="px-1.5 py-0 text-[10px] uppercase">Current</Badge>
                                         {:else if isTrialCurrent}
@@ -830,6 +854,7 @@
                 </div>
 
                 <Dialog.Footer class="border-border mt-4 flex-col items-stretch gap-3 border-t pt-4 sm:flex-col sm:items-stretch sm:space-x-0">
+                    <ErrorMessage message={capacityError} />
                     <form.Subscribe selector={(state) => state.errors}>
                         {#snippet children(errors)}
                             <ErrorMessage message={getFormErrorMessages(errors)} />
@@ -919,7 +944,7 @@
                         {#snippet children(isSubmitting)}
                             <div class="flex items-center justify-end gap-2">
                                 <Button type="button" variant="outline" onclick={handleCancel} disabled={isSubmitting}>Cancel</Button>
-                                <Button type="submit" variant={isDowngrade ? 'destructive' : 'default'} disabled={isSubmitting || !anyDirty}>
+                                <Button type="submit" variant={isDowngrade ? 'destructive' : 'default'} disabled={isSubmitting || !anyDirty || !!capacityError}>
                                     {#if isSubmitting}
                                         <Spinner class="mr-2" />
                                         Saving…

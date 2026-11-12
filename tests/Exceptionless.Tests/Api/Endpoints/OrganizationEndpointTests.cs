@@ -1038,6 +1038,22 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task AddUserAsync_FreePlanAtCapacity_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        const string email = "extra-member@example.test";
+
+        // Act
+        using var response = await SendRequestAsync(request => request.AsFreeOrganizationUser().Post()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "users", email).StatusCodeShouldBeUpgradeRequired());
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
+        Assert.Empty(organization!.Invites);
+    }
+
+    [Fact]
     public async Task AddUserAsync_NewEmail_AddsInvite()
     {
         // Arrange
@@ -2431,7 +2447,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task CanDownGradeAsync_MultipleUsersAndProjects_UnlimitedFreePlanAllowsDowngrade()
+    public async Task CanDownGradeAsync_MultipleUsersAndProjects_FreePlanRejectsDowngrade()
     {
         // Arrange
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
@@ -2453,9 +2469,10 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.True(members.Total is > 1);
         Assert.True(projects.Total is > 1);
-        Assert.Equal(BillingPlan.Unlimited, _plans.FreePlan.MaxUsers);
-        Assert.Equal(BillingPlan.Unlimited, _plans.FreePlan.MaxProjects);
-        Assert.True(result.Success, result.Message);
+        Assert.Equal(1, _plans.FreePlan.MaxUsers);
+        Assert.Equal(1, _plans.FreePlan.MaxProjects);
+        Assert.False(result.Success);
+        Assert.Contains("user", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -3431,6 +3448,41 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
 
         return _userRepository.AddAsync(user, o => o.ImmediateConsistency());
+    }
+
+    [Fact]
+    public async Task PostAsync_TrialClaimWriteFails_DoesNotCreateOrganizationAndAllowsRetry()
+    {
+        // Arrange
+        const string password = "Trial password";
+        var user = await CreateUserAsync("claim-failure@example.test", password, isEmailAddressVerified: true);
+        var claims = GetService<ITrialClaimRepository>();
+        bool failClaim = true;
+        using var handler = claims.DocumentsAdding.AddHandler((_, _) => failClaim
+            ? Task.FromException(new IOException("Trial claim store is unavailable"))
+            : Task.CompletedTask);
+
+        // Act
+        using var failed = await WithBillingEnabledAsync(() => SendRequestAsync(request => request
+            .BasicAuthorization(user.EmailAddress, password).Post().AppendPath("organizations")
+            .Content(new NewOrganization { Name = "Trial after recovery" }).ExpectedStatus(HttpStatusCode.InternalServerError)));
+        var afterFailure = await _userRepository.GetByIdAsync(user.Id);
+        var organizationsAfterFailure = await _organizationRepository.CountAsync(query => query.FieldEquals(value => value.CreatedByUserId, user.Id));
+        failClaim = false;
+        var retried = await WithBillingEnabledAsync(() => SendRequestAsAsync<ViewOrganization>(request => request
+            .BasicAuthorization(user.EmailAddress, password).Post().AppendPath("organizations")
+            .Content(new NewOrganization { Name = "Trial after recovery" }).StatusCodeShouldBeCreated()));
+        var afterRetry = await _userRepository.GetByIdAsync(user.Id);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.InternalServerError, failed.StatusCode);
+        Assert.NotNull(afterFailure);
+        Assert.Empty(afterFailure.OrganizationIds);
+        Assert.Null(afterFailure.TrialStartedUtc);
+        Assert.Equal(0, organizationsAfterFailure.Total);
+        Assert.Equal(_plans.TrialPlan.Id, retried?.PlanId);
+        Assert.NotNull(afterRetry?.TrialStartedUtc);
+        Assert.Equal(retried?.Id, Assert.Single(afterRetry!.OrganizationIds));
     }
 
     private Task<Organization> CreateTrialOrganizationAsync(User user)

@@ -99,9 +99,11 @@
               ? SuspensionCode.Overage
               : organization?.suspension_code === 'Abuse'
                 ? SuspensionCode.Abuse
-                : organization?.suspension_code === 'Other'
-                  ? SuspensionCode.Other
-                  : undefined
+                : organization?.suspension_code === 'PlanLimit'
+                  ? SuspensionCode.PlanLimit
+                  : organization?.suspension_code === 'Other'
+                    ? SuspensionCode.Other
+                    : undefined
     );
 
     const isSuspended = $derived(!!organization?.is_suspended);
@@ -122,7 +124,7 @@
     const queryClient = useQueryClient();
     const recordProductTour = putCurrentUserProductTour();
     const isTrialEndedNoticeDismissed = $derived(
-        !!organization?.id && !!getProductTourRecordedAt(meQuery.data?.product_tours, getTrialEndedNoticeKey(organization.id).replaceAll('-', '_'))
+        !!organization?.id && !!getProductTourRecordedAt(meQuery.data?.product_tours, getTrialEndedNoticeKey(organization.id))
     );
 
     const showUsageWarning = $derived(

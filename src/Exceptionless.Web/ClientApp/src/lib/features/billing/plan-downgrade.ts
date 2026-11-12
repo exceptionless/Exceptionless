@@ -3,8 +3,8 @@ import type { BillingPlan } from '#lib/generated/api.ts';
 export type PlanLimits = Pick<BillingPlan, 'has_premium_features' | 'max_events_per_month' | 'retention_days'>;
 
 /**
- * Describes what an organization gives up by moving to a plan with lower limits. Downgrades are never blocked; this
- * only lets the user see the cost before confirming.
+ * Describes feature and usage reductions before confirming a plan change.
+ * User and project capacity checks are enforced separately.
  */
 export function getDowngradeLosses(current: PlanLimits, next: PlanLimits): string[] {
     const losses: string[] = [];

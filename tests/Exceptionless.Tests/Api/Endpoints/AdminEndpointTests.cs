@@ -344,13 +344,6 @@ public class AdminEndpointTests : IntegrationTestsBase
             .AppendPaths("admin", "trial-settings")
             .StatusCodeShouldBeOk());
 
-        // Assert
-        Assert.NotNull(initial);
-        Assert.True(initial.IsDefault);
-        Assert.Contains("mailinator.com", initial.BlockedEmailDomains);
-        Assert.Equal(initial.DefaultBlockedEmailDomains, initial.BlockedEmailDomains);
-
-        // Act
         var updated = await SendRequestAsAsync<TrialSettings>(request => request
             .Put()
             .AsGlobalAdminUser()
@@ -358,22 +351,12 @@ public class AdminEndpointTests : IntegrationTestsBase
             .Content(new UpdateTrialSettings { BlockedEmailDomains = [" Spam.Test ", "@spam.test", "other.test"] })
             .StatusCodeShouldBeOk());
 
-        // Assert
-        Assert.NotNull(updated);
-        Assert.False(updated.IsDefault);
-        Assert.Equal(["other.test", "spam.test"], updated.BlockedEmailDomains);
-
-        // Act
         await cache.RemoveAllAsync();
         var afterCacheClear = await SendRequestAsAsync<TrialSettings>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "trial-settings")
             .StatusCodeShouldBeOk());
 
-        // Assert
-        Assert.Equal(updated.BlockedEmailDomains, afterCacheClear?.BlockedEmailDomains);
-
-        // Act
         var restored = await SendRequestAsAsync<TrialSettings>(request => request
             .Put()
             .AsGlobalAdminUser()
@@ -382,6 +365,14 @@ public class AdminEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeOk());
 
         // Assert
+        Assert.NotNull(initial);
+        Assert.True(initial.IsDefault);
+        Assert.Contains("mailinator.com", initial.BlockedEmailDomains);
+        Assert.Equal(initial.DefaultBlockedEmailDomains, initial.BlockedEmailDomains);
+        Assert.NotNull(updated);
+        Assert.False(updated.IsDefault);
+        Assert.Equal(["other.test", "spam.test"], updated.BlockedEmailDomains);
+        Assert.Equal(updated.BlockedEmailDomains, afterCacheClear?.BlockedEmailDomains);
         Assert.NotNull(restored);
         Assert.True(restored.IsDefault);
         Assert.Equal(initial.BlockedEmailDomains, restored.BlockedEmailDomains);
@@ -1396,6 +1387,26 @@ public class AdminEndpointTests : IntegrationTestsBase
         Assert.Equal(plans.TrialPlan.Id, organization.PlanId);
         Assert.NotNull(organization.TrialEndsUtc);
         Assert.True(organization.TrialEndsUtc > TimeProvider.GetUtcNow().UtcDateTime.AddDays(6));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(30)]
+    public async Task ChangePlanAsync_CustomTrialEnd_SavesExactUtcDate(int daysFromNow)
+    {
+        // Arrange
+        var expectedEnd = TimeProvider.GetUtcNow().AddDays(daysFromNow);
+        var organizations = GetService<IOrganizationRepository>();
+
+        // Act
+        var result = await SendRequestAsAsync<ChangePlanResponse>(request => request.AsGlobalAdminUser().Post()
+            .AppendPaths("admin", "change-plan").QueryString("organizationId", SampleDataService.FREE_ORG_ID)
+            .QueryString("planId", "EX_TRIAL").QueryString("trialEndsUtc", expectedEnd.ToString("O")).StatusCodeShouldBeOk());
+        var organization = await organizations.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+
+        // Assert
+        Assert.True(result?.Success, result?.Message);
+        Assert.Equal(expectedEnd.UtcDateTime, organization?.TrialEndsUtc);
     }
 
     [Fact]

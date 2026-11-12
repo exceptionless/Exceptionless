@@ -57,8 +57,8 @@ public class BillingPlans
             Name = "Free",
             Description = "Free",
             Price = 0,
-            MaxProjects = BillingPlan.Unlimited,
-            MaxUsers = BillingPlan.Unlimited,
+            MaxProjects = 1,
+            MaxUsers = 1,
             RetentionDays = 3,
             MaxEventsPerMonth = 3000,
             HasPremiumFeatures = false
