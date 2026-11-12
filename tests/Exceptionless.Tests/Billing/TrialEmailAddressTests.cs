@@ -1,12 +1,15 @@
 using System.Security.Cryptography;
 using System.Text;
 using Exceptionless.Core.Billing;
+using Foundatio.Xunit;
 using Xunit;
 
 namespace Exceptionless.Tests.Billing;
 
-public class TrialEmailAddressTests
+public class TrialEmailAddressTests : TestWithLoggingBase
 {
+    public TrialEmailAddressTests(ITestOutputHelper output) : base(output) { }
+
     [Theory]
     [InlineData("Someone@Example.com", "someone@example.com")]
     [InlineData("someone+trial@example.com", "someone@example.com")]
@@ -17,6 +20,9 @@ public class TrialEmailAddressTests
     [InlineData("  padded@example.com ", "padded@example.com")]
     public void Normalize_EmailAddress_RemovesIgnoredParts(string emailAddress, string expected)
     {
+        // Arrange
+        // InlineData supplies the mailbox and expected normalized address.
+
         // Act
         string normalized = TrialEmailAddress.Normalize(emailAddress);
 
@@ -31,8 +37,11 @@ public class TrialEmailAddressTests
     [InlineData("someone@example.com", false)]
     public void IsBlockedDomain_DefaultDomains_MatchesDomainAndSubdomains(string emailAddress, bool expected)
     {
+        // Arrange
+        var blockedDomains = TrialEmailAddress.DefaultBlockedDomains;
+
         // Act
-        bool blocked = TrialEmailAddress.IsBlockedDomain(emailAddress, TrialEmailAddress.DefaultBlockedDomains);
+        bool blocked = TrialEmailAddress.IsBlockedDomain(emailAddress, blockedDomains);
 
         // Assert
         Assert.Equal(expected, blocked);
@@ -79,8 +88,11 @@ public class TrialEmailAddressTests
     [InlineData("addy.io")]
     public void IsBlockedDomain_MajorMailboxProviders_AreNotBlocked(string domain)
     {
+        // Arrange
+        string emailAddress = $"someone@{domain}";
+
         // Act
-        bool blocked = TrialEmailAddress.IsBlockedDomain($"someone@{domain}", TrialEmailAddress.DefaultBlockedDomains);
+        bool blocked = TrialEmailAddress.IsBlockedDomain(emailAddress, TrialEmailAddress.DefaultBlockedDomains);
 
         // Assert
         Assert.False(blocked);
@@ -89,8 +101,11 @@ public class TrialEmailAddressTests
     [Fact]
     public void NormalizeDomains_AdminInput_TrimsLowercasesDeduplicatesAndSorts()
     {
+        // Arrange
+        string[] input = [" Example.COM ", "@example.com", "", "b.test", "a.test"];
+
         // Act
-        var domains = TrialEmailAddress.NormalizeDomains([" Example.COM ", "@example.com", "", "b.test", "a.test"]);
+        var domains = TrialEmailAddress.NormalizeDomains(input);
 
         // Assert
         Assert.Equal(["a.test", "b.test", "example.com"], domains);
@@ -125,8 +140,11 @@ public class TrialEmailAddressTests
     [InlineData("someone@notmail.tm", false)]
     public void IsBlockedDomain_ExpandedDomains_RespectsDomainBoundary(string email, bool expected)
     {
+        // Arrange
+        var blockedDomains = TrialEmailAddress.DefaultBlockedDomains;
+
         // Act
-        bool blocked = TrialEmailAddress.IsBlockedDomain(email, TrialEmailAddress.DefaultBlockedDomains);
+        bool blocked = TrialEmailAddress.IsBlockedDomain(email, blockedDomains);
 
         // Assert
         Assert.Equal(expected, blocked);

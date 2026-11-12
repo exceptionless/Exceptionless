@@ -10,6 +10,7 @@ using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Resilience;
 using Foundatio.Serializer;
+using Foundatio.Xunit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
@@ -17,8 +18,10 @@ using Xunit;
 
 namespace Exceptionless.Tests.Assistant;
 
-public sealed class AssistantUsageServiceTests
+public sealed class AssistantUsageServiceTests : TestWithLoggingBase
 {
+    public AssistantUsageServiceTests(ITestOutputHelper output) : base(output) { }
+
     [Fact]
     public async Task TryStartTurnAsync_SharedCache_EnforcesLimitAcrossServiceInstances()
     {
