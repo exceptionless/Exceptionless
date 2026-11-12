@@ -256,7 +256,7 @@ public sealed class AssistantAccessServiceTests(ITestOutputHelper output) : Test
             Id = TestConstants.OrganizationId,
             Name = "Trial",
             PlanId = billingPlans.TrialPlan.Id,
-            TrialEndsUtc = trialDaysLeft is null ? null : DateTime.UtcNow.AddDays(trialDaysLeft.Value)
+            TrialEndsUtc = trialDaysLeft is null ? null : TimeProvider.GetUtcNow().UtcDateTime.AddDays(trialDaysLeft.Value)
         };
         var repository = new Mock<IOrganizationRepository>();
         repository.Setup(repository => repository.GetByIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Organization>>()))

@@ -41,6 +41,8 @@ var organizations = GetService<IOrganizationRepository>();
 await organizations.AddAsync(organization);
 ```
 
+Never mock `ICacheClient` or `InMemoryCacheClient`, including partial mocks. Use a real in-memory cache, or a real cache provider when testing provider-specific behavior or failures.
+
 Name tests `MethodUnderTest_Scenario_ExpectedBehavior`.
 
 ## HTTP and state
@@ -53,6 +55,6 @@ Tests use the production serializer. For JSON compatibility, inspect `Serializer
 
 ## Time
 
-Use the fixture's `TimeProvider`: `Advance`, `SetUtcNow`, and `Restore`. Prefer controlled time to real waits.
+Use the fixture's `TimeProvider`: `Advance`, `SetUtcNow`, and `Restore`. Do not create a separate clock when the fixture provides one. For isolated tests without that fixture, use a `FakeTimeProvider` and its default fixed time unless a particular date matters. Prefer controlled time to real waits.
 
 Follow root guidance for focused commands, conditional Aspire startup, and API contract verification.

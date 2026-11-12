@@ -248,6 +248,7 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
     {
         // Arrange
         int trialCount = OrganizationRepository.BillingPlanStatsPageLimit + 1;
+        var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
         var organizations = Enumerable.Range(0, trialCount).Select(index => new Organization
         {
             Name = $"Trial Organization {index}",
@@ -255,9 +256,9 @@ public sealed class OrganizationRepositoryTests : IntegrationTestsBase
             PlanName = _plans.TrialPlan.Name,
             PlanDescription = _plans.TrialPlan.Description,
             HasPremiumFeatures = true,
-            TrialEndsUtc = DateTime.UtcNow.AddDays(3)
+            TrialEndsUtc = utcNow.AddDays(3)
         }).ToList();
-        organizations.Add(new Organization { Name = "Expired Trial", PlanId = _plans.FreePlan.Id, PlanName = "Free", PlanDescription = "Free", TrialEndsUtc = DateTime.UtcNow.AddDays(-1) });
+        organizations.Add(new Organization { Name = "Expired Trial", PlanId = _plans.FreePlan.Id, PlanName = "Free", PlanDescription = "Free", TrialEndsUtc = utcNow.AddDays(-1) });
         await _repository.AddAsync(organizations, o => o.ImmediateConsistency());
 
         // Act

@@ -10,7 +10,6 @@ using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
 using Foundatio.Repositories.Models;
 using Foundatio.Utility;
-using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Migrations;
@@ -133,30 +132,25 @@ public sealed class UpdateOrganizationPlanLimitsMigrationTests : IntegrationTest
             CostInMicrodollars = 250_000,
             LastUsedUtc = utcNow
         };
-        var repository = new Mock<IOrganizationRepository>(MockBehavior.Strict);
-        repository.Setup(value => value.FindAsync(It.IsAny<RepositoryQueryDescriptor<Organization>>(), It.IsAny<CommandOptionsDescriptor<Organization>>()))
-            .Returns(async (RepositoryQueryDescriptor<Organization> query, CommandOptionsDescriptor<Organization> options) =>
+        bool billingChanged = false;
+        using var afterQuery = _organizationRepository.AfterQuery.AddHandler(async (_, _) =>
+        {
+            if (billingChanged)
+                return;
+
+            billingChanged = true;
+            await _organizationRepository.PatchAsync(organization.Id, new PartialPatch(new
             {
-                var page = await _organizationRepository.FindAsync(query, options);
-                await _organizationRepository.PatchAsync(organization.Id, new PartialPatch(new
-                {
-                    plan_id = currentPlanId,
-                    billing_status = BillingStatus.Active,
-                    billing_price = 49m,
-                    stripe_subscription_id = "sub_concurrent",
-                    assistant_usage = new[] { concurrentUsage }
-                }), command => command.ImmediateConsistency());
-                await _organizationRepository.GetByIdAsync(organization.Id, command => command.Cache());
-                return page;
-            });
-        repository.Setup(value => value.SaveAsync(It.IsAny<IEnumerable<Organization>>(), It.IsAny<CommandOptionsDescriptor<Organization>>()))
-            .Returns((IEnumerable<Organization> documents, CommandOptionsDescriptor<Organization> options) => _organizationRepository.SaveAsync(documents, options));
-        repository.Setup(value => value.PatchAsync(It.IsAny<Ids>(), It.IsAny<IPatchOperation>(), It.IsAny<CommandOptionsDescriptor<Organization>>()))
-            .Returns((Ids ids, IPatchOperation operation, CommandOptionsDescriptor<Organization> options) => _organizationRepository.PatchAsync(ids, operation, options));
-        var configuration = GetService<ExceptionlessElasticConfiguration>();
+                plan_id = currentPlanId,
+                billing_status = BillingStatus.Active,
+                billing_price = 49m,
+                stripe_subscription_id = "sub_concurrent",
+                assistant_usage = new[] { concurrentUsage }
+            }), command => command.ImmediateConsistency());
+            await _organizationRepository.GetByIdAsync(organization.Id, command => command.Cache());
+        });
+        var migration = GetService<UpdateOrganizationPlanLimits>();
         var migrationLock = GetService<ILock>();
-        var billingPlans = GetService<BillingPlans>();
-        var migration = new UpdateOrganizationPlanLimits(repository.Object, configuration, billingPlans, Log);
 
         // Act
         await migration.RunAsync(new MigrationContext(migrationLock, _logger, TestCancellationToken));
@@ -165,6 +159,7 @@ public sealed class UpdateOrganizationPlanLimitsMigrationTests : IntegrationTest
         var cachedOrganization = await _organizationRepository.GetByIdAsync(organization.Id, options => options.Cache());
 
         // Assert
+        Assert.True(billingChanged);
         foreach (var migrated in new[] { persistedOrganization, cachedOrganization })
         {
             Assert.NotNull(migrated);

@@ -15,7 +15,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 using Xunit;
-using Moq;
 
 namespace Exceptionless.Tests.Assistant;
 
@@ -47,7 +46,8 @@ public sealed class AssistantUsageServiceTests : TestWithLoggingBase
     public async Task TryStartTurnAsync_SharedDailyCostLimitReached_BlocksEveryOrganizationSharingTheLimitUntilTomorrow()
     {
         // Arrange
-        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        var timeProvider = new FakeTimeProvider();
+        var nextMidnight = timeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1);
         using var cache = CreateCache(timeProvider);
         var service = CreateService(cache, CreateOptions(), timeProvider);
         var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 1m };
@@ -69,7 +69,7 @@ public sealed class AssistantUsageServiceTests : TestWithLoggingBase
         // Assert
         Assert.False(blocked.Allowed);
         Assert.Equal(AssistantUsageLimit.SharedDailyCost, blocked.Limit);
-        Assert.Equal(new DateTimeOffset(2026, 8, 3, 0, 0, 0, TimeSpan.Zero), blocked.ResetAtUtc);
+        Assert.Equal(nextMidnight, blocked.ResetAtUtc?.UtcDateTime);
         Assert.True(unshared.Allowed);
         Assert.True(nextDay.Allowed);
     }
@@ -78,7 +78,7 @@ public sealed class AssistantUsageServiceTests : TestWithLoggingBase
     public async Task StartProviderRequestAsync_SharedDailyCostLimit_CountsInFlightEstimateUntilReleased()
     {
         // Arrange
-        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        var timeProvider = new FakeTimeProvider();
         using var cache = CreateCache(timeProvider);
         var service = CreateService(cache, CreateOptions(), timeProvider);
         var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 0.000001m };
@@ -99,7 +99,7 @@ public sealed class AssistantUsageServiceTests : TestWithLoggingBase
     public async Task StartProviderRequestAsync_ConcurrentRequestsAtSharedDailyCostLimit_RejectsRequestsStartedAtTheLimit()
     {
         // Arrange
-        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
+        var timeProvider = new FakeTimeProvider();
         using var cache = CreateCache(timeProvider);
         var service = CreateService(cache, CreateOptions(), timeProvider);
         var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 0.000001m };
@@ -128,22 +128,14 @@ public sealed class AssistantUsageServiceTests : TestWithLoggingBase
     }
 
     [Fact]
-    public async Task StartProviderRequestAsync_SharedDailyCostReservationFails_RejectsRequestAndReleasesMonthlyEstimate()
+    public async Task StartProviderRequestAsync_SharedDailyCostLimitReached_RejectsRequestAndReleasesMonthlyEstimate()
     {
         // Arrange
-        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
-        bool failNextSharedCostIncrement = false;
-        var cacheMock = new Mock<InMemoryCacheClient>(new InMemoryCacheClientOptions { TimeProvider = timeProvider, LoggerFactory = Log }) { CallBase = true };
-        cacheMock.As<ICacheClient>().Setup(cache => cache.IncrementAsync(
-            It.Is<string>(key => failNextSharedCostIncrement && key.Contains("shared:", StringComparison.Ordinal)),
-            It.IsAny<long>(), It.IsAny<TimeSpan?>()))
-            .Callback(() => failNextSharedCostIncrement = false)
-            .ThrowsAsync(new IOException("Shared usage cache is unavailable"));
-        using var cache = cacheMock.Object;
+        var timeProvider = new FakeTimeProvider();
+        using var cache = CreateCache(timeProvider);
         var service = CreateService(cache, CreateOptions(), timeProvider);
         var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 0.000001m };
         await using var countedRequest = await service.StartProviderRequestAsync("counted-organization", 1_000, sharedPlanOptions);
-        failNextSharedCostIncrement = true;
 
         // Act
         var exception = await Record.ExceptionAsync(async () =>
@@ -155,8 +147,8 @@ public sealed class AssistantUsageServiceTests : TestWithLoggingBase
 
         // Assert
         var providerException = Assert.IsType<AssistantProviderException>(exception);
-        Assert.Equal("usage_unavailable", providerException.FailureCode);
-        Assert.Contains("temporarily unavailable", providerException.Message);
+        Assert.Equal("usage_limit", providerException.FailureCode);
+        Assert.Contains("at capacity", providerException.Message);
         Assert.Equal(0, failedOrganizationUsage.PromptTokens);
         Assert.Equal(0, failedOrganizationUsage.CompletionTokens);
         Assert.Equal(0, failedOrganizationUsage.CostInMicrodollars);
@@ -165,37 +157,30 @@ public sealed class AssistantUsageServiceTests : TestWithLoggingBase
     }
 
     [Fact]
-    public async Task StartProviderRequestAsync_SharedDailyCostReconciliationFails_DoesNotRecordUsageAgain()
+    public async Task StartProviderRequestAsync_SharedDailyCostReconciliation_RecordsActualUsageOnce()
     {
         // Arrange
-        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero));
-        bool failNextSharedCostIncrement = false;
-        var cacheMock = new Mock<InMemoryCacheClient>(new InMemoryCacheClientOptions { TimeProvider = timeProvider, LoggerFactory = Log }) { CallBase = true };
-        cacheMock.As<ICacheClient>().Setup(cache => cache.IncrementAsync(
-            It.Is<string>(key => failNextSharedCostIncrement && key.Contains("shared:", StringComparison.Ordinal)),
-            It.IsAny<long>(), It.IsAny<TimeSpan?>()))
-            .Callback(() => failNextSharedCostIncrement = false)
-            .ThrowsAsync(new IOException("Shared usage cache is unavailable"));
-        using var cache = cacheMock.Object;
+        var timeProvider = new FakeTimeProvider();
+        using var cache = CreateCache(timeProvider);
         var recorder = new RecordingAssistantUsageRecorder();
         var service = CreateService(cache, CreateLockProvider(cache, timeProvider), CreateOptions(), timeProvider, recorder);
-        var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 0.000001m };
+        var sharedPlanOptions = CreatePlanOptions() with { SharedDailyCostLimitKey = "trial", MaximumSharedDailyCostUsd = 0.001m };
         var providerRequest = await service.StartProviderRequestAsync("organization-id", 1_000, sharedPlanOptions);
         providerRequest.MarkAccepted();
-        failNextSharedCostIncrement = true;
 
         // Act
-        var exception = await Record.ExceptionAsync(async () =>
-        {
-            await using (providerRequest)
-                await providerRequest.ReconcileAsync(new AssistantProviderUsage(250, 50, 0.001m));
-        });
+        await using (providerRequest)
+            await providerRequest.ReconcileAsync(new AssistantProviderUsage(250, 50, 0.001m));
         var usage = await service.GetMonthlyUsageAsync("organization-id");
+        await using var atLimit = await service.TryStartTurnAsync("another-organization", sharedPlanOptions);
+        await using var belowLimit = await service.TryStartTurnAsync("another-organization", sharedPlanOptions with { MaximumSharedDailyCostUsd = 0.001001m });
 
         // Assert
-        Assert.Null(exception);
         Assert.Equal(new AssistantMonthlyUsage(0, 250, 50, 1_000), usage);
         Assert.Single(recorder.Records, record => record.Increment.PromptTokens > 0);
+        Assert.False(atLimit.Allowed);
+        Assert.Equal(AssistantUsageLimit.SharedDailyCost, atLimit.Limit);
+        Assert.True(belowLimit.Allowed);
     }
 
     [Fact]
