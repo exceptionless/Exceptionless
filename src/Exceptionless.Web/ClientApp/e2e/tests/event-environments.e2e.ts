@@ -113,13 +113,13 @@ test('stack, session, and stream filters retain names with no current events', a
         await page.getByRole('button', { name: 'Manage filters' }).click();
         await page.getByPlaceholder('Search...').fill('Environment');
         await page.getByText('Environment', { exact: true }).click();
-        await page.getByPlaceholder('Environment', { exact: true }).fill('qa,east');
-        await page.getByRole('option', { name: 'Use qa,east' }).click();
+        await page.getByPlaceholder('Environment', { exact: true }).fill('qa-east');
+        await page.getByRole('option', { name: 'Use qa-east' }).click();
         await page.keyboard.press('Escape');
-        await expect(page.getByRole('button', { name: /^Environment\s+qa,east/ })).toBeVisible();
-        await expect.poll(() => new URL(page.url()).searchParams.get(route === 'stream' ? 'filters' : 'environment')).toContain('qa,east');
+        await expect(page.getByRole('button', { name: /^Environment\s+qa-east/ })).toBeVisible();
+        await expect.poll(() => new URL(page.url()).searchParams.get(route === 'stream' ? 'filters' : 'environment')).toContain('qa-east');
         await page.reload();
-        await expect(page.getByRole('button', { name: /^Environment\s+qa,east/ })).toBeVisible();
+        await expect(page.getByRole('button', { name: /^Environment\s+qa-east/ })).toBeVisible();
     }
 });
 

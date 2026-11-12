@@ -40,7 +40,7 @@ For direct API submissions:
 }
 ```
 
-Names are trimmed, with a maximum of 64 characters. Events preserve the supplied casing: `" Production "` is stored and returned as `"Production"`. Filtering is case-insensitive, and aggregation keys are normalized to lowercase, so `Production` and `production` share one environment bucket. Custom names such as `qa-west` are supported. Empty, oversized, control-character, and non-string values are treated as unspecified. Historical events and older clients without this field remain unspecified; they are never assumed to be production.
+Names are identifiers, so they can be used in filters and scripts: 1 to 64 ASCII letters, digits, periods (`.`), underscores (`_`), or hyphens (`-`), starting with a letter or digit. Surrounding whitespace is trimmed. Events preserve the supplied casing: `" Production "` is stored and returned as `"Production"`. Filtering is case-insensitive, and aggregation keys are normalized to lowercase, so `Production` and `production` share one environment bucket. Custom names such as `qa-west`, `staging.eu`, or `dev_local` are supported. Names with spaces or other characters (for example `Staging West` or `prod/eu`), empty or oversized names, and non-string values are treated as unspecified; they are never rewritten. Historical events and older clients without this field remain unspecified; they are never assumed to be production.
 
 ## Filter your data
 
@@ -60,7 +60,32 @@ Environment searches and aggregations are available on every plan:
 
 Stack dashboard counts and charts use events matching the filter. Stack status remains shared, so changing status while viewing production also changes the same stack seen in staging. Automatic session detection separates the same user's activity by environment. Session heartbeats do not include an environment, so a heartbeat keeps the user's open sessions active in every environment.
 
-Notifications and the **New** view are not environment-aware yet. A stack is new once, when its first event arrives from any environment. An error first seen in development triggers the new error notification then, and is not reported as new again when it reaches production; the **New** view also dates it from that first occurrence. Critical error and regression notifications are sent for events from every environment.
+The **New** view is not environment-aware. A stack is dated from its first event in any environment. For notifications, see [Manage environments](#manage-environments) below.
+
+## Manage environments
+
+Open **Project Settings → Environments** to list the environments a project uses. Listed names are shown in the casing you type (for example `Production`) in the Environment filter, event details, and notification emails, while matching stays case-insensitive. Adding or removing a name never changes or deletes events, and the server never adds names to the list on its own: environments that appear in your data show up in the table marked **Not added**, with an **Add** action. A project can list up to 100 environments, and a name follows the same rules as an event's environment.
+
+These settings control what happens to events from environments that are not listed. Projects with no list and default settings behave exactly as before.
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| **Accept events from:** Only environments in this list | Off (Any environment) | Events whose environment is not in the list are discarded before they are stored or stacked. They count as discarded events in your usage and do not count toward your plan limit, like events for a discarded stack. |
+| **Also accept events that don't send an environment** | On | Only shown when the setting above is on. When unchecked, events without an environment are discarded too. Session heartbeats and session ends, which never carry an environment, are never discarded for this reason. |
+| **Other environments** notifications | On | The last row of the table. Applies to environments that are not listed and to events without an environment. Each listed environment has its own **Notifications** toggle. |
+
+Ingestion acknowledges events before they are processed, so a client cannot see that an event was discarded. The **Discarded** section, shown while only listed environments are accepted or when anything was discarded, shows the names that were rejected in the last 7 days (up to 50 names per project), how many events each had, and an **Allow** action that adds the name to the list. This is the quickest way to find a misspelled environment such as `prodution`. Events without an environment are shown as their own row.
+
+### Notifications by environment
+
+An event can send notifications (email, Slack, and web hooks) only when its environment notifies: a listed environment with notifications on, or an unlisted environment or no environment while **Other environments** notifications are on.
+
+- Critical error and critical event notifications are sent only for events from a notifying environment.
+- A new error or new event notification is sent the first time a stack occurs in a notifying environment. If an error is first seen in `dev` and `dev` does not notify, nothing is sent; the first time the same error occurs in `Production`, you get the new error notification, and it is not reported as new again in other environments.
+- A regression works the same way as a new stack. If a fixed stack regresses in an environment that does not notify, nothing is sent; the first time the regressed stack occurs in a notifying environment, you get the regression notification. A regression in a notifying environment notifies immediately, as it always has. Changing the stack's status (for example marking it fixed or ignored) drops a regression or new notification that was still waiting.
+- Stacks that existed before environments could be managed are treated as already reported, so deploying this change does not send new notifications for old stacks.
+- Notification emails and Slack messages mention the environment, for example "New error in Production".
+- Daily summaries are unchanged and still include events from every environment.
 
 ## Fixing stacks across deployments
 

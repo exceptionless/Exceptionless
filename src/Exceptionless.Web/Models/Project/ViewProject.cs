@@ -16,6 +16,14 @@ public class ViewProject : IIdentity, IData, IHaveCreatedDate
     public string OrganizationName { get; set; } = null!;
     public string Name { get; set; } = null!;
     public bool DeleteBotDataEnabled { get; set; }
+
+    /// <summary>
+    /// The environments that the project lists, in the casing they were entered. Change them with the project environment endpoints.
+    /// </summary>
+    public List<ProjectEnvironment> Environments { get; set; } = [];
+    public bool DiscardUnlistedEnvironments { get; set; }
+    public bool DiscardEventsWithoutEnvironment { get; set; }
+    public bool NotifyOtherEnvironments { get; set; } = true;
     public Core.Models.DataDictionary? Data { get; set; }
     public List<string> PromotedTabs { get; set; } = null!;
     public bool? IsConfigured { get; set; }

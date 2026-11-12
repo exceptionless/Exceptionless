@@ -31,7 +31,7 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
         return null;
     }
 
-    public virtual MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    public virtual MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
         return null;
     }
@@ -39,6 +39,15 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
     public virtual SlackMessage? GetSlackEventNotification(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
         return null;
+    }
+
+    /// <summary>
+    /// Adds the environment to a notification description, such as "new error in Production". A listed environment uses its listed casing.
+    /// </summary>
+    protected static string InEnvironment(string notificationType, PersistentEvent ev, Project project)
+    {
+        string? environment = project.GetEnvironmentDisplayName(ev.Environment);
+        return String.IsNullOrEmpty(environment) ? notificationType : String.Concat(notificationType, " in ", environment);
     }
 
     protected void AddDefaultSlackFields(PersistentEvent ev, List<SlackMessage.SlackAttachmentFields> attachmentFields, bool includeUrl = true)
@@ -71,11 +80,19 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
         attachmentFields.Add(new SlackMessage.SlackAttachmentFields { Title = "Other Actions", Value = String.Join("\n", actions) });
     }
 
+    /// <summary>
+    /// Escapes text that came from a client or a user so Slack shows it literally instead of as a mention or link.
+    /// </summary>
+    protected static string EscapeSlack(string? value)
+    {
+        return value?.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;") ?? String.Empty;
+    }
+
     protected string GetSlackEventUrl(string eventId, string? message = null)
     {
         var parts = new List<string> { new AppUrlBuilder(_options.BaseURL).Event(eventId) };
         if (!String.IsNullOrEmpty(message))
-            parts.Add($"|{message.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;")}");
+            parts.Add($"|{EscapeSlack(message)}");
 
         return $"<{String.Join(String.Empty, parts)}>";
     }

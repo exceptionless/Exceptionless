@@ -61,6 +61,28 @@ public sealed class EventEnvironmentTests : TestWithServices
         Assert.Equal("staging", events[1].Environment);
     }
 
+    [Theory]
+    [InlineData("production", "production")]
+    [InlineData(" Staging-EU.2 ", "Staging-EU.2")]
+    [InlineData("dev_local", "dev_local")]
+    [InlineData("9prod", "9prod")]
+    [InlineData("Staging West", null)]
+    [InlineData("prod/eu", null)]
+    [InlineData("prod:eu", null)]
+    [InlineData("-prod", null)]
+    [InlineData(".prod", null)]
+    [InlineData("_prod", null)]
+    [InlineData("produção", null)]
+    [InlineData("prod\u0007", null)]
+    public void Environment_IsAnIdentifier_InvalidNamesAreUnspecified(string value, string? expected)
+    {
+        // Act
+        var ev = new Event { Environment = value };
+
+        // Assert
+        Assert.Equal(expected, ev.Environment);
+    }
+
     [Fact]
     public void Serialize_UnspecifiedEnvironment_OmitsProperty()
     {
@@ -88,6 +110,7 @@ public sealed class EventEnvironmentTests : TestWithServices
     [InlineData("[\"production\",\"staging\"]")]
     [InlineData("\"   \"")]
     [InlineData("\"bad\\nenvironment\"")]
+    [InlineData("\"Staging West\"")]
     [InlineData("\"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklm\"")]
     public void Deserialize_InvalidRootEnvironment_PreservesCustomDataRegardlessOfPropertyOrder(string environment)
     {

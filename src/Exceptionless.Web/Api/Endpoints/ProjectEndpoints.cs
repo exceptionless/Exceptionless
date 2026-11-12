@@ -480,6 +480,101 @@ public static class ProjectEndpoints
             }
         });
 
+        group.MapPost("projects/{id:objectid}/environments", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] NewProjectEnvironment? environment)
+            => environment is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ProjectEnvironmentSettings>>(new ProjectMessages.AddProjectEnvironment(id, environment, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Accepts<NewProjectEnvironment>("application/json", "application/*+json")
+        .Produces<ProjectEnvironmentSettings>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .WithSummary("Add environment")
+        .WithDescription("Lists an environment on the project. Events are never changed, and a name that was being discarded is accepted from now on.")
+        .WithMetadata(new EndpointDocumentation {
+            RequestBodyRequired = true,
+            RequestBodyDescription = "The environment to list.",
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the project.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The project could not be found.",
+                ["409"] = "The environment is already listed. Names are case-insensitive.",
+                ["422"] = "The name is not a valid environment name, or the project already lists the maximum number of environments.",
+            }
+        });
+
+        group.MapPatch("projects/{id:objectid}/environments", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateProjectEnvironment? changes, string? name = null)
+            => changes is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ProjectEnvironmentSettings>>(new ProjectMessages.ChangeProjectEnvironment(id, name, changes, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Accepts<UpdateProjectEnvironment>("application/json", "application/*+json")
+        .Produces<ProjectEnvironmentSettings>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .WithSummary("Update environment")
+        .WithMetadata(new EndpointDocumentation {
+            RequestBodyRequired = true,
+            RequestBodyDescription = "The changes.",
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the project.",
+                ["name"] = "The environment name. Matching is case-insensitive.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The project or the listed environment could not be found.",
+            }
+        });
+
+        group.MapDelete("projects/{id:objectid}/environments", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null)
+            => (await mediator.InvokeAsync<Result<ProjectEnvironmentSettings>>(new ProjectMessages.RemoveProjectEnvironment(id, name, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces<ProjectEnvironmentSettings>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Remove environment")
+        .WithDescription("Removes an environment from the project's list. Events are never deleted.")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the project.",
+                ["name"] = "The environment name. Matching is case-insensitive.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The project could not be found.",
+            }
+        });
+
+        group.MapPut("projects/{id:objectid}/environments/settings", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, [FromBody] UpdateProjectEnvironmentSettings? settings)
+            => settings is null ? ApiValidation.MissingRequestBody() : (await mediator.InvokeAsync<Result<ProjectEnvironmentSettings>>(new ProjectMessages.ChangeProjectEnvironmentSettings(id, settings, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Accepts<UpdateProjectEnvironmentSettings>("application/json", "application/*+json")
+        .Produces<ProjectEnvironmentSettings>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Update environment settings")
+        .WithDescription("Sets whether unlisted environments and events without an environment are discarded, and whether they send notifications. Omitted settings are unchanged.")
+        .WithMetadata(new EndpointDocumentation {
+            RequestBodyRequired = true,
+            RequestBodyDescription = "The settings to change.",
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the project.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The project could not be found.",
+            }
+        });
+
+        group.MapGet("projects/{id:objectid}/environments/discarded", async (string id, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper)
+            => (await mediator.InvokeAsync<Result<ProjectDiscardedEnvironments>>(new ProjectMessages.GetDiscardedProjectEnvironments(id, httpContext))).ToHttpResult(resultMapper))
+        .RequireAuthorization(AuthorizationRoles.UserPolicy)
+        .Produces<ProjectDiscardedEnvironments>()
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .WithSummary("Get discarded environments")
+        .WithDescription("Gets the environment names that recently had events discarded because they are not listed, with the number of events discarded.")
+        .WithMetadata(new EndpointDocumentation {
+            ParameterDescriptions = new() {
+                ["id"] = "The identifier of the project.",
+            },
+            ResponseDescriptions = new() {
+                ["404"] = "The project could not be found.",
+            }
+        });
+
         group.MapGet("organizations/{organizationId:objectid}/projects/check-name", async (string organizationId, HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string? name = null, string? projectId = null)
             => (await mediator.InvokeAsync<Result>(new ProjectMessages.CheckProjectName(name, organizationId, projectId, httpContext))).ToHttpResult(resultMapper))
         .RequireAuthorization(AuthorizationRoles.UserPolicy)

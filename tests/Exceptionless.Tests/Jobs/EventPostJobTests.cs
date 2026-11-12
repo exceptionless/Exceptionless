@@ -153,6 +153,39 @@ public class EventPostJobTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CanRunJobWithEnvironmentDiscardsCountedAsDiscardedUsageOnly()
+    {
+        // Arrange
+        var project = await _projectRepository.GetByIdAsync(TestConstants.ProjectId);
+        Assert.NotNull(project);
+        project.DiscardUnlistedEnvironments = true;
+        project.DiscardEventsWithoutEnvironment = true;
+        project.Environments = [new ProjectEnvironment { Name = "Production" }];
+        await _projectRepository.SaveAsync(project, o => o.Cache().ImmediateConsistency());
+
+        var listed = GenerateEvent(type: Event.KnownTypes.Log, source: "test");
+        listed.Environment = "PRODUCTION";
+        var typo = GenerateEvent(type: Event.KnownTypes.Log, source: "test");
+        typo.Environment = "Prodution";
+        var missing = GenerateEvent(type: Event.KnownTypes.Log, source: "test");
+        await EnqueueEventPostAsync([listed, typo, missing]);
+
+        // Act
+        var result = await _job.RunAsync(TestCancellationToken);
+        await RefreshDataAsync();
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        var usage = await _usageService.GetUsageAsync(TestConstants.OrganizationId, TestConstants.ProjectId);
+        Assert.Equal(1, usage.CurrentUsage.Total);
+        Assert.Equal(2, usage.CurrentUsage.Discarded);
+        Assert.Equal(0, usage.CurrentUsage.Blocked);
+        Assert.Equal(1, await _eventRepository.CountAsync());
+        Assert.Equal(1, await _stackRepository.CountAsync());
+        Assert.Equal(["PRODUCTION"], (await _eventRepository.GetAllAsync()).Documents.Select(e => e.Environment));
+    }
+
+    [Fact]
     public async Task RunAsync_RetryingParsedBatch_PreservesEnvironmentWithoutCustomData()
     {
         // Arrange

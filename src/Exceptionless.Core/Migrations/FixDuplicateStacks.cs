@@ -1,6 +1,7 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.ReindexRethrottle;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
@@ -100,7 +101,7 @@ public sealed class FixDuplicateStacks : MigrationBase
                     }
 
                     targetStack.CreatedUtc = stacks.Documents.Min(d => d.CreatedUtc);
-                    targetStack.Status = stacks.Documents.FirstOrDefault(d => d.Status != StackStatus.Open)?.Status ?? StackStatus.Open;
+                    targetStack.SetStatus(stacks.Documents.FirstOrDefault(d => d.Status != StackStatus.Open)?.Status ?? StackStatus.Open);
                     targetStack.LastOccurrence = stacks.Documents.Max(d => d.LastOccurrence);
                     targetStack.SnoozeUntilUtc = stacks.Documents.Max(d => d.SnoozeUntilUtc);
                     targetStack.DateFixed = stacks.Documents.Max(d => d.DateFixed); ;
