@@ -26,25 +26,28 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
         var users = GetService<IUserRepository>();
         var projects = GetService<IProjectRepository>();
         var billing = GetService<BillingManager>();
+        var userData = GetService<UserData>();
+        var projectData = GetService<ProjectData>();
+        var tokenData = GetService<TokenData>();
         var organization = new Organization { Name = "Over-limit trial" };
         billing.ApplyTrialPlan(organization);
         organization.TrialEndsUtc = TimeProvider.GetUtcNow().UtcDateTime;
         if (pendingInvitation)
             organization.Invites.Add(new Invite { EmailAddress = "member@example.test", Token = StringExtensions.GetNewToken(), DateAdded = TimeProvider.GetUtcNow().UtcDateTime });
         await organizations.AddAsync(organization, command => command.ImmediateConsistency());
-        var owner = GetService<UserData>().GenerateUser(generateId: true, organizationId: organization.Id,
+        var owner = userData.GenerateUser(generateId: true, organizationId: organization.Id,
             emailAddress: "owner@example.test", roles: [AuthorizationRoles.User, AuthorizationRoles.Client]);
         owner.Salt = StringExtensions.GetNewToken();
         owner.Password = "Trial password".ToSaltedHash(owner.Salt);
         owner.MarkEmailAddressVerified();
-        var member = GetService<UserData>().GenerateUser(generateId: true, organizationId: organization.Id, emailAddress: "member@example.test");
+        var member = userData.GenerateUser(generateId: true, organizationId: organization.Id, emailAddress: "member@example.test");
         member.MarkEmailAddressVerified();
         await users.AddAsync(pendingInvitation ? [owner] : [owner, member], command => command.ImmediateConsistency());
-        var firstProject = GetService<ProjectData>().GenerateProject(generateId: true, organizationId: organization.Id);
-        var secondProject = GetService<ProjectData>().GenerateProject(generateId: true, organizationId: organization.Id);
+        var firstProject = projectData.GenerateProject(generateId: true, organizationId: organization.Id);
+        var secondProject = projectData.GenerateProject(generateId: true, organizationId: organization.Id);
         await projects.AddAsync([firstProject, secondProject], command => command.ImmediateConsistency());
         var tokens = GetService<ITokenRepository>();
-        var token = GetService<TokenData>().GenerateToken(generateId: true, organizationId: organization.Id, projectId: firstProject.Id);
+        var token = tokenData.GenerateToken(generateId: true, organizationId: organization.Id, projectId: firstProject.Id);
         await tokens.AddAsync(token, command => command.ImmediateConsistency());
         var job = GetService<TrialExpirationJob>();
         Func<Task> removeMember = async () =>
@@ -99,7 +102,8 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
         var organization = new Organization { Name = "Manual suspension", IsSuspended = true, SuspensionCode = code,
             SuspendedByUserId = TestConstants.UserId, SuspensionDate = TimeProvider.GetUtcNow().UtcDateTime, SuspensionNotes = "Manual suspension reason" };
         var billing = GetService<BillingManager>();
-        billing.ApplyBillingPlan(organization, GetService<BillingPlans>().FreePlan);
+        var plans = GetService<BillingPlans>();
+        billing.ApplyBillingPlan(organization, plans.FreePlan);
         var repository = GetService<IOrganizationRepository>();
         await repository.AddAsync(organization);
 
@@ -121,8 +125,10 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
         // Arrange
         var organization = new Organization { Name = "Within Free limits" };
         var billing = GetService<BillingManager>();
-        billing.ApplyBillingPlan(organization, GetService<BillingPlans>().FreePlan);
-        await GetService<IOrganizationRepository>().AddAsync(organization);
+        var plans = GetService<BillingPlans>();
+        var repository = GetService<IOrganizationRepository>();
+        billing.ApplyBillingPlan(organization, plans.FreePlan);
+        await repository.AddAsync(organization);
 
         // Act
         bool changed = await billing.UpdatePlanLimitSuspensionAsync(organization);

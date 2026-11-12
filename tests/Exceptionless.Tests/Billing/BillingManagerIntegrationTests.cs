@@ -53,19 +53,24 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
         // Arrange
         var billing = GetService<BillingManager>();
         var plans = GetService<BillingPlans>();
+        var organizations = GetService<IOrganizationRepository>();
+        var userRepository = GetService<IUserRepository>();
+        var projectRepository = GetService<IProjectRepository>();
+        var userData = GetService<UserData>();
+        var projectData = GetService<ProjectData>();
         var organization = new Organization { Name = "Finite custom plan" };
         billing.ApplyTrialPlan(organization);
         for (int index = 0; index < inviteCount; index++)
             organization.Invites.Add(new Invite { EmailAddress = $"invite-{index}@example.test", Token = StringExtensions.GetNewToken(), DateAdded = TimeProvider.GetUtcNow().UtcDateTime });
-        await GetService<IOrganizationRepository>().AddAsync(organization);
+        await organizations.AddAsync(organization);
         var users = Enumerable.Range(0, memberCount).Select(index =>
         {
-            var user = GetService<UserData>().GenerateUser(generateId: true, organizationId: organization.Id);
+            var user = userData.GenerateUser(generateId: true, organizationId: organization.Id);
             user.MarkEmailAddressVerified();
             return user;
         });
-        await GetService<IUserRepository>().AddAsync(users, command => command.ImmediateConsistency());
-        await GetService<IProjectRepository>().AddAsync(GetService<ProjectData>().GenerateProjects(projectCount, generateId: true, organizationId: organization.Id), command => command.ImmediateConsistency());
+        await userRepository.AddAsync(users, command => command.ImmediateConsistency());
+        await projectRepository.AddAsync(projectData.GenerateProjects(projectCount, generateId: true, organizationId: organization.Id), command => command.ImmediateConsistency());
         var customPlan = plans.SmallPlan with { Id = "CUSTOM_FINITE", MaxUsers = 1, MaxProjects = 1 };
 
         // Act

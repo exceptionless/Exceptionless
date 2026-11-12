@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
 
+import { spyOn } from 'storybook/test';
+
 import type { ViewOrganization } from '#features/organizations/models.ts';
 import type { BillingPlan } from '#lib/generated/api.ts';
 
@@ -183,6 +185,19 @@ function makeOrg(overrides: Partial<ViewOrganization> = {}): ViewOrganization {
 }
 
 const meta = {
+    beforeEach: ({ args }) => {
+        const originalFetch = globalThis.fetch;
+        const mockFetch = spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+            const url = input instanceof Request ? input.url : String(input);
+            if (new URL(url, globalThis.location.href).pathname.endsWith(`/organizations/${args.organization.id}/users`)) {
+                return Promise.resolve(Response.json([{ email_address: 'user@example.test', id: 'storybook-user' }]));
+            }
+
+            return originalFetch(input, init);
+        });
+
+        return () => mockFetch.mockRestore();
+    },
     component: Harness,
     parameters: {
         layout: 'centered'

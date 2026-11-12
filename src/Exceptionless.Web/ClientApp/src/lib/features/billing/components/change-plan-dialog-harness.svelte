@@ -8,7 +8,6 @@
     import { Button } from '#comp/ui/button/index.ts';
     import { accessToken } from '#features/auth/index.svelte.ts';
     import { queryKeys } from '#features/organizations/api.svelte.ts';
-    import { queryKeys as userQueryKeys } from '#features/users/api.svelte.ts';
 
     import ChangePlanDialog from './change-plan-dialog.svelte';
 
@@ -42,20 +41,6 @@
     untrack(() => {
         if (plans.length > 0) {
             queryClient.setQueryData(queryKeys.plans(organization.id), plans);
-            queryClient.setQueryData(
-                [
-                    ...userQueryKeys.organization(organization.id),
-                    {
-                        params: undefined
-                    }
-                ],
-                {
-                    data: [{}],
-                    meta: {
-                        total: 1
-                    }
-                }
-            );
         }
     });
 

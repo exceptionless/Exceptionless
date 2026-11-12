@@ -44,7 +44,8 @@ public class TrialExpirationJobTests : IntegrationTestsBase
         _billingPlans = GetService<BillingPlans>();
         _organizationData = GetService<OrganizationData>();
         _userData = GetService<UserData>();
-        _billingOptions = GetService<AppOptions>().BillingOptions;
+        var options = GetService<AppOptions>();
+        _billingOptions = options.BillingOptions;
     }
 
     private TimeSpan TimeUntilReminder => TimeSpan.FromDays(_billingOptions.TrialDays - _billingOptions.TrialReminderDays + 0.5);

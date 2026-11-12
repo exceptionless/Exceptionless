@@ -30,6 +30,8 @@ Under `tests/Exceptionless.Tests/`:
 - `Utility/DataBuilder.cs`: synthetic records.
 - `Utility/ProxyTimeProvider.cs`: controlled time.
 
+Resolve each service with `GetService<T>()` into a named local variable before accessing its properties or calling its methods. Reuse that variable within the test.
+
 Name tests `MethodUnderTest_Scenario_ExpectedBehavior`.
 
 ## HTTP and state
