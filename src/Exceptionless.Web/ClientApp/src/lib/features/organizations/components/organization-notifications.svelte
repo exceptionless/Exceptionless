@@ -22,7 +22,7 @@
 
 <script lang="ts">
     import { useQueryClient } from '@tanstack/svelte-query';
-    import { useEventListener, useInterval } from 'runed';
+    import { useEventListener } from 'runed';
     import { SvelteSet } from 'svelte/reactivity';
 
     import type { NotificationProps } from '#comp/notification/index.ts';
@@ -36,6 +36,7 @@
     import { getMonthlyEventUsage, isApproachingMonthlyEventLimit } from '#features/organizations/utils.ts';
     import { getProductTourRecordedAt } from '#features/product-tours/eligibility.ts';
     import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
+    import { clock } from '#features/shared/clock.svelte.ts';
     import { getMeQuery, putCurrentUserProductTour, setCurrentUserProductTourRecorded, queryKeys as userQueryKeys } from '#features/users/api.svelte.ts';
 
     import HourlyOverageNotification from './notifications/hourly-overage-notification.svelte';
@@ -112,11 +113,8 @@
     const isExceededRequestLimit = $derived(!!organization?.is_over_request_limit);
     const isFreePlan = $derived(organization?.plan_id === FREE_PLAN_ID);
     const isTrialPlan = $derived(organization?.plan_id === TRIAL_PLAN_ID);
-    // Re-checks time-based notices each minute so day and month dismissals expire in a tab left open.
-    let now = $state(new Date());
-    useInterval(60 * 1000, {
-        callback: () => (now = new Date())
-    });
+    // Time-based notices (trial days left, dismissals until tomorrow or next month) stay current in a tab left open.
+    const now = $derived(clock.now);
 
     const trialDaysRemaining = $derived(getTrialDaysRemaining(organization?.trial_ends_utc, now));
     const monthlyEventUsage = $derived(getMonthlyEventUsage(organization, now));
