@@ -32,6 +32,7 @@ The scenarios cover:
 - Providing project client setup instructions.
 - Explaining the cause of an exception from its stack trace and error data.
 - Marking the current stack fixed in a version.
+- Creating a saved view for the current project from a plain request.
 - Answering a question about today in the user's time zone.
 - Turning each way of asking about a period into the right `time` date math in one search: rolling windows (last hour, last 24 hours, last 2, 7, and 30 days), calendar periods (today, yesterday, this week, last week, this month, since Monday), explicit dates and ranges, no period, a follow-up that changes the period, the current stack today versus in total, and an organization-wide question.
 

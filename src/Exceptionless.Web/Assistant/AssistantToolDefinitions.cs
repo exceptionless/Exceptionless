@@ -22,13 +22,17 @@ internal static class AssistantToolDefinitions
         nameof(ExceptionlessMcpTools.SnoozeStackAsync),
         nameof(ExceptionlessMcpTools.SetStackCriticalAsync),
         nameof(ExceptionlessMcpTools.AddStackReferenceLinkAsync),
-        nameof(ExceptionlessMcpTools.RemoveStackReferenceLinkAsync)
+        nameof(ExceptionlessMcpTools.RemoveStackReferenceLinkAsync),
+        nameof(ExceptionlessMcpTools.ListSavedViewsAsync),
+        nameof(ExceptionlessMcpTools.CreateSavedViewAsync),
+        nameof(ExceptionlessMcpTools.UpdateSavedViewAsync),
+        nameof(ExceptionlessMcpTools.DeleteSavedViewAsync)
     ];
 
     public static object[] Create(ExceptionlessMcpTools tools, AssistantChatRequest request)
     {
-        string? currentEventId = AssistantService.GetRouteValue(request.Path, "event");
-        string? currentStackId = AssistantService.GetRouteValue(request.Path, "stack");
+        string? currentEventId = AssistantService.GetCurrentResourceId(request.Path, "event");
+        string? currentStackId = AssistantService.GetCurrentResourceId(request.Path, "stack");
 
         var definitions = s_methodNames.Select(methodName =>
         {
@@ -49,6 +53,9 @@ internal static class AssistantToolDefinitions
 
             if (request.ProjectId is not null)
                 ApplyCurrentPageDefault(schema, "projectId", "Defaults to the current page project id when omitted. Only specify another project when the user explicitly requests a broader or different scope.");
+
+            if (protocolTool.Name == "create_saved_view" && request.ProjectId is not null)
+                ApplyCurrentPageDefault(schema, "projectIds", "Defaults to the current project when omitted. Set allProjects when the user wants every project.");
 
             if (protocolTool.Name is "get_stack_events" or "list_projects" or "search_stacks")
                 ApplyMaximum(schema, "limit", AssistantLimits.MaximumToolItemsPerCall);

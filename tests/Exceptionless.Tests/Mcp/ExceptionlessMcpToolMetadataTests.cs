@@ -21,6 +21,7 @@ public sealed class ExceptionlessMcpToolMetadataTests
     [InlineData(nameof(ExceptionlessMcpTools.GetEventAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.CountEventsAsync))]
     [InlineData(nameof(ExceptionlessMcpTools.GetFilterFields))]
+    [InlineData(nameof(ExceptionlessMcpTools.ListSavedViewsAsync))]
     public void ReadTools_AnnotationsAdvertiseReadOnly(string methodName)
     {
         var tool = CreateTool(methodName);
@@ -35,6 +36,9 @@ public sealed class ExceptionlessMcpToolMetadataTests
     [InlineData(nameof(ExceptionlessMcpTools.SetStackCriticalAsync), true, true)]
     [InlineData(nameof(ExceptionlessMcpTools.AddStackReferenceLinkAsync), false, true)]
     [InlineData(nameof(ExceptionlessMcpTools.RemoveStackReferenceLinkAsync), true, true)]
+    [InlineData(nameof(ExceptionlessMcpTools.CreateSavedViewAsync), false, false)]
+    [InlineData(nameof(ExceptionlessMcpTools.UpdateSavedViewAsync), true, true)]
+    [InlineData(nameof(ExceptionlessMcpTools.DeleteSavedViewAsync), true, true)]
     public void StackWriteTools_AnnotationsAdvertiseSideEffects(string methodName, bool destructive, bool idempotent)
     {
         var tool = CreateTool(methodName);

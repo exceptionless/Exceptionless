@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { describeTimeRange, getAssistantToolDetail } from './assistant-tools';
+import type { AssistantToolActivity } from './models';
+
+import { describeTimeRange, getAssistantToolDetail, getAssistantToolLabel, getAssistantToolSavedView, isMutationTool } from './assistant-tools';
 
 describe('describeTimeRange', () => {
     it.each([
@@ -40,5 +42,83 @@ describe('describeTimeRange', () => {
         );
 
         expect(detail).toBe('type:error · today · by stack');
+    });
+});
+
+describe('saved view tools', () => {
+    const view = { filter: 'type:error', id: 'view-1', name: 'Production errors', slug: 'production-errors', view_type: 'stacks' };
+
+    it.each([
+        ['create_saved_view', 'Created a saved view'],
+        ['update_saved_view', 'Updated a saved view'],
+        ['delete_saved_view', 'Deleted a saved view']
+    ])('reports %s as a named change', (name, label) => {
+        // Arrange
+        const tool = {
+            arguments: '{}',
+            id: 'tool-1',
+            name,
+            result: JSON.stringify({ data: { ...view, changed: true }, ok: true }),
+            status: 'complete' as const
+        };
+
+        // Act
+        const detail = getAssistantToolDetail(tool, new Map());
+
+        // Assert
+        expect(isMutationTool(tool)).toBe(true);
+        expect(getAssistantToolLabel(tool, false)).toBe(label);
+        expect(detail).toBe('Production errors');
+    });
+
+    it('shows when an update changed nothing', () => {
+        // Arrange
+        const tool = {
+            arguments: '{}',
+            id: 'tool-1',
+            name: 'update_saved_view',
+            result: JSON.stringify({ data: { ...view, changed: false }, ok: true }),
+            status: 'complete' as const
+        };
+
+        // Act
+        const detail = getAssistantToolDetail(tool, new Map());
+
+        // Assert
+        expect(detail).toBe('No change needed · Production errors');
+    });
+
+    it('links to a created view but not a deleted one', () => {
+        // Arrange
+        const result = JSON.stringify({ data: view, ok: true });
+        const created = { arguments: '{}', id: 'tool-1', name: 'create_saved_view', result, status: 'complete' as const };
+        const deleted = { arguments: '{}', id: 'tool-2', name: 'delete_saved_view', result, status: 'complete' as const };
+
+        // Act
+        const createdView = getAssistantToolSavedView(created);
+        const deletedView = getAssistantToolSavedView(deleted);
+
+        // Assert
+        expect(createdView).toEqual({ id: 'view-1', name: 'Production errors', slug: 'production-errors', view_type: 'stacks' });
+        expect(deletedView).toBeUndefined();
+    });
+
+    it('shows an action held for confirmation as waiting rather than failed', () => {
+        // Arrange
+        const tool = {
+            arguments: '{"savedViewId":"view-1"}',
+            id: 'call-1',
+            name: 'delete_saved_view',
+            result: '{"ok":false,"error":{"code":"confirmation_required","message":"Deleting this saved view needs the user\'s confirmation."}}',
+            status: 'failed'
+        } as AssistantToolActivity;
+
+        // Act
+        const waiting = getAssistantToolLabel(tool, false);
+        const answered = getAssistantToolLabel(tool, false, false);
+
+        // Assert
+        expect(waiting).toBe('Waiting for your confirmation');
+        expect(answered).toBe('Asked for your confirmation');
     });
 });

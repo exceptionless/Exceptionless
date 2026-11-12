@@ -1804,6 +1804,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             GetService<ITextSerializer>(),
             GetService<ILogger<ExceptionlessMcpTools>>(),
             TimeProvider,
+            null!,
             assistantToolContext));
     }
 

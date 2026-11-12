@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Web;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models.Billing;
@@ -11,7 +13,7 @@ using Exceptionless.Web.Mcp;
 
 namespace Exceptionless.Web.Assistant;
 
-public sealed class AssistantService(
+public sealed partial class AssistantService(
     IHttpClientFactory httpClientFactory,
     AppOptions appOptions,
     ExceptionlessMcpTools tools,
@@ -24,15 +26,19 @@ public sealed class AssistantService(
 {
     private const string AddStackReferenceLinkTool = "add_stack_reference_link";
     private const string CountEventsTool = "count_events";
+    private const string CreateSavedViewTool = "create_saved_view";
+    private const string DeleteSavedViewTool = "delete_saved_view";
     private const string GetEventTool = "get_event";
     private const string GetProjectSetupTool = "get_project_setup";
     private const string GetStackTool = "get_stack";
     private const string GetStackEventsTool = "get_stack_events";
     private const string ListProjectsTool = "list_projects";
+    private const string ListSavedViewsTool = "list_saved_views";
     private const string RemoveStackReferenceLinkTool = "remove_stack_reference_link";
     private const string SearchStacksTool = "search_stacks";
     private const string SetStackCriticalTool = "set_stack_critical";
     private const string SnoozeStackTool = "snooze_stack";
+    private const string UpdateSavedViewTool = "update_saved_view";
     private const string UpdateStackStatusTool = "update_stack_status";
     private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
 
@@ -57,13 +63,14 @@ public sealed class AssistantService(
         AssistantConversationState? conversationState = null;
         if (!String.IsNullOrWhiteSpace(request.OrganizationId) && !String.IsNullOrWhiteSpace(request.ConversationId))
         {
-            conversationState = await assistantConversationService.GetAsync(
+            conversationState = await assistantConversationService.BeginTurnAsync(
                 userId,
                 request.OrganizationId,
-                request.ConversationId);
-            if (conversationState is not null)
-                conversationState = await RemoveToolResultsFromMissingProjectsAsync(conversationState, request.OrganizationId);
+                request.ConversationId,
+                cancellationToken);
+            conversationState = await RemoveToolResultsFromMissingProjectsAsync(conversationState, request.OrganizationId);
         }
+        var pendingConfirmations = conversationState?.PendingConfirmations.ToList() ?? [];
 
         // Visible conversation text comes from the browser. Tool results are loaded only from the
         // server-owned distributed cache so a later request can be handled by any app replica
@@ -415,14 +422,31 @@ public sealed class AssistantService(
                     if (toolCall.Name is SearchStacksTool or CountEventsTool)
                         remainingProjectSearches--;
 
-                    try
+                    bool confirmationRequired = AssistantConfirmation.IsRequired(toolCall.Name, toolCall.Name == UpdateSavedViewTool && await IsSharedSavedViewAsync(arguments, request));
+                    bool confirmed = false;
+                    if (confirmationRequired && AssistantConfirmation.FindConfirmed(toolCall.Name, arguments, request, pendingConfirmations) is { } confirmedAction)
                     {
-                        result = await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
+                        // A confirmation authorizes one attempt.
+                        pendingConfirmations.Remove(confirmedAction);
+                        confirmed = conversationState?.TurnId is { } turnId
+                            && await assistantConversationService.IsCurrentTurnAsync(userId, request.OrganizationId!, request.ConversationId!, turnId);
                     }
-                    catch (Exception ex)
+
+                    if (confirmationRequired && !confirmed)
                     {
-                        diagnostics?.RecordToolException(ex, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds, cancellationToken);
-                        throw;
+                        result = AssistantConfirmation.CreateRequiredResult(toolCall.Name, s_jsonOptions);
+                    }
+                    else
+                    {
+                        try
+                        {
+                            result = await ExecuteToolAsync(toolCall.Name, arguments, request, cancellationToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            diagnostics?.RecordToolException(ex, timeProvider.GetElapsedTime(toolStarted).TotalMilliseconds, cancellationToken);
+                            throw;
+                        }
                     }
                 }
 
@@ -447,7 +471,8 @@ public sealed class AssistantService(
 
             if (conversationToolResults.Count > 0
                 && !String.IsNullOrWhiteSpace(request.OrganizationId)
-                && !String.IsNullOrWhiteSpace(request.ConversationId))
+                && !String.IsNullOrWhiteSpace(request.ConversationId)
+                && conversationState?.TurnId is { } activeTurnId)
             {
                 if (diagnostics is not null)
                     diagnostics.Stage = "conversation_save";
@@ -455,6 +480,7 @@ public sealed class AssistantService(
                     userId,
                     request.OrganizationId,
                     request.ConversationId,
+                    activeTurnId,
                     conversationToolResults,
                     cancellationToken);
             }
@@ -549,8 +575,8 @@ public sealed class AssistantService(
         using var _ = assistantToolContext.BeginTools(request.OrganizationId);
         using var document = ParseArguments(arguments);
         var root = document.RootElement;
-        string? currentEventId = GetRouteValue(request.Path, "event");
-        string? currentStackId = GetRouteValue(request.Path, "stack");
+        string? currentEventId = GetCurrentResourceId(request.Path, "event");
+        string? currentStackId = GetCurrentResourceId(request.Path, "stack");
         string? setupProjectId = GetString(root, "projectId", "project_id");
         string? setupProjectName = GetString(root, "projectName", "project_name");
         bool? critical = GetBoolean(root, "critical");
@@ -626,10 +652,67 @@ public sealed class AssistantService(
                 GetString(root, "stackId", "stack_id") ?? currentStackId ?? String.Empty,
                 GetString(root, "url") ?? String.Empty,
                 GetString(root, "projectId", "project_id") ?? request.ProjectId),
+            ListSavedViewsTool => await tools.ListSavedViewsAsync(
+                request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
+                GetString(root, "viewType", "view_type"),
+                GetString(root, "name")),
+            CreateSavedViewTool => await CreateSavedViewAsync(tools, root, request),
+            UpdateSavedViewTool => await tools.UpdateSavedViewAsync(
+                GetString(root, "savedViewId", "saved_view_id") ?? String.Empty,
+                GetString(root, "name"),
+                GetStrings(root, "projectIds", "project_ids"),
+                GetBoolean(root, "allProjects", "all_projects") ?? false,
+                GetStrings(root, "types"),
+                GetStrings(root, "statuses"),
+                GetStrings(root, "environments"),
+                GetStrings(root, "levels"),
+                GetStrings(root, "tags"),
+                GetString(root, "query"),
+                GetStrings(root, "clearCriteria", "clear_criteria"),
+                GetString(root, "time"),
+                GetString(root, "sort")),
+            DeleteSavedViewTool => await tools.DeleteSavedViewAsync(GetString(root, "savedViewId", "saved_view_id") ?? String.Empty),
             _ => new { ok = false, error = $"Unknown tool '{name}'." }
         };
 
         return AssistantToolResultSerializer.Serialize(name, result, s_jsonOptions);
+    }
+
+    /// <summary>A view that can't be read isn't treated as shared, because the update reports that error itself.</summary>
+    private async Task<bool> IsSharedSavedViewAsync(string arguments, AssistantChatRequest request)
+    {
+        using var _ = assistantToolContext.BeginTools(request.OrganizationId);
+        using var document = ParseArguments(arguments);
+        string? savedViewId = GetString(document.RootElement, "savedViewId", "saved_view_id");
+        return !String.IsNullOrWhiteSpace(savedViewId) && await tools.IsSharedSavedViewAsync(savedViewId);
+    }
+
+    /// <summary>
+    /// Without this check, leaving out the project on a page with no current project would quietly include every project,
+    /// which is not what "a view for this project" means.
+    /// </summary>
+    private static async Task<McpResponse<McpSavedViewResult>> CreateSavedViewAsync(ExceptionlessMcpTools tools, JsonElement root, AssistantChatRequest request)
+    {
+        bool allProjects = GetBoolean(root, "allProjects", "all_projects") ?? false;
+        string[]? projectIds = GetStrings(root, "projectIds", "project_ids") ?? (request.ProjectId is { } currentProjectId ? [currentProjectId] : null);
+        if (projectIds is null && !allProjects)
+            return McpResponse<McpSavedViewResult>.Failed(new McpErrorInfo(McpErrorCodes.InvalidArgument, "No current project is selected. Pass projectIds with the project the user wants, or allProjects as true if they asked for every project."));
+
+        return await tools.CreateSavedViewAsync(
+            GetString(root, "name") ?? String.Empty,
+            GetString(root, "viewType", "view_type") ?? String.Empty,
+            request.OrganizationId ?? GetString(root, "organizationId", "organization_id"),
+            projectIds,
+            allProjects,
+            GetStrings(root, "types"),
+            GetStrings(root, "statuses"),
+            GetStrings(root, "environments"),
+            GetStrings(root, "levels"),
+            GetStrings(root, "tags"),
+            GetString(root, "query"),
+            GetString(root, "time"),
+            GetString(root, "sort"),
+            GetBoolean(root, "shared") ?? false);
     }
 
     internal static string? GetProjectSetupProjectId(string? requestedProjectId, string? requestedProjectName, string? currentProjectId)
@@ -649,7 +732,7 @@ public sealed class AssistantService(
         DateTimeOffset utcNow)
     {
         // The model has no clock; without the current time it guesses absolute dates for relative questions.
-        string context = $"Current UTC time: {FormatUtc(utcNow)}. {GetUserCalendarContext(request.TimeZone, utcNow)} Current organization id: {request.OrganizationId ?? "not selected"}. Current project id: {request.ProjectId ?? "not selected"}. Current stack id: {GetRouteValue(request.Path, "stack") ?? "not selected"}. Current event id: {GetRouteValue(request.Path, "event") ?? "not selected"}. Current page: {request.Path ?? "unknown"}.";
+        string context = $"Current UTC time: {FormatUtc(utcNow)}. {GetUserCalendarContext(request.TimeZone, utcNow)} Current organization id: {request.OrganizationId ?? "not selected"}. Current project id: {request.ProjectId ?? "not selected"}. Current stack id: {GetCurrentResourceId(request.Path, "stack") ?? "not selected"}. Current event id: {GetCurrentResourceId(request.Path, "event") ?? "not selected"}. Current saved view: {GetCurrentSavedView(request.Path) ?? "not selected"}. Current page: {request.Path ?? "unknown"}.";
         var messages = new List<object>
         {
             new
@@ -706,8 +789,10 @@ public sealed class AssistantService(
     /// </summary>
     private async Task<AssistantConversationState> RemoveToolResultsFromMissingProjectsAsync(AssistantConversationState state, string organizationId)
     {
-        var tracked = state.ToolResults.Where(result => result.ProjectIds is not null).ToList();
-        string[] projectIds = tracked.SelectMany(result => result.ProjectIds!).Distinct(StringComparer.Ordinal).ToArray();
+        string[] projectIds = state.ToolResults.SelectMany(result => result.ProjectIds)
+            .Concat(state.PendingConfirmations.SelectMany(pending => pending.ProjectIds))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
         IReadOnlySet<string> existing;
         try
         {
@@ -716,13 +801,17 @@ public sealed class AssistantService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "Unable to check the projects of cached assistant tool results for organization {OrganizationId}: {Message}", organizationId, ex.Message);
-            return new AssistantConversationState([]);
+            return state with { ToolResults = [], PendingConfirmations = [] };
         }
 
         // A successful result with no recorded project, such as a count whose project the tool resolved implicitly,
         // cannot be checked, so only failed results, which hold no project data, are kept without one.
-        var kept = tracked.Where(result => result.ProjectIds!.Count > 0 ? result.ProjectIds!.All(existing.Contains) : IsFailedToolResult(result.Result)).ToList();
-        return kept.Count == state.ToolResults.Count ? state : new AssistantConversationState(kept);
+        var kept = state.ToolResults.Where(result => result.ProjectIds.Count > 0 ? result.ProjectIds.All(existing.Contains) : IsFailedToolResult(result.Result)).ToList();
+        return state with
+        {
+            ToolResults = kept,
+            PendingConfirmations = state.PendingConfirmations.Where(pending => pending.ProjectIds.All(existing.Contains)).ToList()
+        };
     }
 
     private static bool IsFailedToolResult(string result)
@@ -842,6 +931,51 @@ public sealed class AssistantService(
         return limited;
     }
 
+    /// <summary>A stack or event page has an id in its path. Anything else there is the URL name of a saved view.</summary>
+    internal static string? GetCurrentResourceId(string? path, string segment)
+        => GetRouteValue(path, segment) is { } value && IsObjectId(value) ? value : null;
+
+    private static bool IsObjectId(string value) => value.Length == 24 && value.All(Char.IsAsciiHexDigit);
+
+    /// <summary>
+    /// The open saved view and its page, such as "errors (viewType stacks)". The URL name alone is ambiguous, because
+    /// views on different pages can share one. Only a URL name or id is accepted, so a crafted link can't add text to the prompt.
+    /// </summary>
+    internal static string? GetCurrentSavedView(string? path)
+    {
+        foreach (var (segment, viewType) in s_savedViewRouteTypes)
+        {
+            if (GetRouteValue(path, segment) is { } value && !IsObjectId(value))
+                return SavedViewSlugRegex().IsMatch(value) ? $"{value} (viewType {viewType})" : null;
+        }
+
+        // Pages without a saved view route, and links that predate them, carry the view's id in the query string.
+        int queryIndex = path?.IndexOf('?') ?? -1;
+        if (queryIndex < 0)
+            return null;
+
+        string? saved = HttpUtility.ParseQueryString(path![(queryIndex + 1)..])["saved"];
+        if (String.IsNullOrWhiteSpace(saved) || (!IsObjectId(saved) && !SavedViewSlugRegex().IsMatch(saved)))
+            return null;
+
+        string page = path[..queryIndex].Trim('/').Split('/')[0];
+        return s_savedViewPageTypes.TryGetValue(page, out string? pageViewType) ? $"{saved} (viewType {pageViewType})" : saved;
+    }
+
+    private static readonly (string Segment, string ViewType)[] s_savedViewRouteTypes = [("stack", "stacks"), ("event", "events"), ("sessions", "sessions")];
+
+    private static readonly Dictionary<string, string> s_savedViewPageTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["stack"] = "stacks",
+        ["event"] = "events",
+        ["sessions"] = "sessions",
+        ["stream"] = "stream"
+    };
+
+    // Matches the app's savedview route parameter.
+    [GeneratedRegex("^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.CultureInvariant)]
+    private static partial Regex SavedViewSlugRegex();
+
     internal static string? GetRouteValue(string? path, string segment)
     {
         if (String.IsNullOrWhiteSpace(path))
@@ -931,6 +1065,29 @@ public sealed class AssistantService(
 
     private static int GetBoundedInt32(JsonElement element, int defaultValue, int maximum, params string[] names)
         => Math.Clamp(GetInt32(element, names) ?? defaultValue, 1, maximum);
+
+    /// <summary>Gets a list of strings, treating a missing or empty list as not supplied.</summary>
+    private static string[]? GetStrings(JsonElement element, params string[] names)
+    {
+        foreach (string name in names)
+        {
+            if (!element.TryGetProperty(name, out var value))
+                continue;
+
+            string?[] values = value.ValueKind switch
+            {
+                JsonValueKind.Array => value.EnumerateArray().Where(item => item.ValueKind == JsonValueKind.String).Select(item => item.GetString()).ToArray(),
+                JsonValueKind.String => [value.GetString()],
+                _ => []
+            };
+
+            string[] supplied = values.Where(item => !String.IsNullOrWhiteSpace(item)).Select(item => item!).ToArray();
+            if (supplied.Length > 0)
+                return supplied;
+        }
+
+        return null;
+    }
 
     private static bool? GetBoolean(JsonElement element, params string[] names)
     {

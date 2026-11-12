@@ -6,6 +6,7 @@ namespace Exceptionless.Web.Mcp;
 
 public static class McpErrorCodes
 {
+    public const string Conflict = "conflict";
     public const string ContextMismatch = "context_mismatch";
     public const string ContextRequired = "context_required";
     public const string Forbidden = "forbidden";
@@ -33,6 +34,11 @@ public static class McpErrorCodes
 
 public static class McpErrors
 {
+    public static McpErrorInfo Conflict(string message)
+    {
+        return new McpErrorInfo(McpErrorCodes.Conflict, message);
+    }
+
     public static McpErrorInfo ContextMismatch(string message, string? activeOrganizationId, string? requestedOrganizationId, string? activeProjectId, string? requestedProjectId)
     {
         return new McpErrorInfo(McpErrorCodes.ContextMismatch, message, new Dictionary<string, object?>
