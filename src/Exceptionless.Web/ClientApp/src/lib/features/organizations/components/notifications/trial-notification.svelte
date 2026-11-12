@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { NotificationProps } from '#comp/notification/index.ts';
 
+    import TimeAgo from '#comp/formatters/time-ago.svelte';
     import { Notification, NotificationDescription, NotificationTitle } from '#comp/notification/index.ts';
     import { A } from '#comp/typography/index.ts';
     import { showUpgradeDialog } from '#features/billing/upgrade-required.svelte.ts';
@@ -8,15 +9,14 @@
     import NotificationDismissButton from './notification-dismiss-button.svelte';
 
     interface Props extends NotificationProps {
-        daysRemaining: number;
+        endsUtc: string;
+        hasEnded: boolean;
         name: string;
         onDismiss?: () => void;
         organizationId: string;
     }
 
-    let { daysRemaining, name, onDismiss, organizationId, ...restProps }: Props = $props();
-
-    const daysLabel = $derived(daysRemaining === 1 ? '1 day' : `${daysRemaining} days`);
+    let { endsUtc, hasEnded, name, onDismiss, organizationId, ...restProps }: Props = $props();
 </script>
 
 <Notification variant="warning" {...restProps}>
@@ -25,8 +25,8 @@
             <NotificationDismissButton {onDismiss} />
         {/if}
     {/snippet}
-    {#if daysRemaining > 0}
-        <NotificationTitle>{daysLabel} left in the {name} free trial.</NotificationTitle>
+    {#if !hasEnded}
+        <NotificationTitle>The {name} free trial ends <TimeAgo value={endsUtc} />.</NotificationTitle>
         <NotificationDescription>
             <A onclick={() => showUpgradeDialog(organizationId, 'Upgrade to keep Exie, alerts, integrations, and 90-day retention.')}>Upgrade now</A>
             to keep Exie, alerts, integrations, and 90-day retention when your trial ends.

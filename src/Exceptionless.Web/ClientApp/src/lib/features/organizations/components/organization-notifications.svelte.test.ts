@@ -206,7 +206,7 @@ describe('OrganizationNotifications', () => {
             const { unmount } = renderNotifications();
 
             // Assert
-            expect(screen.getByText('2 days left in the Acme free trial.')).toBeTruthy();
+            expect(screen.getByText(/The Acme free trial ends/).textContent).toContain('in 2 days');
 
             // Act
             await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
@@ -249,7 +249,7 @@ describe('OrganizationNotifications', () => {
 
                 // Assert
                 expect(wasDismissed).toBe(true);
-                expect(screen.getByText('2 days left in the Acme free trial.')).toBeTruthy();
+                expect(screen.getByText(/The Acme free trial ends/).textContent).toContain('in 2 days');
                 expect(organizationRefetch).not.toHaveBeenCalled();
                 expect(projectsRefetch).not.toHaveBeenCalled();
             } finally {

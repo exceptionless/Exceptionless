@@ -206,7 +206,8 @@
         />
     {:else if showTrialEndingSoon}
         <TrialNotification
-            daysRemaining={trialDaysRemaining}
+            endsUtc={organization.trial_ends_utc ?? ''}
+            hasEnded={trialDaysRemaining === 0}
             name={organization.name}
             onDismiss={() => dismissOrganizationNotification('trial-ending', organization.id)}
             organizationId={organization.id}

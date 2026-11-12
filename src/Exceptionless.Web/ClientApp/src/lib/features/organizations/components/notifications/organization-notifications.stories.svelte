@@ -52,13 +52,25 @@
 </script>
 
 <Story name="Trial Ending Soon">
-    <TrialNotification daysRemaining={3} name="Acme Corporation" onDismiss={() => {}} organizationId="org1" />
+    <TrialNotification
+        endsUtc={new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()}
+        hasEnded={false}
+        name="Acme Corporation"
+        onDismiss={() => {}}
+        organizationId="org1"
+    />
 </Story>
 <Story name="Trial Last Day">
-    <TrialNotification daysRemaining={1} name="Acme Corporation" onDismiss={() => {}} organizationId="org1" />
+    <TrialNotification
+        endsUtc={new Date(Date.now() + 20 * 60 * 60 * 1000).toISOString()}
+        hasEnded={false}
+        name="Acme Corporation"
+        onDismiss={() => {}}
+        organizationId="org1"
+    />
 </Story>
-<Story name="Trial Ending Today">
-    <TrialNotification daysRemaining={0} name="Acme Corporation" onDismiss={() => {}} organizationId="org1" />
+<Story name="Trial Ended Awaiting Free Plan">
+    <TrialNotification endsUtc={new Date().toISOString()} hasEnded={true} name="Acme Corporation" onDismiss={() => {}} organizationId="org1" />
 </Story>
 <Story name="Trial Ended">
     <TrialEndedNotification maxEventsPerMonth={3000} name="Acme Corporation" onDismiss={() => {}} organizationId="org1" retentionDays={3} />
