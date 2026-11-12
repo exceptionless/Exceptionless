@@ -155,7 +155,8 @@ public sealed class UpdateOrganizationPlanLimitsMigrationTests : IntegrationTest
             .Returns((Ids ids, IPatchOperation operation, CommandOptionsDescriptor<Organization> options) => _organizationRepository.PatchAsync(ids, operation, options));
         var configuration = GetService<ExceptionlessElasticConfiguration>();
         var migrationLock = GetService<ILock>();
-        var migration = new UpdateOrganizationPlanLimits(repository.Object, configuration, GetService<BillingPlans>(), Log);
+        var billingPlans = GetService<BillingPlans>();
+        var migration = new UpdateOrganizationPlanLimits(repository.Object, configuration, billingPlans, Log);
 
         // Act
         await migration.RunAsync(new MigrationContext(migrationLock, _logger, TestCancellationToken));

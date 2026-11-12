@@ -30,7 +30,16 @@ Under `tests/Exceptionless.Tests/`:
 - `Utility/DataBuilder.cs`: synthetic records.
 - `Utility/ProxyTimeProvider.cs`: controlled time.
 
-Resolve each service with `GetService<T>()` into a named local variable before accessing its properties or calling its methods. Reuse that variable within the test.
+Always assign each `GetService<T>()` result to a descriptively named variable. Never call a method or access a property directly on the lookup, and never pass the lookup inline as an argument. Reuse the variable throughout the test.
+
+```csharp
+// Avoid
+await GetService<IOrganizationRepository>().AddAsync(organization);
+
+// Use
+var organizations = GetService<IOrganizationRepository>();
+await organizations.AddAsync(organization);
+```
 
 Name tests `MethodUnderTest_Scenario_ExpectedBehavior`.
 

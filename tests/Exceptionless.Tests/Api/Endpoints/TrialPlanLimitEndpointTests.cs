@@ -1,9 +1,9 @@
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Tests.Extensions;
 using Foundatio.Repositories;
@@ -26,52 +26,41 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
         var users = GetService<IUserRepository>();
         var projects = GetService<IProjectRepository>();
         var billing = GetService<BillingManager>();
-        var userData = GetService<UserData>();
+        var sampleData = GetService<SampleDataService>();
         var projectData = GetService<ProjectData>();
-        var tokenData = GetService<TokenData>();
-        var organization = new Organization { Name = "Over-limit trial" };
+        var tokens = GetService<ITokenRepository>();
+        var job = GetService<TrialExpirationJob>();
+        await sampleData.CreateDataAsync();
+        await RefreshDataAsync();
+
+        var organization = await organizations.GetByIdAsync(SampleDataService.FREE_ORG_ID) ?? throw new InvalidOperationException("Free organization was not created.");
         billing.ApplyTrialPlan(organization);
         organization.TrialEndsUtc = TimeProvider.GetUtcNow().UtcDateTime;
         if (pendingInvitation)
-            organization.Invites.Add(new Invite { EmailAddress = "member@example.test", Token = StringExtensions.GetNewToken(), DateAdded = TimeProvider.GetUtcNow().UtcDateTime });
-        await organizations.AddAsync(organization, command => command.ImmediateConsistency());
-        var owner = userData.GenerateUser(generateId: true, organizationId: organization.Id,
-            emailAddress: "owner@example.test", roles: [AuthorizationRoles.User, AuthorizationRoles.Client]);
-        owner.Salt = StringExtensions.GetNewToken();
-        owner.Password = "Trial password".ToSaltedHash(owner.Salt);
-        owner.MarkEmailAddressVerified();
-        var member = userData.GenerateUser(generateId: true, organizationId: organization.Id, emailAddress: "member@example.test");
-        member.MarkEmailAddressVerified();
-        await users.AddAsync(pendingInvitation ? [owner] : [owner, member], command => command.ImmediateConsistency());
-        var firstProject = projectData.GenerateProject(generateId: true, organizationId: organization.Id);
+        {
+            organization.Invites.Add(new Invite { EmailAddress = SampleDataService.TEST_ORG_USER_EMAIL, Token = StringExtensions.GetNewToken(), DateAdded = TimeProvider.GetUtcNow().UtcDateTime });
+        }
+        else
+        {
+            var member = await users.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL) ?? throw new InvalidOperationException("Test user was not created.");
+            member.OrganizationIds.Add(organization.Id);
+            await users.SaveAsync(member, command => command.ImmediateConsistency().Cache());
+        }
+        await organizations.SaveAsync(organization, command => command.ImmediateConsistency().Cache());
         var secondProject = projectData.GenerateProject(generateId: true, organizationId: organization.Id);
-        await projects.AddAsync([firstProject, secondProject], command => command.ImmediateConsistency());
-        var tokens = GetService<ITokenRepository>();
-        var token = tokenData.GenerateToken(generateId: true, organizationId: organization.Id, projectId: firstProject.Id);
-        await tokens.AddAsync(token, command => command.ImmediateConsistency());
-        var job = GetService<TrialExpirationJob>();
-        Func<Task> removeMember = async () =>
-        {
-            using var response = await SendRequestAsync(request => request.BasicAuthorization(owner.EmailAddress, "Trial password")
-                .Delete().AppendPaths("organizations", organization.Id, "users", member.EmailAddress).StatusCodeShouldBeOk());
-        };
-        Func<Task> removeProject = async () =>
-        {
-            using var response = await SendRequestAsync(request => request.BasicAuthorization(owner.EmailAddress, "Trial password")
-                .Delete().AppendPaths("projects", secondProject.Id).StatusCodeShouldBeAccepted());
-        };
+        await projects.AddAsync(secondProject, command => command.ImmediateConsistency());
 
         // Act
         await job.RunAsync(TestCancellationToken);
         var expired = await organizations.GetByIdAsync(organization.Id);
-        var suspendedToken = await tokens.GetByIdAsync(token.Id);
+        var suspendedToken = await tokens.GetByIdAsync(SampleDataService.FREE_API_KEY);
         bool repeatedCheckChangedSuspension = await billing.UpdatePlanLimitSuspensionAsync(expired!);
-        await (removeProjectFirst ? removeProject() : removeMember());
+        await (removeProjectFirst ? RemoveProjectAsync(secondProject.Id) : RemoveUserOrInviteAsync());
         var partiallyRemediated = await organizations.GetByIdAsync(organization.Id);
-        await (removeProjectFirst ? removeMember() : removeProject());
+        await (removeProjectFirst ? RemoveUserOrInviteAsync() : RemoveProjectAsync(secondProject.Id));
         var remediated = await organizations.GetByIdAsync(organization.Id);
-        var remainingProject = await projects.GetByIdAsync(firstProject.Id);
-        var resumedToken = await tokens.GetByIdAsync(token.Id);
+        var remainingProject = await projects.GetByIdAsync(SampleDataService.FREE_PROJECT_ID);
+        var resumedToken = await tokens.GetByIdAsync(SampleDataService.FREE_API_KEY);
 
         // Assert
         Assert.NotNull(expired);
@@ -89,6 +78,18 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
         Assert.Null(remediated.SuspensionCode);
         Assert.False(resumedToken?.IsSuspended);
         Assert.NotNull(remainingProject);
+    }
+
+    private async Task RemoveUserOrInviteAsync()
+    {
+        using var response = await SendRequestAsync(request => request.AsFreeOrganizationUser().Delete()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "users", SampleDataService.TEST_ORG_USER_EMAIL).StatusCodeShouldBeOk());
+    }
+
+    private async Task RemoveProjectAsync(string projectId)
+    {
+        using var response = await SendRequestAsync(request => request.AsFreeOrganizationUser().Delete()
+            .AppendPaths("projects", projectId).StatusCodeShouldBeAccepted());
     }
 
     [Theory]
