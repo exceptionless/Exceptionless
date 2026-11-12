@@ -106,7 +106,8 @@ public class TrialExpirationJob : JobWithLockBase, IHealthCheck
             if (context.CancellationToken.IsCancellationRequested)
                 break;
 
-            if (!await results.NextPageAsync())
+            bool hasNextPage = await results.NextPageAsync();
+            if (!hasNextPage)
                 break;
 
             await context.RenewLockAsync();

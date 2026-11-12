@@ -71,7 +71,8 @@ public sealed class UpdateOrganizationPlanLimits : MigrationBase
             migrated += organizations.Documents.Count;
 
             _logger.LogInformation("Refreshed plan limits for {OrganizationCount} organizations so far", migrated);
-            if (!await organizations.NextPageAsync())
+            bool hasNextPage = await organizations.NextPageAsync();
+            if (!hasNextPage)
                 break;
         }
 
