@@ -1104,6 +1104,9 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var existingUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
         Assert.NotNull(existingUser);
         Assert.DoesNotContain(SampleDataService.TEST_ORG_ID, existingUser.OrganizationIds);
+        existingUser.AuthenticationVersion = "private-authentication-version";
+        existingUser.PasswordResetToken = "private-password-reset-token";
+        await _userRepository.SaveAsync(existingUser, o => o.ImmediateConsistency().Cache());
 
         // Act
         var user = await SendRequestAsAsync<User>(r => r
@@ -1116,6 +1119,11 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(user);
         Assert.Equal(SampleDataService.FREE_USER_EMAIL, user.EmailAddress);
+        Assert.Null(user.AuthenticationVersion);
+        Assert.Null(user.Password);
+        Assert.Null(user.Salt);
+        Assert.Null(user.PasswordResetToken);
+        Assert.Null(user.VerifyEmailAddressToken);
 
         existingUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
         Assert.NotNull(existingUser);
