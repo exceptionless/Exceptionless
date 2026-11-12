@@ -31,6 +31,11 @@ Content-Type: application/json
 ###
 @organizationId = {{newOrganization.response.body.$.id}}
 
+### Get usage history
+# Missing usage months inherit recorded limits, starting at the organization's creation month.
+GET {{apiUrl}}/organizations/{{organizationId}}
+Authorization: Bearer {{token}}
+
 ### Invite a user
 POST {{apiUrl}}/organizations/{{organizationId}}/users/new-user@exceptionless.test
 Authorization: Bearer {{token}}

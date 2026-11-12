@@ -2,6 +2,7 @@
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Lock;
 
 namespace Exceptionless.Core.Billing;
@@ -106,16 +107,23 @@ public class BillingManager
 
     public void ApplyBillingPlan(Organization organization, BillingPlan plan, User? user = null, bool updateBillingPrice = true)
     {
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        CaptureOutgoingUsageLimit(organization, plan, utcNow);
+
         organization.PlanId = plan.Id;
         organization.PlanName = plan.Name;
         organization.PlanDescription = plan.Description;
-        organization.BillingChangeDate = _timeProvider.GetUtcNow().UtcDateTime;
+        organization.BillingChangeDate = utcNow;
 
         if (updateBillingPrice)
+        {
             organization.BillingPrice = plan.Price;
+        }
 
         if (user is not null)
+        {
             organization.BillingChangedByUserId = user.Id;
+        }
 
         organization.MaxUsers = plan.MaxUsers;
         organization.MaxProjects = plan.MaxProjects;
@@ -124,6 +132,31 @@ public class BillingManager
         organization.HasPremiumFeatures = plan.HasPremiumFeatures;
 
         organization.GetCurrentUsage(_timeProvider).Limit = organization.GetMaxEventsPerMonthWithBonus(_timeProvider);
+    }
+
+    private void CaptureOutgoingUsageLimit(Organization organization, BillingPlan plan, DateTime utcNow)
+    {
+        bool isUnchangedPlan = String.Equals(organization.PlanId, plan.Id, StringComparison.OrdinalIgnoreCase)
+            && organization.MaxEventsPerMonth == plan.MaxEventsPerMonth;
+        if (String.IsNullOrEmpty(organization.PlanId)
+            || isUnchangedPlan
+            || organization.MaxEventsPerMonth == 0)
+        {
+            return;
+        }
+
+        var previousMonthUtc = utcNow.StartOfMonth().AddMonths(-1);
+        var organizationCreatedMonthUtc = organization.CreatedUtc.ToUniversalTime().StartOfMonth();
+        if (previousMonthUtc < organizationCreatedMonthUtc)
+        {
+            return;
+        }
+
+        var previousUsage = organization.Usage.GetOrAddMonthlyUsage(previousMonthUtc, organization.MaxEventsPerMonth);
+        if (previousUsage.Limit == 0)
+        {
+            previousUsage.Limit = organization.MaxEventsPerMonth;
+        }
     }
 
     public void ApplyBonus(Organization organization, int bonusEvents, DateTime? expires = null)

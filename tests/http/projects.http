@@ -35,6 +35,11 @@ Content-Type: application/json
 ###
 @projectId = {{newProject.response.body.$.id}}
 
+### Get usage history
+# Missing usage months start no earlier than the project or organization creation month.
+GET {{apiUrl}}/projects/{{projectId}}
+Authorization: Bearer {{token}}
+
 ### Get Default Api Key
 GET {{apiUrl}}/projects/{{projectId}}/tokens/default
 Authorization: Bearer {{token}}
