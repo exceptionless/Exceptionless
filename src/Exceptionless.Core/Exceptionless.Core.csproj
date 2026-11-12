@@ -14,7 +14,6 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="11.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0" />
     <PackageReference Include="Stripe.net" Version="53.1.0" />
-    <PackageReference Include="Stripe.net" Version="53.0.0" />
     <PackageReference Include="System.DirectoryServices" Version="11.0.0" />
     <PackageReference Include="UAParser" Version="3.1.47" />
     <PackageReference Include="Foundatio.Repositories.Elasticsearch" Version="8.0.2-preview.elasticsearch-mapping-issue-investigation.0.3" Condition="'$(ReferenceFoundatioRepositoriesSource)' == '' OR '$(ReferenceFoundatioRepositoriesSource)' == 'false'" />

@@ -156,6 +156,7 @@ public static class PersistentEventExtensions
         if (duration < 0)
             duration = 0;
 
+        // Avoid losing tick precision through TotalSeconds' double representation.
         decimal newDuration = (lastActivityUtc - ev.Date.UtcDateTime).Ticks / (decimal)TimeSpan.TicksPerSecond;
         if (duration >= newDuration)
             lastActivityUtc = ev.Date.UtcDateTime.AddSeconds((double)duration);
