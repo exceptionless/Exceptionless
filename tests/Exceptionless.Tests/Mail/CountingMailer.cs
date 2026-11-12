@@ -70,6 +70,11 @@ public class CountingMailer : IMailer
         return Task.CompletedTask;
     }
 
+    public Task SendRateNotificationAsync(User user, Project project, RateNotificationRule rule, long observedCount, DateTime windowStart, DateTime windowEnd, Stack? stack = null)
+    {
+        return Task.CompletedTask;
+    }
+
     public void Reset()
     {
         Interlocked.Exchange(ref _organizationNoticeCount, 0);

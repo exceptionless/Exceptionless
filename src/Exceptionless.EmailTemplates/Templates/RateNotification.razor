@@ -1,0 +1,30 @@
+@namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<RateNotificationEmail>
+
+<EmailLayout Model="Model">
+    <EmailSection>
+        <p style="@EmailStyles.Lead">
+            Your rate notification rule <strong>“@Model.RuleName”</strong> has fired for the <strong>@Model.ProjectName</strong> project.
+        </p>
+
+        <EmailCallout>
+            <p style="@EmailStyles.Paragraph"><strong>Events Observed</strong><br />@Model.ObservedCount @Model.ObservedEventNoun (threshold: @Model.Threshold) in the last @Model.Window</p>
+            <hr style="border-color:@EmailStyles.Background" />
+            <p style="@EmailStyles.Paragraph"><strong>Signal</strong><br />@Model.Signal</p>
+            <hr style="border-color:@EmailStyles.Background" />
+            <p style="@EmailStyles.Paragraph">
+                <strong>Scope</strong><br />@Model.SubjectType
+                @if (Model.StackLink is not null)
+                {
+                    <text> &mdash; </text><a href="@Model.StackLink.Url" style="@EmailStyles.Link">@Model.StackLink.Text</a>
+                }
+            </p>
+            <hr style="border-color:@EmailStyles.Background" />
+            <p style="@EmailStyles.Paragraph"><strong>Window</strong><br />@Model.WindowStartUtc &ndash; @Model.WindowEndUtc</p>
+        </EmailCallout>
+
+        <EmailButton Url="@Model.Action!.Url">@Model.Action.Name</EmailButton>
+        <p style="@EmailStyles.Paragraph;color:#939393">This notification will not be sent again for another @Model.Cooldown (cooldown period).</p>
+    </EmailSection>
+    <ActionsFooter Links="Model.OtherActions" />
+</EmailLayout>

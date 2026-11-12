@@ -1,8 +1,8 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
@@ -25,6 +25,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ProjectData _projectData;
     private readonly IProjectRepository _projectRepository;
+    private readonly IRateNotificationRuleRepository _rateNotificationRuleRepository;
     private readonly StackData _stackData;
     private readonly IStackRepository _stackRepository;
     private readonly EventData _eventData;
@@ -46,6 +47,7 @@ public class CleanupDataJobTests : IntegrationTestsBase
         _organizationRepository = GetService<IOrganizationRepository>();
         _projectData = GetService<ProjectData>();
         _projectRepository = GetService<IProjectRepository>();
+        _rateNotificationRuleRepository = GetService<IRateNotificationRuleRepository>();
         _stackData = GetService<StackData>();
         _stackRepository = GetService<IStackRepository>();
         _eventData = GetService<EventData>();
@@ -350,6 +352,30 @@ public class CleanupDataJobTests : IntegrationTestsBase
             await _fileStorage.SaveFileAsync(path, stream, TestCancellationToken);
         }
 
+        var rules = new List<RateNotificationRule>();
+        foreach (var project in new[] { project1, project2 })
+        {
+            rules.Add(await _rateNotificationRuleRepository.AddAsync(new RateNotificationRule
+            {
+                OrganizationId = project.OrganizationId,
+                ProjectId = project.Id,
+                UserId = TestConstants.UserId,
+                Name = "Cleanup test",
+                IsEnabled = true,
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Project,
+                Threshold = 1,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(5),
+                Version = 1,
+                CreatedUtc = TimeProvider.GetUtcNow().UtcDateTime,
+                UpdatedUtc = TimeProvider.GetUtcNow().UtcDateTime
+            }, o => o.ImmediateConsistency()));
+        }
+        var ruleCache = GetService<RateNotificationRuleCache>();
+        Assert.Equal(1, (await ruleCache.GetCounterPlanAsync(project1.Id, TestCancellationToken)).RuleCount);
+        Assert.Equal(1, (await ruleCache.GetCounterPlanAsync(project2.Id, TestCancellationToken)).RuleCount);
+
         // Act
         await _job.RunAsync(TestCancellationToken);
 
@@ -359,6 +385,10 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _projectRepository.GetByIdAsync(deletedProject.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _stackRepository.GetByIdAsync(stack1.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _eventRepository.GetByIdAsync(event1.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _rateNotificationRuleRepository.GetByIdAsync(rules[0].Id, o => o.IncludeSoftDeletes()));
+        Assert.NotNull(await _rateNotificationRuleRepository.GetByIdAsync(rules[1].Id));
+        Assert.Equal(0, (await ruleCache.GetCounterPlanAsync(project1.Id, TestCancellationToken)).RuleCount);
+        Assert.Equal(1, (await ruleCache.GetCounterPlanAsync(project2.Id, TestCancellationToken)).RuleCount);
 
         Assert.NotNull(await _organizationRepository.GetByIdAsync(organization2.Id));
         Assert.NotNull(await _projectRepository.GetByIdAsync(project2.Id));
@@ -397,6 +427,30 @@ public class CleanupDataJobTests : IntegrationTestsBase
             await _fileStorage.SaveFileAsync(path, stream, TestCancellationToken);
         }
 
+        var rules = new List<RateNotificationRule>();
+        foreach (var project in new[] { project1, project2 })
+        {
+            rules.Add(await _rateNotificationRuleRepository.AddAsync(new RateNotificationRule
+            {
+                OrganizationId = project.OrganizationId,
+                ProjectId = project.Id,
+                UserId = TestConstants.UserId,
+                Name = "Cleanup test",
+                IsEnabled = true,
+                Signal = RateNotificationSignal.Errors,
+                Subject = RateNotificationSubject.Project,
+                Threshold = 1,
+                Window = TimeSpan.FromMinutes(5),
+                Cooldown = TimeSpan.FromMinutes(5),
+                Version = 1,
+                CreatedUtc = TimeProvider.GetUtcNow().UtcDateTime,
+                UpdatedUtc = TimeProvider.GetUtcNow().UtcDateTime
+            }, o => o.ImmediateConsistency()));
+        }
+        var ruleCache = GetService<RateNotificationRuleCache>();
+        Assert.Equal(1, (await ruleCache.GetCounterPlanAsync(project1.Id, TestCancellationToken)).RuleCount);
+        Assert.Equal(1, (await ruleCache.GetCounterPlanAsync(project2.Id, TestCancellationToken)).RuleCount);
+
         // Act
         await _job.RunAsync(TestCancellationToken);
 
@@ -408,6 +462,10 @@ public class CleanupDataJobTests : IntegrationTestsBase
         Assert.Null(await _stackRepository.GetByIdAsync(stack1.Id, o => o.IncludeSoftDeletes()));
         Assert.NotNull(await _stackRepository.GetByIdAsync(stack2.Id));
         Assert.Null(await _eventRepository.GetByIdAsync(event1.Id, o => o.IncludeSoftDeletes()));
+        Assert.Null(await _rateNotificationRuleRepository.GetByIdAsync(rules[0].Id, o => o.IncludeSoftDeletes()));
+        Assert.NotNull(await _rateNotificationRuleRepository.GetByIdAsync(rules[1].Id));
+        Assert.Equal(0, (await ruleCache.GetCounterPlanAsync(project1.Id, TestCancellationToken)).RuleCount);
+        Assert.Equal(1, (await ruleCache.GetCounterPlanAsync(project2.Id, TestCancellationToken)).RuleCount);
         Assert.NotNull(await _eventRepository.GetByIdAsync(event2.Id));
         Assert.False(await _fileStorage.ExistsAsync(sourceMapPath1));
         Assert.True(await _fileStorage.ExistsAsync(sourceMapPath2));
