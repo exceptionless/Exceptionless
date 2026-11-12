@@ -51,7 +51,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
 
       - name: Cache node_modules
         uses: actions/cache@v6
