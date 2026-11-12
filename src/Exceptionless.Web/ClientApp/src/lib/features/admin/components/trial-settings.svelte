@@ -94,7 +94,7 @@
     </div>
 {:else if settingsQuery.isError}
     <div class="p-4">
-        <p class="text-destructive text-sm">Failed to load free trial settings.</p>
+        <ErrorMessage message="Failed to load free trial settings." />
     </div>
 {:else if settings}
     <form.Field name="blocked_email_domains">

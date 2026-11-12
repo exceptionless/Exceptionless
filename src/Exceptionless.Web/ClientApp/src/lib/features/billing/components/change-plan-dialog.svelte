@@ -917,7 +917,7 @@
                         {#if downgradeLosses.length > 0}
                             <div class="flex items-baseline gap-2 text-xs leading-snug">
                                 <Muted class="min-w-16 text-[10px] font-semibold tracking-wider uppercase">You lose</Muted>
-                                <span class="text-destructive text-xs" data-testid="downgrade-losses">{downgradeLosses.join(' · ')}</span>
+                                <Small class="text-destructive text-xs" data-testid="downgrade-losses">{downgradeLosses.join(' · ')}</Small>
                             </div>
                         {/if}
                         {#if paymentDirty}
