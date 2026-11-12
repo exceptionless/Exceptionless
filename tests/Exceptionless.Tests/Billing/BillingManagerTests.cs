@@ -8,38 +8,40 @@ namespace Exceptionless.Tests.Billing;
 
 public class BillingManagerTests : TestWithServices
 {
-    public BillingManagerTests(ITestOutputHelper output) : base(output) { }
+    private readonly BillingManager _billingManager;
+    private readonly BillingPlans _plans;
+
+    public BillingManagerTests(ITestOutputHelper output) : base(output)
+    {
+        _billingManager = GetService<BillingManager>();
+        _plans = GetService<BillingPlans>();
+    }
 
     [Fact]
     public void GetBillingPlan()
     {
-        var billingManager = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-        Assert.Equal(plans.FreePlan.Id, billingManager.GetBillingPlan(plans.FreePlan.Id)?.Id);
+        Assert.Equal(_plans.FreePlan.Id, _billingManager.GetBillingPlan(_plans.FreePlan.Id)?.Id);
     }
 
     [Fact]
     public void GetBillingPlanByUpsellingRetentionPeriod()
     {
-        var billingManager = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-
-        var plan = billingManager.GetBillingPlanByUpsellingRetentionPeriod(plans.FreePlan.RetentionDays);
+        var plan = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(_plans.FreePlan.RetentionDays);
         Assert.NotNull(plan);
-        Assert.Equal(plans.SmallPlan.Id, plan.Id);
-        Assert.Equal(plans.SmallPlan.RetentionDays, plan.RetentionDays);
+        Assert.Equal(_plans.SmallPlan.Id, plan.Id);
+        Assert.Equal(_plans.SmallPlan.RetentionDays, plan.RetentionDays);
 
-        plan = billingManager.GetBillingPlanByUpsellingRetentionPeriod(plans.SmallPlan.RetentionDays);
+        plan = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(_plans.SmallPlan.RetentionDays);
         Assert.NotNull(plan);
-        Assert.Equal(plans.MediumPlan.Id, plan.Id);
-        Assert.Equal(plans.MediumPlan.RetentionDays, plan.RetentionDays);
+        Assert.Equal(_plans.MediumPlan.Id, plan.Id);
+        Assert.Equal(_plans.MediumPlan.RetentionDays, plan.RetentionDays);
 
-        plan = billingManager.GetBillingPlanByUpsellingRetentionPeriod(plans.MediumPlan.RetentionDays);
+        plan = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(_plans.MediumPlan.RetentionDays);
         Assert.NotNull(plan);
-        Assert.Equal(plans.LargePlan.Id, plan.Id);
-        Assert.Equal(plans.LargePlan.RetentionDays, plan.RetentionDays);
+        Assert.Equal(_plans.LargePlan.Id, plan.Id);
+        Assert.Equal(_plans.LargePlan.RetentionDays, plan.RetentionDays);
 
-        plan = billingManager.GetBillingPlanByUpsellingRetentionPeriod(plans.LargePlan.RetentionDays);
+        plan = _billingManager.GetBillingPlanByUpsellingRetentionPeriod(_plans.LargePlan.RetentionDays);
         Assert.Null(plan);
     }
 
@@ -50,13 +52,13 @@ public class BillingManagerTests : TestWithServices
     public async Task TryAcquireOrganizationLockAsync_InvalidOrganizationId_Throws(string? organizationId)
     {
         // Arrange
-        var billingManager = GetService<BillingManager>();
+        Func<Task> acquireLock = async () =>
+        {
+            _ = await _billingManager.TryAcquireOrganizationLockAsync(organizationId!);
+        };
 
         // Act
-        var exception = await Record.ExceptionAsync(async () =>
-        {
-            _ = await billingManager.TryAcquireOrganizationLockAsync(organizationId!);
-        });
+        var exception = await Record.ExceptionAsync(acquireLock);
 
         // Assert
         Assert.IsAssignableFrom<ArgumentException>(exception);
@@ -66,7 +68,6 @@ public class BillingManagerTests : TestWithServices
     public void SetStripeSubscriptionId_ChangedOwner_ResetsEventWatermark()
     {
         // Arrange
-        var billingManager = GetService<BillingManager>();
         var organization = new Organization
         {
             StripeSubscriptionId = "sub_old",
@@ -74,7 +75,7 @@ public class BillingManagerTests : TestWithServices
         };
 
         // Act
-        billingManager.SetStripeSubscriptionId(organization, "sub_new");
+        _billingManager.SetStripeSubscriptionId(organization, "sub_new");
 
         // Assert
         Assert.Equal("sub_new", organization.StripeSubscriptionId);
@@ -85,7 +86,6 @@ public class BillingManagerTests : TestWithServices
     public void SetStripeSubscriptionId_UnchangedOwner_PreservesEventWatermark()
     {
         // Arrange
-        var billingManager = GetService<BillingManager>();
         var eventWatermarkUtc = DateTime.UtcNow;
         var organization = new Organization
         {
@@ -94,7 +94,7 @@ public class BillingManagerTests : TestWithServices
         };
 
         // Act
-        billingManager.SetStripeSubscriptionId(organization, "sub_current");
+        _billingManager.SetStripeSubscriptionId(organization, "sub_current");
 
         // Assert
         Assert.Equal(eventWatermarkUtc, organization.StripeSubscriptionEventDate);
@@ -118,17 +118,15 @@ public class BillingManagerTests : TestWithServices
     public void ApplyTrialPlan_DefaultOptions_EndsTrialInFourteenDays()
     {
         // Arrange
-        var billingManager = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
         var utcNow = new DateTime(2026, 10, 22, 12, 0, 0, DateTimeKind.Utc);
         TimeProvider.SetUtcNow(utcNow);
         var organization = new Organization { TrialReminderSentUtc = utcNow };
 
         // Act
-        billingManager.ApplyTrialPlan(organization);
+        _billingManager.ApplyTrialPlan(organization);
 
         // Assert
-        Assert.Equal(plans.TrialPlan.Id, organization.PlanId);
+        Assert.Equal(_plans.TrialPlan.Id, organization.PlanId);
         Assert.Equal(utcNow.AddDays(14), organization.TrialEndsUtc);
         Assert.Null(organization.TrialReminderSentUtc);
     }

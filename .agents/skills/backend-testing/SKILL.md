@@ -30,7 +30,7 @@ Under `tests/Exceptionless.Tests/`:
 - `Utility/DataBuilder.cs`: synthetic records.
 - `Utility/ProxyTimeProvider.cs`: controlled time.
 
-Always assign each `GetService<T>()` result to a descriptively named variable. Never call a method or access a property directly on the lookup, and never pass the lookup inline as an argument. Reuse the variable throughout the test.
+Resolve services reused across tests or repeatedly within a test into descriptive readonly private fields in the test constructor. Keep one-off services in named locals. Never call a method or access a property directly on `GetService<T>()`, or pass the lookup inline as an argument.
 
 ```csharp
 // Avoid
@@ -41,7 +41,7 @@ var organizations = GetService<IOrganizationRepository>();
 await organizations.AddAsync(organization);
 ```
 
-Never mock `ICacheClient` or `InMemoryCacheClient`, including partial mocks. Use a real in-memory cache, or a real cache provider when testing provider-specific behavior or failures.
+Use Foundatio in-memory implementations for cache, storage, queues, messaging, and locks instead of mocking those abstractions. Never mock cache clients or serialization; use the configured serializer. Test provider-specific behavior or failures against the real provider.
 
 Name tests `MethodUnderTest_Scenario_ExpectedBehavior`.
 

@@ -29,6 +29,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     private readonly IUserRepository _userRepository;
     private readonly BillingManager _billingManager;
     private readonly BillingPlans _plans;
+    private readonly AppOptions _options;
     private FakeStripeBillingClient StripeBillingClient => (FakeStripeBillingClient)GetService<IStripeBillingClient>();
 
     public OrganizationEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
@@ -38,6 +39,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         _userRepository = GetService<IUserRepository>();
         _billingManager = GetService<BillingManager>();
         _plans = GetService<BillingPlans>();
+        _options = GetService<AppOptions>();
     }
 
     protected override void RegisterServices(IServiceCollection services)
@@ -48,33 +50,31 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
     private async Task WithBillingEnabledAsync(Func<Task> action)
     {
-        var options = GetService<AppOptions>();
-        string? originalStripeApiKey = options.StripeOptions.StripeApiKey;
+        string? originalStripeApiKey = _options.StripeOptions.StripeApiKey;
 
-        options.StripeOptions.StripeApiKey = "sk_test_local";
+        _options.StripeOptions.StripeApiKey = "sk_test_local";
         try
         {
             await action();
         }
         finally
         {
-            options.StripeOptions.StripeApiKey = originalStripeApiKey;
+            _options.StripeOptions.StripeApiKey = originalStripeApiKey;
         }
     }
 
     private async Task<T> WithBillingEnabledAsync<T>(Func<Task<T>> action)
     {
-        var options = GetService<AppOptions>();
-        string? originalStripeApiKey = options.StripeOptions.StripeApiKey;
+        string? originalStripeApiKey = _options.StripeOptions.StripeApiKey;
 
-        options.StripeOptions.StripeApiKey = "sk_test_local";
+        _options.StripeOptions.StripeApiKey = "sk_test_local";
         try
         {
             return await action();
         }
         finally
         {
-            options.StripeOptions.StripeApiKey = originalStripeApiKey;
+            _options.StripeOptions.StripeApiKey = originalStripeApiKey;
         }
     }
 
@@ -3200,8 +3200,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         const string password = "Trial password";
         var user = await CreateUserAsync("trial-inviter@exceptionless.test", password, isEmailAddressVerified: true);
         var organization = await CreateTrialOrganizationAsync(user);
-        var options = GetService<AppOptions>();
-        int dailyLimit = options.BillingOptions.FreeInviteDailyLimit;
+        int dailyLimit = _options.BillingOptions.FreeInviteDailyLimit;
         var statusCodes = new List<HttpStatusCode>();
 
         // Act
@@ -3402,8 +3401,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         var organization = CreatePaidOrganization("Paid Organization");
         organization.CreatedByUserId = user.Id;
         organization = await AddMemberOrganizationAsync(user, organization);
-        var options = GetService<AppOptions>();
-        int freeDailyLimit = options.BillingOptions.FreeInviteDailyLimit;
+        int freeDailyLimit = _options.BillingOptions.FreeInviteDailyLimit;
         var statusCodes = new List<HttpStatusCode>();
 
         // Act

@@ -14,7 +14,28 @@ namespace Exceptionless.Tests.Billing;
 
 public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
 {
-    public BillingManagerIntegrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory) { }
+    private readonly BillingManager _billingManager;
+    private readonly BillingPlans _billingPlans;
+    private readonly AppOptions _options;
+    private readonly ITrialClaimRepository _trialClaimRepository;
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly IProjectRepository _projectRepository;
+    private readonly UserData _userData;
+    private readonly ProjectData _projectData;
+
+    public BillingManagerIntegrationTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
+        _billingManager = GetService<BillingManager>();
+        _billingPlans = GetService<BillingPlans>();
+        _options = GetService<AppOptions>();
+        _trialClaimRepository = GetService<ITrialClaimRepository>();
+        _organizationRepository = GetService<IOrganizationRepository>();
+        _userRepository = GetService<IUserRepository>();
+        _projectRepository = GetService<IProjectRepository>();
+        _userData = GetService<UserData>();
+        _projectData = GetService<ProjectData>();
+    }
 
     [Theory]
     [InlineData(false)]
@@ -22,22 +43,20 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
     public async Task TryClaimTrialAsync_ClaimDisappearsAfterConflict_RecreatesOnlyWhenNoCompetitorClaimsIt(bool competingClaim)
     {
         // Arrange
-        var repository = GetService<ITrialClaimRepository>();
-        var billing = GetService<BillingManager>();
         var user = new User { EmailAddress = "cleanup-race@example.test" };
         int attempts = 0;
-        using var handler = repository.DocumentsAdding.AddHandler(async (_, args) =>
+        using var handler = _trialClaimRepository.DocumentsAdding.AddHandler(async (_, args) =>
         {
             int attempt = Interlocked.Increment(ref attempts);
             if (attempt is 1)
                 throw new DuplicateDocumentException("The expired claim existed when create started");
             if (attempt is 2 && competingClaim)
-                await repository.AddAsync(new TrialClaim { Id = args.Documents.Single().Id, CreatedUtc = TimeProvider.GetUtcNow().UtcDateTime });
+                await _trialClaimRepository.AddAsync(new TrialClaim { Id = args.Documents.Single().Id, CreatedUtc = TimeProvider.GetUtcNow().UtcDateTime });
         });
 
         // Act
-        bool acquired = await billing.TryClaimTrialAsync(user);
-        bool eligible = await billing.CanStartTrialAsync(user);
+        bool acquired = await _billingManager.TryClaimTrialAsync(user);
+        bool eligible = await _billingManager.CanStartTrialAsync(user);
 
         // Assert
         Assert.Equal(!competingClaim, acquired);
@@ -51,31 +70,24 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
     public async Task CanDownGradeAsync_FinitePlanCountsMembersInvitesAndProjects_RejectsExcess(int memberCount, int inviteCount, int projectCount, string expectedMessage)
     {
         // Arrange
-        var billing = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-        var organizations = GetService<IOrganizationRepository>();
-        var userRepository = GetService<IUserRepository>();
-        var projectRepository = GetService<IProjectRepository>();
-        var userData = GetService<UserData>();
-        var projectData = GetService<ProjectData>();
         var organization = new Organization { Name = "Finite custom plan" };
-        billing.ApplyTrialPlan(organization);
+        _billingManager.ApplyTrialPlan(organization);
         for (int index = 0; index < inviteCount; index++)
             organization.Invites.Add(new Invite { EmailAddress = $"invite-{index}@example.test", Token = StringExtensions.GetNewToken(), DateAdded = TimeProvider.GetUtcNow().UtcDateTime });
-        await organizations.AddAsync(organization);
+        await _organizationRepository.AddAsync(organization);
         var users = Enumerable.Range(0, memberCount).Select(index =>
         {
-            var user = userData.GenerateUser(generateId: true, organizationId: organization.Id);
+            var user = _userData.GenerateUser(generateId: true, organizationId: organization.Id);
             user.MarkEmailAddressVerified();
             return user;
         });
-        await userRepository.AddAsync(users, command => command.ImmediateConsistency());
-        await projectRepository.AddAsync(projectData.GenerateProjects(projectCount, generateId: true, organizationId: organization.Id), command => command.ImmediateConsistency());
-        var customPlan = plans.SmallPlan with { Id = "CUSTOM_FINITE", MaxUsers = 1, MaxProjects = 1 };
+        await _userRepository.AddAsync(users, command => command.ImmediateConsistency());
+        await _projectRepository.AddAsync(_projectData.GenerateProjects(projectCount, generateId: true, organizationId: organization.Id), command => command.ImmediateConsistency());
+        var customPlan = _billingPlans.SmallPlan with { Id = "CUSTOM_FINITE", MaxUsers = 1, MaxProjects = 1 };
 
         // Act
-        var finite = await billing.CanDownGradeAsync(organization, customPlan, null);
-        var unlimited = await billing.CanDownGradeAsync(organization, plans.SmallPlan, null);
+        var finite = await _billingManager.CanDownGradeAsync(organization, customPlan, null);
+        var unlimited = await _billingManager.CanDownGradeAsync(organization, _billingPlans.SmallPlan, null);
 
         // Assert
         Assert.False(finite.Success);
@@ -87,17 +99,15 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
     public async Task TryClaimTrialAsync_ConcurrentMailboxAliases_OnlyOneAcquiresClaim()
     {
         // Arrange
-        var billingManager = GetService<BillingManager>();
-        var repository = GetService<ITrialClaimRepository>();
         var first = new User { EmailAddress = "Some.One+first@gmail.com" };
         var alias = new User { EmailAddress = "s.o.m.e.o.n.e+second@googlemail.com" };
         string claimId = TrialEmailAddress.GetClaimId(first.EmailAddress);
-        bool existedBefore = await repository.ExistsAsync(claimId);
+        bool existedBefore = await _trialClaimRepository.ExistsAsync(claimId);
 
         // Act: bypass the mailbox lock to exercise the durable uniqueness boundary directly.
-        var acquired = await Task.WhenAll(billingManager.TryClaimTrialAsync(first), billingManager.TryClaimTrialAsync(alias));
-        bool existsAfter = await repository.ExistsAsync(claimId);
-        bool acquiredAgain = await billingManager.TryClaimTrialAsync(first);
+        var acquired = await Task.WhenAll(_billingManager.TryClaimTrialAsync(first), _billingManager.TryClaimTrialAsync(alias));
+        bool existsAfter = await _trialClaimRepository.ExistsAsync(claimId);
+        bool acquiredAgain = await _billingManager.TryClaimTrialAsync(first);
 
         // Assert
         Assert.False(existedBefore);
@@ -110,15 +120,13 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
     public async Task CanStartTrialAsync_MailboxClaimedWithinRetention_ReturnsFalse()
     {
         // Arrange
-        var billingManager = GetService<BillingManager>();
-        var options = GetService<AppOptions>();
         var original = new User { Id = ObjectId.GenerateNewId().ToString(), EmailAddress = "within.retention@example.com" };
         var returning = new User { Id = ObjectId.GenerateNewId().ToString(), EmailAddress = "within.retention+again@example.com" };
-        await billingManager.TryClaimTrialAsync(original);
-        TimeProvider.Advance(TimeSpan.FromDays(options.BillingOptions.TrialClaimRetentionDays - 1));
+        await _billingManager.TryClaimTrialAsync(original);
+        TimeProvider.Advance(TimeSpan.FromDays(_options.BillingOptions.TrialClaimRetentionDays - 1));
 
         // Act
-        bool canStartTrial = await billingManager.CanStartTrialAsync(returning);
+        bool canStartTrial = await _billingManager.CanStartTrialAsync(returning);
 
         // Assert
         Assert.False(canStartTrial);
@@ -128,21 +136,18 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
     public async Task TryClaimTrialAsync_ClaimOlderThanRetention_RenewsClaim()
     {
         // Arrange
-        var billingManager = GetService<BillingManager>();
-        var repository = GetService<ITrialClaimRepository>();
-        var options = GetService<AppOptions>();
         var original = new User { Id = ObjectId.GenerateNewId().ToString(), EmailAddress = "past.retention@example.com" };
         var returning = new User { Id = ObjectId.GenerateNewId().ToString(), EmailAddress = "past.retention+again@example.com" };
         string claimId = TrialEmailAddress.GetClaimId(original.EmailAddress);
-        await billingManager.TryClaimTrialAsync(original);
-        TimeProvider.Advance(TimeSpan.FromDays(options.BillingOptions.TrialClaimRetentionDays + 1));
+        await _billingManager.TryClaimTrialAsync(original);
+        TimeProvider.Advance(TimeSpan.FromDays(_options.BillingOptions.TrialClaimRetentionDays + 1));
         var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
 
         // Act
-        bool canStartTrial = await billingManager.CanStartTrialAsync(returning);
-        bool claimed = await billingManager.TryClaimTrialAsync(returning);
-        bool claimedAgain = await billingManager.TryClaimTrialAsync(returning);
-        var claim = await repository.GetByIdAsync(claimId);
+        bool canStartTrial = await _billingManager.CanStartTrialAsync(returning);
+        bool claimed = await _billingManager.TryClaimTrialAsync(returning);
+        bool claimedAgain = await _billingManager.TryClaimTrialAsync(returning);
+        var claim = await _trialClaimRepository.GetByIdAsync(claimId);
 
         // Assert
         Assert.True(canStartTrial);
@@ -156,19 +161,17 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
     public async Task CanStartTrialAsync_PreviousTrialOlderThanRetention_ReturnsTrue()
     {
         // Arrange
-        var billingManager = GetService<BillingManager>();
-        var options = GetService<AppOptions>();
         var user = new User
         {
             Id = ObjectId.GenerateNewId().ToString(),
             EmailAddress = "previous.trial@example.com",
             TrialStartedUtc = TimeProvider.GetUtcNow().UtcDateTime
         };
-        bool canStartTrialBefore = await billingManager.CanStartTrialAsync(user);
-        TimeProvider.Advance(TimeSpan.FromDays(options.BillingOptions.TrialClaimRetentionDays + 1));
+        bool canStartTrialBefore = await _billingManager.CanStartTrialAsync(user);
+        TimeProvider.Advance(TimeSpan.FromDays(_options.BillingOptions.TrialClaimRetentionDays + 1));
 
         // Act
-        bool canStartTrialAfter = await billingManager.CanStartTrialAsync(user);
+        bool canStartTrialAfter = await _billingManager.CanStartTrialAsync(user);
 
         // Assert
         Assert.False(canStartTrialBefore);
@@ -179,16 +182,13 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
     public async Task TryClaimTrialAsync_ConcurrentExpiredMailboxAliases_OnlyOneRenewsClaim()
     {
         // Arrange
-        var billingManager = GetService<BillingManager>();
-        var repository = GetService<ITrialClaimRepository>();
-        var options = GetService<AppOptions>();
         var first = new User { EmailAddress = "renewal.race@gmail.com" };
         var alias = new User { EmailAddress = "renewalrace+again@googlemail.com" };
-        await billingManager.TryClaimTrialAsync(first);
-        TimeProvider.Advance(TimeSpan.FromDays(options.BillingOptions.TrialClaimRetentionDays + 1));
+        await _billingManager.TryClaimTrialAsync(first);
+        TimeProvider.Advance(TimeSpan.FromDays(_options.BillingOptions.TrialClaimRetentionDays + 1));
         var bothRenewing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         int arrivals = 0;
-        using var handler = repository.DocumentsChanging.AddHandler(async (_, args) =>
+        using var handler = _trialClaimRepository.DocumentsChanging.AddHandler(async (_, args) =>
         {
             if (args.ChangeType is not ChangeType.Saved)
                 return;
@@ -199,7 +199,7 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
         });
 
         // Act: bypass mailbox locks to verify storage still admits only one renewal.
-        var acquired = await Task.WhenAll(billingManager.TryClaimTrialAsync(first), billingManager.TryClaimTrialAsync(alias));
+        var acquired = await Task.WhenAll(_billingManager.TryClaimTrialAsync(first), _billingManager.TryClaimTrialAsync(alias));
 
         // Assert
         Assert.Single(acquired, claimed => claimed);
@@ -209,23 +209,20 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
     public async Task RemoveExpiredTrialClaimsAsync_MixedClaimAges_RemovesOnlyExpiredClaims()
     {
         // Arrange
-        var billingManager = GetService<BillingManager>();
-        var repository = GetService<ITrialClaimRepository>();
-        var options = GetService<AppOptions>();
         var expired = new User { EmailAddress = "expired.claim@example.com" };
         var active = new User { EmailAddress = "active.claim@example.com" };
-        await billingManager.TryClaimTrialAsync(expired);
-        TimeProvider.Advance(TimeSpan.FromDays(options.BillingOptions.TrialClaimRetentionDays - 10));
-        await billingManager.TryClaimTrialAsync(active);
+        await _billingManager.TryClaimTrialAsync(expired);
+        TimeProvider.Advance(TimeSpan.FromDays(_options.BillingOptions.TrialClaimRetentionDays - 10));
+        await _billingManager.TryClaimTrialAsync(active);
         TimeProvider.Advance(TimeSpan.FromDays(11));
         await RefreshDataAsync();
 
         // Act
-        long removed = await billingManager.RemoveExpiredTrialClaimsAsync();
+        long removed = await _billingManager.RemoveExpiredTrialClaimsAsync();
 
         // Assert
         Assert.Equal(1, removed);
-        Assert.False(await repository.ExistsAsync(TrialEmailAddress.GetClaimId(expired.EmailAddress)));
-        Assert.True(await repository.ExistsAsync(TrialEmailAddress.GetClaimId(active.EmailAddress)));
+        Assert.False(await _trialClaimRepository.ExistsAsync(TrialEmailAddress.GetClaimId(expired.EmailAddress)));
+        Assert.True(await _trialClaimRepository.ExistsAsync(TrialEmailAddress.GetClaimId(active.EmailAddress)));
     }
 }

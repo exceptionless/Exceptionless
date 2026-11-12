@@ -12,8 +12,31 @@ using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
 
-public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : IntegrationTestsBase(output, factory)
+public sealed class TrialPlanLimitEndpointTests : IntegrationTestsBase
 {
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly IProjectRepository _projectRepository;
+    private readonly ITokenRepository _tokenRepository;
+    private readonly BillingManager _billingManager;
+    private readonly BillingPlans _billingPlans;
+    private readonly SampleDataService _sampleData;
+    private readonly ProjectData _projectData;
+    private readonly TrialExpirationJob _job;
+
+    public TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
+    {
+        _organizationRepository = GetService<IOrganizationRepository>();
+        _userRepository = GetService<IUserRepository>();
+        _projectRepository = GetService<IProjectRepository>();
+        _tokenRepository = GetService<ITokenRepository>();
+        _billingManager = GetService<BillingManager>();
+        _billingPlans = GetService<BillingPlans>();
+        _sampleData = GetService<SampleDataService>();
+        _projectData = GetService<ProjectData>();
+        _job = GetService<TrialExpirationJob>();
+    }
+
     [Theory]
     [InlineData(true, true)]
     [InlineData(false, true)]
@@ -22,19 +45,11 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
     public async Task ExpiredTrial_OverFreeLimits_ResumesOnlyAfterBothLimitsAreMet(bool removeProjectFirst, bool pendingInvitation)
     {
         // Arrange
-        var organizations = GetService<IOrganizationRepository>();
-        var users = GetService<IUserRepository>();
-        var projects = GetService<IProjectRepository>();
-        var billing = GetService<BillingManager>();
-        var sampleData = GetService<SampleDataService>();
-        var projectData = GetService<ProjectData>();
-        var tokens = GetService<ITokenRepository>();
-        var job = GetService<TrialExpirationJob>();
-        await sampleData.CreateDataAsync();
+        await _sampleData.CreateDataAsync();
         await RefreshDataAsync();
 
-        var organization = await organizations.GetByIdAsync(SampleDataService.FREE_ORG_ID) ?? throw new InvalidOperationException("Free organization was not created.");
-        billing.ApplyTrialPlan(organization);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID) ?? throw new InvalidOperationException("Free organization was not created.");
+        _billingManager.ApplyTrialPlan(organization);
         organization.TrialEndsUtc = TimeProvider.GetUtcNow().UtcDateTime;
         if (pendingInvitation)
         {
@@ -42,25 +57,25 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
         }
         else
         {
-            var member = await users.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL) ?? throw new InvalidOperationException("Test user was not created.");
+            var member = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL) ?? throw new InvalidOperationException("Test user was not created.");
             member.OrganizationIds.Add(organization.Id);
-            await users.SaveAsync(member, command => command.ImmediateConsistency().Cache());
+            await _userRepository.SaveAsync(member, command => command.ImmediateConsistency().Cache());
         }
-        await organizations.SaveAsync(organization, command => command.ImmediateConsistency().Cache());
-        var secondProject = projectData.GenerateProject(generateId: true, organizationId: organization.Id);
-        await projects.AddAsync(secondProject, command => command.ImmediateConsistency());
+        await _organizationRepository.SaveAsync(organization, command => command.ImmediateConsistency().Cache());
+        var secondProject = _projectData.GenerateProject(generateId: true, organizationId: organization.Id);
+        await _projectRepository.AddAsync(secondProject, command => command.ImmediateConsistency());
 
         // Act
-        await job.RunAsync(TestCancellationToken);
-        var expired = await organizations.GetByIdAsync(organization.Id);
-        var suspendedToken = await tokens.GetByIdAsync(SampleDataService.FREE_API_KEY);
-        bool repeatedCheckChangedSuspension = await billing.UpdatePlanLimitSuspensionAsync(expired!);
+        await _job.RunAsync(TestCancellationToken);
+        var expired = await _organizationRepository.GetByIdAsync(organization.Id);
+        var suspendedToken = await _tokenRepository.GetByIdAsync(SampleDataService.FREE_API_KEY);
+        bool repeatedCheckChangedSuspension = await _billingManager.UpdatePlanLimitSuspensionAsync(expired!);
         await (removeProjectFirst ? RemoveProjectAsync(secondProject.Id) : RemoveUserOrInviteAsync());
-        var partiallyRemediated = await organizations.GetByIdAsync(organization.Id);
+        var partiallyRemediated = await _organizationRepository.GetByIdAsync(organization.Id);
         await (removeProjectFirst ? RemoveUserOrInviteAsync() : RemoveProjectAsync(secondProject.Id));
-        var remediated = await organizations.GetByIdAsync(organization.Id);
-        var remainingProject = await projects.GetByIdAsync(SampleDataService.FREE_PROJECT_ID);
-        var resumedToken = await tokens.GetByIdAsync(SampleDataService.FREE_API_KEY);
+        var remediated = await _organizationRepository.GetByIdAsync(organization.Id);
+        var remainingProject = await _projectRepository.GetByIdAsync(SampleDataService.FREE_PROJECT_ID);
+        var resumedToken = await _tokenRepository.GetByIdAsync(SampleDataService.FREE_API_KEY);
 
         // Assert
         Assert.NotNull(expired);
@@ -102,16 +117,13 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
         // Arrange
         var organization = new Organization { Name = "Manual suspension", IsSuspended = true, SuspensionCode = code,
             SuspendedByUserId = TestConstants.UserId, SuspensionDate = TimeProvider.GetUtcNow().UtcDateTime, SuspensionNotes = "Manual suspension reason" };
-        var billing = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-        billing.ApplyBillingPlan(organization, plans.FreePlan);
-        var repository = GetService<IOrganizationRepository>();
-        await repository.AddAsync(organization);
+        _billingManager.ApplyBillingPlan(organization, _billingPlans.FreePlan);
+        await _organizationRepository.AddAsync(organization);
 
         // Act
-        bool changed = await billing.UpdatePlanLimitSuspensionAsync(organization);
-        await billing.RecheckPlanLimitSuspensionAsync(organization.Id);
-        var saved = await repository.GetByIdAsync(organization.Id);
+        bool changed = await _billingManager.UpdatePlanLimitSuspensionAsync(organization);
+        await _billingManager.RecheckPlanLimitSuspensionAsync(organization.Id);
+        var saved = await _organizationRepository.GetByIdAsync(organization.Id);
 
         // Assert
         Assert.False(changed);
@@ -125,14 +137,11 @@ public sealed class TrialPlanLimitEndpointTests(ITestOutputHelper output, AppWeb
     {
         // Arrange
         var organization = new Organization { Name = "Within Free limits" };
-        var billing = GetService<BillingManager>();
-        var plans = GetService<BillingPlans>();
-        var repository = GetService<IOrganizationRepository>();
-        billing.ApplyBillingPlan(organization, plans.FreePlan);
-        await repository.AddAsync(organization);
+        _billingManager.ApplyBillingPlan(organization, _billingPlans.FreePlan);
+        await _organizationRepository.AddAsync(organization);
 
         // Act
-        bool changed = await billing.UpdatePlanLimitSuspensionAsync(organization);
+        bool changed = await _billingManager.UpdatePlanLimitSuspensionAsync(organization);
 
         // Assert
         Assert.False(changed);

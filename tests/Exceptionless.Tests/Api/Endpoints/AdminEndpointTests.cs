@@ -32,6 +32,8 @@ public class AdminEndpointTests : IntegrationTestsBase
     private readonly IEventRepository _eventRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IOrganizationRepository _organizationRepository;
+    private readonly BillingPlans _billingPlans;
+    private readonly ICacheClient _cache;
     private readonly IUserRepository _userRepository;
     private readonly IFileStorage _fileStorage;
     private readonly StackData _stackData;
@@ -45,6 +47,8 @@ public class AdminEndpointTests : IntegrationTestsBase
         _eventRepository = GetService<IEventRepository>();
         _projectRepository = GetService<IProjectRepository>();
         _organizationRepository = GetService<IOrganizationRepository>();
+        _billingPlans = GetService<BillingPlans>();
+        _cache = GetService<ICacheClient>();
         _userRepository = GetService<IUserRepository>();
         _fileStorage = GetService<IFileStorage>();
         _stackData = GetService<StackData>();
@@ -127,7 +131,7 @@ public class AdminEndpointTests : IntegrationTestsBase
         Assert.False(String.IsNullOrWhiteSpace(persistedSettings.CreatedByUserId));
         Assert.False(String.IsNullOrWhiteSpace(persistedSettings.UpdatedByUserId));
 
-        await GetService<ICacheClient>().RemoveAllAsync();
+        await _cache.RemoveAllAsync();
         var afterCacheClear = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "assistant-settings")
@@ -188,7 +192,7 @@ public class AdminEndpointTests : IntegrationTestsBase
         Assert.Equal(!initial.ConfiguredEnabled, updated.Enabled);
         Assert.True(updated.IsEnabledOverridden);
 
-        await GetService<ICacheClient>().RemoveAllAsync();
+        await _cache.RemoveAllAsync();
         var afterCacheClear = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "assistant-settings")
@@ -244,7 +248,7 @@ public class AdminEndpointTests : IntegrationTestsBase
             Assert.NotNull(updated);
             Assert.Equal(enabled, updated.ConversationSharingDefaultEnabled);
 
-            await GetService<ICacheClient>().RemoveAllAsync();
+            await _cache.RemoveAllAsync();
             var persisted = await SendRequestAsAsync<AssistantModelSettingsResponse>(request => request
                 .AsGlobalAdminUser().AppendPaths("admin", "assistant-settings").StatusCodeShouldBeOk());
             Assert.NotNull(persisted);
@@ -292,7 +296,7 @@ public class AdminEndpointTests : IntegrationTestsBase
         Assert.Equal(!initial.ConfiguredEnabled, updated.Enabled);
         Assert.True(updated.IsOverridden);
 
-        await GetService<ICacheClient>().RemoveAllAsync();
+        await _cache.RemoveAllAsync();
         var afterCacheClear = await SendRequestAsAsync<EventSubmissionSettings>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "event-submission-settings")
@@ -336,7 +340,7 @@ public class AdminEndpointTests : IntegrationTestsBase
     public async Task TrialSettingsAsync_AsGlobalAdmin_SavesNormalizedDomainsAndRestoresDefaults()
     {
         // Arrange
-        var cache = GetService<ICacheClient>();
+        var update = new UpdateTrialSettings { BlockedEmailDomains = [" Spam.Test ", "@spam.test", "other.test"] };
 
         // Act
         var initial = await SendRequestAsAsync<TrialSettings>(request => request
@@ -348,10 +352,10 @@ public class AdminEndpointTests : IntegrationTestsBase
             .Put()
             .AsGlobalAdminUser()
             .AppendPaths("admin", "trial-settings")
-            .Content(new UpdateTrialSettings { BlockedEmailDomains = [" Spam.Test ", "@spam.test", "other.test"] })
+            .Content(update)
             .StatusCodeShouldBeOk());
 
-        await cache.RemoveAllAsync();
+        await _cache.RemoveAllAsync();
         var afterCacheClear = await SendRequestAsAsync<TrialSettings>(request => request
             .AsGlobalAdminUser()
             .AppendPaths("admin", "trial-settings")
@@ -1339,9 +1343,7 @@ public class AdminEndpointTests : IntegrationTestsBase
     public async Task ChangePlanAsync_ValidOrganizationAndPlan_ChangesOrganizationPlan()
     {
         // Arrange
-        var plans = GetService<BillingPlans>();
-        var organizationRepository = GetService<IOrganizationRepository>();
-        var organizationBefore = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var organizationBefore = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationBefore);
 
         // Act
@@ -1350,24 +1352,23 @@ public class AdminEndpointTests : IntegrationTestsBase
             .Post()
             .AppendPaths("admin", "change-plan")
             .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
-            .QueryString("planId", plans.SmallPlan.Id)
+            .QueryString("planId", _billingPlans.SmallPlan.Id)
             .StatusCodeShouldBeOk());
 
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Success);
 
-        var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var organizationAfter = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationAfter);
-        Assert.Equal(plans.SmallPlan.Id, organizationAfter.PlanId);
+        Assert.Equal(_billingPlans.SmallPlan.Id, organizationAfter.PlanId);
     }
 
     [Fact]
     public async Task ChangePlanAsync_TrialPlanOnFreeOrganization_StartsTrial()
     {
         // Arrange
-        var plans = GetService<BillingPlans>();
-        var organizationRepository = GetService<IOrganizationRepository>();
+        string trialPlanId = _billingPlans.TrialPlan.Id;
 
         // Act
         var result = await SendRequestAsAsync<ChangePlanResponse>(r => r
@@ -1375,16 +1376,16 @@ public class AdminEndpointTests : IntegrationTestsBase
             .Post()
             .AppendPaths("admin", "change-plan")
             .QueryString("organizationId", SampleDataService.FREE_ORG_ID)
-            .QueryString("planId", plans.TrialPlan.Id)
+            .QueryString("planId", trialPlanId)
             .StatusCodeShouldBeOk());
 
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Success, result.Message);
 
-        var organization = await organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
         Assert.NotNull(organization);
-        Assert.Equal(plans.TrialPlan.Id, organization.PlanId);
+        Assert.Equal(trialPlanId, organization.PlanId);
         Assert.NotNull(organization.TrialEndsUtc);
         Assert.True(organization.TrialEndsUtc > TimeProvider.GetUtcNow().UtcDateTime.AddDays(6));
     }
@@ -1396,13 +1397,12 @@ public class AdminEndpointTests : IntegrationTestsBase
     {
         // Arrange
         var expectedEnd = TimeProvider.GetUtcNow().AddDays(daysFromNow);
-        var organizations = GetService<IOrganizationRepository>();
 
         // Act
         var result = await SendRequestAsAsync<ChangePlanResponse>(request => request.AsGlobalAdminUser().Post()
             .AppendPaths("admin", "change-plan").QueryString("organizationId", SampleDataService.FREE_ORG_ID)
             .QueryString("planId", "EX_TRIAL").QueryString("trialEndsUtc", expectedEnd.ToString("O")).StatusCodeShouldBeOk());
-        var organization = await organizations.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
 
         // Assert
         Assert.True(result?.Success, result?.Message);
@@ -1413,9 +1413,7 @@ public class AdminEndpointTests : IntegrationTestsBase
     public async Task ChangePlanAsync_TrialPlanOnPaidOrganization_ReturnsFailure()
     {
         // Arrange
-        var plans = GetService<BillingPlans>();
-        var organizationRepository = GetService<IOrganizationRepository>();
-        var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organization);
         string originalPlanId = organization.PlanId;
 
@@ -1425,14 +1423,14 @@ public class AdminEndpointTests : IntegrationTestsBase
             .Post()
             .AppendPaths("admin", "change-plan")
             .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
-            .QueryString("planId", plans.TrialPlan.Id)
+            .QueryString("planId", _billingPlans.TrialPlan.Id)
             .StatusCodeShouldBeOk());
 
         // Assert
         Assert.NotNull(result);
         Assert.False(result.Success);
 
-        var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var organizationAfter = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationAfter);
         Assert.Equal(originalPlanId, organizationAfter.PlanId);
     }
@@ -1441,8 +1439,7 @@ public class AdminEndpointTests : IntegrationTestsBase
     public async Task ChangePlanAsync_InvalidPlanId_ReturnsFailure()
     {
         // Arrange
-        var organizationRepository = GetService<IOrganizationRepository>();
-        var organizationBefore = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var organizationBefore = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationBefore);
         string originalPlan = organizationBefore.PlanId;
 
@@ -1461,7 +1458,7 @@ public class AdminEndpointTests : IntegrationTestsBase
         Assert.Equal("Invalid PlanId.", result.Message);
 
         // Verify plan was not changed
-        var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var organizationAfter = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationAfter);
         Assert.Equal(originalPlan, organizationAfter.PlanId);
     }
@@ -1469,14 +1466,12 @@ public class AdminEndpointTests : IntegrationTestsBase
     [Fact]
     public Task ChangePlanAsync_AsNonAdmin_ReturnsForbidden()
     {
-        var plans = GetService<BillingPlans>();
-
         return SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .Post()
             .AppendPaths("admin", "change-plan")
             .QueryString("organizationId", SampleDataService.TEST_ORG_ID)
-            .QueryString("planId", plans.SmallPlan.Id)
+            .QueryString("planId", _billingPlans.SmallPlan.Id)
             .StatusCodeShouldBeForbidden());
     }
 
@@ -1484,8 +1479,7 @@ public class AdminEndpointTests : IntegrationTestsBase
     public async Task SetBonusAsync_ValidOrganization_AppliesBonus()
     {
         // Arrange
-        var organizationRepository = GetService<IOrganizationRepository>();
-        var organizationBefore = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var organizationBefore = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationBefore);
 
         // Act
@@ -1498,7 +1492,7 @@ public class AdminEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeOk());
 
         // Assert
-        var organizationAfter = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var organizationAfter = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organizationAfter);
         Assert.Equal(5000, organizationAfter.BonusEventsPerMonth);
     }
@@ -1507,7 +1501,6 @@ public class AdminEndpointTests : IntegrationTestsBase
     public async Task SetBonusAsync_WithExpiration_AppliesBonusWithExpiry()
     {
         // Arrange
-        var organizationRepository = GetService<IOrganizationRepository>();
         string expiresUtc = TimeProvider.GetUtcNow().AddDays(30).ToString("o");
 
         // Act
@@ -1521,7 +1514,7 @@ public class AdminEndpointTests : IntegrationTestsBase
             .StatusCodeShouldBeOk());
 
         // Assert
-        var organization = await organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organization);
         Assert.Equal(10000, organization.BonusEventsPerMonth);
         Assert.NotNull(organization.BonusExpiration);
