@@ -233,6 +233,32 @@ describe('OrganizationNotifications', () => {
             expect(screen.queryByRole('alert')).toBeNull();
         });
 
+        it('restores the daily trial notice in an open tab without refetching organization state', async () => {
+            // Arrange
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date(2026, 10, 8, 23, 59, 30));
+            state.organization = createOrganization({ trial_ends_utc: new Date(Date.now() + 2 * DAY).toISOString() });
+            const { unmount } = renderNotifications();
+
+            try {
+                // Act
+                await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
+                const wasDismissed = screen.queryByText(/free trial/) === null;
+                await vi.advanceTimersByTimeAsync(60_000);
+                await tick();
+
+                // Assert
+                expect(wasDismissed).toBe(true);
+                expect(screen.getByText('2 days left in the Acme free trial.')).toBeTruthy();
+                expect(organizationRefetch).not.toHaveBeenCalled();
+                expect(projectsRefetch).not.toHaveBeenCalled();
+            } finally {
+                unmount();
+                await tick();
+                vi.useRealTimers();
+            }
+        });
+
         it('shows the trial-ended notice with the organization limits and records the dismissal', async () => {
             // Arrange
             state.organization = createOrganization({
