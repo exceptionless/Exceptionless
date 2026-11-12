@@ -75,6 +75,7 @@ public static class OrganizationEndpoints
         .Accepts<NewOrganization>("application/json", "application/*+json")
         .Produces<ViewOrganization>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .WithSummary("Create")
         .WithMetadata(new EndpointDocumentation {
@@ -190,6 +191,7 @@ public static class OrganizationEndpoints
         .Produces<WorkInProgressResult>(StatusCodes.Status202Accepted)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status500InternalServerError)
         .WithSummary("Remove")
         .WithMetadata(new EndpointDocumentation {
@@ -281,6 +283,7 @@ public static class OrganizationEndpoints
             => (await mediator.InvokeAsync<Result<User>>(new OrganizationMessages.AddOrganizationUser(id, email, httpContext))).ToHttpResult(resultMapper))
         .Produces<User>()
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .ProducesProblem(StatusCodes.Status426UpgradeRequired)
         .WithSummary("Add user")
         .WithMetadata(new EndpointDocumentation {
@@ -299,6 +302,7 @@ public static class OrganizationEndpoints
         .Produces(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status409Conflict)
         .WithSummary("Remove user")
         .WithMetadata(new EndpointDocumentation {
             ParameterDescriptions = new() {

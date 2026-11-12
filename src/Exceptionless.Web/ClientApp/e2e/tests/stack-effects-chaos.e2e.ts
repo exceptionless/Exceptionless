@@ -40,6 +40,10 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     const pendingApiRequests = trackPendingApiRequests(page);
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
+    const firstStackRow = page
+        .getByRole('row')
+        .filter({ has: page.getByRole('checkbox', { exact: true, name: 'Select row' }) })
+        .first();
     const diagnostics: RuntimeDiagnostics = {
         actionSamples: [],
         activeAction: 'setup',
@@ -70,7 +74,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
         await page.goto('/stack/all?limit=5');
         expect((await response).ok()).toBe(true);
         await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
-        await expect(page.locator('tbody tr:visible').first()).toBeVisible();
+        await expect(firstStackRow).toBeVisible();
         await expect(page.getByRole('button', { name: 'Go to next page' })).toBeEnabled();
     });
 
@@ -104,7 +108,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
     });
 
     await measureAction(diagnostics, 'stack timeline drag', async () => {
-        await page.locator('tbody tr:visible').first().click();
+        await firstStackRow.click();
         const dialog = page.getByRole('dialog');
         await expect(dialog).toBeVisible();
         const timeline = dialog.locator('[data-slot="chart"]');
@@ -152,7 +156,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     await measureAction(diagnostics, 'stack detail mount and teardown', async () => {
         for (let index = 0; index < 5; index++) {
-            await page.locator('tbody tr:visible').first().click();
+            await firstStackRow.click();
             await expect(page.getByRole('dialog')).toBeVisible();
             await page.getByRole('button', { name: 'Close' }).click();
             await expect(page.getByRole('dialog')).not.toBeVisible();

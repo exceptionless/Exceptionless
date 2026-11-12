@@ -5,6 +5,28 @@ const RESET_PASSWORD = `${E2E_TEST_PASSWORD}-reset`;
 test.skip(process.env.E2E_ENV === 'production', 'Password recovery requires local Mailpit.');
 test.use({ e2eCleanupPassword: RESET_PASSWORD, e2eInjectBrowserToken: false, e2eUseInvitedUser: true });
 
+test('failed password-reset cancellation can be retried without reloading', async ({ page }) => {
+    let attempts = 0;
+    await page.route('**/api/v2/auth/cancel-reset-password/cancel-retry', async (route) => {
+        attempts++;
+        await route.fulfill({
+            body: attempts === 1 ? JSON.stringify({ status: 409, title: 'User changed' }) : '',
+            contentType: 'application/problem+json',
+            status: attempts === 1 ? 409 : 200
+        });
+    });
+
+    await page.goto('/reset-password/cancel-retry?cancel=true');
+    await expect(page.getByRole('button', { name: 'Try Again' })).toBeVisible();
+    await expect(page.getByText('Cancelling password reset...')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Back to Login' })).toBeVisible();
+    expect(attempts).toBe(1);
+
+    await page.getByRole('button', { name: 'Try Again' }).click();
+    await expect(page).toHaveURL(/\/login(?:[?#]|$)/);
+    expect(attempts).toBe(2);
+});
+
 test('user can reset a forgotten password and log in @signup', async ({ e2eApi, e2eScenario, page }) => {
     await test.step('request a password reset through the UI', async () => {
         await page.goto('/forgot-password');

@@ -123,14 +123,27 @@ public class UserRepository : RepositoryBase<User>, IUserRepository
         return hit?.Document;
     }
 
-    public async Task<User?> GetUserByOAuthProviderAsync(string provider, string providerUserId)
+    public async Task<IReadOnlyCollection<User>> GetUsersByOAuthProviderAsync(string provider, string providerUserId, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (String.IsNullOrEmpty(provider) || String.IsNullOrEmpty(providerUserId))
-            return null;
+            return Array.Empty<User>();
 
-        provider = provider.ToLowerInvariant();
-        var results = (await FindAsync(q => q.FieldEquals(u => u.OAuthAccounts.First().ProviderUserId, providerUserId))).Documents;
-        return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
+        // OAuth accounts are mapped as objects, so indexed fields cannot enforce matching within one account.
+        var results = await FindAsync(q => q.FieldEquals(u => u.OAuthAccounts.First().ProviderUserId, providerUserId)
+            .FieldEquals(u => u.OAuthAccounts.First().Provider, provider).SortAscending(u => u.Id),
+            o => o.SearchAfterPaging().PageLimit(100));
+        var matchingUsers = new List<User>();
+        do
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            matchingUsers.AddRange(results.Documents.Where(u => u.OAuthAccounts.Any(account =>
+                String.Equals(account.Provider, provider, StringComparison.Ordinal) &&
+                String.Equals(account.ProviderUserId, providerUserId, StringComparison.Ordinal))));
+        } while (!cancellationToken.IsCancellationRequested && await results.NextPageAsync());
+
+        cancellationToken.ThrowIfCancellationRequested();
+        return matchingUsers;
     }
 
     public async Task<User?> GetByVerifyEmailAddressTokenAsync(string token)

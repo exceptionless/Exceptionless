@@ -18,7 +18,7 @@ const queryKeys = {
 export async function cancelResetPassword(token: string) {
     const client = useFetchClient();
     const response = await client.post(`auth/cancel-reset-password/${token}`, {
-        expectedStatusCodes: [400]
+        expectedStatusCodes: [400, 409]
     });
 
     return response;
@@ -33,7 +33,7 @@ export async function changePassword(currentPassword: string | undefined, newPas
             password: newPassword
         },
         {
-            expectedStatusCodes: [422]
+            expectedStatusCodes: [409, 422]
         }
     );
 
@@ -89,7 +89,7 @@ export async function login(email: string, password: string, inviteToken?: null 
     };
     const client = useFetchClient();
     const response = await client.postJSON<TokenResult>('auth/login', data, {
-        expectedStatusCodes: [401, 422]
+        expectedStatusCodes: [401, 409, 422]
     });
 
     if (response.ok && response.data?.token) {
@@ -127,7 +127,7 @@ export async function resetPassword(passwordResetToken: string, password: string
             password_reset_token: passwordResetToken
         },
         {
-            expectedStatusCodes: [422]
+            expectedStatusCodes: [409, 422]
         }
     );
 
@@ -145,7 +145,7 @@ export async function signup(name: string, email: string, password: string, invi
             password
         },
         {
-            expectedStatusCodes: [401, 403, 422]
+            expectedStatusCodes: [401, 403, 409, 422]
         }
     );
 
@@ -166,7 +166,7 @@ export async function unlinkOAuthAccount(provider: string, providerUserId: strin
             provider_user_id: providerUserId
         },
         {
-            expectedStatusCodes: [400]
+            expectedStatusCodes: [400, 409]
         }
     );
 
