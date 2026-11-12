@@ -146,9 +146,6 @@ public class AppOptions
         options.StorageOptions = StorageOptions.ReadFromConfiguration(config, options);
         options.StripeOptions = StripeOptions.ReadFromConfiguration(config);
 
-        if (options.AppMode is not AppMode.Development && options.StripeOptions.EnableBilling && options.BillingOptions.TrialDays is > 0 && options.BillingOptions.TrialClaimSecret is null)
-            throw new InvalidOperationException("Billing:TrialClaimSecret is required when hosted trials are enabled");
-
         return options;
     }
 }

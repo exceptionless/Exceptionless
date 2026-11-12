@@ -1,7 +1,4 @@
 ---
-Billing:
-  # Public fixture key; never use in a deployed environment.
-  TrialClaimSecret: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 ConnectionStrings:
   #  Redis: localhost,abortConnect=false
   #  Elasticsearch: server=https://elastic:elastic@localhost:9200

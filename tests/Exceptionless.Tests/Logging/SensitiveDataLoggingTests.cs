@@ -290,7 +290,6 @@ public class SensitiveDataLoggingTests
                     Password = "elastic-migrate-password-secret-canary"
                 }
             },
-            BillingOptions = new BillingOptions { TrialClaimSecret = "trial-claim-secret-canary" },
             StripeOptions = new StripeOptions
             {
                 StripeApiKey = "stripe-api-key-secret-canary",
@@ -399,7 +398,6 @@ public class SensitiveDataLoggingTests
             "azure-data-account-key-secret-canary",
             "stripe-api-key-secret-canary",
             "stripe-signing-secret-canary",
-            "trial-claim-secret-canary",
             "microsoft-secret-canary",
             "ldap-password-secret-canary",
             "intercom-secret-canary",

@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using Exceptionless.Core.Billing;
 using Foundatio.Xunit;
 using Xunit;
@@ -24,21 +22,6 @@ public class TrialEmailAddressTests : TestWithLoggingBase
 
         // Assert
         Assert.IsAssignableFrom<ArgumentException>(exception);
-    }
-
-    [Theory]
-    [InlineData("not base64", typeof(FormatException))]
-    [InlineData("c2hvcnQ=", typeof(ArgumentException))]
-    public void GetClaimId_InvalidSecret_RejectsInput(string secret, Type expectedException)
-    {
-        // Arrange
-        const string email = "someone@example.test";
-
-        // Act
-        var exception = Record.Exception(() => TrialEmailAddress.GetClaimId(email, secret));
-
-        // Assert
-        Assert.IsType(expectedException, exception);
     }
 
     [Theory]
@@ -143,24 +126,20 @@ public class TrialEmailAddressTests : TestWithLoggingBase
     }
 
     [Fact]
-    public void GetClaimId_UsesSecretAndCanonicalMailbox_WithoutRetainingUnkeyedDigest()
+    public void GetClaimId_CanonicalMailboxAliases_ShareHashAndDifferFromOtherMailboxes()
     {
         // Arrange
-        string firstKey = Convert.ToBase64String(new byte[32]);
-        string secondKey = Convert.ToBase64String(Enumerable.Repeat((byte)1, 32).ToArray());
         const string email = "Some.One+first@gmail.com";
-        string unkeyedDigest = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes("someone@gmail.com")));
 
         // Act
-        string first = TrialEmailAddress.GetClaimId(email, firstKey);
-        string alias = TrialEmailAddress.GetClaimId("s.o.m.e.o.n.e+alias@googlemail.com", firstKey);
-        string otherSecret = TrialEmailAddress.GetClaimId(email, secondKey);
+        string first = TrialEmailAddress.GetClaimId(email);
+        string alias = TrialEmailAddress.GetClaimId("s.o.m.e.o.n.e+alias@googlemail.com");
+        string otherMailbox = TrialEmailAddress.GetClaimId("someone.else@gmail.com");
 
         // Assert
-        Assert.Equal("hmac-v1-65a0093454a49ce28b1071316083b2ca23f73e235b6b99a621b044b8ebcccea9", first);
+        Assert.Equal("fa5fbf8a030b1e769888bf9bbef7af8ce682aee4da978487e4374bbaec257637", first);
         Assert.Equal(first, alias);
-        Assert.NotEqual(first, otherSecret);
-        Assert.DoesNotContain(unkeyedDigest, first);
+        Assert.NotEqual(first, otherMailbox);
     }
 
     [Theory]

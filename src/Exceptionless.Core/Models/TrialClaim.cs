@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Models;
 public sealed class TrialClaim : IIdentity, IHaveCreatedDate, IVersioned
 {
     /// <summary>
-    /// Versioned HMAC identifier from <see cref="Exceptionless.Core.Billing.TrialEmailAddress.GetClaimId"/>.
+    /// SHA-256 identifier from <see cref="Exceptionless.Core.Billing.TrialEmailAddress.GetClaimId"/>.
     /// </summary>
     public string Id { get; set; } = null!;
 

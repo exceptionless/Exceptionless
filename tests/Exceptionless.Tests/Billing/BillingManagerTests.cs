@@ -133,24 +133,8 @@ public class BillingManagerTests : TestWithServices
         Assert.Null(organization.TrialReminderSentUtc);
     }
 
-    [Theory]
-    [InlineData("not base64")]
-    [InlineData("AA==")]
-    public void ReadFromConfiguration_InvalidTrialClaimSecret_RejectsWithoutDisclosingSecret(string secret)
-    {
-        // Arrange
-        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?> { ["Billing:TrialClaimSecret"] = secret }).Build();
-
-        // Act
-        var exception = Record.Exception(() => BillingOptions.ReadFromConfiguration(config));
-
-        // Assert
-        Assert.IsType<InvalidOperationException>(exception);
-        Assert.DoesNotContain(secret, exception.Message);
-    }
-
     [Fact]
-    public void ReadFromConfiguration_HostedTrialsWithoutSecret_RejectsStartup()
+    public void ReadFromConfiguration_HostedBilling_EnablesTrialsWithoutAdditionalConfiguration()
     {
         // Arrange
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
@@ -161,30 +145,10 @@ public class BillingManagerTests : TestWithServices
         }).Build();
 
         // Act
-        var exception = Record.Exception(() => Exceptionless.Core.AppOptions.ReadFromConfiguration(config));
+        var options = Exceptionless.Core.AppOptions.ReadFromConfiguration(config);
 
         // Assert
-        Assert.IsType<InvalidOperationException>(exception);
-        Assert.Contains("Billing:TrialClaimSecret", exception.Message);
-    }
-
-    [Fact]
-    public async Task CanStartTrialAsync_NoConfiguredSecret_DeniesTrial()
-    {
-        // Arrange
-        var billingManager = GetService<BillingManager>();
-        var options = GetService<Exceptionless.Core.AppOptions>();
-        options.BillingOptions.TrialClaimSecret = null;
-
-        // Act
-        bool eligible = await billingManager.CanStartTrialAsync(new User { EmailAddress = "new@example.test" });
-        var exception = await Record.ExceptionAsync(async () =>
-        {
-            _ = await billingManager.TryClaimTrialAsync(new User { EmailAddress = "new@example.test" });
-        });
-
-        // Assert
-        Assert.False(eligible);
-        Assert.IsType<InvalidOperationException>(exception);
+        Assert.True(options.StripeOptions.EnableBilling);
+        Assert.Equal(14, options.BillingOptions.TrialDays);
     }
 }

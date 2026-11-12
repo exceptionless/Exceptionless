@@ -170,16 +170,12 @@ public static class TrialEmailAddress
     }
 
     /// <summary>
-    /// Identifies a normalized mailbox using a dedicated HMAC secret without retaining the address or unkeyed digest.
+    /// Identifies a normalized mailbox without retaining the address in the trial claim.
     /// </summary>
-    public static string GetClaimId(string emailAddress, string secret)
+    public static string GetClaimId(string emailAddress)
     {
-        byte[] key = Convert.FromBase64String(secret);
-        if (key.Length is < 32)
-            throw new ArgumentException("The trial claim secret must contain at least 32 random bytes", nameof(secret));
-
         byte[] digest = SHA256.HashData(Encoding.UTF8.GetBytes(Normalize(emailAddress)));
-        return "hmac-v1-" + Convert.ToHexStringLower(HMACSHA256.HashData(key, digest));
+        return Convert.ToHexStringLower(digest);
     }
 
     /// <summary>

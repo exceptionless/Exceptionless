@@ -86,8 +86,7 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
         var repository = GetService<ITrialClaimRepository>();
         var first = new User { EmailAddress = "Some.One+first@gmail.com" };
         var alias = new User { EmailAddress = "s.o.m.e.o.n.e+second@googlemail.com" };
-        var options = GetService<AppOptions>();
-        string claimId = TrialEmailAddress.GetClaimId(first.EmailAddress, options.BillingOptions.TrialClaimSecret!);
+        string claimId = TrialEmailAddress.GetClaimId(first.EmailAddress);
         bool existedBefore = await repository.ExistsAsync(claimId);
 
         // Act: bypass the mailbox lock to exercise the durable uniqueness boundary directly.
@@ -129,7 +128,7 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
         var options = GetService<AppOptions>();
         var original = new User { Id = ObjectId.GenerateNewId().ToString(), EmailAddress = "past.retention@example.com" };
         var returning = new User { Id = ObjectId.GenerateNewId().ToString(), EmailAddress = "past.retention+again@example.com" };
-        string claimId = TrialEmailAddress.GetClaimId(original.EmailAddress, options.BillingOptions.TrialClaimSecret!);
+        string claimId = TrialEmailAddress.GetClaimId(original.EmailAddress);
         await billingManager.TryClaimTrialAsync(original);
         TimeProvider.Advance(TimeSpan.FromDays(options.BillingOptions.TrialClaimRetentionDays + 1));
         var utcNow = TimeProvider.GetUtcNow().UtcDateTime;
@@ -208,7 +207,6 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
         var billingManager = GetService<BillingManager>();
         var repository = GetService<ITrialClaimRepository>();
         var options = GetService<AppOptions>();
-        string secret = options.BillingOptions.TrialClaimSecret!;
         var expired = new User { EmailAddress = "expired.claim@example.com" };
         var active = new User { EmailAddress = "active.claim@example.com" };
         await billingManager.TryClaimTrialAsync(expired);
@@ -222,7 +220,7 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
 
         // Assert
         Assert.Equal(1, removed);
-        Assert.False(await repository.ExistsAsync(TrialEmailAddress.GetClaimId(expired.EmailAddress, secret)));
-        Assert.True(await repository.ExistsAsync(TrialEmailAddress.GetClaimId(active.EmailAddress, secret)));
+        Assert.False(await repository.ExistsAsync(TrialEmailAddress.GetClaimId(expired.EmailAddress)));
+        Assert.True(await repository.ExistsAsync(TrialEmailAddress.GetClaimId(active.EmailAddress)));
     }
 }

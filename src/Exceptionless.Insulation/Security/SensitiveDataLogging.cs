@@ -60,7 +60,6 @@ public static class SensitiveDataLogging
             Redact<AuthOptions>(nameof(AuthOptions.MicrosoftSecret)),
             Redact<AuthOptions>(nameof(AuthOptions.GitHubSecret)),
             Redact<AuthOptions>(nameof(AuthOptions.GoogleSecret)),
-            Redact<BillingOptions>(nameof(BillingOptions.TrialClaimSecret)),
             Sanitize<AuthOptions>(
                 nameof(AuthOptions.LdapConnectionString),
                 static (_, value) => SanitizeStandaloneConnectionString((string?)value)),
