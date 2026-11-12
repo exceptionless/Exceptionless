@@ -1052,6 +1052,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.NotNull(user);
         Assert.Equal(emailAddress, user.EmailAddress);
+        Assert.Equal(String.Empty, user.Version);
 
         var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
         Assert.NotNull(organization);
