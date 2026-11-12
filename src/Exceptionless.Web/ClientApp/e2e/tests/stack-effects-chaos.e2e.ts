@@ -1,7 +1,7 @@
 import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
-import { isApplicationApiRequest, trackPendingApiRequests } from '../support/api-request-monitor';
+import { isApplicationApiRequest, trackPendingApiRequests, waitForEventDetailResponses } from '../support/api-request-monitor';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
 import {
@@ -251,8 +251,14 @@ test('stack effects stay bounded through background, paging, and navigation chao
     await measureAction(diagnostics, 'route remounts', async () => {
         for (let index = 0; index < 5; index++) {
             await pendingApiRequests.waitForPendingRequests();
+            const detailResponses = waitForEventDetailResponses(page, journey.eventId!, journey.stackId!, e2eScenario.projectId);
             await page.goto(`/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
+            await expect(page).toHaveURL(new RegExp(`/stack/${journey.stackId}/event/${journey.eventId}$`));
+            for (const response of await detailResponses) {
+                expect(response.ok()).toBe(true);
+                await response.finished();
+            }
             await pendingApiRequests.waitForPendingRequests();
             await page.goto('/stack?limit=5');
             await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
