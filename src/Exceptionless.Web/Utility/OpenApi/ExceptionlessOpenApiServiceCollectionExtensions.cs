@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.OpenApi;
 
 namespace Exceptionless.Web.Utility.OpenApi;
 
@@ -11,8 +10,6 @@ internal static class ExceptionlessOpenApiServiceCollectionExtensions
     {
         services.AddOpenApi(options =>
         {
-            // ASP.NET Core 11 defaults to OpenAPI 3.2; keep publishing 3.1 for existing client generators.
-            options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_1;
             options.CreateSchemaReferenceId = SchemaReferenceIdHelper.CreateSchemaReferenceId;
             options.AddDocumentTransformer<AggregateDocumentTransformer>();
             options.AddDocumentTransformer<XmlDocumentationDocumentTransformer>();

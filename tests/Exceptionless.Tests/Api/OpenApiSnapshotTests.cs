@@ -47,6 +47,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         var paths = document.RootElement.GetProperty("paths");
 
         // Assert
+        Assert.Equal("3.2.0", document.RootElement.GetProperty("openapi").GetString());
         Assert.True(paths.TryGetProperty("/api/v2/auth/login", out var loginPath));
         Assert.True(loginPath.TryGetProperty("post", out var loginPost));
         Assert.True(loginPost.TryGetProperty("requestBody", out _));
