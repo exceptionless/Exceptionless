@@ -3,7 +3,7 @@ import type { Page, Request } from '@playwright/test';
 import { EventEmitter } from 'node:events';
 import { expect, test } from 'vitest';
 
-import { isApplicationApiRequest, trackPendingApiRequests } from './api-request-monitor';
+import { isApplicationApiRequest, trackPendingApiRequests } from '../../../e2e/support/api-request-monitor';
 
 test('tracks application requests until they settle without waiting for browser telemetry', async () => {
     // Arrange
