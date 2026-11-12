@@ -1038,22 +1038,6 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task AddUserAsync_FreePlanAtCapacity_ReturnsUpgradeRequired()
-    {
-        // Arrange
-        const string email = "extra-member@example.test";
-
-        // Act
-        using var response = await SendRequestAsync(request => request.AsFreeOrganizationUser().Post()
-            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "users", email).StatusCodeShouldBeUpgradeRequired());
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
-        Assert.Empty(organization!.Invites);
-    }
-
-    [Fact]
     public async Task AddUserAsync_NewEmail_AddsInvite()
     {
         // Arrange
@@ -1191,6 +1175,25 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
             .AppendPaths("organizations", "000000000000000000000000", "users", "new.member@localhost")
             .StatusCodeShouldBeNotFound()
         );
+    }
+
+    [Fact]
+    public async Task AddUserAsync_PlanLimitReached_ReturnsUpgradeRequired()
+    {
+        // Arrange
+        const string email = "new.member@localhost";
+
+        // Act
+        using var response = await SendRequestAsync(request => request.AsFreeOrganizationUser().Post()
+            .AppendPaths("organizations", SampleDataService.FREE_ORG_ID, "users", email).StatusCodeShouldBeUpgradeRequired());
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.UpgradeRequired, response.StatusCode);
+        Assert.NotNull(organization);
+        Assert.Equal(_plans.FreePlan.Id, organization.PlanId);
+        Assert.Null(organization.TrialEndsUtc);
+        Assert.Empty(organization.Invites);
     }
 
     [Fact]
@@ -2422,6 +2425,52 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task CanDownGradeAsync_TooManyUsers_ReturnsFailure()
+    {
+        // Arrange — test organization has 2 users (global admin + organization user); free plan allows max 1
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        Assert.NotNull(organization);
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+
+        // Act
+        var result = await _billingManager.CanDownGradeAsync(organization, _plans.FreePlan, user);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Contains("remove", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("user", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CanDownGradeAsync_TooManyProjects_ReturnsFailure()
+    {
+        // Arrange — free organization has 1 user and 1 project; add a second project so project check fails
+        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.FREE_ORG_ID);
+        Assert.NotNull(organization);
+
+        var extraProject = new Project
+        {
+            Name = "Extra Project",
+            OrganizationId = organization.Id,
+            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
+        };
+        await _projectRepository.AddAsync(extraProject, o => o.ImmediateConsistency());
+
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.FREE_USER_EMAIL);
+        Assert.NotNull(user);
+
+        // Act
+        var result = await _billingManager.CanDownGradeAsync(organization, _plans.FreePlan, user);
+
+        // Assert
+        Assert.False(result.Success);
+        Assert.Contains("remove", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("project", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task CanDownGradeAsync_AlreadyHasFreePlan_ReturnsFailure()
     {
         // Arrange — create a second organization for the free user, so they already have 1 free organization
@@ -2444,35 +2493,6 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         // Assert
         Assert.False(result.Success);
         Assert.Contains("free account", result.Message, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task CanDownGradeAsync_MultipleUsersAndProjects_FreePlanRejectsDowngrade()
-    {
-        // Arrange
-        var organization = await _organizationRepository.GetByIdAsync(SampleDataService.TEST_ORG_ID);
-        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
-        Assert.NotNull(organization);
-        Assert.NotNull(user);
-        await _projectRepository.AddAsync(new Project
-        {
-            Name = "Additional project",
-            OrganizationId = organization.Id,
-            NextSummaryEndOfDayTicks = TimeProvider.GetUtcNow().UtcDateTime.Date.AddDays(1).AddHours(1).Ticks
-        }, command => command.ImmediateConsistency());
-        var members = await _userRepository.GetByOrganizationIdAsync(organization.Id);
-        var projects = await _projectRepository.GetByOrganizationIdAsync(organization.Id);
-
-        // Act
-        var result = await _billingManager.CanDownGradeAsync(organization, _plans.FreePlan, user);
-
-        // Assert
-        Assert.True(members.Total is > 1);
-        Assert.True(projects.Total is > 1);
-        Assert.Equal(1, _plans.FreePlan.MaxUsers);
-        Assert.Equal(1, _plans.FreePlan.MaxProjects);
-        Assert.False(result.Success);
-        Assert.Contains("user", result.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

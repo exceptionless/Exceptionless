@@ -21,7 +21,6 @@
 </script>
 
 <script lang="ts">
-    import { useQueryClient } from '@tanstack/svelte-query';
     import { useEventListener } from 'runed';
     import { SvelteSet } from 'svelte/reactivity';
 
@@ -37,7 +36,7 @@
     import { getProductTourRecordedAt } from '#features/product-tours/eligibility.ts';
     import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
     import { clock } from '#features/shared/clock.svelte.ts';
-    import { getMeQuery, putCurrentUserProductTour, setCurrentUserProductTourRecorded, queryKeys as userQueryKeys } from '#features/users/api.svelte.ts';
+    import { getMeQuery, putCurrentUserProductTour } from '#features/users/api.svelte.ts';
 
     import HourlyOverageNotification from './notifications/hourly-overage-notification.svelte';
     import ImpersonationNotification from './notifications/impersonation-notification.svelte';
@@ -119,10 +118,9 @@
     const trialDaysRemaining = $derived(getTrialDaysRemaining(organization?.trial_ends_utc, now));
     const monthlyEventUsage = $derived(getMonthlyEventUsage(organization, now));
 
-    const queryClient = useQueryClient();
     const recordProductTour = putCurrentUserProductTour();
     const isTrialEndedNoticeDismissed = $derived(
-        !!organization?.id && !!getProductTourRecordedAt(meQuery.data?.product_tours, getTrialEndedNoticeKey(organization.id))
+        !!organization?.id && !!getProductTourRecordedAt(meQuery.data?.product_tours, `trial_ended_${organization.id}`)
     );
 
     const showUsageWarning = $derived(
@@ -148,21 +146,10 @@
             return;
         }
 
-        const tourName = getTrialEndedNoticeKey(organizationId);
-        setCurrentUserProductTourRecorded(queryClient, tourName, new Date().toISOString());
-        recordProductTour.mutate(
-            {
-                tourName,
-                userId
-            },
-            {
-                // Put the notice back if the dismissal wasn't saved, rather than pretending it was.
-                onError: () =>
-                    queryClient.invalidateQueries({
-                        queryKey: userQueryKeys.me()
-                    })
-            }
-        );
+        recordProductTour.mutate({
+            tourName: getTrialEndedNoticeKey(organizationId),
+            userId
+        });
     }
 
     useEventListener(document, 'PersistentEventChanged', (event) => {
@@ -217,7 +204,7 @@
         <TrialEndedNotification
             maxEventsPerMonth={organization.max_events_per_month}
             name={organization.name}
-            onDismiss={dismissTrialEnded}
+            onDismiss={recordProductTour.isPending ? undefined : dismissTrialEnded}
             organizationId={organization.id}
             retentionDays={organization.retention_days}
             {...restProps}

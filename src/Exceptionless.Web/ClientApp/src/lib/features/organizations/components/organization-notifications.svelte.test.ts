@@ -14,16 +14,7 @@ const organizationRefetch = vi.hoisted(() => vi.fn());
 const projectsRefetch = vi.hoisted(() => vi.fn());
 const projects = vi.hoisted(() => [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }]);
 const recordProductTour = vi.hoisted(() => vi.fn());
-const invalidateQueries = vi.hoisted(() => vi.fn());
 const state = notificationTestState;
-
-vi.mock('@tanstack/svelte-query', async (importOriginal) => {
-    const original = await importOriginal<typeof import('@tanstack/svelte-query')>();
-    return {
-        ...original,
-        useQueryClient: () => ({ invalidateQueries })
-    };
-});
 
 vi.mock('#features/organizations/api.svelte.ts', async () => {
     const { notificationTestState } = await import('./organization-notifications.test-fake.svelte');
@@ -54,11 +45,12 @@ vi.mock('#features/users/api.svelte.ts', async () => {
                 return notificationTestState.me;
             }
         }),
-        putCurrentUserProductTour: () => ({ mutate: recordProductTour }),
-        queryKeys: { me: () => ['User', 'me'] },
-        setCurrentUserProductTourRecorded: (_: unknown, tourName: string) => {
-            notificationTestState.me.product_tours = { ...notificationTestState.me.product_tours, [tourName.replaceAll('-', '_')]: '2026-10-23T00:00:00Z' };
-        }
+        putCurrentUserProductTour: () => ({
+            get isPending() {
+                return notificationTestState.isRecordingProductTour;
+            },
+            mutate: recordProductTour
+        })
     };
 });
 
@@ -110,7 +102,7 @@ describe('OrganizationNotifications', () => {
         organizationRefetch.mockReset();
         projectsRefetch.mockReset();
         recordProductTour.mockReset();
-        invalidateQueries.mockReset();
+        state.isRecordingProductTour = false;
         projects[0]!.is_configured = false;
         state.me.organization_ids = ['organization-id'];
         state.me.product_tours = {};
@@ -275,10 +267,11 @@ describe('OrganizationNotifications', () => {
             }
         });
 
-        it('shows the trial-ended notice with the organization limits and records the dismissal', async () => {
+        it('keeps the trial-ended notice until the saved dismissal is reflected in the user', async () => {
             // Arrange
             state.organization = createOrganization({
                 has_premium_features: false,
+                id: '5f8e1b2c3d4e5f6a7b8c9d0e',
                 plan_id: 'EX_FREE',
                 trial_ends_utc: new Date(Date.now() - DAY).toISOString()
             });
@@ -294,21 +287,35 @@ describe('OrganizationNotifications', () => {
             await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
 
             // Assert
-            expect(recordProductTour).toHaveBeenCalledWith({ tourName: 'trial-ended-organization-id', userId: 'user-id' }, expect.anything());
+            expect(recordProductTour).toHaveBeenCalledWith({ tourName: 'trial-ended-5f8e1b2c3d4e5f6a7b8c9d0e', userId: 'user-id' });
+            expect(screen.getByText(/Your trial has ended/)).toBeTruthy();
+
+            // Act
+            state.me.product_tours = { trial_ended_5f8e1b2c3d4e5f6a7b8c9d0e: '2026-10-23T00:00:00Z' };
+            await tick();
+
+            // Assert
             expect(screen.queryByText(/Your trial has ended/)).toBeNull();
         });
 
-        it('reloads the current user when the trial-ended dismissal fails to save', async () => {
+        it('keeps the trial-ended notice dismissible when saving fails', async () => {
             // Arrange
             state.organization = createOrganization({ plan_id: 'EX_FREE', trial_ends_utc: new Date(Date.now() - DAY).toISOString() });
+            recordProductTour.mockImplementation(() => {
+                state.isRecordingProductTour = true;
+            });
             renderNotifications();
 
             // Act
             await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
-            recordProductTour.mock.calls[0]![1].onError();
+            const buttonHiddenDuringSave = screen.queryByRole('button', { name: 'Dismiss notification' }) === null;
+            state.isRecordingProductTour = false;
+            await tick();
 
             // Assert
-            expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['User', 'me'] });
+            expect(buttonHiddenDuringSave).toBe(true);
+            expect(screen.getByText(/Your trial has ended/)).toBeTruthy();
+            expect(screen.getByRole('button', { name: 'Dismiss notification' })).toBeEnabled();
         });
 
         it('does not show the trial-ended notice to a global admin impersonating the organization', () => {
@@ -326,8 +333,12 @@ describe('OrganizationNotifications', () => {
 
         it('does not show the trial-ended notice once the user dismissed it on any device', () => {
             // Arrange
-            state.me.product_tours = { trial_ended_organization_id: '2026-10-20T00:00:00Z' };
-            state.organization = createOrganization({ plan_id: 'EX_FREE', trial_ends_utc: new Date(Date.now() - DAY).toISOString() });
+            state.me.product_tours = { trial_ended_5f8e1b2c3d4e5f6a7b8c9d0e: '2026-10-20T00:00:00Z' };
+            state.organization = createOrganization({
+                id: '5f8e1b2c3d4e5f6a7b8c9d0e',
+                plan_id: 'EX_FREE',
+                trial_ends_utc: new Date(Date.now() - DAY).toISOString()
+            });
 
             // Act
             renderNotifications();

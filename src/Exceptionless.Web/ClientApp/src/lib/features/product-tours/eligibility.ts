@@ -14,7 +14,7 @@ const LEGACY_STATE_KEYS: Record<string, readonly string[]> = {
 
 export function getProductTourRecordedAt(state: ProductTourState = {}, key: string, kind: 'guide' | 'invitation' = 'guide'): string | undefined {
     const values = state as Record<string, unknown>;
-    const keys = [key, key.replaceAll('-', '_'), key.replaceAll('_', '-'), ...(LEGACY_STATE_KEYS[key] ?? [])];
+    const keys = [key, key.replaceAll('_', '-'), ...(LEGACY_STATE_KEYS[key] ?? [])];
     for (const stateKey of keys) {
         const value = values[stateKey];
         if (typeof value === 'string') {
