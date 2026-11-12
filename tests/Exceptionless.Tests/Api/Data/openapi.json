@@ -7299,7 +7299,7 @@
             }
           },
           "426": {
-            "description": "The organization has reached its plan\u0027s user limit.",
+            "description": "Please upgrade your plan to add an additional user.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

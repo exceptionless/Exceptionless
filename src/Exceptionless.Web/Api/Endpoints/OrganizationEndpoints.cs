@@ -293,7 +293,7 @@ public static class OrganizationEndpoints
             ResponseDescriptions = new() {
                 ["403"] = "Please verify your email address before inviting users.",
                 ["404"] = "The organization was not found.",
-                ["426"] = "The organization has reached its plan's user limit.",
+                ["426"] = "Please upgrade your plan to add an additional user.",
                 ["429"] = "You've sent the maximum number of invites for today.",
             }
         });
