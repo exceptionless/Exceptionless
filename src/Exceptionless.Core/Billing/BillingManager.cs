@@ -89,8 +89,8 @@ public class BillingManager
     }
 
     /// <summary>
-    /// A no-card trial is only for someone new to Exceptionless: a user who belongs to no organization and created
-    /// none, whose mailbox hasn't claimed a trial in the last <see cref="BillingOptions.TrialClaimRetentionDays"/> (under
+    /// A no-card trial is for a user who belongs to no organization and has no existing organizations they created,
+    /// whose mailbox hasn't claimed a trial in the last <see cref="BillingOptions.TrialClaimRetentionDays"/> days (under
     /// another alias or a deleted account), and whose email isn't on a blocked disposable domain. Call it while holding
     /// <see cref="AcquireTrialEmailLockAsync"/>.
     /// </summary>
@@ -145,13 +145,30 @@ public class BillingManager
         }
         catch (DuplicateDocumentException)
         {
-            // An expired claim that cleanup hasn't removed yet doesn't block a new trial. The mailbox lock serializes renewals.
+            // Renew expired claims with a version check, so storage enforces uniqueness even if the mailbox lock is lost.
             var claim = await _trialClaimRepository.GetByIdAsync(claimId);
             if (IsActiveClaim(claim))
                 return false;
 
-            await _trialClaimRepository.SaveAsync(new TrialClaim { Id = claimId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime });
-            return true;
+            try
+            {
+                if (claim is null)
+                {
+                    // Cleanup removed the expired claim after the create failed; create-only admission still applies.
+                    await _trialClaimRepository.AddAsync(new TrialClaim { Id = claimId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime });
+                }
+                else
+                {
+                    claim.CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                    await _trialClaimRepository.SaveAsync(claim);
+                }
+
+                return true;
+            }
+            catch (DocumentException ex) when (ex is DuplicateDocumentException or VersionConflictDocumentException)
+            {
+                return false;
+            }
         }
     }
 

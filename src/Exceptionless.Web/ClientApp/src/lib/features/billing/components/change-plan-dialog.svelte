@@ -200,7 +200,7 @@
     });
 
     // Organization limits reflect the current plan, including the hidden trial plan.
-    const downgradeLosses = $derived(isDowngrade && selectedPlan ? getDowngradeLosses(organization, selectedPlan) : []);
+    const downgradeLosses = $derived(planDirty && selectedPlan ? getDowngradeLosses(organization, selectedPlan) : []);
 
     let stripe = $state<null | Stripe>(null);
     let stripeElements = $state<StripeElements | undefined>(undefined);

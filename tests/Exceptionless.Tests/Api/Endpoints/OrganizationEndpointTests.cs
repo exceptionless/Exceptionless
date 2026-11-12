@@ -3224,7 +3224,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
 
     [Theory]
     [InlineData(364, "EX_FREE")]
-    [InlineData(366, "EX_TRIAL")]
+    [InlineData(365, "EX_TRIAL")]
     public async Task PostAsync_MailboxRegisteredAgainAfterDeletingTrialAccount_GetsTrialOnlyAfterRetention(int daysLater, string expectedPlanId)
     {
         // Arrange
@@ -3238,7 +3238,7 @@ public sealed class OrganizationEndpointTests : IntegrationTestsBase
         await SendRequestAsync(request => request.BasicAuthorization(original.EmailAddress, password).Delete()
             .AppendPaths("users", "me").StatusCodeShouldBeAccepted());
         TimeProvider.Advance(TimeSpan.FromDays(daysLater));
-        var returning = await CreateUserAsync("returning+again@exceptionless.test", password, isEmailAddressVerified: true);
+        var returning = await CreateUserAsync("returning@exceptionless.test", password, isEmailAddressVerified: true);
 
         // Act
         var organization = await WithBillingEnabledAsync(() => CreateOrganizationAsync(returning, password, "Returning Organization"));

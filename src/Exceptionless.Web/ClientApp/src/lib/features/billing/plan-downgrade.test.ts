@@ -6,30 +6,28 @@ const trial: PlanLimits = { has_premium_features: true, max_events_per_month: 75
 const free: PlanLimits = { has_premium_features: false, max_events_per_month: 3000, retention_days: 3 };
 
 describe('getDowngradeLosses', () => {
-    it('lists retention, event limit, and premium losses when moving to free', () => {
-        // Act
-        const losses = getDowngradeLosses(trial, free);
-
-        // Assert
-        expect(losses).toEqual(['event history drops from 90 days to 3 days', 'limit drops to 3,000 events a month', 'premium features turn off']);
-    });
-
-    it('treats moving from unlimited events to a limit as a loss', () => {
+    it.each([
+        {
+            current: trial,
+            expected: ['event history drops from 90 days to 3 days', 'limit drops to 3,000 events a month', 'premium features turn off'],
+            name: 'lists retention, event limit, and premium losses when moving to free',
+            next: free
+        },
+        {
+            current: { ...trial, max_events_per_month: -1 },
+            expected: ['limit drops to 75,000 events a month'],
+            name: 'treats moving from unlimited events to a limit as a loss',
+            next: trial
+        },
+        { current: free, expected: [], name: 'returns nothing when no limit goes down', next: trial }
+    ])('$name', (testCase) => {
         // Arrange
-        const unlimited: PlanLimits = { ...trial, max_events_per_month: -1 };
+        const { current, expected, next } = testCase;
 
         // Act
-        const losses = getDowngradeLosses(unlimited, trial);
+        const losses = getDowngradeLosses(current, next);
 
         // Assert
-        expect(losses).toEqual(['limit drops to 75,000 events a month']);
-    });
-
-    it('returns nothing when no limit goes down', () => {
-        // Act
-        const losses = getDowngradeLosses(free, trial);
-
-        // Assert
-        expect(losses).toEqual([]);
+        expect(losses).toEqual(expected);
     });
 });

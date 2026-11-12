@@ -3,6 +3,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
+using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
 using Xunit;
 
@@ -103,6 +104,36 @@ public sealed class BillingManagerIntegrationTests : IntegrationTestsBase
         // Assert
         Assert.False(canStartTrialBefore);
         Assert.True(canStartTrialAfter);
+    }
+
+    [Fact]
+    public async Task TryClaimTrialAsync_ConcurrentExpiredMailboxAliases_OnlyOneRenewsClaim()
+    {
+        // Arrange
+        var billingManager = GetService<BillingManager>();
+        var repository = GetService<ITrialClaimRepository>();
+        var options = GetService<AppOptions>();
+        var first = new User { EmailAddress = "renewal.race@gmail.com" };
+        var alias = new User { EmailAddress = "renewalrace+again@googlemail.com" };
+        await billingManager.TryClaimTrialAsync(first);
+        TimeProvider.Advance(TimeSpan.FromDays(options.BillingOptions.TrialClaimRetentionDays + 1));
+        var bothRenewing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int arrivals = 0;
+        using var handler = repository.DocumentsChanging.AddHandler(async (_, args) =>
+        {
+            if (args.ChangeType is not ChangeType.Saved)
+                return;
+
+            if (Interlocked.Increment(ref arrivals) is 2)
+                bothRenewing.SetResult();
+            await bothRenewing.Task.WaitAsync(TimeSpan.FromSeconds(10), TestCancellationToken);
+        });
+
+        // Act: bypass mailbox locks to verify storage still admits only one renewal.
+        var acquired = await Task.WhenAll(billingManager.TryClaimTrialAsync(first), billingManager.TryClaimTrialAsync(alias));
+
+        // Assert
+        Assert.Single(acquired, claimed => claimed);
     }
 
     [Fact]
