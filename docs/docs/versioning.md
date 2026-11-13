@@ -81,8 +81,8 @@ When a new event arrives for a fixed stack, Exceptionless compares it with the f
 A regressed stack shows **Regressed**, appears in the built-in views again, and can send a regression notification. See
 [Notifications](/docs/notifications/).
 
-When a stack fixed in a version stays fixed, what happens to the event depends on your plan. On paid plans, the event is
-dropped and not stored. On the Free plan, it's stored with the stack, which stays fixed.
+When a stack fixed in a version stays fixed, what happens to the event depends on your plan. On paid plans and active
+trials, the event is dropped and not stored. On the Free plan, it's stored with the stack, which stays fixed.
 
 Versions are compared as semantic versions, so `2.10.0` is later than `2.9.0`, and a prerelease such as `2.4.1-beta` is
 earlier than `2.4.1`. A leading `v` in an event's version, as in `v2.4.1`, is ignored.

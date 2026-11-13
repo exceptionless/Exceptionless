@@ -30,6 +30,7 @@ sources:
   - src/Exceptionless.Core/Pipeline/001_CheckEventDateAction.cs
   - src/Exceptionless.Core/Pipeline/006_TruncateFieldsAction.cs
   - src/Exceptionless.Core/Extensions/PersistentEventExtensions.cs
+  - src/Exceptionless.Core/Extensions/RequestInfoExtensions.cs
   - Exceptionless.JavaScript:packages/core/src/models/Event.ts
   - Exceptionless.Net:src/Exceptionless/Models/Client/Event.cs
 ---
@@ -226,9 +227,11 @@ and `column`.
 | `query_string`      | object  | Query parameters mapped to values.                                  |
 | `data`              | object  | Extra values, including the browser and OS keys below.              |
 
-The server applies the project's [data exclusions](/docs/project-settings/#data-exclusions) to headers, cookies, query
-parameters, and post data, and truncates long values. When the project excludes private information, it removes the
-client IP address, cookies, post data, and query string.
+The server applies the project's [data exclusions](/docs/project-settings/#data-exclusions) to cookies, query parameters,
+and post data represented as a dictionary of string values or JSON that can be read as one. It replaces long values in
+those fields with a placeholder. Filter headers and other request body formats before sending; the server doesn't apply
+these exclusions to them. When the project excludes private information, it removes the client IP address, cookies,
+post data, and query string.
 
 #### Browser and OS keys {#browser-and-os-keys}
 

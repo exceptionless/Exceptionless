@@ -50,7 +50,7 @@ description: Exceptionless brings AI to error monitoring. Ask Exie about product
           <li>{{ icons.check }}<span><strong>Triage:</strong> "What are my top issues this week?" or "What changed after version 1.0.2?"</span></li>
           <li>{{ icons.check }}<span><strong>Root cause:</strong> explanations grounded in your stack traces, requests, and environment data, with links back to every stack it mentions.</span></li>
           <li>{{ icons.check }}<span><strong>Up front about limits:</strong> when the data can't answer a question, Exie says so and tells you what it could find.</span></li>
-          <li>{{ icons.check }}<span><strong>Acts only on request:</strong> mark a stack fixed in a version, snooze it, flag it critical, or attach an issue link, only when you ask for that change.</span></li>
+          <li>{{ icons.check }}<span><strong>Acts on your request:</strong> Exie is instructed to mark a stack fixed in a version, snooze it, flag it critical, or attach an issue link only when you ask for that change.</span></li>
           <li>{{ icons.check }}<span><strong>Your access, nothing more:</strong> Exie works inside the current organization and only sees what your account can see.</span></li>
         </ul>
         <p class="note">Exie is included with Medium plans and up, with a monthly AI usage allowance. Self-hosted installs can enable it with their own model provider key.</p>
@@ -133,8 +133,8 @@ opencode mcp auth exceptionless</code></pre>
   <div class="container">
     <div class="section-head reveal">
       <p class="eyebrow">{{ icons["shield-check"] }} Safe by design</p>
-      <h2 class="section-title">AI that only does what you approve</h2>
-      <p class="section-lead">Giving an AI access to production data should not mean giving up control. Exie and the MCP server share the same guardrails.</p>
+      <h2 class="section-title">Control how AI accesses your errors</h2>
+      <p class="section-lead">Exie works within your current organization and shows its actions. MCP connections use the organizations and permissions you approve, with tool approvals handled by your agent.</p>
     </div>
     <div class="grid grid-3">
       <div class="card reveal">
@@ -145,7 +145,7 @@ opencode mcp auth exceptionless</code></pre>
       <div class="card reveal">
         <span class="feature-icon">{{ icons["eye-off"] }}</span>
         <h3>Read-only if you want</h3>
-        <p>Uncheck the Stacks Write permission on the consent screen and your agent can investigate but never change anything.</p>
+        <p>Uncheck the Stacks Write permission on the consent screen and your agent can investigate without changing stacks through the MCP server.</p>
       </div>
       <div class="card reveal">
         <span class="feature-icon">{{ icons["rotate-ccw"] }}</span>
@@ -160,7 +160,7 @@ opencode mcp auth exceptionless</code></pre>
       <div class="card reveal">
         <span class="feature-icon">{{ icons["shield-check"] }}</span>
         <h3>Prompt-injection aware</h3>
-        <p>Event messages and payloads are treated as untrusted data, so instructions hidden in an error message are not followed.</p>
+        <p>Exie is instructed to treat event messages and payloads as untrusted data. External agents need their own safeguards. Review important actions and see our <a href="/docs/ai/privacy/#prompt-injection">AI privacy guide</a>.</p>
       </div>
       <div class="card reveal">
         <span class="feature-icon">{{ icons.github }}</span>
@@ -220,7 +220,7 @@ opencode mcp auth exceptionless</code></pre>
       </details>
       <details>
         <summary>Which plans include Exie? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">Exie is included with Medium, Large, Extra Large, and Enterprise plans, each with a monthly AI usage allowance. Self-hosted installs can enable Exie by configuring their own model provider API key.</div>
+        <div class="faq-body">Exie is included with Medium, Large, Extra Large, and Enterprise plans, each with a monthly AI usage allowance. Eligible accounts can also use it during an active <a href="/docs/organizations/#free-trial">free trial</a> after verifying their email. Self-hosted installs can enable Exie by configuring their own model provider API key.</div>
       </details>
       <details>
         <summary>What is the Exceptionless MCP server? {{ icons["chevron-down"] }}</summary>
@@ -232,7 +232,7 @@ opencode mcp auth exceptionless</code></pre>
       </details>
       <details>
         <summary>Which AI coding agents work with Exceptionless? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">The app gives copy-paste setup commands for Claude Code, Codex, GitHub Copilot CLI, and OpenCode. Other MCP clients that support remote streamable HTTP servers with OAuth sign-in can connect with the same URL.</div>
+        <div class="faq-body">The app provides setup instructions for Claude Code, Codex, Cursor, GitHub Copilot CLI, OpenCode, and VS Code. Other MCP clients that support remote streamable HTTP servers with OAuth sign-in can use the same URL. See the <a href="/docs/ai/mcp-server/">MCP server guide</a> for connection requirements.</div>
       </details>
       <details>
         <summary>Can an AI agent change or delete my data? {{ icons["chevron-down"] }}</summary>

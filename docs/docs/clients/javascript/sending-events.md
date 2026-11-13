@@ -143,8 +143,8 @@ To add the same tags or data to every event, use `defaultTags` and `defaultData`
 
 ### Make custom data searchable
 
-On paid plans, Exceptionless indexes simple extended data values, such as strings, numbers, booleans, and dates, so you
-can filter on them:
+On paid plans and active trials, Exceptionless indexes simple extended data values, such as strings, numbers, booleans,
+and dates, so you can filter on them:
 
 ```js
 import { Exceptionless } from "@exceptionless/browser"

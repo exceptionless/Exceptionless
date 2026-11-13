@@ -90,7 +90,7 @@ Choose **Fixed** when you've shipped a fix. In the **Mark Stack As Fixed** dialo
 contains the fix, then select **Mark Stack Fixed**.
 
 - **With a version**, only events from that version or later reopen the stack as regressed. Events from older versions
-  that are still running don't, and on paid plans they're dropped instead of stored.
+  that are still running don't, and on paid plans and active trials they're dropped instead of stored.
 - **Without a version**, any event that occurs after you marked it fixed reopens it.
 
 See [Releases and regressions](/docs/versioning/) for how versions are compared.
@@ -145,7 +145,7 @@ The link appears in the stack card under **Reference**. Select the trash icon ne
 example to create an issue in your tracker. Set up the webhook first in the project's **Integrations**; if there isn't
 one, Exceptionless offers to take you there. See [Integrations](/docs/integrations/).
 
-Promoting a stack needs a paid plan.
+Promoting a stack needs a paid plan or an active trial.
 
 ## View stacking information
 

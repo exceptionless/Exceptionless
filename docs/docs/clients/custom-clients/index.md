@@ -12,9 +12,9 @@ sources:
 
 # Other languages and custom clients
 
-If there's no Exceptionless client for your language, you can still send errors, logs, and feature usage. Every event is
-one HTTP request to the REST API. This page shows how to send events from shell scripts and from any language; the
-[client specification](/docs/reference/client-spec/) covers what a full client library does on top of that.
+If there's no Exceptionless client for your language, you can still send errors, logs, and feature usage. Send one or
+more events in an HTTP request to the REST API. This page shows how to send events from shell scripts and other languages;
+the [client specification](/docs/reference/client-spec/) covers what a full client library does on top of that.
 
 ## Before you start {#before-you-start}
 

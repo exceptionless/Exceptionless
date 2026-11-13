@@ -51,8 +51,8 @@ data.
 | `404`     | A request for a page or resource that wasn't found.                                      |
 | `session` | The start of a user session. `heartbeat` events keep it open and `sessionend` closes it. |
 
-Clients send most of these automatically. Unhandled exceptions become errors as soon as the client is installed, and you
-send logs, feature usage, and handled errors with one line of code. Any other type name is a custom event.
+Once configured, supported clients capture unhandled exceptions automatically. Send logs, feature usage, and handled
+errors with the client API, and enable sessions where needed. Any other type name is a custom event.
 
 See [Events](/docs/events/), [Logs and log levels](/docs/setting-log-levels/), [Feature usage](/docs/feature-usage/),
 [Sessions](/docs/user-sessions/), and the [event format](/docs/reference/event-format/).

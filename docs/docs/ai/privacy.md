@@ -34,8 +34,8 @@ Exie acts as you, inside the organization you're viewing:
 - It can read projects, stacks, and events, including stack traces, request details, and custom data.
 - It can change stacks in five ways: status, snooze, critical, and adding or removing reference links. These are things
   you can already do in the app. It can't delete data or change settings.
-- It changes a stack only when your message asks for that change, and every change appears as a step above Exie's
-  answer.
+- It is instructed to change a stack only when your message asks for that change, and every change appears as a step
+  above Exie's answer. There is no separate confirmation dialog, so review important actions.
 
 See [Exie](/docs/ai/exie/) for the full list of tools.
 
@@ -88,7 +88,8 @@ provider under that provider's terms. Exceptionless doesn't see your agent's pro
 ### Chat sharing
 
 **Chat sharing** at the bottom of the Exie panel controls whether Exceptionless can review your conversations to improve
-Exie. When it's on, your browser sends your messages and Exie's replies to Exceptionless. When it's off, it doesn't. The
+Exie. When it's on, your browser also sends your messages and Exie's replies as conversation telemetry. Turning it off
+disables that logging; your chat messages still pass through Exceptionless to the AI model so Exie can answer. The
 popover shows the default and whether you've changed it, and your choice follows your account to other devices.
 
 Usage and error diagnostics are sent either way: for example, how long a response took, how many tools it called, and
@@ -104,7 +105,8 @@ How Exie limits this:
 
 - Its instructions treat tool results and event text as untrusted data and tell it never to follow instructions found
   inside them.
-- It changes data only when your own message asks for that change, never because of something it read.
+- It is instructed to change data only when your own message asks for that change, never because of something it read.
+  These instructions reduce risk but don't guarantee that the model will follow them.
 - It has no way to run code, browse the web, send messages, or reach other organizations, so the most it can do is one
   of the five stack changes, which appear as steps above Exie's answer and can be reversed.
 

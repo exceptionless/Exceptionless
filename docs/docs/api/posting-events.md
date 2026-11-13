@@ -68,7 +68,6 @@ curl https://api.exceptionless.io/api/v2/events \
     "type": "log",
     "source": "Billing.InvoiceJob",
     "message": "Invoice run took longer than expected",
-    "date": "2026-10-27T09:30:00-05:00",
     "data": {
       "@level": "warn",
       "@user": { "identity": "user-1042", "name": "Ana Lopez" }
@@ -104,7 +103,7 @@ curl https://api.exceptionless.io/api/v2/events \
 ```
 
 For structured stack frames, use `@error` instead; see [Error](/docs/reference/event-format/#error). Set `@version` to
-your app's version so a fixed stack can [regress](/docs/versioning/) when the error returns in a newer version.
+your app's version so a fixed stack can [regress](/docs/versioning/) when the error returns in the fixed version or later.
 
 ## Send feature usage {#feature-usage}
 
@@ -172,8 +171,8 @@ The server responds `202`. See [Reference IDs](/docs/references-ids/).
 | ------ | --------------------------------------------------------------------------------------- |
 | `202`  | Nothing. The events were accepted.                                                      |
 | `400`  | Check the request. A user token with no project needs the [project route](#project).    |
-| `401`  | Check the API key. It may be wrong or disabled.                                         |
-| `402`  | The organization has used its events for the month. Wait for the next month or upgrade. |
+| `401`  | Check the API key. It may be wrong, disabled, or blocked because its organization is suspended. |
+| `402`  | The monthly event limit or five-minute event throttle was reached, or a user token submitted to a suspended organization. See [Limits](/docs/concepts/limits/). |
 | `411`  | Send a body.                                                                            |
 | `413`  | Send fewer events per request.                                                          |
 | `415`  | Use `Content-Type: application/json` or `text/plain`.                                   |

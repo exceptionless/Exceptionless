@@ -29,7 +29,7 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/users/components/table/options.svelte.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/users/components/table/user-actions-cell.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/table/organization-actions-cell.svelte
-  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/notifications/free-plan-notification.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/organization-notifications.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/notifications/monthly-overage-notification.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/notifications/hourly-overage-notification.svelte
 ---
@@ -63,8 +63,9 @@ To switch to another organization, use the organization switcher, or press <kbd>
 2. Enter an **Organization Name** and a **Project Name**, then click **Continue**.
 3. Connect your app on the **Client Setup** page that opens. See [Quickstart](/docs/getting-started/).
 
-New organizations start on the Free plan. You can belong to only one organization on the Free plan, so to create another
-organization, upgrade the Free one first.
+When trials are enabled, eligible accounts start with a [free trial](#free-trial). Otherwise, new organizations start on
+the Free plan. You can create at most one Free or trial organization at a time; upgrade that organization before
+creating another.
 
 ## Change organization settings
 
@@ -108,16 +109,30 @@ click **Leave Organization**. If you belong to only one organization, the sideba
 | Plan         | Includes                                                                                                               |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | Free         | Error and log monitoring, the daily project summary, and the MCP server.                                               |
-| Small        | Everything in Free, plus event notifications by email and Slack, webhooks, sessions, and filtering on any event field. |
+| Small        | Everything in Free, plus unlimited projects and users, event notifications by email and Slack, webhooks, sessions, and filtering on any event field. |
 | Medium       | Everything in Small, plus [Exie](/docs/ai/exie/).                                                                      |
-| Large and up | Everything in Medium, with unlimited projects and users.                                                               |
+| Large and up | Everything in Medium, with higher event and Exie allowances.                                                            |
 
-Plans differ in events per month, data retention, and the number of projects and users. See
-[Limits](/docs/concepts/limits/) for the numbers and what happens when you reach them, and [pricing](/pricing/) for
-prices. Yearly billing is available for every paid plan and costs the same as 11 months.
+Paid plans include unlimited projects and users, and differ in events per month, data retention, and Exie access and
+allowances. See [Limits](/docs/concepts/limits/) for the numbers and what happens when you reach them, and
+[pricing](/pricing/) for prices. Yearly billing is available for every paid plan and costs the same as 11 months.
 
 When the organization reaches a limit, the app shows a banner, such as **has reached its monthly plan limit** or
 **Events are currently being throttled**, with an **Upgrade now** link.
+
+## Free trial {#free-trial}
+
+Eligible accounts can try premium features without a credit card when trials are enabled. The default trial lasts 14
+days and includes unlimited projects and users, 75,000 events per calendar month, and 90-day retention. It also includes
+[Exie](/docs/ai/exie/), after you verify your email address, with a smaller AI allowance than the Medium plan.
+
+Trials are for accounts that don't belong to an organization and have no existing organizations they created. A recent
+trial for the same mailbox, including an alias or a deleted account, or a blocked disposable email domain can make an
+account ineligible. Trial length and eligibility settings can differ on self-hosted instances that enable billing.
+
+The trial doesn't charge you automatically. If you don't choose a paid plan, the organization moves to Free when the
+trial ends. Its projects and users aren't deleted, but Free-plan limits apply. If it has more projects or users
+(including pending invitations) than Free allows, event intake is suspended until you remove the excess or upgrade.
 
 ## Change your plan
 
@@ -137,8 +152,8 @@ first, and pending invitations count as users.
 
 ## Usage
 
-The **Usage** tab shows how many events the organization has left this billing period and when the count resets. The
-chart shows **Total** events against the **Limit**, along with **Blocked**, **Discarded**, **Too Big**, and **Deleted**
+The **Usage** tab shows how many events the organization has left this calendar month and when the count resets, in UTC.
+The chart shows **Total** events against the **Limit**, along with **Blocked**, **Discarded**, **Too Big**, and **Deleted**
 events. Each project's settings have a **Usage** tab too. See [Limits](/docs/concepts/limits/) for what each line means.
 
 ## Invoices

@@ -1,13 +1,13 @@
 ---
 title: Pricing
 layout: layouts/base.vto
-description: Simple Exceptionless pricing based on monthly events, not seats. The MCP server is on every plan; paid plans add real-time alerts, integrations, and Exie.
+description: Exceptionless pricing based on monthly events, not seats. All paid plans include unlimited projects and users. Exie is included with Medium plans and up.
 ---
 <section class="page-hero">
   <div class="container">
     <p class="eyebrow">{{ icons.tag }} Pricing</p>
     <h1>Simple pricing that <span class="text-gradient">grows with you</span></h1>
-    <p>Pay for the events you send, not the seats on your team. Every plan includes the full app and the MCP server for AI coding agents; paid plans add real-time alerts, integrations, longer retention, and Exie.</p>
+    <p>Pay for the events you send, not the seats on your team. Every plan includes the MCP server for AI coding agents. Paid plans add unlimited projects and users, real-time alerts, integrations, and longer retention. Exie is included with Medium plans and up.</p>
     <div class="billing-toggle" role="group" aria-label="Billing period">
       <button type="button" data-billing="monthly" aria-pressed="true">Monthly</button>
       <button type="button" data-billing="yearly" aria-pressed="false">Yearly <span class="save">1 month free</span></button>
@@ -42,7 +42,7 @@ description: Simple Exceptionless pricing based on monthly events, not seats. Th
         <ul>
           <li>{{ icons.check }}<span><strong>15,000</strong> events per month</span></li>
           <li>{{ icons.check }}<span><strong>30 days</strong> of retention</span></li>
-          <li>{{ icons.check }}<span><strong>5</strong> projects, <strong>10</strong> users</span></li>
+          <li>{{ icons.check }}<span><strong>Unlimited</strong> projects and users</span></li>
           <li>{{ icons.check }}<span>Premium features</span></li>
           <li>{{ icons.plug }}<span><strong>MCP server</strong> for AI agents</span></li>
         </ul>
@@ -58,7 +58,7 @@ description: Simple Exceptionless pricing based on monthly events, not seats. Th
         <ul>
           <li>{{ icons.check }}<span><strong>75,000</strong> events per month</span></li>
           <li>{{ icons.check }}<span><strong>90 days</strong> of retention</span></li>
-          <li>{{ icons.check }}<span><strong>15</strong> projects, <strong>25</strong> users</span></li>
+          <li>{{ icons.check }}<span><strong>Unlimited</strong> projects and users</span></li>
           <li>{{ icons.check }}<span>Premium features</span></li>
           <li>{{ icons["ai-sparkle"] }}<span><strong>Exie</strong> AI assistant</span></li>
           <li>{{ icons.plug }}<span><strong>MCP server</strong> for AI agents</span></li>
@@ -106,7 +106,7 @@ description: Simple Exceptionless pricing based on monthly events, not seats. Th
       <div class="plan-row">
         <div>
           <h3>Self-hosted</h3>
-          <p>Run it on your own infrastructure with no limits. You operate it; Apache 2.0 licensed.</p>
+          <p>Run it on your own infrastructure without hosted event, project, or user limits. You operate it; Apache 2.0 licensed.</p>
         </div>
         <div class="plan-row-price">
           <strong>Open source</strong>
@@ -156,11 +156,11 @@ description: Simple Exceptionless pricing based on monthly events, not seats. Th
           </tr>
           <tr>
             <th scope="row">Projects</th>
-            <td>1</td><td>5</td><td>15</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td>
+            <td>1</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td>
           </tr>
           <tr>
             <th scope="row">Users</th>
-            <td>1</td><td>10</td><td>25</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td>
+            <td>1</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td>
           </tr>
           <tr class="group"><th scope="rowgroup" colspan="7">Features</th></tr>
           <tr>
@@ -209,7 +209,7 @@ description: Simple Exceptionless pricing based on monthly events, not seats. Th
     <div class="faq">
       <details>
         <summary>Can I try Exceptionless before I buy? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">Yes. Sign up with no credit card and send your first events on the Free plan. When you're ready for real-time alerts, integrations, longer retention, more users, or Exie, upgrade in a couple of clicks.</div>
+        <div class="faq-body">Yes. When trials are enabled, eligible new accounts can try premium features and Exie without a credit card, for 14 days by default. Verify your email to use Exie during the trial. A Free plan is also available. See <a href="/docs/organizations/#free-trial">free trial details</a> for eligibility and what happens when it ends.</div>
       </details>
       <details>
         <summary>Can I change or cancel my plan at any time? {{ icons["chevron-down"] }}</summary>
@@ -221,7 +221,7 @@ description: Simple Exceptionless pricing based on monthly events, not seats. Th
       </details>
       <details>
         <summary>What happens if I go over my event limit? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">Exceptionless stops accepting new events until your next billing period and lets you know, so you can upgrade if you need more room. You're never charged surprise overage fees, and the data you've already collected isn't affected.</div>
+        <div class="faq-body">Exceptionless stops accepting new events until the start of the next calendar month (UTC), or until you upgrade, and lets you know when you reach the limit. You're never charged surprise overage fees, and the data you've already collected isn't affected.</div>
       </details>
       <details>
         <summary>What are premium features? {{ icons["chevron-down"] }}</summary>
@@ -237,7 +237,7 @@ description: Simple Exceptionless pricing based on monthly events, not seats. Th
       </details>
       <details>
         <summary>Which plans include Exie? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">The Exie AI assistant is included with Medium, Large, Extra Large, and Enterprise plans. Each plan includes a monthly AI usage allowance, and there's nothing extra to set up.</div>
+        <div class="faq-body">The Exie AI assistant is included with Medium, Large, Extra Large, and Enterprise plans. Each plan includes a monthly AI usage allowance. Eligible accounts can also use Exie during an active <a href="/docs/organizations/#free-trial">free trial</a> after verifying their email.</div>
       </details>
       <details>
         <summary>Which plans include the MCP server? {{ icons["chevron-down"] }}</summary>
@@ -263,7 +263,7 @@ description: Simple Exceptionless pricing based on monthly events, not seats. Th
   <div class="container">
     <div class="cta reveal">
       <h2>Get set up in minutes</h2>
-      <p>No credit card required to sign up. Upgrade when you're ready for real-time alerts, integrations, and Exie.</p>
+      <p>No credit card required to sign up. Choose the event allowance and features your team needs.</p>
       <div class="btn-group">
         <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="pricing-footer">Get started {{ icons["arrow-right"] }}</a>
         <a class="btn btn-secondary btn-lg" href="/contact/">Talk to us</a>

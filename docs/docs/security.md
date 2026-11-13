@@ -117,8 +117,9 @@ For example: `*Password*, CreditCard*, SSN`.
 
 The clients download the list with the project's
 [client configuration values](/docs/project-settings/#client-configuration) and remove matching fields before the event
-leaves your app. The server applies the list again to cookies, the query string, and POST data before storing an event,
-which covers clients that haven't picked up a change yet.
+leaves your app. The server applies the list again to cookies, the query string, and supported key/value POST data
+before storing an event, which covers clients that haven't picked up a change yet. Headers and other request body
+formats must be filtered before sending; see [request data](/docs/reference/event-format/#request).
 
 You can also add exclusions in code, so they apply from the first event: `AddDataExclusions` in .NET and
 `addDataExclusions` in JavaScript.

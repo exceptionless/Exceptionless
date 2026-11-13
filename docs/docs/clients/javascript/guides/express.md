@@ -55,13 +55,13 @@ app.get("/boom", () => {
 
 // Report errors. Express treats middleware with four arguments as an error handler.
 app.use(async (err, req, res, next) => {
-  if (res.headersSent) {
-    return next(err)
-  }
-
   await Exceptionless.createUnhandledException(toError(err), "express")
     .setContextProperty(KnownEventDataKeys.RequestInfo, req)
     .submit()
+
+  if (res.headersSent) {
+    return next(err)
+  }
 
   res.status(500).send("Something broke!")
 })

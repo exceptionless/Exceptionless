@@ -41,8 +41,8 @@ clients and the server keep a burst of identical errors from using up your plan.
 | Plan        | Events per month | Retention | Projects  | Users     |
 | ----------- | ---------------- | --------- | --------- | --------- |
 | Free        | 3,000            | 3 days    | 1         | 1         |
-| Small       | 15,000           | 30 days   | 5         | 10        |
-| Medium      | 75,000           | 90 days   | 15        | 25        |
+| Small       | 15,000           | 30 days   | Unlimited | Unlimited |
+| Medium      | 75,000           | 90 days   | Unlimited | Unlimited |
 | Large       | 250,000          | 180 days  | Unlimited | Unlimited |
 | Extra Large | 1,000,000        | 180 days  | Unlimited | Unlimited |
 | Enterprise  | 3,000,000        | 180 days  | Unlimited | Unlimited |
@@ -51,10 +51,14 @@ Yearly plans have the same limits as their monthly versions. See [pricing](/pric
 [Organizations and billing](/docs/organizations/) to change plans. Exie's monthly AI allowance also depends on the plan;
 see [Exie](/docs/ai/exie/).
 
+An eligible [free trial](/docs/organizations/#free-trial) includes premium features, unlimited projects and users,
+75,000 events per calendar month, and 90-day retention. Trial Exie access requires a verified email and has its own
+allowance. When the trial ends without a subscription, Free-plan limits apply.
+
 - Limits apply to the whole organization, across all of its projects.
 - The event count resets at the start of each calendar month, in UTC.
 - The user limit counts pending invites as well as members.
-- You can't create another organization while you belong to one on the Free plan.
+- You can create at most one Free or trial organization at a time.
 
 ### What counts as an event
 

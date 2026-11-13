@@ -94,7 +94,14 @@ Exie is instructed to change data only when you ask for that exact change.
 - In 9.0, Exie shows each lookup and change as it works, lets you stop, retry, or edit a question, and keeps recent
   chats in your browser.
 
-Exie is on Medium plans and up. See [Exie](/docs/ai/exie/).
+Exie is on Medium plans and up, and is available during an eligible [free trial](/docs/organizations/#free-trial) after
+email verification. See [Exie](/docs/ai/exie/).
+
+## Plans and trials
+
+All paid plans now include unlimited projects and users. Eligible accounts can start with a no-card free trial when
+trials are enabled; the default is 14 days. If you don't subscribe, the organization moves to Free when the trial ends.
+See [Organizations and billing](/docs/organizations/#free-trial) for eligibility, allowances, and what happens at expiry.
 
 ## The MCP server and connected apps
 
@@ -161,7 +168,7 @@ The current clients are Exceptionless.Net 6.2.0 and Exceptionless.JavaScript 3.2
 
 ## Self-hosting
 
-- **Runtime.** Exceptionless runs on .NET 10 and Elasticsearch 8.19. The Docker images and Compose files use
+- **Runtime.** Exceptionless runs on .NET 11 and Elasticsearch 8.19. The Docker images and Compose files use
   `exceptionless/elasticsearch:8.19.22`.
 - **One app.** The `app` and all-in-one images serve only the new app.
 - **Trusted reverse proxies.** The API now accepts `X-Forwarded-For` and `X-Forwarded-Proto` only from loopback or from

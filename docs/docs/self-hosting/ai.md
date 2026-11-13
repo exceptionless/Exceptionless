@@ -35,7 +35,8 @@ with their own model, and works without any provider key. This page covers setti
    EX_Assistant__ApiKey: YOUR_OPENROUTER_API_KEY
    ```
 
-   Setting a key turns Exie on, unless you also set `EX_Assistant__Enabled` to `false`.
+   Setting a key enables Exie by default, unless you also set `EX_Assistant__Enabled` to `false`. A saved **Exie
+   availability** override in system settings takes precedence over that deployed default.
 
 3. Restart the containers. Exie appears in the app for organizations whose plan includes it.
 
@@ -77,8 +78,9 @@ Do any of these:
 
 - Go to **Settings** > **System** > **Settings**, turn off **Exie availability**, and select **Save**. This applies to
   every organization right away, without a restart. **Reset** returns to the deployed setting.
-- Set `EX_Assistant__Enabled` to `false` and restart.
-- Remove `EX_Assistant__ApiKey`. Without a key, Exie can't be turned on at runtime.
+- Set `EX_Assistant__Enabled` to `false`, restart, and reset any saved **Exie availability** override to use that
+  deployed setting.
+- Remove `EX_Assistant__ApiKey` and restart. Without a key, Exie can't be turned on at runtime.
 
 ## Set up the MCP server
 
@@ -121,9 +123,9 @@ and the other OAuth settings are in the
 There's no setting that removes the `/mcp` endpoint, but it accepts only OAuth tokens that a user approved with the MCP
 scope. To control access:
 
-- **Allow only clients you create.** Set `EX_OAuthServer__DynamicClientRegistrationIpLimit` to `0` and
-  `EX_OAuthServer__EnableClientIdMetadataDocuments` to `false`. Then only the OAuth apps a global administrator creates
-  under **Settings** > **System** > **OAuth Apps** can connect.
+- **Stop new self-registration.** Set `EX_OAuthServer__DynamicClientRegistrationIpLimit` to `0` and
+  `EX_OAuthServer__EnableClientIdMetadataDocuments` to `false`. Existing self-registered apps can still connect. To
+  allow only administrator-managed apps, also disable the other apps under **Settings** > **System** > **OAuth Apps**.
 - **Cut off one client.** Under **OAuth Apps**, open the client, check **Disabled**, and select **Save Changes**.
   Disabled clients can't authorize, refresh, or use existing access tokens.
 - **Turn it off.** Block `/mcp` at your reverse proxy.

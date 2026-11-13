@@ -54,7 +54,7 @@ Send a token in the `Authorization` header:
 
 ```bash
 curl https://api.exceptionless.io/api/v2/projects \
-  --header "Authorization: Bearer YOUR_API_KEY"
+  --header "Authorization: Bearer YOUR_USER_TOKEN"
 ```
 
 Which token you need depends on the route. A client-scoped API key can send events; reading data and managing your
@@ -90,8 +90,8 @@ account need a user token or an OAuth token. See [Authentication](/docs/api/auth
 | `202` | Accepted for background processing. Event submissions, user descriptions, and bulk deletes return this.      |
 | `304` | Not modified. Returned by `GET /api/v2/projects/config` when the `v` you sent is current.                    |
 | `400` | Bad request, such as an invalid filter, or an event submitted with a user token that has no default project. |
-| `401` | No token, or the token is invalid, expired, disabled, or belongs to a suspended organization.                |
-| `402` | Payment required. The organization has used its plan's events for the month, so new events are rejected.     |
+| `401` | No token, or the token is invalid, expired, disabled, or suspended. A suspended organization blocks its client keys. |
+| `402` | The monthly event limit or five-minute throttle was reached, or a user token submitted events to a suspended organization. |
 | `403` | The token is valid but not allowed to do this. For example, a client-scoped key can't read events.           |
 | `404` | Not found, or you don't have access to it.                                                                   |
 | `409` | Conflict, such as a duplicate.                                                                               |

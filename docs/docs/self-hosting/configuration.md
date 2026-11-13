@@ -1,7 +1,7 @@
 ---
 title: "Configuration"
 metaTitle: "Self-hosted Exceptionless configuration reference"
-description: "Every self-hosted Exceptionless setting: EX_ environment variables, connection strings, email, storage, sign-in providers, OAuth, and AI."
+description: "Self-hosted Exceptionless settings: EX_ environment variables, connection strings, email, storage, sign-in providers, OAuth, and AI."
 sources:
   - src/Exceptionless.Web/Program.cs
   - src/Exceptionless.Web/appsettings.yml
@@ -83,7 +83,7 @@ not in YAML, and restart the container after you change them.
 | `EX_MaxMindGeoIpKey`          | None                                         | A MaxMind license key. A daily job downloads the GeoLite2 City database and uses it to look up locations from IP addresses.                                                                                  |
 | `EX_GoogleGeocodingApiKey`    | None                                         | A Google Geocoding API key used to resolve locations.                                                                                                                                                        |
 | `EX_ExceptionlessApiKey`      | None                                         | An API key for an Exceptionless project that receives this instance's own errors and logs. The web UI reports its errors there too.                                                                          |
-| `EX_ExceptionlessServerUrl`   | None                                         | The server URL shown in the app's client setup instructions. With `EX_ExceptionlessApiKey`, also where this instance sends its own errors; without it, they go to the hosted service in `Production`.        |
+| `EX_ExceptionlessServerUrl`   | Hosted service in `Production`; otherwise none | The server URL shown in the app's client setup instructions. Set it to your instance's URL. With `EX_ExceptionlessApiKey`, it also chooses where this instance sends its own errors. |
 | `EX_InternalProjectId`        | The hosted service's project                 | The ID of the project that receives this instance's own errors, so they aren't processed in a loop.                                                                                                          |
 | `EX_ClientSetupShowServerUrl` | `true`                                       | Set to `false` to leave the server URL out of the client setup instructions.                                                                                                                                 |
 
@@ -172,7 +172,7 @@ Users can sign in with Microsoft, GitHub, or Google once you add that provider's
 Set it as an environment variable on the `app` or all-in-one container, so the web UI shows the matching buttons:
 
 ```bash
-EX_ConnectionStrings__OAuth=MicrosoftId=YOUR_ID;MicrosoftSecret=YOUR_SECRET;GitHubId=YOUR_ID;GitHubSecret=YOUR_SECRET;GoogleId=YOUR_ID;GoogleSecret=YOUR_SECRET
+EX_ConnectionStrings__OAuth='MicrosoftId=YOUR_ID;MicrosoftSecret=YOUR_SECRET;GitHubId=YOUR_ID;GitHubSecret=YOUR_SECRET;GoogleId=YOUR_ID;GoogleSecret=YOUR_SECRET'
 ```
 
 Include only the providers you use. Each provider sends users back to the origin of your web app, such as

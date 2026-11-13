@@ -76,7 +76,7 @@ description: Tour Exceptionless error monitoring, from intelligent stacking and 
         <ul class="check-list">
           <li>{{ icons.check }}<span><strong>Triage faster:</strong> "What are my top errors in the last 24 hours?" or "What changed after version 2.4?"</span></li>
           <li>{{ icons.check }}<span><strong>Understand causes</strong> with explanations grounded in your real stack traces and event data.</span></li>
-          <li>{{ icons.check }}<span><strong>Act when you say so.</strong> Exie can mark stacks fixed, snooze them, or add reference links, but only when you ask.</span></li>
+          <li>{{ icons.check }}<span><strong>Act when you say so.</strong> Exie is instructed to mark stacks fixed, snooze them, or add reference links only when you ask for that change.</span></li>
           <li>{{ icons.check }}<span><strong>Respects your access.</strong> Exie only reads data your account can already see.</span></li>
         </ul>
         <p class="note">Exie is included with Medium plans and up. <a href="/docs/ai/exie/">Read the Exie guide</a>.</p>
@@ -130,8 +130,8 @@ description: Tour Exceptionless error monitoring, from intelligent stacking and 
         <p>Turn on session tracking to see how long people use your app, who is active right now, and every event that happened in a session, right up to the error.</p>
         <ul class="check-list">
           <li>{{ icons.check }}<span><strong>Session dashboard</strong> with totals, averages, users, and duration.</span></li>
-          <li>{{ icons.check }}<span><strong>User identity</strong> on every event, so you can see exactly who was affected.</span></li>
-          <li>{{ icons.check }}<span><strong>Session events</strong> tab on each error to replay the steps that led there.</span></li>
+          <li>{{ icons.check }}<span><strong>User identity</strong> you attach to events, so you can see who was affected.</span></li>
+          <li>{{ icons.check }}<span><strong>Session events</strong> tab on errors with a session ID to review the events that led there.</span></li>
         </ul>
         <a class="text-link" href="/docs/user-sessions/">User sessions {{ icons["arrow-right"] }}</a>
       </div>
@@ -192,7 +192,7 @@ description: Tour Exceptionless error monitoring, from intelligent stacking and 
     </div>
     <div class="grid grid-3">
       <div class="card reveal"><span class="feature-icon">{{ icons.radio }}</span><h3>Real-time event stream</h3><p>Watch events arrive the moment they happen, filtered to the projects and statuses you care about.</p></div>
-      <div class="card reveal"><span class="feature-icon">{{ icons["rotate-ccw"] }}</span><h3>Regression detection</h3><p>Mark a stack fixed in a version and Exceptionless reopens it and alerts you if it comes back in a newer one.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons["rotate-ccw"] }}</span><h3>Regression detection</h3><p>Mark a stack fixed in a version and Exceptionless reopens it and alerts you if it comes back in that version or a newer one.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons["sliders-horizontal"] }}</span><h3>Real-time configuration</h3><p>Push settings and log levels to running clients without changing code or redeploying.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons["eye-off"] }}</span><h3>Data exclusions</h3><p>Strip passwords, card numbers, and any other sensitive fields before events leave your app.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons["file-code"] }}</span><h3>Source maps</h3><p>Readable JavaScript stack traces from minified bundles, discovered automatically or uploaded from CI.</p></div>
@@ -200,7 +200,7 @@ description: Tour Exceptionless error monitoring, from intelligent stacking and 
       <div class="card reveal"><span class="feature-icon">{{ icons["wifi-off"] }}</span><h3>Offline support</h3><p>Clients queue events while disconnected and send them when the connection comes back.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons.command }}</span><h3>Command palette and shortcuts</h3><p>Jump anywhere, switch organizations, and run project actions without leaving the keyboard.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons.moon }}</span><h3>Dark mode and guided tours</h3><p>A light or dark theme that follows your system, plus built-in tours that show new teammates around.</p></div>
-      <div class="card reveal"><span class="feature-icon">{{ icons.users }}</span><h3>Unlimited users on larger plans</h3><p>Invite your whole team on Large plans and up, without per-seat pricing.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons.users }}</span><h3>Unlimited users on paid plans</h3><p>Invite your whole team on any paid plan, without per-seat pricing.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons.code }}</span><h3>A complete REST API</h3><p>Everything in the app is available through a documented API with OpenAPI support.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons.server }}</span><h3>Self-hosting</h3><p>Run the exact same product on your own servers with Docker or Kubernetes. Apache 2.0 licensed, no lock-in.</p></div>
     </div>

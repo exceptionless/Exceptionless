@@ -23,7 +23,8 @@ words, and it looks up stacks and events to answer: which errors are new, how of
 stack trace and request show, and how to fix it. When you ask for a change, Exie can mark a stack fixed, snooze or
 ignore it, set it critical, and add or remove reference links.
 
-Exie is included with the Medium plan and up.
+Exie is included with the Medium plan and up. Eligible accounts can also use it during an active
+[free trial](/docs/organizations/#free-trial), after verifying their email.
 
 ## The MCP server
 
@@ -51,9 +52,9 @@ The main differences:
 |                     | Exie                                                    | MCP server                                     |
 | ------------------- | ------------------------------------------------------- | ---------------------------------------------- |
 | Where it runs       | In the Exceptionless app                                | In your coding agent                           |
-| Plans               | Medium and up                                           | Every plan                                     |
+| Plans               | Medium and up; eligible active trials                   | Every plan                                     |
 | Scope               | The organization you're viewing                         | The organizations you approve when you connect |
-| Changes stacks      | When you ask for a specific change                      | Only with the **Stacks Write** permission      |
+| Changes stacks      | Instructed to act on explicit requests                  | Only with the **Stacks Write** permission      |
 | Which model answers | The model Exceptionless runs Exie on                    | Your agent's own model                         |
 | Tools               | A subset of the MCP tools, scoped to the page you're on | [Every MCP tool](/docs/ai/mcp-server/#tools)   |
 

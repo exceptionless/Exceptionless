@@ -86,9 +86,9 @@ file names such as `app.a1b2c3.js` avoid that problem entirely, because each URL
 - The map is at most 20 MiB, and each download finishes within 3 seconds.
 
 Exceptionless discovers a limited number of new maps for each project in a 15-minute period: 10 for organizations on the
-Free plan and 50 on paid plans, with lower limits for each client API key. An event processed while the limit is reached
-keeps its minified frames, and later events use the map once it's stored. When a download fails, Exceptionless doesn't
-try that file again for 15 minutes.
+Free plan and 50 on paid plans and active trials, with lower limits for each client API key. An event processed while
+the limit is reached keeps its minified frames, and later events use the map once it's stored. When a download fails,
+Exceptionless doesn't try that file again for 15 minutes.
 
 Check that a deployed map is public before you rely on it:
 
@@ -185,8 +185,8 @@ If an uploaded map isn't used:
 
 ## Storage and retention
 
-| Limit                                         | Free plan | Paid plans |
-| --------------------------------------------- | --------- | ---------- |
+| Limit                                         | Free plan | Paid plans and active trials |
+| --------------------------------------------- | --------- | ---------------------------- |
 | Source maps per project                       | 100       | 1,000      |
 | Storage per project                           | 100 MiB   | 1 GiB      |
 | Unused maps are deleted after                 | 14 days   | 90 days    |

@@ -7,12 +7,12 @@
   {
     "name": "Small",
     "monthlyPrice": 15,
-    "description": "15,000 events per month, 30 days of retention, 5 projects and 10 users, and the MCP server."
+    "description": "15,000 events per month, 30 days of retention, unlimited projects and users, and the MCP server."
   },
   {
     "name": "Medium",
     "monthlyPrice": 49,
-    "description": "75,000 events per month, 90 days of retention, 15 projects and 25 users, the Exie AI assistant, and the MCP server."
+    "description": "75,000 events per month, 90 days of retention, unlimited projects and users, the Exie AI assistant, and the MCP server."
   },
   {
     "name": "Large",

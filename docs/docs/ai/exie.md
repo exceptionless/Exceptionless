@@ -31,10 +31,11 @@ sources:
 # Exie
 
 Exie is the AI assistant in the Exceptionless app. Ask it about your errors in plain words. It looks up your stacks and
-events to answer, shows each step it takes, and changes a stack only when you ask it to.
+events to answer and shows each step it takes. It is instructed to change a stack only when you ask for that change.
 
 Exie works in the organization you're viewing and sees only data your account can access. It's included with the Medium
-plan and up. On a smaller plan, opening Exie shows **Upgrade Plan** instead of a chat.
+plan and up. Eligible accounts can also use it during an active [free trial](/docs/organizations/#free-trial), after
+verifying their email. On the Free or Small plan, opening Exie shows **Upgrade Plan** instead of a chat.
 
 ## Open Exie
 
@@ -113,8 +114,8 @@ Exie can make mistakes, so check important changes. You can reverse any of them 
 - **Recent chats** in the panel header lists your last 20 chats in this organization. Select one to continue it, or
   delete it with its trash icon.
 - **New chat** starts over.
-- Chats are saved in your browser, not on the Exceptionless servers. They're kept for 30 days, are separate for each
-  organization, and are removed when you sign out. They don't follow you to another browser.
+- Recent chat history is saved in your browser for 30 days, is separate for each organization, and is removed when you
+  sign out. It doesn't follow you to another browser. Optional conversation logging is controlled by **Chat sharing**.
 
 When you continue a chat, Exie reuses the results it already looked up, until 30 minutes pass without a new lookup.
 After that, it looks them up again. See [AI privacy and security](/docs/ai/privacy/#exie-conversations) for what is
@@ -146,6 +147,7 @@ Each organization's plan sets how much it can use Exie:
 
 | Plan        | Responses at a time | Responses per minute |
 | ----------- | ------------------- | -------------------- |
+| Trial       | 1                   | 5                    |
 | Medium      | 2                   | 10                   |
 | Large       | 3                   | 15                   |
 | Extra Large | 5                   | 25                   |
@@ -157,15 +159,18 @@ the first day of each month (UTC). Limits are shared by everyone in the organiza
 When the organization reaches a limit, Exie says which one and when it resets:
 
 - **Too many at once** or **too quickly:** wait a few seconds and send again.
-- **Monthly allowance:** Exie is unavailable for the organization until the first of next month. If the allowance runs
-  out during an answer, Exie stops that answer.
+- **Monthly allowance:** wait until the first of next month or upgrade to a plan with more allowance. If the allowance
+  runs out during an answer, Exie stops that answer.
+- **Trial capacity:** when configured, trial organizations also share a daily AI capacity limit. If it's reached, wait
+  for the next UTC day or upgrade to Medium or above. Trial access ends when the trial expires.
 
 Each answer also has limits that keep it fast:
 
 - Exie makes up to 12 tool calls in up to 3 rounds, and searches at most 5 projects. When an organization has more
   projects, it says which ones it searched and suggests searching the rest. Pick a project in the scope selector to
   search just that one.
-- A tool call returns at most 10 items, and one event's details are cut to about 16 KB.
+- List and search calls return at most 10 items, and counts return at most 10 groups. One event's details are cut to
+  about 16 KB.
 - An answer that takes longer than 2 minutes stops with what Exie has so far.
 - Exie reads the last 20 messages of a long chat. If a chat gets too long for one answer, start a **New chat**.
 

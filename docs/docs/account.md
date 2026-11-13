@@ -58,8 +58,8 @@ which emails you get for each project. See [Notifications](/docs/notifications/)
 ## AI Tools
 
 The **AI Tools** page has setup commands for connecting a coding agent to the Exceptionless
-[MCP server](/docs/ai/mcp-server/). Choose **Claude Code**, **Codex**, **Copilot**, or **OpenCode**, then run each
-command in order. The commands already contain your instance's server URL. When the agent connects, you approve its
+[MCP server](/docs/ai/mcp-server/). Choose **Claude Code**, **Codex**, **Cursor**, **Copilot**, **OpenCode**, or
+**VS Code**, then follow its commands or install link. The setup already contains your instance's server URL. When the agent connects, you approve its
 access in the browser.
 
 The page ends with **Try asking**, a list of prompts to try once your agent is connected.

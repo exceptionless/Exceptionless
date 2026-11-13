@@ -116,14 +116,17 @@ ExceptionlessClient.Default.Register(showDialog: false);
 ### Send events before the app closes
 
 Unhandled exceptions are sent right away, because the app is about to close. Other events are queued and sent in the
-background. To send what's left in the queue when the user closes the app, call `UnregisterAsync()`, for example from
-WPF's `Application.Exit` handler:
+background. `Register()` installs a handler that flushes the queue when the process exits normally.
+
+If your app controls shutdown, await `UnregisterAsync()` before initiating it. For example, in an asynchronous WPF
+quit workflow that keeps the app open until the flush completes:
 
 ```csharp
-private async void Application_Exit(object sender, ExitEventArgs e) {
-    await ExceptionlessClient.Default.UnregisterAsync();
-}
+await ExceptionlessClient.Default.UnregisterAsync();
+Application.Current.Shutdown();
 ```
+
+Don't start this asynchronous cleanup from `Application.Exit`: WPF doesn't wait for an `async void` exit handler.
 
 Desktop users often lose their connection. To keep unsent events across restarts, store the queue on disk before calling
 `Register()`:

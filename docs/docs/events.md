@@ -98,7 +98,7 @@ An event shows only the tabs it has data for.
 | **Machine & runtime** | Machine name, IP address, OS name and version, architecture, processor count, memory, process name and ID, command line, and runtime version.           |
 | **Request**           | HTTP method, URL, referrer, client IP address, user agent, device, browser, browser OS, post data, headers, cookie values, and additional request data. |
 | **Trace Log**         | The log messages the client recorded before the event.                                                                                                  |
-| **Session Events**    | The other events in the same user session, with the session's duration. Sessions need a paid plan.                                                      |
+| **Session Events**    | The other events in the same user session, with the session's duration. Sessions need a paid plan or an active trial.                                   |
 | **Extended Data**     | Your custom data, one section per key.                                                                                                                  |
 
 On the **Overview** tab:

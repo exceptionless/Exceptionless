@@ -38,8 +38,9 @@ traces and request details, and, with your permission, update stacks while it fi
 > On a self-hosted instance, the server is at `/mcp` on your API URL, for example
 > `https://exceptionless.example.com/mcp`. See [AI features](/docs/self-hosting/ai/) to set it up.
 
-The **AI Tools** page under **My Account** in the app shows setup commands with the server URL for your instance, for
-Claude Code, Codex, the GitHub Copilot CLI, and OpenCode.
+The **AI Tools** page under **My Account** in the app shows setup instructions with the server URL for your instance,
+for Claude Code, Codex, Cursor, the GitHub Copilot CLI, OpenCode, and VS Code. The Cursor and VS Code options include an
+install link and configuration you can copy.
 
 ## Connect your agent
 
@@ -128,7 +129,8 @@ sign in first. The screen shows:
   keep at least one.
 - **Application**, **Redirect URI**, and **Resource:** who is asking and where the token goes. Check that they match the
   agent you're connecting.
-- **Scopes:** the permissions the agent asked for. **MCP** is required. The rest are selected; clear any you don't want.
+- **Scopes:** the requested permissions the application is allowed to use. **MCP** is required. The rest are selected;
+  clear any you don't want.
 
 Select **Approve** to finish, or **Cancel** to deny access.
 
@@ -143,12 +145,16 @@ Select **Approve** to finish, or **Cancel** to deny access.
 
 ### Keep a connection read-only {#read-only}
 
-**Stacks Write** appears on the consent screen only when the agent asks for it. Agents that follow the MCP specification
-ask for every permission the server offers, so expect to see it, already selected. To keep a connection read-only, clear
-**Stacks Write** before you approve.
+**Stacks Write** appears on the consent screen when the agent asks for it and the application allows it. Requested,
+allowed scopes start selected. To keep a connection read-only, clear **Stacks Write** before you approve.
 
-An application that registers without asking for specific permissions is limited to the read-only set: **MCP**,
-**Projects Read**, **Stacks Read**, **Events Read**, and **Offline Access**.
+Self-registered applications can request all supported permissions, including **Stacks Write**. Registration without
+specific permissions also uses a default set that includes **Stacks Write**; it doesn't make the connection read-only.
+The scopes you approve on the consent screen determine access.
+
+Once an administrator saves an application's scopes, that list is enforced. Consent offers the allowed subset of the
+requested scopes. Authorization fails if a required scope such as **MCP** isn't allowed, or if the request includes an
+unsupported scope; restart the agent's authorization flow with a valid request.
 
 If the agent calls a tool it doesn't have permission for, the tool returns an error that names the missing scope. To
 change the permissions of a connection, revoke it and connect again.

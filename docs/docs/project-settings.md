@@ -57,7 +57,7 @@ In the sidebar, open **Settings** > **Projects** and click the project. The sett
 - **Settings**: the default log level, data exclusions, error stacking, source maps, and spam detection.
 - **Configuration**: client configuration values.
 - **Integrations**: Slack, webhooks, and Zapier. See [Integrations](/docs/integrations/).
-- **Stack Management**: every stack in the project, including ignored and discarded ones you want to restore. See
+- **Stack Management**: ignored and discarded stacks by default. Change the filters to see other statuses. See
   [Stacks](/docs/managing-stacks/).
 - **Usage**: the project's event history against the organization's plan limit, including blocked, discarded, too big,
   and deleted events.
@@ -72,8 +72,9 @@ also lists its tabs under **Project Settings**. See [Navigating the app](/docs/n
 
 ## API keys {#api-keys}
 
-A client API key lets an app send events to one project. It can't read your data or change settings, so it's safe to
-ship inside an app.
+A client API key lets an app send events and read client configuration values for one project. It can't read stored
+events or change project settings, and is intended for use in client apps. See [API keys](/docs/security/#api-keys) for
+its permissions.
 
 1. Open the **API Keys** tab.
 2. Click **Add token** and choose:
@@ -163,8 +164,9 @@ Enter a comma-separated list of field names. Matching is case-insensitive, and `
 
 The clients remove matching fields from the data they collect, such as extended data properties, form fields, cookies,
 and query string parameters, before an event leaves your app. The server also removes matching cookies, query string
-parameters, and POST data fields from every event it receives, so those exclusions apply even to clients that don't
-support them. Changes save when you leave the field.
+parameters, and supported key/value POST data fields, so those exclusions apply even to clients that don't support
+them. Filter headers and other request body formats before sending; see
+[request data](/docs/reference/event-format/#request). Changes save when you leave the field.
 
 Turn on **Automatically remove user identifiable information from events** to have the server strip personal data from
 every event in the project: the user identity, the email address on user descriptions, IP addresses, the machine name,

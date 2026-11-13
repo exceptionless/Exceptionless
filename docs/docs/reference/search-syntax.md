@@ -177,7 +177,7 @@ data.signupdate:>2025-01-01
 data.customer:"Acme Corp"
 ```
 
-- Only organizations on a paid plan get custom data indexed, and only for events received while they're on one.
+- Custom data is indexed for events received while the organization has a paid plan or an active trial.
 - Only top-level keys are indexed. A key is indexed when it's 25 characters or fewer and has only letters, digits, and
   hyphens. Keys with underscores, dots, or spaces aren't indexed.
 - Field names are lowercase in searches: a value sent as `OrderId` is searched as `data.orderid`.
@@ -209,8 +209,8 @@ as `2025` or `2025-01`, covers the whole year or month.
 
 On the Free plan, filters can use only these fields: `type`, `environment`, `status`, `date`, `reference`, `project`,
 `stack`, and `organization`. Stack lists also allow `critical`, `first_occurrence`, `last`, and `last_occurrence`. Any
-other field, a term without a field, or a `data.*` field needs a paid plan, and the app offers to upgrade when you use
-one.
+other field, a term without a field, or a `data.*` field needs a paid plan or an active trial, and the app offers to
+upgrade when you use one on the Free plan.
 
 ## Exie and the MCP server
 

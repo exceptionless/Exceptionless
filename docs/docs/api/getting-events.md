@@ -20,7 +20,7 @@ sources:
 Read your events and stacks into scripts, dashboards, and other tools. Reading needs a
 [user token](/docs/api/authentication/#user-tokens) or an
 [OAuth access token](/docs/api/authentication/#oauth-access-tokens) with the `events:read` or `stacks:read` scope.
-Client API keys can only send events, and get `403` here.
+Client API keys can't read events or stacks, and get `403` here.
 
 Responses use `snake_case` property names, like the rest of the API.
 
@@ -89,7 +89,7 @@ These routes return events and take the same parameters:
 | `GET /api/v2/events/sessions/{sessionId}`           | Events in one session.                                                    |
 | `GET /api/v2/projects/{projectId}/events/sessions`  | Session start events in one project. Also by organization and across all. |
 
-The session routes need a paid plan and return `426` on the free plan.
+The session routes need a paid plan or an active trial and return `426` on the Free plan.
 
 ### Parameters {#parameters}
 
@@ -106,7 +106,8 @@ The session routes need a paid plan and return `426` on the free plan.
 | `mode`            | `summary` returns short summaries instead of full events.                                                                                            |
 
 On the free plan, `filter` can only use `type`, `environment`, `date`, `reference_id`, `status`, and organization,
-project, and stack IDs. Other fields, such as tags and custom data, need a paid plan and return `426` on the free plan.
+project, and stack IDs. Other fields, such as tags and custom data, need a paid plan or an active trial and return `426`
+on the Free plan.
 
 ## Get one event {#get-event}
 

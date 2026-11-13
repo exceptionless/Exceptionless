@@ -60,12 +60,13 @@ ExceptionlessClient.Default.CreateLog(typeof(OrderImporter).FullName, "Skipped a
     .Submit();
 ```
 
-The first argument is the log source, usually the class name. Levels are `Trace`, `Debug`, `Info`, `Warn`, `Error`, and
-`Fatal`.
+The message-only overload needs no source. For overloads with both a source and a message, the first argument is the
+source, usually the class name. Levels are `Trace`, `Debug`, `Info`, `Warn`, `Error`, and `Fatal`.
 
 Log events with a level are filtered by the project's [log levels](/docs/setting-log-levels/). Until you set one, the
-client drops log events below `Warn`, unless a [logging integration](/docs/clients/dotnet/logging/) is installed, which
-lets every level through. Set a level for all sources in the app, or set a local default in code:
+client drops log events below `Warn`. The Microsoft.Extensions.Logging provider and NLog target set a default of
+`Trace`, while other integrations differ; see [Logging integrations](/docs/clients/dotnet/logging/). Set a level for all
+sources in the app, or set a local default in code:
 
 ```csharp
 ExceptionlessClient.Default.Configuration.SetDefaultMinLogLevel(LogLevel.Info);

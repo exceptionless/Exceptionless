@@ -32,8 +32,9 @@ Zapier zaps. They're set up per project. Open the project's settings and click t
 
 ![Integrations tab in project settings](/assets/img/docs/integrations-overview-light.webp)
 
-Slack notifications, webhooks, and Zapier need a paid plan. On the Free plan, adding a webhook asks you to upgrade,
-Zapier can't connect, and a connected Slack channel gets no messages.
+Slack notifications, webhooks, and Zapier need a paid plan or an active [free trial](/docs/organizations/#free-trial).
+On the Free plan, adding a webhook asks you to upgrade, Zapier can't connect, and a connected Slack channel gets no
+messages.
 
 ## Slack
 

@@ -16,7 +16,7 @@ sources:
 
 # Client-scoped tokens
 
-A client-scoped token, or client API key, lets an app send events to one project and nothing else. Create one for each
+A client-scoped token, or client API key, lets an app send events and read client configuration for one project. Create one for each
 app or environment so you can turn it off on its own. This page shows how to manage keys in the app and with the API.
 For what each kind of token can do, see [Authentication](/docs/api/authentication/).
 

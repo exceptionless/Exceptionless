@@ -21,8 +21,8 @@ sources:
 
 `@exceptionless/react` reports errors that crash your React components, and everything the
 [browser client](/docs/clients/javascript/guides/browser/) reports: unhandled errors and promise rejections from event
-handlers, effects, and async code. `ExceptionlessErrorBoundary` reports render errors and shows a fallback UI in place
-of the broken part of the page.
+handlers, timers, and async code. `ExceptionlessErrorBoundary` reports render and lifecycle errors and shows a fallback
+UI in place of the broken part of the page.
 
 It requires React 18 or later. For React Native and Expo, use the
 [React Native guide](/docs/clients/javascript/guides/react-native/) instead. For Next.js, see the
@@ -108,9 +108,9 @@ export default function DashboardPanel() {
 }
 ```
 
-React error boundaries don't catch errors in event handlers, effects that run later, or async code. Those reach the
-browser's global handlers, which the client already listens to. Errors you catch yourself are not reported unless you
-submit them:
+Ordinary event handlers and asynchronous callbacks such as timers run outside the error boundary. Unhandled errors from
+them reach the browser's global handlers, which the client already listens to. Errors you catch yourself are not
+reported unless you submit them:
 
 ```jsx
 import { Exceptionless, toError } from "@exceptionless/react"
@@ -156,9 +156,8 @@ If nothing arrives, add `c.useDebugLogger()` to `startup` and check the browser 
 
 ## What is captured automatically
 
-- **Render errors** inside `ExceptionlessErrorBoundary`, with React's component stack stored on the error.
-- **Unhandled errors and promise rejections** anywhere on the page, from event handlers, timers, effects, and async
-  code.
+- **Render and lifecycle errors** inside `ExceptionlessErrorBoundary`, with React's component stack stored on the error.
+- **Unhandled errors and promise rejections** anywhere on the page, from event handlers, timers, and async code.
 - **Request details**: the browser, page URL, referrer, cookies, and query string.
 - Everything else the
   [browser client captures](/docs/clients/javascript/guides/browser/#what-is-captured-automatically), such as ignoring

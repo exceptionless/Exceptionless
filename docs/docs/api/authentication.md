@@ -20,8 +20,7 @@ sources:
 
 # Authentication
 
-Every API request needs a token. This page explains the three kinds of token, what each one can do, and the ways to send
-it.
+Most API requests need a token. This page explains the token types, what each one can do, and the ways to send them.
 
 ## Choose a token {#choose-a-token}
 
@@ -134,7 +133,7 @@ choice, such as a webhook URL or `GET /api/v2/events/submit`.
 
 | Status | Cause                                                                                                                             |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `401`  | No token, or the token is wrong, expired, disabled, or belongs to a suspended organization.                                       |
+| `401`  | No token, or the token is wrong, expired, disabled, or suspended. A suspended organization blocks its client keys.                |
 | `403`  | The token is valid but can't call this route, such as a client API key reading events or an OAuth token without the needed scope. |
 | `404`  | The resource doesn't exist, or it's in an organization or project the token can't reach.                                          |
 

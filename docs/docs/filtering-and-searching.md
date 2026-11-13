@@ -116,7 +116,7 @@ See the [search syntax reference](/docs/reference/search-syntax/) for every fiel
 
 > [!NOTE]
 > On the Free plan, filters can use only a few fields, such as type, environment, status, and project. Other fields,
-> search terms without a field, and custom data need a paid plan. See
+> search terms without a field, and custom data need a paid plan or an active trial. See
 > [Free plan searches](/docs/reference/search-syntax/#free-plan-searches).
 
 ## Set the date range

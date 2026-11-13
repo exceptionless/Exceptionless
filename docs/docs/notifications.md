@@ -31,14 +31,14 @@ Notification settings are per user and per project. Each person in the organizat
 
 ## Which events notify
 
-| Notification              | Sent when                                                                                  | Plan       |
-| ------------------------- | ------------------------------------------------------------------------------------------ | ---------- |
-| **New Errors**            | An error happens that starts a new stack.                                                  | Paid plans |
-| **Critical Errors**       | An error marked critical happens.                                                          | Paid plans |
-| **Error Regressions**     | An event happens in a stack marked fixed, so the stack [regresses](/docs/versioning/).     | Paid plans |
-| **New Events**            | An event of any type starts a new stack, such as a new log message, 404, or feature usage. | Paid plans |
-| **Critical Events**       | An event of any type marked critical happens.                                              | Paid plans |
-| **Daily Project Summary** | Once a day, by email only.                                                                 | All plans  |
+| Notification              | Sent when                                                                                  | Availability                 |
+| ------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------- |
+| **New Errors**            | An error happens that starts a new stack.                                                  | Paid plans and active trials |
+| **Critical Errors**       | An error marked critical happens.                                                          | Paid plans and active trials |
+| **Error Regressions**     | An event happens in a stack marked fixed, so the stack [regresses](/docs/versioning/).     | Paid plans and active trials |
+| **New Events**            | An event of any type starts a new stack, such as a new log message, 404, or feature usage. | Paid plans and active trials |
+| **Critical Events**       | An event of any type marked critical happens.                                              | Paid plans and active trials |
+| **Daily Project Summary** | Once a day, by email only.                                                                 | All plans                    |
 
 An event is critical when its stack has **Future Occurrences Are Critical** turned on (see
 [Stacks](/docs/managing-stacks/)), or when your code marks it with `MarkAsCritical()` in .NET or `markAsCritical()` in
@@ -95,8 +95,8 @@ Slack notifications post to one Slack channel per project:
    **Critical Errors**, **Error Regressions**, **New Events**, and **Critical Events**.
 
 New connections start with **New Errors**, **Critical Errors**, and **Error Regressions** on. Slack notifications follow
-the same rules and limits as email, need a paid plan, and there's no daily summary in Slack. To stop them, click
-**Remove Slack**.
+the same rules and limits as email, need a paid plan or an active trial, and there's no daily summary in Slack. To stop
+them, click **Remove Slack**.
 
 If Slack keeps rejecting messages, for example because the Exceptionless app was removed from the workspace,
 Exceptionless disconnects Slack from the project. Connect it again to resume.

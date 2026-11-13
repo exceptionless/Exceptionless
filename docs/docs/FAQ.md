@@ -16,14 +16,15 @@ sources:
 
 ## Will Exceptionless slow my application down?
 
-No. Submitting an event puts it in an in-memory queue, and the client sends the queue in the background, in batches of
-up to 50 events every 10 seconds. Your code doesn't wait for the network. See the
+The clients queue events for background delivery, in batches of up to 50 events every 10 seconds, so submission doesn't
+wait for the network. Collecting context and processing events still uses CPU and memory. See the
 [client specification](/docs/reference/client-spec/).
 
 ## What happens if my internet connection goes down?
 
 Events stay in the client's queue and are retried later. To keep queued events when the app restarts, turn on persisted
-storage: set `StoragePath` in .NET, or `usePersistedQueueStorage` in JavaScript. The server discards events that arrive
+storage: set `StoragePath` in .NET, or `usePersistedQueueStorage` in JavaScript. The React Native client already uses
+persisted storage by default. The server discards events that arrive
 more than three days after they happened. See [Retention](/docs/concepts/limits/#retention).
 
 ## Why is my organization throttled? {#why-is-my-organization-throttled}
