@@ -5,10 +5,14 @@ metadata:
   name: {{ template "exceptionless.fullname" . }}-storage
 spec:
   accessModes:
-  - ReadWriteMany
-  storageClassName: managed-csi-premium
+  {{- range (.Values.storage.accessModes | default (list "ReadWriteMany")) }}
+  - {{ . }}
+  {{- end }}
+  {{- if .Values.storage.storageClassName }}
+  storageClassName: {{ .Values.storage.storageClassName }}
+  {{- end }}
   resources:
     requests:
-      storage: 5Gi
+      storage: {{ .Values.storage.size | default "5Gi" }}
 
 {{- end -}}

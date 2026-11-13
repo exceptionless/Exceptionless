@@ -30,9 +30,9 @@ data:
     EX_ForwardedHeaders__KnownNetworks__{{ $index }}: {{ $network | quote }}
     {{- end }}
     {{- end }}
-    EX_ConnectionStrings__Elasticsearch: {{ default "server=http://elasticsearch:9200" .Values.elasticsearch.connectionString }}
+    EX_ConnectionStrings__Elasticsearch: {{ default (printf "server=http://%s-elasticsearch:9200" (include "exceptionless.fullname" .)) .Values.elasticsearch.connectionString }}
     {{- if (empty .Values.redis.connectionString) }}
-    EX_ConnectionStrings__Redis: {{ template "exceptionless.fullname" . }}-redis-master,abortConnect=false
+    EX_ConnectionStrings__Redis: {{ template "exceptionless.fullname" . }}-redis,abortConnect=false
     {{- else }}
     EX_ConnectionStrings__Redis: {{ .Values.redis.connectionString }}
     {{- end }}
