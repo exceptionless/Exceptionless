@@ -24,6 +24,8 @@
     import GlobalUser from '#features/users/components/global-user.svelte';
     import { getInitials } from '#shared/strings.ts';
 
+    import SidebarTrialIndicator from './sidebar-trial-indicator.svelte';
+
     type Props = HTMLAttributes<HTMLUListElement> & {
         currentOrganizationId: string | undefined;
         impersonateDialogOpen?: boolean;
@@ -241,6 +243,9 @@
                 </DropdownMenu.Root>
             {/if}
         </Sidebar.MenuItem>
+        {#if !isImpersonating}
+            <SidebarTrialIndicator organization={activeOrganization} />
+        {/if}
     </Sidebar.Menu>
 {:else if isLoading}
     <DelayedRender>

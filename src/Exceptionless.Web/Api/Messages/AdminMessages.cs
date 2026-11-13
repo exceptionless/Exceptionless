@@ -8,7 +8,7 @@ public record AdminRerunMigration(int Version, string? Confirmation, HttpContext
 public record GetAdminMigrationRerun(string OperationId);
 public record GetAdminEcho(HttpContext Context);
 public record GetAdminAssemblies;
-public record AdminChangePlan(string OrganizationId, string PlanId, HttpContext Context);
+public record AdminChangePlan(string OrganizationId, string PlanId, HttpContext Context, DateTimeOffset? TrialEndsUtc = null);
 public record AdminSetBonus(string OrganizationId, int BonusEvents, DateTime? Expires, HttpContext Context);
 public record AdminRequeue(string? Path = null, bool Archive = false);
 public record AdminRunMaintenance(string Name, DateTime? UtcStart, DateTime? UtcEnd, string? OrganizationId);

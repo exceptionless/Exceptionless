@@ -12,6 +12,7 @@
     import { Switch } from '#comp/ui/switch/index.ts';
     import { getEventSubmissionSettingsQuery, putEventSubmissionSettingsMutation } from '#features/admin/api.svelte.ts';
     import AssistantSettings from '#features/admin/components/assistant-settings.svelte';
+    import TrialSettings from '#features/admin/components/trial-settings.svelte';
 
     const settingsQuery = getEventSubmissionSettingsQuery();
     const updateSettings = putEventSubmissionSettingsMutation();
@@ -114,5 +115,7 @@
                 </div>
             {/if}
         </Field.Field>
+        <Separator />
+        <TrialSettings />
     </Field.FieldGroup>
 </div>

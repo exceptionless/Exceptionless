@@ -471,9 +471,13 @@
                 case 'TokenChanged':
                     await invalidateTokenQueries(queryClient, data.message);
                     break;
-                case 'UserChanged':
-                    await invalidateUserQueries(queryClient, data.message);
+                case 'UserChanged': {
+                    const currentUserAffected = await invalidateUserQueries(queryClient, data.message);
+                    if (currentUserAffected) {
+                        await invalidateAssistantAccessQueries(queryClient);
+                    }
                     break;
+                }
                 case 'WebHookChanged':
                     await invalidateWebhookQueries(queryClient, data.message);
                     break;

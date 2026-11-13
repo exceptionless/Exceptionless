@@ -247,6 +247,9 @@ public static class AssistantEndpoints
         AssistantAccessReason.UpgradeRequired => HttpResults.Problem(
             statusCode: StatusCodes.Status426UpgradeRequired,
             title: access.Message),
+        AssistantAccessReason.EmailVerificationRequired => HttpResults.Problem(
+            statusCode: StatusCodes.Status403Forbidden,
+            title: access.Message),
         _ => HttpResults.NotFound()
     };
 

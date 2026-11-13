@@ -25,6 +25,7 @@ public record ViewOrganization : IIdentity, IData, IHaveDates
     public string? BillingChangedByUserId { get; set; }
     public BillingStatus BillingStatus { get; set; }
     public decimal BillingPrice { get; set; }
+    public DateTime? TrialEndsUtc { get; set; }
     public int MaxEventsPerMonth { get; set; }
     public int BonusEventsPerMonth { get; set; }
     public DateTime? BonusExpiration { get; set; }
