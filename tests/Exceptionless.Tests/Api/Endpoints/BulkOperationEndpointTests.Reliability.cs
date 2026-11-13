@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Exceptionless.Core;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.BackgroundTasks;
@@ -16,6 +17,7 @@ using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Foundatio.Repositories.Utility;
@@ -39,11 +41,11 @@ public partial class BulkOperationEndpointTests
         var repository = new Mock<IEventRepository>();
         repository.Setup(r => r.FindAsync(It.IsAny<IRepositoryQuery>(), It.IsAny<ICommandOptions>()))
             .Callback<IRepositoryQuery, ICommandOptions?>((_, options) => capturedOptions = options)
-            .ReturnsAsync(new FindResults<PersistentEvent>());
+            .ReturnsAsync(new FindResults<PersistentEvent>(data: new Dictionary<string, object?> { [ElasticDataKeys.PointInTimeId] = "snapshot" }));
         var resolver = CreateResolver(repository.Object);
 
         // Act
-        await resolver.GetPageAsync(NewRecordingOperation("test.record"), "{}", null, 10, TestCancellationToken);
+        await resolver.GetPageAsync(NewRecordingOperation("test.record"), "{\"version\":1,\"point_in_time_id\":\"snapshot\",\"total\":1}", null, 10, TestCancellationToken);
 
         // Assert
         Assert.NotNull(capturedOptions);
@@ -56,7 +58,7 @@ public partial class BulkOperationEndpointTests
         // Arrange
         const string message = "Event filter resulted in too many matching stacks (30000 of 20000 max). Please limit your search criteria.";
         var repository = new Mock<IEventRepository>();
-        repository.Setup(r => r.CountAsync(It.IsAny<IRepositoryQuery>(), It.IsAny<ICommandOptions>())).ThrowsAsync(new DocumentLimitExceededException(message));
+        repository.Setup(r => r.FindAsync(It.IsAny<IRepositoryQuery>(), It.IsAny<ICommandOptions>())).ThrowsAsync(new DocumentLimitExceededException(message));
         var service = CreateService([GetService<DeleteEventsBulkOperationHandler>()], [CreateResolver(repository.Object)]);
 
         // Act
@@ -451,8 +453,14 @@ public partial class BulkOperationEndpointTests
 
     private EventBulkSelectionResolver CreateResolver(IEventRepository eventRepository)
     {
-        return new EventBulkSelectionResolver(eventRepository, GetService<IOrganizationRepository>(), GetService<IProjectRepository>(),
-            GetService<PersistentEventQueryValidator>(), GetService<ITextSerializer>(), GetService<Exceptionless.Core.Repositories.Configuration.ExceptionlessElasticConfiguration>());
+        var organizations = GetService<IOrganizationRepository>();
+        var projects = GetService<IProjectRepository>();
+        var validator = GetService<PersistentEventQueryValidator>();
+        var serializer = GetService<ITextSerializer>();
+        var configuration = GetService<Exceptionless.Core.Repositories.Configuration.ExceptionlessElasticConfiguration>();
+        var appOptions = GetService<AppOptions>();
+        var options = GetService<BulkOperationOptions>();
+        return new EventBulkSelectionResolver(eventRepository, organizations, projects, validator, serializer, configuration, appOptions, options);
     }
 
     private BackgroundTask NewIdsOperation(string type)

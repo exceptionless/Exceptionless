@@ -49,8 +49,8 @@ public interface IBulkSelectionResolver
 
     /// <summary>
     /// Runs once when the task is created. Counts what matches and pins every part of the selection that could
-    /// otherwise change while the task runs (for events, the stack level filter), so the selection stays exactly
-    /// what the user confirmed and pages stay cheap. The pinned state is stored with the task for its lifetime.
+    /// otherwise change while the task runs, so pages never expand beyond what the user confirmed. Current access
+    /// policy may still narrow that membership. The pinned state is stored with the task for its lifetime.
     /// </summary>
     Task<BulkSelectionPreparation> PrepareAsync(BackgroundTask task, CancellationToken cancellationToken);
 
@@ -59,6 +59,12 @@ public interface IBulkSelectionResolver
     /// paging stays correct while earlier items are being deleted or changed. Paging must not count totals.
     /// </summary>
     Task<BulkSelectionPage> GetPageAsync(BackgroundTask task, string? pinnedState, string? cursor, int size, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Best-effort release of selection resources when creation is rejected or a task is terminal. Active retries and
+    /// host shutdown keep their resources so they can resume. Implementations must tolerate duplicate cleanup.
+    /// </summary>
+    Task ReleaseAsync(BackgroundTask task, string? pinnedState, string? cursor) => Task.CompletedTask;
 }
 
 public record BulkSelectionPreparation(BulkOperationCheckResult Check, long Total = 0, string? PinnedState = null)
@@ -68,7 +74,7 @@ public record BulkSelectionPreparation(BulkOperationCheckResult Check, long Tota
 
 public record BulkSelectionPage(IReadOnlyList<string> Ids, string? NextCursor);
 
-/// <summary>A previously accepted selection can no longer run under the organization's current plan.</summary>
+/// <summary>A previously accepted selection can no longer run with its saved membership or current access policy.</summary>
 public sealed class BulkSelectionRejectedException(BulkOperationCheckResult check) : InvalidOperationException(check.Message)
 {
     public BulkOperationCheckResult Check { get; } = check;

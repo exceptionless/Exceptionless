@@ -1,10 +1,14 @@
+using Exceptionless.Core;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Core.Utility;
 using Foundatio.Repositories;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Services.BulkOperations;
@@ -16,8 +20,9 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
 
     public EventBulkSelectionResolverTests(ITestOutputHelper output, AppWebHostFactory factory) : base(output, factory)
     {
-        _resolver = GetService<EventBulkSelectionResolver>();
         _eventRepository = GetService<IEventRepository>();
+        // Exercise retained snapshots with a small fixture that crosses the actual preparation boundary.
+        _resolver = CreateResolver(batchSize: 2);
     }
 
     protected override async Task ResetDataAsync()
@@ -62,16 +67,27 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
         var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
         var ordered = events.OrderByDescending(e => e.Date).Select(e => e.Id).ToArray();
 
-        // Act
-        var first = await _resolver.GetPageAsync(task, preparation.PinnedState, null, 2, TestCancellationToken);
-        await _eventRepository.RemoveAsync(events.Where(e => first.Ids.Contains(e.Id)).ToList(), o => o.ImmediateConsistency());
-        var second = await _resolver.GetPageAsync(task, preparation.PinnedState, first.NextCursor, 2, TestCancellationToken);
-        var third = await _resolver.GetPageAsync(task, preparation.PinnedState, second.NextCursor, 2, TestCancellationToken);
+        string? cursor = null;
+        try
+        {
+            // Act
+            var first = await _resolver.GetPageAsync(task, preparation.PinnedState, cursor, 2, TestCancellationToken);
+            cursor = first.NextCursor;
+            await _eventRepository.RemoveAsync(events.Where(e => first.Ids.Contains(e.Id)).ToList(), o => o.ImmediateConsistency());
+            var second = await _resolver.GetPageAsync(task, preparation.PinnedState, cursor, 2, TestCancellationToken);
+            cursor = second.NextCursor;
+            var third = await _resolver.GetPageAsync(task, preparation.PinnedState, cursor, 2, TestCancellationToken);
+            cursor = third.NextCursor;
 
-        // Assert
-        Assert.Equal(ordered[..2], first.Ids.ToArray());
-        Assert.Equal(ordered[2..4], second.Ids.ToArray());
-        Assert.Equal(ordered[4..], third.Ids.ToArray());
+            // Assert
+            Assert.Equal(ordered[..2], first.Ids.ToArray());
+            Assert.Equal(ordered[2..4], second.Ids.ToArray());
+            Assert.Equal(ordered[4..], third.Ids.ToArray());
+        }
+        finally
+        {
+            await _resolver.ReleaseAsync(task, preparation.PinnedState, cursor);
+        }
     }
 
     [Fact]
@@ -118,19 +134,111 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
         Assert.Equal([events.Single(e => e.Message == "open").Id], pages.SelectMany(p => p).ToArray());
     }
 
-    [Fact]
-    public async Task GetPageAsync_NothingWasPrepared_ReturnsAnEmptyPageInsteadOfSelectingEverything()
+    [Theory]
+    [InlineData(2)]
+    [InlineData(10)]
+    public async Task GetPageAsync_SessionValuesChangeBetweenBatches_KeepsOnlyTheOriginallyMatchingEvents(int preparationSize)
     {
         // Arrange
-        await CreateDataAsync(d => d.Event().TestProject());
-        var task = NewFilterTask("");
+        var now = TimeProvider.GetUtcNow();
+        var (_, events) = await CreateDataAsync(data =>
+        {
+            for (int i = 0; i < 3; i++)
+                data.Event().TestProject().Type(Event.KnownTypes.Session).Date(now.AddMinutes(-i - 1)).Value(90).Message($"selected {i}");
+            data.Event().TestProject().Type(Event.KnownTypes.Session).Date(now.AddMinutes(-4)).Value(30).Message("not selected");
+        });
+        var resolver = CreateResolver(preparationSize);
+        var task = NewFilterTask("type:session value:[60 TO 120]");
+        var preparation = await resolver.PrepareAsync(task, TestCancellationToken);
+        var expected = events.Where(e => e.Value == 90).OrderByDescending(e => e.Date).Select(e => e.Id).ToArray();
+        string? cursor = null;
+        var actual = new List<string>();
+        try
+        {
+            // Act
+            var first = await resolver.GetPageAsync(task, preparation.PinnedState, cursor, 1, TestCancellationToken);
+            cursor = first.NextCursor;
+            actual.AddRange(first.Ids);
+            await _eventRepository.RemoveAsync(events.Where(e => first.Ids.Contains(e.Id)).ToList(), options => options.ImmediateConsistency());
+
+            var newlyMatching = events.Single(e => e.Message == "not selected");
+            var noLongerMatching = events.Single(e => e.Message == "selected 1");
+            // Active-session processing changes existing values without changing created_utc.
+            newlyMatching.UpdateSessionStart(newlyMatching.Date.UtcDateTime.AddSeconds(90));
+            noLongerMatching.UpdateSessionStart(noLongerMatching.Date.UtcDateTime.AddSeconds(180));
+            await _eventRepository.SaveAsync([newlyMatching, noLongerMatching], options => options.ImmediateConsistency());
+
+            var second = await resolver.GetPageAsync(task, preparation.PinnedState, cursor, 1, TestCancellationToken);
+            cursor = second.NextCursor;
+            actual.AddRange(second.Ids);
+            var third = await resolver.GetPageAsync(task, preparation.PinnedState, cursor, 1, TestCancellationToken);
+            cursor = third.NextCursor;
+            actual.AddRange(third.Ids);
+            var exhausted = await resolver.GetPageAsync(task, preparation.PinnedState, cursor, 1, TestCancellationToken);
+
+            // Assert
+            Assert.Equal(3, preparation.Total);
+            Assert.Equal(90m, newlyMatching.Value);
+            Assert.Equal(180m, noLongerMatching.Value);
+            Assert.Equal(expected, actual);
+            Assert.Empty(exhausted.Ids);
+            Assert.DoesNotContain(newlyMatching.Id, actual);
+            Assert.Contains(noLongerMatching.Id, actual);
+        }
+        finally
+        {
+            await resolver.ReleaseAsync(task, preparation.PinnedState, cursor);
+        }
+    }
+
+    [Fact]
+    public async Task PrepareAsync_NoEventsMatch_ReturnsAnEmptyFixedSelection()
+    {
+        // Arrange
+        await CreateDataAsync(data => data.Event().TestProject().Type(Event.KnownTypes.Log));
+        var task = NewFilterTask("type:session");
 
         // Act
-        var page = await _resolver.GetPageAsync(task, null, null, 10, TestCancellationToken);
+        var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
+        var page = await _resolver.GetPageAsync(task, preparation.PinnedState, null, 1, TestCancellationToken);
 
         // Assert
+        Assert.True(preparation.Check.IsOk);
+        Assert.Equal(0, preparation.Total);
+        Assert.NotNull(preparation.PinnedState);
         Assert.Empty(page.Ids);
         Assert.Null(page.NextCursor);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(10)]
+    public async Task GetPageAsync_RetentionShrinksAfterPreparation_ExcludesOlderSelectedEventsAndKeepsRecentOnes(int preparationSize)
+    {
+        // Arrange
+        var now = TimeProvider.GetUtcNow();
+        var organizations = GetService<IOrganizationRepository>();
+        var organization = await organizations.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        organization!.CreatedUtc = now.UtcDateTime.AddDays(-30);
+        organization.RetentionDays = 7;
+        await organizations.SaveAsync(organization, options => options.ImmediateConsistency());
+        var (_, events) = await CreateDataAsync(data =>
+        {
+            data.Event().TestProject().Date(now.AddHours(-1)).Message("recent");
+            data.Event().TestProject().Date(now.AddDays(-4)).Message("older");
+        });
+        var resolver = CreateResolver(preparationSize);
+        var task = NewFilterTask("");
+        var preparation = await resolver.PrepareAsync(task, TestCancellationToken);
+
+        // Act
+        organization.RetentionDays = 1;
+        await organizations.SaveAsync(organization, options => options.ImmediateConsistency());
+        var pages = await GetAllPagesAsync(task, preparation.PinnedState, size: 1, resolver);
+
+        // Assert
+        Assert.Equal(2, preparation.Total);
+        Assert.Equal([events.Single(e => e.Message == "recent").Id], pages.SelectMany(page => page).ToArray());
     }
 
     [Fact]
@@ -222,21 +330,41 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
             Assert.Equal("selection.filter", result.Field);
     }
 
-    private async Task<List<List<string>>> GetAllPagesAsync(BackgroundTask task, string? pinnedState, int size)
+    private async Task<List<List<string>>> GetAllPagesAsync(BackgroundTask task, string? pinnedState, int size, EventBulkSelectionResolver? resolver = null)
     {
+        resolver ??= _resolver;
         var pages = new List<List<string>>();
         string? cursor = null;
-        for (int guard = 0; guard < 20; guard++)
+        try
         {
-            var page = await _resolver.GetPageAsync(task, pinnedState, cursor, size, TestCancellationToken);
-            if (page.Ids.Count == 0)
-                return pages;
+            for (int guard = 0; guard < 20; guard++)
+            {
+                var page = await resolver.GetPageAsync(task, pinnedState, cursor, size, TestCancellationToken);
+                cursor = page.NextCursor ?? cursor;
+                if (page.Ids.Count == 0)
+                    return pages;
 
-            pages.Add(page.Ids.ToList());
-            cursor = page.NextCursor;
+                pages.Add(page.Ids.ToList());
+            }
+
+            throw new InvalidOperationException("Paging did not finish.");
         }
+        finally
+        {
+            await resolver.ReleaseAsync(task, pinnedState, cursor);
+        }
+    }
 
-        throw new InvalidOperationException("Paging did not finish.");
+    private EventBulkSelectionResolver CreateResolver(int batchSize)
+    {
+        var organizations = GetService<IOrganizationRepository>();
+        var projects = GetService<IProjectRepository>();
+        var validator = GetService<PersistentEventQueryValidator>();
+        var serializer = GetService<ITextSerializer>();
+        var configuration = GetService<ExceptionlessElasticConfiguration>();
+        var appOptions = GetService<AppOptions>();
+        return new EventBulkSelectionResolver(_eventRepository, organizations, projects, validator, serializer, configuration, appOptions,
+            new BulkOperationOptions { BatchSize = batchSize });
     }
 
     private BackgroundTask NewFilterTask(string filter, DateTime? createdBefore = null)

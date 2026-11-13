@@ -69,6 +69,9 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         ArgumentException.ThrowIfNullOrWhiteSpace(workItem.TaskId);
 
         BackgroundTask? task = null;
+        BackgroundTask? selectionTask = null;
+        string? pinnedSelection = null;
+        string? latestSelectionCursor = null;
         try
         {
             task = await _taskService.GetAsync(workItem.TaskId);
@@ -80,6 +83,8 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
                 return;
             }
 
+            selectionTask = task;
+            latestSelectionCursor = task.Bulk?.Cursor;
             using var _ = Log.BeginScope(new ExceptionlessState().Organization(task.OrganizationId).Tag("BulkOperation"));
             if (!task.IsActive)
             {
@@ -100,7 +105,6 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
                 return;
             }
 
-            string? pinnedSelection = null;
             if (task.Bulk!.Selection.Kind is BulkOperationSelectionKind.Filter)
             {
                 pinnedSelection = await _service.GetPinnedSelectionAsync(task.Id);
@@ -148,6 +152,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
                 }
 
                 var page = await GetPageAsync(task, resolver, pinnedSelection, context.CancellationToken);
+                latestSelectionCursor = page.NextCursor ?? latestSelectionCursor;
                 if (page.Ids.Count == 0)
                     break;
 
@@ -252,6 +257,38 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         {
             Log.LogError(ex, "Bulk operation {TaskId} failed: {Message}", workItem.TaskId, ex.Message);
             await FinishAsync(workItem, BackgroundTaskStatus.Failed, "The operation stopped because of an unexpected error.");
+        }
+        finally
+        {
+            try
+            {
+                // FinishAsync and enqueue acknowledgement races can change the stored outcome without changing the local
+                // task. Only terminal/lost work releases its selection; active continuation and shutdown must retain it.
+                var saved = await _taskService.GetAsync(workItem.TaskId);
+                if (saved?.IsActive != true)
+                {
+                    var finished = saved ?? selectionTask;
+                    if (finished is null && workItem.Type is not null)
+                    {
+                        // The selection may outlive a lost task record. The work item still identifies its resolver.
+                        finished = new BackgroundTask
+                        {
+                            Id = workItem.TaskId,
+                            OrganizationId = workItem.OrganizationId,
+                            Type = workItem.Type,
+                            Bulk = new BulkOperationDetails { Selection = new BulkOperationSelection { Kind = BulkOperationSelectionKind.Filter } }
+                        };
+                    }
+
+                    if (finished is not null)
+                        await _service.ReleaseSelectionAsync(finished, pinnedSelection, latestSelectionCursor);
+                }
+            }
+            catch (Exception ex)
+            {
+                // A bounded snapshot lease is the fallback when the task store or search backend is unavailable.
+                Log.LogWarning(ex, "Could not check bulk operation {TaskId} for selection cleanup: {Message}", workItem.TaskId, ex.Message);
+            }
         }
     }
 

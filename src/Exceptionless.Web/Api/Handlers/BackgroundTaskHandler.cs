@@ -153,6 +153,9 @@ public class BackgroundTaskHandler(
         if (cancelled.IsNotCancellable)
             return Result.Invalid(ValidationError.Create("task", "This task cannot be cancelled."));
 
+        if (!cancelled.Task.IsActive)
+            await bulkOperationService.ReleaseSelectionAsync(cancelled.Task);
+
         logger.LogInformation("User {User} requested cancellation of task {TaskId}", HttpContext.Request.GetUser().Id, cancelled.Task.Id);
         return new AcceptedResponse<ViewBackgroundTask>(MapToViewModel(cancelled.Task));
     }

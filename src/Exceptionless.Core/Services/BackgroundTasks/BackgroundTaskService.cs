@@ -116,7 +116,9 @@ public class BackgroundTaskService
     /// <summary>The ids of the organization's tasks that have not finished.</summary>
     public async Task<IReadOnlyList<string>> GetActiveIdsAsync(string organizationId)
     {
-        return (await GetIndexedIdsAsync(GetActiveIndexCacheKey(organizationId))).Distinct(StringComparer.Ordinal).ToList();
+        // Completion removes ids concurrently. Read one snapshot so a removal cannot shift an unread id past a page offset.
+        var ids = await _cache.GetListAsync<string>(GetActiveIndexCacheKey(organizationId));
+        return ids.HasValue ? ids.Value.Distinct(StringComparer.Ordinal).ToList() : [];
     }
 
     /// <summary>Puts a task that is running again (for example after a queue retry) back into the active index.</summary>
@@ -143,8 +145,20 @@ public class BackgroundTaskService
         task.UpdatedUtc = utcNow;
 
         await SaveAsync(task);
-        await _cache.ListAddAsync(GetOrganizationIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime);
-        await _cache.ListAddAsync(GetActiveIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime);
+        try
+        {
+            if (await _cache.ListAddAsync(GetOrganizationIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime) != 1)
+                throw new InvalidOperationException("The background task could not be added to the organization index.");
+
+            if (await _cache.ListAddAsync(GetActiveIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime) != 1)
+                throw new InvalidOperationException("The background task could not be added to the active index.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to index background task {TaskId}: {Message}", task.Id, ex.Message);
+            await FailToStartAsync(task.Id);
+            throw;
+        }
     }
 
     /// <summary>
@@ -158,8 +172,8 @@ public class BackgroundTaskService
     }
 
     /// <summary>
-    /// Prepares and queues the work item of a task that was added and publishes it. When preparation or queueing fails
-    /// the task is failed, because nothing would ever run it, and the error is rethrown.
+    /// Prepares and queues the work item of a task that was added and publishes it. When preparation or queueing fails,
+    /// a task that is still queued is failed and the error is rethrown. Worker progress and cancellation are preserved.
     /// </summary>
     public async Task EnqueueAsync<T>(BackgroundTask task, T workItem, Func<Task>? beforeEnqueue = null) where T : class
     {
@@ -173,12 +187,7 @@ public class BackgroundTaskService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unable to queue background task {TaskId}: {Message}", task.Id, ex.Message);
-            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-            task.Finish(BackgroundTaskStatus.Failed, "The task could not be started. Please try again.", utcNow);
-            task.UpdatedUtc = utcNow;
-            await SaveAsync(task);
-            await RemoveFromActiveIndexAsync(task.OrganizationId, [task.Id]);
-            await PublishAsync(task);
+            await FailToStartAsync(task.Id);
             throw;
         }
 
@@ -307,6 +316,19 @@ public class BackgroundTaskService
         {
             _logger.LogWarning(ex, "Failed to publish background task update for {TaskId}: {Message}", message.Id, ex.Message);
         }
+    }
+
+    private Task FailToStartAsync(string id)
+    {
+        return UpdateAsync(id, current =>
+        {
+            // Queueing may have succeeded before its acknowledgement failed, allowing a worker or user to advance the task.
+            if (current.Status is not BackgroundTaskStatus.Queued)
+                return false;
+
+            current.Finish(BackgroundTaskStatus.Failed, "The task could not be started. Please try again.", _timeProvider.GetUtcNow().UtcDateTime);
+            return true;
+        });
     }
 
     private async Task<List<string>> GetIndexedIdsAsync(string key)

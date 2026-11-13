@@ -1,3 +1,4 @@
+using System.Globalization;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Parsers.LuceneQueries;
 using Foundatio.Parsers.LuceneQueries.Nodes;
@@ -31,7 +32,7 @@ public static class RelativeDateFreezer
     private sealed class FreezeRelativeDatesVisitor(DateTime utcNow, Func<string, ValueTask<bool>> isDateFieldAsync) : ChainableQueryVisitor
     {
         // Elasticsearch date math anchors an expression on a date with ||, for example 2026-11-03T04:00:00.000Z||/d-4d.
-        private readonly string _anchor = $"{utcNow.ToUniversalTime():yyyy-MM-ddTHH:mm:ss.fffZ}||";
+        private readonly string _anchor = utcNow.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture) + "||";
 
         public override async Task VisitAsync(GroupNode node, IQueryVisitorContext context)
         {

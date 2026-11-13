@@ -118,10 +118,14 @@ public class BulkOperationWorkItemHandlerTests(ITestOutputHelper output) : TestW
         Assert.Equal(ids.Length, stored.Succeeded);
         Assert.Equal(0, stored.Failed);
         Assert.Equal(ids, executedIds);
+        Assert.Equal(kind is BulkOperationSelectionKind.Filter ? 1 : 0, resolver.Releases.Count);
+        Assert.All(resolver.Releases, release => Assert.Equal(stored.Bulk!.Cursor, release.Cursor));
     }
 
-    [Fact]
-    public async Task HandleItemAsync_HostStopsAfterSuccessfulBatch_PersistsItsResultBeforeStopping()
+    [Theory]
+    [InlineData(BulkOperationSelectionKind.Ids)]
+    [InlineData(BulkOperationSelectionKind.Filter)]
+    public async Task HandleItemAsync_HostStopsAfterSuccessfulBatch_PersistsItsResultBeforeStopping(BulkOperationSelectionKind kind)
     {
         // Arrange
         string[] ids = ["first", "second", "third"];
@@ -145,7 +149,7 @@ public class BulkOperationWorkItemHandlerTests(ITestOutputHelper output) : TestW
         });
         var resolver = new RemainingIdsResolver(remaining);
         var service = CreateService(harness, operationHandler, resolver);
-        var created = await service.CreateAsync(NewTask(ids));
+        var created = await service.CreateAsync(NewTask(ids, kind));
         var handler = CreateHandler(harness, service, resolver, batchSize: 2);
         var interruptedContext = CreateContext(created.Task!.Id, shutdown.Token);
 
@@ -159,6 +163,7 @@ public class BulkOperationWorkItemHandlerTests(ITestOutputHelper output) : TestW
         Assert.Equal(BackgroundTaskStatus.Running, interrupted.Status);
         Assert.Equal(2, interrupted.Processed);
         Assert.Equal(2, interrupted.Succeeded);
+        Assert.Empty(resolver.Releases);
 
         // Act
         await handler.HandleItemAsync(CreateContext(created.Task.Id, TestCancellationToken));
@@ -171,6 +176,7 @@ public class BulkOperationWorkItemHandlerTests(ITestOutputHelper output) : TestW
         Assert.Equal(0, completed.Failed);
         Assert.Equal(ids, executedIds);
         Assert.Empty(remaining);
+        Assert.Equal(kind is BulkOperationSelectionKind.Filter ? 1 : 0, resolver.Releases.Count);
     }
 
     [Theory]
@@ -351,9 +357,9 @@ public class BulkOperationWorkItemHandlerTests(ITestOutputHelper output) : TestW
             shutdown.Cancel();
             return Task.FromException<BulkBatchResult>(new TimeoutException("Search interrupted during shutdown"));
         });
-        var resolver = new RemainingIdsResolver([]);
+        var resolver = new RemainingIdsResolver(["first"]);
         var service = CreateService(harness, operationHandler, resolver);
-        var created = await service.CreateAsync(NewTask(["first"]));
+        var created = await service.CreateAsync(NewTask(["first"], BulkOperationSelectionKind.Filter));
         var handler = CreateHandler(harness, service, resolver, batchSize: 1, retryDelay: TimeSpan.FromSeconds(5));
         var context = CreateContext(created.Task!.Id, shutdown.Token);
 
@@ -371,6 +377,7 @@ public class BulkOperationWorkItemHandlerTests(ITestOutputHelper output) : TestW
         Assert.Equal(1, stored.Bulk!.RetryCount);
         Assert.Contains(stored.Id, await harness.Tasks.GetActiveIdsAsync(OrganizationId));
         Assert.Equal(1, stats.Enqueued);
+        Assert.Empty(resolver.Releases);
     }
 
     [Theory]
@@ -410,6 +417,46 @@ public class BulkOperationWorkItemHandlerTests(ITestOutputHelper output) : TestW
         Assert.Equal(1, stats.Enqueued);
         Assert.Equal(1, stats.Completed);
         Assert.Empty(await harness.Tasks.GetActiveIdsAsync(OrganizationId));
+        var released = Assert.Single(resolver.Releases);
+        Assert.Equal("{}", released.PinnedState);
+        Assert.Equal(stored.Bulk.Cursor, released.Cursor);
+    }
+
+    [Fact]
+    public async Task HandleItemAsync_TransientFailure_KeepsTheSelectionUntilContinuationCompletes()
+    {
+        // Arrange
+        using var harness = new BackgroundTaskTestHarness(_time, Log);
+        var remaining = new HashSet<string>(["first"], StringComparer.Ordinal);
+        int attempts = 0;
+        var operationHandler = new DelegateBulkHandler(batch => ++attempts == 1
+            ? Task.FromException<BulkBatchResult>(new TimeoutException("Search temporarily unavailable"))
+            : Task.FromResult(new BulkBatchResult(batch.Count(remaining.Remove), 0)));
+        var resolver = new RemainingIdsResolver(remaining);
+        var service = CreateService(harness, operationHandler, resolver);
+        var created = await service.CreateAsync(NewTask(["first"], BulkOperationSelectionKind.Filter));
+        var handler = CreateHandler(harness, service, resolver, batchSize: 1);
+
+        // Act
+        await handler.HandleItemAsync(CreateContext(created.Task!.Id, TestCancellationToken));
+        var interrupted = await harness.Tasks.GetAsync(created.Task.Id);
+
+        // Assert
+        Assert.NotNull(interrupted);
+        Assert.Equal(BackgroundTaskStatus.Running, interrupted.Status);
+        Assert.Equal(1, interrupted.Bulk!.RetryCount);
+        Assert.Empty(resolver.Releases);
+        Assert.Equal(2, (await harness.Queue.GetQueueStatsAsync()).Enqueued);
+
+        // Act
+        await handler.HandleItemAsync(CreateContext(created.Task.Id, TestCancellationToken));
+        var completed = await harness.Tasks.GetAsync(created.Task.Id);
+
+        // Assert
+        Assert.NotNull(completed);
+        Assert.Equal(BackgroundTaskStatus.Completed, completed.Status);
+        Assert.Equal(1, completed.Succeeded);
+        Assert.Single(resolver.Releases);
     }
 
     private BulkOperationService CreateService(BackgroundTaskTestHarness harness, IBulkOperationHandler handler, IBulkSelectionResolver resolver)
@@ -470,6 +517,7 @@ public class BulkOperationWorkItemHandlerTests(ITestOutputHelper output) : TestW
         private int _calls;
 
         public Func<int, Exception?>? Failure { get; init; }
+        public List<(string? PinnedState, string? Cursor)> Releases { get; } = [];
         public BulkOperationEntity Entity => BulkOperationEntity.Events;
         public Task<BulkOperationCheckResult> ValidateSelectionAsync(Organization organization, BulkOperationSelection selection) => Task.FromResult(BulkOperationCheckResult.Ok);
         public Task<BulkSelectionPreparation> PrepareAsync(BackgroundTask task, CancellationToken cancellationToken) => Task.FromResult(new BulkSelectionPreparation(BulkOperationCheckResult.Ok, remaining.Count, "{}"));
@@ -481,6 +529,12 @@ public class BulkOperationWorkItemHandlerTests(ITestOutputHelper output) : TestW
 
             string[] ids = remaining.Order(StringComparer.Ordinal).Take(size).ToArray();
             return Task.FromResult(new BulkSelectionPage(ids, ids.LastOrDefault()));
+        }
+
+        public Task ReleaseAsync(BackgroundTask task, string? pinnedState, string? cursor)
+        {
+            Releases.Add((pinnedState, cursor));
+            return Task.CompletedTask;
         }
     }
 

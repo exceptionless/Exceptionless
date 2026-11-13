@@ -1,6 +1,8 @@
 using Exceptionless.Core.Models.BackgroundTasks;
+using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Services.BackgroundTasks;
+using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -84,6 +86,35 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         Assert.Empty(active);
         Assert.Equal(0, queued.Enqueued);
         Assert.Empty(harness.Publisher.Updates);
+    }
+
+    [Theory]
+    [InlineData(true, typeof(MaxEntrySizeExceededCacheException))]
+    [InlineData(false, typeof(InvalidOperationException))]
+    public async Task CreateAndEnqueueAsync_IndexCannotBeStored_DoesNotQueueOrLeaveAnActiveTask(bool throwOnRejection, Type expectedExceptionType)
+    {
+        // Arrange
+        using var harness = new BackgroundTaskTestHarness(_time, Log, configureCache: options =>
+        {
+            options.MaxEntrySize = 1;
+            options.SizeCalculator = value => value is IDictionary<string, DateTime?> ? 2 : 1;
+            options.ShouldThrowOnMaxEntrySizeExceeded = throwOnRejection;
+        });
+        var task = NewTask();
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await harness.Tasks.CreateAndEnqueueAsync(task,
+            current => new ResetProjectDataWorkItem { OrganizationId = OrganizationId, ProjectId = task.ProjectId!, TaskId = current.Id }));
+        var stored = await harness.Tasks.GetAsync(task.Id);
+        var active = await harness.Tasks.GetActiveIdsAsync(OrganizationId);
+        var queued = await harness.Queue.GetQueueStatsAsync();
+
+        // Assert
+        Assert.IsType(expectedExceptionType, thrown);
+        Assert.NotNull(stored);
+        Assert.Equal(BackgroundTaskStatus.Failed, stored.Status);
+        Assert.Empty(active);
+        Assert.Equal(0, queued.Enqueued);
     }
 
     [Fact]
@@ -585,6 +616,70 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         Assert.Equal(BackgroundTaskStatus.Failed, Assert.Single(harness.Publisher.Updates).Status);
     }
 
+    [Theory]
+    [InlineData(BackgroundTaskStatus.Running, 40, 10)]
+    [InlineData(BackgroundTaskStatus.Completed, 100, 4)]
+    [InlineData(BackgroundTaskStatus.Cancelled, 40, 10)]
+    public async Task EnqueueAsync_AcknowledgementFailsAfterTaskAdvances_PreservesTheStoredState(BackgroundTaskStatus status, int expectedProgress, int expectedTotal)
+    {
+        // Arrange
+        var queue = new LostAcknowledgementQueue(new InMemoryQueueOptions<WorkItemData> { TimeProvider = _time, LoggerFactory = Log });
+        using var harness = new BackgroundTaskTestHarness(_time, Log, queue: queue);
+        var task = NewTask(canCancel: true);
+        task.Type = DeleteEventsBulkOperationHandler.OperationType;
+        task.Total = 10;
+        task.Bulk = new BulkOperationDetails
+        {
+            Selection = new BulkOperationSelection
+            {
+                Kind = BulkOperationSelectionKind.Ids,
+                Ids = Enumerable.Range(0, 10).Select(_ => ObjectId.GenerateNewId().ToString()).ToList()
+            }
+        };
+        queue.AfterEnqueue = async () =>
+        {
+            await harness.Tasks.UpdateAsync(task.Id, current =>
+            {
+                current.Start(_time.GetUtcNow().UtcDateTime);
+                current.Progress = 40;
+                current.Processed = 4;
+                current.Succeeded = 3;
+                current.Failed = 1;
+                current.Bulk!.Cursor = "4";
+                current.Message = "Processed four events";
+                if (status is BackgroundTaskStatus.Completed)
+                    current.Total = current.Processed;
+
+                if (status is not BackgroundTaskStatus.Running)
+                    current.Finish(status, current.Message, _time.GetUtcNow().UtcDateTime);
+
+                return true;
+            });
+        };
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await harness.Tasks.CreateAndEnqueueAsync(task,
+            current => new BulkOperationWorkItem { OrganizationId = OrganizationId, TaskId = current.Id, Type = current.Type }));
+        var stored = await harness.Tasks.GetAsync(task.Id);
+        var active = await harness.Tasks.GetActiveIdsAsync(OrganizationId);
+        var queued = await queue.GetQueueStatsAsync();
+
+        // Assert
+        Assert.IsType<TimeoutException>(thrown);
+        Assert.NotNull(stored);
+        Assert.Equal(status, stored.Status);
+        Assert.Equal(expectedProgress, stored.Progress);
+        Assert.Equal(expectedTotal, stored.Total);
+        Assert.Equal(4, stored.Processed);
+        Assert.Equal(3, stored.Succeeded);
+        Assert.Equal(1, stored.Failed);
+        Assert.Equal("4", stored.Bulk!.Cursor);
+        Assert.Equal("Processed four events", stored.Message);
+        Assert.Equal(status is BackgroundTaskStatus.Running, active.Contains(task.Id));
+        Assert.Equal(1, queued.Enqueued);
+        Assert.Equal(status, Assert.Single(harness.Publisher.Updates).Status);
+    }
+
     [Fact]
     public void CacheKeysAndLockResources_ShareThePrefixAndAreNamedByKind()
     {
@@ -620,6 +715,20 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
             CreatedByUserId = "537650f3b77efe23a47914f8",
             CanCancel = canCancel
         };
+    }
+
+    private sealed class LostAcknowledgementQueue(InMemoryQueueOptions<WorkItemData> options) : InMemoryQueue<WorkItemData>(options)
+    {
+        public Func<Task>? AfterEnqueue { get; set; }
+
+        protected override async Task<string?> EnqueueImplAsync(WorkItemData data, QueueEntryOptions options)
+        {
+            await base.EnqueueImplAsync(data, options);
+            if (AfterEnqueue is { } afterEnqueue)
+                await afterEnqueue();
+
+            throw new TimeoutException("The work item was queued but its acknowledgement was lost");
+        }
     }
 
     private sealed class CountingLockProvider

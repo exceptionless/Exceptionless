@@ -6,6 +6,7 @@ using Exceptionless.Core.Services.BackgroundTasks;
 using Foundatio.Caching;
 using Foundatio.Lock;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Exceptionless.Core.Services.BulkOperations;
 
@@ -31,9 +32,10 @@ public class BulkOperationService
     private readonly IReadOnlyDictionary<string, IBulkOperationHandler> _handlers;
     private readonly IReadOnlyDictionary<BulkOperationEntity, IBulkSelectionResolver> _resolvers;
     private readonly TimeProvider _timeProvider;
+    private readonly ILogger _logger;
 
     public BulkOperationService(BackgroundTaskService taskService, ICacheClient cache, ILockProvider lockProvider,
-        IEnumerable<IBulkOperationHandler> handlers, IEnumerable<IBulkSelectionResolver> resolvers, TimeProvider timeProvider)
+        IEnumerable<IBulkOperationHandler> handlers, IEnumerable<IBulkSelectionResolver> resolvers, TimeProvider timeProvider, ILogger<BulkOperationService>? logger = null)
     {
         _taskService = taskService;
         _cache = cache;
@@ -41,6 +43,7 @@ public class BulkOperationService
         _handlers = handlers.ToDictionary(h => h.Type, StringComparer.Ordinal);
         _resolvers = resolvers.ToDictionary(r => r.Entity);
         _timeProvider = timeProvider;
+        _logger = logger ?? NullLogger<BulkOperationService>.Instance;
     }
 
     public static string GetPinnedSelectionCacheKey(string id) => $"{BackgroundTaskService.KeyPrefix}:{id}:selection";
@@ -59,6 +62,24 @@ public class BulkOperationService
         return cached.HasValue ? cached.Value : null;
     }
 
+    /// <summary>Releases a rejected or terminal task's selection without changing its durable outcome.</summary>
+    public async Task ReleaseSelectionAsync(BackgroundTask task, string? pinnedSelection = null, string? cursor = null)
+    {
+        if (task.Bulk?.Selection.Kind is not BulkOperationSelectionKind.Filter
+            || GetHandler(task.Type) is not { } handler || !_resolvers.TryGetValue(handler.Entity, out var resolver))
+            return;
+
+        try
+        {
+            pinnedSelection ??= await GetPinnedSelectionAsync(task.Id);
+            await resolver.ReleaseAsync(task, pinnedSelection, cursor ?? task.Bulk.Cursor);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not release the selection for bulk operation {TaskId}: {Message}", task.Id, ex.Message);
+        }
+    }
+
     /// <summary>
     /// Stores and enqueues the task unless it conflicts with an active destructive task on the same project.
     /// The check and the write happen under a per-organization lock so two requests cannot both pass it.
@@ -70,55 +91,88 @@ public class BulkOperationService
 
         task.CanCancel = true;
 
-        // Count and pin the selection before taking the lock, so a slow search never holds up other requests.
         string? pinnedSelection = null;
-        if (bulk.Selection.Kind is BulkOperationSelectionKind.Filter)
+        bool enqueueAttempted = false;
+        bool retainSelection = false;
+        try
         {
-            if (!_resolvers.TryGetValue(handler.Entity, out var resolver))
-                throw new InvalidOperationException($"No selection resolver is registered for {handler.Entity}.");
+            // Count and pin before taking the lock, so a slow search never holds up other requests.
+            if (bulk.Selection.Kind is BulkOperationSelectionKind.Filter)
+            {
+                if (!_resolvers.TryGetValue(handler.Entity, out var resolver))
+                    throw new InvalidOperationException($"No selection resolver is registered for {handler.Entity}.");
 
-            task.CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
-            var preparation = await resolver.PrepareAsync(task, CancellationToken.None);
-            if (!preparation.Check.IsOk)
-                return BulkOperationCreateResult.Rejected(preparation.Check);
+                task.CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                var preparation = await resolver.PrepareAsync(task, CancellationToken.None);
+                pinnedSelection = preparation.PinnedState;
+                if (!preparation.Check.IsOk)
+                    return BulkOperationCreateResult.Rejected(preparation.Check);
 
-            task.Total = preparation.Total;
-            pinnedSelection = preparation.PinnedState;
+                task.Total = preparation.Total;
+            }
+            else
+            {
+                task.Total = bulk.Selection.Ids?.Count ?? 0;
+            }
+
+            task.Description = handler.Describe(task);
+
+            await using var createLock = await _lockProvider.TryAcquireAsync(BackgroundTaskService.GetCreateLockResource(task.OrganizationId), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(10));
+            if (createLock is null)
+                return BulkOperationCreateResult.Busy();
+
+            if (handler.IsDestructive)
+            {
+                var conflict = await FindConflictingTaskAsync(task);
+                if (conflict is not null)
+                    return BulkOperationCreateResult.Conflicting(conflict);
+            }
+
+            await _taskService.AddAsync(task);
+            enqueueAttempted = true;
+            await _taskService.EnqueueAsync(task, new BulkOperationWorkItem
+            {
+                Description = task.Description,
+                TaskId = task.Id,
+                OrganizationId = task.OrganizationId,
+                Type = task.Type
+            }, async () =>
+            {
+                // A selection that cannot be saved must fail the task just like an enqueue failure, so an unqueued task
+                // cannot remain active and block the project's next operation.
+                if (pinnedSelection is not null && !await _cache.SetAsync(GetPinnedSelectionCacheKey(task.Id), pinnedSelection, BackgroundTaskService.TaskLifetime))
+                    throw new InvalidOperationException("The operation's selection could not be saved.");
+            });
+
+            retainSelection = true;
+            return BulkOperationCreateResult.Created(task);
         }
-        else
+        finally
         {
-            task.Total = bulk.Selection.Ids?.Count ?? 0;
+            if (!retainSelection && pinnedSelection is not null)
+            {
+                var cleanupTask = task;
+                if (enqueueAttempted)
+                {
+                    try
+                    {
+                        // An enqueue can succeed before its acknowledgement is lost. The worker's saved state wins;
+                        // never close an accepted active task's snapshot just because the creating request failed.
+                        var saved = await _taskService.GetAsync(task.Id);
+                        retainSelection = saved?.IsActive == true;
+                        cleanupTask = saved ?? task;
+                    }
+                    catch (Exception ex)
+                    {
+                        retainSelection = true;
+                        _logger.LogWarning(ex, "Could not check bulk operation {TaskId} before releasing its selection: {Message}", task.Id, ex.Message);
+                    }
+                }
+
+                if (!retainSelection)
+                    await ReleaseSelectionAsync(cleanupTask, pinnedSelection);
+            }
         }
-
-        task.Description = handler.Describe(task);
-
-        await using var createLock = await _lockProvider.TryAcquireAsync(BackgroundTaskService.GetCreateLockResource(task.OrganizationId), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(10));
-        if (createLock is null)
-            return BulkOperationCreateResult.Busy();
-
-        if (handler.IsDestructive)
-        {
-            var conflict = await FindConflictingTaskAsync(task);
-            if (conflict is not null)
-                return BulkOperationCreateResult.Conflicting(conflict);
-        }
-
-        await _taskService.AddAsync(task);
-        await _taskService.EnqueueAsync(task, new BulkOperationWorkItem
-        {
-            Description = task.Description,
-            TaskId = task.Id,
-            OrganizationId = task.OrganizationId,
-            Type = task.Type
-        }, async () =>
-        {
-            // A selection that cannot be saved must fail the task just like an enqueue failure, so an unqueued task
-            // cannot remain active and block the project's next operation.
-            if (pinnedSelection is not null && !await _cache.SetAsync(GetPinnedSelectionCacheKey(task.Id), pinnedSelection, BackgroundTaskService.TaskLifetime))
-                throw new InvalidOperationException("The operation's selection could not be saved.");
-        });
-
-        return BulkOperationCreateResult.Created(task);
     }
 
     /// <summary>

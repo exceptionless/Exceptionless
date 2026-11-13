@@ -92,6 +92,40 @@ public class BulkOperationServiceTests : TestWithLoggingBase, IDisposable
         Assert.Equal(1, (await _harness.Queue.GetQueueStatsAsync()).Enqueued);
     }
 
+    [Fact]
+    public async Task CreateAsync_TaskCompletesDuringActiveIndexRead_StillFindsTheConflictingTask()
+    {
+        // Arrange
+        CompletingTaskOnReadCacheClient? cache = null;
+        using var harness = new BackgroundTaskTestHarness(_time, Log,
+            decorateCache: inner => cache = new CompletingTaskOnReadCacheClient(inner));
+        var service = CreateService(harness);
+        var completing = NewTask("test.safe", ProjectId);
+        await harness.Tasks.AddAsync(completing);
+        for (int index = 1; index < 500; index++)
+            await harness.Tasks.AddAsync(NewTask("test.safe", ProjectId));
+
+        var conflicting = NewTask("test.destructive", ProjectId);
+        await harness.Tasks.AddAsync(conflicting);
+        cache!.AfterRead = async () =>
+        {
+            await harness.Tasks.UpdateAsync(completing.Id, current =>
+            {
+                current.Finish(BackgroundTaskStatus.Completed, "Completed", _time.GetUtcNow().UtcDateTime);
+                return true;
+            });
+        };
+
+        // Act
+        var result = await service.CreateAsync(NewTask("test.destructive", ProjectId));
+
+        // Assert
+        Assert.Null(result.Task);
+        Assert.Equal(conflicting.Id, result.Conflict?.Id);
+        Assert.Equal(0, (await harness.Queue.GetQueueStatsAsync()).Enqueued);
+        Assert.Equal(BackgroundTaskStatus.Completed, (await harness.Tasks.GetAsync(completing.Id))!.Status);
+    }
+
     [Theory]
     [InlineData(null, ProjectId)]
     [InlineData(ProjectId, null)]
@@ -210,6 +244,31 @@ public class BulkOperationServiceTests : TestWithLoggingBase, IDisposable
         Assert.Equal(BackgroundTaskStatus.Queued, retry.Task.Status);
     }
 
+    [Fact]
+    public async Task CreateAsync_ActiveIndexWriteFails_DoesNotLeaveAnUnqueuedTaskBlockingTheProject()
+    {
+        // Arrange
+        using var harness = new BackgroundTaskTestHarness(_time, Log,
+            decorateCache: inner => new FailingActiveIndexCacheClient(inner));
+        var service = CreateService(harness);
+        var task = NewTask("test.destructive", ProjectId);
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await service.CreateAsync(task));
+        var stored = await harness.Tasks.GetAsync(task.Id);
+        var activeAfterFailure = await harness.Tasks.GetActiveIdsAsync(OrganizationId);
+        long enqueuedAfterFailure = (await harness.Queue.GetQueueStatsAsync()).Enqueued;
+        var retry = await service.CreateAsync(NewTask("test.destructive", ProjectId));
+
+        // Assert
+        Assert.IsType<TimeoutException>(thrown);
+        Assert.NotNull(stored);
+        Assert.Equal(BackgroundTaskStatus.Failed, stored.Status);
+        Assert.Empty(activeAfterFailure);
+        Assert.Equal(0, enqueuedAfterFailure);
+        Assert.NotNull(retry.Task);
+    }
+
     [Theory]
     [InlineData(true, typeof(MaxEntrySizeExceededCacheException))]
     [InlineData(false, typeof(InvalidOperationException))]
@@ -248,6 +307,7 @@ public class BulkOperationServiceTests : TestWithLoggingBase, IDisposable
         Assert.Empty(activeAfterFailure);
         Assert.Equal(0, enqueuedAfterFailure);
         Assert.Contains(_harness.Publisher.Updates, update => update.Id == task.Id && update.Status == BackgroundTaskStatus.Failed);
+        resolver.Verify(r => r.ReleaseAsync(It.Is<BackgroundTask>(saved => saved.Id == task.Id && saved.Status == BackgroundTaskStatus.Failed), "{}", null), Times.Once);
         Assert.NotNull(retry.Task);
         Assert.Equal(BackgroundTaskStatus.Queued, retry.Task.Status);
     }
@@ -305,5 +365,39 @@ public class BulkOperationServiceTests : TestWithLoggingBase, IDisposable
         public Task<BulkOperationCheckResult> ValidateAsync(BulkOperationRequest request) => Task.FromResult(BulkOperationCheckResult.Ok);
         public string Describe(BackgroundTask task) => $"Record {task.Total}";
         public Task<BulkBatchResult> ExecuteBatchAsync(BackgroundTask task, IReadOnlyCollection<string> ids, CancellationToken cancellationToken) => Task.FromResult(new BulkBatchResult(ids.Count, 0));
+    }
+
+    private sealed class CompletingTaskOnReadCacheClient(ICacheClient inner) : ScopedCacheClient(inner, null), ICacheClient
+    {
+        public Func<Task>? AfterRead { get; set; }
+
+        public new async Task<CacheValue<ICollection<T>>> GetListAsync<T>(string key, int? page = null, int pageSize = 100) where T : notnull
+        {
+            var result = await base.GetListAsync<T>(key, page, pageSize);
+            if (key == BackgroundTaskService.GetActiveIndexCacheKey(OrganizationId) && AfterRead is { } afterRead)
+            {
+                AfterRead = null;
+                await afterRead();
+            }
+
+            return result;
+        }
+    }
+
+    private sealed class FailingActiveIndexCacheClient(ICacheClient inner) : ScopedCacheClient(inner, null), ICacheClient
+    {
+        private bool _failed;
+
+        public new async Task<long> ListAddAsync<T>(string key, IEnumerable<T> values, TimeSpan? expiresIn = null) where T : notnull
+        {
+            long added = await base.ListAddAsync(key, values, expiresIn);
+            if (!_failed && key == BackgroundTaskService.GetActiveIndexCacheKey(OrganizationId))
+            {
+                _failed = true;
+                throw new TimeoutException("The active index write succeeded but its acknowledgement was lost");
+            }
+
+            return added;
+        }
     }
 }

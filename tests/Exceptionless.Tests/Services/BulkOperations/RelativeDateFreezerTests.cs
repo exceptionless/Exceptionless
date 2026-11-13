@@ -1,3 +1,4 @@
+using System.Globalization;
 using Exceptionless.Core.Services.BulkOperations;
 using Foundatio.Xunit;
 using Xunit;
@@ -35,6 +36,26 @@ public class RelativeDateFreezerTests : TestWithLoggingBase
 
         // Assert
         Assert.Equal(expected, frozen);
+    }
+
+    [Fact]
+    public async Task FreezeAsync_NonGregorianCulture_UsesAnInvariantUtcAnchor()
+    {
+        // Arrange
+        var originalCulture = CultureInfo.CurrentCulture;
+        CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("th-TH");
+        try
+        {
+            // Act
+            string? frozen = await RelativeDateFreezer.FreezeAsync("date:>now-1h", UtcNow, IsDateFieldAsync);
+
+            // Assert
+            Assert.Equal("date:>\"2026-11-03T04:05:06.789Z||-1h\"", frozen);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+        }
     }
 
     [Theory]
