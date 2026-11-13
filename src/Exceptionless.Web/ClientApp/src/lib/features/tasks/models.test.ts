@@ -64,15 +64,30 @@ describe('applyTaskUpdate', () => {
         expect(result?.[1]).toBe(tasks[1]);
     });
 
-    it('ignores a message that is older than what is already known', () => {
+    it.each([
+        ['2026-01-01T10:00:05Z', '2026-01-01T10:00:10Z'],
+        ['2026-01-01T10:00:00.1234566Z', '2026-01-01T10:00:00.1234567Z'],
+        ['2026-01-01T10:00:00Z', '2026-01-01T10:00:00.0000001Z']
+    ])('ignores a message at %s when a newer completion at %s is already known', (older, newer) => {
         // Arrange
-        const tasks = [createTask({ processed: 60, updated_utc: '2026-01-01T10:00:10Z' })];
+        const tasks = [createTask({ processed: 100, status: BackgroundTaskStatus.Completed, updated_utc: newer })];
 
         // Act
-        const result = applyTaskUpdate(tasks, createUpdate({ processed: 20 }));
+        const result = applyTaskUpdate(tasks, createUpdate({ processed: 20, updated_utc: older }));
 
         // Assert
         expect(result).toBe(tasks);
+    });
+
+    it('accepts a newer retry within the same millisecond', () => {
+        // Arrange
+        const tasks = [createTask({ status: BackgroundTaskStatus.Failed, updated_utc: '2026-01-01T10:00:00.1234566Z' })];
+
+        // Act
+        const result = applyTaskUpdate(tasks, createUpdate({ updated_utc: '2026-01-01T10:00:00.1234567Z' }));
+
+        // Assert
+        expect(result?.[0]).toMatchObject({ status: BackgroundTaskStatus.Running, updated_utc: '2026-01-01T10:00:00.1234567Z' });
     });
 
     it('reports an unknown task so the list can be reloaded', () => {

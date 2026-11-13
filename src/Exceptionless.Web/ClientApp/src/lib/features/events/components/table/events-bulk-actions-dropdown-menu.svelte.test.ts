@@ -101,6 +101,28 @@ describe('EventsBulkActionsDropdownMenu', () => {
         expect(toast.success).toHaveBeenCalledWith('Successfully deleted 2 events.');
     });
 
+    it('preserves a newer row selection when an earlier deletion finishes', async () => {
+        // Arrange
+        const pending = Promise.withResolvers<void>();
+        mutateAsync.mockReturnValueOnce(pending.promise);
+        const firstTable = { getSelectedRowModel: () => ({ flatRows: [{ id: 'event-a' }] }), resetRowSelection: vi.fn() } as never;
+        const resetRowSelection = vi.fn();
+        const nextTable = { getSelectedRowModel: () => ({ flatRows: [{ id: 'event-b' }] }), resetRowSelection } as never;
+        const { rerender } = render(EventsBulkActionsDropdownMenu, { props: { table: firstTable } });
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+        await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+        await fireEvent.click(screen.getByRole('button', { name: 'Delete Event' }));
+        await rerender({ table: nextTable });
+        pending.resolve();
+
+        // Assert
+        await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Successfully deleted event.'));
+        expect(mutateAsync).toHaveBeenCalledWith(['event-a']);
+        expect(resetRowSelection).not.toHaveBeenCalled();
+    });
+
     it('closes the confirmation when selected row IDs change even if the count stays the same', async () => {
         // Arrange
         const firstTable = {
@@ -171,6 +193,28 @@ describe('EventsBulkActionsDropdownMenu', () => {
             expect(resetRowSelection).toHaveBeenCalledOnce();
             expect(onAllMatchingStarted).toHaveBeenCalledOnce();
             expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('Deleting 1,234 events'));
+        });
+
+        it('preserves a newer filter selection when an earlier bulk request finishes', async () => {
+            // Arrange
+            const pending = Promise.withResolvers<void>();
+            startBulkOperation.mockReturnValueOnce(pending.promise);
+            const resetRowSelection = vi.fn();
+            const onAllMatchingStarted = vi.fn();
+            const table = { getSelectedRowModel: () => ({ flatRows: [] }), resetRowSelection } as never;
+            const { rerender } = render(EventsBulkActionsDropdownMenu, { props: { allMatching, onAllMatchingStarted, table } });
+
+            // Act
+            await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+            await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+            await fireEvent.click(screen.getByRole('button', { name: 'Delete 1,234 Events' }));
+            await rerender({ allMatching: { ...allMatching, filter: 'type:log' }, onAllMatchingStarted, table });
+            pending.resolve();
+
+            // Assert
+            await waitFor(() => expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('Deleting 1,234 events')));
+            expect(resetRowSelection).not.toHaveBeenCalled();
+            expect(onAllMatchingStarted).not.toHaveBeenCalled();
         });
 
         it.each([

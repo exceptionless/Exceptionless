@@ -16,8 +16,8 @@ export function applyTaskUpdate(tasks: ViewBackgroundTask[], update: BackgroundT
     }
 
     const current = tasks[index]!;
-    if (new Date(update.updated_utc).getTime() < new Date(current.updated_utc).getTime()) {
-        // Messages can arrive out of order; never move an task backwards.
+    if (compareTaskUpdateTimes(update.updated_utc, current.updated_utc) < 0) {
+        // Messages can arrive out of order; never move a task backwards.
         return tasks;
     }
 
@@ -37,6 +37,17 @@ export function applyTaskUpdate(tasks: ViewBackgroundTask[], update: BackgroundT
     };
 
     return next;
+}
+
+/** Date.parse truncates the four submillisecond digits of .NET timestamps; retain them when ordering updates. */
+export function compareTaskUpdateTimes(left: string, right: string): number {
+    const milliseconds = Date.parse(left) - Date.parse(right);
+    if (milliseconds !== 0) {
+        return milliseconds;
+    }
+
+    const remainingTicks = (value: string) => Number((value.match(/\.(\d+)/)?.[1] ?? '').padEnd(7, '0').slice(3, 7));
+    return remainingTicks(left) - remainingTicks(right);
 }
 
 /** Tasks that report item counts show those; tasks that only report a percent (total of zero) show the percent. */

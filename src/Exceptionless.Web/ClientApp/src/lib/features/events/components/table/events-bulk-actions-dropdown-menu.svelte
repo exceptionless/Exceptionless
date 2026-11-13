@@ -71,6 +71,7 @@
         }
 
         const deletedCount = ids.length;
+        const deletedSelectionIdentity = selectionIdentity;
         await removeEvents.mutateAsync([...ids]);
 
         if (deletedCount === 1) {
@@ -79,10 +80,14 @@
             toast.success(`Successfully deleted ${Intl.NumberFormat().format(deletedCount)} events.`);
         }
 
-        table.resetRowSelection();
+        // A slow or paused request must not clear a different selection made while it was in flight.
+        if (deletedSelectionIdentity === selectionIdentity) {
+            table.resetRowSelection();
+        }
     }
 
     async function removeAllMatching(target: AllMatchingTarget) {
+        const startedSelectionIdentity = selectionIdentity;
         try {
             await removeMatchingEvents.mutateAsync({
                 organization_id: target.organizationId,
@@ -101,8 +106,10 @@
         }
 
         toast.success(`Deleting ${Intl.NumberFormat().format(target.count)} events. Progress is shown at the bottom of the page.`);
-        table.resetRowSelection();
-        onAllMatchingStarted?.();
+        if (startedSelectionIdentity === selectionIdentity) {
+            table.resetRowSelection();
+            onAllMatchingStarted?.();
+        }
     }
 
     function setOpen(isOpen: boolean): void {

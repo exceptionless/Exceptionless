@@ -9,7 +9,7 @@ import { accessToken } from '#features/auth/index.svelte.ts';
 import { queryKeys as eventQueryKeys } from '#features/events/api.svelte.ts';
 import { queryKeys as stackQueryKeys } from '#features/stacks/api.svelte.ts';
 
-import { applyTaskUpdate, isTaskActive, type NewBulkOperation, type ViewBackgroundTask } from './models';
+import { applyTaskUpdate, compareTaskUpdateTimes, isTaskActive, type NewBulkOperation, type ViewBackgroundTask } from './models';
 
 /** While a task is active the list is polled as well, so progress still moves when push messages are unavailable. */
 export const ACTIVE_TASK_POLL_INTERVAL_MS = 3000;
@@ -140,7 +140,7 @@ async function upsertTask(queryClient: QueryClient, task: ViewBackgroundTask) {
     );
     queryClient.setQueryData<ViewBackgroundTask[]>(key, (current) => {
         const existing = current?.find((item) => item.id === task.id);
-        if (existing && new Date(existing.updated_utc).getTime() > new Date(task.updated_utc).getTime()) {
+        if (existing && compareTaskUpdateTimes(existing.updated_utc, task.updated_utc) > 0) {
             return current;
         }
 

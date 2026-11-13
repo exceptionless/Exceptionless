@@ -136,13 +136,16 @@ describe('task cache lifecycle', () => {
         expect(client.getQueryData(key)).toEqual([task]);
     });
 
-    it('preserves a newer pushed completion when cancellation returns an older running snapshot', async () => {
+    it.each([
+        ['2026-01-01T10:00:00Z', '2026-01-01T10:01:00Z'],
+        ['2026-01-01T10:00:00.1234566Z', '2026-01-01T10:00:00.1234567Z']
+    ])('ignores a cancellation snapshot at %s after a pushed completion at %s', async (older, newer) => {
         // Arrange
-        const running = createTask();
+        const running = createTask({ updated_utc: older });
         client.setQueryData(key, [running]);
         const pending = Promise.withResolvers<ViewBackgroundTask[]>();
         const read = client.fetchQuery({ queryFn: () => pending.promise, queryKey: key }).catch(() => undefined);
-        const completed = createTask({ status: BackgroundTaskStatus.Completed, updated_utc: '2026-01-01T10:01:00Z' });
+        const completed = createTask({ status: BackgroundTaskStatus.Completed, updated_utc: newer });
         client.setQueryData(key, [completed]);
         cancelTask();
         const options = mocks.createMutation.mock.calls[0]![0]();
