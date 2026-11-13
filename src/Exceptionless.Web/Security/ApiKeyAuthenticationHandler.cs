@@ -270,7 +270,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     private Task<Token?> GetTokenRecordAsync(string token)
     {
-        return _tokenRepository.GetByIdAsync(token, o => o.Cache());
+        return _tokenRepository.GetForAuthenticationAsync(token);
     }
 
     private async Task<OAuthToken?> GetOAuthTokenRecordAsync(string token)
@@ -283,14 +283,14 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
         if (!String.IsNullOrEmpty(tokenId))
         {
-            var cachedToken = await _oauthTokenRepository.GetByIdAsync(tokenId, o => o.Cache());
+            var cachedToken = await _oauthTokenRepository.GetByIdAsync(tokenId, o => o.Cache(false));
             if (cachedToken is not null && String.Equals(cachedToken.AccessTokenHash, accessTokenHash, StringComparison.Ordinal))
                 return cachedToken;
 
             await _cacheClient.RemoveAsync(cacheKey);
         }
 
-        var results = await _oauthTokenRepository.GetByAccessTokenHashAsync(accessTokenHash);
+        var results = await _oauthTokenRepository.GetByAccessTokenHashAsync(accessTokenHash, o => o.Cache(false));
         var tokenRecord = results.Documents.FirstOrDefault();
         await _cacheClient.SetAsync(cacheKey, tokenRecord?.Id ?? OAuthAccessTokenCacheMiss, TimeSpan.FromMinutes(5));
 
