@@ -1,6 +1,7 @@
 import { initializeSiteSearch } from "./site-search.js"
 
 const root = document.documentElement
+const tabStorageKey = "docs-tab"
 
 initializeTheme()
 initializeHeader()
@@ -112,8 +113,6 @@ function initializeDocsNav() {
     }
   })
 }
-
-const tabStorageKey = "docs-tab"
 
 function initializeTabs() {
   const syncedSets = []

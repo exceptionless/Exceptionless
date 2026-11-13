@@ -86,7 +86,7 @@ export function initializeSiteSearch(modal) {
       return
     }
 
-    // A result the user arrowed or pointed to wins, even if a newer search is still pending.
+    // A result chosen since the last edit wins, even if a newer search is still pending.
     const activeResult = visibleResults[activeIndex]
     if (activeResult && (selectionChosen || visibleResultsQuery === currentQuery)) {
       openResult(activeResult.url)
@@ -118,6 +118,7 @@ export function initializeSiteSearch(modal) {
   input.addEventListener("input", () => {
     window.clearTimeout(debounceTimer)
     activeSearchId++
+    selectionChosen = false
     const query = input.value.trim()
     if (!query) {
       clearResults()
