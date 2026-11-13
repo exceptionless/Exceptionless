@@ -36,7 +36,7 @@
     import { organization } from '#features/organizations/context.svelte.ts';
     import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
     import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '#features/saved-views/use-saved-views.svelte.ts';
-    import { getSharedTableOptions, isTableEmpty, removeTableData } from '#features/shared/table.svelte.ts';
+    import { getSharedTableOptions } from '#features/shared/table.svelte.ts';
     import { StackStatus } from '#features/stacks/models.ts';
     import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
     import { DEFAULT_LIMIT, DEFAULT_OFFSET, useFetchClientStatus } from '#shared/api/api.svelte.ts';
@@ -261,6 +261,7 @@
     );
 
     let loadDataRequestId = 0;
+    let needsFullRefresh = false;
     let paused = $state(false);
     function handleToggle() {
         paused = !paused;
@@ -270,6 +271,7 @@
     }
 
     async function loadData(filterChanged: boolean = false) {
+        needsFullRefresh ||= filterChanged;
         if (isSavedViewPending) {
             loadDataRequestId++;
             before = undefined;
@@ -278,7 +280,7 @@
             return;
         }
 
-        if (client.isLoading && filterChanged && !before) {
+        if (client.isLoading && needsFullRefresh && !before) {
             return;
         }
 
@@ -291,7 +293,8 @@
             return;
         }
 
-        if (filterChanged) {
+        const resetData = needsFullRefresh;
+        if (resetData) {
             before = undefined;
         }
 
@@ -317,12 +320,13 @@
                 before = clientResponse.meta.links.previous?.before;
             }
 
-            const data = filterChanged ? [] : queryData;
+            const data = resetData ? [] : queryData;
             for (const summary of clientResponse.data?.reverse() || []) {
                 data.push(summary);
             }
 
             queryData = data.slice(-queryParams.limit!);
+            needsFullRefresh = false;
         }
     }
 
@@ -333,9 +337,11 @@
     });
     function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
         if (message.id && message.change_type === ChangeType.Removed) {
-            if (removeTableData(table, (doc) => doc.id === message.id)) {
+            const remaining = queryData.filter((document) => document.id !== message.id);
+            if (remaining.length !== queryData.length) {
+                queryData = remaining;
                 // If the grid data is empty from all events being removed, we should refresh the data.
-                if (isTableEmpty(table) && !paused) {
+                if (queryData.length === 0 && !paused) {
                     debouncedLoadData();
                     return;
                 }
