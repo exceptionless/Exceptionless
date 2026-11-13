@@ -242,7 +242,8 @@ public class BackgroundTaskService
         if (!task.CanCancel && !isAbandoned)
             return BackgroundTaskCancelResult.NotCancellable(task);
 
-        await _cache.SetAsync(GetCancelCacheKey(id), true, TaskLifetime);
+        if (!await _cache.SetAsync(GetCancelCacheKey(id), true, TaskLifetime))
+            throw new InvalidOperationException("The cancellation request could not be saved.");
 
         var updated = await UpdateAsync(id, current =>
         {
@@ -265,7 +266,11 @@ public class BackgroundTaskService
         return (await _cache.GetAsync<bool>(GetCancelCacheKey(id))).HasValue;
     }
 
-    public Task SaveAsync(BackgroundTask task) => _cache.SetAsync(GetTaskCacheKey(task.Id), task, TaskLifetime);
+    public async Task SaveAsync(BackgroundTask task)
+    {
+        if (!await _cache.SetAsync(GetTaskCacheKey(task.Id), task, TaskLifetime))
+            throw new InvalidOperationException("The background task could not be saved.");
+    }
 
     public Task PublishAsync(BackgroundTask task)
     {

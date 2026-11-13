@@ -2,6 +2,7 @@ using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Queues;
@@ -54,6 +55,35 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         Assert.Equal([task.Id], listed.Select(t => t.Id).ToArray());
         Assert.Equal([task.Id], active.ToArray());
         Assert.Empty(_harness.Publisher.Updates);
+    }
+
+    [Theory]
+    [InlineData(true, typeof(MaxEntrySizeExceededCacheException))]
+    [InlineData(false, typeof(InvalidOperationException))]
+    public async Task CreateAndEnqueueAsync_TaskCannotBeStored_DoesNotQueueOrPublish(bool throwOnRejection, Type expectedExceptionType)
+    {
+        // Arrange
+        using var harness = new BackgroundTaskTestHarness(_time, Log, configureCache: options =>
+        {
+            options.MaxEntrySize = 1;
+            options.SizeCalculator = value => value is BackgroundTask ? 2 : 1;
+            options.ShouldThrowOnMaxEntrySizeExceeded = throwOnRejection;
+        });
+        var task = NewTask();
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await harness.Tasks.CreateAndEnqueueAsync(task,
+            current => new ResetProjectDataWorkItem { OrganizationId = OrganizationId, ProjectId = task.ProjectId!, TaskId = current.Id }));
+        var stored = await harness.Tasks.GetAsync(task.Id);
+        var active = await harness.Tasks.GetActiveIdsAsync(OrganizationId);
+        var queued = await harness.Queue.GetQueueStatsAsync();
+
+        // Assert
+        Assert.IsType(expectedExceptionType, thrown);
+        Assert.Null(stored);
+        Assert.Empty(active);
+        Assert.Equal(0, queued.Enqueued);
+        Assert.Empty(harness.Publisher.Updates);
     }
 
     [Fact]
@@ -222,6 +252,38 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         Assert.Equal(100, update.Progress);
     }
 
+    [Theory]
+    [InlineData(true, typeof(MaxEntrySizeExceededCacheException))]
+    [InlineData(false, typeof(InvalidOperationException))]
+    public async Task UpdateAsync_TaskCannotBeStored_PreservesTheStoredStateAndActiveIndex(bool throwOnRejection, Type expectedExceptionType)
+    {
+        // Arrange
+        using var harness = new BackgroundTaskTestHarness(_time, Log, configureCache: options =>
+        {
+            options.MaxEntrySize = 1;
+            options.SizeCalculator = value => value is BackgroundTask { Status: BackgroundTaskStatus.Completed } ? 2 : 1;
+            options.ShouldThrowOnMaxEntrySizeExceeded = throwOnRejection;
+        });
+        var task = NewTask();
+        await harness.Tasks.AddAsync(task);
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await harness.Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Finish(BackgroundTaskStatus.Completed, "Done", _time.GetUtcNow().UtcDateTime);
+            return true;
+        }));
+        var stored = await harness.Tasks.GetAsync(task.Id);
+        var active = await harness.Tasks.GetActiveIdsAsync(OrganizationId);
+
+        // Assert
+        Assert.IsType(expectedExceptionType, thrown);
+        Assert.Equal(BackgroundTaskStatus.Queued, stored!.Status);
+        Assert.Null(stored.CompletedUtc);
+        Assert.Equal([task.Id], active.ToArray());
+        Assert.Empty(harness.Publisher.Updates);
+    }
+
     [Fact]
     public async Task UpdateAsync_UnknownTask_ReturnsNullWithoutRunningTheUpdate()
     {
@@ -348,6 +410,39 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         Assert.Equal(BackgroundTaskStatus.Running, result.Task!.Status);
         Assert.True(await Tasks.IsCancelRequestedAsync(task.Id));
         Assert.Equal([task.Id], (await Tasks.GetActiveIdsAsync(OrganizationId)).ToArray());
+    }
+
+    [Theory]
+    [InlineData(true, typeof(MaxEntrySizeExceededCacheException))]
+    [InlineData(false, typeof(InvalidOperationException))]
+    public async Task CancelAsync_RequestCannotBeStored_DoesNotAcknowledgeCancellation(bool throwOnRejection, Type expectedExceptionType)
+    {
+        // Arrange
+        using var harness = new BackgroundTaskTestHarness(_time, Log, configureCache: options =>
+        {
+            options.MaxEntrySize = 1;
+            options.SizeCalculator = value => value is bool ? 2 : 1;
+            options.ShouldThrowOnMaxEntrySizeExceeded = throwOnRejection;
+        });
+        var task = NewTask(canCancel: true);
+        await harness.Tasks.AddAsync(task);
+        await harness.Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Start(_time.GetUtcNow().UtcDateTime);
+            return true;
+        });
+        int publishedBefore = harness.Publisher.Updates.Count;
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await harness.Tasks.CancelAsync(task.Id));
+        var stored = await harness.Tasks.GetAsync(task.Id);
+        bool cancellationRequested = await harness.Tasks.IsCancelRequestedAsync(task.Id);
+
+        // Assert
+        Assert.IsType(expectedExceptionType, thrown);
+        Assert.Equal(BackgroundTaskStatus.Running, stored!.Status);
+        Assert.False(cancellationRequested);
+        Assert.Equal(publishedBefore, harness.Publisher.Updates.Count);
     }
 
     [Fact]
