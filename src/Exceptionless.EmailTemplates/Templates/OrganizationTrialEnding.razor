@@ -1,0 +1,12 @@
+@namespace Exceptionless.EmailTemplates.Templates
+@inherits EmailTemplateComponent<OrganizationTrialEndingEmail>
+
+<EmailLayout Model="Model">
+    <EmailSection>
+        <h1 style="@EmailStyles.Heading1">Your trial ends soon</h1>
+        <p style="@EmailStyles.Lead">The free trial for "@Model.OrganizationName" ends on @Model.TrialEndsDate. Upgrade now to keep everything you've been using.</p>
+        <p style="@EmailStyles.Paragraph">When the trial ends, @Model.OrganizationName moves to the Free plan: 3,000 events per month, 3 days of data retention, and no Exie, alerts, or integrations. Events older than 3 days will be deleted.</p>
+        <EmailButton Url="@Model.UpgradeUrl">Upgrade Plan</EmailButton>
+        <p style="@EmailStyles.Paragraph">Send us an email at <a href="mailto:support@exceptionless.io" style="@EmailStyles.Link">support@exceptionless.io</a> if you have any questions or need assistance.</p>
+    </EmailSection>
+</EmailLayout>

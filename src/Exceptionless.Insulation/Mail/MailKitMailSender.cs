@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Mail;
+using MailKit;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Logging;

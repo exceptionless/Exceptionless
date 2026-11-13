@@ -79,6 +79,7 @@ export interface AssistantAccessResponse {
   upgrade_required: boolean;
   message?: null | string;
   minimum_plan_id?: null | string;
+  email_verification_required: boolean;
 }
 
 export interface AssistantChatMessage {
@@ -643,6 +644,12 @@ export interface TokenResult {
   token: string;
 }
 
+export interface TrialSettings {
+  blocked_email_domains: string[];
+  default_blocked_email_domains: string[];
+  is_default: boolean;
+}
+
 export interface UpdateAssistantConversationSharing {
   enabled?: null | boolean;
 }
@@ -709,6 +716,11 @@ export interface UpdateToken {
   notes?: null | string;
 }
 
+export interface UpdateTrialSettings {
+  /** Email domains that can't start a free trial. Subdomains are blocked too. Null restores the built-in list. */
+  blocked_email_domains?: string[] | null;
+}
+
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
 export interface UpdateUser {
   full_name: string;
@@ -755,6 +767,12 @@ export interface User {
   id: string;
   /** The organizations that the user has access to. */
   organization_ids: string[];
+  /**
+   * Session revocation generation, rotated when a password changes or resets, or an external login is removed or transferred away.
+   * Remains null until rotation; active users with a null generation accept only matching legacy null token generations.
+   * This value does not describe the password hashing format.
+   */
+  authentication_version?: null | string;
   password?: null | string;
   salt?: null | string;
   password_reset_token?: null | string;
@@ -775,6 +793,11 @@ export interface User {
   verify_email_address_token?: null | string;
   /** @format date-time */
   verify_email_address_token_expiration: string;
+  /**
+   * Date the user started their one no-card trial.
+   * @format date-time
+   */
+  trial_started_utc?: null | string;
   /** Gets or sets the users active state. */
   is_active: boolean;
   roles: string[];
@@ -804,6 +827,11 @@ export interface UserSavedViewOrderPreference {
   organization_id: string;
   view_type: string;
   saved_view_ids: string[];
+}
+
+/** The account whose email address the link verified, which may not be the account that's signed in. */
+export interface VerifyEmailAddressResult {
+  email_address: string;
 }
 
 export interface ViewCurrentUser {
@@ -875,6 +903,8 @@ export interface ViewOrganization {
   billing_status: BillingStatus;
   /** @format double */
   billing_price: number;
+  /** @format date-time */
+  trial_ends_utc?: null | string;
   /** @format int32 */
   max_events_per_month: number;
   /** @format int32 */

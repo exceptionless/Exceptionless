@@ -1,11 +1,13 @@
 import type { Locator, Page, Request } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
+import { isApplicationApiRequest, trackPendingApiRequests } from '../support/api-request-monitor';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { getHistoryPageState, getVisibleText } from '../support/page-helpers';
 
 test('home navigation honors personal and organization saved views and survives deletion', async ({ e2eApi, e2eScenario, page, request }) => {
     // Arrange
+    const pendingApiRequests = trackPendingApiRequests(page);
     const failedApiRequests = captureFailedApiRequests(page);
     const savedViewListLimits: string[] = [];
     page.on('request', (request) => {
@@ -21,6 +23,7 @@ test('home navigation honors personal and organization saved views and survives 
     // Act & Assert: each step exercises and verifies a home-view transition.
     await test.step('fall back to the first Stacks saved view when no default is configured', async () => {
         // Act
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto('/');
         // Assert
         await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
@@ -31,6 +34,7 @@ test('home navigation honors personal and organization saved views and survives 
     await test.step('prefer the personal saved view', async () => {
         // Arrange
         await journey.submitRepresentativeEvent();
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto(`/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
         await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
 
@@ -73,6 +77,7 @@ test('home navigation honors personal and organization saved views and survives 
             .toBe(true);
 
         // Act
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto('/');
         // Assert
         await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
@@ -92,6 +97,7 @@ test('home navigation honors personal and organization saved views and survives 
         await expect(page.getByText('Personal home view cleared.')).toBeVisible();
 
         // Act
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto('/');
         // Assert
         await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(viewSlug)}(?:[?#]|$)`));
@@ -122,6 +128,7 @@ test('home navigation honors personal and organization saved views and survives 
         await expect(page.getByRole('heading', { name: "We couldn't find that page" })).toBeVisible();
 
         // Act
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto('/');
         // Assert
         await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
@@ -129,6 +136,7 @@ test('home navigation honors personal and organization saved views and survives 
 });
 
 test('saved view navigation order is personal, persistent, and resettable', async ({ e2eScenario, page, request }) => {
+    const pendingApiRequests = trackPendingApiRequests(page);
     const failedApiRequests = captureFailedApiRequests(page);
     const suffix = e2eScenario.run.slice(-24);
     const sharedViewName = `AAA Shared ${suffix}`;
@@ -165,6 +173,8 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
         )
         .toBe(true);
 
+    await pendingApiRequests.waitForPendingRequests();
+
     await page.goto('/event');
     const sidebar = page.locator('[data-sidebar="sidebar"]');
     const sharedViewLink = sidebar.getByRole('link', { exact: true, name: sharedViewName });
@@ -175,6 +185,7 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
 
     await sharedViewLink.click();
     await expect(page).toHaveURL(new RegExp(`/event/${escapeRegExp(savedViewSlug(sharedViewName))}(?:[?#]|$)`));
+    await pendingApiRequests.waitForPendingRequests();
     await page.goto('/event');
     await expect(privateViewLink).toBeVisible({ timeout: 30_000 });
 
@@ -193,6 +204,8 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
     await page.mouse.up();
     await expect(page.getByText('Events view order saved.')).toBeVisible();
     await expectSavedViewBefore(privateViewLink, sharedViewLink);
+
+    await pendingApiRequests.waitForPendingRequests();
 
     await page.reload();
     await expect(privateViewLink).toBeVisible({ timeout: 30_000 });
@@ -216,6 +229,7 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
     await dialog.getByRole('button', { name: 'Reset to alphabetical' }).click();
     await expect(dialog).toBeHidden();
     await expectSavedViewBefore(sharedViewLink, privateViewLink);
+    await pendingApiRequests.waitForPendingRequests();
     await page.reload();
     await expect(sharedViewLink).toBeVisible({ timeout: 30_000 });
     await expectSavedViewBefore(sharedViewLink, privateViewLink);
@@ -232,6 +246,7 @@ test('saved view navigation order is personal, persistent, and resettable', asyn
 });
 
 test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2eApi, e2eScenario, page, request }) => {
+    const pendingApiRequests = trackPendingApiRequests(page);
     const failedApiRequests = captureFailedApiRequests(page);
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const suffix = journey.run.slice(-36);
@@ -244,6 +259,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
     });
 
     await test.step('save the filtered Events page as a view', async () => {
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto(`/event?reference=${encodeURIComponent(journey.referenceId)}&time=all`);
         await expect(getVisibleText(page, journey.message)).toBeVisible({ timeout: 30_000 });
 
@@ -279,12 +295,15 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
     });
 
     await test.step('updating a URL override clears the hidden session-local draft', async () => {
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto(`/event/${viewSlug}?time=90d`);
         const dateFilter = page.getByRole('button', { name: /^Date/ }).filter({ visible: true }).first();
         await dateFilter.click();
         await page.getByRole('button', { name: 'Last 30 days' }).click();
         await expect(page).toHaveURL(/[?&]time=30d(?:&|$)/);
         await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
+
+        await pendingApiRequests.waitForPendingRequests();
 
         await page.goto(`/event/${viewSlug}?time=1d`);
         await expect(
@@ -307,6 +326,8 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
             })
             .toContain('now-1d');
 
+        await pendingApiRequests.waitForPendingRequests();
+
         await page.goto(`/event/${viewSlug}`);
         await expect(
             page
@@ -323,9 +344,12 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
             .filter({ visible: true })
             .first();
 
+        await pendingApiRequests.waitForPendingRequests();
+
         await page.goto(`/event/${viewSlug}?reference=`);
         await expect(page).toHaveURL(/[?&]reference=(?:&|$)/);
         await expect(referenceFilter).toHaveCount(0);
+        await pendingApiRequests.waitForPendingRequests();
         await page.reload();
         await expect(page).toHaveURL(/[?&]reference=(?:&|$)/);
         await expect(referenceFilter).toHaveCount(0);
@@ -337,6 +361,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
     });
 
     await test.step('reset route-specific filter overrides to the saved view', async () => {
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto(`/event/${viewSlug}?project=${e2eScenario.projectId}`);
         await openViewMenu(page);
         await page.getByRole('menuitem', { name: 'Reset to Saved' }).click();
@@ -364,6 +389,7 @@ test('events saved view can be saved, renamed, loaded, and deleted', async ({ e2
 });
 
 test('switching saved views preserves each view temporary filter overrides across page reloads', async ({ e2eScenario, page, request }) => {
+    const pendingApiRequests = trackPendingApiRequests(page);
     const failedApiRequests = captureFailedApiRequests(page);
     const suffix = e2eScenario.run.slice(-28);
     const firstViewName = `E2E First View ${suffix}`;
@@ -430,6 +456,8 @@ test('switching saved views preserves each view temporary filter overrides acros
             { timeout: 30_000 }
         )
         .toBe(true);
+
+    await pendingApiRequests.waitForPendingRequests();
 
     await page.goto(`/event/${firstViewSlug}`);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
@@ -506,6 +534,7 @@ test('switching saved views preserves each view temporary filter overrides acros
         }
     };
     page.on('request', captureColdLoadEventTime);
+    await pendingApiRequests.waitForPendingRequests();
     await page.goto(`/event/${firstViewSlug}?project=${e2eScenario.projectId}&sort=type&status=open`);
     await expect(page.getByRole('heading', { name: firstViewName })).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`[?&]project=${escapeRegExp(e2eScenario.projectId)}(?:&|$)`));
@@ -519,6 +548,7 @@ test('switching saved views preserves each view temporary filter overrides acros
     await expect.poll(() => coldLoadEventTimes.length).toBeGreaterThan(0);
     page.off('request', captureColdLoadEventTime);
     expect(coldLoadEventTimes.every((time) => time.includes('now-90d'))).toBe(true);
+    await pendingApiRequests.waitForPendingRequests();
     await page.reload();
     await expect(
         page
@@ -545,6 +575,8 @@ test('switching saved views preserves each view temporary filter overrides acros
     ).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
     await expectColumnBefore(page, 'User', 'Summary');
+
+    await pendingApiRequests.waitForPendingRequests();
 
     await page.goto(`/event/${firstViewSlug}?time=15m`);
     await expect(
@@ -593,6 +625,8 @@ test('switching saved views preserves each view temporary filter overrides acros
     await page.getByRole('menuitem', { name: 'Manage Columns...' }).click();
     await expect(summaryWrap).not.toBeChecked();
     await columnDialog.getByRole('button', { name: 'Done' }).click();
+
+    await pendingApiRequests.waitForPendingRequests();
 
     await page.reload();
     await expect(page.getByRole('heading', { name: secondViewName })).toBeVisible();
@@ -756,6 +790,7 @@ test('save completion does not overwrite a newly active saved view', async ({ e2
 });
 
 test('stream switches to a session-local saved view draft without mixing in-flight results', async ({ e2eApi, e2eScenario, page, request }) => {
+    const pendingApiRequests = trackPendingApiRequests(page);
     const failedApiRequests = captureFailedApiRequests(page);
     const suffix = e2eScenario.run.slice(-28);
     const viewName = `E2E Stream View ${suffix}`;
@@ -846,6 +881,8 @@ test('stream switches to a session-local saved view draft without mixing in-flig
         sourceRequestCompleted = true;
     });
 
+    await pendingApiRequests.waitForPendingRequests();
+
     await page.goto('/stream');
     await expect.poll(() => sourceRequestStarted).toBe(true);
     await page.getByRole('button', { name: 'Pause streaming updates' }).click();
@@ -887,6 +924,7 @@ test('stream switches to a session-local saved view draft without mixing in-flig
         .toBe(updatedFilterDefinitions);
 
     streamRequestFilters.length = 0;
+    await pendingApiRequests.waitForPendingRequests();
     await page.reload();
     await expect
         .poll(async () => (await getHistoryPageState(page))?.__exceptionlessSavedViewDraftFilter)
@@ -902,6 +940,7 @@ test('stream switches to a session-local saved view draft without mixing in-flig
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
 
     streamRequestFilters.length = 0;
+    await pendingApiRequests.waitForPendingRequests();
     await page.goto(`/stream?saved=${savedView.id}&filter=${encodeURIComponent(draftExpression)}`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
@@ -912,6 +951,7 @@ test('stream switches to a session-local saved view draft without mixing in-flig
     expect(explicitFilter).not.toContain(remoteExpression);
 
     streamRequestFilters.length = 0;
+    await pendingApiRequests.waitForPendingRequests();
     await page.goto(`/stream?saved=${savedView.id}&filter=`);
     await expect(page.getByRole('heading', { name: viewName })).toBeVisible();
     await expect(page.getByLabel('Unsaved view changes')).toBeVisible();
@@ -1196,7 +1236,7 @@ test('saved view loads server state and protects drafts when the current-user lo
 function captureFailedApiRequests(page: Page): { error: null | string; method: string; url: string }[] {
     const failures: { error: null | string; method: string; url: string }[] = [];
     page.on('requestfailed', (request: Request) => {
-        if (new URL(request.url()).pathname.startsWith('/api/v2/')) {
+        if (isApplicationApiRequest(request)) {
             failures.push({
                 error: request.failure()?.errorText ?? null,
                 method: request.method(),

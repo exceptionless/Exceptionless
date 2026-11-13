@@ -16,6 +16,7 @@
     import { maintenanceActions } from '#features/admin/models.ts';
     import { deleteSuspendOrganization, postSetBonusOrganization, postSuspendOrganization } from '#features/organizations/api.svelte.ts';
     import SetEventBonusDialog from '#features/organizations/components/dialogs/set-event-bonus-dialog.svelte';
+    import SetTrialEndDialog from '#features/organizations/components/dialogs/set-trial-end-dialog.svelte';
     import SuspendOrganizationDialog from '#features/organizations/components/dialogs/suspend-organization-dialog.svelte';
     import { getProblemMessage } from '#features/shared/validation.ts';
 
@@ -29,6 +30,7 @@
     let openSuspendOrganizationDialog = $state(false);
     let openSetEventBonusDialog = $state(false);
     let openFixStackStatsDialog = $state(false);
+    let openSetTrialEndDialog = $state(false);
 
     const markSuspended = postSuspendOrganization({
         route: {
@@ -125,6 +127,10 @@
                 </DropdownMenu.Item>
             {/if}
             <DropdownMenu.Separator />
+            {#if organization?.plan_id === 'EX_FREE' || organization?.plan_id === 'EX_TRIAL'}
+                <DropdownMenu.Item onclick={() => (openSetTrialEndDialog = true)}>Set trial end date</DropdownMenu.Item>
+                <DropdownMenu.Separator />
+            {/if}
             <DropdownMenu.Item onclick={handleSetBonus}>
                 <Award class="mr-2 size-4" />
                 <span>Set Bonus</span>
@@ -144,6 +150,10 @@
 
 {#if organization && openSetEventBonusDialog}
     <SetEventBonusDialog bind:open={openSetEventBonusDialog} {organization} {setBonus} />
+{/if}
+
+{#if organization && openSetTrialEndDialog}
+    <SetTrialEndDialog bind:open={openSetTrialEndDialog} {organization} />
 {/if}
 
 {#if organization && openFixStackStatsDialog}

@@ -2,10 +2,12 @@ import type {
     AssistantModelSettings,
     CountResult,
     EventSubmissionSettings,
+    TrialSettings,
     UpdateAssistantConversationSharingSettings,
     UpdateAssistantEnabledSettings,
     UpdateAssistantSettings,
-    UpdateEventSubmissionSettings
+    UpdateEventSubmissionSettings,
+    UpdateTrialSettings
 } from '#generated/api.ts';
 
 export enum MigrationType {
@@ -59,6 +61,8 @@ export type AdminStats = {
     stacks: CountResult;
     users: CountResult;
 };
+
+export type AdminTrialSettings = TrialSettings;
 
 export type ElasticsearchHealth = {
     active_primary_shards: number;
@@ -209,6 +213,8 @@ export type UpdateAssistantConversationSharingSettingsRequest = UpdateAssistantC
 export type UpdateAssistantEnabledSettingsRequest = UpdateAssistantEnabledSettings;
 export type UpdateAssistantSettingsRequest = UpdateAssistantSettings;
 export type UpdateEventSubmissionSettingsRequest = UpdateEventSubmissionSettings;
+
+export type UpdateTrialSettingsRequest = UpdateTrialSettings;
 
 export const maintenanceActions: MaintenanceAction[] = [
     {

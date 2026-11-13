@@ -23,9 +23,11 @@
 		formatter,
 		nameKey,
 		color,
+		reverse = false,
 		...restProps
 	}: WithoutChildren<WithElementRef<HTMLAttributes<HTMLDivElement>>> & {
 		hideLabel?: boolean;
+		reverse?: boolean;
 		label?: string;
 		indicator?: "line" | "dot" | "dashed";
 		nameKey?: string;
@@ -52,9 +54,10 @@
 
 	// Filter to series with defined values (important for item-based charts like Pie/Arc
 	// where only the hovered item has a value)
-	const visibleSeries = $derived(
-		chartCtx.tooltip.series.filter((s: TooltipPayload) => s.value !== undefined)
-	);
+	const visibleSeries = $derived.by(() => {
+		const series = chartCtx.tooltip.series.filter((s: TooltipPayload) => s.value !== undefined);
+		return reverse ? series.reverse() : series;
+	});
 
 	const formattedLabel = $derived.by(() => {
 		if (hideLabel || !visibleSeries?.length) return null;

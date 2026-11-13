@@ -30,10 +30,14 @@ export { accessToken } from './state.svelte';
 // Re-export validators
 export { validateEmailAvailability } from './validators';
 
-export interface OAuthLoginOptions extends OAuthPopupOptions {
+export interface ExternalLoginOptions {
     inviteToken?: null | string;
+    /** Links the provider account to the signed-in user instead of signing in as the provider's user. */
+    linkToCurrentUser?: boolean;
     redirectUrl?: string;
 }
+
+export interface OAuthLoginOptions extends ExternalLoginOptions, OAuthPopupOptions {}
 
 export interface OAuthPopupOptions {
     authUrl: string;
@@ -60,7 +64,7 @@ export const enableOAuthLogin = gitHubClientId || googleClientId || microsoftCli
 
 // OAuth login functions (interactive popup-based, not pure API calls)
 
-export async function githubLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function githubLogin(options: ExternalLoginOptions = {}) {
     if (!gitHubClientId) {
         throw new Error('GitHub client id not set');
     }
@@ -68,18 +72,17 @@ export async function githubLogin(redirectUrl?: string, inviteToken?: null | str
     await oauthLogin({
         authUrl: 'https://github.com/login/oauth/authorize',
         clientId: gitHubClientId,
-        inviteToken,
+        ...options,
         popupOptions: {
             height: 618,
             width: 1020
         },
         provider: 'github',
-        redirectUrl,
         scope: 'user:email'
     });
 }
 
-export async function googleLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function googleLogin(options: ExternalLoginOptions = {}) {
     if (!googleClientId) {
         throw new Error('Google client id not set');
     }
@@ -94,9 +97,8 @@ export async function googleLogin(redirectUrl?: string, inviteToken?: null | str
             service: 'lso',
             state: encodeURIComponent(Math.random().toString(36).substring(2))
         },
-        inviteToken,
+        ...options,
         provider: 'google',
-        redirectUrl,
         scope: 'openid profile email'
     });
 }
@@ -112,7 +114,7 @@ export async function gotoLogin() {
     });
 }
 
-export async function microsoftLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function microsoftLogin(options: ExternalLoginOptions = {}) {
     if (!microsoftClientId) {
         throw new Error('Microsoft client id not set');
     }
@@ -123,9 +125,8 @@ export async function microsoftLogin(redirectUrl?: string, inviteToken?: null | 
         extraParams: {
             state: createOAuthState()
         },
-        inviteToken,
+        ...options,
         provider: 'microsoft',
-        redirectUrl,
         scope: 'User.Read'
     });
 }
@@ -165,7 +166,14 @@ function createOAuthState() {
 async function oauthLogin(options: OAuthLoginOptions) {
     const data = await openOAuthPopup(options);
 
-    const client = useFetchClient();
+    // The API links the provider to whoever the request authenticates as, so a sign-in must not send the current session.
+    const client = useFetchClient(
+        options.linkToCurrentUser
+            ? undefined
+            : {
+                  accessTokenFunc: () => null
+              }
+    );
     const response = await client.postJSON<TokenResult>(
         `auth/${options.provider}`,
         {

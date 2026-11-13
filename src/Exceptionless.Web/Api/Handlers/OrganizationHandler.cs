@@ -17,6 +17,7 @@ using Exceptionless.Web.Mapping;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Utility;
 using Foundatio.Caching;
+using Foundatio.Lock;
 using Foundatio.Mediator;
 using Foundatio.Messaging;
 using Foundatio.Repositories;
@@ -110,11 +111,23 @@ public class OrganizationHandler(
             return Result.BadRequest("Organization value is required.");
 
         var model = mapper.MapToOrganization(message.Organization);
-        var error = await CanAddAsync(model, message.Context);
+
+        // Serialize creation per user and reload the user so concurrent requests can't both pass the
+        // one-free-organization and one-trial checks.
+        string userId = GetCurrentUser(message.Context).Id;
+        await using var ownerLock = await billingManager.AcquireOwnerFreeOrganizationLockAsync(userId);
+        var user = await userRepository.GetByIdAsync(userId);
+        if (user is null)
+            return Result.Unauthorized("User not found.");
+
+        // Aliases of one mailbox are different users, so the trial claim is serialized on the mailbox too.
+        await using var trialEmailLock = await billingManager.AcquireTrialEmailLockAsync(user);
+
+        var error = await CanAddAsync(model, user);
         if (error is not null)
             return error;
 
-        model = await AddModelAsync(model, message.Context);
+        model = await AddModelAsync(model, user);
         var viewModel = mapper.MapToViewOrganization(model);
         await AfterResultMapAsync([viewModel]);
         string location = linkGenerator.GetUriByName(message.Context, "GetOrganizationById", new { id = model.Id })
@@ -387,6 +400,13 @@ public class OrganizationHandler(
         if (String.Equals(organization.PlanId, plan.Id) && String.Equals(plans.FreePlan.Id, plan.Id))
             return ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan.");
 
+        // Downgrades to Free share the owner's lock with organization creation so two can't both pass the one-free-organization rule.
+        bool acquireOwnerLock = plans.IsFreePlan(plan.Id) && !String.Equals(organization.PlanId, plan.Id);
+        ILock? ownerLock = null;
+        if (acquireOwnerLock)
+            ownerLock = await billingManager.AcquireOwnerFreeOrganizationLockAsync(organization.CreatedByUserId ?? GetCurrentUser(message.Context).Id);
+        await using var ownerLockScope = ownerLock;
+
         if (!String.Equals(organization.PlanId, plan.Id))
         {
             var result = await billingManager.CanDownGradeAsync(organization, plan, GetCurrentUser(message.Context));
@@ -629,11 +649,17 @@ public class OrganizationHandler(
         if (String.IsNullOrEmpty(message.Id) || !message.Context.Request.CanAccessOrganization(message.Id) || String.IsNullOrEmpty(message.Email))
             return Result.NotFound("Organization not found.");
 
-        var organization = await GetModelAsync(message.Id);
+        await using var billingLock = await billingManager.AcquireOrganizationLockAsync(message.Id);
+        var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
             return Result.NotFound("Organization not found.");
 
-        if (!await billingManager.CanAddUserAsync(organization))
+        var inviteLimitResult = await CheckInviteLimitAsync(organization, message.Context);
+        if (inviteLimitResult is not null)
+            return inviteLimitResult;
+
+        bool canAddUser = await billingManager.CanAddUserAsync(organization);
+        if (!canAddUser)
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add an additional user."));
 
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
@@ -642,7 +668,8 @@ public class OrganizationHandler(
             if (!user.OrganizationIds.Contains(organization.Id))
             {
                 user.OrganizationIds.Add(organization.Id);
-                await userRepository.SaveAsync(user, o => o.Cache());
+                // Finite user limits count memberships through search before the next admission.
+                await userRepository.SaveAsync(user, o => o.Cache().ImmediateConsistency());
                 await messagePublisher.PublishAsync(new UserMembershipChanged
                 {
                     ChangeType = ChangeType.Added,
@@ -674,12 +701,36 @@ public class OrganizationHandler(
         return new User { EmailAddress = message.Email };
     }
 
+    private async Task<Result<User>?> CheckInviteLimitAsync(Organization organization, HttpContext httpContext)
+    {
+        // Paid organizations keep inviting as before. Free and trial organizations are where throwaway signups would
+        // send invite spam, so only they need a verified inviter and a daily limit.
+        if (!options.StripeOptions.EnableBilling || httpContext.Request.IsGlobalAdmin() || !plans.IsFreeOrTrialPlan(organization.PlanId))
+            return null;
+
+        var currentUser = GetCurrentUser(httpContext);
+        if (!currentUser.IsEmailAddressVerified)
+            return Result.Forbidden("Please verify your email address before inviting users.");
+
+        bool withinInviteLimit = await billingManager.TryCountFreeInviteAsync(currentUser.Id);
+        if (withinInviteLimit)
+            return null;
+
+        _logger.LogWarning("User {UserId} reached the daily invite limit of {DailyLimit} for organization {OrganizationId}", currentUser.Id, options.BillingOptions.FreeInviteDailyLimit, organization.Id);
+        return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.RateLimit, "You've sent the maximum number of invites for today. Please try again tomorrow or contact support."));
+    }
+
     public async Task<Result> Handle(RemoveOrganizationUser message)
     {
+        if (String.IsNullOrEmpty(message.Id) || !message.Context.Request.CanAccessOrganization(message.Id))
+            return Result.NotFound("Organization not found.");
+
+        await using var billingLock = await billingManager.AcquireOrganizationLockAsync(message.Id);
         var organization = await GetModelAsync(message.Id, useCache: false);
         if (organization is null)
             return Result.NotFound("Organization not found.");
 
+        bool inviteRemoved = false;
         var user = await userRepository.GetByEmailAddressAsync(message.Email);
         if (user is null || !user.OrganizationIds.Contains(message.Id))
         {
@@ -688,7 +739,7 @@ public class OrganizationHandler(
                 return Result.Success();
 
             organization.Invites.Remove(invite);
-            await repository.SaveAsync(organization, o => o.Cache());
+            inviteRemoved = true;
         }
         else
         {
@@ -707,7 +758,8 @@ public class OrganizationHandler(
                 user.OrganizationPreferences.Remove(preference);
             foreach (var preference in user.SavedViewOrders.Where(preference => String.Equals(preference.OrganizationId, organization.Id, StringComparison.Ordinal)).ToList())
                 user.SavedViewOrders.Remove(preference);
-            await userRepository.SaveAsync(user, o => o.Cache());
+            // The following plan-limit check counts memberships through search.
+            await userRepository.SaveAsync(user, o => o.Cache().ImmediateConsistency());
             await messagePublisher.PublishAsync(new UserMembershipChanged
             {
                 ChangeType = ChangeType.Removed,
@@ -716,6 +768,9 @@ public class OrganizationHandler(
             });
         }
 
+        bool suspensionChanged = await billingManager.UpdatePlanLimitSuspensionAsync(organization);
+        if (inviteRemoved || suspensionChanged)
+            await repository.SaveAsync(organization, command => command.Cache().Originals());
         return Result.Success();
     }
 
@@ -817,29 +872,52 @@ public class OrganizationHandler(
         return viewModel;
     }
 
-    private async Task<Result<ViewOrganization>?> CanAddAsync(Organization value, HttpContext httpContext)
+    private async Task<Result<ViewOrganization>?> CanAddAsync(Organization value, User user)
     {
         if (String.IsNullOrEmpty(value.Name))
             return Result.BadRequest("Organization name is required.");
 
-        if (!await billingManager.CanAddOrganizationAsync(GetCurrentUser(httpContext)))
+        bool canAddOrganization = await billingManager.CanAddOrganizationAsync(user);
+        if (!canAddOrganization)
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add an additional organization."));
 
         return null;
     }
 
-    private async Task<Organization> AddModelAsync(Organization value, HttpContext httpContext)
+    private async Task<Organization> AddModelAsync(Organization value, User user)
     {
-        var user = GetCurrentUser(httpContext);
-        var plan = !options.StripeOptions.EnableBilling || user.Roles.Contains(AuthorizationRoles.GlobalAdmin)
-            ? plans.UnlimitedPlan
-            : plans.FreePlan;
-        billingManager.ApplyBillingPlan(value, plan, user);
+        value.CreatedByUserId = user.Id;
+        if (!options.StripeOptions.EnableBilling || user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+        {
+            billingManager.ApplyBillingPlan(value, plans.UnlimitedPlan, user);
+        }
+        else
+        {
+            bool startTrial = await billingManager.CanStartTrialAsync(user);
+            if (startTrial)
+                startTrial = await billingManager.TryClaimTrialAsync(user);
 
-        var organization = await repository.AddAsync(value, o => o.Cache());
+            if (startTrial)
+                billingManager.StartTrial(value, user);
+            else
+                billingManager.ApplyBillingPlan(value, plans.FreePlan, user);
+        }
+
+        var organization = await repository.AddAsync(value, o => o.ImmediateConsistency().Cache());
 
         user.OrganizationIds.Add(organization.Id);
-        await userRepository.SaveAsync(user, o => o.Cache());
+        try
+        {
+            await userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+        }
+        catch (Exception ex)
+        {
+            // Without the membership the user couldn't reach the organization, but it would still count as theirs.
+            _logger.LogError(ex, "Unable to add user {UserId} to new organization {OrganizationId}, removing it: {Message}", user.Id, organization.Id, ex.Message);
+            await repository.RemoveAsync(organization, o => o.ImmediateConsistency());
+            throw;
+        }
+
         await messagePublisher.PublishAsync(new UserMembershipChanged
         {
             UserId = user.Id,
