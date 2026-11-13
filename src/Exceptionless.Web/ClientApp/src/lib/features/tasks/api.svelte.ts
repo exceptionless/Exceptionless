@@ -39,9 +39,7 @@ export function cancelTask() {
             return response.data!;
         },
         mutationKey: queryKeys.cancel(undefined),
-        onSuccess: (task) => {
-            upsertTask(queryClient, task);
-        }
+        onSuccess: (task) => upsertTask(queryClient, task)
     }));
 }
 
@@ -92,14 +90,12 @@ export function postBulkOperation() {
             return response.data!;
         },
         mutationKey: queryKeys.post(),
-        onSuccess: (task) => {
-            upsertTask(queryClient, task);
-        }
+        onSuccess: (task) => upsertTask(queryClient, task)
     }));
 }
 
 /** Applies a pushed update to the cached list. Unknown tasks (started elsewhere) trigger a refetch instead. */
-export function updateTaskFromMessage(queryClient: QueryClient, update: BackgroundTaskUpdated) {
+export async function updateTaskFromMessage(queryClient: QueryClient, update: BackgroundTaskUpdated) {
     const key = queryKeys.organization(update.organization_id);
     const current = queryClient.getQueryData<ViewBackgroundTask[]>(key);
     const next = current ? applyTaskUpdate(current, update) : undefined;
@@ -110,12 +106,44 @@ export function updateTaskFromMessage(queryClient: QueryClient, update: Backgrou
         return;
     }
 
-    queryClient.setQueryData(key, next);
+    if (next === current) {
+        return;
+    }
+
+    await queryClient.cancelQueries(
+        {
+            queryKey: key
+        },
+        {
+            revert: false
+        }
+    );
+    // Other messages can be applied while cancellation settles; merge with the latest cache, not the earlier snapshot.
+    const latest = queryClient.getQueryData<ViewBackgroundTask[]>(key);
+    const updated = latest ? applyTaskUpdate(latest, update) : undefined;
+    if (updated) {
+        queryClient.setQueryData(key, updated);
+    }
 }
 
-function upsertTask(queryClient: QueryClient, task: ViewBackgroundTask) {
-    queryClient.setQueryData<ViewBackgroundTask[]>(queryKeys.organization(task.organization_id), (current) => [
-        task,
-        ...(current ?? []).filter((existing) => existing.id !== task.id)
-    ]);
+async function upsertTask(queryClient: QueryClient, task: ViewBackgroundTask) {
+    const key = queryKeys.organization(task.organization_id);
+    // An older list response must not remove newly queued work and stop polling. Keep any pushed updates received
+    // since that read started instead of reverting the cache to its pre-fetch snapshot.
+    await queryClient.cancelQueries(
+        {
+            queryKey: key
+        },
+        {
+            revert: false
+        }
+    );
+    queryClient.setQueryData<ViewBackgroundTask[]>(key, (current) => {
+        const existing = current?.find((item) => item.id === task.id);
+        if (existing && new Date(existing.updated_utc).getTime() > new Date(task.updated_utc).getTime()) {
+            return current;
+        }
+
+        return [task, ...(current ?? []).filter((item) => item.id !== task.id)];
+    });
 }

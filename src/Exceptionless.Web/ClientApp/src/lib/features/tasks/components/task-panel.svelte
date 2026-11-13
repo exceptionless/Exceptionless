@@ -43,6 +43,8 @@
     $effect(() => {
         for (const task of tasksQuery.data ?? []) {
             if (isTaskActive(task.status)) {
+                // A failed task can be retried with the same id; its new attempt and outcome must be visible.
+                dismissedIds.delete(task.id);
                 activeSeenIds.add(task.id);
                 continue;
             }
@@ -62,7 +64,7 @@
             return;
         }
 
-        updateTaskFromMessage(queryClient, update);
+        void updateTaskFromMessage(queryClient, update);
     });
 
     async function onCancel(task: ViewBackgroundTask) {
@@ -70,8 +72,11 @@
         try {
             await cancelTaskMutation.mutateAsync(task.id);
         } catch {
-            cancellingIds.delete(task.id);
             toast.error('Unable to cancel the task.');
+        } finally {
+            // The server may only acknowledge the request while a worker is running. Allow a later retry to clear
+            // an abandoned task if that worker never acknowledges cancellation.
+            cancellingIds.delete(task.id);
         }
     }
 

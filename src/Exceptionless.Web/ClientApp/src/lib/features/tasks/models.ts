@@ -76,11 +76,15 @@ export function isTaskActive(status: BackgroundTaskStatus): boolean {
 export function selectVisibleTasks(tasks: ViewBackgroundTask[], dismissedIds: ReadonlySet<string>, now: number): ViewBackgroundTask[] {
     return tasks
         .filter((task) => {
+            if (isTaskActive(task.status)) {
+                return true;
+            }
+
             if (dismissedIds.has(task.id)) {
                 return false;
             }
 
-            return isTaskActive(task.status) || now - new Date(task.updated_utc).getTime() < FINISHED_TASK_VISIBLE_MS;
+            return now - new Date(task.updated_utc).getTime() < FINISHED_TASK_VISIBLE_MS;
         })
         .sort((a, b) => new Date(b.created_utc).getTime() - new Date(a.created_utc).getTime());
 }

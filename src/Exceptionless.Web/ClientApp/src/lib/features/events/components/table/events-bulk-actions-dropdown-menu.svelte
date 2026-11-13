@@ -32,28 +32,46 @@
     const bulkActionsDescriptionId = `${componentId}-bulk-actions-description`;
     const ids = $derived(table.getSelectedRowModel().flatRows.map((row) => row.id));
     const selectedCount = $derived(allMatching ? allMatching.count : ids.length);
+    const selectionIdentity = $derived(
+        JSON.stringify(
+            allMatching
+                ? ['filter', allMatching.organizationId, allMatching.filter ?? '', allMatching.time ?? null, allMatching.offset ?? null]
+                : ['ids', ...ids.toSorted()]
+        )
+    );
 
     let open = $state(false);
     let openRemoveEventDialog = $state<boolean>(false);
+    let confirmedSelectionIdentity = $state<string>();
 
-    const removeEvents = deleteEvent({
-        route: {
-            get ids() {
-                return ids;
-            }
+    $effect(() => {
+        if (openRemoveEventDialog && confirmedSelectionIdentity !== selectionIdentity) {
+            openRemoveEventDialog = false;
         }
     });
 
+    const removeEvents = deleteEvent();
+
     const removeMatchingEvents = postBulkOperation();
 
+    function confirmRemove(): void {
+        confirmedSelectionIdentity = selectionIdentity;
+        openRemoveEventDialog = true;
+    }
+
     async function remove() {
+        // Navigation or a live update can change the selection while the confirmation is open.
+        if (confirmedSelectionIdentity !== selectionIdentity) {
+            return;
+        }
+
         if (allMatching) {
             await removeAllMatching(allMatching);
             return;
         }
 
         const deletedCount = ids.length;
-        await removeEvents.mutateAsync();
+        await removeEvents.mutateAsync([...ids]);
 
         if (deletedCount === 1) {
             toast.success('Successfully deleted event.');
@@ -110,7 +128,7 @@
     </DropdownMenu.Trigger>
     <DropdownMenu.Content>
         <DropdownMenu.Group>
-            <DropdownMenu.Item onclick={() => (openRemoveEventDialog = true)} class="text-destructive" title="Delete event">Delete</DropdownMenu.Item>
+            <DropdownMenu.Item onclick={confirmRemove} class="text-destructive" title="Delete event">Delete</DropdownMenu.Item>
         </DropdownMenu.Group>
     </DropdownMenu.Content>
 </DropdownMenu.Root>

@@ -76,6 +76,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
 
         // Assert
         await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
+        expect(mutateAsync).toHaveBeenCalledWith(['event-id']);
         expect(resetRowSelection).toHaveBeenCalledOnce();
         expect(toast.success).toHaveBeenCalledWith('Successfully deleted event.');
         expect(startBulkOperation).not.toHaveBeenCalled();
@@ -96,7 +97,36 @@ describe('EventsBulkActionsDropdownMenu', () => {
 
         // Assert
         await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
+        expect(mutateAsync).toHaveBeenCalledWith(['event-id-1', 'event-id-2']);
         expect(toast.success).toHaveBeenCalledWith('Successfully deleted 2 events.');
+    });
+
+    it('closes the confirmation when selected row IDs change even if the count stays the same', async () => {
+        // Arrange
+        const firstTable = {
+            getSelectedRowModel: () => ({ flatRows: [{ id: 'event-a' }] }),
+            resetRowSelection: vi.fn()
+        } as never;
+        const nextTable = {
+            getSelectedRowModel: () => ({ flatRows: [{ id: 'event-b' }] }),
+            resetRowSelection: vi.fn()
+        } as never;
+        const { rerender } = render(EventsBulkActionsDropdownMenu, { props: { table: firstTable } });
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+        await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+
+        // Assert
+        expect(screen.getByRole('alertdialog')).toBeTruthy();
+
+        // Act
+        await rerender({ table: nextTable });
+
+        // Assert
+        await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+        expect(mutateAsync).not.toHaveBeenCalled();
+        expect(startBulkOperation).not.toHaveBeenCalled();
     });
 
     describe('when everything matching the filter is selected', () => {
@@ -141,6 +171,33 @@ describe('EventsBulkActionsDropdownMenu', () => {
             expect(resetRowSelection).toHaveBeenCalledOnce();
             expect(onAllMatchingStarted).toHaveBeenCalledOnce();
             expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('Deleting 1,234 events'));
+        });
+
+        it.each([
+            ['filter', { ...allMatching, filter: 'type:log' }],
+            ['organization', { ...allMatching, organizationId: 'another-organization' }],
+            ['time range', { ...allMatching, time: '[now-30d TO now]' }],
+            ['time offset', { ...allMatching, offset: '-360m' }],
+            ['selection mode', undefined]
+        ])('closes the confirmation when the %s changes', async (_, target) => {
+            // Arrange
+            const table = { getSelectedRowModel: () => ({ flatRows: [{ id: 'event-id' }] }), resetRowSelection: vi.fn() } as never;
+            const { rerender } = render(EventsBulkActionsDropdownMenu, { props: { allMatching, table } });
+
+            // Act
+            await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+            await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+
+            // Assert
+            expect(screen.getByRole('alertdialog')).toBeTruthy();
+
+            // Act
+            await rerender({ allMatching: target, table });
+
+            // Assert
+            await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+            expect(startBulkOperation).not.toHaveBeenCalled();
+            expect(mutateAsync).not.toHaveBeenCalled();
         });
 
         it('keeps the selection when starting the operation fails', async () => {

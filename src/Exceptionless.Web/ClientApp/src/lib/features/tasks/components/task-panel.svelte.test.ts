@@ -125,6 +125,33 @@ describe('TaskPanel', () => {
         await waitFor(() => expect(mocks.cancelMutateAsync).toHaveBeenCalledWith('task-1'));
     });
 
+    it('allows cancellation to be retried after the request finishes while the worker is still running', async () => {
+        // Arrange
+        const request = Promise.withResolvers<ViewBackgroundTask>();
+        mocks.cancelMutateAsync.mockReturnValueOnce(request.promise);
+        state.set('tasks', [createTask()]);
+        render(TaskPanel);
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: /^Cancel / }));
+
+        // Assert
+        expect(screen.getByRole('button', { name: /^Cancel / })).toBeDisabled();
+
+        // Act
+        request.resolve(createTask());
+        await tick();
+
+        // Assert
+        await waitFor(() => expect(screen.getByRole('button', { name: /^Cancel / })).toBeEnabled());
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: /^Cancel / }));
+
+        // Assert
+        expect(mocks.cancelMutateAsync).toHaveBeenCalledTimes(2);
+    });
+
     it('removes a finished task when it is dismissed', async () => {
         // Arrange
         state.set('tasks', [createTask({ status: BackgroundTaskStatus.Completed })]);
@@ -137,11 +164,38 @@ describe('TaskPanel', () => {
         expect(screen.queryByText('Delete 50 events matching filter')).toBeNull();
     });
 
+    it('shows a dismissed failed task again during and after an automatic retry', async () => {
+        // Arrange
+        state.set('tasks', [createTask({ status: BackgroundTaskStatus.Failed })]);
+        render(TaskPanel);
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: /^Dismiss / }));
+
+        // Assert
+        expect(screen.queryByText('Delete 50 events matching filter')).toBeNull();
+
+        // Act
+        state.set('tasks', [createTask()]);
+        await tick();
+
+        // Assert
+        expect(screen.getByRole('button', { name: /^Cancel / })).toBeEnabled();
+
+        // Act
+        state.set('tasks', [createTask({ processed: 50, status: BackgroundTaskStatus.Completed, succeeded: 50 })]);
+        await tick();
+
+        // Assert
+        expect(document.querySelector('[data-slot="task-progress"]')?.textContent).toContain('Completed');
+        expect(mocks.invalidateAffected).toHaveBeenCalledOnce();
+    });
+
     it('renders nothing when there is nothing to show', () => {
         // Arrange & Act
         render(TaskPanel);
 
         // Assert
-        expect(screen.queryByRole('region', { name: 'Bulk tasks' })).toBeNull();
+        expect(screen.queryByRole('region', { name: 'Background tasks' })).toBeNull();
     });
 });

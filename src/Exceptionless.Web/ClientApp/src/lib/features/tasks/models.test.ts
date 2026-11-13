@@ -148,14 +148,25 @@ describe('selectVisibleTasks', () => {
         expect(result.map((task) => task.id)).toEqual(['recent', 'active']);
     });
 
-    it('hides dismissed tasks', () => {
+    it('hides dismissed finished tasks', () => {
         // Arrange
-        const task = createTask({ id: 'dismissed' });
+        const task = createTask({ id: 'dismissed', status: BackgroundTaskStatus.Failed });
 
         // Act
         const result = selectVisibleTasks([task], new Set(['dismissed']), now);
 
         // Assert
         expect(result).toEqual([]);
+    });
+
+    it.each([BackgroundTaskStatus.Queued, BackgroundTaskStatus.Running])('shows a dismissed failed task when it is retried as %s', (status) => {
+        // Arrange
+        const task = createTask({ id: 'retried', status });
+
+        // Act
+        const result = selectVisibleTasks([task], new Set(['retried']), now);
+
+        // Assert
+        expect(result).toEqual([task]);
     });
 });
