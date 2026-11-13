@@ -1,0 +1,120 @@
+# The docs sidebar, previous and next links, breadcrumbs, and llms.txt sections all come from this file.
+#
+# - section: a top-level sidebar section.
+# - A plain URL is a page. The page's navTitle (or title) is its label.
+# - group: a collapsible sub-group. Give it a url to link the group heading to its overview page; that page then comes
+#   first in the reading order, before the group's items.
+#
+# deno task verify fails if a URL here has no page, or if a published docs page is missing from this file.
+- section: Get started
+  items:
+    - /docs/
+    - /docs/getting-started/
+    - /docs/concepts/
+    - /docs/whats-new/
+
+- section: AI
+  items:
+    - /docs/ai/
+    - /docs/ai/exie/
+    - /docs/ai/mcp-server/
+    - /docs/ai/coding-agents/
+    - /docs/ai/privacy/
+    - /docs/ai/docs-for-ai/
+
+- section: Send data
+  items:
+    - /docs/clients/
+    - /docs/clients/features/
+    - group: .NET
+      url: /docs/clients/dotnet/
+      items:
+        - /docs/clients/dotnet/aspnet-core/
+        - /docs/clients/dotnet/worker-services/
+        - /docs/clients/dotnet/console/
+        - /docs/clients/dotnet/desktop/
+        - /docs/clients/dotnet/blazor/
+        - /docs/clients/dotnet/serverless/
+        - /docs/clients/dotnet/logging/
+        - /docs/clients/dotnet/configuration/
+        - /docs/clients/dotnet/sending-events/
+        - /docs/clients/dotnet/client-configuration-values/
+        - /docs/clients/dotnet/plugins/
+        - /docs/clients/dotnet/private-information/
+        - /docs/clients/dotnet/legacy-aspnet/
+        - /docs/clients/dotnet/troubleshooting/
+        - /docs/clients/dotnet/upgrading/
+    - group: JavaScript
+      url: /docs/clients/javascript/
+      items:
+        - group: Framework guides
+          url: /docs/clients/javascript/guides/
+          items:
+            - /docs/clients/javascript/guides/browser/
+            - /docs/clients/javascript/guides/node/
+            - /docs/clients/javascript/guides/express/
+            - /docs/clients/javascript/guides/react/
+            - /docs/clients/javascript/guides/react-native/
+            - /docs/clients/javascript/guides/nextjs/
+            - /docs/clients/javascript/guides/sveltekit/
+            - /docs/clients/javascript/guides/vue/
+            - /docs/clients/javascript/guides/angular/
+        - /docs/clients/javascript/client-configuration/
+        - /docs/clients/javascript/sending-events/
+        - /docs/clients/javascript/client-configuration-values/
+        - /docs/clients/javascript/source-maps/
+        - /docs/clients/javascript/troubleshooting/
+    - group: Other languages
+      items:
+        - /docs/clients/custom-clients/
+
+- section: Use Exceptionless
+  items:
+    - /docs/events/
+    - /docs/managing-stacks/
+    - /docs/filtering-and-searching/
+    - /docs/saved-views/
+    - /docs/environments/
+    - /docs/versioning/
+    - /docs/setting-log-levels/
+    - /docs/feature-usage/
+    - /docs/user-sessions/
+    - /docs/references-ids/
+    - /docs/notifications/
+    - /docs/integrations/
+    - /docs/navigation/
+    - /docs/project-settings/
+    - /docs/organizations/
+    - /docs/account/
+
+- section: How it works
+  items:
+    - /docs/concepts/stacking/
+    - /docs/concepts/limits/
+    - /docs/security/
+
+- section: Reference
+  items:
+    - /docs/reference/search-syntax/
+    - /docs/reference/event-format/
+    - /docs/reference/client-spec/
+    - /docs/FAQ/
+
+- section: REST API
+  items:
+    - /docs/api/
+    - /docs/api/authentication/
+    - /docs/api/project-tokens/
+    - /docs/api/posting-events/
+    - /docs/api/getting-events/
+
+- section: Self-hosting
+  items:
+    - /docs/self-hosting/
+    - /docs/self-hosting/docker/
+    - /docs/self-hosting/kubernetes/
+    - /docs/self-hosting/configuration/
+    - /docs/self-hosting/reverse-proxy/
+    - /docs/self-hosting/ai/
+    - /docs/self-hosting/administration/
+    - /docs/self-hosting/upgrading-self-hosted-instance/
