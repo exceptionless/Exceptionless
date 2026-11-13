@@ -55,7 +55,9 @@ export function getTasksQuery(request: GetTasksRequest) {
             return response.data ?? [];
         },
         queryKey: queryKeys.organization(request.route.organizationId),
-        refetchInterval: (query) => (query.state.data?.some((task) => isTaskActive(task.status)) ? ACTIVE_TASK_POLL_INTERVAL_MS : false)
+        refetchInterval: (query) => (query.state.data?.some((task) => isTaskActive(task.status)) ? ACTIVE_TASK_POLL_INTERVAL_MS : false),
+        // Updates for other organizations are not observed. Refresh on return even when the cached list has no active tasks to poll.
+        staleTime: 0
     }));
 }
 
