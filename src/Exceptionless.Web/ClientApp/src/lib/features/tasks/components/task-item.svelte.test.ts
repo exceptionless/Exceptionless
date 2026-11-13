@@ -68,18 +68,27 @@ describe('TaskItem', () => {
     });
 
     it('labels Cancel with the task it cancels', () => {
-        // Arrange & Act
-        render(TaskItem, { props: { canCancel: true, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask() } });
+        // Arrange
+        const props = { canCancel: true, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask() };
+
+        // Act
+        render(TaskItem, { props });
 
         // Assert
         expect(screen.getByRole('button', { name: 'Cancel Delete 1,234 events matching filter' })).toBeTruthy();
     });
 
     it('shows the queued state without a count', () => {
-        // Arrange & Act
-        render(TaskItem, {
-            props: { canCancel: true, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask({ processed: 0, status: BackgroundTaskStatus.Queued }) }
-        });
+        // Arrange
+        const props = {
+            canCancel: true,
+            onCancel: vi.fn(),
+            onDismiss: vi.fn(),
+            task: createTask({ processed: 0, status: BackgroundTaskStatus.Queued })
+        };
+
+        // Act
+        render(TaskItem, { props });
 
         // Assert
         expect(statusText()).toBe('Waiting to start');
@@ -87,8 +96,11 @@ describe('TaskItem', () => {
     });
 
     it('disables Cancel once cancellation was requested', () => {
-        // Arrange & Act
-        render(TaskItem, { props: { canCancel: true, isCancelling: true, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask() } });
+        // Arrange
+        const props = { canCancel: true, isCancelling: true, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask() };
+
+        // Act
+        render(TaskItem, { props });
 
         // Assert
         expect((screen.getByRole('button', { name: /^Cancel / }) as HTMLButtonElement).disabled).toBe(true);
@@ -110,8 +122,11 @@ describe('TaskItem', () => {
     });
 
     it('shows how far a cancelled task got', () => {
-        // Arrange & Act
-        render(TaskItem, { props: { onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask({ status: BackgroundTaskStatus.Cancelled }) } });
+        // Arrange
+        const props = { onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask({ status: BackgroundTaskStatus.Cancelled }) };
+
+        // Act
+        render(TaskItem, { props });
 
         // Assert
         expect(statusText()).toBe('Cancelled after 500 of 1,234');
@@ -119,28 +134,30 @@ describe('TaskItem', () => {
     });
 
     it('shows why a task failed', () => {
-        // Arrange & Act
-        render(TaskItem, {
-            props: {
-                onCancel: vi.fn(),
-                onDismiss: vi.fn(),
-                task: createTask({ message: 'The task stopped because of an unexpected error.', status: BackgroundTaskStatus.Failed })
-            }
-        });
+        // Arrange
+        const props = {
+            onCancel: vi.fn(),
+            onDismiss: vi.fn(),
+            task: createTask({ message: 'The task stopped because of an unexpected error.', status: BackgroundTaskStatus.Failed })
+        };
+
+        // Act
+        render(TaskItem, { props });
 
         // Assert
         expect(statusText()).toBe('Failed after 500 of 1,234 · The task stopped because of an unexpected error.');
     });
 
     it('shows the percent and message of a task that has no item counts', () => {
-        // Arrange & Act
-        render(TaskItem, {
-            props: {
-                onCancel: vi.fn(),
-                onDismiss: vi.fn(),
-                task: createTask({ can_cancel: false, message: 'Events removed: 12', processed: 0, progress: 50, total: 0, type: 'projects.reset-data' })
-            }
-        });
+        // Arrange
+        const props = {
+            onCancel: vi.fn(),
+            onDismiss: vi.fn(),
+            task: createTask({ can_cancel: false, message: 'Events removed: 12', processed: 0, progress: 50, total: 0, type: 'projects.reset-data' })
+        };
+
+        // Act
+        render(TaskItem, { props });
 
         // Assert
         expect(statusText()).toBe('50% · Events removed: 12');
@@ -148,8 +165,11 @@ describe('TaskItem', () => {
     });
 
     it('does not offer Cancel for a running task when cancelling is not allowed', () => {
-        // Arrange & Act
-        render(TaskItem, { props: { canCancel: false, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask({ can_cancel: false }) } });
+        // Arrange
+        const props = { canCancel: false, onCancel: vi.fn(), onDismiss: vi.fn(), task: createTask({ can_cancel: false }) };
+
+        // Act
+        render(TaskItem, { props });
 
         // Assert
         expect(screen.queryByRole('button', { name: /^Cancel / })).toBeNull();

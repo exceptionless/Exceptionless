@@ -195,7 +195,10 @@ describe('TaskPanel', () => {
     });
 
     it('renders nothing when there is nothing to show', () => {
-        // Arrange & Act
+        // Arrange
+        state.clear();
+
+        // Act
         render(TaskPanel);
 
         // Assert

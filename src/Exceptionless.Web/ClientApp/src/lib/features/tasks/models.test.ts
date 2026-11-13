@@ -109,8 +109,11 @@ describe('getProgressPercent', () => {
         [{ processed: 5, progress: 0, status: BackgroundTaskStatus.Running, total: 3 }, 100],
         [{ processed: 3, progress: 0, status: BackgroundTaskStatus.Completed, total: 0 }, 100],
         [{ processed: 0, progress: 42, status: BackgroundTaskStatus.Running, total: 0 }, 42]
-    ])('maps %j to %i percent', (task, expected) => {
-        // Arrange & Act
+    ])('maps %j to %i percent', (overrides, expected) => {
+        // Arrange
+        const task = createTask(overrides);
+
+        // Act
         const percent = getProgressPercent(task);
 
         // Assert

@@ -43,9 +43,12 @@ describe('EventsSelectAllBanner', () => {
         ['only some rows are selected', { isPageSelected: false, pageCount: 20, totalMatching: 1234 }],
         ['the page already shows every match', { isPageSelected: true, pageCount: 20, totalMatching: 20 }],
         ['the total is not known yet', { isPageSelected: true, pageCount: 20, totalMatching: undefined }]
-    ])('shows nothing when %s', (_, props) => {
-        // Arrange & Act
-        render(EventsSelectAllBanner, { props: { ...props, onClear: vi.fn(), onSelectAllMatching: vi.fn() } });
+    ])('shows nothing when %s', (_, selection) => {
+        // Arrange
+        const props = { ...selection, onClear: vi.fn(), onSelectAllMatching: vi.fn() };
+
+        // Act
+        render(EventsSelectAllBanner, { props });
 
         // Assert
         expect(screen.queryByRole('status')).toBeNull();
