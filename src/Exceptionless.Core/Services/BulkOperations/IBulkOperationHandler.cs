@@ -32,6 +32,10 @@ public interface IBulkOperationHandler
     /// Executes one batch of ids through the same code path as the single-item action, so side effects stay identical.
     /// Ids that cannot be processed (missing, or outside the task's organization and project) must be reported as failed.
     /// </summary>
+    /// <remarks>
+    /// Handlers must tolerate at-least-once execution: a process can stop after the action but before its checkpoint is
+    /// saved, so the same ids may be delivered again. Missing ids must still be reported as failed.
+    /// </remarks>
     Task<BulkBatchResult> ExecuteBatchAsync(BackgroundTask task, IReadOnlyCollection<string> ids, CancellationToken cancellationToken);
 }
 
@@ -63,6 +67,12 @@ public record BulkSelectionPreparation(BulkOperationCheckResult Check, long Tota
 }
 
 public record BulkSelectionPage(IReadOnlyList<string> Ids, string? NextCursor);
+
+/// <summary>A previously accepted selection can no longer run under the organization's current plan.</summary>
+public sealed class BulkSelectionRejectedException(BulkOperationCheckResult check) : InvalidOperationException(check.Message)
+{
+    public BulkOperationCheckResult Check { get; } = check;
+}
 
 public record BulkBatchResult(int Succeeded, int Failed, string? Message = null);
 

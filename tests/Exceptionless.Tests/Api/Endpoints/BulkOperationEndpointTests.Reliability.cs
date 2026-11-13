@@ -100,6 +100,37 @@ public partial class BulkOperationEndpointTests
     }
 
     [Fact]
+    public async Task Execute_PremiumFeaturesRemovedAfterCreation_FailsWithoutDeletingOrLosingTheSelectionCount()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(data => data.Event().TestProject().Message("selected"));
+        var organizations = GetService<IOrganizationRepository>();
+
+        // Act
+        var created = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, null, "message:selected"));
+
+        // Assert
+        Assert.Equal(1, created.Total);
+
+        // Arrange
+        var organization = await organizations.GetByIdAsync(SampleDataService.TEST_ORG_ID);
+        organization!.HasPremiumFeatures = false;
+        await organizations.SaveAsync(organization, options => options.ImmediateConsistency());
+
+        // Act
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        var finished = await GetOperationAsync(created.Id);
+
+        // Assert
+        Assert.Equal(BackgroundTaskStatus.Failed, finished.Status);
+        Assert.Equal(1, finished.Total);
+        Assert.Equal(0, finished.Processed);
+        Assert.Equal(0, finished.Succeeded);
+        Assert.Equal("Please upgrade your plan to use premium search features.", finished.Message);
+        Assert.Equal(["selected"], (await GetRemainingMessagesAsync(events)).ToArray());
+    }
+
+    [Fact]
     public async Task Create_MoreThanFiveHundredOperations_StillSeesTheNewestActiveOneForTheConflictCheck()
     {
         // Arrange
