@@ -258,7 +258,7 @@ public sealed class ExceptionlessMcpTools
                     new McpProjectSetupClient(".NET", "current"),
                     new McpProjectSetupClient("React Native", "current"),
                     new McpProjectSetupClient("Expo", "current"),
-                    new McpProjectSetupClient("JavaScript / Node.js", "legacy")
+                    new McpProjectSetupClient("JavaScript / Node.js", "current")
                 ],
                 ["Use the project's Client Setup page for the server URL, API key, and current installation instructions."]));
         }

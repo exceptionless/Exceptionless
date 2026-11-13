@@ -208,8 +208,8 @@ public class Mailer : IMailer
                 : $"[{organization.Name}] Events are currently being throttled.";
         string upgradeUrl = _appUrls.OrganizationUpgrade(organization.Id);
         string learnMoreUrl = isOverMonthlyLimit
-            ? "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-what-happens-if-the-organization-plan-limit-is-reached"
-            : "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled";
+            ? "https://exceptionless.com/docs/FAQ/#what-happens-if-the-organization-plan-limit-is-reached"
+            : "https://exceptionless.com/docs/FAQ/#why-is-my-organization-throttled";
         var message = new OrganizationNoticeEmail(
             subject,
             organization.Name,

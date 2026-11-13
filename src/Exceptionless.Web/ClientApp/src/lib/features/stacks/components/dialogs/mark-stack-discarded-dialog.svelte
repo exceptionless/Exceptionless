@@ -45,13 +45,15 @@
             </AlertDialog.Title>
             <AlertDialog.Description>
                 {#if stackTitle}<strong>{stackTitle}</strong><br />{/if}
-                Are you sure you want to discard all current
+                Are you sure you want to discard future events for
                 {#if count === 1}
-                    stack events
+                    this stack?
                 {:else}
-                    <Number value={count} /> stacks events
+                    <Number value={count} /> stacks?
                 {/if}
-                and discard any future events?
+                Existing events are kept. To remove them, delete the
+                {#if count === 1}stack{:else}stacks{/if}
+                instead.
             </AlertDialog.Description>
         </AlertDialog.Header>
         All future occurrences will be discarded and will not count against your event limit.
