@@ -50,34 +50,8 @@ public static class RelativeDateFreezer
             if (!IsRelative(node.Min) && !IsRelative(node.Max))
                 return;
 
-            // A range inside a group such as date:(>now-2h AND <=now) takes its field from the group.
-            string? field = node.Field ?? GetGroupField(node);
-            if (String.IsNullOrEmpty(field))
+            if (!await EnsureDateFieldAsync(node, [node.Min, node.Max]))
                 return;
-
-            if (node.Field is null)
-            {
-                // The group already decided the stored field: a custom field left unchanged there is not a date.
-                if (!IsStoredDateField(field) && (IsCustomField(field) || !await isDateFieldAsync(field)))
-                    return;
-            }
-            else
-            {
-                // Custom data fields are stored by type, and the events index picks a date field only when the bounds look like
-                // dates. Freezing the bounds would hide that, so name the stored date field directly.
-                string? storedField = EventFieldsQueryVisitor.GetCustomFieldName(field, [node.Min, node.Max]);
-                if (IsCustomField(field))
-                {
-                    if (!IsStoredDateField(storedField))
-                        return;
-
-                    node.Field = storedField;
-                }
-                else if (!IsStoredDateField(field) && !await isDateFieldAsync(field))
-                {
-                    return;
-                }
-            }
 
             if (IsRelative(node.Min))
             {
@@ -90,6 +64,51 @@ public static class RelativeDateFreezer
                 node.Max = _anchor + node.Max![3..];
                 node.IsMaxQuotedTerm = true;
             }
+        }
+
+        public override async Task VisitAsync(TermNode node, IQueryVisitorContext context)
+        {
+            if (node.IsRegexTerm || node.Proximity is not null || !IsRelative(node.Term) || node.Term!.IndexOfAny(['*', '?']) >= 0
+                || !await EnsureDateFieldAsync(node, [node.Term]))
+                return;
+
+            // Elasticsearch treats a date term such as now/d as an inclusive date range, so it needs the same anchor.
+            node.Term = _anchor + node.Term![3..];
+            node.IsQuotedTerm = true;
+        }
+
+        private async ValueTask<bool> EnsureDateFieldAsync(IFieldQueryNode node, string?[] terms)
+        {
+            // An unfielded term or range inside a group takes its field from the group.
+            string? field = node.Field ?? GetGroupField(node);
+            if (String.IsNullOrEmpty(field))
+                return false;
+
+            if (node.Field is null)
+            {
+                // The group already decided the stored field: a custom field left unchanged there is not a date.
+                if (!IsStoredDateField(field) && (IsCustomField(field) || !await isDateFieldAsync(field)))
+                    return false;
+            }
+            else
+            {
+                // Custom data fields are stored by type. Freezing their original terms would hide the date type,
+                // so name the stored date field directly.
+                string? storedField = EventFieldsQueryVisitor.GetCustomFieldName(field, terms);
+                if (IsCustomField(field))
+                {
+                    if (!IsStoredDateField(storedField))
+                        return false;
+
+                    node.Field = storedField;
+                }
+                else if (!IsStoredDateField(field) && !await isDateFieldAsync(field))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool IsCustomField(string field)
@@ -115,7 +134,7 @@ public static class RelativeDateFreezer
 
         private static bool IsRelative(string? value)
         {
-            return value is not null && value.StartsWith("now", StringComparison.OrdinalIgnoreCase) && (value.Length == 3 || value[3] is '+' or '-' or '/');
+            return value is not null && value.StartsWith("now", StringComparison.Ordinal) && (value.Length == 3 || value[3] is '+' or '-' or '/');
         }
     }
 }

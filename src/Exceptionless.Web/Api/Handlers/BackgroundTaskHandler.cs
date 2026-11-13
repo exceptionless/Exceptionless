@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -7,6 +8,9 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Core.Services.BulkOperations;
+using Exceptionless.DateTimeExtensions;
+using Exceptionless.DateTimeExtensions.FormatParsers;
+using Exceptionless.DateTimeExtensions.FormatParsers.PartParsers;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -30,7 +34,6 @@ public class BackgroundTaskHandler(
     ILogger<BackgroundTaskHandler> logger)
 {
     private const int MaxIds = 1000;
-    private static readonly ICollection<string> _allowedDateFields = new List<string> { EventIndex.Alias.Date };
 
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
@@ -192,10 +195,17 @@ public class BackgroundTaskHandler(
         if (model.Ids is { Count: > 0 })
             return (null, Result.Invalid(ValidationError.Create("selection", "A filter selection cannot include ids.")));
 
-        // Resolve the relative time range once, now. The end can never be later than this moment, so events that
-        // arrive after the operation is created are not part of it.
-        var timeInfo = TimeRangeParser.GetTimeInfo(model.Time, model.Offset, timeProvider, _allowedDateFields, EventIndex.Alias.Date,
-            organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
+        if (!TryParseSelectionOffset(model.Offset, out var utcOffset))
+            return (null, Result.Invalid(ValidationError.Create("selection.offset", "The UTC offset must be a valid whole-minute offset between -14h and 14h.")));
+
+        // Validate the requested range before retention and open-end defaults can turn a parse failure into all history.
+        // Reuse the parsed range so validation and execution resolve relative dates at exactly the same instant.
+        if (!TryParseSelectionTime(model.Time, new DateTimeOffset(utcNow).ToOffset(utcOffset), out var range))
+            return (null, Result.Invalid(ValidationError.Create("selection.time", "The time range is not valid.")));
+
+        var timeInfo = new TimeInfo { Field = EventIndex.Alias.Date, Offset = utcOffset, Range = range! };
+        timeInfo.ApplyMinimumUtcStartDate(organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
+        timeInfo.AdjustEndTimeIfMaxValue(timeProvider);
         var utcStart = timeInfo.Range.UtcStart;
         var utcEnd = timeInfo.Range.UtcEnd > utcNow ? utcNow : timeInfo.Range.UtcEnd;
         if (utcStart > utcEnd)
@@ -212,6 +222,104 @@ public class BackgroundTaskHandler(
         };
 
         return (selection, null);
+    }
+
+    internal static bool TryParseSelectionTime(string? time, DateTimeOffset relativeBaseTime, out DateTimeRange? range)
+    {
+        if (String.IsNullOrWhiteSpace(time))
+        {
+            range = DateTimeRange.Empty;
+            return true;
+        }
+
+        string expression = time.Trim();
+        if (expression.StartsWith($"{EventIndex.Alias.Date}|", StringComparison.Ordinal))
+            expression = expression[(EventIndex.Alias.Date.Length + 1)..];
+
+        // DateTimeRange.Parse uses the same unbounded sentinel for invalid input and a valid [* TO *] range.
+        // Its two-part parser also supplies missing bounds, so require both to have been parsed explicitly.
+        range = null;
+        try
+        {
+            foreach (var parser in DateTimeRange.FormatParsers)
+            {
+                if (parser is TwoPartFormatParser twoPartParser)
+                {
+                    var bounds = new List<DateTimeOffset>(2);
+                    var partParsers = twoPartParser.Parsers.Select<IPartParser, IPartParser>(partParser => partParser is WildcardPartParser
+                        ? new SelectionTimeWildcardPartParser(bounds)
+                        : new SelectionTimePartParser(partParser, bounds));
+                    range = new TwoPartFormatParser(partParsers).Parse(expression, relativeBaseTime);
+                    if (range is not null && (bounds.Count != 2 || bounds[0] > bounds[1]))
+                    {
+                        range = null;
+                        return false;
+                    }
+                }
+                else
+                {
+                    range = parser.Parse(expression, relativeBaseTime);
+                }
+
+                if (range is not null)
+                    return true;
+            }
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException or OverflowException)
+        {
+            range = null;
+        }
+
+        return false;
+    }
+
+    internal static bool TryParseSelectionOffset(string? offset, out TimeSpan utcOffset)
+    {
+        utcOffset = TimeSpan.Zero;
+        if (String.IsNullOrWhiteSpace(offset))
+            return true;
+
+        try
+        {
+            if (!TimeUnit.TryParse(offset, out var parsedOffset) || !parsedOffset.HasValue
+                || parsedOffset.Value < TimeSpan.FromHours(-14) || parsedOffset.Value > TimeSpan.FromHours(14)
+                || parsedOffset.Value.Ticks % TimeSpan.TicksPerMinute != 0)
+                return false;
+
+            utcOffset = parsedOffset.Value;
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or FormatException or OverflowException)
+        {
+            return false;
+        }
+    }
+
+    private sealed class SelectionTimePartParser(IPartParser inner, List<DateTimeOffset> bounds) : IPartParser
+    {
+        public Regex Regex => inner.Regex;
+
+        public DateTimeOffset? Parse(Match match, DateTimeOffset relativeBaseTime, bool isUpperLimit)
+        {
+            var value = inner.Parse(match, relativeBaseTime, isUpperLimit);
+            if (value.HasValue)
+                bounds.Add(value.Value);
+
+            return value;
+        }
+    }
+
+    // The two-part parser checks this type to keep wildcard bounds open regardless of bracket inclusivity.
+    private sealed class SelectionTimeWildcardPartParser(List<DateTimeOffset> bounds) : WildcardPartParser, IPartParser
+    {
+        DateTimeOffset? IPartParser.Parse(Match match, DateTimeOffset relativeBaseTime, bool isUpperLimit)
+        {
+            var value = base.Parse(match, relativeBaseTime, isUpperLimit);
+            if (value.HasValue)
+                bounds.Add(value.Value);
+
+            return value;
+        }
     }
 
     private static Result<T> ToResult<T>(BulkOperationCheckResult check)

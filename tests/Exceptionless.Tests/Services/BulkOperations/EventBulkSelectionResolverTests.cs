@@ -172,6 +172,37 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
         Assert.Contains("||-2h", preparation.PinnedState);
     }
 
+    [Fact]
+    public async Task GetPageAsync_RelativeDateTerm_UsesTheSelectionCutoffInsteadOfExecutionTime()
+    {
+        // Arrange
+        var now = TimeProvider.GetUtcNow().UtcDateTime;
+        var cutoff = now.AddDays(-1);
+        var (_, events) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Message("confirmed first").Date(cutoff.AddHours(-1))
+                .Mutate(e => e.Data = new DataDictionary { ["scheduled"] = cutoff })
+                .MutateStack(stack => stack.CreatedUtc = cutoff.AddHours(-2));
+            d.Event().TestProject().Message("confirmed second").Date(cutoff.AddHours(-2))
+                .Mutate(e => e.Data = new DataDictionary { ["scheduled"] = cutoff.Date.AddHours(12) })
+                .MutateStack(stack => stack.CreatedUtc = cutoff.AddHours(-2));
+            d.Event().TestProject().Message("different day").Date(cutoff.AddHours(-1))
+                .Mutate(e => e.Data = new DataDictionary { ["scheduled"] = now })
+                .MutateStack(stack => stack.CreatedUtc = cutoff.AddHours(-2));
+        });
+        // Use yesterday's selection anchor so the regression does not need to wait for Elasticsearch's clock to advance.
+        var task = NewFilterTask("data.scheduled:now/d", createdBefore: cutoff);
+        var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
+
+        // Act
+        var pages = await GetAllPagesAsync(task, preparation.PinnedState, size: 1);
+
+        // Assert
+        Assert.Equal(2, preparation.Total);
+        Assert.Equal(events.Where(e => e.Message!.StartsWith("confirmed", StringComparison.Ordinal)).OrderByDescending(e => e.Date).Select(e => e.Id).ToArray(),
+            pages.SelectMany(page => page).ToArray());
+    }
+
     [Theory]
     [InlineData(SampleDataService.TEST_ORG_ID, "type:log", BulkOperationCheckStatus.Ok)]
     [InlineData(SampleDataService.TEST_ORG_ID, "type:(log", BulkOperationCheckStatus.Invalid)]

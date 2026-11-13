@@ -67,10 +67,14 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         if (appFilter is null)
             return new BulkSelectionPreparation(BulkOperationCheckResult.Ok);
 
+        // Counting and paging must use the same relative-date anchor, even when preparation runs after the selected day.
+        string? frozenFilter = await RelativeDateFreezer.FreezeAsync(task.Bulk!.Selection.Filter,
+            task.Bulk.Selection.UtcCreatedBefore ?? task.CreatedUtc, IsDateFieldAsync);
+
         // The events list resolves stack level terms (for example status:open) and removes deleted stacks by looking up
         // matching stack ids. Do that once, here, and keep the result so every page uses the same stacks.
         var query = ApplyScope(new RepositoryQuery<PersistentEvent>(), appFilter, task.Bulk!.Selection)
-            .FilterExpression(task.Bulk!.Selection.Filter)
+            .FilterExpression(frozenFilter)
             .EnforceEventStackFilter();
 
         CountResult count;
@@ -85,8 +89,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
 
         var pinned = new PinnedEventSelection
         {
-            // Relative dates in the filter are pinned to the creation time, like the outer time window.
-            EventFilter = await RelativeDateFreezer.FreezeAsync(query.GetFilterExpression(), task.Bulk!.Selection.UtcCreatedBefore ?? task.CreatedUtc, IsDateFieldAsync),
+            EventFilter = query.GetFilterExpression(),
             ExcludedStackIds = query.GetExcludedStacks().ToArray(),
             StackIds = query.GetStacks().ToArray()
         };

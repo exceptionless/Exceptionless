@@ -19,6 +19,11 @@ public class RelativeDateFreezerTests : TestWithLoggingBase
     [InlineData("date:(>now-2h AND <=now)", "date:(>\"2026-11-03T04:05:06.789Z||-2h\" AND <=\"2026-11-03T04:05:06.789Z||\")")]
     [InlineData("data.date:(>=now/d AND <now/d+1d)", "idx.date-d:(>=\"2026-11-03T04:05:06.789Z||/d\" AND <\"2026-11-03T04:05:06.789Z||/d+1d\")")]
     [InlineData("data.date:[now/d-4d TO now/d+1d}", "idx.date-d:[\"2026-11-03T04:05:06.789Z||/d-4d\" TO \"2026-11-03T04:05:06.789Z||/d+1d\"}")]
+    [InlineData("date:now/d", "date:\"2026-11-03T04:05:06.789Z||/d\"")]
+    [InlineData("NOT date:now/d^2", "NOT date:\"2026-11-03T04:05:06.789Z||/d\"^2")]
+    [InlineData("date:(now/d OR now/d-1d)", "date:(\"2026-11-03T04:05:06.789Z||/d\" OR \"2026-11-03T04:05:06.789Z||/d-1d\")")]
+    [InlineData("data.date:now/d", "idx.date-d:\"2026-11-03T04:05:06.789Z||/d\"")]
+    [InlineData("data.date:(now/d OR now/d-1d)", "idx.date-d:(\"2026-11-03T04:05:06.789Z||/d\" OR \"2026-11-03T04:05:06.789Z||/d-1d\")")]
     public async Task FreezeAsync_RelativeDatesOnDateFields_AreAnchoredToTheGivenTime(string filter, string expected)
     {
         // Arrange
@@ -37,6 +42,16 @@ public class RelativeDateFreezerTests : TestWithLoggingBase
     [InlineData("")]
     [InlineData("type:error")]
     [InlineData("message:now")]
+    [InlineData("environment:now/d")]
+    [InlineData("environment:(now/d OR now/d-1d)")]
+    [InlineData("data.name:(hello OR now/d)")]
+    [InlineData("ref.parent:now/d")]
+    [InlineData("date:NOW/d")]
+    [InlineData("date:[NOW-1d TO NOW]")]
+    [InlineData("date:now/d*")]
+    [InlineData("date:now/d?")]
+    [InlineData("date:now/d~1")]
+    [InlineData("date:/now.*/")]
     [InlineData("date:[2026-01-01 TO 2026-02-01]")]
     [InlineData("tag:[nowhere TO zebra]")]
     [InlineData("environment:[now TO z]")]
