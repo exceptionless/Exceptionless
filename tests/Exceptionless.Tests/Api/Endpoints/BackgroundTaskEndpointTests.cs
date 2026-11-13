@@ -169,10 +169,12 @@ public class BackgroundTaskEndpointTests : IntegrationTestsBase
         // Act
         var accepted = await SendRequestAsAsync<WorkInProgressResult>(r => r.Post().AsTestOrganizationUser()
             .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "reset-data").StatusCodeShouldBeAccepted());
+
+        // Assert
         string taskId = Assert.Single(accepted!.Workers);
+
+        // Act
         var queued = await GetTaskAsync(taskId);
-        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
-        var completed = await GetTaskAsync(taskId);
 
         // Assert
         Assert.Equal(BackgroundTaskTypes.ResetProjectData, queued.Type);
@@ -180,12 +182,19 @@ public class BackgroundTaskEndpointTests : IntegrationTestsBase
         Assert.False(queued.CanCancel);
         Assert.Equal(SampleDataService.TEST_PROJECT_ID, queued.ProjectId);
         Assert.StartsWith("Reset data for ", queued.Description);
+
+        // Act
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        var completed = await GetTaskAsync(taskId);
+        await RefreshDataAsync();
+        var remaining = await GetService<IEventRepository>().GetByIdsAsync(events.Select(e => e.Id).ToArray(), o => o.Cache(false));
+
+        // Assert
         Assert.Equal(BackgroundTaskStatus.Completed, completed.Status);
         Assert.Equal(100, completed.Progress);
         Assert.NotNull(completed.StartedUtc);
         Assert.NotNull(completed.CompletedUtc);
-        await RefreshDataAsync();
-        Assert.Empty(await GetService<IEventRepository>().GetByIdsAsync(events.Select(e => e.Id).ToArray(), o => o.Cache(false)));
+        Assert.Empty(remaining);
     }
 
     [Fact]
@@ -216,19 +225,30 @@ public class BackgroundTaskEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task SampleData_ReturnsATaskIdThatTracksTheJobUntilItCompletes()
     {
+        // Arrange
+        string projectId = SampleDataService.TEST_PROJECT_ID;
+
         // Act
         var accepted = await SendRequestAsAsync<WorkInProgressResult>(r => r.Post().AsTestOrganizationUser()
-            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "sample-data").StatusCodeShouldBeAccepted());
+            .AppendPaths("projects", projectId, "sample-data").StatusCodeShouldBeAccepted());
+
+        // Assert
         string taskId = Assert.Single(accepted!.Workers);
+
+        // Act
         var queued = await GetTaskAsync(taskId);
-        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
-        var completed = await GetTaskAsync(taskId);
 
         // Assert
         Assert.Equal(BackgroundTaskTypes.GenerateProjectSampleData, queued.Type);
         Assert.Equal(BackgroundTaskStatus.Queued, queued.Status);
         Assert.False(queued.CanCancel);
         Assert.StartsWith("Generate sample data for ", queued.Description);
+
+        // Act
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        var completed = await GetTaskAsync(taskId);
+
+        // Assert
         Assert.Equal(BackgroundTaskStatus.Completed, completed.Status);
         Assert.Equal(100, completed.Progress);
     }
@@ -236,9 +256,12 @@ public class BackgroundTaskEndpointTests : IntegrationTestsBase
     [Fact]
     public async Task ResetAndSampleData_ProjectOfAnotherOrganization_IsNotFoundAndTracksNothing()
     {
+        // Arrange
+        string projectId = SampleDataService.TEST_PROJECT_ID;
+
         // Act
-        await SendRequestAsync(r => r.Post().AsFreeOrganizationUser().AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "reset-data").StatusCodeShouldBeNotFound());
-        await SendRequestAsync(r => r.Post().AsFreeOrganizationUser().AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, "sample-data").StatusCodeShouldBeNotFound());
+        await SendRequestAsync(r => r.Post().AsFreeOrganizationUser().AppendPaths("projects", projectId, "reset-data").StatusCodeShouldBeNotFound());
+        await SendRequestAsync(r => r.Post().AsFreeOrganizationUser().AppendPaths("projects", projectId, "sample-data").StatusCodeShouldBeNotFound());
 
         // Assert
         Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
