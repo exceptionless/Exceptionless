@@ -1,5 +1,12 @@
 import { array, boolean, date, type infer as Infer, object, string } from 'zod';
 
+import { UpdateTrialSettingsSchema } from '#generated/schemas.ts';
+
+export const TrialSettingsFormSchema = UpdateTrialSettingsSchema.extend({
+    blocked_email_domains: string()
+});
+export type TrialSettingsFormData = Infer<typeof TrialSettingsFormSchema>;
+
 export const AssistantSettingsSchema = object({
     model: string().trim().min(1, 'Enter an OpenRouter model ID.').max(200)
 });

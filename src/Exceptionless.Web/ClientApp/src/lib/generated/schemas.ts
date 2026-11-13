@@ -92,6 +92,7 @@ export const AssistantAccessResponseSchema = object({
     .min(1, "Minimum plan id is required")
     .nullable()
     .optional(),
+  email_verification_required: boolean(),
 });
 export type AssistantAccessResponseFormData = Infer<
   typeof AssistantAccessResponseSchema
@@ -801,6 +802,13 @@ export const TokenResultSchema = object({
 });
 export type TokenResultFormData = Infer<typeof TokenResultSchema>;
 
+export const TrialSettingsSchema = object({
+  blocked_email_domains: array(string()),
+  default_blocked_email_domains: array(string()),
+  is_default: boolean(),
+});
+export type TrialSettingsFormData = Infer<typeof TrialSettingsSchema>;
+
 export const UpdateAssistantConversationSharingSchema = object({
   enabled: boolean().nullable(),
 });
@@ -905,6 +913,13 @@ export const UpdateTokenSchema = object({
 });
 export type UpdateTokenFormData = Infer<typeof UpdateTokenSchema>;
 
+export const UpdateTrialSettingsSchema = object({
+  blocked_email_domains: array(string()).nullable().optional(),
+});
+export type UpdateTrialSettingsFormData = Infer<
+  typeof UpdateTrialSettingsSchema
+>;
+
 export const UpdateUserSchema = object({
   full_name: string().min(1, "Full name is required").optional(),
   email_notifications_enabled: boolean().optional(),
@@ -964,6 +979,7 @@ export const UserSchema = object({
     .nullable()
     .optional(),
   verify_email_address_token_expiration: iso.datetime(),
+  trial_started_utc: iso.datetime().nullable().optional(),
   is_active: boolean(),
   roles: array(string()),
   created_utc: iso.datetime(),
@@ -999,6 +1015,13 @@ export const UserSavedViewOrderPreferenceSchema = object({
 });
 export type UserSavedViewOrderPreferenceFormData = Infer<
   typeof UserSavedViewOrderPreferenceSchema
+>;
+
+export const VerifyEmailAddressResultSchema = object({
+  email_address: email(),
+});
+export type VerifyEmailAddressResultFormData = Infer<
+  typeof VerifyEmailAddressResultSchema
 >;
 
 export const ViewBackgroundTaskSchema = object({
@@ -1118,6 +1141,7 @@ export const ViewOrganizationSchema = object({
     .optional(),
   billing_status: BillingStatusSchema,
   billing_price: number(),
+  trial_ends_utc: iso.datetime().nullable().optional(),
   max_events_per_month: int32(),
   bonus_events_per_month: int32(),
   bonus_expiration: iso.datetime().nullable().optional(),

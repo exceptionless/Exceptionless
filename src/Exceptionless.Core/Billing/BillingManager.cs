@@ -1,33 +1,79 @@
-﻿using Exceptionless.Core.Extensions;
+﻿using Exceptionless.Core.Configuration;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services;
+using Exceptionless.DateTimeExtensions;
+using Foundatio.Caching;
 using Foundatio.Lock;
+using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 
 namespace Exceptionless.Core.Billing;
 
 public class BillingManager
 {
     private static readonly TimeSpan BillingLockDuration = TimeSpan.FromMinutes(5);
+    private readonly ICacheClient _cacheClient;
     private readonly ILockProvider _lockProvider;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
+    private readonly ITrialClaimRepository _trialClaimRepository;
     private readonly IUserRepository _userRepository;
+    private readonly SystemSettingsService _systemSettingsService;
     private readonly BillingPlans _plans;
+    private readonly BillingOptions _billingOptions;
     private readonly TimeProvider _timeProvider;
 
-    public BillingManager(ILockProvider lockProvider, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingPlans plans, TimeProvider timeProvider)
+    public BillingManager(
+        ICacheClient cacheClient,
+        ILockProvider lockProvider,
+        IOrganizationRepository organizationRepository,
+        IProjectRepository projectRepository,
+        ITrialClaimRepository trialClaimRepository,
+        IUserRepository userRepository,
+        SystemSettingsService systemSettingsService,
+        BillingPlans plans,
+        AppOptions appOptions,
+        TimeProvider timeProvider)
     {
+        _cacheClient = cacheClient;
         _lockProvider = lockProvider;
         _organizationRepository = organizationRepository;
         _projectRepository = projectRepository;
+        _trialClaimRepository = trialClaimRepository;
         _userRepository = userRepository;
+        _systemSettingsService = systemSettingsService;
         _plans = plans;
+        _billingOptions = appOptions.BillingOptions;
         _timeProvider = timeProvider;
     }
 
     public Task<ILock> AcquireOrganizationLockAsync(string organizationId)
         => _lockProvider.AcquireAsync(GetOrganizationLockKey(organizationId), BillingLockDuration, TimeSpan.FromSeconds(30));
+
+    /// <summary>
+    /// Serializes creating Free or trial organizations and downgrades to Free for one owner, so concurrent requests
+    /// can't both pass the one-free-organization rule. It lasts as long as the billing lock because a downgrade holds
+    /// it across the same Stripe calls.
+    /// </summary>
+    public Task<ILock> AcquireOwnerFreeOrganizationLockAsync(string userId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+
+        return _lockProvider.AcquireAsync(GetOwnerFreeOrganizationLockKey(userId), BillingLockDuration, TimeSpan.FromSeconds(30));
+    }
+
+    /// <summary>
+    /// Serializes trial starts for one mailbox, so two aliases of it can't both claim a trial at once.
+    /// </summary>
+    public Task<ILock> AcquireTrialEmailLockAsync(User user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        return _lockProvider.AcquireAsync(GetTrialEmailLockKey(user.EmailAddress), BillingLockDuration, TimeSpan.FromSeconds(30));
+    }
 
     public Task<ILock?> TryAcquireOrganizationLockAsync(string organizationId)
         => _lockProvider.TryAcquireAsync(GetOrganizationLockKey(organizationId), BillingLockDuration, TimeSpan.Zero);
@@ -37,8 +83,121 @@ public class BillingManager
         if (user is null)
             return false;
 
-        var organizations = (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray())).Where(o => o.PlanId == _plans.FreePlan.Id);
-        return !organizations.Any();
+        var organizations = await GetFreeOrTrialOrganizationsCountedForAsync(user);
+        return organizations.Count is 0;
+    }
+
+    /// <summary>
+    /// A no-card trial is for a user who belongs to no organization and has no existing organizations they created,
+    /// whose mailbox hasn't claimed a trial in the last <see cref="BillingOptions.TrialClaimRetentionDays"/> days (under
+    /// another alias or a deleted account), and whose email isn't on a blocked disposable domain. Call it while holding
+    /// <see cref="AcquireTrialEmailLockAsync"/>.
+    /// </summary>
+    public async Task<bool> CanStartTrialAsync(User user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        if (_billingOptions.TrialDays is <= 0 || user.OrganizationIds.Count is > 0)
+            return false;
+
+        if (user.TrialStartedUtc is { } trialStartedUtc && trialStartedUtc.IsAfter(GetTrialClaimCutoffUtc()))
+            return false;
+
+        var blockedEmailDomains = await _systemSettingsService.GetTrialBlockedEmailDomainsAsync();
+        if (TrialEmailAddress.IsBlockedDomain(user.EmailAddress, blockedEmailDomains))
+            return false;
+
+        var created = await _organizationRepository.CountAsync(q => q.FieldEquals(o => o.CreatedByUserId, user.Id));
+        if (created.Total is > 0)
+            return false;
+
+        var claim = await _trialClaimRepository.GetByIdAsync(TrialEmailAddress.GetClaimId(user.EmailAddress));
+        return !IsActiveClaim(claim);
+    }
+
+    public void StartTrial(Organization organization, User user)
+    {
+        ArgumentNullException.ThrowIfNull(organization);
+        ArgumentNullException.ThrowIfNull(user);
+
+        ApplyTrialPlan(organization, user);
+        user.TrialStartedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+    }
+
+    /// <summary>
+    /// Tries to record the user's mailbox trial claim after confirming eligibility and before granting the trial, while
+    /// still holding <see cref="AcquireTrialEmailLockAsync"/>. The claim remains if subsequent organization creation
+    /// fails because the outcome of those writes may be uncertain.
+    /// </summary>
+    /// <returns>True only when this call created or renewed the mailbox claim; false when an active claim already exists.</returns>
+    public async Task<bool> TryClaimTrialAsync(User user)
+    {
+        ArgumentNullException.ThrowIfNull(user);
+
+        string claimId = TrialEmailAddress.GetClaimId(user.EmailAddress);
+        try
+        {
+            // Add is create-only: the normalized mailbox ID enforces uniqueness even without the lock.
+            await _trialClaimRepository.AddAsync(new TrialClaim { Id = claimId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime });
+            return true;
+        }
+        catch (DuplicateDocumentException)
+        {
+            // Renew expired claims with a version check, so storage enforces uniqueness even if the mailbox lock is lost.
+            var claim = await _trialClaimRepository.GetByIdAsync(claimId);
+            if (IsActiveClaim(claim))
+                return false;
+
+            try
+            {
+                if (claim is null)
+                {
+                    // Cleanup removed the expired claim after the create failed; create-only admission still applies.
+                    await _trialClaimRepository.AddAsync(new TrialClaim { Id = claimId, CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime });
+                }
+                else
+                {
+                    claim.CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+                    await _trialClaimRepository.SaveAsync(claim);
+                }
+
+                return true;
+            }
+            catch (DocumentException ex) when (ex is DuplicateDocumentException or VersionConflictDocumentException)
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Removes trial claims older than <see cref="BillingOptions.TrialClaimRetentionDays"/>, so those mailboxes can trial again.
+    /// </summary>
+    public Task<long> RemoveExpiredTrialClaimsAsync()
+        => _trialClaimRepository.RemoveCreatedBeforeAsync(GetTrialClaimCutoffUtc());
+
+    private bool IsActiveClaim(TrialClaim? claim) => claim is not null && claim.CreatedUtc.IsAfter(GetTrialClaimCutoffUtc());
+
+    private DateTime GetTrialClaimCutoffUtc() => _timeProvider.GetUtcNow().UtcDateTime.AddDays(-_billingOptions.TrialClaimRetentionDays);
+
+    /// <summary>
+    /// Applies the trial plan and starts a full-length trial. Also used by admins to extend a trial.
+    /// </summary>
+    public void ApplyTrialPlan(Organization organization, User? user = null)
+    {
+        ArgumentNullException.ThrowIfNull(organization);
+
+        int trialDays = _billingOptions.TrialDays is > 0 ? _billingOptions.TrialDays : 14;
+        ApplyBillingPlan(organization, _plans.TrialPlan, user);
+        organization.TrialEndsUtc = _timeProvider.GetUtcNow().UtcDateTime.AddDays(trialDays);
+        organization.TrialReminderSentUtc = null;
+    }
+
+    public void EndTrial(Organization organization)
+    {
+        ArgumentNullException.ThrowIfNull(organization);
+
+        ApplyBillingPlan(organization, _plans.FreePlan);
     }
 
     public async Task<bool> CanAddUserAsync(Organization organization)
@@ -46,8 +205,11 @@ public class BillingManager
         if (String.IsNullOrWhiteSpace(organization?.Id))
             return false;
 
-        long numberOfUsers = (await _userRepository.GetByOrganizationIdAsync(organization.Id)).Total + organization.Invites.Count;
-        return organization.MaxUsers <= -1 || numberOfUsers < organization.MaxUsers;
+        if (organization.MaxUsers is BillingPlan.Unlimited)
+            return true;
+
+        var users = await _userRepository.GetByOrganizationIdAsync(organization.Id);
+        return users.Total + organization.Invites.Count < organization.MaxUsers;
     }
 
     public async Task<bool> CanAddProjectAsync(Project project)
@@ -59,8 +221,11 @@ public class BillingManager
         if (organization is null)
             return false;
 
-        long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(project.OrganizationId);
-        return organization.MaxProjects == -1 || projectCount < organization.MaxProjects;
+        if (organization.MaxProjects is BillingPlan.Unlimited)
+            return true;
+
+        long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id);
+        return projectCount < organization.MaxProjects;
     }
 
     public async Task<bool> HasPremiumFeaturesAsync(string organizationId)
@@ -77,21 +242,78 @@ public class BillingManager
         if (String.IsNullOrWhiteSpace(organization?.Id))
             return ChangePlanResult.FailWithMessage("Invalid Organization");
 
-        long currentNumberOfUsers = (await _userRepository.GetByOrganizationIdAsync(organization.Id)).Total + organization.Invites.Count;
-        int maxUsers = plan.MaxUsers != -1 ? plan.MaxUsers : Int32.MaxValue;
-        if (currentNumberOfUsers > maxUsers)
-            return ChangePlanResult.FailWithMessage($"Please remove {currentNumberOfUsers - maxUsers} user{((currentNumberOfUsers - maxUsers) > 0 ? "s" : String.Empty)} and try again.");
+        // Ensure the organization's owner can't own more than one free or trial organization, no matter which member downgrades it.
+        if (_plans.IsFreePlan(plan.Id) && user is not null)
+        {
+            bool hasOtherFreeOrTrialOrganization = await OwnerHasOtherFreeOrTrialOrganizationAsync(organization, user);
+            if (hasOtherFreeOrTrialOrganization)
+                return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
+        }
 
-        int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : Int32.MaxValue;
-        long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id);
-        if (projectCount > maxProjects)
-            return ChangePlanResult.FailWithMessage($"Please remove {projectCount - maxProjects} project{((projectCount - maxProjects) > 0 ? "s" : String.Empty)} and try again.");
-
-        // Ensure the user can't be apart of more than one free plan.
-        if (String.Equals(plan.Id, _plans.FreePlan.Id) && user is not null && (await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray())).Any(o => String.Equals(o.PlanId, _plans.FreePlan.Id)))
-            return ChangePlanResult.FailWithMessage("You already have one free account. You are not allowed to create more than one free account.");
+        string? limitError = await GetPlanLimitErrorAsync(organization, plan.MaxUsers, plan.MaxProjects);
+        if (limitError is not null)
+            return ChangePlanResult.FailWithMessage(limitError);
 
         return new ChangePlanResult { Success = true };
+    }
+
+    private async Task<string?> GetPlanLimitErrorAsync(Organization organization, int maxUsers, int maxProjects)
+    {
+        if (maxUsers is >= 0)
+        {
+            var users = await _userRepository.GetByOrganizationIdAsync(organization.Id);
+            long excessUsers = users.Total + organization.Invites.Count - maxUsers;
+            if (excessUsers is > 0)
+                return $"Please remove {excessUsers} {(excessUsers is 1 ? "user or pending invitation" : "users or pending invitations")} and try again.";
+        }
+
+        if (maxProjects is >= 0)
+        {
+            long projectCount = await _projectRepository.GetCountByOrganizationIdAsync(organization.Id);
+            long excessProjects = projectCount - maxProjects;
+            if (excessProjects is > 0)
+                return $"Please remove {excessProjects} {(excessProjects is 1 ? "project" : "projects")} and try again.";
+        }
+
+        return null;
+    }
+
+    public async Task<bool> UpdatePlanLimitSuspensionAsync(Organization organization)
+    {
+        if (organization.IsSuspended && organization.SuspensionCode is not SuspensionCode.PlanLimit)
+            return false;
+
+        string? error = await GetPlanLimitErrorAsync(organization, organization.MaxUsers, organization.MaxProjects);
+        if (error is null)
+        {
+            if (!organization.IsSuspended)
+                return false;
+
+            organization.RemoveSuspension();
+            return true;
+        }
+
+        if (organization.IsSuspended && String.Equals(organization.SuspensionNotes, error, StringComparison.Ordinal))
+            return false;
+
+        organization.IsSuspended = true;
+        organization.SuspensionCode = SuspensionCode.PlanLimit;
+        organization.SuspensionDate = _timeProvider.GetUtcNow().UtcDateTime;
+        organization.SuspendedByUserId = StripeConstants.SystemUserId;
+        organization.SuspensionNotes = error;
+        return true;
+    }
+
+    public async Task RecheckPlanLimitSuspensionAsync(string organizationId)
+    {
+        await using var billingLock = await AcquireOrganizationLockAsync(organizationId);
+        var organization = await _organizationRepository.GetByIdAsync(organizationId);
+        if (organization is null || organization.SuspensionCode is not SuspensionCode.PlanLimit)
+            return;
+
+        bool changed = await UpdatePlanLimitSuspensionAsync(organization);
+        if (changed)
+            await _organizationRepository.SaveAsync(organization, command => command.Cache().Originals());
     }
 
     public BillingPlan? GetBillingPlan(string planId)
@@ -136,6 +358,7 @@ public class BillingManager
     internal void SetStripeSubscriptionId(Organization organization, string? subscriptionId)
     {
         ArgumentNullException.ThrowIfNull(organization);
+
         if (String.Equals(organization.StripeSubscriptionId, subscriptionId, StringComparison.Ordinal))
             return;
 
@@ -143,9 +366,74 @@ public class BillingManager
         organization.StripeSubscriptionEventDate = null;
     }
 
+    private async Task<bool> OwnerHasOtherFreeOrTrialOrganizationAsync(Organization organization, User actingUser)
+    {
+        // Organizations created before creators were recorded have no owner, so the member downgrading them is held to the rule.
+        var owner = actingUser;
+        if (organization.CreatedByUserId is not null && !String.Equals(organization.CreatedByUserId, actingUser.Id, StringComparison.Ordinal))
+            owner = await _userRepository.GetByIdAsync(organization.CreatedByUserId, o => o.Cache(false));
+
+        IReadOnlyCollection<Organization> counted;
+        if (owner is not null)
+            counted = await GetFreeOrTrialOrganizationsCountedForAsync(owner);
+        else
+            counted = await GetCreatedFreeOrTrialOrganizationsAsync(organization.CreatedByUserId!);
+        return counted.Any(o => !String.Equals(o.Id, organization.Id, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// The free and trial organizations that count toward a user's one-free-organization limit: the ones they created,
+    /// plus, for organizations created before creators were recorded, the ones they're a member of.
+    /// </summary>
+    private async Task<IReadOnlyCollection<Organization>> GetFreeOrTrialOrganizationsCountedForAsync(User user)
+    {
+        var created = await GetCreatedFreeOrTrialOrganizationsAsync(user.Id);
+        if (user.OrganizationIds.Count is 0)
+            return created;
+
+        var organizations = await _organizationRepository.GetByIdsAsync(user.OrganizationIds.ToArray());
+        var withoutRecordedCreators = organizations.Where(o => o.CreatedByUserId is null && _plans.IsFreeOrTrialPlan(o.PlanId));
+        return created.Concat(withoutRecordedCreators).DistinctBy(o => o.Id).ToList();
+    }
+
+    /// <summary>
+    /// The free and trial organizations a user created, including ones they're no longer a member of. The
+    /// one-free-organization rule keeps this to a handful, so a single page is enough.
+    /// </summary>
+    private async Task<IReadOnlyCollection<Organization>> GetCreatedFreeOrTrialOrganizationsAsync(string userId)
+    {
+        var results = await _organizationRepository.FindAsync(q => q
+            .FieldEquals(o => o.CreatedByUserId, userId)
+            .FieldEquals(o => o.PlanId, _plans.FreePlan.Id, _plans.TrialPlan.Id), o => o.PageLimit(100));
+        return results.Documents;
+    }
+
+    /// <summary>
+    /// Counts an invite from a Free or trial organization toward the inviter's daily limit, and returns whether it's
+    /// within <see cref="BillingOptions.FreeInviteDailyLimit"/>.
+    /// </summary>
+    public async Task<bool> TryCountFreeInviteAsync(string userId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        long invites = await _cacheClient.IncrementAsync(GetFreeInviteCountCacheKey(userId, utcNow), 1, utcNow.Date.AddDays(1));
+        return invites <= _billingOptions.FreeInviteDailyLimit;
+    }
+
+    private static string GetFreeInviteCountCacheKey(string userId, DateTime utcNow)
+        => $"User:{userId}:free-invites:{utcNow:yyyyMMdd}";
+
+    private static string GetOwnerFreeOrganizationLockKey(string userId)
+        => $"User:{userId}:free-organization";
+
+    private static string GetTrialEmailLockKey(string emailAddress)
+        => $"Trial:{TrialEmailAddress.GetClaimId(emailAddress)}";
+
     private static string GetOrganizationLockKey(string organizationId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(organizationId);
+
         return $"Organization:{organizationId}:billing-plan";
     }
 }

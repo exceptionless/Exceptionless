@@ -266,6 +266,8 @@ public class AdminHandler(
         if (String.IsNullOrEmpty(message.OrganizationId) || !httpContext.Request.CanAccessOrganization(message.OrganizationId))
             return new ChangePlanResponse(false, "Invalid Organization Id.");
 
+        // Share the billing lock with user plan changes and the trial expiration job, and reload inside it.
+        await using var billingLock = await billingManager.AcquireOrganizationLockAsync(message.OrganizationId);
         var organization = await organizationRepository.GetByIdAsync(message.OrganizationId);
         if (organization is null)
             return new ChangePlanResponse(false, "Invalid Organization Id.");
@@ -274,12 +276,26 @@ public class AdminHandler(
         if (plan is null)
             return new ChangePlanResponse(false, "Invalid PlanId.");
 
-        organization.BillingStatus = !String.Equals(plan.Id, plans.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
+        if (message.TrialEndsUtc is not null && !plans.IsTrialPlan(plan.Id))
+            return new ChangePlanResponse(false, "A trial end date can only be set for a trial plan.");
+
+        // Trials start or extend a no-card trial. A paying organization keeps its subscription, so don't move it onto one.
+        if (plans.IsTrialPlan(plan.Id) && !plans.IsFreeOrTrialPlan(organization.PlanId))
+            return new ChangePlanResponse(false, "Only free or trial organizations can be put on a trial.");
+
+        organization.BillingStatus = !plans.IsFreeOrTrialPlan(plan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
         organization.RemoveSuspension();
         var currentUser = httpContext.Request.GetUser();
-        billingManager.ApplyBillingPlan(organization, plan, currentUser, false);
+        if (plans.IsTrialPlan(plan.Id))
+        {
+            billingManager.ApplyTrialPlan(organization, currentUser);
+            if (message.TrialEndsUtc is not null)
+                organization.TrialEndsUtc = message.TrialEndsUtc.Value.UtcDateTime;
+        }
+        else
+            billingManager.ApplyBillingPlan(organization, plan, currentUser, false);
 
-        await organizationRepository.SaveAsync(organization, o => o.Cache().Originals());
+        await organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency().Cache().Originals());
         await messagePublisher.PublishAsync(new PlanChanged
         {
             OrganizationId = organization.Id

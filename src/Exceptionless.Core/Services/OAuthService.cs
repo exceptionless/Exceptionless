@@ -64,6 +64,7 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.McpRead,
         AuthorizationRoles.ProjectsRead,
         AuthorizationRoles.StacksRead,
+        AuthorizationRoles.StacksWrite,
         AuthorizationRoles.EventsRead,
         AuthorizationRoles.OfflineAccess
     ];
@@ -206,7 +207,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
 
     private async Task<OAuthApplication> RefreshObservedApplicationAsync(OAuthApplication application)
     {
-        if (!String.Equals(application.CreatedByUserId, OAuthApplication.SystemUserId, StringComparison.Ordinal)
+        // Once an administrator saves an application, a metadata change must not replace their settings or reclassify it.
+        if (!IsSelfRegistered(application)
             || !String.Equals(application.Notes, ClientMetadataNotes, StringComparison.Ordinal)
             || !options.EnableClientIdMetadataDocuments
             || !OAuthClientMetadataService.TryCreateClientMetadataDocumentUri(application.ClientId, out _))
@@ -292,9 +294,17 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             ClientId = application.ClientId,
             Name = application.Name,
             RedirectUris = application.RedirectUris,
-            Scopes = application.Scopes,
+            // A self-registered client chose its own scopes, and could register again with all of them, so that list
+            // restricts nothing. The signed-in user's consent limits its grant. Scopes an administrator saved stay enforced.
+            Scopes = IsSelfRegistered(application) ? SupportedScopes : application.Scopes,
             IsDisabled = application.IsDisabled
         }.Normalize();
+    }
+
+    private static bool IsSelfRegistered(OAuthApplication application)
+    {
+        return String.Equals(application.CreatedByUserId, OAuthApplication.SystemUserId, StringComparison.Ordinal)
+            && String.Equals(application.UpdatedByUserId, OAuthApplication.SystemUserId, StringComparison.Ordinal);
     }
 
     private static string NormalizeClientName(string? clientName, string clientId)
@@ -334,7 +344,10 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             .ToArray();
     }
 
-    public async Task<OAuthValidationResult> ValidateAuthorizationRequestAsync(OAuthAuthorizeRequest request, string expectedResource, OAuthResourceDefinition resourceDefinition)
+    // narrowToClientScopes drops optional supported scopes an administrator has not allowed for this client, for building
+    // the consent page, because clients commonly request everything discovery advertises. Leave it false when issuing a
+    // code, which stores the scopes from the request as submitted.
+    public async Task<OAuthValidationResult> ValidateAuthorizationRequestAsync(OAuthAuthorizeRequest request, string expectedResource, OAuthResourceDefinition resourceDefinition, bool narrowToClientScopes = false)
     {
         if (String.IsNullOrWhiteSpace(request.ClientId))
             return OAuthValidationResult.Invalid("invalid_request", "Missing client_id.");
@@ -360,6 +373,15 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
             return OAuthValidationResult.Invalid("invalid_scope", "At least one scope is required.");
 
         var allowedScopes = GetAllowedScopes(client);
+        if (narrowToClientScopes)
+        {
+            requestedScopes = requestedScopes
+                .Where(s => allowedScopes.Contains(s, StringComparer.Ordinal)
+                    || !SupportedScopes.Contains(s, StringComparer.Ordinal)
+                    || resourceDefinition.RequiredScopes.Contains(s, StringComparer.Ordinal))
+                .ToArray();
+        }
+
         if (requestedScopes.Any(s => !allowedScopes.Contains(s, StringComparer.Ordinal)))
         {
             // Only name server-supported scopes; do not reflect arbitrary request values.

@@ -1,6 +1,13 @@
 import type { ViewCurrentUser } from '#generated/api.ts';
 
-export type { ViewOAuthGrant as OAuthGrant, RecordProductTourResult, UpdateEmailAddressResult, ViewCurrentUser, ViewUser } from '#generated/api.ts';
+export type {
+    ViewOAuthGrant as OAuthGrant,
+    RecordProductTourResult,
+    UpdateEmailAddressResult,
+    VerifyEmailAddressResult,
+    ViewCurrentUser,
+    ViewUser
+} from '#generated/api.ts';
 
 export interface InviteUserForm {
     email: string;

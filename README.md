@@ -31,7 +31,7 @@ _In appreciation for anyone who submits a non-trivial pull request, we will give
 Start here:
 
 1. Read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/main/CONTRIBUTING.md).
-2. Install [Docker](https://www.docker.com/get-docker), [.NET 10.0](https://dotnet.microsoft.com/), and [Node 24+](https://nodejs.org/).
+2. Install [Docker](https://www.docker.com/get-docker), [.NET 11.0](https://dotnet.microsoft.com/), and [Node 26+](https://nodejs.org/).
 3. Run the app with one of these entry points:
     - Visual Studio Code: open the repo root and start the `Aspire` launch configuration.
     - Visual Studio: open `Exceptionless.slnx`, set `Exceptionless.AppHost` as the startup project, and run it.
@@ -46,7 +46,8 @@ Notes:
 
 1. Running `Exceptionless.AppHost` starts the app and required infrastructure together.
 2. Backend tests bootstrap required infrastructure automatically.
-3. Use Aspire CLI 13.6.0 or newer (`aspire update --self` to update). The AppHost uses the CLI bundle for the dashboard and resource orchestrator; when no CLI is installed, the SDK downloads the matching version through DNX.
+3. Use Aspire CLI 13.6.5 or newer (`aspire update --self` to update). The AppHost uses the CLI bundle for the dashboard and resource orchestrator; when no CLI is installed, the SDK downloads the matching version through DNX.
+4. Try `dotnet build -mt` for multithreaded builds. Performance depends on the workload and machine.
 
 ## UI Development
 

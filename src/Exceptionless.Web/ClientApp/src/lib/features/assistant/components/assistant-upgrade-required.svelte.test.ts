@@ -48,6 +48,23 @@ describe('AssistantUpgradeRequired', () => {
         expect(screen.getByText('Billing checkout is unavailable in this environment.')).toBeTruthy();
     });
 
+    it('sends trial users without a verified email to verify it instead of upgrading', () => {
+        // Arrange
+        const props = {
+            accessState: 'verification-required' as const,
+            message: 'Verify your email address to use Exie during your trial.',
+            organizationId: 'organization-id'
+        };
+
+        // Act
+        render(AssistantUpgradeRequired, { props });
+
+        // Assert
+        expect(screen.getByText('Verify your email address to use Exie during your trial.')).toBeTruthy();
+        expect(screen.getByRole('link', { name: 'Verify email address' }).getAttribute('href')).toContain('/account/manage');
+        expect(screen.queryByRole('button', { name: 'Upgrade Plan' })).toBeNull();
+    });
+
     it('shows a retry action when access loading fails', async () => {
         const onRetry = vi.fn();
         render(AssistantUpgradeRequired, { props: { accessState: 'error', onRetry } });

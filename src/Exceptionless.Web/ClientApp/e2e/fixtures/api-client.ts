@@ -5,6 +5,7 @@ import type { E2EEnvironment } from './environment';
 export interface E2ECurrentUser {
     email_address?: string;
     id: string;
+    is_email_address_verified?: boolean;
     product_tours?: Record<string, unknown>;
 }
 
@@ -262,7 +263,7 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for E2E event with reference id ${referenceId}`);
     }
 
-    public async pollForMailLink(email: string, path: 'reset-password' | 'signup', timeoutMs = 30_000): Promise<string> {
+    public async pollForMailLink(email: string, path: 'reset-password' | 'signup' | 'verify-email', timeoutMs = 30_000): Promise<string> {
         const deadline = Date.now() + timeoutMs;
         const normalizedEmail = email.toLowerCase();
 
@@ -435,13 +436,19 @@ async function expectStatus(response: APIResponse, expectedStatuses: number[], o
     throw new Error(`${operation} failed with status ${response.status()} ${response.statusText()}${body ? `: ${body}` : ''}`);
 }
 
-function extractMailLink(content: string, path: 'reset-password' | 'signup'): string | undefined {
+function extractMailLink(content: string, path: 'reset-password' | 'signup' | 'verify-email'): string | undefined {
     const links = content.replaceAll('&amp;', '&').match(/https?:\/\/[^"'<\\\s]+/g) ?? [];
     return links.find((link) => {
         const url = new URL(link);
-        return path === 'signup'
-            ? url.pathname === '/signup' && url.searchParams.has('token')
-            : url.pathname.startsWith('/reset-password/') && !url.searchParams.has('cancel');
+        if (path === 'signup') {
+            return url.pathname === '/signup' && url.searchParams.has('token');
+        }
+
+        if (path === 'verify-email') {
+            return url.pathname === '/account/verify' && url.searchParams.has('token');
+        }
+
+        return url.pathname.startsWith('/reset-password/') && !url.searchParams.has('cancel');
     });
 }
 
@@ -480,6 +487,7 @@ function toCurrentUser(value: unknown): E2ECurrentUser {
     return {
         email_address: getOptionalString(record, 'email_address'),
         id: getRequiredString(record, 'id', 'current user response'),
+        is_email_address_verified: typeof record.is_email_address_verified === 'boolean' ? record.is_email_address_verified : undefined,
         product_tours: record.product_tours == null ? undefined : toRecord(record.product_tours, 'current user product tours')
     };
 }

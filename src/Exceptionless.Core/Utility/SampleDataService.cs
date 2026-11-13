@@ -126,7 +126,7 @@ public class SampleDataService
         if (await _tokenRepository.ExistsAsync(TEST_API_KEY))
             return;
 
-        var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
+        var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme", CreatedByUserId = user.Id };
         _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
         organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache());
 
@@ -205,7 +205,7 @@ public class SampleDataService
         if (await _tokenRepository.ExistsAsync(FREE_API_KEY))
             return;
 
-        var organization = new Organization { Id = FREE_ORG_ID, Name = "Free Plan Organization" };
+        var organization = new Organization { Id = FREE_ORG_ID, Name = "Free Plan Organization", CreatedByUserId = user.Id };
         _billingManager.ApplyBillingPlan(organization, _billingPlans.FreePlan, user);
         organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache());
 
@@ -254,7 +254,7 @@ public class SampleDataService
             return;
         }
 
-        var organization = new Organization { Name = "Exceptionless" };
+        var organization = new Organization { Name = "Exceptionless", CreatedByUserId = user.Id };
         _billingManager.ApplyBillingPlan(organization, _billingPlans.UnlimitedPlan, user);
         organization = await _organizationRepository.AddAsync(organization, o => o.ImmediateConsistency().Cache());
 

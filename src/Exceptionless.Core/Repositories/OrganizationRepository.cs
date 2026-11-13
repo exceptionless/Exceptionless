@@ -71,9 +71,9 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         if (paid.HasValue)
         {
             if (paid.Value)
-                query.FieldNotEquals(o => o.PlanId, _plans.FreePlan.Id);
+                query.FieldNotEquals(o => o.PlanId, _plans.FreePlan.Id, _plans.TrialPlan.Id);
             else
-                query.FieldEquals(o => o.PlanId, _plans.FreePlan.Id);
+                query.FieldEquals(o => o.PlanId, _plans.FreePlan.Id, _plans.TrialPlan.Id);
         }
 
         if (suspended.HasValue)
@@ -114,41 +114,99 @@ public class OrganizationRepository : RepositoryBase<Organization>, IOrganizatio
         return FindAsync(q => query, options);
     }
 
+    internal const int BillingPlanStatsPageLimit = 250;
+
     public async Task<BillingPlanStats> GetBillingPlanStatsAsync()
     {
-        var results = (await FindAsync(q => q
-            .Include(o => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus)
-            .SortDescending(o => o.PlanId))).Documents;
-        var smallOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.SmallPlan.Id) && o.BillingPrice > 0).ToList();
-        var mediumOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.MediumPlan.Id) && o.BillingPrice > 0).ToList();
-        var largeOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.LargePlan.Id) && o.BillingPrice > 0).ToList();
-        decimal monthlyTotalPaid = smallOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
-            + mediumOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
-            + largeOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
+        var page = await FindAsync(q => q
+            .Include(o => o.PlanId, o => o.IsSuspended, o => o.BillingPrice, o => o.BillingStatus, o => o.TrialEndsUtc)
+            .SortAscending(o => o.Id), o => o.SearchAfterPaging().PageLimit(BillingPlanStatsPageLimit));
+        int smallTotal = 0, mediumTotal = 0, largeTotal = 0, smallYearlyTotal = 0, mediumYearlyTotal = 0, largeYearlyTotal = 0;
+        int freeAccounts = 0, trialAccounts = 0, convertedTrialAccounts = 0, expiredTrialAccounts = 0, paidAccounts = 0, freeloaderAccounts = 0, suspendedAccounts = 0;
+        decimal monthlyTotalPaid = 0, yearlyTotalPaid = 0;
 
-        var smallYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.SmallYearlyPlan.Id) && o.BillingPrice > 0).ToList();
-        var mediumYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.MediumYearlyPlan.Id) && o.BillingPrice > 0).ToList();
-        var largeYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, _plans.LargeYearlyPlan.Id) && o.BillingPrice > 0).ToList();
-        decimal yearlyTotalPaid = smallYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
-            + mediumYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
-            + largeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
+        // Count page by page so memory stays bounded by the page size, not the number of organizations.
+        bool hasNextPage;
+        do
+        {
+            foreach (var organization in page.Documents)
+            {
+                bool isFree = _plans.IsFreePlan(organization.PlanId);
+                bool isFreeOrTrial = _plans.IsFreeOrTrialPlan(organization.PlanId);
+                bool isPaying = organization.BillingPrice is > 0;
+
+                if (isFree)
+                    freeAccounts++;
+                if (_plans.IsTrialPlan(organization.PlanId))
+                    trialAccounts++;
+                if (organization.TrialEndsUtc is not null && !isFreeOrTrial && isPaying)
+                    convertedTrialAccounts++;
+                if (organization.TrialEndsUtc is not null && isFree)
+                    expiredTrialAccounts++;
+                if (!isFreeOrTrial && isPaying)
+                    paidAccounts++;
+                if (!isFreeOrTrial && !isPaying)
+                    freeloaderAccounts++;
+                if (organization.IsSuspended)
+                    suspendedAccounts++;
+
+                if (!isPaying)
+                    continue;
+
+                decimal activePrice = !organization.IsSuspended && organization.BillingStatus is BillingStatus.Active ? organization.BillingPrice : 0;
+                if (String.Equals(organization.PlanId, _plans.SmallPlan.Id, StringComparison.Ordinal))
+                {
+                    smallTotal++;
+                    monthlyTotalPaid += activePrice;
+                }
+                else if (String.Equals(organization.PlanId, _plans.MediumPlan.Id, StringComparison.Ordinal))
+                {
+                    mediumTotal++;
+                    monthlyTotalPaid += activePrice;
+                }
+                else if (String.Equals(organization.PlanId, _plans.LargePlan.Id, StringComparison.Ordinal))
+                {
+                    largeTotal++;
+                    monthlyTotalPaid += activePrice;
+                }
+                else if (String.Equals(organization.PlanId, _plans.SmallYearlyPlan.Id, StringComparison.Ordinal))
+                {
+                    smallYearlyTotal++;
+                    yearlyTotalPaid += activePrice;
+                }
+                else if (String.Equals(organization.PlanId, _plans.MediumYearlyPlan.Id, StringComparison.Ordinal))
+                {
+                    mediumYearlyTotal++;
+                    yearlyTotalPaid += activePrice;
+                }
+                else if (String.Equals(organization.PlanId, _plans.LargeYearlyPlan.Id, StringComparison.Ordinal))
+                {
+                    largeYearlyTotal++;
+                    yearlyTotalPaid += activePrice;
+                }
+            }
+            hasNextPage = await page.NextPageAsync();
+        } while (hasNextPage);
 
         return new BillingPlanStats
         {
-            SmallTotal = smallOrganizations.Count,
-            SmallYearlyTotal = smallYearlyOrganizations.Count,
-            MediumTotal = mediumOrganizations.Count,
-            MediumYearlyTotal = mediumYearlyOrganizations.Count,
-            LargeTotal = largeOrganizations.Count,
-            LargeYearlyTotal = largeYearlyOrganizations.Count,
+            SmallTotal = smallTotal,
+            SmallYearlyTotal = smallYearlyTotal,
+            MediumTotal = mediumTotal,
+            MediumYearlyTotal = mediumYearlyTotal,
+            LargeTotal = largeTotal,
+            LargeYearlyTotal = largeYearlyTotal,
             MonthlyTotal = monthlyTotalPaid + (yearlyTotalPaid / 12),
             YearlyTotal = (monthlyTotalPaid * 12) + yearlyTotalPaid,
-            MonthlyTotalAccounts = smallOrganizations.Count + mediumOrganizations.Count + largeOrganizations.Count,
-            YearlyTotalAccounts = smallYearlyOrganizations.Count + mediumYearlyOrganizations.Count + largeYearlyOrganizations.Count,
-            FreeAccounts = results.Count(o => String.Equals(o.PlanId, _plans.FreePlan.Id)),
-            PaidAccounts = results.Count(o => !String.Equals(o.PlanId, _plans.FreePlan.Id) && o.BillingPrice > 0),
-            FreeloaderAccounts = results.Count(o => !String.Equals(o.PlanId, _plans.FreePlan.Id) && o.BillingPrice <= 0),
-            SuspendedAccounts = results.Count(o => o.IsSuspended),
+            MonthlyTotalAccounts = smallTotal + mediumTotal + largeTotal,
+            YearlyTotalAccounts = smallYearlyTotal + mediumYearlyTotal + largeYearlyTotal,
+            FreeAccounts = freeAccounts,
+            TrialAccounts = trialAccounts,
+            ConvertedTrialAccounts = convertedTrialAccounts,
+            ExpiredTrialAccounts = expiredTrialAccounts,
+            PaidAccounts = paidAccounts,
+            FreeloaderAccounts = freeloaderAccounts,
+            SuspendedAccounts = suspendedAccounts,
         };
     }
 }

@@ -34,6 +34,20 @@
                 To unsuspend <strong>{name}</strong>, please
                 <A href={changePlanHref}>update your billing information</A>.
             </p>
+        {:else if suspensionCode === SuspensionCode.PlanLimit}
+            <p>
+                The Free plan allows one user and one project. <A href={changePlanHref}>Upgrade your plan</A> or remove excess
+                <A
+                    href={resolve('/(app)/organization/[organizationId]/users', {
+                        organizationId
+                    })}>users and pending invitations</A
+                >
+                and <A
+                    href={resolve('/(app)/organization/[organizationId]/projects', {
+                        organizationId
+                    })}>projects</A
+                >. Event ingestion resumes automatically once both limits are met.
+            </p>
         {:else if suspensionCode === SuspensionCode.Abuse || suspensionCode === SuspensionCode.Overage}
             <p>
                 <strong>{name}</strong> has exceeded the plan limits. To unsuspend your account, please

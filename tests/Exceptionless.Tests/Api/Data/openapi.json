@@ -1,5 +1,5 @@
 {
-  "openapi": "3.1.1",
+  "openapi": "3.2.0",
   "info": {
     "title": "Exceptionless API",
     "termsOfService": "https://exceptionless.com/terms/",
@@ -16,7 +16,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost/"
+      "url": "http://localhost"
     }
   ],
   "paths": {
@@ -467,6 +467,81 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EventSubmissionSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/admin/trial-settings": {
+      "get": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Get free trial settings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AdminEndpoints"
+        ],
+        "summary": "Update free trial settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTrialSettings"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTrialSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialSettings"
                 }
               }
             }
@@ -1434,9 +1509,6 @@
           "202": {
             "description": "Accepted"
           },
-          "413": {
-            "description": "Payload Too Large"
-          },
           "400": {
             "description": "No project id specified and no default project was found.",
             "content": {
@@ -1456,6 +1528,9 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Payload Too Large"
           }
         },
         "deprecated": true
@@ -1510,9 +1585,6 @@
           "202": {
             "description": "Accepted"
           },
-          "413": {
-            "description": "Payload Too Large"
-          },
           "400": {
             "description": "No project id specified and no default project was found.",
             "content": {
@@ -1532,6 +1604,9 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Payload Too Large"
           }
         },
         "deprecated": true
@@ -3444,8 +3519,8 @@
               }
             }
           },
-          "409": {
-            "description": "The saved view preferences could not be updated due to a concurrent request.",
+          "404": {
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3454,8 +3529,8 @@
               }
             }
           },
-          "404": {
-            "description": "The organization could not be found.",
+          "409": {
+            "description": "The saved view preferences could not be updated due to a concurrent request.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3541,8 +3616,8 @@
               }
             }
           },
-          "409": {
-            "description": "The saved view preferences could not be updated due to a concurrent request.",
+          "404": {
+            "description": "The organization could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -3551,8 +3626,8 @@
               }
             }
           },
-          "404": {
-            "description": "The organization could not be found.",
+          "409": {
+            "description": "The saved view preferences could not be updated due to a concurrent request.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4308,8 +4383,8 @@
               }
             }
           },
-          "422": {
-            "description": "The product tour name is invalid.",
+          "404": {
+            "description": "The current user could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4318,8 +4393,8 @@
               }
             }
           },
-          "404": {
-            "description": "The current user could not be found.",
+          "422": {
+            "description": "The product tour name is invalid.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -4950,7 +5025,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyEmailAddressResult"
+                }
+              }
+            }
           },
           "404": {
             "description": "The user could not be found.",
@@ -7426,6 +7508,16 @@
               }
             }
           },
+          "403": {
+            "description": "Please verify your email address before inviting users.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "The organization was not found.",
             "content": {
@@ -7438,6 +7530,16 @@
           },
           "426": {
             "description": "Please upgrade your plan to add an additional user.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "You\u0027ve sent the maximum number of invites for today.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7974,22 +8076,22 @@
           "200": {
             "description": "OK"
           },
-          "422": {
-            "description": "The requested status is invalid.",
-            "content": {
-              "application/problem\u002Bjson": {
-                "schema": {
-                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "One or more stacks could not be found.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The requested status is invalid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
                 }
               }
             }
@@ -9300,9 +9402,6 @@
           "202": {
             "description": "Accepted"
           },
-          "413": {
-            "description": "Payload Too Large"
-          },
           "400": {
             "description": "No project id specified and no default project was found.",
             "content": {
@@ -9322,6 +9421,9 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Payload Too Large"
           }
         }
       }
@@ -9672,9 +9774,6 @@
           "202": {
             "description": "Accepted"
           },
-          "413": {
-            "description": "Payload Too Large"
-          },
           "400": {
             "description": "No project id specified and no default project was found.",
             "content": {
@@ -9694,6 +9793,9 @@
                 }
               }
             }
+          },
+          "413": {
+            "description": "Payload Too Large"
           }
         }
       }
@@ -12111,7 +12213,8 @@
         "required": [
           "enabled",
           "has_access",
-          "upgrade_required"
+          "upgrade_required",
+          "email_verification_required"
         ],
         "type": "object",
         "properties": {
@@ -12135,6 +12238,10 @@
               "null",
               "string"
             ]
+          },
+          "email_verification_required": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -14150,6 +14257,31 @@
           }
         }
       },
+      "TrialSettings": {
+        "required": [
+          "blocked_email_domains",
+          "default_blocked_email_domains",
+          "is_default"
+        ],
+        "type": "object",
+        "properties": {
+          "blocked_email_domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default_blocked_email_domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "is_default": {
+            "type": "boolean"
+          }
+        }
+      },
       "UpdateAssistantConversationSharing": {
         "required": [
           "enabled"
@@ -14367,6 +14499,22 @@
         },
         "description": "A class the tracks changes (i.e. the Delta) for a particular TEntityType."
       },
+      "UpdateTrialSettings": {
+        "type": "object",
+        "properties": {
+          "blocked_email_domains": {
+            "maxItems": 10000,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Email domains that can\u0027t start a free trial. Subdomains are blocked too. Null restores the built-in list."
+          }
+        }
+      },
       "UpdateUser": {
         "type": "object",
         "properties": {
@@ -14582,6 +14730,14 @@
             "type": "string",
             "format": "date-time"
           },
+          "trial_started_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Date the user started their one no-card trial.",
+            "format": "date-time"
+          },
           "is_active": {
             "type": "boolean",
             "description": "Gets or sets the users active state."
@@ -14674,6 +14830,18 @@
             }
           }
         }
+      },
+      "VerifyEmailAddressResult": {
+        "required": [
+          "email_address"
+        ],
+        "type": "object",
+        "properties": {
+          "email_address": {
+            "type": "string"
+          }
+        },
+        "description": "The account whose email address the link verified, which may not be the account that\u0027s signed in."
       },
       "ViewBackgroundTask": {
         "required": [
@@ -15142,6 +15310,13 @@
           "billing_price": {
             "type": "number",
             "format": "double"
+          },
+          "trial_ends_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           },
           "max_events_per_month": {
             "type": "integer",
@@ -15702,46 +15877,46 @@
   },
   "tags": [
     {
-      "name": "AssistantEndpoints"
-    },
-    {
-      "name": "Project"
-    },
-    {
       "name": "AdminEndpoints"
     },
     {
-      "name": "OAuth"
-    },
-    {
-      "name": "Event"
+      "name": "AssistantEndpoints"
     },
     {
       "name": "Auth"
     },
     {
-      "name": "Token"
-    },
-    {
-      "name": "WebHook"
-    },
-    {
-      "name": "SavedView"
-    },
-    {
       "name": "BackgroundTask"
     },
     {
-      "name": "User"
+      "name": "Event"
+    },
+    {
+      "name": "OAuth"
     },
     {
       "name": "Organization"
     },
     {
-      "name": "Stack"
+      "name": "Project"
+    },
+    {
+      "name": "SavedView"
     },
     {
       "name": "Source Map"
+    },
+    {
+      "name": "Stack"
+    },
+    {
+      "name": "Token"
+    },
+    {
+      "name": "User"
+    },
+    {
+      "name": "WebHook"
     }
   ]
 }

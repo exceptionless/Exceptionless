@@ -509,6 +509,7 @@ public class StripeEndpointTests : IntegrationTestsBase
     [Theory]
     [InlineData("2026-08-26.dahlia")]
     [InlineData("2026-09-30.endive")]
+    [InlineData("2026-10-28.endive")]
     public async Task PostAsync_WithNewerSubscriptionDeletedEvent_SuspendsOrganization(string apiVersion)
     {
         // Arrange

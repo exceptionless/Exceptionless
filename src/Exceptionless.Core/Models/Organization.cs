@@ -78,6 +78,23 @@ public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates,
     public DateTime? SubscribeDate { get; set; }
 
     /// <summary>
+    /// User who created the organization. Used to enforce per-owner plan rules such as one free organization.
+    /// </summary>
+    [ObjectId]
+    public string? CreatedByUserId { get; set; }
+
+    /// <summary>
+    /// Date the organization's no-card trial ends. Kept after the trial ends so the app can tell the
+    /// organization its trial is over.
+    /// </summary>
+    public DateTime? TrialEndsUtc { get; set; }
+
+    /// <summary>
+    /// Date the trial ending reminder email was sent.
+    /// </summary>
+    public DateTime? TrialReminderSentUtc { get; set; }
+
+    /// <summary>
     /// Date the billing information was last changed.
     /// </summary>
     public DateTime BillingChangeDate { get; set; }
