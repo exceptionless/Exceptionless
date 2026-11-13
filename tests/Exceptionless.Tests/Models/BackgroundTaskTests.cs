@@ -1,11 +1,14 @@
 using Exceptionless.Core.Models.BackgroundTasks;
+using Foundatio.Xunit;
 using Xunit;
 
 namespace Exceptionless.Tests.Models;
 
-public class BackgroundTaskTests
+public class BackgroundTaskTests : TestWithLoggingBase
 {
     private static readonly DateTime UtcNow = new(2026, 11, 3, 4, 5, 6, DateTimeKind.Utc);
+
+    public BackgroundTaskTests(ITestOutputHelper output) : base(output) { }
 
     [Fact]
     public void Start_CalledTwice_KeepsTheFirstStartTime()

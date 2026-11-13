@@ -158,13 +158,16 @@ public class BackgroundTaskService
     }
 
     /// <summary>
-    /// Queues the work item of a task that was added and publishes it. When queueing fails the task is failed, because
-    /// nothing would ever run it, and the error is rethrown.
+    /// Prepares and queues the work item of a task that was added and publishes it. When preparation or queueing fails
+    /// the task is failed, because nothing would ever run it, and the error is rethrown.
     /// </summary>
-    public async Task EnqueueAsync<T>(BackgroundTask task, T workItem) where T : class
+    public async Task EnqueueAsync<T>(BackgroundTask task, T workItem, Func<Task>? beforeEnqueue = null) where T : class
     {
         try
         {
+            if (beforeEnqueue is not null)
+                await beforeEnqueue();
+
             await _workItemQueue.EnqueueAsync(workItem);
         }
         catch (Exception ex)

@@ -4,6 +4,7 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Serializer;
@@ -205,6 +206,48 @@ public class BulkOperationServiceTests : TestWithLoggingBase, IDisposable
         Assert.IsType<TimeoutException>(thrown);
         Assert.Equal(BackgroundTaskStatus.Failed, orphan!.Status);
         Assert.Empty(activeAfterFailure);
+        Assert.NotNull(retry.Task);
+        Assert.Equal(BackgroundTaskStatus.Queued, retry.Task.Status);
+    }
+
+    [Theory]
+    [InlineData(true, typeof(MaxEntrySizeExceededCacheException))]
+    [InlineData(false, typeof(InvalidOperationException))]
+    public async Task CreateAsync_SelectionCannotBeStored_FailsWithoutQueueingAndAllowsAnotherOperation(bool throwOnRejection, Type expectedExceptionType)
+    {
+        // Arrange
+        using var selectionCache = new InMemoryCacheClient(new InMemoryCacheClientOptions
+        {
+            TimeProvider = _time,
+            LoggerFactory = Log,
+            MaxEntrySize = 1,
+            SizeCalculator = _ => 2,
+            ShouldThrowOnMaxEntrySizeExceeded = throwOnRejection
+        });
+        var resolver = new Mock<IBulkSelectionResolver>();
+        resolver.SetupGet(r => r.Entity).Returns(BulkOperationEntity.Events);
+        resolver.Setup(r => r.PrepareAsync(It.IsAny<BackgroundTask>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BulkSelectionPreparation(BulkOperationCheckResult.Ok, 1, "{}"));
+        var service = new BulkOperationService(_harness.Tasks, selectionCache, _harness.LockProvider,
+            [new StubHandler("test.destructive", isDestructive: true)], [resolver.Object], _time);
+        var task = NewTask("test.destructive", ProjectId);
+        task.Bulk!.Selection = new BulkOperationSelection { Kind = BulkOperationSelectionKind.Filter };
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await service.CreateAsync(task));
+        var failed = await _harness.Tasks.GetAsync(task.Id);
+        var activeAfterFailure = await _harness.Tasks.GetActiveIdsAsync(OrganizationId);
+        long enqueuedAfterFailure = (await _harness.Queue.GetQueueStatsAsync()).Enqueued;
+        var retry = await service.CreateAsync(NewTask("test.destructive", ProjectId));
+
+        // Assert
+        Assert.IsType(expectedExceptionType, thrown);
+        Assert.NotNull(failed);
+        Assert.Equal(BackgroundTaskStatus.Failed, failed.Status);
+        Assert.NotNull(failed.CompletedUtc);
+        Assert.Empty(activeAfterFailure);
+        Assert.Equal(0, enqueuedAfterFailure);
+        Assert.Contains(_harness.Publisher.Updates, update => update.Id == task.Id && update.Status == BackgroundTaskStatus.Failed);
         Assert.NotNull(retry.Task);
         Assert.Equal(BackgroundTaskStatus.Queued, retry.Task.Status);
     }

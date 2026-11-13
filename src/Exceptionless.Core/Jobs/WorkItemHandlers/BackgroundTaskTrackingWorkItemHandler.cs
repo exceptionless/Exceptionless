@@ -122,12 +122,13 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
 
     /// <summary>
     /// Marks the task running. A queue retry runs the work item again after it failed, which brings the task back to running
-    /// and back into the active index. A cancelled or completed task must not run again.
+    /// and back into the active index. A cancelled or completed task must not run again, so a failed start decision must
+    /// be retried by the queue rather than treated as a missing task record.
     /// </summary>
     private async Task<bool> StartAsync(string taskId)
     {
         bool wasFinished = false;
-        var task = await TryUpdateAsync(taskId, current =>
+        var task = await _taskService.UpdateAsync(taskId, current =>
         {
             if (current.Status is BackgroundTaskStatus.Cancelled or BackgroundTaskStatus.Completed)
                 return false;

@@ -1,8 +1,10 @@
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
+using Foundatio.Lock;
 using Foundatio.Utility;
 using Foundatio.Xunit;
 using Microsoft.Extensions.Time.Testing;
@@ -212,6 +214,37 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
         Assert.Equal(status, (await _harness.Tasks.GetAsync(task.Id))!.Status);
     }
 
+    [Theory]
+    [InlineData(BackgroundTaskStatus.Cancelled)]
+    [InlineData(BackgroundTaskStatus.Completed)]
+    public async Task HandleItemAsync_TaskStatusCannotBeChecked_DoesNotRunTheWorker(BackgroundTaskStatus status)
+    {
+        // Arrange
+        using var harness = new BackgroundTaskTestHarness(_time, Log, new BackgroundTaskOptions { LockAcquireTimeout = TimeSpan.Zero }, lockAttempts: 1);
+        var task = await AddTaskAsync(harness: harness);
+        await harness.Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Finish(status, "Finished", _time.GetUtcNow().UtcDateTime);
+            return true;
+        });
+        await using var held = await harness.LockProvider.AcquireAsync(BackgroundTaskService.GetUpdateLockResource(task.Id), TimeSpan.FromSeconds(30), TestCancellationToken);
+        bool ran = false;
+        var inner = new DelegateWorkItemHandler(_ =>
+        {
+            ran = true;
+            return Task.CompletedTask;
+        });
+        var handler = new BackgroundTaskTrackingWorkItemHandler(inner, harness.Tasks, _time);
+
+        // Act
+        var exception = await Record.ExceptionAsync(() => handler.HandleItemAsync(CreateContext(task.Id)));
+
+        // Assert
+        Assert.IsType<LockAcquisitionTimeoutException>(exception);
+        Assert.False(ran);
+        Assert.Equal(status, (await harness.Tasks.GetAsync(task.Id))!.Status);
+    }
+
     [Fact]
     public void Handler_DelegatesTheJobSettingsToTheWrappedHandler()
     {
@@ -227,7 +260,7 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
         Assert.Same(inner.Log, handler.Log);
     }
 
-    private async Task<BackgroundTask> AddTaskAsync(bool canCancel = false)
+    private async Task<BackgroundTask> AddTaskAsync(bool canCancel = false, BackgroundTaskTestHarness? harness = null)
     {
         var task = new BackgroundTask
         {
@@ -238,7 +271,7 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
             CreatedByUserId = "537650f3b77efe23a47914f8",
             CanCancel = canCancel
         };
-        await _harness.Tasks.AddAsync(task);
+        await (harness ?? _harness).Tasks.AddAsync(task);
         return task;
     }
 

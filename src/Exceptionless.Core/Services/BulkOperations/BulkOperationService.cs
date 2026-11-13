@@ -104,15 +104,18 @@ public class BulkOperationService
         }
 
         await _taskService.AddAsync(task);
-        if (pinnedSelection is not null)
-            await _cache.SetAsync(GetPinnedSelectionCacheKey(task.Id), pinnedSelection, BackgroundTaskService.TaskLifetime);
-
         await _taskService.EnqueueAsync(task, new BulkOperationWorkItem
         {
             Description = task.Description,
             TaskId = task.Id,
             OrganizationId = task.OrganizationId,
             Type = task.Type
+        }, async () =>
+        {
+            // A selection that cannot be saved must fail the task just like an enqueue failure, so an unqueued task
+            // cannot remain active and block the project's next operation.
+            if (pinnedSelection is not null && !await _cache.SetAsync(GetPinnedSelectionCacheKey(task.Id), pinnedSelection, BackgroundTaskService.TaskLifetime))
+                throw new InvalidOperationException("The operation's selection could not be saved.");
         });
 
         return BulkOperationCreateResult.Created(task);
