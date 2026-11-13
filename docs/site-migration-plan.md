@@ -274,7 +274,7 @@ Build-time configuration:
 Google Tag Manager is part of the public site layout and loads by default. Local Codex and Aspire docs runs do not force
 any Exceptionless configuration; the browser client script is not emitted unless an API key is supplied. Website
 deployments require the repository variable, while pull-request CI exercises both configured and unconfigured builds.
-Website CI pins Deno 2.5.7 so the experimental bundle output cannot drift with the moving `lts` channel.
+Website CI pins Deno 2.9.7 to support Lume 3.3's runtime requirements and prevent experimental bundle output from drifting with the moving `lts` channel.
 
 The bootstrap disables private-information capture, omits query strings and fragments from page context, and does not
 enable session heartbeats. This keeps the public site integration focused on errors without collecting cookies or
