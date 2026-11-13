@@ -109,9 +109,39 @@ public class EventBulkSelectionResolverPlanTests : TestWithServices
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PrepareAsync_EmptySelection_RemainsEmptyWhenStoredAndResumed(bool organizationMissing)
+    {
+        // Arrange
+        var task = NewTask("type:log");
+        if (organizationMissing)
+            task.OrganizationId = "537650f3b77efe23a47914f5";
+        _events.SetupSequence(repository => repository.FindAsync(It.IsAny<IRepositoryQuery>(), It.IsAny<ICommandOptions>()))
+            .ReturnsAsync(Results("prepared", 0, false))
+            .ReturnsAsync(Results("later", 1, false, "newly-matching"));
+
+        // Act
+        // The resolver uses the configured application serializer for the saved state, just as queued tasks do.
+        var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
+        var page = await _resolver.GetPageAsync(task, preparation.PinnedState, null, 1, TestCancellationToken);
+        await _resolver.ReleaseAsync(task, preparation.PinnedState, page.NextCursor);
+
+        // Assert
+        Assert.True(preparation.Check.IsOk);
+        Assert.Equal(0, preparation.Total);
+        Assert.NotNull(preparation.PinnedState);
+        Assert.Empty(page.Ids);
+        Assert.Null(page.NextCursor);
+        _events.Verify(repository => repository.FindAsync(It.IsAny<IRepositoryQuery>(), It.IsAny<ICommandOptions>()), Times.Exactly(organizationMissing ? 0 : 1));
+        _snapshots.Verify(repository => repository.ClosePointInTimeAsync("prepared"), Times.Exactly(organizationMissing ? 0 : 1));
+    }
+
+    [Theory]
     [InlineData(null)]
     [InlineData("{}")]
     [InlineData("{\"event_filter\":\"type:log\",\"stack_ids\":[\"stack\"]}")]
+    [InlineData("{\"version\":1,\"total\":0}")]
     public async Task GetPageAsync_MissingOrLegacySelection_FailsWithoutSearchingLiveEvents(string? pinned)
     {
         // Arrange

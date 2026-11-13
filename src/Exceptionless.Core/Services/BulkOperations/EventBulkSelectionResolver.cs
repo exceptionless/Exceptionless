@@ -84,7 +84,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
 
         if (appFilter is null)
             return new BulkSelectionPreparation(BulkOperationCheckResult.Ok, 0,
-                _serializer.SerializeToString(new PinnedEventSelection { Version = 1, Ids = [] }));
+                _serializer.SerializeToString(new PinnedEventSelection { Version = 1, IsEmpty = true }));
 
         // Counting and paging must use the same relative-date anchor, even when preparation runs after the selected day.
         string? frozenFilter = await RelativeDateFreezer.FreezeAsync(task.Bulk!.Selection.Filter,
@@ -114,6 +114,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
             pinned.ExcludedStackIds = query.GetExcludedStacks().ToArray();
             pinned.StackIds = query.GetStacks().ToArray();
             pinned.Total = results.Total;
+            pinned.IsEmpty = results.Total == 0;
 
             string[] ids = GetIds(results);
             if (results.Total <= ids.Length)
@@ -152,7 +153,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
 
         // A final checkpoint can survive a host restart before completion is recorded. There is no remaining action to
         // authorize in that case, and a later plan change must not turn already completed work into a failed task.
-        if (position.Exhausted || pinned.Ids is { Length: 0 })
+        if (position.Exhausted || pinned.IsEmpty || pinned.Ids is { Length: 0 })
             return new BulkSelectionPage([], null);
 
         var (appFilter, check) = await GetAppFilterAsync(task);
@@ -272,7 +273,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         var pinned = state is null ? null : _serializer.Deserialize<PinnedEventSelection>(state);
         // Records created before snapshots were introduced contain only filters and stack ids. Replaying them would
         // broaden the confirmed membership, so those tasks must be restarted instead of silently upgrading in place.
-        if (pinned is null || pinned.Version != 1 || (pinned.Ids is null && String.IsNullOrEmpty(pinned.PointInTimeId)))
+        if (pinned is null || pinned.Version != 1 || (!pinned.IsEmpty && pinned.Ids is null && String.IsNullOrEmpty(pinned.PointInTimeId)))
             throw new BulkSelectionRejectedException(SnapshotUnavailable());
 
         return pinned;
@@ -351,6 +352,8 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
     private sealed class PinnedEventSelection
     {
         public int Version { get; set; }
+        // Storage serialization omits empty arrays, so an intentionally empty membership needs its own marker.
+        public bool IsEmpty { get; set; }
         public string[]? Ids { get; set; }
         public string? PointInTimeId { get; set; }
         public long Total { get; set; }
