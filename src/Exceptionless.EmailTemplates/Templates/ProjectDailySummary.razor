@@ -28,7 +28,7 @@
             {
                 <EmailCallout BackgroundColor="#f4dede" BorderColor="#bb423f">
                     <p style="@EmailStyles.Paragraph"><strong>@Model.Blocked events</strong> were discarded due to throttling. <a href="@Model.UpgradeUrl" style="@EmailStyles.Link">Upgrade now</a> to increase your limits. <a href="https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled" style="@EmailStyles.Link">Click here to learn more about throttling.</a></p>
-                    <EmailButton Url="@Model.UpgradeUrl" BackgroundColor="#bb423f">Upgrade Plan</EmailButton>
+                    <EmailButton Url="@Model.UpgradeUrl" BackgroundColor="#bb423f" TextColor="@EmailStyles.White">Upgrade Plan</EmailButton>
                 </EmailCallout>
             }
 

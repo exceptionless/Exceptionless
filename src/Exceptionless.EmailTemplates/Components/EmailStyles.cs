@@ -5,8 +5,8 @@ internal static class EmailStyles
     public const string Background = "#f7f7f7";
     public const string Border = "#cbcbcb";
     public const string Dark = "#2c2c2c";
-    public const string Primary = "#5e9a00";
-    public const string PrimaryAction = "#6ebc1a";
+    public const string Primary = "#66c02a";
+    public const string PrimaryForeground = "#1a1a1a";
     public const string White = "#fefefe";
 
     public const string Heading1 = "color:#2c2c2c;font-family:Helvetica,Arial,sans-serif;font-size:34px;font-weight:400;line-height:1.3;margin:0 0 5px;text-align:left";
@@ -14,8 +14,7 @@ internal static class EmailStyles
     public const string Heading5 = "color:#939393;font-family:Helvetica,Arial,sans-serif;font-size:20px;font-weight:400;line-height:1.3;margin:0 0 5px;text-align:left";
     public const string Lead = "color:#2c2c2c;font-family:Helvetica,Arial,sans-serif;font-size:20px;font-weight:400;line-height:1.6;margin:0 0 10px;text-align:left";
     public const string Paragraph = "color:#2c2c2c;font-family:Helvetica,Arial,sans-serif;font-size:16px;font-weight:400;line-height:1.3;margin:0 0 10px;text-align:left";
-    public const string Link = "color:#5e9a00;text-decoration:none";
-    public const string ActionLink = "color:#6ebc1a;text-decoration:none";
+    public const string Link = "color:#3c7d18;text-decoration:none";
 
     public const string ClientCss = """
         :root{color-scheme:light only;supported-color-schemes:light}
