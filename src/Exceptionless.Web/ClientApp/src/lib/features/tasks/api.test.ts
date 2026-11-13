@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/svelte-query';
+import { QueryClient, QueryObserver } from '@tanstack/svelte-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BackgroundTaskStatus, BulkOperationSelectionKind, type ViewBackgroundTask } from './models';
@@ -60,35 +60,38 @@ function createUpdate(id: string) {
 }
 
 describe('updateTaskFromMessage', () => {
-    const queryClient = { cancelQueries: vi.fn().mockResolvedValue(undefined), getQueryData: vi.fn(), invalidateQueries: vi.fn(), setQueryData: vi.fn() };
+    let queryClient: QueryClient;
 
     beforeEach(() => {
         vi.clearAllMocks();
+        queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        vi.spyOn(queryClient, 'invalidateQueries');
     });
+
+    afterEach(() => queryClient.clear());
 
     it('writes the progress of a known task into the cached list', async () => {
         // Arrange
-        queryClient.getQueryData.mockReturnValue([createTask()]);
+        queryClient.setQueryData(queryKeys.organization('organization-id'), [createTask()]);
 
         // Act
-        await updateTaskFromMessage(queryClient as never, createUpdate('task-1'));
+        await updateTaskFromMessage(queryClient, createUpdate('task-1'));
 
         // Assert
-        expect(queryClient.setQueryData).toHaveBeenCalledWith(queryKeys.organization('organization-id'), [
-            expect.objectContaining({ id: 'task-1', processed: 75 })
-        ]);
+        expect(queryClient.getQueryData(queryKeys.organization('organization-id'))).toMatchObject([{ id: 'task-1', processed: 75 }]);
         expect(queryClient.invalidateQueries).not.toHaveBeenCalled();
     });
 
     it('reloads the list when the task was started somewhere else', async () => {
         // Arrange
-        queryClient.getQueryData.mockReturnValue([createTask()]);
+        const tasks = [createTask()];
+        queryClient.setQueryData(queryKeys.organization('organization-id'), tasks);
 
         // Act
-        await updateTaskFromMessage(queryClient as never, createUpdate('started-elsewhere'));
+        await updateTaskFromMessage(queryClient, createUpdate('started-elsewhere'));
 
         // Assert
-        expect(queryClient.setQueryData).not.toHaveBeenCalled();
+        expect(queryClient.getQueryData(queryKeys.organization('organization-id'))).toEqual(tasks);
         expect(queryClient.invalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.organization('organization-id') });
     });
 });
@@ -187,5 +190,67 @@ describe('task cache lifecycle', () => {
 
         // Assert
         expect(client.getQueryData<ViewBackgroundTask[]>(key)?.map((task) => task.processed)).toEqual([75, 75]);
+    });
+
+    it.each(['pushed completion', 'cancellation response'] as const)(
+        'finishes discovering an unknown task after a %s cancels the list request',
+        async (source) => {
+            // Arrange
+            const running = createTask();
+            const completed = createTask({ status: BackgroundTaskStatus.Completed, updated_utc: '2026-01-01T10:00:09Z' });
+            const unknown = createTask({ id: 'started-elsewhere' });
+            client.setQueryData(key, [running]);
+            const previousRead = Promise.withResolvers<ViewBackgroundTask[]>();
+            const nextRead = Promise.withResolvers<ViewBackgroundTask[]>();
+            const queryFn = vi.fn().mockReturnValueOnce(previousRead.promise).mockReturnValueOnce(nextRead.promise);
+            const observer = new QueryObserver(client, { queryFn, queryKey: key, staleTime: Infinity });
+            const unsubscribe = observer.subscribe(() => {});
+
+            // Act
+            await updateTaskFromMessage(client, createUpdate(unknown.id));
+            if (source === 'pushed completion') {
+                await updateTaskFromMessage(client, { ...completed, message: undefined, project_id: undefined });
+            } else {
+                cancelTask();
+                await mocks.createMutation.mock.calls[0]![0]().onSuccess(completed);
+            }
+
+            // Assert
+            expect(client.getQueryData(key)).toMatchObject([completed]);
+            expect(queryFn).toHaveBeenCalledTimes(2);
+
+            // Act
+            previousRead.resolve([running, unknown]);
+            nextRead.resolve([completed, unknown]);
+            await client.getQueryCache().find({ queryKey: key })?.promise;
+            unsubscribe();
+
+            // Assert
+            expect(client.getQueryData(key)).toEqual([completed, unknown]);
+        }
+    );
+
+    it('keeps unknown-task reconciliation pending when the panel unmounts before the list is merged', async () => {
+        // Arrange
+        const running = createTask();
+        const completed = createTask({ status: BackgroundTaskStatus.Completed, updated_utc: '2026-01-01T10:00:09Z' });
+        client.setQueryData(key, [running]);
+        const pending = Promise.withResolvers<ViewBackgroundTask[]>();
+        const queryFn = vi.fn(({ signal }: { signal: AbortSignal }) => {
+            void signal;
+            return pending.promise;
+        });
+        const observer = new QueryObserver(client, { queryFn, queryKey: key, staleTime: Infinity });
+        const unsubscribe = observer.subscribe(() => {});
+
+        // Act
+        await updateTaskFromMessage(client, createUpdate('started-elsewhere'));
+        unsubscribe();
+        await updateTaskFromMessage(client, { ...completed, message: undefined, project_id: undefined });
+
+        // Assert
+        expect(client.getQueryData(key)).toMatchObject([completed]);
+        expect(client.getQueryState(key)?.isInvalidated).toBe(true);
+        expect(queryFn).toHaveBeenCalledOnce();
     });
 });

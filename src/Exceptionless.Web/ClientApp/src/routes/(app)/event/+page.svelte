@@ -771,13 +771,15 @@
 
     // Gmail-style "select everything matching the filter". It belongs to the query it was made for, so a different
     // filter, time range, project or saved view drops it.
-    const allMatching = createAllMatchingSelection(() =>
-        getEventsQueryIdentity({
-            filter: eventsQueryParameters.filter,
-            organizationId: organization.current,
-            savedViewId: savedViewsState.activeSavedView?.id,
-            time: eventsQueryParameters.time
-        })
+    const allMatching = createAllMatchingSelection(
+        () =>
+            getEventsQueryIdentity({
+                filter: eventsQueryParameters.filter,
+                organizationId: organization.current,
+                savedViewId: savedViewsState.activeSavedView?.id,
+                time: eventsQueryParameters.time
+            }),
+        () => table.store.state.rowSelection
     );
     const pageRowCount = $derived(table.getRowModel().rows.length);
     const isPageSelected = $derived(pageRowCount > 0 && table.getIsAllRowsSelected());
@@ -879,13 +881,13 @@
     }
 
     async function selectAllMatching() {
-        // Count again right now, so the number the user confirms is current. If the filter changes while the count is
-        // loading, the count belongs to the old filter and must not be bound to the new one.
-        const identity = allMatching.identity;
+        // Count again right now, so the number the user confirms is current. The result may only expand the query
+        // and page selection that started this request, even if the same rows are cleared and selected again.
+        const selection = allMatching.snapshot;
         const result = await matchingTotalQuery.refetch();
         const count = (result.data?.meta.total ?? totalMatching) as number | undefined;
         if (count !== undefined) {
-            allMatching.select(count, identity);
+            allMatching.select(count, selection);
         }
     }
 

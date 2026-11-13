@@ -64,7 +64,10 @@ describe('TaskPanel', () => {
         mocks.cancelMutateAsync.mockResolvedValue(undefined);
     });
 
-    afterEach(cleanup);
+    afterEach(() => {
+        cleanup();
+        vi.useRealTimers();
+    });
 
     it('hydrates running tasks from the list after a reload and ignores stale finished ones', async () => {
         // Arrange
@@ -197,5 +200,26 @@ describe('TaskPanel', () => {
 
         // Assert
         expect(screen.queryByRole('region', { name: 'Background tasks' })).toBeNull();
+    });
+
+    it('expires a finished task while another task keeps reporting progress', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        vi.setSystemTime('2026-01-01T10:00:00Z');
+        const finished = createTask({ description: 'Finished task', id: 'finished', status: BackgroundTaskStatus.Completed });
+        state.set('tasks', [createTask(), finished]);
+        render(TaskPanel);
+        await tick();
+
+        // Act
+        for (let progress = 1; progress <= 25; progress++) {
+            await vi.advanceTimersByTimeAsync(5000);
+            state.set('tasks', [createTask({ processed: progress }), finished]);
+            await tick();
+        }
+
+        // Assert
+        expect(screen.queryByText('Finished task')).toBeNull();
+        expect(screen.getByText('Delete 50 events matching filter')).toBeVisible();
     });
 });

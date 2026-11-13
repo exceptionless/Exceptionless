@@ -1,3 +1,4 @@
+import { createTable, stockFeatures, type StockFeatures, type Table, tableFeatures } from '@tanstack/svelte-table';
 import { describe, expect, it } from 'vitest';
 
 import { createAllMatchingSelection, getEventsQueryIdentity } from './all-matching-selection.svelte';
@@ -38,11 +39,11 @@ describe('createAllMatchingSelection', () => {
         // Arrange
         let identity = getEventsQueryIdentity({ filter: 'type:error', organizationId: 'organization-id' });
         const selection = createAllMatchingSelection(() => identity);
-        const identityWhenCountingStarted = selection.identity;
+        const selectionWhenCountingStarted = selection.snapshot;
 
         // Act
         identity = getEventsQueryIdentity({ filter: 'type:log', organizationId: 'organization-id' });
-        const selected = selection.select(1234, identityWhenCountingStarted);
+        const selected = selection.select(1234, selectionWhenCountingStarted);
 
         // Assert
         expect(selected).toBe(false);
@@ -63,5 +64,44 @@ describe('createAllMatchingSelection', () => {
 
         // Assert
         expect(selection.active).toBeUndefined();
+    });
+
+    it.each([
+        ['unchanged', false],
+        ['cleared and selected again', true]
+    ])('handles a deferred count when the page selection is %s', async (_, changeSelection) => {
+        // Arrange
+        const identity = getEventsQueryIdentity({ filter: 'type:error', organizationId: 'organization-id' });
+        let table: Table<StockFeatures, { id: string }>;
+        const dispose = $effect.root(() => {
+            table = createTable({
+                columns: [{ accessorKey: 'id' }],
+                data: [{ id: 'event-1' }, { id: 'event-2' }],
+                features: tableFeatures(stockFeatures),
+                getRowId: (row) => row.id
+            });
+        });
+        table!.toggleAllRowsSelected(true);
+        const selection = createAllMatchingSelection(
+            () => identity,
+            () => table!.store.state.rowSelection
+        );
+        const counting = Promise.withResolvers<number>();
+        const selectionWhenCountingStarted = selection.snapshot;
+        const selecting = counting.promise.then((count) => selection.select(count, selectionWhenCountingStarted));
+
+        // Act
+        if (changeSelection) {
+            table!.resetRowSelection();
+            table!.toggleAllRowsSelected(true);
+        }
+        counting.resolve(1234);
+        const selected = await selecting;
+        dispose();
+
+        // Assert
+        expect(table!.getIsAllRowsSelected()).toBe(true);
+        expect(selected).toBe(!changeSelection);
+        expect(selection.active).toEqual(changeSelection ? undefined : { count: 1234, identity });
     });
 });

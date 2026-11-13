@@ -28,10 +28,11 @@
     let now = $state(Date.now());
 
     const visibleTasks = $derived(selectVisibleTasks(tasksQuery.data ?? [], dismissedIds, now));
+    const hasVisibleTasks = $derived(visibleTasks.length > 0);
 
     // Finished tasks fade out of the panel on their own, so re-evaluate time while any of them is shown.
     $effect(() => {
-        if (visibleTasks.length === 0) {
+        if (!hasVisibleTasks) {
             return;
         }
 

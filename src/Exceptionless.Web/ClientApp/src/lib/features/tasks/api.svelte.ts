@@ -110,24 +110,15 @@ export async function updateTaskFromMessage(queryClient: QueryClient, update: Ba
         return;
     }
 
-    await queryClient.cancelQueries(
-        {
-            queryKey: key
-        },
-        {
-            revert: false
-        }
-    );
-    // Other messages can be applied while cancellation settles; merge with the latest cache, not the earlier snapshot.
-    const latest = queryClient.getQueryData<ViewBackgroundTask[]>(key);
-    const updated = latest ? applyTaskUpdate(latest, update) : undefined;
-    if (updated) {
-        queryClient.setQueryData(key, updated);
-    }
+    await updateCachedTasks(queryClient, key, (latest) => (latest ? applyTaskUpdate(latest, update) : undefined));
 }
 
-async function upsertTask(queryClient: QueryClient, task: ViewBackgroundTask) {
-    const key = queryKeys.organization(task.organization_id);
+async function updateCachedTasks(
+    queryClient: QueryClient,
+    key: ReturnType<typeof queryKeys.organization>,
+    update: (current: undefined | ViewBackgroundTask[]) => undefined | ViewBackgroundTask[]
+) {
+    const wasInvalidated = queryClient.getQueryState(key)?.isInvalidated;
     // An older list response must not remove newly queued work and stop polling. Keep any pushed updates received
     // since that read started instead of reverting the cache to its pre-fetch snapshot.
     await queryClient.cancelQueries(
@@ -138,7 +129,26 @@ async function upsertTask(queryClient: QueryClient, task: ViewBackgroundTask) {
             revert: false
         }
     );
-    queryClient.setQueryData<ViewBackgroundTask[]>(key, (current) => {
+
+    // An unknown-task message can invalidate the list while cancellation settles. A cache write clears that flag,
+    // so preserve the required reconciliation even if this update finishes the last task we already know about.
+    const needsReconciliation = wasInvalidated || queryClient.getQueryState(key)?.isInvalidated;
+    queryClient.setQueryData<ViewBackgroundTask[]>(key, update);
+    if (needsReconciliation) {
+        void queryClient.invalidateQueries(
+            {
+                queryKey: key
+            },
+            {
+                cancelRefetch: false
+            }
+        );
+    }
+}
+
+async function upsertTask(queryClient: QueryClient, task: ViewBackgroundTask) {
+    const key = queryKeys.organization(task.organization_id);
+    await updateCachedTasks(queryClient, key, (current) => {
         const existing = current?.find((item) => item.id === task.id);
         if (existing && compareTaskUpdateTimes(existing.updated_utc, task.updated_utc) > 0) {
             return current;

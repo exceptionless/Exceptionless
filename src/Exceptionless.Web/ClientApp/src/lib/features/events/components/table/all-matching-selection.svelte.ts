@@ -1,8 +1,15 @@
+import type { RowSelectionState } from '@tanstack/svelte-table';
+
 export interface AllMatchingSelection {
     /** How many events matched when the user chose "select all matching". */
     count: number;
     /** The query the selection was made for. */
     identity: string;
+}
+
+export interface AllMatchingSelectionSnapshot {
+    identity: string;
+    rowSelection: RowSelectionState | undefined;
 }
 
 /** Everything matching the current filter, as passed to an action menu. */
@@ -19,7 +26,7 @@ export interface AllMatchingTarget {
  * for: as soon as the query identity (organization, filter, time range, saved view) changes it is no longer active, so
  * an action can never run against a different set of events than the user confirmed.
  */
-export function createAllMatchingSelection(getIdentity: () => string) {
+export function createAllMatchingSelection(getIdentity: () => string, getRowSelection?: () => RowSelectionState) {
     let selection = $state<AllMatchingSelection>();
 
     return {
@@ -29,17 +36,13 @@ export function createAllMatchingSelection(getIdentity: () => string) {
         clear() {
             selection = undefined;
         },
-        /** The query the list is showing right now. Capture it before awaiting a count, then pass it to select. */
-        get identity(): string {
-            return getIdentity();
-        },
         /**
-         * Selects everything matching the current query. When an expected identity is given and the query changed in
-         * the meantime (the count was fetched for a different filter), nothing is selected and false is returned.
+         * Selects everything matching the current query. A pending count must not replace a newer filter or page
+         * selection, including clearing and then selecting the same rows again.
          */
-        select(count: number, expectedIdentity?: string): boolean {
+        select(count: number, expected?: AllMatchingSelectionSnapshot): boolean {
             const identity = getIdentity();
-            if (expectedIdentity !== undefined && expectedIdentity !== identity) {
+            if (expected && (expected.identity !== identity || expected.rowSelection !== getRowSelection?.())) {
                 return false;
             }
 
@@ -48,6 +51,13 @@ export function createAllMatchingSelection(getIdentity: () => string) {
                 identity
             };
             return true;
+        },
+        /** Capture the query and page selection before awaiting a count, then pass the snapshot to select. */
+        get snapshot(): AllMatchingSelectionSnapshot {
+            return {
+                identity: getIdentity(),
+                rowSelection: getRowSelection?.()
+            };
         }
     };
 }
