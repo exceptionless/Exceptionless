@@ -98,16 +98,21 @@ describe('TaskPanel', () => {
         expect(mocks.updateFromMessage).toHaveBeenCalledWith(mocks.queryClient, update);
     });
 
-    it('refreshes events and stacks once when a running task finishes', async () => {
+    it.each([1, 3])('refreshes events and stacks once when %i running tasks finish in one update', async (count) => {
         // Arrange
-        state.set('tasks', [createTask()]);
+        const running = Array.from({ length: count }, (_, index) => createTask({ id: `task-${index}` }));
+        const completed = running.map((task) => ({ ...task, processed: 50, status: BackgroundTaskStatus.Completed, succeeded: 50 }));
+        state.set('tasks', running);
         render(TaskPanel);
         await tick();
 
         // Act
-        state.set('tasks', [createTask({ processed: 50, status: BackgroundTaskStatus.Completed, succeeded: 50 })]);
+        state.set('tasks', completed);
         await tick();
-        state.set('tasks', [createTask({ processed: 50, status: BackgroundTaskStatus.Completed, succeeded: 50, updated_utc: new Date().toISOString() })]);
+        state.set(
+            'tasks',
+            completed.map((task) => ({ ...task, updated_utc: new Date().toISOString() }))
+        );
         await tick();
 
         // Assert

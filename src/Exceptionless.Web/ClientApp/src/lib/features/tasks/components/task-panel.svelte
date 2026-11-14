@@ -42,6 +42,7 @@
 
     // A task that was seen running and is now finished changed events and stacks, whichever way the update arrived.
     $effect(() => {
+        let hasFinishedTasks = false;
         for (const task of tasksQuery.data ?? []) {
             if (isTaskActive(task.status)) {
                 // A failed task can be retried with the same id; its new attempt and outcome must be visible.
@@ -55,6 +56,10 @@
             }
 
             cancellingIds.delete(task.id);
+            hasFinishedTasks = true;
+        }
+
+        if (hasFinishedTasks) {
             void invalidateTaskAffectedQueries(queryClient);
         }
     });
@@ -89,7 +94,7 @@
 {#if visibleTasks.length > 0}
     <div
         aria-label="Background tasks"
-        class="fixed bottom-4 left-4 z-40 flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2 md:left-[calc(var(--sidebar-width,16rem)+1rem)]"
+        class="fixed bottom-4 left-4 z-40 flex max-h-[calc(100dvh-2rem)] w-[min(22rem,calc(100vw-2rem))] flex-col gap-2 overflow-y-auto md:left-[calc(var(--sidebar-width,16rem)+1rem)]"
         role="region"
     >
         {#each visibleTasks as task (task.id)}

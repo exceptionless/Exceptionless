@@ -1,8 +1,78 @@
+import { BackgroundTaskStatus, type ViewBackgroundTask } from '#generated/api.ts';
+
 import { expect, test } from '../fixtures/e2e-test';
 import { createRepresentativeEvent } from '../support/synthetic-event';
 
 const EVENT_COUNT = 5;
 const PAGE_SIZE = 2;
+
+test('many running tasks stay within the viewport and the oldest task can be cancelled after scrolling', async ({ e2eScenario, page }) => {
+    // Arrange
+    const now = Date.now();
+    const tasks: ViewBackgroundTask[] = Array.from({ length: 12 }, (_, index) => ({
+        can_cancel: true,
+        created_by_user_id: '000000000000000000000001',
+        created_utc: new Date(now - index * 1000).toISOString(),
+        description: `Synthetic bulk task ${index + 1}`,
+        failed: 0,
+        id: (index + 1).toString(16).padStart(24, '0'),
+        organization_id: e2eScenario.organizationId,
+        processed: 25,
+        progress: 25,
+        project_id: e2eScenario.projectId,
+        status: BackgroundTaskStatus.Running,
+        succeeded: 25,
+        total: 100,
+        type: 'events.delete',
+        updated_utc: new Date(now).toISOString()
+    }));
+    const oldest = tasks.at(-1)!;
+    await page.route(
+        (url) => url.pathname === `/api/v2/organizations/${e2eScenario.organizationId}/tasks`,
+        (route) => route.fulfill({ json: tasks })
+    );
+    await page.route(`**/api/v2/tasks/${oldest.id}/cancel`, async (route) => {
+        oldest.status = BackgroundTaskStatus.Cancelled;
+        oldest.updated_utc = new Date().toISOString();
+        await route.fulfill({ json: oldest, status: 202 });
+    });
+    await page.setViewportSize({ height: 400, width: 390 });
+    const panel = page.getByRole('region', { name: 'Background tasks' });
+    const oldestCancel = panel.getByRole('button', { exact: true, name: `Cancel ${oldest.description}` });
+
+    // Act
+    await page.goto(`/event?project=${e2eScenario.projectId}&time=all`);
+
+    // Assert
+    await expect(panel.getByRole('button', { name: /^Cancel Synthetic bulk task / })).toHaveCount(tasks.length);
+    const metrics = await panel.evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        return {
+            bottom: bounds.bottom,
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+            top: bounds.top,
+            viewportHeight: window.innerHeight
+        };
+    });
+    expect(metrics.top).toBeGreaterThanOrEqual(0);
+    expect(metrics.bottom).toBeLessThanOrEqual(metrics.viewportHeight);
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+    await expect(oldestCancel).not.toBeInViewport();
+
+    // Act
+    await oldestCancel.scrollIntoViewIfNeeded();
+
+    // Assert
+    await expect(oldestCancel).toBeInViewport();
+    expect(await panel.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+
+    // Act
+    await oldestCancel.click();
+
+    // Assert
+    await expect(panel.getByRole('button', { exact: true, name: `Dismiss ${oldest.description}` })).toBeVisible();
+});
 
 test('deleting everything matching the filter runs in the background and shows progress', async ({ e2eApi, e2eScenario, page }) => {
     // Arrange: more events than fit on one page, all in this test's own project.
