@@ -38,10 +38,12 @@ export function waitForEventDetailResponses(page: Page, eventId: string, stackId
         const url = new URL(response.url());
         return url.pathname === `/api/v2/events/${eventId}` && url.searchParams.get('expected_stack_id') === stackId;
     });
-    const projectCountResponse = page.waitForResponse((response) => {
+    return Promise.all([eventResponse, waitForProjectUserCountResponse(page, projectId)]);
+}
+
+export function waitForProjectUserCountResponse(page: Page, projectId: string): Promise<Response> {
+    return page.waitForResponse((response) => {
         const url = new URL(response.url());
         return url.pathname === `/api/v2/projects/${projectId}/events/count` && url.searchParams.get('aggregations') === 'cardinality:user';
     });
-
-    return Promise.all([eventResponse, projectCountResponse]);
 }
