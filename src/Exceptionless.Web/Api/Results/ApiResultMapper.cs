@@ -152,6 +152,9 @@ public sealed class ApiResultMapper : IMediatorResultMapper<IResult>
         if (value is WorkInProgressResult)
             return HttpResults.Json(value, statusCode: StatusCodes.Status202Accepted);
 
+        if (value is IAcceptedResponse accepted)
+            return HttpResults.Json(accepted.Body, statusCode: StatusCodes.Status202Accepted);
+
         return HttpResults.Ok(value);
     }
 

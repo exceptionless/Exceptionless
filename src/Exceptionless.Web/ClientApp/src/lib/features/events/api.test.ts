@@ -1,5 +1,9 @@
-import { QueryClient } from '@tanstack/svelte-query';
+import type { ProblemDetails } from '@foundatiofx/fetchclient';
+
+import { MutationObserver, type MutationObserverOptions, onlineManager, QueryClient } from '@tanstack/svelte-query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import type { WorkInProgressResult } from '#shared/models/index.ts';
 
 import { ChangeType } from '#features/websockets/models.ts';
 
@@ -9,6 +13,7 @@ import { queryKeys as stackQueryKeys } from '../stacks/api.svelte';
 import {
     createEventWithNavigationQueryOptions,
     createOrganizationEventNotificationRefresher,
+    deleteEvent,
     type GetEventRequest,
     invalidatePersistentEventQueries,
     ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS,
@@ -20,10 +25,19 @@ import {
     schedulePersistentEventDeleteReconciliation
 } from './api.svelte';
 
-const fetchClientMocks = vi.hoisted(() => ({ getJSON: vi.fn() }));
+const fetchClientMocks = vi.hoisted(() => ({ deleteJSON: vi.fn(), getJSON: vi.fn() }));
+const mutationMocks = vi.hoisted(() => ({
+    createMutation: vi.fn<(options: () => MutationObserverOptions<WorkInProgressResult, ProblemDetails, string[]>) => void>(),
+    useQueryClient: vi.fn()
+}));
 
 vi.mock('@foundatiofx/fetchclient', () => ({
-    useFetchClient: () => ({ getJSON: fetchClientMocks.getJSON })
+    useFetchClient: () => fetchClientMocks
+}));
+vi.mock('@tanstack/svelte-query', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@tanstack/svelte-query')>()),
+    createMutation: mutationMocks.createMutation,
+    useQueryClient: mutationMocks.useQueryClient
 }));
 
 afterEach(() => {
@@ -38,6 +52,46 @@ describe('retainPreviousOrganizationQueryData', () => {
         expect(retainPreviousOrganizationQueryData(previousData, previousQueryKey, 'organization-a', true)).toBe(previousData);
         expect(retainPreviousOrganizationQueryData(previousData, previousQueryKey, 'organization-b', true)).toBeUndefined();
         expect(retainPreviousOrganizationQueryData(previousData, previousQueryKey, 'organization-a', false)).toBeUndefined();
+    });
+});
+
+describe('deleteEvent', () => {
+    it('keeps the confirmed event IDs when a paused deletion resumes after the selection changes', async () => {
+        // Arrange
+        vi.useFakeTimers();
+        vi.stubGlobal('document', new EventTarget());
+        onlineManager.setOnline(false);
+        const client = new QueryClient();
+        const invalidate = vi.spyOn(client, 'invalidateQueries').mockResolvedValue(undefined);
+        mutationMocks.useQueryClient.mockReturnValue(client);
+        fetchClientMocks.deleteJSON.mockResolvedValue({ data: { workers: ['worker-id'] } });
+        const selection = ['event-a'];
+        deleteEvent();
+        const mutation = new MutationObserver(client, mutationMocks.createMutation.mock.calls.at(-1)![0]());
+
+        try {
+            // Act
+            const result = mutation.mutate([...selection]);
+
+            // Assert
+            expect(mutation.getCurrentResult().isPaused).toBe(true);
+            expect(fetchClientMocks.deleteJSON).not.toHaveBeenCalled();
+
+            // Act
+            selection.splice(0, selection.length, 'event-b');
+            onlineManager.setOnline(true);
+            await client.resumePausedMutations();
+            await result;
+
+            // Assert
+            expect(fetchClientMocks.deleteJSON).toHaveBeenCalledExactlyOnceWith('events/event-a');
+            expect(invalidate).toHaveBeenCalledWith({ queryKey: queryKeys.id('event-a') });
+            expect(invalidate).not.toHaveBeenCalledWith({ queryKey: queryKeys.id('event-b') });
+        } finally {
+            onlineManager.setOnline(true);
+            client.clear();
+            vi.unstubAllGlobals();
+        }
     });
 });
 

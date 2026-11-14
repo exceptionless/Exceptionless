@@ -15,6 +15,7 @@ site.ignore(
   ".gitignore",
   ".npmrc",
   "_site",
+  "background-tasks.md",
   "deno.json",
   "deno.lock",
   "news/index.md",

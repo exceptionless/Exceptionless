@@ -3,10 +3,12 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Core.Utility;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
@@ -37,6 +39,7 @@ public class ProjectHandler(
     SlackService slackService,
     IOAuthProviderClient oauthProviderClient,
     SampleDataService sampleDataService,
+    BackgroundTaskService backgroundTaskService,
     ApiMapper mapper,
     ITextSerializer serializer,
     AppOptions options,
@@ -228,8 +231,8 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        string workItemId = await sampleDataService.EnqueueSampleEventsAsync(project.OrganizationId, project.Id);
-        return new WorkInProgressResult([workItemId]);
+        string taskId = await sampleDataService.EnqueueSampleEventsAsync(project, GetCurrentUser(message.Context).Id);
+        return new WorkInProgressResult([taskId]);
     }
 
     public async Task<Result<WorkInProgressResult>> Handle(ResetProjectData message)
@@ -238,13 +241,22 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        string workItemId = await workItemQueue.EnqueueAsync(new ResetProjectDataWorkItem
+        // The returned id is the background task that tracks the reset, so the progress panel can follow it.
+        var task = await backgroundTaskService.CreateAndEnqueueAsync(new BackgroundTask
         {
             OrganizationId = project.OrganizationId,
-            ProjectId = project.Id
+            ProjectId = project.Id,
+            Type = BackgroundTaskTypes.ResetProjectData,
+            Description = $"Reset data for {project.Name}",
+            CreatedByUserId = GetCurrentUser(message.Context).Id
+        }, t => new ResetProjectDataWorkItem
+        {
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
+            TaskId = t.Id
         });
 
-        return new WorkInProgressResult([workItemId]);
+        return new WorkInProgressResult([task.Id]);
     }
 
     public async Task<Result<IDictionary<string, NotificationSettings>>> Handle(GetProjectNotificationSettings message)

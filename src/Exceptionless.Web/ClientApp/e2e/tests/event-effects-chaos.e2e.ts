@@ -1,7 +1,7 @@
 import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
-import { isApplicationApiRequest, trackPendingApiRequests, waitForEventDetailResponses } from '../support/api-request-monitor';
+import { isApplicationApiRequest, trackPendingApiRequests, waitForEventDetailResponses, waitForProjectUserCountResponse } from '../support/api-request-monitor';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
 import {
@@ -206,9 +206,19 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'stack detail discovery route remounts', async () => {
         for (let index = 0; index < 5; index++) {
+            // Arrange
             await pendingApiRequests.waitForPendingRequests();
+            // Overview can render before the dependent project metric request starts.
+            const projectCountResponse = waitForProjectUserCountResponse(page, e2eScenario.projectId);
+
+            // Act
             await page.goto(`/stack/${journey.stackId}`);
+
+            // Assert
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
+            const response = await projectCountResponse;
+            expect(response.ok()).toBe(true);
+            expect(await response.finished()).toBeNull();
         }
     });
     expect(actionSample(diagnostics, 'stack detail discovery route remounts').eventDetails).toBeLessThanOrEqual(10);
@@ -217,9 +227,18 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'canonical stack event route remounts', async () => {
         for (let index = 0; index < 5; index++) {
+            // Arrange
             await pendingApiRequests.waitForPendingRequests();
+            const projectCountResponse = waitForProjectUserCountResponse(page, e2eScenario.projectId);
+
+            // Act
             await page.goto(`/stack/${journey.stackId}/event/${journey.eventId}`);
+
+            // Assert
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
+            const response = await projectCountResponse;
+            expect(response.ok()).toBe(true);
+            expect(await response.finished()).toBeNull();
         }
     });
     expect(actionSample(diagnostics, 'canonical stack event route remounts').eventDetails).toBeLessThanOrEqual(10);

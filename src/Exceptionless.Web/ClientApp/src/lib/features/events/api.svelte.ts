@@ -99,7 +99,7 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
 }
 
 export const queryKeys = {
-    deleteEvent: (ids: string[] | undefined) => [...queryKeys.type, 'delete', ...(ids ?? [])] as const,
+    deleteEvent: () => [...queryKeys.type, 'delete'] as const,
     eventsByReference: (referenceId: string | undefined, projectId?: string | undefined, params?: GetEventsByReferenceRequest['params']) =>
         [...queryKeys.type, 'by-ref', referenceId, projectId, params] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
@@ -126,12 +126,6 @@ export const PERSISTENT_EVENT_DELETE_RECONCILE_DELAY = 1500;
 export const PERSISTENT_EVENT_DELETE_RECONCILE_RETRY_DELAY = 5000;
 export const ORGANIZATION_EVENT_QUERY_STALE_TIME_MS = 60 * 1000;
 export const ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS = 5 * 1000;
-
-export interface DeleteEventsRequest {
-    route: {
-        ids: string[] | undefined;
-    };
-}
 
 export interface EventNavigation {
     nextId: null | string;
@@ -335,26 +329,26 @@ export function createEventWithNavigationQueryOptions(request: GetEventRequest, 
     };
 }
 
-export function deleteEvent(request: DeleteEventsRequest) {
+export function deleteEvent() {
     const queryClient = useQueryClient();
-    return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.ids?.length,
-        mutationFn: async () => {
+    return createMutation<WorkInProgressResult, ProblemDetails, string[]>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (ids) => {
             const client = useFetchClient();
-            const response = await client.deleteJSON<WorkInProgressResult>(`events/${request.route.ids?.join(',')}`);
+            const response = await client.deleteJSON<WorkInProgressResult>(`events/${ids.join(',')}`);
 
             return response.data!;
         },
-        mutationKey: queryKeys.deleteEvent(request.route.ids),
-        onError: () => {
-            request.route.ids?.forEach((id) =>
+        mutationKey: queryKeys.deleteEvent(),
+        onError: (_, ids) => {
+            ids.forEach((id) =>
                 queryClient.invalidateQueries({
                     queryKey: queryKeys.id(id)
                 })
             );
         },
-        onSuccess: () => {
-            request.route.ids?.forEach((id) =>
+        onSuccess: (_, ids) => {
+            ids.forEach((id) =>
                 queryClient.invalidateQueries({
                     queryKey: queryKeys.id(id)
                 })
