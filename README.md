@@ -49,6 +49,8 @@ Notes:
 3. Use Aspire CLI 13.6.5 or newer (`aspire update --self` to update). The AppHost uses the CLI bundle for the dashboard and resource orchestrator; when no CLI is installed, the SDK downloads the matching version through DNX.
 4. Try `dotnet build -mt` for multithreaded builds. Performance depends on the workload and machine.
 
+See the [background task developer guide](docs/background-tasks.md) for task lifecycle, API contracts, cancellation, bulk execution, and extension points.
+
 ## UI Development
 
 The Svelte 5 UI in `src/Exceptionless.Web/ClientApp` is the only application frontend and serves at `/`. Aspire starts Svelte together with the API. Primary hash-route bookmarks resolve to the current pages, and existing signed-in sessions are retained.
