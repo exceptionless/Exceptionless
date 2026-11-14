@@ -34,8 +34,8 @@ public class BackgroundTaskService
     /// <summary>Every cache key and lock resource of background tasks starts with this prefix.</summary>
     public const string KeyPrefix = "background-tasks";
 
-    private const int IndexPageSize = 500;
-    private const int MaxIndexPages = 100;
+    /// <summary>Bounds task payloads loaded together, including selections attached to bulk tasks.</summary>
+    internal const int ReadBatchSize = 50;
     private readonly ICacheClient _cache;
     private readonly ILockProvider _lockProvider;
     private readonly IMessagePublisher _publisher;
@@ -77,13 +77,35 @@ public class BackgroundTaskService
     }
 
     /// <summary>
+    /// Returns the existing tasks in input order, once per id. Missing records are omitted. Reads are batched so a
+    /// remote cache can retrieve several records together; callers remain responsible for checking their scope.
+    /// </summary>
+    public async Task<IReadOnlyList<BackgroundTask>> GetByIdsAsync(IEnumerable<string> ids)
+    {
+        var tasks = new List<BackgroundTask>();
+        foreach (var keys in ids.Distinct(StringComparer.Ordinal).Select(GetTaskCacheKey).Chunk(ReadBatchSize))
+        {
+            var cached = await _cache.GetAllAsync<BackgroundTask>(keys);
+            foreach (string key in keys)
+            {
+                if (cached.TryGetValue(key, out var value) && value.HasValue && value.Value is { } task)
+                    tasks.Add(task);
+            }
+        }
+
+        return tasks;
+    }
+
+    /// <summary>
     /// All active tasks and the newest finished tasks of the organization, newest first. Only finished history is limited.
     /// </summary>
     public async Task<IReadOnlyList<BackgroundTask>> GetByOrganizationAsync(string organizationId, int limit = ListLimit)
     {
         var activeIds = (await GetActiveIdsAsync(organizationId)).ToHashSet(StringComparer.Ordinal);
+        // One snapshot avoids repeated full-list cloning in memory and offset shifts while entries expire.
+        var indexed = await _cache.GetListAsync<string>(GetOrganizationIndexCacheKey(organizationId));
         // Ids are ObjectIds, so descending order is newest first no matter how the cache orders its list.
-        var newestIds = (await GetIndexedIdsAsync(GetOrganizationIndexCacheKey(organizationId)))
+        var newestIds = (indexed.HasValue ? indexed.Value : [])
             .Concat(activeIds)
             .Distinct(StringComparer.Ordinal)
             .OrderByDescending(id => id, StringComparer.Ordinal);
@@ -91,16 +113,15 @@ public class BackgroundTaskService
         var tasks = new List<BackgroundTask>();
         var expired = new List<string>();
         int finishedCount = 0;
-        foreach (string id in newestIds)
+        foreach (var batch in newestIds.Where(id => finishedCount < limit || activeIds.Contains(id)).Chunk(ReadBatchSize))
         {
-            if (finishedCount >= limit && !activeIds.Contains(id))
-                continue;
-
-            var task = await GetAsync(id);
-            if (task is null)
-                expired.Add(id);
-            else if (String.Equals(task.OrganizationId, organizationId, StringComparison.Ordinal) && (task.IsActive || finishedCount < limit))
+            var found = await GetByIdsAsync(batch);
+            expired.AddRange(batch.Except(found.Select(task => task.Id), StringComparer.Ordinal));
+            foreach (var task in found)
             {
+                if (!String.Equals(task.OrganizationId, organizationId, StringComparison.Ordinal) || (!task.IsActive && finishedCount >= limit))
+                    continue;
+
                 tasks.Add(task);
                 if (!task.IsActive)
                     finishedCount++;
@@ -108,7 +129,10 @@ public class BackgroundTaskService
         }
 
         if (expired.Count > 0)
+        {
             await _cache.ListRemoveAsync(GetOrganizationIndexCacheKey(organizationId), expired);
+            await RemoveFromActiveIndexAsync(organizationId, expired);
+        }
 
         return tasks.OrderByDescending(t => t.CreatedUtc).ThenByDescending(t => t.Id, StringComparer.Ordinal).ToList();
     }
@@ -119,12 +143,6 @@ public class BackgroundTaskService
         // Completion removes ids concurrently. Read one snapshot so a removal cannot shift an unread id past a page offset.
         var ids = await _cache.GetListAsync<string>(GetActiveIndexCacheKey(organizationId));
         return ids.HasValue ? ids.Value.Distinct(StringComparer.Ordinal).ToList() : [];
-    }
-
-    /// <summary>Puts a task that is running again (for example after a queue retry) back into the active index.</summary>
-    public Task AddToActiveIndexAsync(string organizationId, string id)
-    {
-        return _cache.ListAddAsync(GetActiveIndexCacheKey(organizationId), [id], TaskLifetime);
     }
 
     /// <summary>Removes finished (or expired) ids from the active index of the organization.</summary>
@@ -163,11 +181,25 @@ public class BackgroundTaskService
 
     /// <summary>
     /// Adds a task and queues the work item that runs it. The work item is created after the task has its id.
+    /// If preparation fails, the task is marked failed and no work is queued.
     /// </summary>
     public async Task<BackgroundTask> CreateAndEnqueueAsync<T>(BackgroundTask task, Func<BackgroundTask, T> createWorkItem) where T : class
     {
         await AddAsync(task);
-        await EnqueueAsync(task, createWorkItem(task));
+
+        T workItem;
+        try
+        {
+            workItem = createWorkItem(task);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to prepare background task {TaskId}: {Message}", task.Id, ex.Message);
+            await FailToStartAsync(task.Id);
+            throw;
+        }
+
+        await EnqueueAsync(task, workItem);
         return task;
     }
 
@@ -213,21 +245,37 @@ public class BackgroundTaskService
     /// </remarks>
     public async Task<BackgroundTask?> UpdateAsync(string id, Func<BackgroundTask, bool> update)
     {
-        await using var updateLock = await _lockPolicy.ExecuteAsync(async ct =>
-            await _lockProvider.AcquireAsync(GetUpdateLockResource(id), TimeSpan.FromSeconds(30), _options.LockAcquireTimeout), CancellationToken.None);
+        BackgroundTask? task;
+        await using (var updateLock = await _lockPolicy.ExecuteAsync(async ct =>
+            await _lockProvider.AcquireAsync(GetUpdateLockResource(id), TimeSpan.FromSeconds(30), _options.LockAcquireTimeout), CancellationToken.None))
+        {
+            task = await GetAsync(id);
+            if (task is null)
+                return null;
 
-        var task = await GetAsync(id);
-        if (task is null)
-            return null;
+            var previousUpdatedUtc = task.UpdatedUtc;
+            if (!update(task))
+                return task;
 
-        if (!update(task))
-            return task;
+            // Clients use this stamp to reject delayed notifications, including when a clock repeats or moves backwards.
+            var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+            task.UpdatedUtc = utcNow > previousUpdatedUtc ? utcNow : previousUpdatedUtc.AddTicks(1);
+            await SaveAsync(task);
+            if (task.IsActive)
+            {
+                // Active discovery must live as long as progress, including tasks that run longer than TaskLifetime.
+                await RefreshIndexAsync(GetActiveIndexCacheKey(task.OrganizationId), task.Id);
+            }
+            else
+            {
+                // Renew history on completion, rather than rewriting the large history index on every progress report.
+                // Keep active membership until history is saved so a concurrent list cannot miss a long-running task.
+                await RefreshIndexAsync(GetOrganizationIndexCacheKey(task.OrganizationId), task.Id);
+                await RemoveFromActiveIndexAsync(task.OrganizationId, [task.Id]);
+            }
+        }
 
-        task.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
-        await SaveAsync(task);
-        if (!task.IsActive)
-            await RemoveFromActiveIndexAsync(task.OrganizationId, [task.Id]);
-
+        // The state is committed; a slow publisher must not block another update or cancellation.
         await PublishAsync(task);
         return task;
     }
@@ -275,7 +323,7 @@ public class BackgroundTaskService
         return (await _cache.GetAsync<bool>(GetCancelCacheKey(id))).HasValue;
     }
 
-    public async Task SaveAsync(BackgroundTask task)
+    private async Task SaveAsync(BackgroundTask task)
     {
         if (!await _cache.SetAsync(GetTaskCacheKey(task.Id), task, TaskLifetime))
             throw new InvalidOperationException("The background task could not be saved.");
@@ -331,21 +379,11 @@ public class BackgroundTaskService
         });
     }
 
-    private async Task<List<string>> GetIndexedIdsAsync(string key)
+    private async Task RefreshIndexAsync(string key, string id)
     {
-        var ids = new List<string>();
-        for (int page = 1; page <= MaxIndexPages; page++)
-        {
-            var batch = await _cache.GetListAsync<string>(key, page, IndexPageSize);
-            if (!batch.HasValue || batch.Value.Count == 0)
-                break;
-
-            ids.AddRange(batch.Value);
-            if (batch.Value.Count < IndexPageSize)
-                break;
-        }
-
-        return ids;
+        await _cache.ListAddAsync(key, [id], TaskLifetime);
+        // Refreshing an existing list member does not extend the key TTL in every cache provider.
+        await _cache.SetExpirationAsync(key, TaskLifetime);
     }
 }
 

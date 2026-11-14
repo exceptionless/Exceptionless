@@ -200,42 +200,42 @@ public class BulkOperationService
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         var finished = new List<string>();
         BackgroundTask? conflict = null;
-        foreach (string id in await _taskService.GetActiveIdsAsync(candidate.OrganizationId))
+        var activeIds = await _taskService.GetActiveIdsAsync(candidate.OrganizationId);
+        foreach (var batch in activeIds.Chunk(BackgroundTaskService.ReadBatchSize))
         {
-            var existing = await _taskService.GetAsync(id);
-            if (existing is null || !existing.IsActive)
+            var tasks = await _taskService.GetByIdsAsync(batch);
+            finished.AddRange(batch.Except(tasks.Where(task => task.IsActive).Select(task => task.Id), StringComparer.Ordinal));
+            foreach (var active in tasks.Where(task => task.IsActive))
             {
-                finished.Add(id);
-                continue;
-            }
-
-            if (GetHandler(existing.Type) is not { IsDestructive: true })
-                continue;
-
-            // An organization wide task can touch every project, so it conflicts with any project's task.
-            bool overlaps = existing.ProjectId is null || candidate.ProjectId is null || String.Equals(existing.ProjectId, candidate.ProjectId, StringComparison.Ordinal);
-            if (!overlaps)
-                continue;
-
-            if (utcNow - existing.UpdatedUtc >= BackgroundTaskService.StaleAfter)
-            {
-                // Retire it before admitting a replacement, so a delayed delivery cannot run it alongside the new one.
-                var retired = await _taskService.UpdateAsync(existing.Id, current =>
-                {
-                    if (!current.IsActive || utcNow - current.UpdatedUtc < BackgroundTaskService.StaleAfter)
-                        return false;
-
-                    current.Finish(BackgroundTaskStatus.Failed, "Stopped because it made no progress for two hours.", utcNow);
-                    return true;
-                });
-
-                if (retired is null || !retired.IsActive)
+                var existing = active;
+                if (GetHandler(existing.Type) is not { IsDestructive: true })
                     continue;
 
-                existing = retired;
-            }
+                // An organization wide task can touch every project, so it conflicts with any project's task.
+                bool overlaps = existing.ProjectId is null || candidate.ProjectId is null || String.Equals(existing.ProjectId, candidate.ProjectId, StringComparison.Ordinal);
+                if (!overlaps)
+                    continue;
 
-            conflict ??= existing;
+                if (utcNow - existing.UpdatedUtc >= BackgroundTaskService.StaleAfter)
+                {
+                    // Retire it before admitting a replacement, so a delayed delivery cannot run it alongside the new one.
+                    var retired = await _taskService.UpdateAsync(existing.Id, current =>
+                    {
+                        if (!current.IsActive || utcNow - current.UpdatedUtc < BackgroundTaskService.StaleAfter)
+                            return false;
+
+                        current.Finish(BackgroundTaskStatus.Failed, "Stopped because it made no progress for two hours.", utcNow);
+                        return true;
+                    });
+
+                    if (retired is null || !retired.IsActive)
+                        continue;
+
+                    existing = retired;
+                }
+
+                conflict ??= existing;
+            }
         }
 
         if (finished.Count > 0)

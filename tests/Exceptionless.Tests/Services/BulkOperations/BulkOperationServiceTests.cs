@@ -205,7 +205,7 @@ public class BulkOperationServiceTests : TestWithLoggingBase, IDisposable
         await _harness.Tasks.AddAsync(expired);
         // Simulate an index that was not cleaned: the task finished without being removed, and another record expired.
         finished.Finish(BackgroundTaskStatus.Completed, "Done", _time.GetUtcNow().UtcDateTime);
-        await _harness.Tasks.SaveAsync(finished);
+        await _harness.Cache.SetAsync(BackgroundTaskService.GetTaskCacheKey(finished.Id), finished, BackgroundTaskService.TaskLifetime);
         await _harness.Cache.RemoveAsync(BackgroundTaskService.GetTaskCacheKey(expired.Id));
 
         // Act

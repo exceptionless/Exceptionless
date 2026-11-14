@@ -118,6 +118,27 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
     }
 
     [Fact]
+    public async Task GetByIdsAsync_MissingAndRepeatedIdsAcrossBatches_ReturnsExistingTasksInInputOrder()
+    {
+        // Arrange
+        var tasks = new List<BackgroundTask>();
+        for (int index = 0; index <= BackgroundTaskService.ReadBatchSize; index++)
+        {
+            var task = NewTask();
+            await Tasks.AddAsync(task);
+            tasks.Add(task);
+        }
+
+        string[] requested = [.. tasks.Select(task => task.Id).Reverse(), ObjectId.GenerateNewId().ToString(), tasks[0].Id];
+
+        // Act
+        var found = await Tasks.GetByIdsAsync(requested);
+
+        // Assert
+        Assert.Equal(tasks.Select(task => task.Id).Reverse(), found.Select(task => task.Id));
+    }
+
+    [Fact]
     public async Task GetByOrganizationAsync_FinishedTasks_ReturnsTheNewestFirstUpToTheLimit()
     {
         // Arrange
@@ -140,6 +161,31 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
 
         // Assert
         Assert.Equal([ids[3], ids[2]], newestTwo.Select(t => t.Id).ToArray());
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_HistoryExceedsFormerPageLimit_ReturnsNewestTask()
+    {
+        // Arrange
+        const int historyCount = 50_001;
+        var utcNow = _time.GetUtcNow().UtcDateTime;
+        var firstCreatedUtc = utcNow.AddSeconds(1 - historyCount);
+        var ids = Enumerable.Range(0, historyCount)
+            .Select(index => ObjectId.GenerateNewId(firstCreatedUtc.AddSeconds(index)).ToString())
+            .ToArray();
+        var newest = NewTask();
+        newest.Id = ids[^1];
+        newest.CreatedUtc = utcNow;
+        newest.UpdatedUtc = utcNow;
+        newest.Finish(BackgroundTaskStatus.Completed, "Done", utcNow);
+        await _harness.Cache.SetAsync(BackgroundTaskService.GetTaskCacheKey(newest.Id), newest, BackgroundTaskService.TaskLifetime);
+        await _harness.Cache.ListAddAsync(BackgroundTaskService.GetOrganizationIndexCacheKey(OrganizationId), ids, BackgroundTaskService.TaskLifetime);
+
+        // Act
+        var listed = await Tasks.GetByOrganizationAsync(OrganizationId, limit: 1);
+
+        // Assert
+        Assert.Equal(newest.Id, Assert.Single(listed).Id);
     }
 
     [Fact]
@@ -203,6 +249,60 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         Assert.Contains(kept.Id, indexed.Value);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task UpdateAsync_NotificationWaits_PersistsOrderedUpdatesWithoutHoldingTheLock(int clockAdjustmentSeconds)
+    {
+        // Arrange
+        using var harness = new BackgroundTaskTestHarness(_time, Log, new BackgroundTaskOptions { LockAcquireTimeout = TimeSpan.Zero }, lockAttempts: 1);
+        var task = NewTask();
+        await harness.Tasks.AddAsync(task);
+        var publishing = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releasePublication = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        harness.Publisher.BeforePublish = () =>
+        {
+            harness.Publisher.BeforePublish = null;
+            publishing.SetResult();
+            return releasePublication.Task;
+        };
+
+        // Act
+        var firstUpdate = harness.Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Start(_time.GetUtcNow().UtcDateTime);
+            current.Progress = 20;
+            return true;
+        });
+        Exception? exception;
+        try
+        {
+            await publishing.Task.WaitAsync(TestCancellationToken);
+            _time.AdjustTime(_time.GetUtcNow().AddSeconds(clockAdjustmentSeconds));
+            exception = await Record.ExceptionAsync(async () => await harness.Tasks.UpdateAsync(task.Id, current =>
+            {
+                current.Progress = 40;
+                return true;
+            }));
+        }
+        finally
+        {
+            releasePublication.SetResult();
+            await firstUpdate;
+        }
+
+        var stored = await harness.Tasks.GetAsync(task.Id);
+        var updates = harness.Publisher.Updates;
+
+        // Assert
+        Assert.Null(exception);
+        Assert.NotNull(stored);
+        Assert.Equal(40, stored.Progress);
+        Assert.Equal([40, 20], updates.Select(update => update.Progress));
+        Assert.Equal(stored.UpdatedUtc, updates[0].UpdatedUtc);
+        Assert.True(updates[0].UpdatedUtc > updates[1].UpdatedUtc);
+    }
+
     [Fact]
     public async Task UpdateAsync_UpdateReturnsFalse_SavesAndPublishesNothing()
     {
@@ -257,6 +357,65 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         Assert.Equal(40, update.Progress);
         Assert.Equal("Working", update.Message);
         Assert.Equal(task.CanCancel, update.CanCancel);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_LongRunningTask_KeepsIndexesForTheSavedRecordLifetime()
+    {
+        // Arrange
+        ObservingHistoryCacheClient? cache = null;
+        using var harness = new BackgroundTaskTestHarness(_time, Log,
+            decorateCache: inner => cache = new ObservingHistoryCacheClient(inner));
+        var tasks = harness.Tasks;
+        var task = NewTask();
+        await tasks.AddAsync(task);
+        _time.Advance(TimeSpan.FromDays(6));
+
+        // Act
+        await tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Start(_time.GetUtcNow().UtcDateTime);
+            current.Progress = 50;
+            return true;
+        });
+        _time.Advance(TimeSpan.FromDays(2));
+        var stored = await tasks.GetAsync(task.Id);
+        var active = await tasks.GetActiveIdsAsync(OrganizationId);
+        var listed = await tasks.GetByOrganizationAsync(OrganizationId);
+
+        // Assert
+        Assert.NotNull(stored);
+        Assert.Equal(BackgroundTaskStatus.Running, stored.Status);
+        Assert.Equal([task.Id], active);
+        Assert.Equal(task.Id, Assert.Single(listed).Id);
+
+        // Arrange
+        IReadOnlyList<BackgroundTask> duringHistoryRefresh = [];
+        cache!.BeforeHistoryRefresh = async () => duringHistoryRefresh = await tasks.GetByOrganizationAsync(OrganizationId);
+
+        // Act
+        await tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Finish(BackgroundTaskStatus.Completed, "Done", _time.GetUtcNow().UtcDateTime);
+            return true;
+        });
+        _time.Advance(TimeSpan.FromDays(6));
+        var finished = await tasks.GetByOrganizationAsync(OrganizationId);
+        var finishedActive = await tasks.GetActiveIdsAsync(OrganizationId);
+
+        // Assert
+        Assert.Equal(task.Id, Assert.Single(duringHistoryRefresh).Id);
+        Assert.Equal(BackgroundTaskStatus.Completed, Assert.Single(finished).Status);
+        Assert.Empty(finishedActive);
+
+        // Act
+        _time.Advance(TimeSpan.FromDays(1) + TimeSpan.FromSeconds(1));
+        var expired = await tasks.GetAsync(task.Id);
+        var expiredList = await tasks.GetByOrganizationAsync(OrganizationId);
+
+        // Assert
+        Assert.Null(expired);
+        Assert.Empty(expiredList);
     }
 
     [Fact]
@@ -595,6 +754,29 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
     }
 
     [Fact]
+    public async Task CreateAndEnqueueAsync_WorkItemFactoryThrows_FailsTheTaskWithoutQueueingIt()
+    {
+        // Arrange
+        var task = NewTask();
+        var failure = new InvalidOperationException("Unable to prepare the work item");
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await Tasks.CreateAndEnqueueAsync<ResetProjectDataWorkItem>(task, _ => throw failure));
+        var stored = await Tasks.GetAsync(task.Id);
+        var active = await Tasks.GetActiveIdsAsync(OrganizationId);
+        var queued = await _harness.Queue.GetQueueStatsAsync();
+
+        // Assert
+        Assert.Same(failure, thrown);
+        Assert.NotNull(stored);
+        Assert.Equal(BackgroundTaskStatus.Failed, stored.Status);
+        Assert.NotNull(stored.CompletedUtc);
+        Assert.Empty(active);
+        Assert.Equal(0, queued.Enqueued);
+        Assert.Equal(BackgroundTaskStatus.Failed, Assert.Single(_harness.Publisher.Updates).Status);
+    }
+
+    [Fact]
     public async Task EnqueueAsync_QueueRejectsTheWorkItem_FailsTheTaskSoItIsNotLeftWaiting()
     {
         // Arrange
@@ -715,6 +897,22 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
             CreatedByUserId = "537650f3b77efe23a47914f8",
             CanCancel = canCancel
         };
+    }
+
+    private sealed class ObservingHistoryCacheClient(ICacheClient inner) : ScopedCacheClient(inner, null), ICacheClient
+    {
+        public Func<Task>? BeforeHistoryRefresh { get; set; }
+
+        public new async Task<long> ListAddAsync<T>(string key, IEnumerable<T> values, TimeSpan? expiresIn = null) where T : notnull
+        {
+            if (key == BackgroundTaskService.GetOrganizationIndexCacheKey(OrganizationId) && BeforeHistoryRefresh is { } observe)
+            {
+                BeforeHistoryRefresh = null;
+                await observe();
+            }
+
+            return await base.ListAddAsync(key, values, expiresIn);
+        }
     }
 
     private sealed class LostAcknowledgementQueue(InMemoryQueueOptions<WorkItemData> options) : InMemoryQueue<WorkItemData>(options)

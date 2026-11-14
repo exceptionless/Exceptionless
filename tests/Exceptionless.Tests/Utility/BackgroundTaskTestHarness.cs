@@ -59,6 +59,9 @@ public sealed class BackgroundTaskTestHarness : IDisposable
         /// <summary>When set, publishing throws, like a message bus that is down.</summary>
         public Exception? Failure { get; set; }
 
+        /// <summary>Lets a test hold publication while another task update proceeds.</summary>
+        public Func<Task>? BeforePublish { get; set; }
+
         public IReadOnlyList<BackgroundTaskUpdated> Updates
         {
             get
@@ -68,15 +71,16 @@ public sealed class BackgroundTaskTestHarness : IDisposable
             }
         }
 
-        public Task PublishAsync(Type messageType, object message, MessageOptions? options = null, CancellationToken cancellationToken = default)
+        public async Task PublishAsync(Type messageType, object message, MessageOptions? options = null, CancellationToken cancellationToken = default)
         {
             if (Failure is not null)
                 throw Failure;
 
+            if (BeforePublish is { } beforePublish)
+                await beforePublish();
+
             lock (_messages)
                 _messages.Add(message);
-
-            return Task.CompletedTask;
         }
     }
 }

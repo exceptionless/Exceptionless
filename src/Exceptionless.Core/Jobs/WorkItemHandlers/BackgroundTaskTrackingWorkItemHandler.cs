@@ -145,9 +145,6 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
             return true;
         });
 
-        if (wasFinished && task is not null)
-            await TryAsync(taskId, () => _taskService.AddToActiveIndexAsync(task.OrganizationId, task.Id));
-
         return task is not { Status: BackgroundTaskStatus.Cancelled or BackgroundTaskStatus.Completed };
     }
 
