@@ -122,6 +122,8 @@ Preparation runs before the organization admission lock. Destructive bulk operat
 
 The snapshot has a two-hour idle lease, renewed while paging. Terminal or rejected work releases it best effort; active retries and shutdown retain it. Expiry bounds the resource when cleanup cannot reach the backend.
 
+Completion does not force an Elasticsearch index refresh. Deletion uses the repository's normal eventual search consistency, so search results can briefly retain deleted events until the index refreshes.
+
 Deletion and checkpoint persistence are separate writes. The worker retries saving a known batch result before considering another execution. A process can still stop after a side effect but before its checkpoint is saved, so handlers must tolerate replay. Missing items are reported as failed; counts are not an exactly-once ledger of external side effects.
 
 ## Adding work

@@ -225,6 +225,8 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         var created = await CreateOperationAsync(request);
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
         var finished = await GetOperationAsync(created.Id);
+        // Missing ids fall back to a search across daily indexes, which must observe the completed deletions.
+        await RefreshDataAsync();
         var remaining = await _eventRepository.GetByIdsAsync(events.Select(e => e.Id).ToArray());
         var usage = await usageService.GetUsageAsync(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID);
 
