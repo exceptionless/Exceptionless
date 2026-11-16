@@ -1,6 +1,7 @@
 import { createSearchIndexLoader, initializeSiteSearch, searchEntries } from "../public/assets/js/site-search.js"
 
 Deno.test("createSearchIndexLoader retries after a transient failure", async () => {
+  // Arrange
   let requestCount = 0
   const loadSearchIndex = createSearchIndexLoader(() => {
     requestCount++
@@ -11,35 +12,55 @@ Deno.test("createSearchIndexLoader retries after a transient failure", async () 
     return Promise.resolve(Response.json({ entries: [entry("Docker", "/docs/docker/", "Containers")] }))
   })
 
-  await assertRejects(loadSearchIndex, "503")
-  assertEquals((await loadSearchIndex()).map((result) => result.url), ["/docs/docker/"])
+  // Act
+  const firstRequest = loadSearchIndex()
+
+  // Assert
+  await assertRejects(() => firstRequest, "503")
+
+  // Act
+  const results = await loadSearchIndex()
+
+  // Assert
+  assertEquals(results.map((result) => result.url), ["/docs/docker/"])
   assertEquals(requestCount, 2)
 })
 
 Deno.test("searchEntries requires every query token", () => {
+  // Arrange
   const entries = [
     entry("Docker hosting", "/docs/self-hosting/docker/", "Run the container locally"),
     entry("Kubernetes hosting", "/docs/self-hosting/kubernetes/", "Run the cluster locally"),
   ]
 
-  assertEquals(searchEntries(entries, "docker locally").map((result) => result.url), [
+  // Act
+  const results = searchEntries(entries, "docker locally")
+
+  // Assert
+  assertEquals(results.map((result) => result.url), [
     "/docs/self-hosting/docker/",
   ])
 })
 
 Deno.test("searchEntries ranks an exact title above body-only matches", () => {
+  // Arrange
   const entries = [
     entry("Client configuration", "/docs/client-configuration/", "Project tokens"),
     entry("Project tokens", "/docs/project-tokens/", "Client configuration"),
   ]
 
-  assertEquals(searchEntries(entries, "project tokens").map((result) => result.url), [
+  // Act
+  const results = searchEntries(entries, "project tokens")
+
+  // Assert
+  assertEquals(results.map((result) => result.url), [
     "/docs/project-tokens/",
     "/docs/client-configuration/",
   ])
 })
 
 Deno.test("searchEntries returns safe code-token excerpts", () => {
+  // Arrange
   const candidate = entry("Configure the client", "/docs/configure/", "Browser setup ExceptionlessClient")
   candidate.codeBlocks = [{
     language: "javascript",
@@ -50,8 +71,10 @@ Deno.test("searchEntries returns safe code-token excerpts", () => {
     ],
   }]
 
+  // Act
   const [result] = searchEntries([candidate], "ExceptionlessClient")
 
+  // Assert
   assertEquals(result.codeExcerpt.language, "javascript")
   assertEquals(result.codeExcerpt.tokens.flatMap((token) => token.classes ?? []), ["hljs-keyword"])
   assertEquals(result.codeExcerpt.tokens.map((token) => token.text).join(""), candidate.codeBlocks[0].text)
