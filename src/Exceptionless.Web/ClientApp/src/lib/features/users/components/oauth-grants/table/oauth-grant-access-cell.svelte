@@ -42,6 +42,10 @@
                 return 'Offline';
             case 'projects:read':
                 return 'Projects';
+            case 'saved-views:read':
+                return 'Saved Views';
+            case 'saved-views:write':
+                return 'Saved Views Write';
             case 'stacks:read':
                 return 'Stacks';
             case 'stacks:write':
@@ -72,7 +76,7 @@
                     <div class="text-sm font-medium">{formatResource(resource.resource)}</div>
                     <div class="flex flex-wrap gap-1">
                         {#each resource.scopes as scope (scope)}
-                            <Badge variant={scope === 'stacks:write' ? 'amber' : 'secondary'}>{formatScope(scope)}</Badge>
+                            <Badge variant={scope.endsWith(':write') ? 'amber' : 'secondary'}>{formatScope(scope)}</Badge>
                         {/each}
                     </div>
                 </div>

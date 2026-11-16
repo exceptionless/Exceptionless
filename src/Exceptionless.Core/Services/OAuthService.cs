@@ -29,6 +29,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.StacksRead,
         AuthorizationRoles.StacksWrite,
         AuthorizationRoles.EventsRead,
+        AuthorizationRoles.SavedViewsRead,
+        AuthorizationRoles.SavedViewsWrite,
         AuthorizationRoles.OfflineAccess
     ],
     [
@@ -56,6 +58,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.StacksRead,
         AuthorizationRoles.StacksWrite,
         AuthorizationRoles.EventsRead,
+        AuthorizationRoles.SavedViewsRead,
+        AuthorizationRoles.SavedViewsWrite,
         AuthorizationRoles.OfflineAccess
     ];
 
@@ -66,6 +70,8 @@ public class OAuthService(OAuthServerOptions options, ICacheClient cacheClient, 
         AuthorizationRoles.StacksRead,
         AuthorizationRoles.StacksWrite,
         AuthorizationRoles.EventsRead,
+        AuthorizationRoles.SavedViewsRead,
+        AuthorizationRoles.SavedViewsWrite,
         AuthorizationRoles.OfflineAccess
     ];
 

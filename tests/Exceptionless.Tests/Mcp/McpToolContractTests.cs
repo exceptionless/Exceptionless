@@ -107,5 +107,6 @@ public sealed class McpToolContractTests
         null!,
         null!,
         NullLogger<ExceptionlessMcpTools>.Instance,
-        TimeProvider.System);
+        TimeProvider.System,
+        null!);
 }
