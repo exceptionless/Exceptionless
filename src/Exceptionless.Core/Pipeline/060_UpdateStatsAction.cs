@@ -40,6 +40,7 @@ public class UpdateStatsAction : EventPipelineActionBase
             await _stackService.IncrementStackUsageAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count);
 
             // Update stacks in memory since they are used in notifications.
+            int? updatedTotalOccurrences = null;
             foreach (var ctx in stackContexts)
             {
                 if (ctx.Stack is null)
@@ -51,7 +52,8 @@ public class UpdateStatsAction : EventPipelineActionBase
                 if (ctx.Stack.LastOccurrence < maxDate)
                     ctx.Stack.LastOccurrence = maxDate;
 
-                ctx.Stack.TotalOccurrences += count;
+                updatedTotalOccurrences ??= ctx.Stack.TotalOccurrences + count;
+                ctx.Stack.TotalOccurrences = updatedTotalOccurrences.Value;
             }
         }
         catch (Exception ex)
