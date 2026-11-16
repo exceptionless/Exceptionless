@@ -1011,6 +1011,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [Fact]
     public async Task ListProjectsAsync_DatesStoredWithoutTimeZone_SerializeAsUtc()
     {
+        // Arrange
         var project = await _projectRepository.AddAsync(new Project
         {
             OrganizationId = TestConstants.OrganizationId,
@@ -1019,14 +1020,20 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             CreatedUtc = new DateTime(2016, 1, 11, 20, 5, 59, 718, DateTimeKind.Unspecified),
             LastEventDateUtc = new DateTime(2024, 12, 13, 14, 10, 26, DateTimeKind.Unspecified)
         }, o => o.ImmediateConsistency());
+        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+
+        // Act
         var stored = await _projectRepository.GetByIdAsync(project.Id);
+
+        // Assert
         Assert.Equal(DateTimeKind.Unspecified, stored!.CreatedUtc.Kind);
 
-        var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
+        // Act
         var result = await tools.ListProjectsAsync(TestConstants.OrganizationId, sort: "created_utc", limit: 50);
-
-        Assert.True(result.Ok);
         var json = JsonSerializer.SerializeToElement(result, McpJsonSerializerOptions.Default);
+
+        // Assert
+        Assert.True(result.Ok);
         var legacy = json.GetProperty("data").GetProperty("items").EnumerateArray().Single(item => item.GetProperty("id").GetString() == project.Id);
         Assert.Equal("2016-01-11T20:05:59.718Z", legacy.GetProperty("createdUtc").GetString());
         Assert.Equal("2024-12-13T14:10:26Z", legacy.GetProperty("lastEventDateUtc").GetString());
@@ -1038,10 +1045,13 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [InlineData("*pistol*")]
     public async Task ListProjectsAsync_LeadingWildcardFilter_ReturnsInvalidFilter(string filter)
     {
+        // Arrange
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
 
+        // Act
         var result = await tools.ListProjectsAsync(TestConstants.OrganizationId, filter: filter);
 
+        // Assert
         Assert.False(result.Ok);
         Assert.Equal(McpErrorCodes.InvalidFilter, result.Error?.Code);
         Assert.Contains("leading wildcards", result.Error?.Message);
@@ -1052,10 +1062,13 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
     [InlineData("name:Disint*")]
     public async Task ListProjectsAsync_TrailingWildcardNameFilter_ReturnsMatchingProjects(string filter)
     {
+        // Arrange
         var tools = await CreateToolsAsync(AuthorizationRoles.McpRead, AuthorizationRoles.ProjectsRead);
 
+        // Act
         var result = await tools.ListProjectsAsync(TestConstants.OrganizationId, filter: filter, limit: 50);
 
+        // Assert
         Assert.True(result.Ok, result.Error?.Message);
         Assert.Contains(Items(result), project => project.Id == TestConstants.ProjectId);
     }

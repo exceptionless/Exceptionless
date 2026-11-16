@@ -86,6 +86,7 @@ public sealed class McpToolContractTests
     [Fact]
     public void Serialize_DatesWithoutTimeZone_WritesUtc()
     {
+        // Arrange
         var unspecified = new DateTime(2016, 1, 11, 20, 5, 59, DateTimeKind.Unspecified);
         var project = new McpProjectResult("project", "organization", "Legacy", unspecified, unspecified, "/api/v2/projects/project", LastEventDateUtc: unspecified);
         var stack = new McpStackResult("stack", "organization", "project", "error", "fixed", "Title", 1, unspecified, unspecified, [], [], false, unspecified, unspecified, "/api/v2/stacks/stack",
@@ -94,24 +95,29 @@ public sealed class McpToolContractTests
         var context = new McpContextResult("organization", "Org", "project", "Legacy", [], [project], false, false, unspecified);
         var counts = new McpEventCountResult(1, 1, 1, 0, [], StartUtc: unspecified, EndUtc: unspecified, Groups: [new McpEventCountGroup("stack", 1, 1, [], FirstOccurrence: unspecified, LastOccurrence: unspecified)]);
         var contextRequired = McpResponse<McpProjectResult>.Failed(McpErrors.ContextRequired("Select a project.", "project", [], [project]));
+        object[] results = [project, stack, evt, context, counts, contextRequired, McpResponse<McpListData<McpStackResult>>.Success(new McpListData<McpStackResult>([stack]))];
 
-        foreach (object result in new object[] { project, stack, evt, context, counts, contextRequired, McpResponse<McpListData<McpStackResult>>.Success(new McpListData<McpStackResult>([stack])) })
-        {
-            var json = JsonSerializer.SerializeToElement(result, McpJsonSerializerOptions.Default);
+        // Act
+        var serialized = results.Select(result => JsonSerializer.SerializeToElement(result, McpJsonSerializerOptions.Default)).ToArray();
+
+        // Assert
+        foreach (var json in serialized)
             McpDateAssert.AllDatesHaveTimeZone(json);
-        }
 
-        Assert.Equal("2016-01-11T20:05:59Z", JsonSerializer.SerializeToElement(project, McpJsonSerializerOptions.Default).GetProperty("createdUtc").GetString());
+        Assert.Equal("2016-01-11T20:05:59Z", serialized[0].GetProperty("createdUtc").GetString());
     }
 
     [Fact]
     public void Serialize_LocalAndUtcDates_WritesSameInstantInUtc()
     {
+        // Arrange
         var utc = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
         var project = new McpProjectResult("project", "organization", "Project", utc.ToLocalTime(), utc, "/api/v2/projects/project");
 
+        // Act
         var json = JsonSerializer.SerializeToElement(project, McpJsonSerializerOptions.Default);
 
+        // Assert
         Assert.Equal("2026-06-01T12:00:00Z", json.GetProperty("createdUtc").GetString());
         Assert.Equal("2026-06-01T12:00:00Z", json.GetProperty("updatedUtc").GetString());
     }
@@ -119,11 +125,14 @@ public sealed class McpToolContractTests
     [Fact]
     public void ListProjects_OutputSchemaAdvertisesDateTimeFormat()
     {
+        // Arrange
         var method = typeof(ExceptionlessMcpTools).GetMethod(nameof(ExceptionlessMcpTools.ListProjectsAsync))!;
-        var protocolTool = McpServerTool.Create(method, CreateMcpTools(), new McpServerToolCreateOptions { SerializerOptions = McpJsonSerializerOptions.Default }).ProtocolTool;
 
+        // Act
+        var protocolTool = McpServerTool.Create(method, CreateMcpTools(), new McpServerToolCreateOptions { SerializerOptions = McpJsonSerializerOptions.Default }).ProtocolTool;
         string schema = protocolTool.OutputSchema!.Value.GetRawText();
 
+        // Assert
         Assert.Contains("\"createdUtc\"", schema, StringComparison.Ordinal);
         Assert.Contains("\"date-time\"", schema, StringComparison.Ordinal);
     }
