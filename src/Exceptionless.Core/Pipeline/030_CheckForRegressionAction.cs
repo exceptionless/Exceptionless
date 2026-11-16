@@ -63,9 +63,11 @@ public class CheckForRegressionAction : EventPipelineActionBase
                             continue;
                         }
 
-                        regressedVersion = version;
-                        regressedContext = versionGroup.First();
-                        break;
+                        if (regressedContext is null)
+                        {
+                            regressedVersion = version;
+                            regressedContext = versionGroup.First();
+                        }
                     }
                 }
 
@@ -73,11 +75,13 @@ public class CheckForRegressionAction : EventPipelineActionBase
                     continue;
 
                 _logger.LogDebug("Marking stack and events as regressed in version: {Version}", regressedVersion);
-                stack.Status = StackStatus.Regressed;
                 await _stackRepository.MarkAsRegressedAsync(stack.Id);
 
                 foreach (var ctx in stackGroup)
+                {
+                    ctx.Stack!.Status = StackStatus.Regressed;
                     ctx.IsRegression = ctx == regressedContext;
+                }
             }
             catch (Exception ex)
             {
