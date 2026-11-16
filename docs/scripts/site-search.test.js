@@ -113,7 +113,7 @@ for (const selectionMethod of ["keyboard", "pointer"]) {
     Deno.test(`search submit ${expectation} when ${selectionMethod} selection is ${selectionTiming} editing`, async () => {
       await withBrowser(async ({ document, flushTimers, navigations }) => {
         // Arrange
-        const modal = new TestElement()
+        const modal = new HTMLDialogElement()
         const input = new TestElement()
         const form = new TestElement()
         const results = new TestElement()
@@ -126,6 +126,7 @@ for (const selectionMethod of ["keyboard", "pointer"]) {
         ])
         document.body = new TestElement()
         initializeSiteSearch(modal)
+        modal.showModal()
         input.value = "hosting"
         await input.emit("input")
         await flushTimers()
@@ -154,6 +155,76 @@ for (const selectionMethod of ["keyboard", "pointer"]) {
   }
 }
 
+for (const dismissal of ["Escape", "close button", "backdrop"]) {
+  for (const reopen of [false, true]) {
+    Deno.test(`pending search submit is canceled by ${dismissal}${reopen ? " even after reopening" : ""}`, async () => {
+      await withBrowser(async ({ document, flushDialogEvents, navigations }) => {
+        // Arrange
+        const modal = new HTMLDialogElement()
+        const input = new TestElement()
+        input.value = ""
+        const form = new TestElement()
+        const results = new TestElement()
+        const closeButton = new TestElement()
+        const trigger = new TestElement()
+        modal.selectors = new Map([
+          ["#site-search-input", input],
+          ["#site-search-clear", new TestElement()],
+          ["[data-site-search-close]", closeButton],
+          ["#site-search-form", form],
+          ["#site-search-results", results],
+          ["#site-search-status", new TestElement()],
+        ])
+        document.body = new TestElement()
+        document.selectors.set("[data-site-search-open]", [trigger])
+        const response = Promise.withResolvers()
+        let requestCount = 0
+        globalThis.fetch = () => {
+          requestCount++
+          return response.promise
+        }
+        initializeSiteSearch(modal)
+        await trigger.emit("click")
+        input.value = "tokens"
+        await input.emit("input")
+
+        // Act
+        const submitted = form.emit("submit")
+        if (dismissal === "Escape") {
+          await modal.emit("keydown", { key: "Escape" })
+        } else if (dismissal === "close button") {
+          await closeButton.emit("click")
+        } else {
+          await modal.emit("click")
+        }
+        if (reopen) {
+          await trigger.emit("click")
+        }
+        // Native close events can arrive after a new dialog session has opened.
+        await flushDialogEvents()
+        response.resolve(
+          Response.json({ entries: [entry("Project tokens", "/docs/project-tokens/", "Authentication")] }),
+        )
+        await submitted
+
+        // Assert
+        assertEquals(navigations, [])
+        assertEquals(modal.open, reopen)
+        assertEquals(results.children.length, reopen ? 1 : 0)
+        assertEquals(requestCount, 1)
+
+        if (reopen) {
+          // Act
+          await form.emit("submit")
+
+          // Assert
+          assertEquals(navigations, ["/docs/project-tokens/"])
+        }
+      })
+    })
+  }
+}
+
 /** Minimal browser surfaces for running the real initialization and event handlers without network or real timers. */
 async function withBrowser(action) {
   const document = new TestElement()
@@ -164,6 +235,7 @@ async function withBrowser(action) {
   document.createTextNode = (text) => ({ textContent: text })
   const storage = new Map()
   const timers = new Map()
+  const dialogEvents = []
   const navigations = []
   let timerId = 0
   const globals = {
@@ -174,7 +246,21 @@ async function withBrowser(action) {
     HTMLButtonElement: TestElement,
     HTMLFormElement: TestElement,
     HTMLOListElement: TestElement,
-    HTMLDialogElement: class extends TestElement {},
+    HTMLDialogElement: class extends TestElement {
+      open = false
+
+      showModal() {
+        this.open = true
+      }
+
+      close() {
+        if (!this.open) {
+          return
+        }
+        this.open = false
+        dialogEvents.push(() => this.emit("close"))
+      }
+    },
     matchMedia: undefined,
     addEventListener() {},
     localStorage: {
@@ -188,6 +274,7 @@ async function withBrowser(action) {
         return timerId
       },
       location: { assign: (url) => navigations.push(url) },
+      requestAnimationFrame: (callback) => callback(),
     },
     fetch: () =>
       Promise.resolve(Response.json({
@@ -208,6 +295,11 @@ async function withBrowser(action) {
       elements,
       storage,
       navigations,
+      async flushDialogEvents() {
+        for (const callback of dialogEvents.splice(0)) {
+          await callback()
+        }
+      },
       async flushTimers() {
         const callbacks = [...timers.values()]
         timers.clear()
@@ -269,6 +361,8 @@ class TestElement {
     return this
   }
   scrollIntoView() {}
+  focus() {}
+  select() {}
 }
 
 function entry(title, url, text) {

@@ -72,6 +72,12 @@ export function initializeSiteSearch(modal) {
   })
 
   modal.addEventListener("close", () => {
+    if (modal.open) {
+      return
+    }
+
+    window.clearTimeout(debounceTimer)
+    activeSearchId++
     document.body.classList.remove("site-search-open")
     if (lastActiveElement instanceof HTMLElement) {
       lastActiveElement.focus()
@@ -95,7 +101,11 @@ export function initializeSiteSearch(modal) {
 
     // Otherwise finish searching for what was typed and open its top result.
     window.clearTimeout(debounceTimer)
-    await performSearch(currentQuery)
+    const searchId = await performSearch(currentQuery)
+    if (searchId !== activeSearchId || !modal.open) {
+      return
+    }
+
     const topResult = visibleResultsQuery === currentQuery ? visibleResults[activeIndex] : undefined
     if (topResult) {
       openResult(topResult.url)
@@ -104,13 +114,11 @@ export function initializeSiteSearch(modal) {
 
   globalThis.addEventListener("pageshow", (event) => {
     if (event.persisted && modal instanceof HTMLDialogElement && modal.open) {
-      modal.close()
+      closeSearch()
     }
   })
 
   function openResult(url) {
-    window.clearTimeout(debounceTimer)
-    activeSearchId++
     closeSearch()
     window.location.assign(url)
   }
@@ -151,12 +159,17 @@ export function initializeSiteSearch(modal) {
 
   function openSearch(sourceElement) {
     lastActiveElement = sourceElement instanceof HTMLElement ? sourceElement : document.activeElement
+    const query = input.value.trim()
     if (modal instanceof HTMLDialogElement && !modal.open) {
+      activeSearchId++
       modal.showModal()
+      if (query) {
+        performSearch(query)
+      }
     }
     document.body.classList.add("site-search-open")
 
-    if (!input.value.trim()) {
+    if (!query) {
       clearResults()
     }
 
@@ -167,6 +180,8 @@ export function initializeSiteSearch(modal) {
   }
 
   function closeSearch() {
+    window.clearTimeout(debounceTimer)
+    activeSearchId++
     if (modal instanceof HTMLDialogElement && modal.open) {
       modal.close()
     }
@@ -193,6 +208,7 @@ export function initializeSiteSearch(modal) {
       const matches = searchEntries(entries, trimmedQuery)
       visibleResults = matches.slice(0, 30)
       renderResults(trimmedQuery, matches.length)
+      return searchId
     } catch (error) {
       if (searchId !== activeSearchId) {
         return
