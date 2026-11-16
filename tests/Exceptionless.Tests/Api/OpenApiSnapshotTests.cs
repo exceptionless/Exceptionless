@@ -71,6 +71,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(assistantChatPath.TryGetProperty("post", out var assistantChatPost));
         AssertResponseCodes(assistantChatPost, "200", "400", "401", "403", "404", "426", "429", "503");
 
+        var addUserPost = paths.GetProperty("/api/v2/organizations/{id}/users/{email}").GetProperty("post");
+        AssertResponseCodes(addUserPost, "200", "403", "404", "426", "429");
+
         Assert.True(paths.TryGetProperty("/api/v2/events/by-ref/{referenceId}/user-description", out var userDescriptionPath));
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));
         Assert.True(userDescriptionPost.TryGetProperty("requestBody", out _));

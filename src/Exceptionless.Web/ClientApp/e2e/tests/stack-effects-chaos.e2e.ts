@@ -1,6 +1,7 @@
 import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
+import { isApplicationApiRequest, trackPendingApiRequests, waitForEventDetailResponses } from '../support/api-request-monitor';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
 import {
@@ -37,6 +38,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
     await page.clock.install();
     await installWebSocketTestHarness(page, { ignoreServerMessages: true });
 
+    const pendingApiRequests = trackPendingApiRequests(page);
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const diagnostics: RuntimeDiagnostics = {
         actionSamples: [],
@@ -64,6 +66,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     await test.step('load the stack page with one page of results', async () => {
         const response = page.waitForResponse((candidate) => isStackListResponse(candidate, e2eScenario.organizationId));
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto('/stack/all?limit=5');
         expect((await response).ok()).toBe(true);
         await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
@@ -74,7 +77,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
     await test.step('open a stack route without aborting detail requests', async () => {
         const failedDetailRequests: { failure: null | string; pageUrl: string; requestUrl: string }[] = [];
         const recordFailedDetailRequest = (request: Request) => {
-            if (new URL(request.url()).pathname.startsWith('/api/v2/')) {
+            if (isApplicationApiRequest(request)) {
                 failedDetailRequests.push({
                     failure: request.failure()?.errorText ?? null,
                     pageUrl: page.url(),
@@ -86,6 +89,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
         page.on('requestfailed', recordFailedDetailRequest);
 
         try {
+            await pendingApiRequests.waitForPendingRequests();
             await page.goto(`/stack/${journey.stackId}`);
             await expect(page).toHaveURL(new RegExp(`/stack/${journey.stackId}$`));
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
@@ -94,6 +98,7 @@ test('stack effects stay bounded through background, paging, and navigation chao
         }
 
         expect(failedDetailRequests).toEqual([]);
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto('/stack/all?limit=5');
         await expect(page.getByRole('heading', { exact: true, name: 'All' })).toBeVisible();
     });
@@ -245,8 +250,16 @@ test('stack effects stay bounded through background, paging, and navigation chao
 
     await measureAction(diagnostics, 'route remounts', async () => {
         for (let index = 0; index < 5; index++) {
+            await pendingApiRequests.waitForPendingRequests();
+            const detailResponses = waitForEventDetailResponses(page, journey.eventId!, journey.stackId!, e2eScenario.projectId);
             await page.goto(`/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
+            await expect(page).toHaveURL(new RegExp(`/stack/${journey.stackId}/event/${journey.eventId}$`));
+            for (const response of await detailResponses) {
+                expect(response.ok()).toBe(true);
+                await response.finished();
+            }
+            await pendingApiRequests.waitForPendingRequests();
             await page.goto('/stack?limit=5');
             await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
         }
@@ -349,7 +362,7 @@ function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organi
 }
 
 function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request): void {
-    if (!new URL(request.url()).pathname.startsWith('/api/v2/')) {
+    if (!isApplicationApiRequest(request)) {
         return;
     }
 

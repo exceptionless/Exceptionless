@@ -1,6 +1,7 @@
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
+import type { TrialEndedNoticeKey } from '#features/billing/trial.ts';
 import type { ProductTourKey } from '#features/product-tours/models.ts';
 import type { WebSocketMessageValue } from '#features/websockets/models.ts';
 import type { WorkInProgressResult } from '#shared/models/index.ts';
@@ -10,7 +11,11 @@ import { fetchApiJson } from '#features/shared/api/api.svelte.ts';
 
 import type { OAuthGrant, RecordProductTourResult, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
 
-export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
+/**
+ * Refreshes the user queries a `UserChanged` message affects. Returns whether the signed-in user may have changed, so
+ * callers can refresh state derived from them, such as Exie access after an email is verified in another tab.
+ */
+export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>): Promise<boolean> {
     const { id } = message;
     if (id) {
         await queryClient.invalidateQueries({
@@ -18,16 +23,20 @@ export async function invalidateUserQueries(queryClient: QueryClient, message: W
         });
 
         const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
-        if (currentUser?.id === id) {
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.me()
-            });
+        if (currentUser?.id !== id) {
+            return false;
         }
-    } else {
+
         await queryClient.invalidateQueries({
-            queryKey: queryKeys.type
+            queryKey: queryKeys.me()
         });
+        return true;
     }
+
+    await queryClient.invalidateQueries({
+        queryKey: queryKeys.type
+    });
+    return true;
 }
 
 export const queryKeys = {
@@ -263,7 +272,7 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
 
 export function putCurrentUserProductTour() {
     const queryClient = useQueryClient();
-    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey; userId: string }>(() => ({
+    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey | TrialEndedNoticeKey; userId: string }>(() => ({
         enabled: () => !!accessToken.current,
         mutationFn: async ({ tourName, userId }) => {
             if (queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.id !== userId) {

@@ -26,13 +26,18 @@
 
     import type { NotificationProps } from '#comp/notification/index.ts';
 
+    import { FREE_PLAN_ID, TRIAL_PLAN_ID } from '#features/billing/constants.ts';
+    import { getTrialDaysRemaining, getTrialEndedNoticeKey, hasTrialEndedWithoutSubscribing, isTrialEndingSoon } from '#features/billing/trial.ts';
     import { getOrganizationQuery, getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
     import { organization as currentOrganizationId } from '#features/organizations/context.svelte.ts';
     import { SuspensionCode } from '#features/organizations/models.ts';
+    import { dismissOrganizationNotification, isOrganizationNotificationDismissed } from '#features/organizations/notification-dismissals.ts';
+    import { getMonthlyEventUsage, isApproachingMonthlyEventLimit } from '#features/organizations/utils.ts';
+    import { getProductTourRecordedAt } from '#features/product-tours/eligibility.ts';
     import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
-    import { getMeQuery } from '#features/users/api.svelte.ts';
+    import { clock } from '#features/shared/clock.svelte.ts';
+    import { getMeQuery, putCurrentUserProductTour } from '#features/users/api.svelte.ts';
 
-    import FreePlanNotification from './notifications/free-plan-notification.svelte';
     import HourlyOverageNotification from './notifications/hourly-overage-notification.svelte';
     import ImpersonationNotification from './notifications/impersonation-notification.svelte';
     import MonthlyOverageNotification from './notifications/monthly-overage-notification.svelte';
@@ -41,25 +46,19 @@
     import RequestLimitNotification from './notifications/request-limit-notification.svelte';
     import SetupFirstProjectNotification from './notifications/setup-first-project-notification.svelte';
     import SuspendedOrganizationNotification from './notifications/suspended-organization-notification.svelte';
+    import TrialEndedNotification from './notifications/trial-ended-notification.svelte';
+    import TrialNotification from './notifications/trial-notification.svelte';
+    import UsageWarningNotification from './notifications/usage-warning-notification.svelte';
 
     interface Props extends NotificationProps {
         ignoreConfigureProjects?: boolean;
-        ignoreFree?: boolean;
         isChatEnabled: boolean;
         openChat: () => void;
         premiumFeatureName?: string;
         requiresPremium?: boolean;
     }
 
-    let {
-        ignoreConfigureProjects = false,
-        ignoreFree = false,
-        isChatEnabled,
-        openChat,
-        premiumFeatureName,
-        requiresPremium = false,
-        ...restProps
-    }: Props = $props();
+    let { ignoreConfigureProjects = false, isChatEnabled, openChat, premiumFeatureName, requiresPremium = false, ...restProps }: Props = $props();
 
     const meQuery = getMeQuery();
     const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));
@@ -100,21 +99,58 @@
               ? SuspensionCode.Overage
               : organization?.suspension_code === 'Abuse'
                 ? SuspensionCode.Abuse
-                : organization?.suspension_code === 'Other'
-                  ? SuspensionCode.Other
-                  : undefined
+                : organization?.suspension_code === 'PlanLimit'
+                  ? SuspensionCode.PlanLimit
+                  : organization?.suspension_code === 'Other'
+                    ? SuspensionCode.Other
+                    : undefined
     );
 
     const isSuspended = $derived(!!organization?.is_suspended);
     const isMonthlyOverage = $derived(!!organization?.is_over_monthly_limit);
     const isHourlyOverage = $derived(!!organization?.is_throttled);
     const isExceededRequestLimit = $derived(!!organization?.is_over_request_limit);
-    const isFreePlan = $derived(!ignoreFree && /free/i.test(organization?.plan_name ?? ''));
+    const isFreePlan = $derived(organization?.plan_id === FREE_PLAN_ID);
+    const isTrialPlan = $derived(organization?.plan_id === TRIAL_PLAN_ID);
+    // Time-based notices (trial days left, dismissals until tomorrow or next month) stay current in a tab left open.
+    const now = $derived(clock.now);
+
+    const trialDaysRemaining = $derived(getTrialDaysRemaining(organization?.trial_ends_utc, now));
+    const monthlyEventUsage = $derived(getMonthlyEventUsage(organization, now));
+
+    const recordProductTour = putCurrentUserProductTour();
+    const isTrialEndedNoticeDismissed = $derived(
+        !!organization?.id && !!getProductTourRecordedAt(meQuery.data?.product_tours, `trial_ended_${organization.id}`)
+    );
+
+    const showUsageWarning = $derived(
+        isApproachingMonthlyEventLimit(organization, now) && !isOrganizationNotificationDismissed('usage-warning', organization?.id, now)
+    );
+    const showTrialEndingSoon = $derived(
+        isTrialPlan && isTrialEndingSoon(trialDaysRemaining) && !isOrganizationNotificationDismissed('trial-ending', organization?.id, now)
+    );
+    // Admins impersonating an organization would otherwise fill their own product tour records with other organizations' notices.
+    const showTrialEnded = $derived(
+        isFreePlan && !isImpersonating && !!organization && hasTrialEndedWithoutSubscribing(organization) && !!meQuery.data && !isTrialEndedNoticeDismissed
+    );
     const hasNoProjects = $derived(projectsQuery.isSuccess && projects.length === 0);
     const needsProjectConfiguration = $derived(
         projectsQuery.isSuccess && !ignoreConfigureProjects && projects.length > 0 && projectsNeedingConfig.length === projects.length
     );
     const requiresPremiumUpgrade = $derived(requiresPremium && !organization?.has_premium_features && !needsProjectConfiguration);
+
+    function dismissTrialEnded(): void {
+        const organizationId = organization?.id;
+        const userId = meQuery.data?.id;
+        if (!organizationId || !userId) {
+            return;
+        }
+
+        recordProductTour.mutate({
+            tourName: getTrialEndedNoticeKey(organizationId),
+            userId
+        });
+    }
 
     useEventListener(document, 'PersistentEventChanged', (event) => {
         const message = (event as CustomEvent<WebSocketMessageValue<'PersistentEventChanged'>>).detail;
@@ -146,8 +182,33 @@
         <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
     {:else if requiresPremiumUpgrade}
         <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} {premiumFeatureName} {...restProps} />
-    {:else if isFreePlan}
-        <FreePlanNotification name={organization.name} organizationId={organization.id} {...restProps} />
+    {:else if showUsageWarning && monthlyEventUsage}
+        <UsageWarningNotification
+            limit={monthlyEventUsage.limit}
+            name={organization.name}
+            onDismiss={() => dismissOrganizationNotification('usage-warning', organization.id)}
+            organizationId={organization.id}
+            total={monthlyEventUsage.total}
+            {...restProps}
+        />
+    {:else if showTrialEndingSoon}
+        <TrialNotification
+            endsUtc={organization.trial_ends_utc ?? ''}
+            hasEnded={trialDaysRemaining === 0}
+            name={organization.name}
+            onDismiss={() => dismissOrganizationNotification('trial-ending', organization.id)}
+            organizationId={organization.id}
+            {...restProps}
+        />
+    {:else if showTrialEnded}
+        <TrialEndedNotification
+            maxEventsPerMonth={organization.max_events_per_month}
+            name={organization.name}
+            onDismiss={recordProductTour.isPending ? undefined : dismissTrialEnded}
+            organizationId={organization.id}
+            retentionDays={organization.retention_days}
+            {...restProps}
+        />
     {:else if hasNoProjects}
         <SetupFirstProjectNotification {...restProps} />
     {/if}

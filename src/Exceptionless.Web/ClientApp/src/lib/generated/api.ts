@@ -79,6 +79,7 @@ export interface AssistantAccessResponse {
   upgrade_required: boolean;
   message?: null | string;
   minimum_plan_id?: null | string;
+  email_verification_required: boolean;
 }
 
 export interface AssistantChatMessage {
@@ -643,6 +644,12 @@ export interface TokenResult {
   token: string;
 }
 
+export interface TrialSettings {
+  blocked_email_domains: string[];
+  default_blocked_email_domains: string[];
+  is_default: boolean;
+}
+
 export interface UpdateAssistantConversationSharing {
   enabled?: null | boolean;
 }
@@ -707,6 +714,11 @@ export interface UpdateSavedViewOrder {
 export interface UpdateToken {
   is_disabled: boolean;
   notes?: null | string;
+}
+
+export interface UpdateTrialSettings {
+  /** Email domains that can't start a free trial. Subdomains are blocked too. Null restores the built-in list. */
+  blocked_email_domains?: string[] | null;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -781,6 +793,11 @@ export interface User {
   verify_email_address_token?: null | string;
   /** @format date-time */
   verify_email_address_token_expiration: string;
+  /**
+   * Date the user started their one no-card trial.
+   * @format date-time
+   */
+  trial_started_utc?: null | string;
   /** Gets or sets the users active state. */
   is_active: boolean;
   roles: string[];
@@ -810,6 +827,11 @@ export interface UserSavedViewOrderPreference {
   organization_id: string;
   view_type: string;
   saved_view_ids: string[];
+}
+
+/** The account whose email address the link verified, which may not be the account that's signed in. */
+export interface VerifyEmailAddressResult {
+  email_address: string;
 }
 
 export interface ViewCurrentUser {
@@ -881,6 +903,8 @@ export interface ViewOrganization {
   billing_status: BillingStatus;
   /** @format double */
   billing_price: number;
+  /** @format date-time */
+  trial_ends_utc?: null | string;
   /** @format int32 */
   max_events_per_month: number;
   /** @format int32 */

@@ -1,6 +1,7 @@
 export type { AssistantConversationSharingSettings } from '#generated/api.ts';
 
 export interface AssistantAccess {
+    email_verification_required?: boolean;
     enabled: boolean;
     has_access: boolean;
     message?: string;
@@ -8,7 +9,7 @@ export interface AssistantAccess {
     upgrade_required: boolean;
 }
 
-export type AssistantAccessState = 'available' | 'disabled' | 'error' | 'loading' | 'upgrade-required';
+export type AssistantAccessState = 'available' | 'disabled' | 'error' | 'loading' | 'upgrade-required' | 'verification-required';
 
 export interface AssistantChatMessage {
     content: string;
