@@ -42,7 +42,7 @@ public sealed class ExceptionlessMcpTools
     private const string EndUtcDescription = "Optional exclusive UTC end time, for example 2026-06-25T01:00:00Z. Do not combine with last.";
     private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
-    private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
+    private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc. name matches whole words, such as name:web, or word prefixes, such as name:web*; leading wildcards such as name:*web* are not supported.";
     private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences.";
     private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*. data.* works for custom data values that were indexed for search; arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
 
@@ -1138,9 +1138,9 @@ public sealed class ExceptionlessMcpTools
         if (!TryValidateSort(sort, ProjectSortFields, out string? sortError))
             return SearchValidationResult.Failed(McpErrors.InvalidSort(sortError ?? "Invalid sort.", sort, ProjectSortFields));
 
-        var filterFieldError = GetFilterFieldError(filter, ProjectFilterFields, allowIndexedDataFields: false);
-        if (filterFieldError is not null)
-            return SearchValidationResult.Failed(filterFieldError);
+        var filterError = GetLeadingWildcardError(filter) ?? GetFilterFieldError(filter, ProjectFilterFields, allowIndexedDataFields: false);
+        if (filterError is not null)
+            return SearchValidationResult.Failed(filterError);
 
         return new SearchValidationResult(resolvedLimit, warning);
     }
@@ -1164,11 +1164,20 @@ public sealed class ExceptionlessMcpTools
         if (!queryValidation.IsValid)
             return SearchValidationResult.Failed(McpErrors.InvalidFilter($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}"));
 
-        var filterFieldError = GetFilterFieldError(filter, allowedFilterFields, allowIndexedDataFields);
+        var filterFieldError = GetLeadingWildcardError(filter) ?? GetFilterFieldError(filter, allowedFilterFields, allowIndexedDataFields);
         if (filterFieldError is not null)
             return SearchValidationResult.Failed(filterFieldError);
 
         return new SearchValidationResult(resolvedLimit, warning);
+    }
+
+    /// <summary>Elasticsearch rejects leading wildcards, which would otherwise fail the whole search.</summary>
+    private static McpErrorInfo? GetLeadingWildcardError(string? filter)
+    {
+        if (filter is null || !s_leadingWildcardPattern.IsMatch(filter))
+            return null;
+
+        return McpErrors.InvalidFilter("Invalid filter: leading wildcards such as *timeout* are not supported. Search for a whole word or a word prefix instead, such as title:timeout or title:time*.");
     }
 
     private static bool TryValidateSort(string? sort, IReadOnlySet<string> allowedSortFields, out string? error)
@@ -1829,6 +1838,7 @@ public sealed class ExceptionlessMcpTools
     private static readonly Regex IdRegex = new(@"^[A-Za-z0-9]{24,36}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly Regex RelativeTimeRegex = new(@"^(?<value>\d+)(?<unit>[mhdw])$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
     private static readonly Regex IntervalRegex = new(@"^\d+[mhdwM]$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex s_leadingWildcardPattern = new(@"(?:^|[\s:(])[*?]\w", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
 
     private static readonly string[] EventGroupByAllowedFields =
     [

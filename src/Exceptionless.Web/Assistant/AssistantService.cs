@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
 using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
@@ -33,8 +34,16 @@ public sealed class AssistantService(
     private const string SetStackCriticalTool = "set_stack_critical";
     private const string SnoozeStackTool = "snooze_stack";
     private const string UpdateStackStatusTool = "update_stack_status";
-    private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
+    private static readonly JsonSerializerOptions s_jsonOptions = CreateJsonOptions();
     private static readonly Regex s_rawDsmlPattern = new(@"<\s*/?\s*[|｜]\s*DSML\s*[|｜]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+
+    private static JsonSerializerOptions CreateJsonOptions()
+    {
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
+        // Exie reads the same tool results as MCP clients, so its dates need the same UTC marker.
+        options.TypeInfoResolver = options.TypeInfoResolver!.WithAddedModifier(McpJsonSerializerOptions.WriteDatesAsUtc);
+        return options;
+    }
 
     public IAsyncEnumerable<AssistantStreamEvent> StreamAsync(
         AssistantChatRequest request,
