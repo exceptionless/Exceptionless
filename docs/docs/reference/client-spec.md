@@ -20,13 +20,18 @@ sources:
   - src/Exceptionless.Core/Jobs/EventPostsJob.cs
   - src/Exceptionless.Core/Jobs/CloseInactiveSessionsJob.cs
   - src/Exceptionless.Core/Pipeline/001_CheckEventDateAction.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/EventContext.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/05_CheckForDuplicateReferenceIdPlugin.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/07_SubmissionClientPlugin.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/40_RequestInfoPlugin.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/70_SessionPlugin.cs
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/90_RemovePrivateInformationPlugin.cs
   - Exceptionless.Net:src/Exceptionless/Submission/DefaultSubmissionClient.cs
   - Exceptionless.Net:src/Exceptionless/Queue/DefaultEventQueue.cs
   - Exceptionless.Net:src/Exceptionless/Configuration/ExceptionlessConfiguration.cs
+  - Exceptionless.Net:src/Exceptionless/Extensions/DataDictionaryExtensions.cs
+  - Exceptionless.Net:src/Exceptionless/Extensions/EventBuilderExtensions.cs
+  - Exceptionless.Net:src/Exceptionless/Extensions/EventExtensions.cs
   - Exceptionless.Net:src/Exceptionless/Configuration/SettingsManager.cs
   - Exceptionless.Net:src/Exceptionless/Plugins/Default/010_EventExclusionPlugin.cs
   - Exceptionless.Net:src/Exceptionless/Plugins/Default/025_SessionIdManagementPlugin.cs
@@ -35,6 +40,8 @@ sources:
   - Exceptionless.JavaScript:packages/core/src/submission/DefaultSubmissionClient.ts
   - Exceptionless.JavaScript:packages/core/src/queue/DefaultEventQueue.ts
   - Exceptionless.JavaScript:packages/core/src/configuration/Configuration.ts
+  - Exceptionless.JavaScript:packages/core/src/EventBuilder.ts
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/ConfigurationDefaultsPlugin.ts
   - Exceptionless.JavaScript:packages/core/src/configuration/SettingsManager.ts
   - Exceptionless.JavaScript:packages/core/src/plugins/default/EventExclusionPlugin.ts
   - Exceptionless.JavaScript:packages/core/src/plugins/default/SessionIdManagementPlugin.ts
@@ -226,17 +233,26 @@ the `@@DataExclusions` setting and remove every matching key from:
 - custom data and the `data` of errors and other reserved objects,
 - request headers, cookies, query string parameters, and form data.
 
+JavaScript 3.2.1 filters properties inside values passed to `setProperty` or `defaultData`, but doesn't check their outer
+data keys. Omit sensitive top-level values or remove them in a plugin; see
+[JavaScript data exclusions](/docs/clients/javascript/client-configuration/#data-exclusions). The .NET client checks
+those outer names too.
+
 Patterns match keys without regard to case. `*` at the start, end, or both matches any text, so `*password*` matches
 `UserPassword`. The server also applies the project's exclusions to request data it receives, but the client should not
 rely on that.
 
 ## Private information {#private-information}
 
-A client should let the app turn off sending private information: the user name, machine name, IP address, request
-headers, cookies, post data, and query string. Both official clients have one `includePrivateInformation` switch for all
-of these. When the project turns off private information in its settings, the server removes the user (`@user`), the
-email address in a user description, the IP addresses, machine name, cookies, post data, and query string from events it
-receives.
+A client should let the app turn off automatically collected private information: the user name, machine name, IP
+address, request headers, cookies, post data, and query string. The official clients group their collection flags under
+`IncludePrivateInformation` in .NET and `includePrivateInformation` in JavaScript. These flags don't remove user
+identities, user descriptions, or custom data the app adds explicitly.
+
+When the project turns off private information in its settings, the server removes the user (`@user`), the email address
+in a user description, the IP addresses, machine name, cookies, post data, and query string from events it receives.
+The server can infer IP addresses independently of the client flags, so use the project setting to keep those out of
+stored events. See [Security and privacy](/docs/security/#remove-private-information-on-the-server).
 
 ## Deduplication {#deduplication}
 

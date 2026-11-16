@@ -13,8 +13,10 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/stack-status-dropdown-menu.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/saved-views/components/save-view-dialog.svelte
   - src/Exceptionless.Web/Assistant/AssistantToolDefinitions.cs
+  - src/Exceptionless.Web/Assistant/AssistantAccessService.cs
   - src/Exceptionless.Web/Assistant/AssistantSystemPrompt.cs
   - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.SavedViews.cs
 ---
 
 # Core concepts
@@ -105,9 +107,10 @@ the columns and charts to show. Every organization starts with built-in views:
 - **Events**: All, Errors, and Logs.
 - **Sessions**: All.
 
-Each built-in view covers the last 7 days. Change the filter or time range, then save it as a new view. A view is shared
-with everyone in the organization unless you mark it **Private**. Saved views appear in the sidebar under the page they
-belong to. See [Saved views](/docs/saved-views/) and [Filtering and searching](/docs/filtering-and-searching/).
+Each built-in view covers the last 7 days. Change the filter or time range, then save it as a new view. In **Save As...**,
+turn **Private** on to keep a view to yourself or off to share it. Views created through Exie or MCP default to private.
+Saved views appear in the sidebar under the page they belong to. See
+[Saved views](/docs/saved-views/) and [Filtering and searching](/docs/filtering-and-searching/).
 
 ## Where AI fits
 
@@ -115,10 +118,12 @@ Exceptionless works with AI in two ways, and Exie uses a subset of the MCP serve
 
 - **Exie** is the assistant in the app. Ask it which errors matter, what changed after a release, or why a stack keeps
   happening. It searches stacks, looks up their events, counts events over time, and reads stack traces. When you ask it
-  to, it also changes a stack's status, snoozes it, marks it critical, or adds a reference link. Exie is instructed to
-  change data only when you ask for that exact change. Exie is on Medium plans and up. See [Exie](/docs/ai/exie/).
+  to, it also changes a stack's status, snoozes it, marks it critical, adds a reference link, or manages saved views.
+  Exie is instructed to change data only when you ask for that exact change. Exie is on Medium plans and up and eligible
+  active trials. See [Exie](/docs/ai/exie/) for access and confirmation requirements.
 - **The MCP server** connects your own coding agent, such as Claude Code or Codex, to Exceptionless on every plan. The
   agent signs in with your account, you choose what it can access, and it can look up an error and fix the code in the
-  same session. Changing stacks needs a separate `stacks:write` permission. See [MCP server](/docs/ai/mcp-server/).
+  same session. Changing stacks needs `stacks:write`; creating, updating, or deleting saved views needs
+  `saved-views:write`. See [MCP server](/docs/ai/mcp-server/).
 
 For what these tools can see and how to limit them, see [AI privacy and security](/docs/ai/privacy/).

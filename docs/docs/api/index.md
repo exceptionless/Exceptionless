@@ -12,6 +12,8 @@ sources:
   - src/Exceptionless.Web/Utility/Handlers/ThrottlingMiddleware.cs
   - src/Exceptionless.Web/Utility/Handlers/OverageMiddleware.cs
   - src/Exceptionless.Core/Configuration/AppOptions.cs
+  - src/Exceptionless.Core/Services/OAuthService.cs
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.SavedViews.cs
   - src/Exceptionless.Web/ClientApp/src/lib/features/shared/help-links.ts
 ---
 
@@ -130,4 +132,6 @@ readable from JavaScript: `ETag`, `Link`, `X-Result-Count`, `X-RateLimit-Limit`,
 ## MCP server {#mcp}
 
 AI tools connect to Exceptionless through the MCP server at `https://be.exceptionless.io/mcp`, which uses OAuth sign-in
-and its own scopes. See [MCP server](/docs/ai/mcp-server/).
+and its own scopes. In addition to stack actions, agents can create, update, and delete saved views when you grant
+`saved-views:write`. The `saved-views:read` and `saved-views:write` scopes apply only to MCP, not REST API routes. See
+[MCP server](/docs/ai/mcp-server/).

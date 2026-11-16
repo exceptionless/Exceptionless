@@ -21,6 +21,8 @@ sources:
   - Exceptionless.Net:src/Exceptionless/Extensions/ExceptionlessConfigurationExtensions.cs
   - Exceptionless.Net:src/Platforms/Exceptionless.AspNetCore/RequestInfoCollector.cs
   - Exceptionless.JavaScript:packages/core/src/configuration/Configuration.ts
+  - Exceptionless.JavaScript:packages/core/src/EventBuilder.ts
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/ConfigurationDefaultsPlugin.ts
   - Exceptionless.JavaScript:packages/core/src/Utils.ts
   - Exceptionless.JavaScript:packages/node/src/plugins/NodeRequestInfoPlugin.ts
 ---
@@ -54,8 +56,8 @@ The ASP.NET Core and Node.js clients never send the `Authorization` or `Proxy-Au
 
 ### Turn off private information
 
-The clients treat the user name, machine name, IP addresses, headers, cookies, POST data, and query string as private
-information. One setting turns all of them off:
+The clients treat automatically collected user names, machine names, IP addresses, headers, cookies, POST data, and
+query strings as private information. One setting turns off that automatic collection:
 
 ```json tab=".NET"
 {
@@ -78,6 +80,9 @@ await Exceptionless.startup((c) => {
 Each kind also has its own setting, such as `IncludeCookies` in .NET and `includeCookies` in JavaScript, so you can keep
 some and drop others. See [.NET private information](/docs/clients/dotnet/private-information/) and
 [JavaScript configuration](/docs/clients/javascript/client-configuration/).
+
+These settings don't remove identity, user descriptions, or custom data you explicitly add to an event. Omit or redact
+that data in your app. To prevent the server from adding the submitting IP address, also use the project setting below.
 
 ### Remove private information on the server
 
@@ -120,6 +125,10 @@ The clients download the list with the project's
 leaves your app. The server applies the list again to cookies, the query string, and supported key/value POST data
 before storing an event, which covers clients that haven't picked up a change yet. Headers and other request body
 formats must be filtered before sending; see [request data](/docs/reference/event-format/#request).
+
+In JavaScript 3.2.1, exclusions filter properties inside custom-data objects, but don't check the outer name passed to
+`setProperty` or used in `defaultData`. Omit sensitive top-level values yourself; see
+[JavaScript data exclusions](/docs/clients/javascript/client-configuration/#data-exclusions).
 
 You can also add exclusions in code, so they apply from the first event: `AddDataExclusions` in .NET and
 `addDataExclusions` in JavaScript.

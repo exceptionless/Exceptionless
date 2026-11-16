@@ -7,6 +7,8 @@ sources:
   - src/Exceptionless.Web/Assistant/AssistantToolDefinitions.cs
   - src/Exceptionless.Web/Assistant/AssistantAccessService.cs
   - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.SavedViews.cs
+  - src/Exceptionless.Web/Assistant/AssistantConfirmation.cs
   - src/Exceptionless.Core/Billing/BillingPlans.cs
   - src/Exceptionless.Core/Services/OAuthService.cs
 ---
@@ -21,7 +23,8 @@ agents connect to. Both read the same stacks and events you see in the app, and 
 [Exie](/docs/ai/exie/) is the assistant built into the Exceptionless app. Open it from any page, ask a question in plain
 words, and it looks up stacks and events to answer: which errors are new, how often a stack happens, what an event's
 stack trace and request show, and how to fix it. When you ask for a change, Exie can mark a stack fixed, snooze or
-ignore it, set it critical, and add or remove reference links.
+ignore it, set it critical, and add or remove reference links. It can also create, update, and delete saved views, with
+an extra confirmation before deleting a view or changing a shared one.
 
 Exie is included with the Medium plan and up. Eligible accounts can also use it during an active
 [free trial](/docs/organizations/#free-trial), after verifying their email.
@@ -33,8 +36,9 @@ Copilot in VS Code use your Exceptionless data while they work in your code. You
 the event details behind one, fix the code, and, if you granted write access, mark the stack fixed in the version that
 ships the fix.
 
-You sign in with OAuth and choose which organizations and permissions the agent gets. Connections are read-only unless
-you grant **Stacks Write**. The MCP server is included on every plan, including Free.
+You sign in with OAuth and choose which organizations and permissions the agent gets. **Stacks Write** allows stack
+changes; **Saved Views Write** allows creating, updating, and deleting saved views. Leave both off for read-only access.
+The MCP server is included on every plan, including Free.
 
 ## Which one to use
 
@@ -45,6 +49,7 @@ you grant **Stacks Write**. The MCP server is included on every plan, including 
 | Fix an error in your code with an agent that can read it | The MCP server                                                  |
 | Check production from your editor or terminal            | The MCP server                                                  |
 | Mark a stack fixed when the fix ships                    | Either. Exie acts on request; the agent needs **Stacks Write**. |
+| Create or manage a saved view                           | Either. The agent needs **Saved Views Write**.                  |
 | Add Exceptionless to a new project                       | A [coding agent](/docs/ai/coding-agents/) and the client docs   |
 
 The main differences:
@@ -55,6 +60,7 @@ The main differences:
 | Plans               | Medium and up; eligible active trials                   | Every plan                                     |
 | Scope               | The organization you're viewing                         | The organizations you approve when you connect |
 | Changes stacks      | Instructed to act on explicit requests                  | Only with the **Stacks Write** permission      |
+| Manages saved views | Confirms deletion and changes to shared views           | Only with **Saved Views Write**; approvals depend on the agent |
 | Which model answers | The model Exceptionless runs Exie on                    | Your agent's own model                         |
 | Tools               | A subset of the MCP tools, scoped to the page you're on | [Every MCP tool](/docs/ai/mcp-server/#tools)   |
 

@@ -38,6 +38,8 @@ sources:
   - Exceptionless.Net:src/Exceptionless/Extensions/StringExtensions.cs
   - Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts
   - Exceptionless.JavaScript:packages/core/src/configuration/Configuration.ts
+  - Exceptionless.JavaScript:packages/core/src/EventBuilder.ts
+  - Exceptionless.JavaScript:packages/core/src/plugins/default/ConfigurationDefaultsPlugin.ts
   - Exceptionless.JavaScript:packages/core/src/plugins/default/EventExclusionPlugin.ts
   - src/Exceptionless.Core/Jobs/EventUserDescriptionsJob.cs
 ---
@@ -167,6 +169,10 @@ and query string parameters, before an event leaves your app. The server also re
 parameters, and supported key/value POST data fields, so those exclusions apply even to clients that don't support
 them. Filter headers and other request body formats before sending; see
 [request data](/docs/reference/event-format/#request). Changes save when you leave the field.
+
+JavaScript 3.2.1 filters properties inside custom-data objects, but not the outer name passed to `setProperty` or used
+in `defaultData`. Omit sensitive top-level values yourself; see
+[JavaScript data exclusions](/docs/clients/javascript/client-configuration/#data-exclusions).
 
 Turn on **Automatically remove user identifiable information from events** to have the server strip personal data from
 every event in the project: the user identity, the email address on user descriptions, IP addresses, the machine name,

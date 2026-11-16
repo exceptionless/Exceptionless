@@ -42,9 +42,9 @@ Two filters decide whether an entry becomes an event:
    source is the logger name or category, and `*` matches any source. See
    [Logs and log levels](/docs/setting-log-levels/) to set them in the app.
 
-When no Exceptionless log level is set, the Microsoft.Extensions.Logging provider and the NLog target set the default
-level for all sources (`@@log:*`) to `Trace`, so your logging rules decide. Without one of them, the client drops log
-events below `Warn` until you set a level (see [Sending events](/docs/clients/dotnet/sending-events/#log-messages)).
+The core client defaults to `Warn`; individual integrations can change that default. The Microsoft.Extensions.Logging
+provider and the NLog target set the default level for all sources (`@@log:*`) to `Trace`, so your logging rules decide.
+See the integration sections below for the log4net and Serilog defaults.
 
 A practical setup: keep the logging library permissive for the Exceptionless provider or target, and raise or lower the
 level per source in the app when you need more detail.
@@ -232,6 +232,9 @@ Log.Logger = new LoggerConfiguration()
 ```
 
 Call `await Log.CloseAndFlushAsync()` before your app exits. See the sink's README for its other options.
+
+The sink uses `restrictedToMinimumLevel` as its Exceptionless default. It defaults to Serilog's `Verbose`, which maps to
+Exceptionless `Trace`.
 
 ## High-volume logging
 

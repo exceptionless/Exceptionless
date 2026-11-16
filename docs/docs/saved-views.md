@@ -6,6 +6,8 @@ sources:
   - src/Exceptionless.Core/Models/SavedView.cs
   - src/Exceptionless.Web/Models/SavedView/NewSavedView.cs
   - src/Exceptionless.Web/Api/Handlers/SavedViewHandler.cs
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.SavedViews.cs
+  - src/Exceptionless.Web/Assistant/AssistantConfirmation.cs
   - src/Exceptionless.Web/ClientApp/src/lib/features/saved-views/components/saved-view-picker.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/saved-views/components/save-view-dialog.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/saved-views/components/rename-view-dialog.svelte
@@ -102,7 +104,8 @@ Under **View** > **Display**, turn **Stat boxes** and **Chart** on or off. These
 
 ## Share a view
 
-A view is shared with everyone in your organization unless you turn on **Private** when you create it. Shared views
+In **Save As...**, turn **Private** on to keep a view to yourself or off to share it. Views created through Exie or MCP
+are private unless you explicitly ask to share them. Shared views
 appear in everyone's sidebar, and anyone in the organization can save changes to them, rename them, or delete them.
 Private views appear only in your sidebar, and only you can change them.
 
@@ -126,15 +129,28 @@ The order is personal: it changes only your sidebar.
 
 ## Ask Exie
 
-Exie can't create or change saved views, but it can answer the questions you'd build a view for:
+Exie can list, create, rename, update, and delete saved views you can access. Tell it which project to use, or ask for
+all projects. New views are private unless you ask for a shared view. You can also use these tools from a
+[coding agent connected through MCP](/docs/ai/mcp-server/#saved-view-tools).
+
+Exie can change a view's filters, date range, and sort. Renaming through Exie keeps its URL name, so existing links
+still work. Use the app to change columns and display settings. To change a view between private and shared, create
+a new view instead.
+
+Before deleting any view or updating a shared view, Exie names the pending action and asks you to confirm in your
+next message. Creating a view, including a shared view, or updating a private view doesn't require this extra step.
+Deleting a view is permanent, and changing or deleting a shared view affects everyone who uses it. MCP clients use
+their own approval settings rather than Exie's chat confirmation.
 
 ```prompt exie
-What are the most frequent 404s this week?
+Create a private Events view named Production checkout errors for the Checkout project, filtered to production errors from the last 24 hours.
 ```
 
 ```prompt exie
-Which errors are new in production in the last 24 hours?
+Change my private Production checkout errors view to cover the last 7 days.
 ```
+
+Exie can also answer the questions you'd build a view for:
 
 ```prompt exie
 Which features were used most in the last 30 days?

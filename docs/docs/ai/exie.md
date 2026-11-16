@@ -1,7 +1,7 @@
 ---
 title: "Exie"
 metaTitle: "Exie, the Exceptionless AI assistant"
-description: "Ask Exie about your errors in the Exceptionless app: open it, what it can answer, which stack changes it makes, and its plan limits."
+description: "Ask Exie about errors in the app, update stacks, create and manage saved views, and understand its access, confirmations, and limits."
 plan: "Medium"
 sources:
   - src/Exceptionless.Web/Assistant/AssistantToolDefinitions.cs
@@ -11,6 +11,8 @@ sources:
   - src/Exceptionless.Web/Assistant/AssistantAccessService.cs
   - src/Exceptionless.Web/Assistant/AssistantUsageService.cs
   - src/Exceptionless.Web/Assistant/AssistantConversationService.cs
+  - src/Exceptionless.Web/Assistant/AssistantConfirmation.cs
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.SavedViews.cs
   - src/Exceptionless.Web/Api/Endpoints/AssistantEndpoints.cs
   - src/Exceptionless.Core/Billing/BillingPlans.cs
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/components/assistant-panel.svelte
@@ -30,8 +32,8 @@ sources:
 
 # Exie
 
-Exie is the AI assistant in the Exceptionless app. Ask it about your errors in plain words. It looks up your stacks and
-events to answer and shows each step it takes. It is instructed to change a stack only when you ask for that change.
+Exie is the AI assistant in the Exceptionless app. Ask it about your errors in plain words. It looks up your stacks,
+events, and saved views, and shows each step it takes. It is instructed to change data only when you ask for that change.
 
 Exie works in the organization you're viewing and sees only data your account can access. It's included with the Medium
 plan and up. Eligible accounts can also use it during an active [free trial](/docs/organizations/#free-trial), after
@@ -64,11 +66,12 @@ Exie uses the page you're on as context:
   select **Use this event as context** (or stack) to bring it back.
 - **Project scope.** The selector in the message box sets which project Exie searches: one project, or **All projects**.
   It starts on the project you're viewing.
+- **Saved views.** On a saved view's page, you can refer to "this view" when asking Exie to find or change it.
 - **Time.** Exie uses your browser's time zone for "today" and "this week". If you don't give a time range, it uses the
   last 7 days and says so.
 
-Answers link to the stacks, events, and projects they mention. When there's a useful next step, Exie adds up to three
-suggested follow-ups that you can select instead of typing.
+Answers link to the stacks, events, projects, and saved views they mention. When there's a useful next step, Exie adds
+up to three suggested follow-ups that you can select instead of typing.
 
 ## What Exie can look up
 
@@ -83,12 +86,14 @@ Exie answers from your live data with these tools:
 | `get_event`         | An event's error and stack trace, request, environment, and custom data                                   |
 | `list_projects`     | The projects in the organization                                                                          |
 | `get_project_setup` | The project's **Client Setup** page and which clients are supported                                       |
+| `list_saved_views`  | Finding a visible saved view by name, URL name, or ID before changing it                                  |
 
 Every tool call appears as a step above the answer, with the project, filter, and time range it used. Expand a step to
 see its request and response.
 
-Exie can't see data outside the current organization, delete anything, change project or organization settings, or read
-your source code. To work with your code, connect a coding agent to the [MCP server](/docs/ai/mcp-server/).
+Exie can't see data outside the current organization, delete events, stacks, projects, or organizations, change project
+or organization settings, or read your source code. To work with your code, connect a coding agent to the
+[MCP server](/docs/ai/mcp-server/).
 
 ## What Exie can change
 
@@ -101,13 +106,24 @@ When you ask, Exie can:
 | `set_stack_critical`          | Mark future occurrences of a stack critical, or stop marking them                            |
 | `add_stack_reference_link`    | Add a link to an issue, pull request, deployment, or incident                                |
 | `remove_stack_reference_link` | Remove a reference link                                                                      |
+| `create_saved_view`           | Create a private or shared view with projects, filters, a time range, and sort                 |
+| `update_saved_view`           | Rename a view or change its projects, filters, time range, or sort; its URL stays the same      |
+| `delete_saved_view`           | Permanently delete a saved view; deleting a shared view removes it for everyone                |
 
-Exie doesn't show a confirmation dialog. Instead, it is instructed to change a stack only when your message asks for
-that exact change, so asking it to look at, investigate, or explain something shouldn't change data. After a change,
-Exie says what changed, or that nothing needed to change, and the change always appears as a step above the answer.
+Exie is instructed to make only the change your message asks for. Stack changes, creating a private or shared view,
+and updating a private view don't require a separate confirmation. After a change, Exie says what changed, or that
+nothing needed to change, and the change appears as a step above the answer.
 
-Exie can make mistakes, so check important changes. You can reverse any of them on the stack in the app. See
-[Stacks](/docs/managing-stacks/).
+Before deleting any saved view or changing a shared view, Exie asks you to confirm in the chat. Select **Yes, continue**
+or reply with a plain "yes" in your next message. The server checks that the tool repeats the same action; one reply can
+confirm several named views from the same request. Creating a shared view does not require this extra confirmation.
+
+New views default to private; ask Exie to share one with the organization when creating it. Exie uses the current
+project unless you request another project or all projects. Visibility can't be changed after creation; ask for a new
+copy instead. The copy has a new URL and doesn't keep custom columns. See [Saved views](/docs/saved-views/).
+
+Exie can make mistakes, so check important changes. Stack changes can be reversed in the app, but saved-view deletion
+can't be undone. See [Stacks](/docs/managing-stacks/) and [AI privacy and security](/docs/ai/privacy/).
 
 ## Chat history
 
@@ -117,7 +133,7 @@ Exie can make mistakes, so check important changes. You can reverse any of them 
 - Recent chat history is saved in your browser for 30 days, is separate for each organization, and is removed when you
   sign out. It doesn't follow you to another browser. Optional conversation logging is controlled by **Chat sharing**.
 
-When you continue a chat, Exie reuses the results it already looked up, until 30 minutes pass without a new lookup.
+When you continue a chat, Exie reuses the results it already looked up, until 30 minutes pass without activity.
 After that, it looks them up again. See [AI privacy and security](/docs/ai/privacy/#exie-conversations) for what is
 stored where.
 
@@ -169,8 +185,8 @@ Each answer also has limits that keep it fast:
 - Exie makes up to 12 tool calls in up to 3 rounds, and searches at most 5 projects. When an organization has more
   projects, it says which ones it searched and suggests searching the rest. Pick a project in the scope selector to
   search just that one.
-- List and search calls return at most 10 items, and counts return at most 10 groups. One event's details are cut to
-  about 16 KB.
+- Project, stack, and event lists return at most 10 items, and counts return at most 10 groups. Saved-view lists return
+  up to 50 views. One event's details are cut to about 16 KB.
 - An answer that takes longer than 2 minutes stops with what Exie has so far.
 - Exie reads the last 20 messages of a long chat. If a chat gets too long for one answer, start a **New chat**.
 
@@ -203,6 +219,10 @@ Mark this stack fixed in version 2.4.1 and add https://github.com/acme/shop/pull
 
 ```prompt exie
 Snooze this stack for 3 days.
+```
+
+```prompt exie
+Create a private saved view named Production Errors for errors in this project in production over the last 7 days.
 ```
 
 With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can do the same from your editor and fix the

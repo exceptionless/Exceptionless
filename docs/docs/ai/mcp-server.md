@@ -1,9 +1,10 @@
 ---
 title: "MCP server"
 metaTitle: "Exceptionless MCP server for AI coding agents"
-description: "Connect Claude Code, Codex, or VS Code to the Exceptionless MCP server to search errors, read event details, and update stacks."
+description: "Connect Claude Code, Codex, or VS Code to the Exceptionless MCP server to search errors, update stacks, and create and manage saved views."
 sources:
   - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.SavedViews.cs
   - src/Exceptionless.Web/Mcp/McpModels.cs
   - src/Exceptionless.Web/Mcp/McpOriginValidationMiddleware.cs
   - src/Exceptionless.Web/Program.cs
@@ -24,14 +25,14 @@ sources:
 
 The Exceptionless MCP server lets AI coding agents work with your production errors. It implements the
 [Model Context Protocol](https://modelcontextprotocol.io/), so an agent can search your stacks and events, read stack
-traces and request details, and, with your permission, update stacks while it fixes your code.
+traces and request details, and, with your permission, update stacks and manage saved views while it fixes your code.
 
 | Setting        | Value                                               |
 | -------------- | --------------------------------------------------- |
 | Server URL     | `https://be.exceptionless.io/mcp`                   |
 | Transport      | Streamable HTTP                                     |
 | Authentication | OAuth in your browser. No API key or client secret. |
-| Access         | Read-only unless you grant **Stacks Write**         |
+| Access         | Read-only when neither **Stacks Write** nor **Saved Views Write** is granted |
 | Plans          | Every plan, including Free                          |
 
 > [!NOTE]
@@ -141,15 +142,19 @@ Select **Approve** to finish, or **Cancel** to deny access.
 | Stacks Read    | `stacks:read`    | Search and read stacks                                                                    |
 | Events Read    | `events:read`    | Search, count, and read events                                                            |
 | Stacks Write   | `stacks:write`   | Change stack status, snooze, set critical, and add or remove reference links              |
+| Saved Views Read | `saved-views:read` | List saved views visible to your account                                                |
+| Saved Views Write | `saved-views:write` | Create, update, and permanently delete saved views, including shared views             |
 | Offline Access | `offline_access` | Stay connected without asking you again when its access token expires                     |
+
+The saved-view scopes apply to the MCP resource, not OAuth access to the REST API.
 
 ### Keep a connection read-only {#read-only}
 
-**Stacks Write** appears on the consent screen when the agent asks for it and the application allows it. Requested,
-allowed scopes start selected. To keep a connection read-only, clear **Stacks Write** before you approve.
+**Stacks Write** and **Saved Views Write** appear on the consent screen when the agent asks for them and the application
+allows them. Requested, allowed scopes start selected. To keep a connection read-only, clear both before you approve.
 
-Self-registered applications can request all supported permissions, including **Stacks Write**. Registration without
-specific permissions also uses a default set that includes **Stacks Write**; it doesn't make the connection read-only.
+Self-registered applications can request all supported permissions, including both write permissions. Registration
+without specific permissions also includes both; it doesn't make the connection read-only.
 The scopes you approve on the consent screen determine access.
 
 Once an administrator saves an application's scopes, that list is enforced. Consent offers the allowed subset of the
@@ -158,6 +163,11 @@ unsupported scope; restart the agent's authorization flow with a valid request.
 
 If the agent calls a tool it doesn't have permission for, the tool returns an error that names the missing scope. To
 change the permissions of a connection, revoke it and connect again.
+
+Existing tokens don't gain new permissions automatically. To use saved-view tools with an existing connection,
+reconnect and approve **Saved Views Read** and, for changes, **Saved Views Write**. Clients with a fixed requested scope
+list must add the needed scopes before reconnecting. For an application whose scopes an administrator saved, the
+administrator must allow the new scopes first.
 
 ### How long access lasts
 
@@ -206,13 +216,13 @@ results include a `url` with their REST API path.
 first occurrence, so a stack first seen in the range is a new error. Use it, not `search_stacks`, to find what happened
 in a period.
 
-List tools return 10 rows by default and up to 100. When `pagination.hasMore` is true, pass `pagination.after` or
-`pagination.before` to page.
+Project, stack, and event list tools return 10 rows by default and up to 100. When `pagination.hasMore` is true, pass
+`pagination.after` or `pagination.before` to page. Saved-view lists have a separate limit below.
 
-### Write tools
+### Stack write tools {#write-tools}
 
-Write tools need **Stacks Write**. They're marked as not read-only, so agents that ask before running such tools will
-ask you first.
+Stack write tools need **Stacks Write**. They're marked as not read-only, so agents that ask before running such tools
+will ask you first.
 
 | Tool                          | What it does                                                                                                                                         |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -221,6 +231,30 @@ ask you first.
 | `set_stack_critical`          | With `critical` true, marks future occurrences of a stack critical. False stops it.                                                                  |
 | `add_stack_reference_link`    | Adds a `url`, such as an issue, pull request, deployment, or incident, to a stack.                                                                   |
 | `remove_stack_reference_link` | Removes a reference link from a stack.                                                                                                               |
+
+### Saved-view tools {#saved-view-tools}
+
+These tools work with the private views you can access and the organization's shared views.
+
+| Tool                | Scope               | What it does |
+| ------------------- | ------------------- | ------------ |
+| `list_saved_views`  | `saved-views:read`  | Lists up to 50 visible views. Takes `organizationId`, `viewType`, and `name`; `name` matches IDs, names, or URL names. Use `name` or `viewType` to narrow the list; it has no cursor arguments. |
+| `create_saved_view` | `saved-views:write` | Creates a view with `name` and `viewType` (`stacks`, `events`, `sessions`, or `stream`). Pass `projectIds` or `allProjects: true`. Views are private unless `shared` is true. |
+| `update_saved_view` | `saved-views:write` | Renames a view or changes its projects, filters, time range, or sort. Pass `savedViewId` from the list. Omitted values stay unchanged, and renaming keeps the same URL. |
+| `delete_saved_view` | `saved-views:write` | Permanently deletes the view identified by `savedViewId`. Deleting a shared view removes it for everyone in the organization. |
+
+New views default to the last 7 days, except live stream views, which have no time range. They include open and regressed
+stacks by default, except sessions views. Use `types`, `statuses`, `environments`, `levels`, and `tags` for those filters,
+and `query` for other search expressions. Only events and sessions views accept `sort` (`date` or `-date`).
+
+When updating, use `clearCriteria` to remove a type, status, environment, level, tag, or query filter. A view with a
+custom raw filter can't have its criteria changed separately: replace the whole filter with `query` and
+`clearCriteria: ["query"]`. A view's private or shared visibility can't be changed; create a copy instead. The copy has
+a new URL and doesn't keep custom columns.
+
+Saved-view writes are marked as not read-only, and update and delete are also marked destructive. MCP clients use
+their own approval settings; these calls don't use Exie's follow-up chat confirmation. See
+[Saved views](/docs/saved-views/).
 
 No tool can delete events, stacks, projects, or organizations, or change project or organization settings.
 
@@ -250,6 +284,10 @@ Which versions has this Exceptionless stack occurred in since Monday? https://be
 Mark the Exceptionless stack for this bug fixed in version 2.4.1 and add this pull request as a reference link.
 ```
 
+```prompt agent
+Create a private Exceptionless saved view named Production Errors for this project's errors in production over the last 7 days.
+```
+
 For step-by-step jobs, see the recipes in [Coding agents](/docs/ai/coding-agents/).
 
 ## Security {#security}
@@ -257,8 +295,8 @@ For step-by-step jobs, see the recipes in [Coding agents](/docs/ai/coding-agents
 - **Event data is untrusted.** Error messages, stack traces, request data, and custom data come from your apps and the
   people who use them, so anyone who can cause an error can put text in front of your agent. Treat it as input, never as
   instructions. Prefer an agent that asks before it runs commands or edits files, and review what it does.
-- **Grant only what the agent needs.** Clear **Stacks Write** on the consent screen unless the agent should change
-  stacks, and approve only the organizations it needs.
+- **Grant only what the agent needs.** Clear **Stacks Write** unless the agent should change stacks, and **Saved Views
+  Write** unless it should create, update, or delete views. Approve only the organizations it needs.
 - **The API key in setup results.** `get_client_setup_instructions` returns the project's API key so the agent can
   configure a client. Anyone with the key can send events to the project, so treat it like any other configuration
   secret.

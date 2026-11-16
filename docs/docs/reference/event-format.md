@@ -29,6 +29,7 @@ sources:
   - src/Exceptionless.Core/Jobs/EventUserDescriptionsJob.cs
   - src/Exceptionless.Core/Pipeline/001_CheckEventDateAction.cs
   - src/Exceptionless.Core/Pipeline/006_TruncateFieldsAction.cs
+  - src/Exceptionless.Core/Pipeline/035_CopySimpleDataToIdxAction.cs
   - src/Exceptionless.Core/Extensions/PersistentEventExtensions.cs
   - src/Exceptionless.Core/Extensions/RequestInfoExtensions.cs
   - Exceptionless.JavaScript:packages/core/src/models/Event.ts
@@ -125,7 +126,8 @@ Don't confuse it with the `@environment` data key, which describes the machine a
 ## Reserved data keys {#reserved-data-keys}
 
 Keys in `data` that start with `@` are reserved for Exceptionless. Everything else in `data` is custom data that appears
-on the event's **Extended Data** tab and can be searched (see [Search syntax](/docs/reference/search-syntax/)).
+on the event's **Extended Data** tab. On paid plans and active trials, supported simple values are indexed for search;
+see [Search syntax](/docs/reference/search-syntax/#custom-data) for the key and value limits.
 
 If a reserved key that expects an object holds something else, such as a plain string in `@user`, the server keeps the
 value as custom data under the same key prefixed with `_`, for example `_@user`.

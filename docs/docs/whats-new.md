@@ -22,8 +22,11 @@ sources:
   - src/Exceptionless.Web/Api/Endpoints/AuthEndpoints.cs
   - src/Exceptionless.Web/Assistant/AssistantAccessService.cs
   - src/Exceptionless.Web/Assistant/AssistantToolDefinitions.cs
+  - src/Exceptionless.Web/Assistant/AssistantConfirmation.cs
   - src/Exceptionless.Web/Assistant/AssistantSystemPrompt.cs
   - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.SavedViews.cs
+  - src/Exceptionless.Core/Services/OAuthService.cs
   - src/Exceptionless.Web/Security/TrustedForwardedHeadersOptions.cs
   - src/Exceptionless.Web/Program.cs
   - src/Exceptionless.Web/appsettings.yml
@@ -87,7 +90,9 @@ the **Absolute** tab. The **Relative** tab keeps the date math expressions, such
 Exie is an assistant built into the app. Ask it which errors matter this week, what changed after a release, or why a
 stack keeps happening. It searches your stacks, looks up their events, counts events over time, and reads stack traces.
 When you ask it to, it also marks a stack fixed, snoozes or ignores it, marks it critical, or adds a reference link.
-Exie is instructed to change data only when you ask for that exact change.
+It can create and manage saved views too. Exie is instructed to change data only when you ask for that exact change.
+Deleting a saved view or updating a shared view also requires confirmation in your next message. Creating a view or
+updating a private view doesn't require this extra step. See [Saved views](/docs/saved-views/#ask-exie).
 
 - Open it in a side panel with **Ask Exie** in the top bar or <kbd>A</kbd>, or full page with **Exie** in the sidebar.
 - On a stack, **Fix** starts a conversation with Exie about that error.
@@ -107,8 +112,9 @@ See [Organizations and billing](/docs/organizations/#free-trial) for eligibility
 
 The Exceptionless MCP server lets your coding agent, such as Claude Code or Codex, work with your Exceptionless data on
 every plan. The agent signs in through your browser: you approve the request, choose the organizations it can use, and
-choose what it can do. It can read projects, stacks, and events. Changing stacks needs the separate `stacks:write`
-permission.
+choose what it can do. It can read projects, stacks, events, and saved views. Changing stacks needs `stacks:write`;
+creating, updating, or deleting saved views needs `saved-views:write`. Leave both write permissions off for read-only
+access. Existing connections need to request and approve the new saved-view scopes before using those tools.
 
 - **AI Tools** in your user menu shows the setup command for each agent.
 - The **Applications** page in your account lists the apps you've connected, and lets you revoke them.

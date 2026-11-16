@@ -82,7 +82,8 @@ You add code that runs on every event before it's sent, to add data, change the 
 
 ## Data exclusions {#data-exclusions}
 
-The client removes fields whose names match exclusion patterns, such as `*password*`, before events leave your app.
+Exclusion patterns, such as `*password*`, remove matching fields before events leave your app. The scope varies by client;
+see the [JavaScript 3.2.1 limitations](/docs/clients/javascript/client-configuration/#data-exclusions).
 Patterns come from your code and from the project's settings. See [Projects](/docs/project-settings/#data-exclusions).
 
 ## Offline queue persistence {#offline-queue}

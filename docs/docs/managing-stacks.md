@@ -50,7 +50,8 @@ copy icon copies a link to it. The stack card at the top shows:
   list its events.
 - **Users Affected**: the share of the project's users in the last 7 days who hit this stack. Hover over the info icon
   for the counts.
-- **First** and **Last**: the stack's first and last occurrence in the last 7 days.
+- **First** and **Last**: the first and last occurrence in the last 7 days, or the stack's stored first and last dates
+  if it has no events in that period.
 - A chart of the stack's events over the last 7 days.
 - The **Project**, **Tags**, when it was **Fixed** or how long it's **Snoozed Until**, and any **Reference** links.
 

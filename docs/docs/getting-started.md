@@ -12,6 +12,7 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/table/project-actions-cell.svelte
   - src/Exceptionless.Web/Api/Endpoints/EventEndpoints.cs
   - src/Exceptionless.Web/Api/Handlers/OrganizationHandler.cs
+  - src/Exceptionless.Core/Billing/BillingManager.cs
   - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
   - src/Exceptionless.Web/Assistant/AssistantToolDefinitions.cs
   - Exceptionless.Net:.agents/skills/exceptionless-dotnet/SKILL.md
@@ -34,7 +35,8 @@ install the client yourself or hand that step to your coding agent.
 Go to [be.exceptionless.io/signup](https://be.exceptionless.io/signup). Sign up with **Microsoft**, **Google**, or
 **GitHub**, or enter your **Name**, **Email**, and **Password** and select **Create My Account**.
 
-New organizations start on the Free plan. See [pricing](/pricing/) for what each plan includes.
+On the hosted service, new organizations start with a [free trial](/docs/organizations/#free-trial) when trials are
+enabled and the account is eligible; otherwise they start on Free. See [pricing](/pricing/) for what each plan includes.
 
 ## 2. Create an organization and a project
 

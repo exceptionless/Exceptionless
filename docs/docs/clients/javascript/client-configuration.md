@@ -7,6 +7,7 @@ order: 2
 sources:
   - Exceptionless.JavaScript:packages/core/src/configuration/Configuration.ts
   - Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts
+  - Exceptionless.JavaScript:packages/core/src/EventBuilder.ts
   - Exceptionless.JavaScript:packages/core/src/queue/DefaultEventQueue.ts
   - Exceptionless.JavaScript:packages/core/src/submission/DefaultSubmissionClient.ts
   - Exceptionless.JavaScript:packages/core/src/plugins/EventPluginManager.ts
@@ -20,6 +21,9 @@ sources:
   - Exceptionless.JavaScript:packages/node/src/plugins/NodeRequestInfoPlugin.ts
   - Exceptionless.JavaScript:packages/react-native/src/ReactNativeExceptionlessClient.ts
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/settings/+page.svelte
+  - src/Exceptionless.Core/Plugins/EventProcessor/EventContext.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/07_SubmissionClientPlugin.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/40_RequestInfoPlugin.cs
 ---
 
 # JavaScript client configuration
@@ -63,7 +67,7 @@ Calling `startup()` again with no arguments resumes a client that was suspended.
 | `configServerUrl`                | The hosted service, or `serverUrl` | Kept for compatibility. In 3.2.1, the client gets [configuration values](/docs/clients/javascript/client-configuration-values/) from `serverUrl`.                       |
 | `version`                        | Not set                            | Your app's version, sent with every event. It enables [regression detection](/docs/versioning/).                                                                        |
 | `defaultTags`                    | `[]`                               | Tags added to every event.                                                                                                                                              |
-| `defaultData`                    | `{}`                               | Extended data added to every event, unless the event already has a value with the same key. Data exclusions apply.                                                      |
+| `defaultData`                    | `{}`                               | Extended data added to every event, unless the event already has a value with the same key. [Data exclusions](#data-exclusions) filter properties inside its values.   |
 | `enabled`                        | `true`                             | When `false`, the client discards events and stops checking for configuration values.                                                                                   |
 | `submissionBatchSize`            | `50`                               | The most events sent in one request. The client lowers it on its own if the server rejects a batch as too large.                                                        |
 | `updateSettingsWhenIdleInterval` | `120000`                           | How often, in milliseconds, the client checks for new configuration values. Values below `120000` are raised to `120000`. `0` or a negative value turns the check off.  |
@@ -91,7 +95,7 @@ Calling `startup()` again with no arguments resumes a client that was suspended.
 The client sends the data it can collect unless you turn it off. To meet the GDPR or your own privacy rules, remove what
 you don't need before it leaves the app.
 
-Turn off all of it at once:
+Turn off the automatic collection controlled by these flags:
 
 ```js
 import { Exceptionless } from "@exceptionless/browser"
@@ -115,19 +119,22 @@ Or turn off individual items. Set `includePrivateInformation` first, if you use 
 | `includeUserName`    | `true`  | Kept for parity with other clients. The 3.2.1 packages don't read it; a user is only sent when you set one. |
 
 A user is attached to events only when you call `setUserIdentity`, on the configuration or on a single event. Don't pass
-names or email addresses you don't need.
+names or email addresses you don't need. The privacy flags don't remove user identities, user descriptions, or custom
+data you add yourself.
 
 > [!NOTE]
 > The project setting **Automatically remove user identifiable information from events** is applied by the server when
 > it processes events, not by the JavaScript client. The client still sends the data, and the server removes the user,
 > email address, IP addresses, machine name, and request cookies, query strings, and bodies before storing the event. To
-> keep that data from leaving your app, set `includePrivateInformation = false` in code.
+> disable automatic collection in your app, set `includePrivateInformation = false` in code. The server can still infer
+> the browser's IP address from the submission; use this project setting to keep it out of stored events. See
+> [Security and privacy](/docs/security/#remove-private-information-on-the-server).
 
 ### Data exclusions {#data-exclusions}
 
-Data exclusions remove values by key name before an event is sent. They apply to extended data you add with
-`setProperty`, `defaultData`, the properties of error objects, and request cookies, headers, query strings, and bodies.
-Matching ignores case, and `*` at the start or end of a pattern matches any prefix or suffix:
+Data exclusions remove matching property names before an event is sent. They apply to properties inside objects added
+with `setProperty` or `defaultData`, the properties of error objects, and request cookies, headers, query strings, and
+bodies. Matching ignores case, and `*` at the start or end of a pattern matches any prefix or suffix:
 
 ```js
 import { Exceptionless } from "@exceptionless/browser"
@@ -137,6 +144,11 @@ await Exceptionless.startup((c) => {
   c.addDataExclusions("authorization", "cookie", "set-cookie", "*password*", "*secret*", "*token*")
 })
 ```
+
+In 3.2.1, exclusions don't check the outer name passed to `setProperty` or used in `defaultData`.
+For example, `setProperty("password", value)` still sends the value, while
+`setProperty("credentials", { password: value })` removes the nested `password` with the patterns above. Omit sensitive
+top-level values or remove them with a [plugin](#plugins).
 
 The client also applies the **Data Exclusions** list from your project's settings, which it receives as a
 [configuration value](/docs/clients/javascript/client-configuration-values/). See [Security](/docs/security/) for how

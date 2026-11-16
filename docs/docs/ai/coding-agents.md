@@ -108,8 +108,12 @@ Each recipe is a prompt you can paste into your agent, with the MCP tools it use
 Use Exceptionless to find the most frequent error that first appeared in my project in the last 24 hours. Read its most recent event, including the stack trace and request, find the cause in this repository, and fix it. Don't change the stack in Exceptionless. Tell me which stack you fixed.
 ```
 
-The agent ranks stacks with `count_events` (`groupBy` `stack`, `time` `[now-24h TO now]`, `filter` `type:error`), picks
-one whose first occurrence is in the range, then reads it with `get_stack_events` and `get_event`.
+The agent finds new stacks with `search_stacks` (`filter` `type:error first_occurrence:[now-24h TO now]`), following its
+pagination as needed. It counts each candidate with `count_events` (`filter` `type:error stack:STACK_ID`, `time`
+`[now-24h TO now]`), ranks by occurrences, then reads the top stack with `get_stack_events` and `get_event`.
+
+`count_events` with `groupBy` `stack` returns the top 10 groups by default, at most 25. Older errors can fill that list,
+so finding no new stack in those results doesn't establish that no new errors occurred.
 
 When the fix is merged, close the loop:
 
@@ -123,12 +127,17 @@ This uses `update_stack_status` with `fixedInVersion` and `add_stack_reference_l
 ### Triage regressions after a deploy
 
 ```prompt agent
-We deployed version 2.4.1 to production about two hours ago. Use Exceptionless to list the stacks that regressed since then and the new errors that first appeared since then, ranked by how often they happened. For the top three, read a recent event and tell me whether the deploy likely caused it and which code to look at. Don't change any stacks.
+We deployed version 2.4.1 to production about two hours ago. Use Exceptionless to find currently regressed stacks that occurred in production since then and new error stacks first seen since then. Rank them by production occurrences since deployment. For the top three, read a recent event and tell me whether the deploy likely caused it and which code to look at. Don't change any stacks.
 ```
 
-The agent finds regressed stacks with `search_stacks` (`filter` `status:regressed`) and new errors with `count_events`
-(`groupBy` `stack`, `time` `[now-2h TO now]`). It can check which versions a stack happens in with `count_events`
-(`groupBy` `version`, `filter` `stack:STACK_ID`).
+The agent counts currently regressed errors with `count_events` (`filter` `type:error environment:production
+status:regressed`, `groupBy` `stack`, `time` `[now-2h TO now]`). For new errors, it uses the first-occurrence search above
+with a two-hour range, then counts each candidate's production events in that range. Grouping a stack's events by
+`version` helps compare releases.
+
+Current status and recent occurrences don't establish when a stack regressed: the tools expose no regression timestamp,
+and `search_stacks` applies its `time` argument to the last occurrence. Treat a connection to the deployment as an
+inference from the event and version evidence.
 
 ### Verify a fix in production
 
@@ -137,7 +146,11 @@ I fixed the Exceptionless stack https://be.exceptionless.io/stack/STACK_ID in ve
 ```
 
 The agent reads the stack's status and fixed version with `get_stack`, then counts occurrences with `count_events`
-(`filter` `stack:STACK_ID`, `groupBy` `version`, `interval` `1h`).
+(`filter` `stack:STACK_ID`, `time` `[now-3d TO now]`, `groupBy` `version`, `interval` `1h`).
+
+Grouped results can omit less frequent versions. To check a particular release, count it with an exact `version`
+filter; a version missing from the groups doesn't establish zero occurrences. The result covers only the selected
+time range.
 
 ### Clean up noisy stacks
 

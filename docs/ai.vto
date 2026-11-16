@@ -51,12 +51,13 @@ description: Exceptionless brings AI to error monitoring. Ask Exie about product
           <li>{{ icons.check }}<span><strong>Root cause:</strong> explanations grounded in your stack traces, requests, and environment data, with links back to every stack it mentions.</span></li>
           <li>{{ icons.check }}<span><strong>Up front about limits:</strong> when the data can't answer a question, Exie says so and tells you what it could find.</span></li>
           <li>{{ icons.check }}<span><strong>Acts on your request:</strong> Exie is instructed to mark a stack fixed in a version, snooze it, flag it critical, or attach an issue link only when you ask for that change.</span></li>
+          <li>{{ icons.check }}<span><strong>Saved views:</strong> ask Exie to create, rename, or change a view. It asks for confirmation before deleting a view or changing a shared one.</span></li>
           <li>{{ icons.check }}<span><strong>Your access, nothing more:</strong> Exie works inside the current organization and only sees what your account can see.</span></li>
         </ul>
         <p class="note">Exie is included with Medium plans and up, with a monthly AI usage allowance. Self-hosted installs can enable it with their own model provider key.</p>
       </div>
       <div class="feature-media">
-        {{ productShot("exie", "Exie answering which errors affected the most users this week") }}
+        {{ productShot("exie", "Exie conversation showing linked errors and occurrence counts") }}
       </div>
     </div>
   </div>
@@ -145,7 +146,7 @@ opencode mcp auth exceptionless</code></pre>
       <div class="card reveal">
         <span class="feature-icon">{{ icons["eye-off"] }}</span>
         <h3>Read-only if you want</h3>
-        <p>Uncheck the Stacks Write permission on the consent screen and your agent can investigate without changing stacks through the MCP server.</p>
+        <p>Uncheck both Stacks Write and Saved Views Write on the consent screen to keep your MCP connection read-only.</p>
       </div>
       <div class="card reveal">
         <span class="feature-icon">{{ icons["rotate-ccw"] }}</span>
@@ -155,7 +156,7 @@ opencode mcp auth exceptionless</code></pre>
       <div class="card reveal">
         <span class="feature-icon">{{ icons.layers }}</span>
         <h3>Narrow write actions</h3>
-        <p>Changes are limited to stack status, snoozing, critical flags, and reference links. Write tools are marked so your agent can ask before using them.</p>
+        <p>Write permissions cover stack status, snoozing, critical flags, reference links, and saved-view creation, updates, and deletion. Your agent controls tool approvals.</p>
       </div>
       <div class="card reveal">
         <span class="feature-icon">{{ icons["shield-check"] }}</span>
@@ -216,7 +217,7 @@ opencode mcp auth exceptionless</code></pre>
     <div class="faq">
       <details>
         <summary>What is Exie? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">Exie is the AI assistant built into Exceptionless. It answers questions about your errors in plain English by searching stacks, reading events, and explaining the likely cause, and it can update a stack when you explicitly ask it to.</div>
+        <div class="faq-body">Exie is the AI assistant built into Exceptionless. It answers questions about your errors in plain English by searching stacks, reading events, and explaining the likely cause. It can also update stacks and manage saved views when you ask.</div>
       </details>
       <details>
         <summary>Which plans include Exie? {{ icons["chevron-down"] }}</summary>
@@ -224,7 +225,7 @@ opencode mcp auth exceptionless</code></pre>
       </details>
       <details>
         <summary>What is the Exceptionless MCP server? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">It is a Model Context Protocol server at <code>https://be.exceptionless.io/mcp</code> that gives AI coding agents tools to search stacks and events, read event details, count events over time, and, with your permission, update stacks.</div>
+        <div class="faq-body">It is a Model Context Protocol server at <code>https://be.exceptionless.io/mcp</code> that gives AI coding agents tools to search stacks and events, read event details, count events over time, and, with your permission, update stacks and manage saved views.</div>
       </details>
       <details>
         <summary>Is the MCP server included in my plan? {{ icons["chevron-down"] }}</summary>
@@ -236,11 +237,11 @@ opencode mcp auth exceptionless</code></pre>
       </details>
       <details>
         <summary>Can an AI agent change or delete my data? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">Agents can only change stack status, snooze stacks, mark them critical, and add or remove reference links, and only if you grant the Stacks Write permission. They cannot delete events, projects, or organizations.</div>
+        <div class="faq-body">Stacks Write lets an agent change stack status, snooze stacks, mark them critical, and add or remove reference links. Saved Views Write lets it create, update, and permanently delete saved views, including shared views. Agents cannot delete events, stacks, projects, or organizations. See <a href="/docs/ai/privacy/">AI privacy and security</a> for permissions and confirmations.</div>
       </details>
       <details>
         <summary>What data does Exie send to the AI model? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">Your question, recent messages in the conversation, the page you are on, and the stack and event details Exie looks up to answer. Large event payloads are truncated before they are sent.</div>
+        <div class="faq-body">Your question, recent messages in the conversation, the page you are on, and the stack, event, project, and saved-view details Exie looks up to answer. Large event payloads are truncated before they are sent.</div>
       </details>
       <details>
         <summary>Does the MCP server work with self-hosted Exceptionless? {{ icons["chevron-down"] }}</summary>

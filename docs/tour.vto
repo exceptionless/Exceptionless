@@ -77,12 +77,13 @@ description: Tour Exceptionless error monitoring, from intelligent stacking and 
           <li>{{ icons.check }}<span><strong>Triage faster:</strong> "What are my top errors in the last 24 hours?" or "What changed after version 2.4?"</span></li>
           <li>{{ icons.check }}<span><strong>Understand causes</strong> with explanations grounded in your real stack traces and event data.</span></li>
           <li>{{ icons.check }}<span><strong>Act when you say so.</strong> Exie is instructed to mark stacks fixed, snooze them, or add reference links only when you ask for that change.</span></li>
+          <li>{{ icons.check }}<span><strong>Save a view in plain words.</strong> Ask for the projects, filters, and time range you need. Exie confirms before deleting a view or changing a shared one.</span></li>
           <li>{{ icons.check }}<span><strong>Respects your access.</strong> Exie only reads data your account can already see.</span></li>
         </ul>
         <p class="note">Exie is included with Medium plans and up. <a href="/docs/ai/exie/">Read the Exie guide</a>.</p>
       </div>
       <div class="feature-media">
-        {{ productShot("exie", "Exie answering which errors hit the most users this week") }}
+        {{ productShot("exie", "Exie conversation showing linked errors and occurrence counts") }}
       </div>
     </div>
 
@@ -94,6 +95,7 @@ description: Tour Exceptionless error monitoring, from intelligent stacking and 
         <ul class="check-list">
           <li>{{ icons.check }}<span><strong>Copy-paste setup</strong> for Claude Code, Codex, GitHub Copilot, and OpenCode.</span></li>
           <li>{{ icons.check }}<span><strong>Search stacks and events</strong>, read stack traces, and count events over time.</span></li>
+          <li>{{ icons.check }}<span><strong>Manage saved views</strong> with the Saved Views Write permission.</span></li>
           <li>{{ icons.check }}<span><strong>Revoke access anytime</strong> from your account's connected applications.</span></li>
           <li>{{ icons.check }}<span><strong>Included on every plan</strong>, including Free.</span></li>
         </ul>
@@ -194,7 +196,7 @@ description: Tour Exceptionless error monitoring, from intelligent stacking and 
       <div class="card reveal"><span class="feature-icon">{{ icons.radio }}</span><h3>Real-time event stream</h3><p>Watch events arrive the moment they happen, filtered to the projects and statuses you care about.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons["rotate-ccw"] }}</span><h3>Regression detection</h3><p>Mark a stack fixed in a version and Exceptionless reopens it and alerts you if it comes back in that version or a newer one.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons["sliders-horizontal"] }}</span><h3>Real-time configuration</h3><p>Push settings and log levels to running clients without changing code or redeploying.</p></div>
-      <div class="card reveal"><span class="feature-icon">{{ icons["eye-off"] }}</span><h3>Data exclusions</h3><p>Strip passwords, card numbers, and any other sensitive fields before events leave your app.</p></div>
+      <div class="card reveal"><span class="feature-icon">{{ icons["eye-off"] }}</span><h3>Data exclusions</h3><p>Filter sensitive fields before events leave your app. <a href="/docs/security/#data-exclusions">See which fields each client filters</a>.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons["file-code"] }}</span><h3>Source maps</h3><p>Readable JavaScript stack traces from minified bundles, discovered automatically or uploaded from CI.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons.hash }}</span><h3>Reference IDs</h3><p>Show users a reference ID on your error page and jump straight to the matching event from a support ticket.</p></div>
       <div class="card reveal"><span class="feature-icon">{{ icons["wifi-off"] }}</span><h3>Offline support</h3><p>Clients queue events while disconnected and send them when the connection comes back.</p></div>

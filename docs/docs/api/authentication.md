@@ -103,7 +103,8 @@ themselves to `https://api.exceptionless.io`. Apps find the endpoints through di
 > On a self-hosted instance, the origin is `EX_ApiUrl` if you set it, otherwise `EX_BaseURL`.
 
 Users see and revoke the apps they've approved under their account's **Applications** page. AI tools use the same OAuth
-server with the MCP resource; see [MCP server](/docs/ai/mcp-server/).
+server with the MCP resource. Its `saved-views:read` and `saved-views:write` scopes allow saved-view tools through MCP;
+they don't grant OAuth access to saved-view REST routes. See [MCP server](/docs/ai/mcp-server/).
 
 ## Send a token {#send-a-token}
 

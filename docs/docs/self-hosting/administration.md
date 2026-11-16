@@ -21,6 +21,7 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/admin/components/dialogs/run-maintenance-job-dialog.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/admin/models.ts
   - src/Exceptionless.Core/Services/SystemSettingsService.cs
+  - src/Exceptionless.Core/Services/OAuthService.cs
   - src/Exceptionless.Core/Migrations/MigrationRerunService.cs
   - src/Exceptionless.Job/JobRunnerOptions.cs
   - src/Exceptionless.Web/Api/Handlers/AuthHandler.cs
@@ -125,11 +126,16 @@ Clients usually register themselves when someone connects an agent. To create on
 2. Enter a **Name** and a **Client ID**.
 3. Enter the **Redirect URIs**, one per line. Each must match exactly, with no wildcards, and use HTTPS or HTTP on a
    loopback address such as `localhost`.
-4. Choose the **Scopes**: **MCP**, **Projects**, **Stacks**, **Stacks Write**, **Events**, and **Offline Access**.
+4. Choose the **Scopes**: **MCP**, **Projects**, **Stacks**, **Stacks Write**, **Events**, **Saved Views**,
+   **Saved Views Write**, and **Offline Access**.
 5. Optionally add **Notes**, then select **Create App**.
 
 Open an app to edit it. Check **Disabled** to block a client: disabled clients can't authorize, refresh, or use existing
 access tokens. To delete an app, open its menu in the list and select **Delete**.
+
+Scopes saved by an administrator limit what users can approve. To enable saved-view tools for an existing restricted app,
+allow the new scopes, then reconnect the agent and approve them. Existing grants don't gain permissions automatically;
+see [MCP permissions](/docs/ai/mcp-server/#approve-access).
 
 ## Migrations {#migrations}
 

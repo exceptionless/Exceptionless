@@ -72,7 +72,7 @@ to the MCP server. For each one you see:
 - **Application:** its name and when its access was last updated. **Disabled** means an administrator turned the
   application off.
 - **Access:** what it can reach (**MCP** or **REST API**) and how many scopes it has. Hover to see the scopes, such as
-  **Projects**, **Stacks**, **Events**, **Stacks Write**, and **Offline**.
+  **Projects**, **Stacks**, **Events**, **Stacks Write**, **Saved Views**, **Saved Views Write**, and **Offline**.
 - **Organizations:** the organizations it can use.
 
 To disconnect an application, open its menu (**...**), choose **Revoke Access**, and confirm. It has to sign in and get
