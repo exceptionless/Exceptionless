@@ -76,14 +76,26 @@ function render(source: string, env: Record<string, unknown> = {}): string {
 }
 
 Deno.test("headings: explicit ids are applied and the suffix is stripped", () => {
-  const html = render("## Client configuration {#client-configuration}\n\n## Plain heading")
+  // Arrange
+  const source = "## Client configuration {#client-configuration}\n\n## Plain heading"
+
+  // Act
+  const html = render(source)
+
+  // Assert
   assertStringIncludes(html, '<h2 id="client-configuration">Client configuration</h2>')
   assertStringIncludes(html, '<h2 id="plain-heading">Plain heading</h2>')
   assert(!html.includes("{#"))
 })
 
 Deno.test("headings: automatic ids are unique and never reuse an explicit id", () => {
-  const html = render("## Setup {#setup}\n\n## Setup\n\n## Setup\n\n## Docs v1.2")
+  // Arrange
+  const source = "## Setup {#setup}\n\n## Setup\n\n## Setup\n\n## Docs v1.2"
+
+  // Act
+  const html = render(source)
+
+  // Assert
   assertStringIncludes(html, '<h2 id="setup">Setup</h2>')
   assertStringIncludes(html, '<h2 id="setup-1">Setup</h2>')
   assertStringIncludes(html, '<h2 id="setup-2">Setup</h2>')
@@ -91,6 +103,7 @@ Deno.test("headings: automatic ids are unique and never reuse an explicit id", (
 })
 
 Deno.test("alerts: each kind renders a labeled callout with an icon", () => {
+  // Arrange
   for (
     const [marker, kind, label] of [["NOTE", "note", "Note"], ["TIP", "tip", "Tip"], [
       "IMPORTANT",
@@ -98,7 +111,10 @@ Deno.test("alerts: each kind renders a labeled callout with an icon", () => {
       "Important",
     ], ["WARNING", "warning", "Warning"]]
   ) {
+    // Act
     const html = render(`> [!${marker}]\n> Be careful with **bold** text.`)
+
+    // Assert
     assertStringIncludes(html, `<div class="callout callout-${kind}" role="note">`)
     assertStringIncludes(html, `<p class="callout-title">`)
     assertStringIncludes(html, `<span>${label}</span>`)
@@ -109,7 +125,13 @@ Deno.test("alerts: each kind renders a labeled callout with an icon", () => {
 })
 
 Deno.test("alerts: a marker-only first line and later paragraphs are kept", () => {
-  const html = render("> [!TIP]\n>\n> First paragraph.\n>\n> Second paragraph.")
+  // Arrange
+  const source = "> [!TIP]\n>\n> First paragraph.\n>\n> Second paragraph."
+
+  // Act
+  const html = render(source)
+
+  // Assert
   assertStringIncludes(html, "callout-tip")
   assertStringIncludes(html, "<p>First paragraph.</p>")
   assertStringIncludes(html, "<p>Second paragraph.</p>")
@@ -118,13 +140,27 @@ Deno.test("alerts: a marker-only first line and later paragraphs are kept", () =
 })
 
 Deno.test("alerts: ordinary blockquotes are unchanged", () => {
-  const html = render("> Just a quote\n> [!NOTE] not at the start of a line")
+  // Arrange
+  const source = "> Just a quote\n> [!NOTE] not at the start of a line"
+
+  // Act
+  const html = render(source)
+
+  // Assert
   assertStringIncludes(html, "<blockquote>")
   assert(!html.includes("callout"))
 })
 
 Deno.test("prompts: exie and agent prompts render cards with a copy button", () => {
-  const exie = render("```prompt exie\nWhich <new> stacks appeared since the deploy?\n```")
+  // Arrange
+  const exieSource = "```prompt exie\nWhich <new> stacks appeared since the deploy?\n```"
+  const agentSource = "```prompt agent\nFix my top error.\n```\n\n```prompt exie\nSecond.\n```"
+
+  // Act
+  const exie = render(exieSource)
+  const agent = render(agentSource)
+
+  // Assert
   assertStringIncludes(exie, 'class="prompt prompt-exie"')
   assertStringIncludes(exie, "<span>Ask Exie</span>")
   assertStringIncludes(exie, "<svg>exie</svg>")
@@ -132,21 +168,32 @@ Deno.test("prompts: exie and agent prompts render cards with a copy button", () 
   assertStringIncludes(exie, 'id="prompt-1-text">Which &lt;new&gt; stacks appeared since the deploy?</div>')
   assertStringIncludes(exie, 'aria-label="Copy prompt"')
 
-  const agent = render("```prompt agent\nFix my top error.\n```\n\n```prompt exie\nSecond.\n```")
   assertStringIncludes(agent, "<span>Paste into your coding agent</span>")
   assertStringIncludes(agent, "<svg>terminal</svg>")
   assertStringIncludes(agent, 'id="prompt-2-text"')
 })
 
 Deno.test("prompts: an unknown kind fails the build", () => {
-  assertThrows(() => render("```prompt robot\nHi\n```"), Error, "Prompt blocks need a kind")
-  assertThrows(() => render("```prompt\nHi\n```"), Error, "Prompt blocks need a kind")
+  // Arrange
+  const sources = ["```prompt robot\nHi\n```", "```prompt\nHi\n```"]
+
+  // Act
+  const attempts = sources.map((source) => () => render(source))
+
+  // Assert
+  assertThrows(attempts[0], Error, "Prompt blocks need a kind")
+  assertThrows(attempts[1], Error, "Prompt blocks need a kind")
 })
 
 Deno.test("tabs: adjacent labeled fences group into one accessible tab set", () => {
-  const html = render(
-    '```csharp tab=".NET"\nvar a = 1;\n```\n\n```ts tab="JavaScript"\nconst a = 1\n```\n\n```bash tab="curl"\ncurl x\n```',
-  )
+  // Arrange
+  const source =
+    '```csharp tab=".NET"\nvar a = 1;\n```\n\n```ts tab="JavaScript"\nconst a = 1\n```\n\n```bash tab="curl"\ncurl x\n```'
+
+  // Act
+  const html = render(source)
+
+  // Assert
   assertEquals(html.match(/data-tab-sync/g)?.length, 1)
   assertEquals(html.match(/role="tab"/g)?.length, 3)
   assertEquals(html.match(/role="tabpanel"/g)?.length, 3)
@@ -163,37 +210,63 @@ Deno.test("tabs: adjacent labeled fences group into one accessible tab set", () 
 })
 
 Deno.test("tabs: separate groups stay separate and unlabeled fences break a group", () => {
-  const html = render(
-    '```csharp tab="A"\n1\n```\n\n```js tab="B"\n2\n```\n\ntext\n\n```csharp tab="A"\n3\n```\n\n```js tab="B"\n4\n```\n\n```js\nplain\n```',
-  )
+  // Arrange
+  const source =
+    '```csharp tab="A"\n1\n```\n\n```js tab="B"\n2\n```\n\ntext\n\n```csharp tab="A"\n3\n```\n\n```js tab="B"\n4\n```\n\n```js\nplain\n```'
+
+  // Act
+  const html = render(source)
+
+  // Assert
   assertEquals(html.match(/data-tab-sync/g)?.length, 2)
   assertStringIncludes(html, 'id="tabs-2-tab-0"')
   assertStringIncludes(html, '<pre><code class="language-js">plain')
 })
 
 Deno.test("tabs: one labeled fence is a plain code block, duplicate labels fail", () => {
-  const single = render('```csharp tab=".NET"\nvar a = 1;\n```')
+  // Arrange
+  const source = '```csharp tab=".NET"\nvar a = 1;\n```'
+  const duplicate = '```js tab="A"\n1\n```\n\n```ts tab="A"\n2\n```'
+
+  // Act
+  const single = render(source)
+  const renderDuplicate = () => render(duplicate)
+
+  // Assert
   assert(!single.includes("data-tabs"))
   assertStringIncludes(single, '<code class="language-csharp">')
   assertThrows(
-    () => render('```js tab="A"\n1\n```\n\n```ts tab="A"\n2\n```'),
+    renderDuplicate,
     Error,
     'share the tab label "A"',
   )
 })
 
 Deno.test("fence info: language, words, and attributes", () => {
-  assertEquals(parseFenceInfo('csharp tab=".NET Core"'), {
+  // Arrange
+  const sources = ['csharp tab=".NET Core"', "prompt exie", 'tab="X"']
+
+  // Act
+  const [language, prompt, tab] = sources.map(parseFenceInfo)
+
+  // Assert
+  assertEquals(language, {
     language: "csharp",
     words: [],
     attributes: { tab: ".NET Core" },
   })
-  assertEquals(parseFenceInfo("prompt exie"), { language: "prompt", words: ["exie"], attributes: {} })
-  assertEquals(parseFenceInfo('tab="X"'), { language: "", words: [], attributes: { tab: "X" } })
+  assertEquals(prompt, { language: "prompt", words: ["exie"], attributes: {} })
+  assertEquals(tab, { language: "", words: [], attributes: { tab: "X" } })
 })
 
 Deno.test("clients block: renders install commands and snippets for every client", () => {
-  const html = render("```clients\n```")
+  // Arrange
+  const source = "```clients\n```"
+
+  // Act
+  const html = render(source)
+
+  // Assert
   assertEquals(html.match(/role="tab"/g)?.length, 2)
   assertStringIncludes(html, 'data-tab-label="Browser"')
   assertStringIncludes(html, '<code class="language-bash">dotnet add package Exceptionless')
@@ -205,7 +278,13 @@ Deno.test("clients block: renders install commands and snippets for every client
 })
 
 Deno.test("clients features block: renders the feature matrix", () => {
-  const html = render("```clients features\n```")
+  // Arrange
+  const source = "```clients features\n```"
+
+  // Act
+  const html = render(source)
+
+  // Assert
   assertStringIncludes(html, '<table class="feature-matrix">')
   assertStringIncludes(html, '<th scope="row">Log messages</th>')
   assertStringIncludes(html, "Opt-in")
@@ -214,11 +293,19 @@ Deno.test("clients features block: renders the feature matrix", () => {
 })
 
 Deno.test("clients block: content or unknown words fail the build", () => {
-  assertThrows(() => render("```clients\nsomething\n```"), Error, "must be empty")
-  assertThrows(() => render("```clients nope\n```"), Error, "Unknown clients block")
+  // Arrange
+  const sources = ["```clients\nsomething\n```", "```clients nope\n```"]
+
+  // Act
+  const attempts = sources.map((source) => () => render(source))
+
+  // Assert
+  assertThrows(attempts[0], Error, "must be empty")
+  assertThrows(attempts[1], Error, "Unknown clients block")
 })
 
 Deno.test("markdown copy: clients blocks expand to real Markdown, everything else is untouched", () => {
+  // Arrange
   const source = [
     "# Title",
     "",
@@ -239,7 +326,11 @@ Deno.test("markdown copy: clients blocks expand to real Markdown, everything els
     "var a = 1;",
     "```",
   ].join("\n")
+
+  // Act
   const markdown = expandClientBlocks(source, clients, features)
+
+  // Assert
   assert(!markdown.includes("```clients"), markdown)
   assertStringIncludes(markdown, "**.NET** (package `Exceptionless`)")
   assertStringIncludes(markdown, "```bash\ndotnet add package Exceptionless\n```")
@@ -252,44 +343,81 @@ Deno.test("markdown copy: clients blocks expand to real Markdown, everything els
 })
 
 Deno.test("plan badge: renders under the title and rejects unknown plans", () => {
-  const html = render("# Exie\n\nText", { filename: "docs/ai/exie.md", data: { plan: "Medium" } })
+  // Arrange
+  const filename = "docs/ai/exie.md"
+
+  // Act
+  const html = render("# Exie\n\nText", { filename, data: { plan: "Medium" } })
+  const noPlan = render("# Exie")
+  const unknownPlan = () => render("# Exie", { filename, data: { plan: "Gold" } })
+
+  // Assert
   assertStringIncludes(html, '<a class="docs-plan" href="/pricing/">Medium plan and up</a>')
   assert(html.indexOf("</h1>") < html.indexOf("docs-plan"))
   assertThrows(
-    () => render("# Exie", { filename: "docs/ai/exie.md", data: { plan: "Gold" } }),
+    unknownPlan,
     Error,
     'plan "Gold" is not in _data/plans.json',
   )
-  assert(!render("# Exie").includes("docs-plan"))
+  assert(!noPlan.includes("docs-plan"))
 })
 
 Deno.test("client data: validation catches missing features and bad support levels", () => {
-  validateClients(clients, features)
+  // Arrange
   const missing = structuredClone(clients)
   delete missing[0].features.sessions
-  assertThrows(() => validateClients(missing, features), Error, 'valid status for feature "sessions"')
   const bad = structuredClone(clients)
   bad[0].support = "Maybe" as Client["support"]
-  assertThrows(() => validateClients(bad, features), Error, "unknown support level")
+
+  // Act
+  validateClients(clients, features)
+  const validateMissing = () => validateClients(missing, features)
+  const validateBad = () => validateClients(bad, features)
+
+  // Assert
+  assertThrows(validateMissing, Error, 'valid status for feature "sessions"')
+  assertThrows(validateBad, Error, "unknown support level")
 })
 
 Deno.test("client data: the real files pass validation", async () => {
+  // Arrange
   const realClients = JSON.parse(await Deno.readTextFile("_data/clients.json")) as Client[]
   const realFeatures = JSON.parse(await Deno.readTextFile("_data/client_features.json")) as FeatureDefinition[]
-  validateClients(realClients, realFeatures)
+
+  // Act
+  const validate = () => validateClients(realClients, realFeatures)
+
+  // Assert
+  validate()
 })
 
 Deno.test("install comments wrap long commands like a shell would", () => {
-  assertEquals(installComment("dotnet add package Exceptionless", "csharp"), "// dotnet add package Exceptionless")
+  // Arrange
+  const shortCommand = "dotnet add package Exceptionless"
+  const longCommand = "npx expo install @exceptionless/react-native @react-native-async-storage/async-storage"
+
+  // Act
+  const short = installComment(shortCommand, "csharp")
+  const long = installComment(longCommand, "js")
+
+  // Assert
+  assertEquals(short, "// dotnet add package Exceptionless")
   assertEquals(
-    installComment("npx expo install @exceptionless/react-native @react-native-async-storage/async-storage", "js"),
+    long,
     "// npx expo install @exceptionless/react-native \\\n//   @react-native-async-storage/async-storage",
   )
 })
 
 Deno.test("clients sentence names every client and links its docs", () => {
+  // Arrange
+  const availableClients = clients
+
+  // Act
+  const sentence = clientsSentence(availableClients)
+
+  // Assert
   assertEquals(
-    clientsSentence(clients),
+    sentence,
     'Exceptionless has clients for <a href="/docs/clients/dotnet/">.NET</a> (ASP.NET Core and console apps) and <a href="/docs/clients/javascript/">JavaScript</a> (browser and Node.js).',
   )
 })

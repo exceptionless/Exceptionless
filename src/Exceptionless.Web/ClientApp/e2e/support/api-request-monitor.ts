@@ -8,7 +8,11 @@ export function isApplicationApiRequest(request: Request): boolean {
         return false;
     }
 
-    return !((request.method() === 'POST' && path === '/api/v2/events') || (request.method() === 'GET' && path === '/api/v2/events/session/heartbeat'));
+    return !(
+        (request.method() === 'POST' && path === '/api/v2/events') ||
+        (request.method() === 'GET' && path === '/api/v2/events/session/heartbeat') ||
+        (request.method() === 'GET' && path === '/api/v2/projects/config')
+    );
 }
 
 export function trackPendingApiRequests(page: Page): { waitForPendingRequests: () => Promise<void> } {
