@@ -826,9 +826,10 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         await _stackRepository.AddAsync(firstStack, o => o.ImmediateConsistency().Cache());
         await _stackRepository.AddAsync(secondStack, o => o.ImmediateConsistency().Cache());
 
-        var firstEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, stackId: firstStack.Id, generateTags: false, generateData: false, type: Event.KnownTypes.Log);
+        var utcNow = TimeProvider.GetUtcNow();
+        var firstEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, stackId: firstStack.Id, occurrenceDate: utcNow.AddMinutes(-2), generateTags: false, generateData: false, type: Event.KnownTypes.Log);
         firstEvent.Tags = new TagSet { "first-tag" };
-        var secondEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, stackId: secondStack.Id, generateTags: false, generateData: false, type: Event.KnownTypes.Log);
+        var secondEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, stackId: secondStack.Id, occurrenceDate: utcNow.AddMinutes(-1), generateTags: false, generateData: false, type: Event.KnownTypes.Log);
         secondEvent.Tags = new TagSet { "second-tag" };
         await RefreshDataAsync();
 
@@ -838,6 +839,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
 
         // Assert
         Assert.All(contexts, context => Assert.False(context.HasError, context.ErrorMessage));
+        Assert.All(contexts, context => Assert.True(context.IsProcessed));
         Assert.NotSame(contexts.First().Stack, contexts.Last().Stack);
         Assert.Equal(firstStack.Id, contexts.First().Event.StackId);
         Assert.Equal(secondStack.Id, contexts.Last().Event.StackId);
