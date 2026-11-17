@@ -39,22 +39,18 @@ public class UpdateStatsAction : EventPipelineActionBase
             var maxDate = stackContexts.Max(s => s.Event.Date.UtcDateTime);
             await _stackService.IncrementStackUsageAsync(stackContexts[0].Event.OrganizationId, stackContexts[0].Event.ProjectId, stackGroup.Key, minDate, maxDate, count);
 
-            // Update stacks in memory since they are used in notifications.
-            int? updatedTotalOccurrences = null;
-            foreach (var ctx in stackContexts)
-            {
-                if (ctx.Stack is null)
-                    continue;
+            // Contexts with the same stack ID share an instance; update it once for notifications.
+            var stack = stackContexts[0].Stack;
+            if (stack is null)
+                return;
 
-                if (ctx.Stack.FirstOccurrence > minDate)
-                    ctx.Stack.FirstOccurrence = minDate;
+            if (stack.FirstOccurrence > minDate)
+                stack.FirstOccurrence = minDate;
 
-                if (ctx.Stack.LastOccurrence < maxDate)
-                    ctx.Stack.LastOccurrence = maxDate;
+            if (stack.LastOccurrence < maxDate)
+                stack.LastOccurrence = maxDate;
 
-                updatedTotalOccurrences ??= ctx.Stack.TotalOccurrences + count;
-                ctx.Stack.TotalOccurrences = updatedTotalOccurrences.Value;
-            }
+            stack.TotalOccurrences += count;
         }
         catch (Exception ex)
         {
