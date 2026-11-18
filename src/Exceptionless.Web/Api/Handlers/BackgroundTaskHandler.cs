@@ -7,6 +7,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Core.Services.BulkOperations;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
 using Exceptionless.Web.Api.Results;
@@ -196,8 +197,7 @@ public class BackgroundTaskHandler(
         // arrive after the operation is created are not part of it.
         // An unparseable time parses to the same unbounded range as a blank one. Without this check it would silently widen the
         // delete to everything inside retention, so reject it instead of guessing.
-        if (!String.IsNullOrWhiteSpace(model.Time) && !IsExplicitlyUnbounded(model.Time)
-            && TimeRangeParser.GetTimeInfo(model.Time, model.Offset, timeProvider, _allowedDateFields, EventIndex.Alias.Date).Range.UtcStart == DateTime.MinValue)
+        if (!String.IsNullOrWhiteSpace(model.Time) && IsUnparseableTime(model.Time, model.Offset))
             return (null, Result.Invalid(ValidationError.Create("selection.time", "The time range is not valid.")));
 
         var timeInfo = TimeRangeParser.GetTimeInfo(model.Time, model.Offset, timeProvider, _allowedDateFields, EventIndex.Alias.Date,
@@ -220,10 +220,21 @@ public class BackgroundTaskHandler(
         return (selection, null);
     }
 
-    private static bool IsExplicitlyUnbounded(string time)
+    private bool IsUnparseableTime(string time, string? offset)
     {
-        string range = time.Contains('|') ? time[(time.IndexOf('|') + 1)..] : time;
-        return range.Trim().Equals("all", StringComparison.OrdinalIgnoreCase) || range.Contains('*');
+        string range = (time.Contains('|') ? time[(time.IndexOf('|') + 1)..] : time).Trim();
+        if (range.Equals("all", StringComparison.OrdinalIgnoreCase) || IsWildcardRange(range))
+            return false;
+
+        // A value that does not parse comes back with neither bound set. A range with one wildcard bound still has the other.
+        var parsed = DateTimeRange.Parse(range, timeProvider.GetUtcNow().ToOffset(TimeRangeParser.GetOffset(offset)));
+        return parsed.Start == DateTime.MinValue && parsed.End == DateTime.MaxValue;
+    }
+
+    private static bool IsWildcardRange(string range)
+    {
+        string bounds = String.Concat(range.Where(c => !Char.IsWhiteSpace(c) && c is not ('[' or ']' or '{' or '}')));
+        return bounds is "*" || bounds.Equals("*TO*", StringComparison.OrdinalIgnoreCase);
     }
 
     private static Result<T> ToResult<T>(BulkOperationCheckResult check)

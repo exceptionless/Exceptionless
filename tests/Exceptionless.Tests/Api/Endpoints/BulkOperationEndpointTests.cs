@@ -454,6 +454,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "[now+1d TO now+2d]"),
             // An unparseable time parses as unbounded and must not widen the delete to everything within retention.
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "not a time range"),
+            FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "not a time range*"),
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "[now-7d TO"),
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Filter, Ids = ["537650f3b77efe23a47914f3"] } },
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = [] } },
@@ -477,6 +478,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
     [InlineData("all")]
     [InlineData("[* TO *]")]
     [InlineData("[now-30d TO *]")]
+    [InlineData("[* TO now-1d]")]
     [InlineData("last 7 days")]
     public async Task Create_FilterSelection_UnboundedOrNaturalTime_IsAccepted(string time)
     {

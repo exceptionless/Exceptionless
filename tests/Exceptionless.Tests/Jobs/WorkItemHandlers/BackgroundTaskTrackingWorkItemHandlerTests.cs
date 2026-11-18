@@ -184,17 +184,23 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
     }
 
     [Fact]
-    public async Task HandleItemAsync_TaskWasCancelled_DoesNotRevive()
+    public async Task HandleItemAsync_TaskWasCancelled_SkipsTheWorkAndDoesNotRevive()
     {
         // Arrange
         var task = await AddTaskAsync(canCancel: true);
         await _harness.Tasks.CancelAsync(task.Id);
-        var handler = CreateHandler(context => context.ReportProgressAsync(100, "Done"));
+        bool ran = false;
+        var handler = CreateHandler(async context =>
+        {
+            ran = true;
+            await context.ReportProgressAsync(100, "Done");
+        });
 
         // Act
         await handler.HandleItemAsync(CreateContext(task.Id));
 
         // Assert
+        Assert.False(ran);
         Assert.Equal(BackgroundTaskStatus.Cancelled, (await _harness.Tasks.GetAsync(task.Id))!.Status);
     }
 
