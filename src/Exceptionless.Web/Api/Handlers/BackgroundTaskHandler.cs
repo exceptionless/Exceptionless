@@ -194,6 +194,12 @@ public class BackgroundTaskHandler(
 
         // Resolve the relative time range once, now. The end can never be later than this moment, so events that
         // arrive after the operation is created are not part of it.
+        // An unparseable time parses to the same unbounded range as a blank one. Without this check it would silently widen the
+        // delete to everything inside retention, so reject it instead of guessing.
+        if (!String.IsNullOrWhiteSpace(model.Time) && !IsExplicitlyUnbounded(model.Time)
+            && TimeRangeParser.GetTimeInfo(model.Time, model.Offset, timeProvider, _allowedDateFields, EventIndex.Alias.Date).Range.UtcStart == DateTime.MinValue)
+            return (null, Result.Invalid(ValidationError.Create("selection.time", "The time range is not valid.")));
+
         var timeInfo = TimeRangeParser.GetTimeInfo(model.Time, model.Offset, timeProvider, _allowedDateFields, EventIndex.Alias.Date,
             organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
         var utcStart = timeInfo.Range.UtcStart;
@@ -212,6 +218,12 @@ public class BackgroundTaskHandler(
         };
 
         return (selection, null);
+    }
+
+    private static bool IsExplicitlyUnbounded(string time)
+    {
+        string range = time.Contains('|') ? time[(time.IndexOf('|') + 1)..] : time;
+        return range.Trim().Equals("all", StringComparison.OrdinalIgnoreCase) || range.Contains('*');
     }
 
     private static Result<T> ToResult<T>(BulkOperationCheckResult check)

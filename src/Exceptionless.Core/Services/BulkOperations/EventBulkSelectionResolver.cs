@@ -24,6 +24,7 @@ namespace Exceptionless.Core.Services.BulkOperations;
 public class EventBulkSelectionResolver : IBulkSelectionResolver
 {
     private const string CreatedUtcField = "created_utc";
+    private const string PremiumSearchUpgradeMessage = "Please upgrade your plan to use premium search features.";
     private readonly IEventRepository _eventRepository;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly IProjectRepository _projectRepository;
@@ -44,7 +45,10 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
 
     private ValueTask<bool> IsDateFieldAsync(string field)
     {
-        return ValueTask.FromResult(_configuration.Events.MappingResolver.GetMappingProperty(field, followAlias: true) is DateProperty);
+        // Event searches also support stack dates, so fall back to the stacks mapping.
+        var property = _configuration.Events.MappingResolver.GetMappingProperty(field, followAlias: true)
+            ?? _configuration.Stacks.MappingResolver.GetMappingProperty(field, followAlias: true);
+        return ValueTask.FromResult(property is DateProperty);
     }
 
     public BulkOperationEntity Entity => BulkOperationEntity.Events;
@@ -56,21 +60,28 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
             return BulkOperationCheckResult.Invalid("selection.filter", result.Message ?? "Invalid filter.");
 
         if (result.UsesPremiumFeatures && !organization.HasPremiumFeatures)
-            return BulkOperationCheckResult.PlanLimit("Please upgrade your plan to use premium search features.");
+            return BulkOperationCheckResult.PlanLimit(PremiumSearchUpgradeMessage);
 
         return BulkOperationCheckResult.Ok;
     }
 
     public async Task<BulkSelectionPreparation> PrepareAsync(BackgroundTask task, CancellationToken cancellationToken)
     {
-        var appFilter = await GetAppFilterAsync(task);
+        var (appFilter, check) = await GetAppFilterAsync(task);
+        if (!check.IsOk)
+            return BulkSelectionPreparation.Rejected(check);
+
         if (appFilter is null)
             return new BulkSelectionPreparation(BulkOperationCheckResult.Ok);
+
+        // Relative dates are pinned to the creation time, like the outer time window. Freeze before counting so the count
+        // and every page share one anchor, even when preparation runs after the selected day.
+        string? frozenFilter = await RelativeDateFreezer.FreezeAsync(task.Bulk!.Selection.Filter, task.Bulk.Selection.UtcCreatedBefore ?? task.CreatedUtc, IsDateFieldAsync);
 
         // The events list resolves stack level terms (for example status:open) and removes deleted stacks by looking up
         // matching stack ids. Do that once, here, and keep the result so every page uses the same stacks.
         var query = ApplyScope(new RepositoryQuery<PersistentEvent>(), appFilter, task.Bulk!.Selection)
-            .FilterExpression(task.Bulk!.Selection.Filter)
+            .FilterExpression(frozenFilter)
             .EnforceEventStackFilter();
 
         CountResult count;
@@ -85,8 +96,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
 
         var pinned = new PinnedEventSelection
         {
-            // Relative dates in the filter are pinned to the creation time, like the outer time window.
-            EventFilter = await RelativeDateFreezer.FreezeAsync(query.GetFilterExpression(), task.Bulk!.Selection.UtcCreatedBefore ?? task.CreatedUtc, IsDateFieldAsync),
+            EventFilter = query.GetFilterExpression(),
             ExcludedStackIds = query.GetExcludedStacks().ToArray(),
             StackIds = query.GetStacks().ToArray()
         };
@@ -96,7 +106,10 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
 
     public async Task<BulkSelectionPage> GetPageAsync(BackgroundTask task, string? pinnedState, string? cursor, int size, CancellationToken cancellationToken)
     {
-        var appFilter = await GetAppFilterAsync(task);
+        var (appFilter, check) = await GetAppFilterAsync(task);
+        if (!check.IsOk)
+            throw new BulkSelectionRejectedException(check);
+
         if (appFilter is null || pinnedState is null)
             return new BulkSelectionPage([], null);
 
@@ -138,11 +151,11 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         return query;
     }
 
-    private async Task<AppFilter?> GetAppFilterAsync(BackgroundTask task)
+    private async Task<(AppFilter? Filter, BulkOperationCheckResult Check)> GetAppFilterAsync(BackgroundTask task)
     {
         var organization = await _organizationRepository.GetByIdAsync(task.OrganizationId, o => o.Cache());
         if (organization is null)
-            return null;
+            return (null, BulkOperationCheckResult.Ok);
 
         var validation = await _validator.ValidateQueryAsync(task.Bulk!.Selection.Filter);
         AppFilter appFilter;
@@ -150,7 +163,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         {
             var project = await _projectRepository.GetByIdAsync(task.ProjectId, o => o.Cache());
             if (project is null || !String.Equals(project.OrganizationId, organization.Id, StringComparison.Ordinal))
-                return null;
+                return (null, BulkOperationCheckResult.Ok);
 
             appFilter = new AppFilter(project, organization);
         }
@@ -159,8 +172,13 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
             appFilter = new AppFilter(organization);
         }
 
+        // AppFilter turns an unavailable premium search into no matches. Report the plan change explicitly so the worker
+        // cannot mistake it for an exhausted selection and record the deletion as completed.
+        if (validation.UsesPremiumFeatures && !organization.HasPremiumFeatures)
+            return (null, BulkOperationCheckResult.PlanLimit(PremiumSearchUpgradeMessage));
+
         appFilter.UsesPremiumFeatures = validation.UsesPremiumFeatures;
-        return appFilter;
+        return (appFilter, BulkOperationCheckResult.Ok);
     }
 
     /// <summary>What the stack level filter resolved to when the task was created.</summary>

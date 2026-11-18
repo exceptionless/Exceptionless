@@ -55,7 +55,9 @@ public class DeleteEventsBulkOperationHandler : IBulkOperationHandler
 
     public async Task<BulkBatchResult> ExecuteBatchAsync(BackgroundTask task, IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
     {
-        var events = await _eventRepository.GetByIdsAsync(ids.ToArray(), o => o.Cache(false));
+        // Deletion needs scope, daily-index routing and notification fields, not the event's potentially large payload.
+        var events = await _eventRepository.GetByIdsAsync(ids.ToArray(), o => o.Cache(false)
+            .Include(e => e.Id, e => e.Date, e => e.OrganizationId, e => e.ProjectId, e => e.StackId));
 
         // The task may only touch its own organization (and project), no matter what ids it was given.
         var inScope = events

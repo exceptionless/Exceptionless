@@ -64,6 +64,12 @@ public record BulkSelectionPreparation(BulkOperationCheckResult Check, long Tota
 
 public record BulkSelectionPage(IReadOnlyList<string> Ids, string? NextCursor);
 
+/// <summary>A previously accepted selection can no longer run, for example because the organization lost a plan feature.</summary>
+public sealed class BulkSelectionRejectedException(BulkOperationCheckResult check) : InvalidOperationException(check.Message)
+{
+    public BulkOperationCheckResult Check { get; } = check;
+}
+
 public record BulkBatchResult(int Succeeded, int Failed, string? Message = null);
 
 /// <summary>The authenticated caller, independent of the transport the request arrived on.</summary>

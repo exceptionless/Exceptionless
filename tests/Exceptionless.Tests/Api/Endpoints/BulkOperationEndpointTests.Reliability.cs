@@ -116,7 +116,8 @@ public partial class BulkOperationEndpointTests
         Assert.NotNull(newest.Task);
         Assert.Null(blocked.Task);
         Assert.Equal(newest.Task.Id, blocked.Conflict?.Id);
-        Assert.Equal(BackgroundTaskService.ListLimit, list.Count);
+        // Every task here is still active, so none of them may drop out of the list.
+        Assert.Equal(501, list.Count);
         Assert.Equal(newest.Task.Id, list[0].Id);
     }
 

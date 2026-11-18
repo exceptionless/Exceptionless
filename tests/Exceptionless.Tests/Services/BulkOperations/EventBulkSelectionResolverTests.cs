@@ -173,6 +173,107 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
     }
 
     [Theory]
+    [InlineData("data.scheduled:now/d")]
+    [InlineData("fixedon:now/d")]
+    public async Task PrepareAsync_RelativeDateTerm_UsesTheSelectionCutoffForCountAndPages(string filter)
+    {
+        // Arrange
+        var now = TimeProvider.GetUtcNow().UtcDateTime;
+        var cutoff = now.AddDays(-1);
+        var (_, events) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Message("confirmed first").Date(cutoff.AddHours(-1))
+                .Mutate(e => e.Data = new DataDictionary { ["scheduled"] = cutoff })
+                .MutateStack(stack =>
+                {
+                    stack.CreatedUtc = cutoff.AddHours(-2);
+                    stack.DateFixed = cutoff;
+                });
+            d.Event().TestProject().Message("confirmed second").Date(cutoff.AddHours(-2))
+                .Mutate(e => e.Data = new DataDictionary { ["scheduled"] = cutoff.Date.AddHours(12) })
+                .MutateStack(stack =>
+                {
+                    stack.CreatedUtc = cutoff.AddHours(-2);
+                    stack.DateFixed = cutoff.Date.AddHours(12);
+                });
+            d.Event().TestProject().Message("different day").Date(cutoff.AddHours(-1))
+                .Mutate(e => e.Data = new DataDictionary { ["scheduled"] = now })
+                .MutateStack(stack =>
+                {
+                    stack.CreatedUtc = cutoff.AddHours(-2);
+                    stack.DateFixed = now;
+                });
+        });
+        // Use yesterday's selection anchor so the test does not need to wait for Elasticsearch's clock to advance.
+        var task = NewFilterTask(filter, createdBefore: cutoff);
+
+        // Act
+        var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
+        var pages = await GetAllPagesAsync(task, preparation.PinnedState, size: 1);
+
+        // Assert
+        Assert.Equal(2, preparation.Total);
+        Assert.Equal(events.Where(e => e.Message!.StartsWith("confirmed", StringComparison.Ordinal)).OrderByDescending(e => e.Date).Select(e => e.Id).ToArray(),
+            pages.SelectMany(page => page).ToArray());
+    }
+
+    [Fact]
+    public async Task PrepareAsync_PremiumFeaturesRemovedAfterValidation_RejectsInsteadOfSelectingNothing()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().TestProject().Tag("premium-tag"));
+        var task = NewFilterTask("tag:premium-tag");
+        await SetPremiumFeaturesAsync(false);
+
+        // Act
+        var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(BulkOperationCheckStatus.PlanLimit, preparation.Check.Status);
+    }
+
+    [Fact]
+    public async Task GetPageAsync_PremiumFeaturesRemovedAfterPreparation_ThrowsInsteadOfReportingAnExhaustedSelection()
+    {
+        // Arrange
+        await CreateDataAsync(d => d.Event().TestProject().Tag("premium-tag"));
+        var task = NewFilterTask("tag:premium-tag");
+        var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
+        await SetPremiumFeaturesAsync(false);
+
+        // Act
+        var exception = await Assert.ThrowsAsync<BulkSelectionRejectedException>(() => _resolver.GetPageAsync(task, preparation.PinnedState, null, 10, TestCancellationToken));
+
+        // Assert
+        Assert.Equal(1, preparation.Total);
+        Assert.Equal(BulkOperationCheckStatus.PlanLimit, exception.Check.Status);
+    }
+
+    [Fact]
+    public async Task GetPageAsync_PremiumFeaturesRemovedForFreeFilter_StillPages()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d => d.Event().TestProject());
+        var task = NewFilterTask("");
+        var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
+        await SetPremiumFeaturesAsync(false);
+
+        // Act
+        var page = await _resolver.GetPageAsync(task, preparation.PinnedState, null, 10, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(events.Select(e => e.Id).ToArray(), page.Ids.ToArray());
+    }
+
+    private async Task SetPremiumFeaturesAsync(bool hasPremiumFeatures)
+    {
+        var repository = GetService<IOrganizationRepository>();
+        var organization = await repository.GetByIdAsync(SampleDataService.TEST_ORG_ID, o => o.Cache(false));
+        organization!.HasPremiumFeatures = hasPremiumFeatures;
+        await repository.SaveAsync(organization, o => o.ImmediateConsistency());
+    }
+
+    [Theory]
     [InlineData(SampleDataService.TEST_ORG_ID, "type:log", BulkOperationCheckStatus.Ok)]
     [InlineData(SampleDataService.TEST_ORG_ID, "type:(log", BulkOperationCheckStatus.Invalid)]
     [InlineData(SampleDataService.FREE_ORG_ID, "tag:premium-tag", BulkOperationCheckStatus.PlanLimit)]

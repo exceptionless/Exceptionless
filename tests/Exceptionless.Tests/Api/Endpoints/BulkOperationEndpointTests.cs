@@ -197,32 +197,54 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
     public async Task Create_IdSelection_DeletesTheIdsThroughTheSameSideEffectsAsTheSingleAction()
     {
         // Arrange
+        var now = TimeProvider.GetUtcNow();
         var (_, events) = await CreateDataAsync(d =>
         {
-            d.Event().TestProject();
-            d.Event().TestProject();
+            d.Event().TestProject().Date(now.AddHours(-1)).Message("First selected event")
+                .Mutate(e => e.Data = new() { ["payload"] = new string('x', 4096) });
+            d.Event().TestProject().Date(now.AddDays(-2)).Message("Second selected event")
+                .Mutate(e => e.Data = new() { ["payload"] = new string('y', 4096) });
             d.Event().TestProject();
         });
-
-        // Act
-        var created = await CreateOperationAsync(new NewBulkOperation
+        var selected = events.Take(2).ToDictionary(e => e.Id);
+        var removed = new List<PersistentEvent>();
+        using var removing = _eventRepository.DocumentsRemoving.AddHandler((_, args) =>
+        {
+            removed.AddRange(args.Documents);
+            return Task.CompletedTask;
+        });
+        var usageService = GetService<UsageService>();
+        var request = new NewBulkOperation
         {
             Type = "events.delete",
             OrganizationId = SampleDataService.TEST_ORG_ID,
-            Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = events.Take(2).Select(e => e.Id).ToList() }
-        });
+            Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = selected.Keys.ToList() }
+        };
+
+        // Act
+        var created = await CreateOperationAsync(request);
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+        var finished = await GetOperationAsync(created.Id);
+        await RefreshDataAsync();
+        var remaining = await _eventRepository.GetByIdsAsync(events.Select(e => e.Id).ToArray(), o => o.Cache(false));
+        var usage = await usageService.GetUsageAsync(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID);
 
         // Assert
-        var finished = await GetOperationAsync(created.Id);
         Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
         Assert.Equal(2, finished.Succeeded);
-        Assert.Null(await _eventRepository.GetByIdAsync(events[0].Id));
-        Assert.Null(await _eventRepository.GetByIdAsync(events[1].Id));
-        Assert.NotNull(await _eventRepository.GetByIdAsync(events[2].Id));
-
-        var usage = await GetService<UsageService>().GetUsageAsync(SampleDataService.TEST_ORG_ID, SampleDataService.TEST_PROJECT_ID);
+        Assert.Equal(events[2].Id, Assert.Single(remaining).Id);
         Assert.Equal(2, usage.CurrentUsage.Deleted);
+        Assert.Equal(selected.Keys.Order(), removed.Select(e => e.Id).Order());
+        Assert.All(removed, deleted =>
+        {
+            var original = selected[deleted.Id];
+            Assert.Equal(original.Date, deleted.Date);
+            Assert.Equal(original.OrganizationId, deleted.OrganizationId);
+            Assert.Equal(original.ProjectId, deleted.ProjectId);
+            Assert.Equal(original.StackId, deleted.StackId);
+            Assert.Null(deleted.Message);
+            Assert.Empty(deleted.Data!);
+        });
     }
 
     [Fact]
@@ -430,6 +452,9 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Parameters = new Dictionary<string, string> { ["x"] = "y" } },
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "type:(log"),
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "[now+1d TO now+2d]"),
+            // An unparseable time parses as unbounded and must not widen the delete to everything within retention.
+            FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "not a time range"),
+            FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "[now-7d TO"),
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Filter, Ids = ["537650f3b77efe23a47914f3"] } },
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = [] } },
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = ["not-an-id"] } },
@@ -445,6 +470,24 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("all")]
+    [InlineData("[* TO *]")]
+    [InlineData("[now-30d TO *]")]
+    [InlineData("last 7 days")]
+    public async Task Create_FilterSelection_UnboundedOrNaturalTime_IsAccepted(string time)
+    {
+        // Arrange
+        var request = FilterRequest(SampleDataService.TEST_ORG_ID, null, "", time);
+
+        // Act
+        var created = await CreateOperationAsync(request);
+
+        // Assert
+        Assert.True(created.Selection!.UtcStart < created.Selection.UtcEnd);
     }
 
     [Fact]

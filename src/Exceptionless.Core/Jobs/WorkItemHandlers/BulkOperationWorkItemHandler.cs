@@ -181,6 +181,11 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         {
             context.Result = JobResult.CancelledWithMessage($"Stopping bulk operation {task?.Id} for shutdown");
         }
+        catch (BulkSelectionRejectedException ex)
+        {
+            Log.LogWarning(ex, "Bulk operation {TaskId} selection is no longer available: {Message}", workItem.TaskId, ex.Message);
+            await FinishAsync(workItem.TaskId, BackgroundTaskStatus.Failed, ex.Message);
+        }
         catch (Exception ex) when (!IsPermanent(ex))
         {
             // Elasticsearch, cache and network hiccups: continue in a new work item from the saved counts and cursor. Rethrowing
