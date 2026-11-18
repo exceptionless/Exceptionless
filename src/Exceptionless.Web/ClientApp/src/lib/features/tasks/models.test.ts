@@ -142,20 +142,32 @@ describe('selectVisibleTasks', () => {
         });
 
         // Act
-        const result = selectVisibleTasks([active, old, recent], new Set(), now);
+        const result = selectVisibleTasks([active, old, recent], new Map(), now);
 
         // Assert
         expect(result.map((task) => task.id)).toEqual(['recent', 'active']);
     });
 
-    it('hides dismissed tasks', () => {
+    it('hides a task dismissed at its current update', () => {
         // Arrange
-        const task = createTask({ id: 'dismissed' });
+        const task = createTask({ id: 'dismissed', status: BackgroundTaskStatus.Completed, updated_utc: new Date(now - 1000).toISOString() });
 
         // Act
-        const result = selectVisibleTasks([task], new Set(['dismissed']), now);
+        const result = selectVisibleTasks([task], new Map([['dismissed', task.updated_utc]]), now);
 
         // Assert
         expect(result).toEqual([]);
+    });
+
+    it('shows a dismissed task again once it is updated after the dismissal', () => {
+        // Arrange
+        const dismissedUtc = new Date(now - 5000).toISOString();
+        const retried = createTask({ id: 'retried', status: BackgroundTaskStatus.Running, updated_utc: new Date(now - 1000).toISOString() });
+
+        // Act
+        const result = selectVisibleTasks([retried], new Map([['retried', dismissedUtc]]), now);
+
+        // Assert
+        expect(result.map((task) => task.id)).toEqual(['retried']);
     });
 });

@@ -99,6 +99,24 @@ describe('EventsBulkActionsDropdownMenu', () => {
         expect(toast.success).toHaveBeenCalledWith('Successfully deleted 2 events.');
     });
 
+    it('closes the confirmation when selected row IDs change even if the count stays the same', async () => {
+        // Arrange
+        const firstTable = { getSelectedRowModel: () => ({ flatRows: [{ id: 'event-a' }] }), resetRowSelection: vi.fn() } as never;
+        const nextTable = { getSelectedRowModel: () => ({ flatRows: [{ id: 'event-b' }] }), resetRowSelection: vi.fn() } as never;
+        const { rerender } = render(EventsBulkActionsDropdownMenu, { props: { table: firstTable } });
+        await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+        await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+        expect(screen.getByRole('alertdialog')).toBeTruthy();
+
+        // Act
+        await rerender({ table: nextTable });
+
+        // Assert
+        await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+        expect(mutateAsync).not.toHaveBeenCalled();
+        expect(startBulkOperation).not.toHaveBeenCalled();
+    });
+
     describe('when everything matching the filter is selected', () => {
         const allMatching = { count: 1234, filter: 'type:error', offset: '-300m', organizationId: 'organization-id', time: '[now-7d TO now]' };
 

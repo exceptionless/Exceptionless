@@ -72,11 +72,13 @@ export function isTaskActive(status: BackgroundTaskStatus): boolean {
     return status === BackgroundTaskStatus.Queued || status === BackgroundTaskStatus.Running;
 }
 
-/** Active tasks plus recently finished ones the user has not dismissed, newest first. */
-export function selectVisibleTasks(tasks: ViewBackgroundTask[], dismissedIds: ReadonlySet<string>, now: number): ViewBackgroundTask[] {
+/** Active tasks plus recently finished ones, newest first, except those dismissed at their current revision. */
+export function selectVisibleTasks(tasks: ViewBackgroundTask[], dismissedUpdates: ReadonlyMap<string, string>, now: number): ViewBackgroundTask[] {
     return tasks
         .filter((task) => {
-            if (dismissedIds.has(task.id)) {
+            // A dismissal covers the revision the user saw. A retry or later update of the same task is shown again.
+            const dismissedUtc = dismissedUpdates.get(task.id);
+            if (dismissedUtc && new Date(task.updated_utc).getTime() <= new Date(dismissedUtc).getTime()) {
                 return false;
             }
 

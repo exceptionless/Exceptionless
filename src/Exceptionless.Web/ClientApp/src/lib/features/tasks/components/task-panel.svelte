@@ -2,7 +2,7 @@
     import { useQueryClient } from '@tanstack/svelte-query';
     import { useEventListener } from 'runed';
     import { toast } from 'svelte-sonner';
-    import { SvelteSet } from 'svelte/reactivity';
+    import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
     import type { BackgroundTaskUpdated } from '#features/websockets/models.ts';
 
@@ -22,12 +22,12 @@
     });
     const cancelTaskMutation = cancelTask();
 
-    const dismissedIds = new SvelteSet<string>();
+    const dismissedUpdates = new SvelteMap<string, string>();
     const activeSeenIds = new SvelteSet<string>();
     const cancellingIds = new SvelteSet<string>();
     let now = $state(Date.now());
 
-    const visibleTasks = $derived(selectVisibleTasks(tasksQuery.data ?? [], dismissedIds, now));
+    const visibleTasks = $derived(selectVisibleTasks(tasksQuery.data ?? [], dismissedUpdates, now));
 
     // Finished tasks fade out of the panel on their own, so re-evaluate time while any of them is shown.
     $effect(() => {
@@ -76,7 +76,7 @@
     }
 
     function onDismiss(task: ViewBackgroundTask) {
-        dismissedIds.add(task.id);
+        dismissedUpdates.set(task.id, task.updated_utc);
     }
 </script>
 
