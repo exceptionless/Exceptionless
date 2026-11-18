@@ -973,6 +973,39 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task VerifyEmailAddressAsync_TokenForAnotherAccount_ReturnsTheVerifiedAccount()
+    {
+        // Arrange
+        var signedInUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(signedInUser);
+        signedInUser.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        await _userRepository.SaveAsync(signedInUser, o => o.ImmediateConsistency());
+
+        var otherUser = new User { EmailAddress = "verify-other@exceptionless.test", FullName = "Other User" };
+        otherUser.Roles.Add(AuthorizationRoles.Client);
+        otherUser.Roles.Add(AuthorizationRoles.User);
+        otherUser.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        await _userRepository.AddAsync(otherUser, o => o.ImmediateConsistency());
+
+        // Act
+        var result = await SendRequestAsAsync<VerifyEmailAddressResult>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("users", "verify-email-address", otherUser.VerifyEmailAddressToken!)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(otherUser.EmailAddress, result.EmailAddress);
+        var verifiedUser = await _userRepository.GetByIdAsync(otherUser.Id);
+        Assert.NotNull(verifiedUser);
+        Assert.True(verifiedUser.IsEmailAddressVerified);
+        var unchangedUser = await _userRepository.GetByIdAsync(signedInUser.Id);
+        Assert.NotNull(unchangedUser);
+        Assert.False(unchangedUser.IsEmailAddressVerified);
+    }
+
+    [Fact]
     public Task UnverifyEmailAddressAsync_NonAdmin_ReturnsForbidden()
     {
         return SendRequestAsync(r => r
@@ -1054,6 +1087,35 @@ public sealed class UserEndpointTests : IntegrationTestsBase
 
         // Assert
         Assert.NotNull(result);
+    }
+
+    [Theory]
+    [InlineData("Microsoft")]
+    [InlineData("Google")]
+    public async Task UpdateEmailAddressAsync_LinkedProviderEmail_MarksAddressVerified(string provider)
+    {
+        // Arrange
+        const string email = "linked-provider@exceptionless.test";
+        var user = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(user);
+        user.AddOAuthAccount(provider, "provider-user", email);
+        await _userRepository.SaveAsync(user, o => o.ImmediateConsistency().Cache());
+
+        // Act
+        var result = await SendRequestAsAsync<UpdateEmailAddressResult>(r => r
+            .Post()
+            .AsTestOrganizationUser()
+            .AppendPaths("users", user.Id, "email-address", email)
+            .StatusCodeShouldBeOk());
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.IsVerified);
+        var updatedUser = await _userRepository.GetByIdAsync(user.Id);
+        Assert.NotNull(updatedUser);
+        Assert.Equal(email, updatedUser.EmailAddress);
+        Assert.True(updatedUser.IsEmailAddressVerified);
+        Assert.Null(updatedUser.VerifyEmailAddressToken);
     }
 
     [Fact]

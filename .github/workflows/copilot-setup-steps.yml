@@ -25,15 +25,15 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.402
+          dotnet-version: 11.0.100
 
       - name: Install Aspire CLI
         run: |
           export PATH="$HOME/.dotnet/tools:$PATH"
           if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
-            dotnet tool update --global Aspire.Cli --version 13.6.1
+            dotnet tool update --global Aspire.Cli --version 13.6.5
           else
-            dotnet tool install --global Aspire.Cli --version 13.6.1
+            dotnet tool install --global Aspire.Cli --version 13.6.5
           fi
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           aspire --version
@@ -51,7 +51,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
 
       - name: Cache node_modules
         uses: actions/cache@v6

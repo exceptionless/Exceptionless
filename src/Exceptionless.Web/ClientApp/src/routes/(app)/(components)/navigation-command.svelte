@@ -5,7 +5,6 @@
     import { resolve } from '$app/paths';
     import { ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
     import Activity from '@lucide/svelte/icons/activity';
-    import Bot from '@lucide/svelte/icons/bot';
     import Building2 from '@lucide/svelte/icons/building-2';
     import CircleHelp from '@lucide/svelte/icons/circle-help';
     import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
@@ -29,6 +28,7 @@
     import type { ViewOrganization } from '#features/organizations/models.ts';
     import type { ViewProject } from '#features/projects/models.ts';
 
+    import ExieIcon from '#comp/icons/ExieIcon.svelte';
     import * as Command from '#comp/ui/command/index.ts';
     import { logout } from '#features/auth/api.svelte.ts';
     import { accessToken } from '#features/auth/index.svelte.ts';
@@ -581,7 +581,7 @@
                 {#if isExieEnabled}
                     <Command.Group heading="Exie" value="Exie Assistant">
                         <Command.Item value="Ask Exie open assistant AI chat" onSelect={() => void openExieAssistant()}>
-                            <Bot />
+                            <ExieIcon />
                             <span>Ask Exie</span>
                         </Command.Item>
                         <Command.Item value="Exie Triage Recent Errors investigate issues stacks" onSelect={() => void askExieAssistant(EXIE_TRIAGE_PROMPT)}>

@@ -6,7 +6,7 @@ import { assistantToolResultFailed } from './assistant-tool-result';
 
 const maximumMessageCharacters = 16_384;
 
-export type AssistantPromptSource = 'composer' | 'queued' | 'regenerate' | 'retry' | 'starter' | 'suggested_action';
+export type AssistantPromptSource = 'composer' | 'edit' | 'queued' | 'regenerate' | 'retry' | 'starter' | 'suggested_action';
 
 export type AssistantStopReason = 'access_changed' | 'component_unmounted' | 'conversation_cleared' | 'organization_changed' | 'user_stopped';
 export interface AssistantTelemetryContext {

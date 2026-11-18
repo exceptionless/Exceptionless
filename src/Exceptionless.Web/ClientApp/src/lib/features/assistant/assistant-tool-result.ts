@@ -12,6 +12,19 @@ export function assistantToolErrorMessage(result: string | undefined): string | 
     }
 }
 
+/** The server held back an action until the user confirms it in their next message. */
+export function assistantToolNeedsConfirmation(result: string | undefined): boolean {
+    if (!result) {
+        return false;
+    }
+
+    try {
+        return readString(asRecord(asRecord(JSON.parse(result))?.error), 'code') === 'confirmation_required';
+    } catch {
+        return false;
+    }
+}
+
 export function assistantToolResultFailed(result: string | undefined): boolean {
     if (!result) {
         return false;

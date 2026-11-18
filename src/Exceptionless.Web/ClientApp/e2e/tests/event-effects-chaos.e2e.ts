@@ -1,6 +1,7 @@
 import type { ConsoleMessage, Page, Request, Response } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
+import { isApplicationApiRequest, trackPendingApiRequests, waitForEventDetailResponses } from '../support/api-request-monitor';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { createRepresentativeEvent } from '../support/synthetic-event';
 import {
@@ -39,6 +40,7 @@ test('event list and detail effects stay bounded through paging and background c
     test.slow();
     await installWebSocketTestHarness(page, { ignoreServerMessages: true });
 
+    const pendingApiRequests = trackPendingApiRequests(page);
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const diagnostics: RuntimeDiagnostics = {
         actionSamples: [],
@@ -67,6 +69,7 @@ test('event list and detail effects stay bounded through paging and background c
 
     await test.step('load the Events list with one page of results', async () => {
         const response = page.waitForResponse((candidate) => isEventListResponse(candidate, e2eScenario.organizationId));
+        await pendingApiRequests.waitForPendingRequests();
         await page.goto('/event?filter=type%3Aerror&limit=5');
         const listResponse = await response;
         expect(listResponse.ok()).toBe(true);
@@ -187,8 +190,15 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'event detail alias route remounts', async () => {
         for (let index = 0; index < 5; index++) {
+            await pendingApiRequests.waitForPendingRequests();
+            const detailResponses = waitForEventDetailResponses(page, journey.eventId!, journey.stackId!, e2eScenario.projectId);
             await page.goto(`/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
+            await expect(page).toHaveURL(new RegExp(`/stack/${journey.stackId}/event/${journey.eventId}$`));
+            for (const response of await detailResponses) {
+                expect(response.ok()).toBe(true);
+                await response.finished();
+            }
         }
     });
     expect(actionSample(diagnostics, 'event detail alias route remounts').eventDetails).toBeLessThanOrEqual(10);
@@ -196,6 +206,7 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'stack detail discovery route remounts', async () => {
         for (let index = 0; index < 5; index++) {
+            await pendingApiRequests.waitForPendingRequests();
             await page.goto(`/stack/${journey.stackId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         }
@@ -206,6 +217,7 @@ test('event list and detail effects stay bounded through paging and background c
 
     await measureAction(diagnostics, 'canonical stack event route remounts', async () => {
         for (let index = 0; index < 5; index++) {
+            await pendingApiRequests.waitForPendingRequests();
             await page.goto(`/stack/${journey.stackId}/event/${journey.eventId}`);
             await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
         }
@@ -371,7 +383,7 @@ function recordRequest(diagnostics: RuntimeDiagnostics, request: Request, organi
 }
 
 function recordRequestFailure(diagnostics: RuntimeDiagnostics, request: Request): void {
-    if (!new URL(request.url()).pathname.startsWith('/api/v2/')) {
+    if (!isApplicationApiRequest(request)) {
         return;
     }
 

@@ -1,23 +1,20 @@
 <script lang="ts">
     import { PUBLIC_STRIPE_PUBLISHABLE_KEY } from '$app/env/public';
     import { page } from '$app/state';
-    import { scaleUtc } from 'd3-scale';
-    import { curveMonotoneX } from 'd3-shape';
-    import { AreaChart } from 'layerchart';
 
     import ErrorMessage from '#comp/error-message.svelte';
     import Number from '#comp/formatters/number.svelte';
     import TimeAgo from '#comp/formatters/time-ago.svelte';
     import { Muted, Small } from '#comp/typography/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
-    import * as Chart from '#comp/ui/chart/index.ts';
     import { Skeleton } from '#comp/ui/skeleton/index.ts';
     import { ChangePlanDialog } from '#features/billing/index.ts';
     import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
+    import UsageChart from '#features/organizations/components/usage-chart.svelte';
     import { organization } from '#features/organizations/context.svelte.ts';
     import { getNextBillingDateUtc, getRemainingEventLimit, ORGANIZATION_USAGE_REFETCH_INTERVAL_MS } from '#features/organizations/utils.ts';
     import { getProjectQuery } from '#features/projects/api.svelte.ts';
-    import { formatDateLabel, formatLongDate } from '#shared/dates.ts';
+    import { formatLongDate } from '#shared/dates.ts';
 
     const organizationQuery = getOrganizationQuery({
         params: {
@@ -47,37 +44,6 @@
 
     let changePlanDialogOpen = $state(false);
 
-    const chartConfig = {
-        blocked: {
-            color: 'var(--chart-2)',
-            label: 'Blocked'
-        },
-        deleted: {
-            color: 'var(--chart-7)',
-            label: 'Deleted'
-        },
-        discarded: {
-            color: 'var(--chart-3)',
-            label: 'Discarded'
-        },
-        limit: {
-            color: 'var(--chart-6)',
-            label: 'Limit'
-        },
-        org_total: {
-            color: 'var(--chart-5)',
-            label: 'Total in Organization'
-        },
-        too_big: {
-            color: 'var(--chart-4)',
-            label: 'Too Big'
-        },
-        total: {
-            color: 'var(--chart-1)',
-            label: 'Total'
-        }
-    } satisfies Chart.ChartConfig;
-
     const chartData = $derived.by(() => {
         const project = projectQuery.data;
         const org = organizationQuery.data;
@@ -101,49 +67,12 @@
                 deleted: projItem.deleted,
                 discarded: projItem.discarded,
                 limit: orgItem?.limit || 0,
-                org_total: orgItem?.total || 0,
+                organization_total: orgItem?.total || 0,
                 too_big: projItem.too_big,
                 total: projItem.total
             };
         });
     });
-
-    const series = [
-        {
-            key: 'org_total',
-            ...chartConfig.org_total
-        },
-        {
-            key: 'total',
-            ...chartConfig.total
-        },
-        {
-            key: 'discarded',
-            ...chartConfig.discarded
-        },
-        {
-            key: 'blocked',
-            ...chartConfig.blocked
-        },
-        {
-            key: 'too_big',
-            ...chartConfig.too_big
-        },
-        {
-            key: 'deleted',
-            ...chartConfig.deleted
-        },
-        {
-            key: 'limit',
-            ...chartConfig.limit,
-            props: {
-                class: 'fill-none',
-                line: {
-                    class: '[stroke-dasharray:4]'
-                }
-            }
-        }
-    ];
 </script>
 
 <div class="space-y-6">
@@ -187,27 +116,7 @@
                 </p>
             </div>
 
-            <Chart.Container config={chartConfig} class="aspect-auto h-62.5 w-full">
-                <AreaChart
-                    legend
-                    data={chartData}
-                    x="date"
-                    xScale={scaleUtc()}
-                    {series}
-                    props={{
-                        area: {
-                            curve: curveMonotoneX
-                        },
-                        yAxis: {
-                            format: 'metric'
-                        }
-                    }}
-                >
-                    {#snippet tooltip()}
-                        <Chart.Tooltip class="min-w-57.5" indicator="line" labelFormatter={(v) => formatDateLabel(v as Date)} />
-                    {/snippet}
-                </AreaChart>
-            </Chart.Container>
+            <UsageChart data={chartData} showOrganizationTotal />
 
             <Small class="text-xs">The usage data above is refreshed periodically and may not reflect current totals.</Small>
         </div>

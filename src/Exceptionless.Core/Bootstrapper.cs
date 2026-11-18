@@ -156,6 +156,7 @@ public class Bootstrapper
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
         services.AddSingleton<ISavedViewRepository, SavedViewRepository>();
         services.AddSingleton<ISystemSettingsRepository, SystemSettingsRepository>();
+        services.AddSingleton<ITrialClaimRepository, TrialClaimRepository>();
         services.AddSingleton<ITokenRepository, TokenRepository>();
 
         services.AddSingleton<IGeocodeService, NullGeocodeService>();
@@ -374,8 +375,6 @@ public class Bootstrapper
             integrations.Add("Google OAuth");
         if (!String.IsNullOrWhiteSpace(options.AuthOptions.MicrosoftId))
             integrations.Add("Microsoft OAuth");
-        if (!String.IsNullOrWhiteSpace(options.AuthOptions.FacebookId))
-            integrations.Add("Facebook OAuth");
         if (!String.IsNullOrWhiteSpace(options.AuthOptions.GitHubId))
             integrations.Add("GitHub OAuth");
         if (options.AuthOptions.EnableActiveDirectoryAuth)
@@ -525,6 +524,7 @@ public class Bootstrapper
         services.AddDistributedCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
         services.AddDistributedCronJob<DownloadGeoIPDatabaseJob>(Cron.Daily(1));
         services.AddDistributedCronJob<MaintainIndexesJob>("10 */2 * * *");
+        services.AddDistributedCronJob<TrialExpirationJob>("15 * * * *");
 
         var logger = loggerFactory.CreateLogger<Bootstrapper>();
         logger.LogWarning("Jobs running in process");

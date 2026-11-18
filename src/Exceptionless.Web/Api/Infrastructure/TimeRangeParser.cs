@@ -16,6 +16,9 @@ public static class TimeRangeParser
     }
 
     public static TimeInfo GetTimeInfo(string? time, string? offset, TimeProvider timeProvider, ICollection<string>? allowedDateFields = null, string defaultDateField = "created_utc", DateTime? minimumUtcStartDate = null)
+        => GetTimeInfo(time, GetOffset(offset), timeProvider, allowedDateFields, defaultDateField, minimumUtcStartDate);
+
+    public static TimeInfo GetTimeInfo(string? time, TimeSpan utcOffset, TimeProvider timeProvider, ICollection<string>? allowedDateFields = null, string defaultDateField = "created_utc", DateTime? minimumUtcStartDate = null)
     {
         string field = defaultDateField;
         if (!String.IsNullOrEmpty(time) && time.Contains('|'))
@@ -24,8 +27,6 @@ public static class TimeRangeParser
             field = parts.Length > 0 && allowedDateFields?.Contains(parts[0]) == true ? parts[0] : defaultDateField;
             time = parts.Length > 1 ? parts[1] : null;
         }
-
-        var utcOffset = GetOffset(offset);
 
         // range parsing needs to be based on the user's local time.
         var range = DateTimeRange.Parse(time, timeProvider.GetUtcNow().ToOffset(utcOffset));

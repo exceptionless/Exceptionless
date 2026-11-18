@@ -9,13 +9,38 @@
     import githubDarkDefault from '@shikijs/themes/github-dark-default';
     import githubLightDefault from '@shikijs/themes/github-light-default';
     import { mode } from 'mode-watcher';
-    import { Streamdown, type StreamdownProps } from 'streamdown-svelte';
+    import { type LinkSafetyModalProps, Streamdown, type StreamdownProps } from 'streamdown-svelte';
 
+    import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
     import { cn } from '#lib/utils.ts';
     type Props = StreamdownProps;
 
-    let { class: className, components, content, ...restProps }: Props = $props();
+    let {
+        class: className,
+        components,
+        content,
+        linkSafety = {
+            enabled: true,
+            onLinkCheck: isTrustedLink,
+            renderModal: linkSafetyModal
+        },
+        ...restProps
+    }: Props = $props();
     let currentTheme = $derived(mode.current === 'dark' ? 'github-dark-default' : 'github-light-default');
+
+    /** AI answers can repeat untrusted event data, so only the app's own links and Exceptionless sites open without asking. */
+    function isTrustedLink(href: string): boolean {
+        try {
+            const url = new URL(href, window.location.origin);
+            if (url.origin === window.location.origin) {
+                return true;
+            }
+
+            return url.protocol === 'https:' && (url.hostname === 'exceptionless.com' || url.hostname.endsWith('.exceptionless.com'));
+        } catch {
+            return false;
+        }
+    }
 
     const assistantTheme = {
         blockquote: {
@@ -28,6 +53,9 @@
                 'pointer-events-auto flex shrink-0 items-center gap-1 rounded-md border border-sidebar bg-sidebar/90 px-1 py-0.5 supports-[backdrop-filter]:bg-sidebar/75 supports-[backdrop-filter]:backdrop-blur',
             container: 'overflow-x-auto rounded-md border border-border bg-background p-3 text-xs',
             header: 'flex h-7 items-center justify-between text-muted-foreground text-xs'
+        },
+        codespan: {
+            base: 'rounded bg-muted px-1.5 py-0.5 font-mono text-[0.9em] text-foreground wrap-anywhere'
         },
         components: {
             button: 'disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer p-1 text-muted-foreground transition-colors hover:text-foreground rounded hover:bg-border flex items-center justify-center size-7'
@@ -76,11 +104,37 @@
     } satisfies NonNullable<StreamdownProps['theme']>;
 </script>
 
+{#snippet linkSafetyModal({ isOpen, onClose, onConfirm, url }: LinkSafetyModalProps)}
+    <AlertDialog.Root onOpenChange={(open) => !open && onClose()} open={isOpen}>
+        <AlertDialog.Content>
+            <AlertDialog.Header>
+                <AlertDialog.Title>Open external link?</AlertDialog.Title>
+                <AlertDialog.Description>
+                    This link leaves Exceptionless. Answers can include text from your events, so check the address before you open it.
+                </AlertDialog.Description>
+            </AlertDialog.Header>
+            <p class="bg-muted text-foreground rounded-md p-3 font-mono text-xs break-all">{url}</p>
+            <AlertDialog.Footer>
+                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                <AlertDialog.Action
+                    onclick={() => {
+                        onConfirm();
+                        onClose();
+                    }}>Open link</AlertDialog.Action
+                >
+            </AlertDialog.Footer>
+        </AlertDialog.Content>
+    </AlertDialog.Root>
+{/snippet}
+
 <div class={cn('w-full min-w-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0', className)}>
+    <!-- Answers can repeat untrusted event data: raw HTML shows as text so it cannot skip the link check, and remote images cannot load. -->
     <Streamdown
         {content}
         {components}
+        allowedImagePrefixes={[]}
         baseTheme="shadcn"
+        {linkSafety}
         controls={{
             code: {
                 copy: true,
@@ -89,6 +143,7 @@
             table: false
         }}
         mergeTheme={true}
+        renderHtml={false}
         shikiTheme={currentTheme}
         shikiThemes={{
             'github-dark-default': githubDarkDefault,

@@ -185,7 +185,7 @@
             <H3>Project Notifications</H3>
             <Muted>Choose how often you want to receive notifications for event occurrences in this project.</Muted>
             <Select.Root bind:value={queryParams.project!} type="single">
-                <Select.Trigger class="w-full">
+                <Select.Trigger aria-label="Project" class="w-full">
                     {selectedProject.name}
                 </Select.Trigger>
                 <Select.Content>

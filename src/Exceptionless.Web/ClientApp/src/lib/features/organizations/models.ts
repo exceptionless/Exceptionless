@@ -5,5 +5,6 @@ export enum SuspensionCode {
     Billing = 0,
     Overage = 1,
     Abuse = 2,
+    PlanLimit = 3,
     Other = 100
 }

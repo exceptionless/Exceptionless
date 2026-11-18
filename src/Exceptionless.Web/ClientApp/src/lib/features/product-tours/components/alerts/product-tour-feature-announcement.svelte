@@ -1,7 +1,7 @@
 <script lang="ts">
-    import Sparkles from '@lucide/svelte/icons/sparkles';
     import X from '@lucide/svelte/icons/x';
 
+    import ExieIcon from '#comp/icons/ExieIcon.svelte';
     import { Muted } from '#comp/typography/index.ts';
     import * as Alert from '#comp/ui/alert/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
@@ -23,7 +23,7 @@
         class="product-tour-feature-announcement fixed right-4 bottom-4 z-40 w-[min(24rem,calc(100vw-2rem))] shadow-lg"
         data-product-tour-announcement="exie"
     >
-        <Sparkles aria-hidden="true" class="text-primary mt-0.5" />
+        <ExieIcon aria-hidden="true" class="text-primary mt-0.5" />
         <div data-slot="alert-description">
             <div class="flex items-start justify-between gap-3">
                 <div>

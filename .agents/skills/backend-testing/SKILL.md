@@ -30,6 +30,19 @@ Under `tests/Exceptionless.Tests/`:
 - `Utility/DataBuilder.cs`: synthetic records.
 - `Utility/ProxyTimeProvider.cs`: controlled time.
 
+Resolve services reused across tests or repeatedly within a test into descriptive readonly private fields in the test constructor. Keep one-off services in named locals. Never call a method or access a property directly on `GetService<T>()`, or pass the lookup inline as an argument.
+
+```csharp
+// Avoid
+await GetService<IOrganizationRepository>().AddAsync(organization);
+
+// Use
+var organizations = GetService<IOrganizationRepository>();
+await organizations.AddAsync(organization);
+```
+
+Use Foundatio in-memory implementations for cache, storage, queues, messaging, and locks instead of mocking those abstractions. Never mock cache clients or serialization; use the configured serializer. Test provider-specific behavior or failures against the real provider.
+
 Name tests `MethodUnderTest_Scenario_ExpectedBehavior`.
 
 ## HTTP and state
@@ -42,6 +55,6 @@ Tests use the production serializer. For JSON compatibility, inspect `Serializer
 
 ## Time
 
-Use the fixture's `TimeProvider`: `Advance`, `SetUtcNow`, and `Restore`. Prefer controlled time to real waits.
+Use the fixture's `TimeProvider`: `Advance`, `SetUtcNow`, and `Restore`. Do not create a separate clock when the fixture provides one. For isolated tests without that fixture, use a `FakeTimeProvider` and its default fixed time unless a particular date matters. Prefer controlled time to real waits.
 
 Follow root guidance for focused commands, conditional Aspire startup, and API contract verification.

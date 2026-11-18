@@ -1,6 +1,7 @@
 export type { AssistantConversationSharingSettings } from '#generated/api.ts';
 
 export interface AssistantAccess {
+    email_verification_required?: boolean;
     enabled: boolean;
     has_access: boolean;
     message?: string;
@@ -8,14 +9,20 @@ export interface AssistantAccess {
     upgrade_required: boolean;
 }
 
-export type AssistantAccessState = 'available' | 'disabled' | 'error' | 'loading' | 'upgrade-required';
+export type AssistantAccessState = 'available' | 'disabled' | 'error' | 'loading' | 'upgrade-required' | 'verification-required';
 
 export interface AssistantChatMessage {
     content: string;
     conversationId?: string;
+    /** Why the response ended early. Absent for a response that completed normally. */
+    endReason?: AssistantMessageEndReason;
+    errorMessage?: string;
     feedback?: AssistantFeedback;
+    feedbackReason?: AssistantFeedbackReason;
     id: string;
     isSuggestedAction?: boolean;
+    /** Text and tool activity in the order they streamed. */
+    parts: AssistantMessagePart[];
     role: 'assistant' | 'user';
     suggestedActionLabel?: string;
     suggestedActionPath?: string;
@@ -23,7 +30,28 @@ export interface AssistantChatMessage {
     tools: AssistantToolActivity[];
 }
 
+export interface AssistantConversation {
+    id: string;
+    messages: AssistantChatMessage[];
+    /** The project Exie searched, or null for all projects. Chats saved before scopes were recorded omit it. */
+    projectId?: null | string;
+    title: string;
+    updatedAt: number;
+}
+
 export type AssistantFeedback = 'helpful' | 'not-helpful';
+
+export type AssistantFeedbackReason = 'incomplete' | 'incorrect' | 'not-relevant' | 'other' | 'wrong-action';
+
+export type AssistantMessageEndReason = 'error' | 'stopped';
+
+export type AssistantMessagePart = { text: string; type: 'text' } | { toolId: string; type: 'tool' };
+
+/** A project Exie can be scoped to from the composer. */
+export interface AssistantProject {
+    id: string;
+    name: string;
+}
 
 export interface AssistantPromptRequest {
     id: string;

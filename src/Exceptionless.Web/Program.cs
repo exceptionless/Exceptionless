@@ -34,6 +34,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Net.Http.Headers;
 using ModelContextProtocol.AspNetCore;
+using ModelContextProtocol.Server;
 using OpenTelemetry;
 using Scalar.AspNetCore;
 using Serilog;
@@ -202,9 +203,17 @@ public partial class Program
             builder.Services.AddMcpServer(options =>
                 options.ServerInstructions = "Exceptionless MCP tools are stateless. Direct get and stack-update tools accept a globally unique eventId or stackId without projectId; an explicitly supplied projectId is validated against that resource. Search and other scoped tools may omit scope only when the current OAuth grant exposes exactly one matching organization or project; otherwise use list_organizations, list_projects, or resolve_project and pass the required id explicitly. Previous tool calls never change the scope of later calls.")
                 .WithHttpTransport()
-                .WithTools<ExceptionlessMcpTools>()
+                .WithTools<ExceptionlessMcpTools>(McpJsonSerializerOptions.Default)
                 .WithRequestFilters(filters => filters.AddCallToolFilter(next => async (context, cancellationToken) =>
-                    McpToolResultFilter.MarkStructuredErrors(await next(context, cancellationToken))));
+                {
+                    if (context.MatchedPrimitive is McpServerTool tool
+                        && McpToolResultFilter.RejectUnknownArguments(tool.ProtocolTool.Name, tool.ProtocolTool.InputSchema, context.Params?.Arguments?.Keys) is { } rejected)
+                    {
+                        return rejected;
+                    }
+
+                    return McpToolResultFilter.MarkStructuredErrors(await next(context, cancellationToken));
+                }));
             builder.Services.AddSingleton(_ => new ThrottlingOptions
             {
                 MaxRequestsForUserIdentifierFunc = _ => options.ApiThrottleLimit,
@@ -433,7 +442,6 @@ public partial class Program
             Environment.SetEnvironmentVariable("PUBLIC_EXCEPTIONLESS_SERVER_URL", options.ExceptionlessServerUrl);
             Environment.SetEnvironmentVariable("PUBLIC_STRIPE_PUBLISHABLE_KEY",
                 options.StripeOptions.StripePublishableApiKey);
-            Environment.SetEnvironmentVariable("PUBLIC_FACEBOOK_APPID", options.AuthOptions.FacebookId);
             Environment.SetEnvironmentVariable("PUBLIC_GITHUB_APPID", options.AuthOptions.GitHubId);
             Environment.SetEnvironmentVariable("PUBLIC_GOOGLE_APPID", options.AuthOptions.GoogleId);
             Environment.SetEnvironmentVariable("PUBLIC_MICROSOFT_APPID", options.AuthOptions.MicrosoftId);

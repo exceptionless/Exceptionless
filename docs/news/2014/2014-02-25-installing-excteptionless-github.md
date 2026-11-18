@@ -9,8 +9,6 @@ Since we officially announced that Exceptionless was going open source last week
 
 It's really quick, as you can see from the below video. Below the video is also a textual walkthrough. Please take a look and let us know if you have any questions.
 
-Please note that before contributing to the Exceptionless project, you must read and sign the Exceptionless [Contribution License Agreement](http://www.clahub.com/agreements/exceptionless/Exceptionless). Pull requests will not be accepted otherwise.
-
 ### GitHub Exceptionless Getting Started Video
 
 https://www.youtube.com/watch?v=wROzlVuBoDs

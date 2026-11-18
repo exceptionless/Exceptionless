@@ -46,7 +46,7 @@ test('OAuth applications default to authorized and expose configuration and orga
     const params = new URL((await initialRequest).url()).searchParams;
     expect(params.get('authorized')).toBe('true');
     expect(params.get('sort')).toBe('-updated_utc');
-    await expect(page.getByRole('button', { name: 'Filter by authorization' })).toHaveText('Authorized');
+    await expect(page.getByRole('combobox', { name: 'Filter by authorization' })).toHaveText('Authorized');
     await expect(page.getByRole('link', { exact: true, name: authorizedApplication.name })).toBeVisible();
     await expect(page.getByRole('link', { exact: true, name: unauthorizedApplication.name })).toHaveCount(0);
     await expect(page.getByRole('columnheader', { name: 'Client ID' })).toHaveCount(0);
@@ -73,19 +73,19 @@ test('OAuth applications default to authorized and expose configuration and orga
 
     await page.getByRole('button', { name: `Hide details for ${authorizedApplication.name}` }).click();
     await expect(page.getByText(authorizedApplication.client_id, { exact: true })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Filter by authorization' }).click();
+    await page.getByRole('combobox', { name: 'Filter by authorization' }).click();
     await page.getByRole('option', { exact: true, name: 'Not authorized' }).click();
     await expect(page.getByRole('link', { exact: true, name: unauthorizedApplication.name })).toBeVisible();
     await expect(page.getByRole('link', { exact: true, name: authorizedApplication.name })).toHaveCount(0);
     await expect(page).toHaveURL(/authorization=unauthorized/);
 
-    await page.getByRole('button', { name: 'Filter by authorization' }).click();
+    await page.getByRole('combobox', { name: 'Filter by authorization' }).click();
     await page.getByRole('option', { exact: true, name: 'All applications' }).click();
     await expect(page.getByRole('link', { exact: true, name: authorizedApplication.name })).toBeVisible();
     await expect(page.getByRole('link', { exact: true, name: unauthorizedApplication.name })).toBeVisible();
     await expect(page).toHaveURL(/authorization=all/);
     await page.reload();
-    await expect(page.getByRole('button', { name: 'Filter by authorization' })).toHaveText('All applications');
+    await expect(page.getByRole('combobox', { name: 'Filter by authorization' })).toHaveText('All applications');
 
     await page.getByRole('link', { exact: true, name: e2eScenario.organizationName }).click();
     await expect(page).toHaveURL(new RegExp(`/organization/${e2eScenario.organizationId}/manage`));

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Bot from '@lucide/svelte/icons/bot';
+    import { resolve } from '$app/paths';
 
     import { H3, Muted } from '#comp/typography/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
@@ -8,6 +8,8 @@
     import { isStripeEnabled } from '#features/billing/stripe.svelte.ts';
 
     import type { AssistantAccessState } from '../models';
+
+    import ExieAvatar from './exie-avatar.svelte';
 
     interface Props {
         accessState?: AssistantAccessState;
@@ -31,9 +33,7 @@
 </script>
 
 <div class="flex h-full flex-col items-center justify-center gap-5 px-6 text-center">
-    <div class="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-xl">
-        <Bot aria-hidden="true" class="size-7" />
-    </div>
+    <ExieAvatar size="lg" />
     <div class="max-w-80">
         {#if accessState === 'loading'}
             <H3 class="text-base">Checking Exie access</H3>
@@ -41,6 +41,9 @@
         {:else if accessState === 'error'}
             <H3 class="text-base">Exie couldn’t check access</H3>
             <Muted class="mt-1">{message ?? 'We couldn’t load this organization’s assistant access.'}</Muted>
+        {:else if accessState === 'verification-required'}
+            <H3 class="text-base">Verify your email to use Exie</H3>
+            <Muted class="mt-1">{message ?? 'Verify your email address to use Exie during your trial.'}</Muted>
         {:else}
             <H3 class="text-base">Bring Exie onto your team</H3>
             <Muted class="mt-1">{message ?? 'Exie is not available for this organization.'}</Muted>
@@ -51,6 +54,8 @@
     </div>
     {#if accessState === 'loading'}
         <Spinner aria-label="Loading Exie access" />
+    {:else if accessState === 'verification-required'}
+        <Button href={resolve('/(app)/account/manage')} variant="outline">Verify email address</Button>
     {:else if accessState === 'error' && onRetry}
         <Button onclick={() => void onRetry()} variant="outline">Retry</Button>
     {:else if accessState === 'upgrade-required' && organizationId && isStripeEnabled()}

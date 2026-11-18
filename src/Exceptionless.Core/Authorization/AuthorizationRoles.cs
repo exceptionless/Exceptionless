@@ -19,6 +19,8 @@ public static class AuthorizationRoles
     public const string StacksRead = "stacks:read";
     public const string StacksWrite = "stacks:write";
     public const string SourceMapsWrite = "source-maps:write";
+    public const string SavedViewsRead = "saved-views:read";
+    public const string SavedViewsWrite = "saved-views:write";
     public const string EventsRead = "events:read";
     public const string OfflineAccess = "offline_access";
     public static readonly ISet<string> AllScopes = new HashSet<string>([Client, User, GlobalAdmin, SourceMapsWrite]);

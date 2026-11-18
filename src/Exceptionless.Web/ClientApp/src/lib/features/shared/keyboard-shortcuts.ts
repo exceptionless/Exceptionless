@@ -9,6 +9,7 @@ export type ShortcutKey = 'Alt' | 'Mod' | 'Shift' | string;
 
 export const appKeyboardShortcuts = {
     allEvents: { key: 'e', keys: ['e'] },
+    assistant: { key: 'a', keys: ['a'] },
     commandPalette: { key: '/', keys: ['/'] },
     keyboardShortcuts: { key: '?', keys: ['?'] },
     stacks: { key: 'i', keys: ['i'] },

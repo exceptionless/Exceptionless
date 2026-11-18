@@ -13,6 +13,9 @@ public record BillingPlanStats
     public int MonthlyTotalAccounts { get; init; }
     public int YearlyTotalAccounts { get; init; }
     public int FreeAccounts { get; init; }
+    public int TrialAccounts { get; init; }
+    public int ConvertedTrialAccounts { get; init; }
+    public int ExpiredTrialAccounts { get; init; }
     public int PaidAccounts { get; init; }
     public int FreeloaderAccounts { get; init; }
     public int SuspendedAccounts { get; init; }

@@ -43,7 +43,7 @@ ForwardedHeaders:
 
 Assistant:
   Endpoint: https://openrouter.ai/api/v1/chat/completions
-  Model: "~deepseek/deepseek-v4-flash-latest"
+  Model: "openai/gpt-6.1-sol"
   ApiKey:
 
 Apm:

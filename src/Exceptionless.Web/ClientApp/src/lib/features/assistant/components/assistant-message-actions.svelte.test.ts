@@ -36,7 +36,28 @@ describe('AssistantMessageActions', () => {
         await fireEvent.click(screen.getByRole('button', { name: 'Good response' }));
 
         expect(onFeedback).toHaveBeenCalledWith('helpful');
-        expect(toast.success).toHaveBeenCalledWith('Marked as helpful.');
+        expect(screen.getByRole('button', { name: 'Good response' }).getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('records a poor rating from the keyboard', async () => {
+        const onFeedback = vi.fn();
+        render(AssistantMessageActions, { props: { content: 'The answer', onFeedback, showFeedback: true } });
+
+        await fireEvent.keyDown(screen.getByRole('button', { name: 'Poor response' }), { key: 'Enter' });
+
+        expect(onFeedback).toHaveBeenCalledWith('not-helpful');
+        expect(await screen.findByText('What went wrong?')).toBeTruthy();
+    });
+
+    it('asks what went wrong after a poor rating', async () => {
+        const onFeedback = vi.fn();
+        render(AssistantMessageActions, { props: { content: 'The answer', onFeedback, showFeedback: true } });
+
+        await fireEvent.click(screen.getByRole('button', { name: 'Poor response' }));
+        expect(onFeedback).toHaveBeenCalledWith('not-helpful');
+
+        await fireEvent.click(await screen.findByRole('button', { name: 'Incomplete' }));
+        expect(onFeedback).toHaveBeenLastCalledWith('not-helpful', 'incomplete');
     });
 
     it('disables regenerate while the callback is pending', async () => {

@@ -58,7 +58,6 @@ public static class SensitiveDataLogging
             Redact<AppOptions>(nameof(AppOptions.GoogleGeocodingApiKey)),
             Redact<AppOptions>(nameof(AppOptions.MaxMindGeoIpKey)),
             Redact<AuthOptions>(nameof(AuthOptions.MicrosoftSecret)),
-            Redact<AuthOptions>(nameof(AuthOptions.FacebookSecret)),
             Redact<AuthOptions>(nameof(AuthOptions.GitHubSecret)),
             Redact<AuthOptions>(nameof(AuthOptions.GoogleSecret)),
             Sanitize<AuthOptions>(

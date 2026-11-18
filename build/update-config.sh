@@ -11,7 +11,7 @@ for part in "${oauth_parts[@]}"; do
     value="${value#"${value%%[![:space:]]*}"}"
     value="${value%"${value##*[![:space:]]}"}"
     case "$key" in
-        FacebookId|GitHubId|GoogleId|IntercomId|MicrosoftId|SlackId)
+        GitHubId|GoogleId|IntercomId|MicrosoftId|SlackId)
             oauth_ids[$key]="$value" ;;
     esac
 done
@@ -43,7 +43,6 @@ mkdir -p _app
     write_setting PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL "${EX_ClientSetupShowServerUrl:-true}"
     write_setting PUBLIC_EXCEPTIONLESS_SERVER_URL "${EX_ExceptionlessServerUrl:-}"
     write_setting PUBLIC_STRIPE_PUBLISHABLE_KEY "${EX_StripePublishableApiKey:-}"
-    write_setting PUBLIC_FACEBOOK_APPID "${oauth_ids[FacebookId]:-}"
     write_setting PUBLIC_GITHUB_APPID "${oauth_ids[GitHubId]:-}"
     write_setting PUBLIC_GOOGLE_APPID "${oauth_ids[GoogleId]:-}"
     write_setting PUBLIC_MICROSOFT_APPID "${oauth_ids[MicrosoftId]:-}"

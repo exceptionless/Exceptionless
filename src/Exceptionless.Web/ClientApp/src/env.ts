@@ -14,7 +14,6 @@ export const variables = defineEnvVars({
     PUBLIC_EXCEPTIONLESS_CLIENT_SETUP_SHOW_SERVER_URL: { public: true },
     PUBLIC_EXCEPTIONLESS_SERVER_URL: { description: 'Server URL shown in client setup instructions and used for UI telemetry.', public: true },
     PUBLIC_EXCEPTIONLESS_TELEMETRY_SERVER_URL: { public: true, schema: optional },
-    PUBLIC_FACEBOOK_APPID: { public: true },
     PUBLIC_GITHUB_APPID: { public: true },
     PUBLIC_GOOGLE_APPID: { public: true },
     PUBLIC_INTERCOM_APPID: { public: true },

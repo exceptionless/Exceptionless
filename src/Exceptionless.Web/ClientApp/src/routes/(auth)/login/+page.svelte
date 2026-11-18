@@ -6,7 +6,6 @@
     import { onMount } from 'svelte';
 
     import ErrorMessage from '#comp/error-message.svelte';
-    import FacebookIcon from '#comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
     import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
@@ -22,15 +21,13 @@
         accessToken,
         enableAccountCreation,
         enableOAuthLogin,
-        facebookClientId,
-        facebookLogin,
         gitHubClientId,
         githubLogin,
         googleClientId,
         googleLogin,
-        liveLogin,
         logout,
-        microsoftClientId
+        microsoftClientId,
+        microsoftLogin
     } from '#features/auth/index.svelte.ts';
     import { type LoginFormData, LoginSchema } from '#features/auth/schemas.ts';
     import { gotoRedirect } from '#features/navigation/redirect.ts';
@@ -43,8 +40,17 @@
     const canSignup = enableAccountCreation || !!inviteToken;
     const signupUrl = inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup');
 
+    const externalLoginOptions = {
+        inviteToken,
+        redirectUrl
+    };
+
+    // Only an invitation ends the current session: it must be accepted as the invited user. Every login shares one
+    // server token, so ending the session on any visit would sign out the user's other tabs and devices.
+    const isEndingSessionForInvite = !!inviteToken && !!accessToken.current;
+
     onMount(async () => {
-        if (accessToken.current) {
+        if (isEndingSessionForInvite) {
             try {
                 await logout();
             } catch {
@@ -79,7 +85,7 @@
     }
 </script>
 
-<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col items-center" inert={!!accessToken.current}>
+<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col items-center" inert={!!inviteToken && !!accessToken.current}>
     <Card.Root class="w-full">
         <Card.Header>
             <Logo />
@@ -178,22 +184,17 @@
                 </div>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => liveLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => microsoftLogin(externalLoginOptions)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(externalLoginOptions)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
-                    {#if facebookClientId}
-                        <Button aria-label="Login with Facebook" tabindex={4} onclick={() => facebookLogin(redirectUrl, inviteToken)}>
-                            <FacebookIcon class="size-4" /> Facebook
-                        </Button>
-                    {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(externalLoginOptions)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}

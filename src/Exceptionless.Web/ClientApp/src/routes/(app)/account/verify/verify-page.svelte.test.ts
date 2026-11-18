@@ -36,20 +36,20 @@ function problemResponse(status: number, title: string) {
 
 describe('Verify email address page', () => {
     let fetch: Mock<typeof globalThis.fetch>;
-    let invalidateQueries: MockInstance<QueryClient['invalidateQueries']>;
+    let resetQueries: MockInstance<QueryClient['resetQueries']>;
 
     beforeEach(() => {
         vi.clearAllMocks();
         fetch = vi.fn<typeof globalThis.fetch>();
         mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
         mocks.queryClient = new QueryClient();
-        invalidateQueries = vi.spyOn(mocks.queryClient, 'invalidateQueries');
+        resetQueries = vi.spyOn(mocks.queryClient, 'resetQueries');
         mocks.page.url = new URL(`http://localhost/account/verify?token=${token}`);
     });
 
-    it('VerifyEmailAddress_ValidToken_VerifiesWithGetAndRefreshesCurrentUser', async () => {
+    it('VerifyEmailAddress_ValidToken_VerifiesWithGetAndResetsCurrentUser', async () => {
         // Arrange
-        fetch.mockResolvedValue(new Response(null, { status: 200 }));
+        fetch.mockResolvedValue(Response.json({ email_address: 'alice@example.com' }));
 
         // Act
         render(VerifyPage);
@@ -60,8 +60,9 @@ describe('Verify email address page', () => {
         const request = fetch.mock.calls[0]![0] as Request;
         expect(request.url).toBe(`http://localhost/api/v2/users/verify-email-address/${token}`);
         expect(request.method).toBe('GET');
-        expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.me() });
-        expect(mocks.toast.success).toHaveBeenCalledWith('Your email address is verified.');
+        expect(resetQueries).toHaveBeenCalledWith({ exact: true, queryKey: queryKeys.me() });
+        // The link may belong to a different account than the one signed in, so name the address it verified.
+        expect(mocks.toast.success).toHaveBeenCalledWith('Verified alice@example.com.');
         expect(mocks.toast.error).not.toHaveBeenCalled();
     });
 
@@ -80,7 +81,7 @@ describe('Verify email address page', () => {
         await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/account/manage'));
         expect(mocks.toast.error).toHaveBeenCalledWith(expect.stringContaining(message));
         expect(mocks.toast.success).not.toHaveBeenCalled();
-        expect(invalidateQueries).not.toHaveBeenCalled();
+        expect(resetQueries).not.toHaveBeenCalled();
     });
 
     it('VerifyEmailAddress_MissingToken_ExplainsWithoutCallingApi', async () => {

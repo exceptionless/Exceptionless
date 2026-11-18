@@ -15,6 +15,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Serializer;
@@ -958,6 +959,72 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var regressedEvent = contexts.First(c => c.IsRegression).Event;
         Assert.Equal(utcNow.AddMinutes(-1), regressedEvent.Date);
         Assert.Equal("1.0.1-rc3", regressedEvent.GetVersion());
+    }
+
+    [Theory]
+    [InlineData(-3, "1.0.1")]
+    [InlineData(-1, "1.0.2")]
+    public async Task RunAsync_MixedVersionsForFixedStack_DiscardsOnlyOlderVersionEvents(int olderEventMinutes, string regressedVersion)
+    {
+        // Arrange
+        var utcNow = TimeProvider.GetUtcNow();
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        organization.HasPremiumFeatures = true;
+        var project = _projectData.GenerateSampleProject();
+        var ev = _eventData.GenerateEvent(projectId: project.Id, organizationId: organization.Id, occurrenceDate: utcNow.AddMinutes(-5));
+        var context = new EventContext(ev, organization, project);
+        await _pipeline.RunAsync(context);
+        await RefreshDataAsync();
+
+        Assert.False(context.HasError, context.ErrorMessage);
+        ev = await _eventRepository.GetByIdAsync(ev.Id);
+        Assert.NotNull(ev);
+
+        var stack = await _stackRepository.GetByIdAsync(ev.StackId);
+        Assert.NotNull(stack);
+        stack.MarkFixed(new SemanticVersion(1, 0, 1), TimeProvider);
+        await _stackRepository.SaveAsync(stack, o => o.Cache());
+
+        project.NotificationSettings[TestConstants.UserId] = new NotificationSettings { ReportEventRegressions = true };
+        var notificationQueue = GetService<IQueue<EventNotification>>();
+        var olderContext = new EventContext(_eventData.GenerateEvent(stackId: ev.StackId, projectId: project.Id, organizationId: organization.Id, occurrenceDate: utcNow.AddMinutes(olderEventMinutes), semver: "1.0.0"), organization, project);
+        var newerContext = new EventContext(_eventData.GenerateEvent(stackId: ev.StackId, projectId: project.Id, organizationId: organization.Id, occurrenceDate: utcNow.AddMinutes(-2), semver: regressedVersion), organization, project);
+        var latestContext = new EventContext(_eventData.GenerateEvent(stackId: ev.StackId, projectId: project.Id, organizationId: organization.Id, occurrenceDate: utcNow, semver: "1.0.3"), organization, project);
+        await RefreshDataAsync();
+
+        // Act
+        await _pipeline.RunAsync([latestContext, olderContext, newerContext]);
+
+        // Assert
+        Assert.False(olderContext.HasError, olderContext.ErrorMessage);
+        Assert.False(newerContext.HasError, newerContext.ErrorMessage);
+        Assert.False(latestContext.HasError, latestContext.ErrorMessage);
+        Assert.True(olderContext.IsDiscarded);
+        Assert.True(olderContext.IsCancelled);
+        Assert.False(olderContext.IsProcessed);
+        Assert.False(olderContext.IsRegression);
+        Assert.False(newerContext.IsDiscarded);
+        Assert.True(newerContext.IsRegression);
+        Assert.True(newerContext.IsProcessed);
+        Assert.False(latestContext.IsDiscarded);
+        Assert.False(latestContext.IsRegression);
+        Assert.True(latestContext.IsProcessed);
+        Assert.Equal(StackStatus.Regressed, newerContext.Stack?.Status);
+        Assert.Equal(StackStatus.Regressed, latestContext.Stack?.Status);
+
+        var savedEvent = await _eventRepository.GetByIdAsync(newerContext.Event.Id);
+        Assert.NotNull(savedEvent);
+        Assert.Equal(regressedVersion, savedEvent.GetVersion());
+        var savedStack = await _stackRepository.GetByIdAsync(stack.Id);
+        Assert.Equal(StackStatus.Regressed, savedStack?.Status);
+
+        var queueStats = await notificationQueue.GetQueueStatsAsync();
+        Assert.Equal(1, queueStats.Queued);
+        var notification = await notificationQueue.DequeueAsync(TestCancellationToken);
+        Assert.NotNull(notification);
+        Assert.Equal(newerContext.Event.Id, notification.Value.EventId);
+        Assert.True(notification.Value.IsRegression);
+        await notification.CompleteAsync();
     }
 
     [Theory]

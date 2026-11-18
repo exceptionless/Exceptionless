@@ -46,7 +46,7 @@ public sealed class AssistantDiagnosticsTests
     [Theory]
     [InlineData("empty_response")]
     [InlineData("output_limit")]
-    [InlineData("malformed_response")]
+    [InlineData("incomplete_stream")]
     [InlineData("tool_round_limit")]
     [InlineData("usage_limit")]
     public async Task WriteResponseAsync_StreamedError_RecordsCorrelatedFailureWithoutChangingResponse(string reason)
@@ -295,6 +295,17 @@ public sealed class AssistantDiagnosticsTests
         Assert.Null(provider.ReasoningTokens);
         Assert.Equal("unknown", provider.FinishReason);
         Assert.DoesNotContain("private", Assert.Single(logger.Entries).Message);
+    }
+
+    [Fact]
+    public void StartTool_CountEvents_RecordsTheToolName()
+    {
+        var logger = new RecordingAssistantLogger();
+        using var diagnostics = new AssistantTurnDiagnostics(logger, TimeProvider.System, "organization-id", "conversation-id", "request-id");
+
+        diagnostics.StartTool("count_events");
+
+        Assert.Equal("count_events", diagnostics.LastTool);
     }
 
     [Fact]
