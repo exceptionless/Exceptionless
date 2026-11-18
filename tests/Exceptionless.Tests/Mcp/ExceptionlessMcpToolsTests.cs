@@ -407,7 +407,7 @@ public sealed class ExceptionlessMcpToolsTests : IntegrationTestsBase
             client =>
             {
                 Assert.Equal("JavaScript / Node.js", client.Name);
-                Assert.Equal("legacy", client.Status);
+                Assert.Equal("current", client.Status);
             });
         Assert.DoesNotContain(setup.Clients, client => client.Name is "Python" or "Java" or "Ruby" or "PHP");
     }
