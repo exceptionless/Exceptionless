@@ -49,6 +49,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
         AddIndex(SavedViews = new SavedViewIndex(this));
         AddIndex(SystemSettings = new SystemSettingsIndex(this));
         AddIndex(Tokens = new TokenIndex(this));
+        AddIndex(TrialClaims = new TrialClaimIndex(this));
         AddIndex(Users = new UserIndex(this));
         AddIndex(WebHooks = new WebHookIndex(this));
     }
@@ -80,6 +81,7 @@ public sealed class ExceptionlessElasticConfiguration : ElasticConfiguration, IS
     public SavedViewIndex SavedViews { get; }
     public SystemSettingsIndex SystemSettings { get; }
     public TokenIndex Tokens { get; }
+    public TrialClaimIndex TrialClaims { get; }
     public UserIndex Users { get; }
     public WebHookIndex WebHooks { get; }
 

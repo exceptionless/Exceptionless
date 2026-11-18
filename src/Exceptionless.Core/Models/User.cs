@@ -55,6 +55,11 @@ public record User : IIdentity, IHaveDates, IValidatableObject
     public DateTime VerifyEmailAddressTokenExpiration { get; set; }
 
     /// <summary>
+    /// Date the user started their one no-card trial.
+    /// </summary>
+    public DateTime? TrialStartedUtc { get; set; }
+
+    /// <summary>
     /// Gets or sets the users active state.
     /// </summary>
     public bool IsActive { get; init; } = true;

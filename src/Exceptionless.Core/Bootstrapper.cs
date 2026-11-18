@@ -159,6 +159,7 @@ public class Bootstrapper
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
         services.AddSingleton<ISavedViewRepository, SavedViewRepository>();
         services.AddSingleton<ISystemSettingsRepository, SystemSettingsRepository>();
+        services.AddSingleton<ITrialClaimRepository, TrialClaimRepository>();
         services.AddSingleton<ITokenRepository, TokenRepository>();
 
         services.AddSingleton<IGeocodeService, NullGeocodeService>();
@@ -533,6 +534,7 @@ public class Bootstrapper
         services.AddDistributedCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
         services.AddDistributedCronJob<DownloadGeoIPDatabaseJob>(Cron.Daily(1));
         services.AddDistributedCronJob<MaintainIndexesJob>("10 */2 * * *");
+        services.AddDistributedCronJob<TrialExpirationJob>("15 * * * *");
 
         var logger = loggerFactory.CreateLogger<Bootstrapper>();
         logger.LogWarning("Jobs running in process");

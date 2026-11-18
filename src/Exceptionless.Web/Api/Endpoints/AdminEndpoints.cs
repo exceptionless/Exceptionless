@@ -1,5 +1,6 @@
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Services;
 using Exceptionless.Web.Api.Filters;
 using Exceptionless.Web.Api.Messages;
@@ -91,6 +92,25 @@ public static class AdminEndpoints
             .WithTags(nameof(AdminEndpoints))
             .WithSummary("Update event submission settings");
 
+        endpoints.MapGet("api/v2/admin/trial-settings", GetTrialSettingsAsync)
+            .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+            .Produces<TrialSettings>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .WithTags(nameof(AdminEndpoints))
+            .WithSummary("Get free trial settings");
+
+        endpoints.MapPut("api/v2/admin/trial-settings", UpdateTrialSettingsAsync)
+            .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
+            .AddEndpointFilter<AutoValidationEndpointFilter>()
+            .Accepts<UpdateTrialSettings>("application/json", "application/*+json")
+            .Produces<TrialSettings>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .WithTags(nameof(AdminEndpoints))
+            .WithSummary("Update free trial settings");
+
         endpoints.MapGet("api/v2/admin/assistant-usage", GetAssistantUsageAsync)
             .RequireAuthorization(AuthorizationRoles.GlobalAdminPolicy)
             .AddEndpointFilter<AutoValidationEndpointFilter>()
@@ -99,8 +119,8 @@ public static class AdminEndpoints
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status403Forbidden);
 
-        group.MapPost("change-plan", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string organizationId, string planId)
-            => (await mediator.InvokeAsync<Result<object>>(new AdminChangePlan(organizationId, planId, httpContext))).ToHttpResult(resultMapper));
+        group.MapPost("change-plan", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string organizationId, string planId, DateTimeOffset? trialEndsUtc = null)
+            => (await mediator.InvokeAsync<Result<object>>(new AdminChangePlan(organizationId, planId, httpContext, trialEndsUtc))).ToHttpResult(resultMapper));
 
         group.MapPost("set-bonus", async (HttpContext httpContext, IMediator mediator, IMediatorResultMapper<HttpIResult> resultMapper, string organizationId, int bonusEvents, DateTime? expires = null)
             => (await mediator.InvokeAsync<Result>(new AdminSetBonus(organizationId, bonusEvents, expires, httpContext))).ToHttpResult(resultMapper));
@@ -152,6 +172,25 @@ public static class AdminEndpoints
         var settings = await settingsService.UpdateAsync(httpContext.Request.GetUser().Id, value => value.EventSubmissionEnabled = enabledOverride);
         return HttpResults.Ok(CreateEventSubmissionSettings(settings.EventSubmissionEnabled, appOptions));
     }
+
+    private static async Task<HttpIResult> GetTrialSettingsAsync(SystemSettingsService settingsService)
+    {
+        var settings = await settingsService.GetAsync();
+        return HttpResults.Ok(CreateTrialSettings(settings?.TrialBlockedEmailDomains));
+    }
+
+    private static async Task<HttpIResult> UpdateTrialSettingsAsync(
+        HttpContext httpContext,
+        [FromBody] UpdateTrialSettings request,
+        SystemSettingsService settingsService)
+    {
+        var blockedEmailDomains = request.BlockedEmailDomains is null ? null : TrialEmailAddress.NormalizeDomains(request.BlockedEmailDomains);
+        var settings = await settingsService.UpdateAsync(httpContext.Request.GetUser().Id, value => value.TrialBlockedEmailDomains = blockedEmailDomains);
+        return HttpResults.Ok(CreateTrialSettings(settings.TrialBlockedEmailDomains));
+    }
+
+    private static TrialSettings CreateTrialSettings(List<string>? blockedEmailDomains)
+        => new(blockedEmailDomains ?? TrialEmailAddress.DefaultBlockedDomains, TrialEmailAddress.DefaultBlockedDomains, blockedEmailDomains is null);
 
     private static EventSubmissionSettings CreateEventSubmissionSettings(bool? enabledOverride, AppOptions appOptions)
     {
