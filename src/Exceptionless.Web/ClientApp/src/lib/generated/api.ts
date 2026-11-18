@@ -872,6 +872,11 @@ export interface UserSavedViewOrderPreference {
   saved_view_ids: string[];
 }
 
+/** The account whose email address the link verified, which may not be the account that's signed in. */
+export interface VerifyEmailAddressResult {
+  email_address: string;
+}
+
 export interface ViewBackgroundTask {
   /** @pattern ^[a-fA-F0-9]{24}$ */
   id: string;
@@ -936,11 +941,6 @@ export interface ViewBulkOperationSelection {
    * @format date-time
    */
   utc_end?: null | string;
-}
-
-/** The account whose email address the link verified, which may not be the account that's signed in. */
-export interface VerifyEmailAddressResult {
-  email_address: string;
 }
 
 export interface ViewCurrentUser {

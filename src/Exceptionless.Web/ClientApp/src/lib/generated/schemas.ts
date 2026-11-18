@@ -1017,6 +1017,13 @@ export type UserSavedViewOrderPreferenceFormData = Infer<
   typeof UserSavedViewOrderPreferenceSchema
 >;
 
+export const VerifyEmailAddressResultSchema = object({
+  email_address: email(),
+});
+export type VerifyEmailAddressResultFormData = Infer<
+  typeof VerifyEmailAddressResultSchema
+>;
+
 export const ViewBackgroundTaskSchema = object({
   id: string()
     .length(24, "Id must be exactly 24 characters")
@@ -1060,13 +1067,6 @@ export const ViewBulkOperationSelectionSchema = object({
 });
 export type ViewBulkOperationSelectionFormData = Infer<
   typeof ViewBulkOperationSelectionSchema
->;
-
-export const VerifyEmailAddressResultSchema = object({
-  email_address: email(),
-});
-export type VerifyEmailAddressResultFormData = Infer<
-  typeof VerifyEmailAddressResultSchema
 >;
 
 export const ViewCurrentUserSchema = object({

@@ -14831,6 +14831,18 @@
           }
         }
       },
+      "VerifyEmailAddressResult": {
+        "required": [
+          "email_address"
+        ],
+        "type": "object",
+        "properties": {
+          "email_address": {
+            "type": "string"
+          }
+        },
+        "description": "The account whose email address the link verified, which may not be the account that\u0027s signed in."
+      },
       "ViewBackgroundTask": {
         "required": [
           "id",
@@ -15001,18 +15013,6 @@
           }
         },
         "description": "What a bulk action applies to. Only set for bulk actions."
-      },
-      "VerifyEmailAddressResult": {
-        "required": [
-          "email_address"
-        ],
-        "type": "object",
-        "properties": {
-          "email_address": {
-            "type": "string"
-          }
-        },
-        "description": "The account whose email address the link verified, which may not be the account that\u0027s signed in."
       },
       "ViewCurrentUser": {
         "required": [
