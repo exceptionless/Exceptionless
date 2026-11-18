@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ViewCurrentUser } from './models';
 
-import { queryKeys, setCurrentUserSavedViewDefault, setCurrentUserSavedViewOrder } from './api.svelte';
+import { invalidateUserQueries, queryKeys, setCurrentUserSavedViewDefault, setCurrentUserSavedViewOrder } from './api.svelte';
 
 describe('setCurrentUserSavedViewDefault', () => {
     it('replaces duplicate organization preferences in the current-user cache', () => {
@@ -108,5 +108,33 @@ describe('setCurrentUserSavedViewOrder', () => {
                 view_type: 'events'
             }
         ]);
+    });
+});
+
+describe('invalidateUserQueries', () => {
+    it('reports a change to the signed-in user so their Exie access is refreshed', async () => {
+        // Arrange
+        const queryClient = new QueryClient();
+        queryClient.setQueryData(queryKeys.me(), { id: 'user-id', is_email_address_verified: true } as ViewCurrentUser);
+
+        // Act
+        const changed = await invalidateUserQueries(queryClient, { id: 'user-id' } as Parameters<typeof invalidateUserQueries>[1]);
+
+        // Assert
+        expect(changed).toBe(true);
+        expect(queryClient.getQueryState(queryKeys.me())?.isInvalidated).toBe(true);
+    });
+
+    it('ignores changes to other users', async () => {
+        // Arrange
+        const queryClient = new QueryClient();
+        queryClient.setQueryData(queryKeys.me(), { id: 'user-id' } as ViewCurrentUser);
+
+        // Act
+        const changed = await invalidateUserQueries(queryClient, { id: 'other-user-id' } as Parameters<typeof invalidateUserQueries>[1]);
+
+        // Assert
+        expect(changed).toBe(false);
+        expect(queryClient.getQueryState(queryKeys.me())?.isInvalidated).toBe(false);
     });
 });

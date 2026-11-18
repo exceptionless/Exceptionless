@@ -5,7 +5,6 @@ namespace Exceptionless.Web.Mcp;
 
 public static class McpToolResultFilter
 {
-    private static readonly JsonSerializerOptions s_jsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly string[] s_removedTimeArguments = ["last", "startUtc", "endUtc"];
 
     public static CallToolResult MarkStructuredErrors(CallToolResult result)
@@ -40,7 +39,7 @@ public static class McpToolResultFilter
             message += " Pass a time range in time instead, using date math such as [now-24h TO now] or [now/d TO now/d] for today.";
 
         var response = McpResponse<object>.Failed(McpErrors.InvalidArgument(message, unknown, allowed));
-        var structuredContent = JsonSerializer.SerializeToElement(response, s_jsonOptions);
+        var structuredContent = JsonSerializer.SerializeToElement(response, McpJsonSerializerOptions.Default);
         return new CallToolResult
         {
             Content = [new TextContentBlock { Text = structuredContent.GetRawText() }],

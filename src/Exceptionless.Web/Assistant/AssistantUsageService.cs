@@ -60,6 +60,13 @@ public sealed class AssistantUsageService(
                 "This organization has reached Exie's monthly AI cost limit."));
         }
 
+        var sharedDailyCostDecision = await GetSharedDailyCostDecisionAsync(planOptions, now);
+        if (sharedDailyCostDecision is not null)
+        {
+            await TryRecordUsageAsync(organizationId, new AssistantUsageIncrement { BlockedByCostLimit = 1 });
+            return AssistantTurnReservation.Blocked(sharedDailyCostDecision);
+        }
+
         if (monthlyUsage.TotalTokens >= planOptions.MaximumMonthlyTokens)
         {
             await TryRecordUsageAsync(organizationId, new AssistantUsageIncrement { BlockedByTokenLimit = 1 });
@@ -129,6 +136,13 @@ public sealed class AssistantUsageService(
                 "This organization reached Exie's monthly AI cost limit while completing the response.");
         }
 
+        var sharedDailyCostDecision = await GetSharedDailyCostDecisionAsync(planOptions, now);
+        if (sharedDailyCostDecision is not null)
+        {
+            await TryRecordUsageAsync(organizationId, new AssistantUsageIncrement { BlockedByCostLimit = 1 });
+            return sharedDailyCostDecision;
+        }
+
         if (monthlyUsage.TotalTokens >= planOptions.MaximumMonthlyTokens)
         {
             await TryRecordUsageAsync(organizationId, new AssistantUsageIncrement { BlockedByTokenLimit = 1 });
@@ -169,9 +183,37 @@ public sealed class AssistantUsageService(
         };
     }
 
-    public async Task<AssistantProviderUsageLifecycle> StartProviderRequestAsync(string? organizationId, int providerInputCharacters = 0)
+    public async Task<AssistantProviderUsageLifecycle> StartProviderRequestAsync(string? organizationId, int providerInputCharacters = 0, AssistantPlanOptions? planOptions = null)
     {
         var reservation = await RecordProviderRequestStartedAsync(organizationId, providerInputCharacters);
+        if (planOptions is { SharedDailyCostLimitKey: { } sharedDailyCostLimitKey, MaximumSharedDailyCostUsd: > 0 } && reservation.CostInMicrodollars is > 0)
+        {
+            // Count the estimate immediately so concurrent turns can't all pass the shared limit before any cost lands.
+            var sharedReservation = reservation with { SharedDailyCostLimitKey = sharedDailyCostLimitKey };
+            long? sharedDailyCost = await IncrementSharedDailyCostAsync(sharedReservation, sharedReservation.CostInMicrodollars);
+
+            if (sharedDailyCost is null)
+            {
+                // The shared increment may not have been applied, so only release the monthly reservation.
+                await ReleaseProviderReservationAsync(organizationId, reservation);
+                throw new AssistantProviderException("Exie is temporarily unavailable. Try again in a moment.") { FailureCode = "usage_unavailable" };
+            }
+
+            reservation = sharedReservation;
+
+            // Increments are atomic, so only the request that crosses the limit sees a total below it before its own
+            // estimate. Every later request is rejected, which keeps a burst within one estimate of the limit.
+            if (sharedDailyCost - sharedReservation.CostInMicrodollars >= ToMicrodollars(planOptions.MaximumSharedDailyCostUsd))
+            {
+                await ReleaseProviderReservationAsync(organizationId, reservation);
+                if (!String.IsNullOrWhiteSpace(organizationId))
+                    await TryRecordUsageAsync(organizationId, new AssistantUsageIncrement { BlockedByCostLimit = 1 });
+
+                logger.LogWarning("Assistant shared daily cost limit reached for {SharedDailyCostLimitKey}", sharedDailyCostLimitKey);
+                throw new AssistantProviderException(SharedDailyCostLimitMessage) { FailureCode = "usage_limit" };
+            }
+        }
+
         return new AssistantProviderUsageLifecycle(this, organizationId, reservation);
     }
 
@@ -220,9 +262,7 @@ public sealed class AssistantUsageService(
         if (String.IsNullOrWhiteSpace(organizationId) || !reservation.HasValue)
             return;
 
-        var usageDate = reservation.UsageDateUtc is { } date
-            ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
-            : timeProvider.GetUtcNow();
+        var usageDate = GetUsageDate(reservation);
         var month = reservation is { MonthId: not null, ExpiresAtUtc: not null }
             ? new UsageWindow(reservation.MonthId, reservation.ExpiresAtUtc.Value)
             : GetMonthWindow(usageDate);
@@ -235,6 +275,8 @@ public sealed class AssistantUsageService(
             costInMicrodollars: 0,
             reservation,
             reverse: false);
+
+        await IncrementSharedDailyCostAsync(reservation, -reservation.CostInMicrodollars);
     }
 
     private async Task RecordProviderUsageAsync(
@@ -250,9 +292,7 @@ public sealed class AssistantUsageService(
         if (reservation is { MonthId: not null, ExpiresAtUtc: not null })
         {
             month = new UsageWindow(reservation.MonthId, reservation.ExpiresAtUtc.Value);
-            usageDate = reservation.UsageDateUtc is { } date
-                ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc))
-                : timeProvider.GetUtcNow();
+            usageDate = GetUsageDate(reservation);
         }
         else
         {
@@ -293,7 +333,59 @@ public sealed class AssistantUsageService(
                 reverse: true);
             throw;
         }
+
+        if (reservation is not null)
+            await IncrementSharedDailyCostAsync(reservation, costInMicrodollars - reservation.CostInMicrodollars);
     }
+
+    /// <summary>
+    /// Adjusts the shared daily cost counter for a reservation's day. The estimate is added when the provider
+    /// request starts, then replaced by the actual cost or removed when the reservation is released.
+    /// </summary>
+    /// <returns>The new shared daily cost, or null when the adjustment was skipped or could not be confirmed.</returns>
+    private async Task<long?> IncrementSharedDailyCostAsync(AssistantProviderReservation reservation, long costInMicrodollars)
+    {
+        if (reservation.SharedDailyCostLimitKey is not { } sharedDailyCostLimitKey || costInMicrodollars is 0)
+            return null;
+
+        var usageDate = GetUsageDate(reservation);
+        var day = GetDayWindow(usageDate);
+
+        // Reconciliation runs after durable usage is recorded, so a failure here must not cause that usage to be
+        // recorded again. Return null so admission can reject a request whose reservation could not be confirmed.
+        try
+        {
+            long total = await _cache.IncrementAsync(GetSharedDailyCostKey(sharedDailyCostLimitKey, day.Id), costInMicrodollars, day.ResetAtUtc.UtcDateTime);
+            return total;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unable to update the shared daily assistant cost for {SharedDailyCostLimitKey}: {Message}", sharedDailyCostLimitKey, ex.Message);
+            return null;
+        }
+    }
+
+    private const string SharedDailyCostLimitMessage = "Exie is at capacity for trial organizations right now. Upgrade your plan for guaranteed access.";
+
+    private async Task<AssistantUsageDecision?> GetSharedDailyCostDecisionAsync(AssistantPlanOptions planOptions, DateTimeOffset utcNow)
+    {
+        if (planOptions is not { SharedDailyCostLimitKey: { } sharedDailyCostLimitKey, MaximumSharedDailyCostUsd: > 0 })
+            return null;
+
+        var day = GetDayWindow(utcNow);
+        var cost = await _cache.GetAsync<long>(GetSharedDailyCostKey(sharedDailyCostLimitKey, day.Id));
+        if (!cost.HasValue || cost.Value < ToMicrodollars(planOptions.MaximumSharedDailyCostUsd))
+            return null;
+
+        logger.LogWarning("Assistant shared daily cost limit reached for {SharedDailyCostLimitKey}", sharedDailyCostLimitKey);
+        return AssistantUsageDecision.Blocked(
+            AssistantUsageLimit.SharedDailyCost,
+            day.ResetAtUtc,
+            SharedDailyCostLimitMessage);
+    }
+
+    private static string GetSharedDailyCostKey(string sharedDailyCostLimitKey, string dayId)
+        => $"shared:{sharedDailyCostLimitKey}:usage:{dayId}:cost-microdollars";
 
     private async Task UpdateProviderUsageCacheWithInitializationAsync(
         string organizationId,
@@ -477,6 +569,19 @@ public sealed class AssistantUsageService(
         return new UsageWindow(id.ToString(), DateTimeOffset.FromUnixTimeSeconds((id + 1) * 60));
     }
 
+    /// <summary>
+    /// When the reserved provider request started, so its cost lands in that day and month even if it finishes after
+    /// midnight.
+    /// </summary>
+    private DateTimeOffset GetUsageDate(AssistantProviderReservation reservation)
+        => reservation.UsageDateUtc is { } usageDateUtc ? new DateTimeOffset(usageDateUtc.Ticks, TimeSpan.Zero) : timeProvider.GetUtcNow();
+
+    private static UsageWindow GetDayWindow(DateTimeOffset utcNow)
+    {
+        var utcStartDate = utcNow.UtcDateTime.Date;
+        return new UsageWindow(utcStartDate.ToString("yyyyMMdd"), utcStartDate.AddDays(1));
+    }
+
     private static UsageWindow GetMonthWindow(DateTimeOffset now)
     {
         var start = new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero);
@@ -511,7 +616,8 @@ public enum AssistantUsageLimit
     ConcurrentTurns,
     MinuteTurns,
     MonthlyTokens,
-    MonthlyCost
+    MonthlyCost,
+    SharedDailyCost
 }
 
 public sealed record AssistantUsageDecision(
@@ -535,6 +641,7 @@ public sealed record AssistantProviderReservation(long PromptTokens, long Comple
     internal string? MonthId { get; init; }
     internal DateTimeOffset? ExpiresAtUtc { get; init; }
     internal DateTime? UsageDateUtc { get; init; }
+    internal string? SharedDailyCostLimitKey { get; init; }
 }
 
 public sealed class AssistantProviderUsageLifecycle : IAsyncDisposable

@@ -26,7 +26,7 @@
     <Tooltip.Content class="max-w-xs">
         <div class="flex flex-wrap gap-1">
             {#each application.scopes as scope (scope)}
-                <Badge variant={scope === 'stacks:write' ? 'amber' : 'secondary'}>{scope}</Badge>
+                <Badge variant={scope.endsWith(':write') ? 'amber' : 'secondary'}>{scope}</Badge>
             {/each}
         </div>
     </Tooltip.Content>

@@ -6,6 +6,15 @@ public class BillingPlans
 {
     public BillingPlans(AppOptions options)
     {
+        var trialAssistantOptions = new AssistantPlanOptions
+        {
+            MaximumConcurrentTurns = 1,
+            MaximumTurnsPerMinute = 5,
+            MaximumMonthlyTokens = 5_000_000,
+            MaximumMonthlyCostUsd = 1m,
+            SharedDailyCostLimitKey = "trial",
+            MaximumSharedDailyCostUsd = options.BillingOptions?.TrialAssistantDailyCostLimitUsd ?? 0
+        };
         var mediumAssistantOptions = new AssistantPlanOptions
         {
             MaximumConcurrentTurns = 2,
@@ -55,14 +64,29 @@ public class BillingPlans
             HasPremiumFeatures = false
         };
 
+        TrialPlan = new BillingPlan
+        {
+            Id = "EX_TRIAL",
+            Name = "Trial",
+            Description = "Free Trial",
+            IsHidden = true,
+            Price = 0,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
+            RetentionDays = 90,
+            MaxEventsPerMonth = 75000,
+            HasPremiumFeatures = true,
+            Assistant = trialAssistantOptions
+        };
+
         SmallPlan = new BillingPlan
         {
             Id = "EX_SMALL",
             Name = "Small",
             Description = "Small ($15/month)",
             Price = 15,
-            MaxProjects = 5,
-            MaxUsers = 10,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = 30,
             MaxEventsPerMonth = 15000,
             HasPremiumFeatures = true
@@ -74,8 +98,8 @@ public class BillingPlans
             Name = "Small (Yearly)",
             Description = "Small Yearly ($165/year - Save $15)",
             Price = 165,
-            MaxProjects = 5,
-            MaxUsers = 10,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = 30,
             MaxEventsPerMonth = 15000,
             HasPremiumFeatures = true
@@ -87,8 +111,8 @@ public class BillingPlans
             Name = "Medium",
             Description = "Medium ($49/month)",
             Price = 49,
-            MaxProjects = 15,
-            MaxUsers = 25,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = 90,
             MaxEventsPerMonth = 75000,
             HasPremiumFeatures = true,
@@ -101,8 +125,8 @@ public class BillingPlans
             Name = "Medium (Yearly)",
             Description = "Medium Yearly ($539/year - Save $49)",
             Price = 539,
-            MaxProjects = 15,
-            MaxUsers = 25,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = 90,
             MaxEventsPerMonth = 75000,
             HasPremiumFeatures = true,
@@ -115,8 +139,8 @@ public class BillingPlans
             Name = "Large",
             Description = "Large ($99/month)",
             Price = 99,
-            MaxProjects = -1,
-            MaxUsers = -1,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = 180,
             MaxEventsPerMonth = 250000,
             HasPremiumFeatures = true,
@@ -129,8 +153,8 @@ public class BillingPlans
             Name = "Large (Yearly)",
             Description = "Large Yearly ($1,089/year - Save $99)",
             Price = 1089,
-            MaxProjects = -1,
-            MaxUsers = -1,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = 180,
             MaxEventsPerMonth = 250000,
             HasPremiumFeatures = true,
@@ -143,8 +167,8 @@ public class BillingPlans
             Name = "Extra Large",
             Description = "Extra Large ($199/month)",
             Price = 199,
-            MaxProjects = -1,
-            MaxUsers = -1,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = 180,
             MaxEventsPerMonth = 1000000,
             HasPremiumFeatures = true,
@@ -157,8 +181,8 @@ public class BillingPlans
             Name = "Extra Large (Yearly)",
             Description = "Extra Large Yearly ($2,189/year - Save $199)",
             Price = 2189,
-            MaxProjects = -1,
-            MaxUsers = -1,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = 180,
             MaxEventsPerMonth = 1000000,
             HasPremiumFeatures = true,
@@ -171,8 +195,8 @@ public class BillingPlans
             Name = "Enterprise",
             Description = "Enterprise ($499/month)",
             Price = 499,
-            MaxProjects = -1,
-            MaxUsers = -1,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = 180,
             MaxEventsPerMonth = 3000000,
             HasPremiumFeatures = true,
@@ -185,8 +209,8 @@ public class BillingPlans
             Name = "Enterprise (Yearly)",
             Description = "Enterprise Yearly ($5,489/year - Save $499)",
             Price = 5489,
-            MaxProjects = -1,
-            MaxUsers = -1,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = 180,
             MaxEventsPerMonth = 3000000,
             HasPremiumFeatures = true,
@@ -200,18 +224,23 @@ public class BillingPlans
             Description = "Unlimited",
             IsHidden = true,
             Price = 0,
-            MaxProjects = -1,
-            MaxUsers = -1,
+            MaxProjects = BillingPlan.Unlimited,
+            MaxUsers = BillingPlan.Unlimited,
             RetentionDays = options.MaximumRetentionDays,
             MaxEventsPerMonth = -1,
             HasPremiumFeatures = true,
             Assistant = unlimitedAssistantOptions
         };
 
-        Plans = new List<BillingPlan> { FreePlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, ExtraLargeYearlyPlan, EnterpriseYearlyPlan, SmallPlan, MediumPlan, LargePlan, ExtraLargePlan, EnterprisePlan, UnlimitedPlan };
+        Plans = new List<BillingPlan> { FreePlan, TrialPlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, ExtraLargeYearlyPlan, EnterpriseYearlyPlan, SmallPlan, MediumPlan, LargePlan, ExtraLargePlan, EnterprisePlan, UnlimitedPlan };
     }
 
     public BillingPlan FreePlan { get; }
+
+    /// <summary>
+    /// Hidden no-card trial with Medium plan features. Trial organizations move to the free plan when the trial ends.
+    /// </summary>
+    public BillingPlan TrialPlan { get; }
 
     public BillingPlan SmallPlan { get; }
 
@@ -236,6 +265,12 @@ public class BillingPlans
     public BillingPlan UnlimitedPlan { get; }
 
     public List<BillingPlan> Plans { get; }
+
+    public bool IsFreePlan(string? planId) => String.Equals(planId, FreePlan.Id, StringComparison.OrdinalIgnoreCase);
+
+    public bool IsTrialPlan(string? planId) => String.Equals(planId, TrialPlan.Id, StringComparison.OrdinalIgnoreCase);
+
+    public bool IsFreeOrTrialPlan(string? planId) => IsFreePlan(planId) || IsTrialPlan(planId);
 
     public BillingPlan? GetPlan(string? planId) => planId is null
         ? null

@@ -185,3 +185,18 @@ public sealed record McpEventDetails(
     RequestInfo? Request = null,
     EnvironmentInfo? Environment = null,
     DataDictionary? Data = null);
+
+public sealed record McpSavedViewResult(
+    string Id,
+    string OrganizationId,
+    string Name,
+    string Slug,
+    string ViewType,
+    bool IsPrivate,
+    bool IsPredefined,
+    string Url,
+    string? Filter = null,
+    string? Time = null,
+    string? Sort = null,
+    bool? Changed = null,
+    string? Message = null);

@@ -25,6 +25,7 @@ import {
     getSavedViewOverrideSignature,
     getSavedViewStateSignature,
     hasMissingSavedView,
+    hasOpenSavedViewBeenRemoved,
     hasSavedViewAutoFillChange,
     hasSavedViewColumnChanges,
     isSavedViewDraftFilterHistoryEntry,
@@ -34,6 +35,7 @@ import {
     type SavedViewQueryParams,
     setSortQueryParam,
     setTimeQueryParam,
+    shouldRecheckMissingSavedView,
     shouldTrackPendingSavedViewDraft,
     supportsSortQueryParam,
     supportsTimeQueryParam,
@@ -1036,5 +1038,46 @@ describe('useSavedViews', () => {
             // Assert
             expect(updated).toBeUndefined();
         });
+    });
+});
+
+describe('shouldRecheckMissingSavedView', () => {
+    it.each([
+        { expected: true, isFetching: false, isMissing: true, recheckedKey: undefined, scenario: 'first absent from the list' },
+        { expected: true, isFetching: false, isMissing: true, recheckedKey: 'org:other', scenario: 'a different view was rechecked' },
+        { expected: false, isFetching: false, isMissing: true, recheckedKey: 'org:view', scenario: 'already rechecked' },
+        { expected: false, isFetching: true, isMissing: true, recheckedKey: undefined, scenario: 'a newer list is on its way' },
+        { expected: false, isFetching: false, isMissing: false, recheckedKey: undefined, scenario: 'the view is in the list' }
+    ])('returns $expected when $scenario', ({ expected, isFetching, isMissing, recheckedKey }) => {
+        // Act
+        const result = shouldRecheckMissingSavedView(isMissing, isFetching, recheckedKey, 'org:view');
+
+        // Assert
+        expect(result).toBe(expected);
+    });
+});
+
+describe('hasOpenSavedViewBeenRemoved', () => {
+    const opened = { id: 'view-1', key: 'production-errors', organizationId: 'organization-1' };
+
+    it.each([
+        ['the server reported it removed', opened.key, opened.organizationId, true, true],
+        ['it was not reported removed, even if it left a page of the list', opened.key, opened.organizationId, false, false],
+        ['the route moved to another view', 'other-view', opened.organizationId, true, false],
+        ['the organization changed', opened.key, 'organization-2', true, false]
+    ])('when %s', (_, key, organizationId, removed, expected) => {
+        // Act
+        const result = hasOpenSavedViewBeenRemoved(opened, key, organizationId, () => removed);
+
+        // Assert
+        expect(result).toBe(expected);
+    });
+
+    it('is false before a view has been opened', () => {
+        // Act
+        const result = hasOpenSavedViewBeenRemoved(undefined, opened.key, opened.organizationId, () => true);
+
+        // Assert
+        expect(result).toBe(false);
     });
 });

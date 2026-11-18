@@ -27,6 +27,31 @@ public sealed class AssistantToolResultSerializerTests
         Assert.Equal(AssistantRoutes.ProjectConfigure("project id"), document.RootElement.GetProperty("data").GetProperty("webUrl").GetString());
     }
 
+    [Theory]
+    [InlineData("stacks", "/stack/production-errors")]
+    [InlineData("events", "/event/production-errors")]
+    [InlineData("sessions", "/sessions/production-errors")]
+    [InlineData("stream", "/stream?saved=view-id")]
+    public void Serialize_SavedViewResult_LinksToItsPage(string viewType, string expectedUrl)
+    {
+        // Arrange
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
+        var view = new McpSavedViewResult("view-id", "organization-id", "Production errors", "production-errors", viewType, IsPrivate: true, IsPredefined: false, "/api/v2/saved-views/view-id");
+
+        // Act
+        string created = AssistantToolResultSerializer.Serialize("create_saved_view", McpResponse<McpSavedViewResult>.Success(view), options);
+        string listed = AssistantToolResultSerializer.Serialize("list_saved_views", McpResponse<McpListData<McpSavedViewResult>>.Success(new McpListData<McpSavedViewResult>([view])), options);
+        string deleted = AssistantToolResultSerializer.Serialize("delete_saved_view", McpResponse<McpSavedViewResult>.Success(view), options);
+
+        // Assert
+        using var createdDocument = JsonDocument.Parse(created);
+        using var listedDocument = JsonDocument.Parse(listed);
+        using var deletedDocument = JsonDocument.Parse(deleted);
+        Assert.Equal(expectedUrl, createdDocument.RootElement.GetProperty("data").GetProperty("webUrl").GetString());
+        Assert.Equal(expectedUrl, listedDocument.RootElement.GetProperty("data").GetProperty("items")[0].GetProperty("webUrl").GetString());
+        Assert.False(deletedDocument.RootElement.GetProperty("data").TryGetProperty("webUrl", out _));
+    }
+
     [Fact]
     public void Serialize_CountEventsGroupedByStack_LinksEachStack()
     {

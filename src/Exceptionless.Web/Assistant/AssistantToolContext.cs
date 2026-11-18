@@ -18,7 +18,7 @@ public sealed class AssistantToolContext
 
     public bool AllowsScope(string scope)
     {
-        return ToolsEnabled && (scope is AuthorizationRoles.EventsRead or AuthorizationRoles.ProjectsRead or AuthorizationRoles.StacksRead or AuthorizationRoles.StacksWrite);
+        return ToolsEnabled && (scope is AuthorizationRoles.EventsRead or AuthorizationRoles.ProjectsRead or AuthorizationRoles.StacksRead or AuthorizationRoles.StacksWrite or AuthorizationRoles.SavedViewsRead or AuthorizationRoles.SavedViewsWrite);
     }
 
     public bool AllowsOrganization(string organizationId)
