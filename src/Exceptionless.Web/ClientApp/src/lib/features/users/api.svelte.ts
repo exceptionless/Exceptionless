@@ -389,11 +389,15 @@ export async function verifyEmailAddress(queryClient: QueryClient, token: string
     });
 
     if (response.status === 404) {
-        return { status: 'invalid' };
+        return {
+            status: 'invalid'
+        };
     }
 
     if (response.status === 422) {
-        return { status: 'expired' };
+        return {
+            status: 'expired'
+        };
     }
 
     // Reset rather than invalidate so pages never render the cached unverified user while the refetch runs.
@@ -402,7 +406,10 @@ export async function verifyEmailAddress(queryClient: QueryClient, token: string
         queryKey: queryKeys.me()
     });
 
-    return { emailAddress: response.data?.email_address, status: 'verified' };
+    return {
+        emailAddress: response.data?.email_address,
+        status: 'verified'
+    };
 }
 
 function setCurrentUser(queryClient: QueryClient, currentUser: ViewCurrentUser, changes: Partial<ViewCurrentUser>): void {

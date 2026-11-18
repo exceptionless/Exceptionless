@@ -541,13 +541,14 @@ export function postProject() {
                 queryKey: queryKeys.organization(project.organization_id)
             };
             queryClient.setQueriesData<FetchClientResponse<ViewProject[]> | undefined>(organizationProjectsFilter, (response) => {
-                if (!response || response.data?.some((existingProject) => existingProject.id === project.id)) {
+                // The prefix also matches non-list queries for the organization; only extend project arrays.
+                if (!response || !Array.isArray(response.data) || response.data.some((existingProject) => existingProject.id === project.id)) {
                     return response;
                 }
 
                 return {
                     ...response,
-                    data: [...(response.data ?? []), project]
+                    data: [...response.data, project]
                 };
             });
 

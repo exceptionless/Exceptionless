@@ -116,7 +116,12 @@ describe('OrganizationNotifications', () => {
     it.each([
         ['no projects', [], {}, 'Set up your first project'],
         ['no projects on a premium page', [], { premiumFeatureName: 'Sessions', requiresPremium: true }, 'Set up your first project'],
-        ['only unconfigured projects', [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }], {}, "We haven't received any events yet!"]
+        [
+            'only unconfigured projects',
+            [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }],
+            {},
+            "We haven't received any events yet!"
+        ]
     ])('shows setup prompts before upgrade prompts for an organization with %s', (_, organizationProjects, props, title) => {
         // Arrange
         state.organization = createOrganization({ has_premium_features: false, usage: createUsage(2900) });
