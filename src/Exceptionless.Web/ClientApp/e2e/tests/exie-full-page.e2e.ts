@@ -45,8 +45,8 @@ test('Exie opens from navigation and expands without losing the conversation', a
 
         await expect(page).toHaveURL(/\/exie(?:[?#]|$)/);
         await expect(page.locator('[data-assistant-page]')).toBeVisible();
-        await expect(page.getByRole('log', { name: 'Conversation with Exie' })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Clear conversation' })).toBeDisabled();
+        await expect(page.getByText('Hi, I’m Exie. How can I help?')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'New chat' })).toBeDisabled();
         await page.waitForTimeout(200);
         expect(await page.locator('html').getAttribute('data-exie-transition-overlap')).toBe('false');
     });
@@ -55,10 +55,10 @@ test('Exie opens from navigation and expands without losing the conversation', a
         await page.getByRole('link', { name: 'Collapse Exie to side panel' }).click();
         await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
         await expect(page.locator('[data-assistant-panel]')).toBeVisible();
-        await page.getByRole('button', { name: 'Close Exie' }).click();
+        await page.getByRole('button', { exact: true, name: 'Ask Exie' }).click();
 
         await page.goto('/stack?filter=status%3Aopen');
-        await page.getByRole('button', { name: 'Open Exie' }).click();
+        await page.getByRole('button', { exact: true, name: 'Ask Exie' }).click();
         await page.getByRole('textbox', { name: 'Message Exie' }).fill('Keep this conversation when I expand it.');
         await page.getByRole('button', { name: 'Send message' }).click();
         await expect(page.getByText('This conversation followed you into the full-page chat.')).toBeVisible();
@@ -71,7 +71,8 @@ test('Exie opens from navigation and expands without losing the conversation', a
         const fullPageChat = page.locator('[data-assistant-page]');
         await expect(fullPageChat).toBeVisible();
         await expect(fullPageChat.getByText('This conversation followed you into the full-page chat.')).toBeVisible();
-        await expect(fullPageChat.getByRole('button', { name: 'Clear conversation' })).toBeEnabled();
+        await expect(fullPageChat.getByRole('log', { name: 'Conversation with Exie' })).toBeVisible();
+        await expect(fullPageChat.getByRole('button', { name: 'New chat' })).toBeEnabled();
 
         await expect.poll(async () => (await fullPageChat.boundingBox())?.height ?? 0).toBeGreaterThan(500);
         const fullPageBox = await fullPageChat.boundingBox();

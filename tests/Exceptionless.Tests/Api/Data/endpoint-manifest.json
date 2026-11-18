@@ -617,6 +617,34 @@
   },
   {
     "method": "GET",
+    "route": "/api/v2/admin/trial-settings",
+    "displayName": "HTTP: GET api/v2/admin/trial-settings =\u003E GetTrialSettingsAsync",
+    "tags": [
+      "AdminEndpoints"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "PUT",
+    "route": "/api/v2/admin/trial-settings",
+    "displayName": "HTTP: PUT api/v2/admin/trial-settings =\u003E UpdateTrialSettingsAsync",
+    "tags": [
+      "AdminEndpoints"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "GlobalAdminPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
     "route": "/api/v2/assistant/access",
     "displayName": "HTTP: GET api/v2/assistant/access =\u003E GetAccessAsync",
     "tags": [],
@@ -706,20 +734,6 @@
     "authenticationSchemes": []
   },
   {
-    "method": "POST",
-    "route": "/api/v2/auth/facebook",
-    "displayName": "HTTP: POST api/v2/auth/facebook",
-    "tags": [
-      "Auth"
-    ],
-    "allowAnonymous": true,
-    "authorizationPolicies": [
-      "UserPolicy"
-    ],
-    "authorizationRoles": [],
-    "authenticationSchemes": []
-  },
-  {
     "method": "GET",
     "route": "/api/v2/auth/forgot-password/{email:minlength(1)}",
     "displayName": "HTTP: GET api/v2/auth/forgot-password/{email:minlength(1)}",
@@ -777,20 +791,6 @@
   },
   {
     "method": "POST",
-    "route": "/api/v2/auth/live",
-    "displayName": "HTTP: POST api/v2/auth/live",
-    "tags": [
-      "Auth"
-    ],
-    "allowAnonymous": true,
-    "authorizationPolicies": [
-      "UserPolicy"
-    ],
-    "authorizationRoles": [],
-    "authenticationSchemes": []
-  },
-  {
-    "method": "POST",
     "route": "/api/v2/auth/login",
     "displayName": "HTTP: POST api/v2/auth/login",
     "tags": [
@@ -811,6 +811,20 @@
       "Auth"
     ],
     "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/auth/microsoft",
+    "displayName": "HTTP: POST api/v2/auth/microsoft",
+    "tags": [
+      "Auth"
+    ],
+    "allowAnonymous": true,
     "authorizationPolicies": [
       "UserPolicy"
     ],

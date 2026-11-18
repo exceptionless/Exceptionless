@@ -36,33 +36,53 @@ function problemResponse(status: number, title: string) {
 
 describe('Verify email address page', () => {
     let fetch: Mock<typeof globalThis.fetch>;
-    let invalidateQueries: MockInstance<QueryClient['invalidateQueries']>;
+    let resetQueries: MockInstance<QueryClient['resetQueries']>;
 
     beforeEach(() => {
         vi.clearAllMocks();
         fetch = vi.fn<typeof globalThis.fetch>();
         mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
         mocks.queryClient = new QueryClient();
-        invalidateQueries = vi.spyOn(mocks.queryClient, 'invalidateQueries');
+        resetQueries = vi.spyOn(mocks.queryClient, 'resetQueries');
         mocks.page.url = new URL(`http://localhost/account/verify?token=${token}`);
     });
 
-    it('VerifyEmailAddress_ValidToken_VerifiesWithGetAndRefreshesCurrentUser', async () => {
+    function respondAsVerified(verifiedEmail: string, signedInEmail: string) {
+        fetch.mockImplementation(async (input) =>
+            (input as Request).url.endsWith('/users/me')
+                ? Response.json({ email_address: signedInEmail, id: 'user-id', is_email_address_verified: verifiedEmail === signedInEmail })
+                : Response.json({ email_address: verifiedEmail })
+        );
+    }
+
+    it('VerifyEmailAddress_ValidToken_VerifiesWithGetAndContinuesIntoTheApp', async () => {
         // Arrange
-        fetch.mockResolvedValue(new Response(null, { status: 200 }));
+        respondAsVerified('alice@example.com', 'Alice@Example.com');
 
         // Act
         render(VerifyPage);
 
         // Assert
         await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/'));
-        expect(fetch).toHaveBeenCalledOnce();
         const request = fetch.mock.calls[0]![0] as Request;
         expect(request.url).toBe(`http://localhost/api/v2/users/verify-email-address/${token}`);
         expect(request.method).toBe('GET');
-        expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.me() });
-        expect(mocks.toast.success).toHaveBeenCalledWith('Your email address is verified.');
+        expect(resetQueries).toHaveBeenCalledWith({ exact: true, queryKey: queryKeys.me() });
+        expect(mocks.toast.success).toHaveBeenCalledWith('Verified alice@example.com.');
         expect(mocks.toast.error).not.toHaveBeenCalled();
+    });
+
+    it('VerifyEmailAddress_LinkForAnotherAccount_StaysWhereTheSignedInUserCanResend', async () => {
+        // Arrange
+        respondAsVerified('other@example.com', 'alice@example.com');
+
+        // Act
+        render(VerifyPage);
+
+        // Assert
+        await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/account/manage'));
+        // Name the address: the signed-in account is still unverified.
+        expect(mocks.toast.success).toHaveBeenCalledWith('Verified other@example.com.');
     });
 
     it.each([
@@ -80,7 +100,7 @@ describe('Verify email address page', () => {
         await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/account/manage'));
         expect(mocks.toast.error).toHaveBeenCalledWith(expect.stringContaining(message));
         expect(mocks.toast.success).not.toHaveBeenCalled();
-        expect(invalidateQueries).not.toHaveBeenCalled();
+        expect(resetQueries).not.toHaveBeenCalled();
     });
 
     it('VerifyEmailAddress_MissingToken_ExplainsWithoutCallingApi', async () => {

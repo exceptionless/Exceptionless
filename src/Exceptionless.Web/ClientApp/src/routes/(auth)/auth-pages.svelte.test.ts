@@ -24,15 +24,13 @@ vi.mock('#features/auth/index.svelte.ts', async () => {
         accessToken: testAccessToken,
         enableAccountCreation: true,
         enableOAuthLogin: false,
-        facebookClientId: undefined,
-        facebookLogin: vi.fn(),
         gitHubClientId: undefined,
         githubLogin: vi.fn(),
         googleClientId: undefined,
         googleLogin: vi.fn(),
-        liveLogin: vi.fn(),
         logout: mocks.logout,
         microsoftClientId: undefined,
+        microsoftLogin: vi.fn(),
         validateEmailAvailability: vi.fn()
     };
 });

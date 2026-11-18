@@ -19,10 +19,12 @@
         } else {
             try {
                 const result = await verifyEmailAddress(queryClient, token);
-                if (result === 'verified') {
-                    isVerified = true;
-                    toast.success('Your email address is verified.');
-                } else if (result === 'expired') {
+                if (result.status === 'verified') {
+                    // A link for another account leaves this one unverified, so keep the user where they can resend theirs.
+                    isVerified = result.isCurrentUser;
+                    // Name the address: the link may belong to a different account than the one signed in.
+                    toast.success(result.emailAddress ? `Verified ${result.emailAddress}.` : 'Email address verified.');
+                } else if (result.status === 'expired') {
                     toast.error('This verification link has expired. Resend the verification email from your account to get a new link.');
                 } else {
                     toast.error(

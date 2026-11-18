@@ -3,21 +3,19 @@
 
     import { toast } from 'svelte-sonner';
 
-    import FacebookIcon from '#comp/icons/FacebookIcon.svelte';
     import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
     import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
     import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
     import { Button } from '#comp/ui/button/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
     import {
-        facebookClientId,
-        facebookLogin,
+        type ExternalLoginOptions,
         gitHubClientId,
         githubLogin,
         googleClientId,
         googleLogin,
-        liveLogin,
-        microsoftClientId
+        microsoftClientId,
+        microsoftLogin
     } from '#features/auth/index.svelte.ts';
 
     import { getOAuthErrorMessage } from '../oauth-errors';
@@ -35,7 +33,7 @@
         icon: Component<{ class?: string }>;
         id: string;
         label: string;
-        login: (redirectUrl?: string, inviteToken?: null | string) => Promise<void>;
+        login: (options: ExternalLoginOptions) => Promise<void>;
     }
 
     let { disabled = false, inviteToken, mode, redirectUrl }: Props = $props();
@@ -46,7 +44,7 @@
             icon: MicrosoftIcon,
             id: 'microsoft',
             label: 'Microsoft',
-            login: liveLogin
+            login: microsoftLogin
         },
         {
             enabled: !!googleClientId,
@@ -54,13 +52,6 @@
             id: 'google',
             label: 'Google',
             login: googleLogin
-        },
-        {
-            enabled: !!facebookClientId,
-            icon: FacebookIcon,
-            id: 'facebook',
-            label: 'Facebook',
-            login: facebookLogin
         },
         {
             enabled: !!gitHubClientId,
@@ -79,7 +70,10 @@
         pendingProviderId = provider.id;
 
         try {
-            await provider.login(redirectUrl, inviteToken);
+            await provider.login({
+                inviteToken,
+                redirectUrl
+            });
         } catch (error: unknown) {
             const { description, title } = getOAuthErrorMessage(error, provider.label);
             toastId = toast.error(title, {

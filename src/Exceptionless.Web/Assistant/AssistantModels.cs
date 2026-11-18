@@ -5,7 +5,9 @@ public sealed record AssistantChatRequest(
     string? OrganizationId = null,
     string? ProjectId = null,
     string? Path = null,
-    string? ConversationId = null);
+    string? ConversationId = null,
+    // The browser's IANA time zone, used to resolve "today" and "this week".
+    string? TimeZone = null);
 
 public sealed record AssistantChatMessage(string Role, string Content)
 {
@@ -14,22 +16,39 @@ public sealed record AssistantChatMessage(string Role, string Content)
     public string? SuggestedActionPath { get; init; }
 }
 
+// ProjectIds are the projects a result came from. A later turn reuses the result only while all of them still exist
+// in the organization; a successful result with none, such as one recorded before this was tracked, is not reused.
 public sealed record AssistantConversationToolResult(
     string ToolCallId,
     string ToolName,
     string Arguments,
     string Result,
     string? Path,
-    DateTimeOffset CapturedAtUtc);
+    DateTimeOffset CapturedAtUtc,
+    IReadOnlyCollection<string>? ProjectIds = null)
+{
+    /// <summary>The cache serializer omits empty collections, so no projects is read back as missing.</summary>
+    public IReadOnlyCollection<string> ProjectIds { get; init; } = ProjectIds ?? [];
+}
 
-public sealed record AssistantConversationState(IReadOnlyCollection<AssistantConversationToolResult> ToolResults);
+public sealed record AssistantConversationState(IReadOnlyCollection<AssistantConversationToolResult> ToolResults)
+{
+    /// <summary>The cache serializer omits empty collections, so an empty history is read back as missing.</summary>
+    public IReadOnlyCollection<AssistantConversationToolResult> ToolResults { get; init; } = ToolResults ?? [];
+
+    public string? TurnId { get; init; }
+
+    /// <summary>The actions the previous turn asked the user to confirm, which this turn may run once each.</summary>
+    public IReadOnlyCollection<AssistantConversationToolResult> PendingConfirmations { get; init; } = [];
+}
 
 public sealed record AssistantAccessResponse(
     bool Enabled,
     bool HasAccess,
     bool UpgradeRequired,
     string? Message = null,
-    string? MinimumPlanId = null);
+    string? MinimumPlanId = null,
+    bool EmailVerificationRequired = false);
 
 public sealed record AssistantSuggestedAction(string Label, string Prompt, string? Href = null);
 

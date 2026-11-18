@@ -119,7 +119,7 @@ test.describe('in-app legacy navigation', () => {
         await page.getByRole('link', { exact: true, name: 'Historical notification settings' }).click();
 
         await expect(page.getByRole('heading', { exact: true, name: 'Project Notifications' })).toBeVisible();
-        await expect(page.getByRole('button', { exact: true, name: e2eScenario.projectName })).toBeVisible();
+        await expect(page.getByRole('combobox', { exact: true, name: 'Project' })).toHaveText(e2eScenario.projectName);
         const destination = page.url();
         expect(new URL(destination).pathname).toBe('/account/notifications');
         expect(new URL(destination).searchParams.get('from')).toBe('legacy-link');

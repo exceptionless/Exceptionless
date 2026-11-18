@@ -71,8 +71,6 @@ public class AuthEndpointTests : IntegrationTestsBase
     {
         _authOptions.EnableAccountCreation = true;
         _authOptions.EnableActiveDirectoryAuth = false;
-        _authOptions.FacebookId = "facebook-client-id";
-        _authOptions.FacebookSecret = "facebook-client-secret";
         _authOptions.GitHubId = "github-client-id";
         _authOptions.GitHubSecret = "github-client-secret";
         _authOptions.GoogleId = "google-client-id";
@@ -521,16 +519,19 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task FacebookAsync_WithConfiguredProvider_ReturnsToken()
+    public async Task FacebookAsync_RemovedProvider_ReturnsNotFound()
     {
-        // Arrange
-        const string code = "facebook-user";
+        // Arrange is handled by the configured authentication fixture.
 
         // Act
-        var result = await SendExternalLoginAsync("facebook", code);
+        var response = await SendRequestAsync(request => request
+            .Post()
+            .AppendPaths("auth", "facebook")
+            .Content(new ExternalAuthInfo { ClientId = "facebook-client-id", Code = "facebook-user", RedirectUri = "http://localhost" })
+            .StatusCodeShouldBeNotFound());
 
         // Assert
-        await AssertExternalLoginAsync(result, "facebook", code);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -560,16 +561,20 @@ public class AuthEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
-    public async Task LiveAsync_WithConfiguredProvider_ReturnsToken()
+    public async Task MicrosoftAsync_WithLinkedIdentity_ReturnsToken()
     {
         // Arrange
-        const string code = "live-user";
+        const string code = "microsoft-user";
+        var user = new User { EmailAddress = TestOAuthProviderClient.GetEmailAddress(code), FullName = "Microsoft User" };
+        user.MarkEmailAddressVerified();
+        user.AddOAuthAccount("Microsoft", code, user.EmailAddress);
+        await _userRepository.AddAsync(user, o => o.ImmediateConsistency());
 
         // Act
-        var result = await SendExternalLoginAsync("live", code);
+        var result = await SendExternalLoginAsync("microsoft", code);
 
         // Assert
-        await AssertExternalLoginAsync(result, "windowslive", code);
+        await AssertExternalLoginAsync(result, "microsoft", code);
     }
 
     [Fact]
@@ -2000,14 +2005,14 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.False(token.IsSuspended);
     }
 
-    private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId)
+    private async Task AssertExternalLoginAsync(TokenResult? result, string providerName, string providerUserId, bool isEmailVerified = true)
     {
         Assert.NotNull(result);
         Assert.False(String.IsNullOrEmpty(result.Token));
 
         var user = await _userRepository.GetByEmailAddressAsync(TestOAuthProviderClient.GetEmailAddress(providerUserId));
         Assert.NotNull(user);
-        Assert.True(user.IsEmailAddressVerified);
+        Assert.Equal(isEmailVerified, user.IsEmailAddressVerified);
         var account = Assert.Single(user.OAuthAccounts);
         Assert.Equal(providerName, account.Provider);
         Assert.Equal(providerUserId, account.ProviderUserId);
@@ -2033,8 +2038,6 @@ public class AuthEndpointTests : IntegrationTestsBase
     private sealed record AuthOptionsState(
         bool EnableAccountCreation,
         bool EnableActiveDirectoryAuth,
-        string? FacebookId,
-        string? FacebookSecret,
         string? GitHubId,
         string? GitHubSecret,
         string? GoogleId,
@@ -2048,8 +2051,6 @@ public class AuthEndpointTests : IntegrationTestsBase
             return new AuthOptionsState(
                 options.EnableAccountCreation,
                 options.EnableActiveDirectoryAuth,
-                options.FacebookId,
-                options.FacebookSecret,
                 options.GitHubId,
                 options.GitHubSecret,
                 options.GoogleId,
@@ -2062,8 +2063,6 @@ public class AuthEndpointTests : IntegrationTestsBase
         {
             options.EnableAccountCreation = EnableAccountCreation;
             options.EnableActiveDirectoryAuth = EnableActiveDirectoryAuth;
-            options.FacebookId = FacebookId;
-            options.FacebookSecret = FacebookSecret;
             options.GitHubId = GitHubId;
             options.GitHubSecret = GitHubSecret;
             options.GoogleId = GoogleId;

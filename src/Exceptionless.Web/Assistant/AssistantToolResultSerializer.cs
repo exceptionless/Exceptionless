@@ -18,6 +18,15 @@ internal static class AssistantToolResultSerializer
             foreach (var item in items.OfType<JsonObject>())
                 AddWebUrl(toolName, item);
         }
+        else if (toolName == "count_events" && data["groups"] is JsonArray groups && data["group_by"]?.GetValue<string>() == "stack")
+        {
+            // Stack groups are keyed by stack id, so each one links to its stack like a search result does.
+            foreach (var group in groups.OfType<JsonObject>())
+            {
+                if (group["key"]?.GetValue<string>() is { Length: > 0 } stackId)
+                    group["webUrl"] = AssistantRoutes.Stack(stackId);
+            }
+        }
         else
         {
             AddWebUrl(toolName, data);
@@ -40,6 +49,9 @@ internal static class AssistantToolResultSerializer
             "get_stack" or "search_stacks" => AssistantRoutes.Stack(id),
             "get_project_setup" => AssistantRoutes.ProjectConfigure(id),
             "list_projects" => AssistantRoutes.ProjectStacks(id),
+            "list_saved_views" or "create_saved_view" or "update_saved_view"
+                when item["view_type"]?.GetValue<string>() is { Length: > 0 } viewType && item["slug"]?.GetValue<string>() is { Length: > 0 } slug
+                => AssistantRoutes.SavedView(viewType, slug, id),
             _ => null
         };
 

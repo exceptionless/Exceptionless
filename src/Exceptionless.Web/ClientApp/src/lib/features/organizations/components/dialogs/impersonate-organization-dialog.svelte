@@ -208,7 +208,7 @@
                         }
                     }}
                 >
-                    <Select.Trigger class="h-8 w-30">
+                    <Select.Trigger aria-label="Filter by plan" class="h-8 w-30">
                         {#if paidFilter === undefined}
                             All Plans
                         {:else if paidFilter}
@@ -235,7 +235,7 @@
                         }
                     }}
                 >
-                    <Select.Trigger class="h-8 w-30">
+                    <Select.Trigger aria-label="Filter by suspension status" class="h-8 w-30">
                         {#if suspendedFilter === undefined}
                             All Status
                         {:else if suspendedFilter}

@@ -31,7 +31,7 @@ async function seedFirstEvent(e2eApi: E2EApiClient, scenario: E2EScenario): Prom
 
 test('the next checklist link opens the item it names @onboarding', async ({ e2eApi, e2eScenario, page }) => {
     await seedFirstEvent(e2eApi, e2eScenario);
-    await page.goto(await e2eApi.pollForMailLink(e2eScenario.email, 'account/verify'));
+    await page.goto(await e2eApi.pollForMailLink(e2eScenario.email, 'verify-email'));
     await expect(checklist(page)).toContainText('4 of 8 done', { timeout: 30_000 });
 
     await checklist(page).getByRole('link', { name: 'Review your notifications' }).click();
@@ -47,7 +47,7 @@ test('finishing every item retires the checklist for good @onboarding', async ({
         }
 
         // Verifying the email lands back on the stack list with the checklist one item short.
-        await page.goto(await e2eApi.pollForMailLink(e2eScenario.email, 'account/verify'));
+        await page.goto(await e2eApi.pollForMailLink(e2eScenario.email, 'verify-email'));
         await expect(checklist(page)).toContainText('7 of 8 done', { timeout: 30_000 });
     });
 

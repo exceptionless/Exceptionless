@@ -28,12 +28,12 @@ namespace Exceptionless.Web.Api.Handlers;
 
 public class ProjectHandler(
     IOrganizationRepository organizationRepository,
+    BillingManager billingManager,
     IProjectRepository repository,
     IStackRepository stackRepository,
     IEventRepository eventRepository,
     ITokenRepository tokenRepository,
     IQueue<WorkItemData> workItemQueue,
-    BillingManager billingManager,
     SlackService slackService,
     IOAuthProviderClient oauthProviderClient,
     SampleDataService sampleDataService,
@@ -108,6 +108,11 @@ public class ProjectHandler(
         var model = mapper.MapToProject(message.Project);
         if (String.IsNullOrEmpty(model.OrganizationId) && message.Context.Request.GetAssociatedOrganizationIds().Count > 0)
             model.OrganizationId = message.Context.Request.GetDefaultOrganizationId()!;
+
+        if (String.IsNullOrWhiteSpace(model.OrganizationId) || !message.Context.Request.CanAccessOrganization(model.OrganizationId))
+            return Result.BadRequest("Invalid organization id specified.");
+
+        await using var billingLock = await billingManager.AcquireOrganizationLockAsync(model.OrganizationId);
 
         var error = await CanAddAsync(model, message.Context);
         if (error is not null)
@@ -545,7 +550,8 @@ public class ProjectHandler(
         if (!await IsProjectNameAvailableInternalAsync(value.OrganizationId, value.Name, null, httpContext))
             return Result.BadRequest("A project with this name already exists.");
 
-        if (!await billingManager.CanAddProjectAsync(value))
+        bool canAddProject = await billingManager.CanAddProjectAsync(value);
+        if (!canAddProject)
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add additional projects."));
 
         return null;
@@ -559,8 +565,8 @@ public class ProjectHandler(
         value.AddDefaultNotificationSettings(GetCurrentUserId(httpContext));
         value.SetDefaultUserAgentBotPatterns();
         value.Configuration.IncrementVersion();
-        // Clients list the organization's projects right after creating one (first-run setup), so the
-        // new project must be searchable before we respond.
+        // The next capacity check uses a search count, and first-run setup lists the organization's projects right
+        // after creating one, so creation must be visible before releasing the billing lock and responding.
         return repository.AddAsync(value, o => o.Cache().ImmediateConsistency());
     }
 
@@ -600,8 +606,11 @@ public class ProjectHandler(
         foreach (var project in projects.OfType<ISupportSoftDeletes>())
             project.IsDeleted = true;
 
-        // Clients list the organization's projects right after a delete, so the soft delete must be searchable before we respond.
-        await repository.SaveAsync(projects, o => o.ImmediateConsistency());
+        // Clients list the organization's projects right after a delete, and a suspended organization needs the updated
+        // project count before checking whether ingestion can resume, so the soft delete must be searchable first.
+        await repository.SaveAsync(projects, command => command.ImmediateConsistency());
+        foreach (string organizationId in projects.Select(project => project.OrganizationId).Distinct(StringComparer.Ordinal))
+            await billingManager.RecheckPlanLimitSuspensionAsync(organizationId);
         return [];
     }
 

@@ -1,17 +1,12 @@
-import {
-    PUBLIC_ENABLE_ACCOUNT_CREATION,
-    PUBLIC_FACEBOOK_APPID,
-    PUBLIC_GITHUB_APPID,
-    PUBLIC_GOOGLE_APPID,
-    PUBLIC_MICROSOFT_APPID,
-    PUBLIC_SLACK_APPID
-} from '$app/env/public';
+import { PUBLIC_ENABLE_ACCOUNT_CREATION, PUBLIC_GITHUB_APPID, PUBLIC_GOOGLE_APPID, PUBLIC_MICROSOFT_APPID, PUBLIC_SLACK_APPID } from '$app/env/public';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 import { useFetchClient } from '@foundatiofx/fetchclient';
+import { toast } from 'svelte-sonner';
 
 import { gotoRedirect } from '#features/navigation/redirect.ts';
 import { getVisibleUrl } from '#features/navigation/visible-url.ts';
+import { getProblemMessage } from '#shared/validation.ts';
 
 import type { TokenResult } from './models';
 
@@ -35,10 +30,14 @@ export { accessToken } from './state.svelte';
 // Re-export validators
 export { validateEmailAvailability } from './validators';
 
-export interface OAuthLoginOptions extends OAuthPopupOptions {
+export interface ExternalLoginOptions {
     inviteToken?: null | string;
+    /** Links the provider account to the signed-in user instead of signing in as the provider's user. */
+    linkToCurrentUser?: boolean;
     redirectUrl?: string;
 }
+
+export interface OAuthLoginOptions extends ExternalLoginOptions, OAuthPopupOptions {}
 
 export interface OAuthPopupOptions {
     authUrl: string;
@@ -54,34 +53,18 @@ export interface OAuthResponseData {
     state: string;
 }
 
-export type SupportedOAuthProviders = 'facebook' | 'github' | 'google' | 'live' | 'slack';
+export type SupportedOAuthProviders = 'github' | 'google' | 'microsoft' | 'slack';
 
 export const enableAccountCreation = PUBLIC_ENABLE_ACCOUNT_CREATION === 'true';
-export const facebookClientId = PUBLIC_FACEBOOK_APPID;
 export const gitHubClientId = PUBLIC_GITHUB_APPID;
 export const googleClientId = PUBLIC_GOOGLE_APPID;
 export const microsoftClientId = PUBLIC_MICROSOFT_APPID;
 export const slackClientId = PUBLIC_SLACK_APPID;
-export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClientId || microsoftClientId;
+export const enableOAuthLogin = gitHubClientId || googleClientId || microsoftClientId;
 
 // OAuth login functions (interactive popup-based, not pure API calls)
 
-export async function facebookLogin(redirectUrl?: string, inviteToken?: null | string) {
-    if (!facebookClientId) {
-        throw new Error('Facebook client id not set');
-    }
-
-    await oauthLogin({
-        authUrl: 'https://www.facebook.com/v2.5/dialog/oauth',
-        clientId: facebookClientId,
-        inviteToken,
-        provider: 'facebook',
-        redirectUrl,
-        scope: 'email'
-    });
-}
-
-export async function githubLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function githubLogin(options: ExternalLoginOptions = {}) {
     if (!gitHubClientId) {
         throw new Error('GitHub client id not set');
     }
@@ -89,18 +72,17 @@ export async function githubLogin(redirectUrl?: string, inviteToken?: null | str
     await oauthLogin({
         authUrl: 'https://github.com/login/oauth/authorize',
         clientId: gitHubClientId,
-        inviteToken,
+        ...options,
         popupOptions: {
             height: 618,
             width: 1020
         },
         provider: 'github',
-        redirectUrl,
         scope: 'user:email'
     });
 }
 
-export async function googleLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function googleLogin(options: ExternalLoginOptions = {}) {
     if (!googleClientId) {
         throw new Error('Google client id not set');
     }
@@ -115,9 +97,8 @@ export async function googleLogin(redirectUrl?: string, inviteToken?: null | str
             service: 'lso',
             state: encodeURIComponent(Math.random().toString(36).substring(2))
         },
-        inviteToken,
+        ...options,
         provider: 'google',
-        redirectUrl,
         scope: 'openid profile email'
     });
 }
@@ -133,21 +114,20 @@ export async function gotoLogin() {
     });
 }
 
-export async function liveLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function microsoftLogin(options: ExternalLoginOptions = {}) {
     if (!microsoftClientId) {
-        throw new Error('Live client id not set');
+        throw new Error('Microsoft client id not set');
     }
 
     await oauthLogin({
-        authUrl: 'https://login.live.com/oauth20_authorize.srf',
+        authUrl: 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
         clientId: microsoftClientId,
         extraParams: {
-            display: 'popup'
+            state: createOAuthState()
         },
-        inviteToken,
-        provider: 'live',
-        redirectUrl,
-        scope: 'wl.emails'
+        ...options,
+        provider: 'microsoft',
+        scope: 'User.Read'
     });
 }
 
@@ -175,24 +155,45 @@ export async function slackOAuthLogin(): Promise<string> {
 
 // OAuth helpers
 
+function createOAuthState() {
+    if (typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+
+    return Array.from(crypto.getRandomValues(new Uint8Array(16)), (value) => value.toString(16).padStart(2, '0')).join('');
+}
+
 async function oauthLogin(options: OAuthLoginOptions) {
     const data = await openOAuthPopup(options);
 
-    const client = useFetchClient();
-    const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
-        clientId: options.clientId,
-        code: data.code,
-        inviteToken: options.inviteToken,
-        redirectUri: window.location.origin,
-        state: data.state
-    });
+    // The API links the provider to whoever the request authenticates as, so a sign-in must not send the current session.
+    const client = useFetchClient(
+        options.linkToCurrentUser
+            ? undefined
+            : {
+                  accessTokenFunc: () => null
+              }
+    );
+    const response = await client.postJSON<TokenResult>(
+        `auth/${options.provider}`,
+        {
+            clientId: options.clientId,
+            code: data.code,
+            inviteToken: options.inviteToken,
+            redirectUri: window.location.origin,
+            state: data.state
+        },
+        {
+            expectedStatusCodes: [401, 403, 422]
+        }
+    );
 
-    if (!response.ok || !response.data?.token) {
-        throw new Error('The sign-in provider did not return a session.');
+    if (response.ok && response.data?.token) {
+        accessToken.current = response.data.token;
+        await gotoRedirect(options.redirectUrl || resolve('/(app)'));
+    } else {
+        toast.error(getProblemMessage(response.problem, 'Unable to sign in. Please try again.'));
     }
-
-    accessToken.current = response.data.token;
-    await gotoRedirect(options.redirectUrl || resolve('/(app)'));
 }
 
 async function openOAuthPopup(options: OAuthPopupOptions): Promise<OAuthResponseData> {

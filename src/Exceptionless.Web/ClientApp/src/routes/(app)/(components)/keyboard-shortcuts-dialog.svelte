@@ -5,6 +5,7 @@
     import { appKeyboardShortcuts, formatKeyboardShortcut, type ShortcutKey } from '#features/shared/keyboard-shortcuts.ts';
 
     type Props = {
+        assistantEnabled?: boolean;
         open: boolean;
     };
 
@@ -18,9 +19,9 @@
         title: string;
     };
 
-    let { open = $bindable() }: Props = $props();
+    let { assistantEnabled = false, open = $bindable() }: Props = $props();
 
-    const shortcutSections: ShortcutSection[] = [
+    let shortcutSections: ShortcutSection[] = $derived([
         {
             rows: [
                 {
@@ -47,7 +48,15 @@
                 {
                     action: 'Open User Menu',
                     shortcuts: [appKeyboardShortcuts.userMenu.keys]
-                }
+                },
+                ...(assistantEnabled
+                    ? [
+                          {
+                              action: 'Open or Close Exie',
+                              shortcuts: [appKeyboardShortcuts.assistant.keys]
+                          }
+                      ]
+                    : [])
             ],
             title: 'Menus'
         },
@@ -85,7 +94,7 @@
             ],
             title: 'Lists and Tables'
         }
-    ];
+    ]);
 
     function shortcutLabel(keys: readonly ShortcutKey[]): string {
         return formatKeyboardShortcut(keys);

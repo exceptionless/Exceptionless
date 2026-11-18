@@ -34,7 +34,7 @@ export interface E2EToken {
     notes?: string;
 }
 
-type MailLinkPath = 'account/verify' | 'reset-password' | 'signup';
+type MailLinkPath = 'reset-password' | 'signup' | 'verify-email';
 
 interface TokenResult {
     token: string;
@@ -442,14 +442,15 @@ function extractMailLink(content: string, path: MailLinkPath): string | undefine
     const links = content.replaceAll('&amp;', '&').match(/https?:\/\/[^"'<\\\s]+/g) ?? [];
     return links.find((link) => {
         const url = new URL(link);
-        switch (path) {
-            case 'account/verify':
-                return url.pathname === '/account/verify' && url.searchParams.has('token');
-            case 'signup':
-                return url.pathname === '/signup' && url.searchParams.has('token');
-            default:
-                return url.pathname.startsWith('/reset-password/') && !url.searchParams.has('cancel');
+        if (path === 'signup') {
+            return url.pathname === '/signup' && url.searchParams.has('token');
         }
+
+        if (path === 'verify-email') {
+            return url.pathname === '/account/verify' && url.searchParams.has('token');
+        }
+
+        return url.pathname.startsWith('/reset-password/') && !url.searchParams.has('cancel');
     });
 }
 

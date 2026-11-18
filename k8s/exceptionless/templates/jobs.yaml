@@ -790,6 +790,63 @@ spec:
           restartPolicy: OnFailure
 
 ---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ template "exceptionless.fullname" . }}-jobs-trial-expiration
+  labels:
+    app: {{ template "exceptionless.name" . }}
+    component: {{ template "exceptionless.fullname" . }}-jobs-trial-expiration
+    tier: {{ template "exceptionless.fullname" . }}-job
+    chart: {{ template "exceptionless.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  schedule: "15 * * * *" # hourly
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: {{ template "exceptionless.name" . }}-jobs-trial-expiration
+              image: "{{ .Values.jobs.image.repository }}:{{ .Values.version }}"
+              imagePullPolicy: {{ .Values.jobs.image.pullPolicy }}
+              livenessProbe:
+                httpGet:
+                  path: /health
+                  port: 8080
+                initialDelaySeconds: 10
+                periodSeconds: 10
+              resources:
+                requests:
+                  memory: 75Mi
+                  cpu: 50m
+                limits:
+                  memory: 250Mi
+                  cpu: 400m
+              args: [TrialExpiration]
+              envFrom:
+                - configMapRef:
+                    name: {{ template "exceptionless.fullname" . }}-config
+              env:
+                - name: HOST_IP
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: status.hostIP
+                - name: K8S_POD_IP
+                  valueFrom:
+                    fieldRef:
+                      apiVersion: v1
+                      fieldPath: status.podIP
+                - name: K8S_POD_UID
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.uid
+{{- include "exceptionless.otel-env" . | indent 16 }}
+          restartPolicy: OnFailure
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

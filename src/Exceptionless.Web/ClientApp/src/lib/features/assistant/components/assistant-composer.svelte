@@ -1,46 +1,86 @@
 <script lang="ts">
-    import CircleStop from '@lucide/svelte/icons/circle-stop';
-    import Send from '@lucide/svelte/icons/send';
-    import Wrench from '@lucide/svelte/icons/wrench';
+    import ArrowUp from '@lucide/svelte/icons/arrow-up';
+    import Calendar from '@lucide/svelte/icons/calendar';
+    import Folder from '@lucide/svelte/icons/folder';
+    import Layers from '@lucide/svelte/icons/layers';
+    import Pencil from '@lucide/svelte/icons/pencil';
+    import Plus from '@lucide/svelte/icons/plus';
+    import Square from '@lucide/svelte/icons/square';
+    import X from '@lucide/svelte/icons/x';
 
-    import * as Command from '#comp/ui/command/index.ts';
     import * as InputGroup from '#comp/ui/input-group/index.ts';
+    import * as Kbd from '#comp/ui/kbd/index.ts';
+
+    import type { AssistantContext } from '../assistant-starters';
+    import type { AssistantProject } from '../models';
+
+    import AssistantProjectScope from './assistant-project-scope.svelte';
 
     interface Props {
+        context?: AssistantContext;
+        contextDismissed?: boolean;
+        isEditing?: boolean;
         isStreaming?: boolean;
+        onCancelEdit?: () => void;
+        onProjectChange?: (projectId: string | undefined) => void;
         onStop: () => void;
         onSubmit: (value: string) => void;
-        showToolCalls?: boolean;
+        /** The project Exie searches; undefined means all projects. */
+        projectId?: string;
+        /** Projects the user can scope Exie to. The picker is hidden when there is no choice to make. */
+        projects?: AssistantProject[];
         value?: string;
     }
 
-    let { isStreaming = false, onStop, onSubmit, showToolCalls = false, value = $bindable('') }: Props = $props();
+    let {
+        context,
+        contextDismissed = $bindable(false),
+        isEditing = false,
+        isStreaming = false,
+        onCancelEdit,
+        onProjectChange,
+        onStop,
+        onSubmit,
+        projectId,
+        projects = [],
+        value = $bindable('')
+    }: Props = $props();
     let textareaElement = $state<HTMLTextAreaElement | null>(null);
-    let slashCommandQuery = $derived(value.trim().toLowerCase());
-    let showSlashCommands = $derived(!isStreaming && slashCommandQuery.startsWith('/') && '/tools'.startsWith(slashCommandQuery));
+    let canSend = $derived(!isStreaming && value.trim().length > 0);
+    let contextLabel = $derived(context?.kind === 'event' ? 'Event' : context?.kind === 'stack' ? 'Stack' : 'Project');
+    let placeholder = $derived(
+        isEditing ? 'Edit your message…' : context && !contextDismissed ? `Ask about this ${contextLabel.toLowerCase()}…` : 'Ask Exie anything…'
+    );
 
     $effect(() => {
         void value;
         resizeTextarea();
     });
 
+    /**
+     * Moves focus to the message box. Automatic focus is skipped on touch screens, where it would
+     * open the on-screen keyboard and make iOS pan the fixed panel out of view; pass `force` when
+     * the user asked to type, such as editing a message.
+     */
+    export function focus(options: { force?: boolean } = {}): void {
+        if (!options.force && !window.matchMedia('(pointer: fine)').matches) {
+            return;
+        }
+
+        textareaElement?.focus();
+    }
+
     function handleKeydown(event: KeyboardEvent): void {
-        if (event.key === 'Escape' && showSlashCommands) {
+        if (event.key === 'Escape' && isEditing) {
             event.preventDefault();
-            value = '';
+            event.stopPropagation();
+            onCancelEdit?.();
             return;
         }
 
         if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
             event.preventDefault();
-            if (showSlashCommands) {
-                selectToolsCommand();
-                return;
-            }
-
-            if (!isStreaming && value.trim()) {
-                onSubmit(value);
-            }
+            submit();
         }
     }
 
@@ -50,55 +90,103 @@
         }
 
         textareaElement.style.height = 'auto';
-        textareaElement.style.height = `${Math.min(textareaElement.scrollHeight, 160)}px`;
+        textareaElement.style.height = `${Math.min(textareaElement.scrollHeight, 200)}px`;
     }
 
-    function selectToolsCommand(): void {
-        onSubmit('/tools');
+    function submit(): void {
+        if (canSend) {
+            onSubmit(value);
+        }
     }
 </script>
 
-<div class="relative">
-    {#if showSlashCommands}
-        <Command.Root aria-label="Exie commands" class="absolute inset-x-0 bottom-full mb-2 h-auto shadow-md">
-            <Command.List>
-                <Command.Group heading="Commands">
-                    <Command.Item onSelect={selectToolsCommand} value="/tools">
-                        <Wrench aria-hidden="true" />
-                        <div class="flex min-w-0 flex-col">
-                            <code>/tools</code>
-                            <span class="text-muted-foreground text-xs">{showToolCalls ? 'Hide' : 'Show'} tool calls in the conversation</span>
-                        </div>
-                    </Command.Item>
-                </Command.Group>
-            </Command.List>
-        </Command.Root>
+{#snippet contextIcon()}
+    {#if context?.kind === 'event'}
+        <Calendar aria-hidden="true" class="size-3.5 shrink-0" />
+    {:else if context?.kind === 'stack'}
+        <Layers aria-hidden="true" class="size-3.5 shrink-0" />
+    {:else}
+        <Folder aria-hidden="true" class="size-3.5 shrink-0" />
     {/if}
+{/snippet}
 
-    <InputGroup.Root class="bg-background h-auto rounded-xl shadow-xs" data-disabled={false}>
+<form
+    class="w-full"
+    onsubmit={(event) => {
+        event.preventDefault();
+        submit();
+    }}
+>
+    <InputGroup.Root class="bg-background h-auto rounded-xl shadow-xs">
+        {#if isEditing || context}
+            <InputGroup.Addon align="block-start" class="flex-wrap gap-1.5">
+                {#if isEditing}
+                    <span class="bg-primary/10 text-primary inline-flex h-6 items-center gap-1 rounded-md pr-0.5 pl-2 text-xs font-medium">
+                        <Pencil aria-hidden="true" class="size-3" />
+                        Editing message
+                        <InputGroup.Button aria-label="Cancel editing" class="size-5" onclick={onCancelEdit} size="icon-xs" variant="ghost">
+                            <X aria-hidden="true" />
+                        </InputGroup.Button>
+                    </span>
+                {/if}
+                {#if context && !contextDismissed}
+                    <span
+                        class="bg-muted text-foreground inline-flex h-6 max-w-full min-w-0 items-center gap-1 rounded-md pr-0.5 pl-2 text-xs font-medium"
+                        data-testid="assistant-context-chip"
+                        title={context.title ? `${contextLabel}: ${context.title}` : `This ${contextLabel.toLowerCase()}`}
+                    >
+                        {@render contextIcon()}
+                        <span class="text-muted-foreground shrink-0">{contextLabel}:</span>
+                        <span class="min-w-0 truncate">{context.title ?? `This ${contextLabel.toLowerCase()}`}</span>
+                        <InputGroup.Button
+                            aria-label={`Don’t use this ${contextLabel.toLowerCase()} as context`}
+                            class="size-5"
+                            onclick={() => (contextDismissed = true)}
+                            size="icon-xs"
+                            variant="ghost"
+                        >
+                            <X aria-hidden="true" />
+                        </InputGroup.Button>
+                    </span>
+                {:else if context}
+                    <InputGroup.Button class="h-6 text-xs" onclick={() => (contextDismissed = false)} size="xs" variant="ghost">
+                        <Plus aria-hidden="true" />
+                        Use this {contextLabel.toLowerCase()} as context
+                    </InputGroup.Button>
+                {/if}
+            </InputGroup.Addon>
+        {/if}
         <InputGroup.Textarea
             aria-describedby="assistant-composer-help"
             aria-label="Message Exie"
-            data-tour="exie-input"
             bind:ref={textareaElement}
             bind:value
-            class="placeholder:text-muted-foreground/50 max-h-40 min-h-18 px-3 pt-3 text-sm"
-            oninput={resizeTextarea}
+            class="max-h-50 min-h-11 px-3 pt-2.5 pb-1 text-sm"
+            data-tour="exie-input"
             onkeydown={handleKeydown}
-            placeholder="Ask Exie…"
+            {placeholder}
             rows={1}
         />
-        <InputGroup.Addon align="block-end" class="justify-between gap-2 px-2.5 pb-2">
-            <span class="text-muted-foreground text-[11px]" id="assistant-composer-help"> Enter to send · Shift+Enter for a new line · / for commands </span>
+        <InputGroup.Addon align="block-end" class="justify-between gap-2 pt-0">
+            {#if onProjectChange && projects.length > 1}
+                <AssistantProjectScope disabled={isStreaming} onChange={onProjectChange} {projects} value={projectId} />
+            {/if}
+            <span
+                class="text-muted-foreground hidden min-w-0 items-center gap-1 text-[11px] font-normal whitespace-nowrap pointer-fine:flex"
+                id="assistant-composer-help"
+            >
+                <Kbd.Root>↵</Kbd.Root> to send <span aria-hidden="true">·</span>
+                <Kbd.Root>⇧</Kbd.Root><Kbd.Root>↵</Kbd.Root> new line
+            </span>
             {#if isStreaming}
-                <InputGroup.Button aria-label="Stop generating" onclick={onStop} size="icon-sm" variant="outline">
-                    <CircleStop aria-hidden="true" />
+                <InputGroup.Button aria-label="Stop generating" class="ml-auto rounded-full" onclick={onStop} size="icon-sm" variant="default">
+                    <Square aria-hidden="true" class="size-3 fill-current" />
                 </InputGroup.Button>
             {:else}
-                <InputGroup.Button aria-label="Send message" disabled={!value.trim()} onclick={() => onSubmit(value)} size="icon-sm" variant="default">
-                    <Send aria-hidden="true" />
+                <InputGroup.Button aria-label="Send message" class="ml-auto rounded-full" disabled={!canSend} size="icon-sm" type="submit" variant="default">
+                    <ArrowUp aria-hidden="true" />
                 </InputGroup.Button>
             {/if}
         </InputGroup.Addon>
     </InputGroup.Root>
-</div>
+</form>
