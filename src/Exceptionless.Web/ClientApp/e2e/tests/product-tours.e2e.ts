@@ -176,6 +176,8 @@ test.describe('shell and identity checkpoints', () => {
     test('supports responsive guides and clears them on reload or identity changes', async ({ e2eApi, e2eScenario, e2eSecondaryOrganization, page }) => {
         // Arrange
         test.setTimeout(240_000);
+        // Organizations without events open client setup, where the shell guides are unavailable.
+        await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eScenario);
         const progressWrites: string[] = [];
         page.on('request', (request) => {
             if (request.method() === 'PUT' && request.url().includes('/api/v2/users/me/product-tours/')) {
