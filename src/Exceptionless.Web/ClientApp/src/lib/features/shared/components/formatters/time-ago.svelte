@@ -19,7 +19,7 @@
 
 <Time {title} live={true} relative={true} timestamp={value}>
     {#snippet children(relativeTime)}
-        {relativeTime}
-        {#if title}<span class="sr-only"> ({title})</span>{/if}
+        <!-- Keep these on one line: a line break here renders as a space before any following punctuation. -->
+        {relativeTime}{#if title}<span class="sr-only"> ({title})</span>{/if}
     {/snippet}
 </Time>

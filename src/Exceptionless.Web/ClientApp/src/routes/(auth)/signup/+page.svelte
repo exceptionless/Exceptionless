@@ -20,6 +20,7 @@
     import { accessToken, enableOAuthLogin, validateEmailAvailability } from '#features/auth/index.svelte.ts';
     import { buildAuthPageHref, getAuthPageParams, getPostLoginRedirect, getPostSignupRedirect } from '#features/auth/redirects.ts';
     import { type SignupFormData, SignupSchema } from '#features/auth/schemas.ts';
+    import { isStripeEnabled } from '#features/billing/stripe.svelte.ts';
     import { gotoRedirect } from '#features/navigation/redirect.ts';
     import ExieGuide from '#features/onboarding/components/exie-guide.svelte';
     import OnboardingStepper from '#features/onboarding/components/onboarding-stepper.svelte';
@@ -28,6 +29,8 @@
     const params = getAuthPageParams(page.url.searchParams);
     const inviteToken = params.token;
     const loginHref = buildAuthPageHref(resolve('/(auth)/login'), params);
+    // Hosted signups start a no-card trial of every feature; self-hosted installs and invited users don't.
+    const signupTagline = isStripeEnabled() && !inviteToken ? 'Try every feature free · No credit card required' : 'Free to start · No credit card required';
 
     // Only a session that existed when the page opened is "already signed in"; a successful signup also sets one.
     const hadSessionOnLoad = !!accessToken.current;
@@ -92,7 +95,7 @@
             <Card.Root class="w-full">
                 <Card.Header>
                     <h1 class="text-foreground text-2xl font-semibold tracking-tight">Create your account</h1>
-                    <Card.Description>Free to start · No credit card required</Card.Description>
+                    <Card.Description>{signupTagline}</Card.Description>
                 </Card.Header>
                 <Card.Content class="flex flex-col gap-4">
                     {#if enableOAuthLogin}

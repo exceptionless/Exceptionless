@@ -7,6 +7,7 @@
     import * as Sidebar from '#comp/ui/sidebar/index.ts';
     import { TRIAL_PLAN_ID } from '#features/billing/constants.ts';
     import { showUpgradeDialog } from '#features/billing/upgrade-required.svelte.ts';
+    import { clock } from '#features/shared/clock.svelte.ts';
 
     interface Props {
         organization: undefined | ViewOrganization;
@@ -16,9 +17,11 @@
 
     // The trial expiration job moves the organization to Free when the trial ends, which hides this indicator.
     const trialEndsUtc = $derived(organization?.plan_id === TRIAL_PLAN_ID ? organization.trial_ends_utc : undefined);
+    // The expiration job can take a while to move an ended trial to Free, so don't promise a future end.
+    const hasEnded = $derived(!!trialEndsUtc && new Date(trialEndsUtc).getTime() <= clock.now.getTime());
     const tooltip = $derived(
         trialEndsUtc
-            ? `Trial ends ${new Date(trialEndsUtc).toLocaleDateString(undefined, {
+            ? `Trial ${hasEnded ? 'ended' : 'ends'} ${new Date(trialEndsUtc).toLocaleDateString(undefined, {
                   dateStyle: 'medium'
               })}`
             : undefined
@@ -26,7 +29,7 @@
 </script>
 
 {#snippet trialEnds(value: string)}
-    Trial ends <TimeAgo {value} />
+    Trial {hasEnded ? 'ended' : 'ends'} <TimeAgo {value} />
 {/snippet}
 
 {#if organization?.id && trialEndsUtc}

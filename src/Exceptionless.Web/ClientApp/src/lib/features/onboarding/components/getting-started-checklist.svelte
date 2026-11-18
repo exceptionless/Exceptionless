@@ -18,7 +18,7 @@
     import * as Card from '#comp/ui/card/index.ts';
     import * as Collapsible from '#comp/ui/collapsible/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
-    import { FREE_PLAN_ID } from '#features/billing/index.ts';
+    import { FREE_PLAN_ID, TRIAL_PLAN_ID } from '#features/billing/index.ts';
     import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
     import { organization } from '#features/organizations/context.svelte.ts';
     import { getMeQuery, putCurrentUserProductTour, resendVerificationEmail } from '#features/users/api.svelte.ts';
@@ -93,6 +93,7 @@
             })
     );
     const isFreePlan = $derived(organizationQuery.data?.plan_id === FREE_PLAN_ID);
+    const isTrialPlan = $derived(organizationQuery.data?.plan_id === TRIAL_PLAN_ID);
 
     // Finishing the list retires it for good: celebrate once, then record it like a dismissal.
     $effect(() => {
@@ -173,7 +174,14 @@
                 };
             case 'verify-email':
                 return {
-                    description: meQuery.data?.email_address ? `Check ${meQuery.data.email_address} for the link.` : undefined,
+                    // Trials hold Exie and team invites until the email is verified, so say what verifying unlocks.
+                    description:
+                        [
+                            meQuery.data?.email_address ? `Check ${meQuery.data.email_address} for the link.` : undefined,
+                            isTrialPlan ? 'It unlocks Exie and team invites during your trial.' : undefined
+                        ]
+                            .filter(Boolean)
+                            .join(' ') || undefined,
                     label: 'Verify your email'
                 };
             case 'versions':
