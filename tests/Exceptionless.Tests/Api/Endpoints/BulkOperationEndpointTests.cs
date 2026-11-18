@@ -447,8 +447,11 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
     {
         // Arrange
         var ids = Enumerable.Range(0, 1001).Select(_ => ObjectId.GenerateNewId().ToString()).ToList();
+        var invalidOffset = FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "today");
+        invalidOffset.Selection.Offset = "not-an-offset";
         var requests = new[]
         {
+            invalidOffset,
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Type = "events.explode" },
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Parameters = new Dictionary<string, string> { ["x"] = "y" } },
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "type:(log"),

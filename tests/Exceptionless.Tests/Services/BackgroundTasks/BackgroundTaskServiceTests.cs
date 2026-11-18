@@ -153,6 +153,29 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AddAsync_IndexWriteFails_DiscardsUnqueuedTaskAndSelection(bool failActiveIndex)
+    {
+        // Arrange
+        var task = NewTask();
+        string history = BackgroundTaskService.GetOrganizationIndexCacheKey(OrganizationId);
+        string active = BackgroundTaskService.GetActiveIndexCacheKey(OrganizationId);
+        // An incompatible existing value makes the real cache reject a list write.
+        await _harness.Cache.SetAsync(failActiveIndex ? active : history, "existing value");
+
+        // Act
+        var error = await Record.ExceptionAsync(() => Tasks.AddAsync(task, "saved selection"));
+        var otherIndex = await _harness.Cache.GetListAsync<string>(failActiveIndex ? history : active);
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(error);
+        Assert.Null(await Tasks.GetAsync(task.Id));
+        Assert.False(await _harness.Cache.ExistsAsync(BackgroundTaskService.GetPinnedSelectionCacheKey(task.Id)));
+        Assert.DoesNotContain(task.Id, otherIndex.Value ?? []);
+    }
+
+    [Theory]
     [InlineData(true)]
     [InlineData(false)]
     public async Task CancelAsync_RequestCannotBeStored_ThrowsAndPreservesCommittedState(bool startTask)

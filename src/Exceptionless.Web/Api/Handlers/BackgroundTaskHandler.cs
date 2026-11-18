@@ -203,8 +203,9 @@ public class BackgroundTaskHandler(
                 return (null, Result.Invalid(ValidationError.Create("selection.time", "The time range is not valid.")));
         }
 
-        var offset = TimeRangeParser.GetOffset(model.Offset);
-        if (offset < TimeSpan.FromHours(-14) || offset > TimeSpan.FromHours(14) || offset.Ticks % TimeSpan.TicksPerMinute is not 0)
+        if (!TimeRangeParser.TryGetOffset(model.Offset, out var offset)
+            || offset < TimeSpan.FromHours(-14) || offset > TimeSpan.FromHours(14)
+            || offset.Ticks % TimeSpan.TicksPerMinute is not 0)
             return (null, Result.Invalid(ValidationError.Create("selection.offset", "The UTC offset is not valid.")));
 
         var range = DateTimeRange.Parse(time, new DateTimeOffset(utcNow).ToOffset(offset));

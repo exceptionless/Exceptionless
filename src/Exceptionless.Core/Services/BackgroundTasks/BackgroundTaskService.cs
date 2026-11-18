@@ -117,7 +117,7 @@ public class BackgroundTaskService
             if (task is not null && !String.Equals(task.OrganizationId, organizationId, StringComparison.Ordinal))
                 continue;
 
-            await _cache.RemoveAllAsync([GetTaskCacheKey(id), GetPinnedSelectionCacheKey(id), GetCancelCacheKey(id)]);
+            await RemoveTaskDataAsync(id);
         }
 
         await _cache.RemoveAllAsync([historyKey, activeKey]);
@@ -151,17 +151,38 @@ public class BackgroundTaskService
         task.Status = BackgroundTaskStatus.Queued;
         task.CreatedUtc = utcNow;
 
-        // The worker needs its selection before the task becomes visible in either index.
-        if (pinnedSelection is not null && !await _cache.SetAsync(GetPinnedSelectionCacheKey(task.Id), pinnedSelection, TaskLifetime))
-            throw new InvalidOperationException("The bulk selection could not be saved.");
+        string historyKey = GetOrganizationIndexCacheKey(task.OrganizationId);
+        string activeKey = GetActiveIndexCacheKey(task.OrganizationId);
+        try
+        {
+            if (pinnedSelection is not null && !await _cache.SetAsync(GetPinnedSelectionCacheKey(task.Id), pinnedSelection, TaskLifetime))
+                throw new InvalidOperationException("The bulk selection could not be saved.");
 
-        await SaveAsync(task);
-        var indexLifetime = GetIndexLifetime(task.UpdatedUtc);
-        if (await _cache.ListAddAsync(GetOrganizationIndexCacheKey(task.OrganizationId), [task.Id], indexLifetime) is not 1)
-            throw new InvalidOperationException("The background task could not be added to the organization index.");
+            await SaveAsync(task);
+            var indexLifetime = GetIndexLifetime(task.UpdatedUtc);
+            if (await _cache.ListAddAsync(historyKey, [task.Id], indexLifetime) is not 1)
+                throw new InvalidOperationException("The background task could not be added to the organization index.");
 
-        if (await _cache.ListAddAsync(GetActiveIndexCacheKey(task.OrganizationId), [task.Id], indexLifetime) is not 1)
-            throw new InvalidOperationException("The background task could not be added to the active index.");
+            if (await _cache.ListAddAsync(activeKey, [task.Id], indexLifetime) is not 1)
+                throw new InvalidOperationException("The background task could not be added to the active index.");
+        }
+        catch
+        {
+            // No work was enqueued. Remove only this attempt's generated id, even if an index write lost its acknowledgement.
+            try
+            {
+                await Task.WhenAll(
+                    RemoveTaskDataAsync(task.Id),
+                    _cache.ListRemoveAsync(historyKey, [task.Id]),
+                    _cache.ListRemoveAsync(activeKey, [task.Id]));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to clean up unqueued background task {TaskId}: {Message}", task.Id, ex.Message);
+            }
+
+            throw;
+        }
     }
 
     /// <summary>
@@ -344,6 +365,8 @@ public class BackgroundTaskService
     }
 
     internal static bool IsStale(BackgroundTask task, DateTime utcNow) => task.UpdatedUtc.IsBeforeOrEqual(utcNow - StaleAfter);
+
+    private Task RemoveTaskDataAsync(string id) => _cache.RemoveAllAsync([GetTaskCacheKey(id), GetPinnedSelectionCacheKey(id), GetCancelCacheKey(id)]);
 
     // Index entries cover every record saved on this UTC day, so progress within the day only rewrites the record.
     private static TimeSpan GetIndexLifetime(DateTime utcNow) => TaskLifetime + (utcNow.Date.AddDays(1) - utcNow);
