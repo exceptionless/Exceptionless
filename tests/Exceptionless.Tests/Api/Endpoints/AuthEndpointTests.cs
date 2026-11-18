@@ -8,6 +8,7 @@ using System.Text.Json;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
@@ -16,6 +17,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Authentication;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Tests.Mail;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Models;
 using Exceptionless.Web.Security;
@@ -26,6 +28,7 @@ using Foundatio.Repositories.Utility;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using User = Exceptionless.Core.Models.User;
 
@@ -53,9 +56,17 @@ public class AuthEndpointTests : IntegrationTestsBase
         _oauthTokenRepository = GetService<IOAuthTokenRepository>();
     }
 
+    protected override void RegisterServices(IServiceCollection services)
+    {
+        base.RegisterServices(services);
+        services.AddSingleton<CountingMailer>();
+        services.ReplaceSingleton<IMailer>(sp => sp.GetRequiredService<CountingMailer>());
+    }
+
     protected override async Task ResetDataAsync()
     {
         await base.ResetDataAsync();
+        GetService<CountingMailer>().Reset();
         ConfigureAuthOptions();
         var service = GetService<SampleDataService>();
         await service.CreateDataAsync();
@@ -211,6 +222,58 @@ public class AuthEndpointTests : IntegrationTestsBase
         Assert.True(user.IsEmailAddressVerified);
         Assert.Null(user.VerifyEmailAddressToken);
         Assert.Equal(DateTime.MinValue, user.VerifyEmailAddressTokenExpiration);
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task Signup_UnverifiedAddress_SendsWelcomeOnlyWithoutAnInvite(bool withInviteForAnotherAddress, bool expectedIsNewAccount)
+    {
+        // Arrange
+        _authOptions.EnableAccountCreation = true;
+        _authOptions.EnableActiveDirectoryAuth = false;
+        const string email = "welcome-check@exceptionless.io";
+
+        var organizations = await _organizationRepository.GetAllAsync();
+        var organization = organizations.Documents.First();
+        string? inviteToken = null;
+        if (withInviteForAnotherAddress)
+        {
+            var invite = new Invite
+            {
+                Token = StringExtensions.GetNewToken(),
+                EmailAddress = "invited-original@exceptionless.io",
+                DateAdded = DateTime.UtcNow
+            };
+            organization.Invites.Add(invite);
+            await _organizationRepository.SaveAsync(organization, o => o.ImmediateConsistency());
+            inviteToken = invite.Token;
+        }
+
+        // Act
+        await SendRequestAsync(r => r
+           .Post()
+           .AppendPath("auth/signup")
+           .Content(new Signup
+           {
+               Name = "Welcome Check",
+               Email = email,
+               Password = "Password1$",
+               InviteToken = inviteToken
+           })
+           .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        var user = await _userRepository.GetByEmailAddressAsync(email);
+        Assert.NotNull(user);
+        Assert.False(user.IsEmailAddressVerified);
+        Assert.Equal(withInviteForAnotherAddress, user.OrganizationIds.Contains(organization.Id));
+
+        // Invited users join an organization that already has apps, so their email skips the "connect your app" welcome.
+        var call = Assert.Single(GetService<CountingMailer>().UserEmailVerifyCalls);
+        Assert.Equal(email, call.EmailAddress);
+        Assert.Equal(expectedIsNewAccount, call.IsNewAccount);
     }
 
     [Fact]

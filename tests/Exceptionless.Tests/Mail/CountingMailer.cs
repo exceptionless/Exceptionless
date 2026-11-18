@@ -13,6 +13,8 @@ public class CountingMailer : IMailer
 
     public List<OrganizationTrialEndingCall> OrganizationTrialEndingCalls { get; } = [];
 
+    public List<UserEmailVerifyCall> UserEmailVerifyCalls { get; } = [];
+
     /// <summary>
     /// When true, <see cref="SendOrganizationNoticeAsync"/> throws instead of recording a call.
     /// Reset by <see cref="Reset"/>.
@@ -80,6 +82,11 @@ public class CountingMailer : IMailer
 
     public Task SendUserEmailVerifyAsync(User user, bool isNewAccount = false)
     {
+        lock (UserEmailVerifyCalls)
+        {
+            UserEmailVerifyCalls.Add(new UserEmailVerifyCall(user.EmailAddress, isNewAccount));
+        }
+
         return Task.CompletedTask;
     }
 
@@ -99,6 +106,10 @@ public class CountingMailer : IMailer
         {
             OrganizationTrialEndingCalls.Clear();
         }
+        lock (UserEmailVerifyCalls)
+        {
+            UserEmailVerifyCalls.Clear();
+        }
         ShouldThrow = false;
         OnOrganizationTrialEnding = null;
     }
@@ -107,3 +118,5 @@ public class CountingMailer : IMailer
 public record OrganizationNoticeCall(string UserId, string OrganizationId, bool IsOverMonthlyLimit, bool IsOverHourlyLimit);
 
 public record OrganizationTrialEndingCall(string UserId, string OrganizationId);
+
+public record UserEmailVerifyCall(string EmailAddress, bool IsNewAccount);

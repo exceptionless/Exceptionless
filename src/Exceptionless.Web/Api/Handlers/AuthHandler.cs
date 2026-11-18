@@ -249,8 +249,9 @@ public class AuthHandler(
         if (hasValidInviteToken)
             await AddInvitedUserToOrganizationAsync(model.InviteToken, user, httpContext);
 
+        // Invited users join an organization that already has apps connected, so skip the "connect your app" welcome.
         if (!user.IsEmailAddressVerified)
-            await mailer.SendUserEmailVerifyAsync(user, isNewAccount: true);
+            await mailer.SendUserEmailVerifyAsync(user, isNewAccount: !hasValidInviteToken);
 
         logger.UserSignedUp(user.EmailAddress);
         return new TokenResult { Token = await GetOrCreateAuthenticationTokenAsync(user) };
