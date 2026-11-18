@@ -638,6 +638,7 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         // Assert
         Assert.All(all, key => Assert.StartsWith(BackgroundTaskService.KeyPrefix + ":", key));
         Assert.Equal(all.Count, all.Distinct().Count());
+        Assert.Equal("background-tasks:create:o", BackgroundTaskService.GetCreateLockResource("o"));
     }
 
     private static BackgroundTask NewTask(string organizationId = OrganizationId, bool canCancel = false)

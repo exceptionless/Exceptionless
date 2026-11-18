@@ -61,7 +61,7 @@ public class BackgroundTaskService
     public static string GetOrganizationIndexCacheKey(string organizationId) => $"{KeyPrefix}:organization:{organizationId}";
     public static string GetActiveIndexCacheKey(string organizationId) => $"{GetOrganizationIndexCacheKey(organizationId)}:active";
     public static string GetUpdateLockResource(string id) => $"{KeyPrefix}:update:{id}";
-    public static string GetCreateLockResource(string organizationId) => $"{GetOrganizationIndexCacheKey(organizationId)}:create";
+    public static string GetCreateLockResource(string organizationId) => $"{KeyPrefix}:create:{organizationId}";
 
     public async Task<BackgroundTask?> GetAsync(string id)
     {
