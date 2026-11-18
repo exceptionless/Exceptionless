@@ -18,6 +18,9 @@ internal static class AssistantLimits
     public const int MaximumProviderInputCharacters = 128_000;
     public const int MaximumTurnDurationSeconds = 120;
     public const int ConversationRetentionMinutes = 30;
-    public const decimal MaximumProviderPromptPricePerMillionTokens = 2m;
-    public const decimal MaximumProviderCompletionPricePerMillionTokens = 8m;
+
+    // Used only to estimate reservations until the provider reports actual usage.
+    // These are not routing limits: admins can select models at any price.
+    public const decimal EstimatedProviderPromptPricePerMillionTokens = 2m;
+    public const decimal EstimatedProviderCompletionPricePerMillionTokens = 8m;
 }

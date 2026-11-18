@@ -67,8 +67,8 @@ public static class WorktreeScope
             ports[11]);
 
         Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"https://localhost:{assignments.DashboardHttps};http://localhost:{assignments.DashboardHttp}");
-        Environment.SetEnvironmentVariable("DOTNET_DASHBOARD_OTLP_ENDPOINT_URL", $"https://localhost:{assignments.DashboardOtlp}");
-        Environment.SetEnvironmentVariable("DOTNET_RESOURCE_SERVICE_ENDPOINT_URL", $"https://localhost:{assignments.ResourceService}");
+        Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", $"https://localhost:{assignments.DashboardOtlp}");
+        Environment.SetEnvironmentVariable("ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL", $"https://localhost:{assignments.ResourceService}");
 
         return assignments;
     }

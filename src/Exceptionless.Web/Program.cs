@@ -204,7 +204,7 @@ public partial class Program
             builder.Services.AddMcpServer(options =>
                 options.ServerInstructions = "Exceptionless MCP tools are stateless. Direct get and stack-update tools accept a globally unique eventId or stackId without projectId; an explicitly supplied projectId is validated against that resource. Search and other scoped tools may omit scope only when the current OAuth grant exposes exactly one matching organization or project; otherwise use list_organizations, list_projects, or resolve_project and pass the required id explicitly. Previous tool calls never change the scope of later calls.")
                 .WithHttpTransport()
-                .WithTools<ExceptionlessMcpTools>()
+                .WithTools<ExceptionlessMcpTools>(McpJsonSerializerOptions.Default)
                 .WithRequestFilters(filters => filters.AddCallToolFilter(next => async (context, cancellationToken) =>
                     McpToolResultFilter.MarkStructuredErrors(await next(context, cancellationToken))));
             builder.Services.AddSingleton(_ => new ThrottlingOptions

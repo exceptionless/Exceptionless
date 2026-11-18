@@ -26,10 +26,14 @@ export { accessToken } from './state.svelte';
 // Re-export validators
 export { validateEmailAvailability } from './validators';
 
-export interface OAuthLoginOptions extends OAuthPopupOptions {
+export interface ExternalLoginOptions {
     inviteToken?: null | string;
+    /** Links the provider account to the signed-in user instead of signing in as the provider's user. */
+    linkToCurrentUser?: boolean;
     redirectUrl?: string;
 }
+
+export interface OAuthLoginOptions extends ExternalLoginOptions, OAuthPopupOptions {}
 
 export interface OAuthPopupOptions {
     authUrl: string;
@@ -57,7 +61,7 @@ export const enableOAuthLogin = facebookClientId || gitHubClientId || googleClie
 
 // OAuth login functions (interactive popup-based, not pure API calls)
 
-export async function facebookLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function facebookLogin(options: ExternalLoginOptions = {}) {
     if (!facebookClientId) {
         throw new Error('Facebook client id not set');
     }
@@ -65,14 +69,13 @@ export async function facebookLogin(redirectUrl?: string, inviteToken?: null | s
     await oauthLogin({
         authUrl: 'https://www.facebook.com/v2.5/dialog/oauth',
         clientId: facebookClientId,
-        inviteToken,
+        ...options,
         provider: 'facebook',
-        redirectUrl,
         scope: 'email'
     });
 }
 
-export async function githubLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function githubLogin(options: ExternalLoginOptions = {}) {
     if (!gitHubClientId) {
         throw new Error('GitHub client id not set');
     }
@@ -80,18 +83,17 @@ export async function githubLogin(redirectUrl?: string, inviteToken?: null | str
     await oauthLogin({
         authUrl: 'https://github.com/login/oauth/authorize',
         clientId: gitHubClientId,
-        inviteToken,
+        ...options,
         popupOptions: {
             height: 618,
             width: 1020
         },
         provider: 'github',
-        redirectUrl,
         scope: 'user:email'
     });
 }
 
-export async function googleLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function googleLogin(options: ExternalLoginOptions = {}) {
     if (!googleClientId) {
         throw new Error('Google client id not set');
     }
@@ -106,9 +108,8 @@ export async function googleLogin(redirectUrl?: string, inviteToken?: null | str
             service: 'lso',
             state: encodeURIComponent(Math.random().toString(36).substring(2))
         },
-        inviteToken,
+        ...options,
         provider: 'google',
-        redirectUrl,
         scope: 'openid profile email'
     });
 }
@@ -124,7 +125,7 @@ export async function gotoLogin() {
     });
 }
 
-export async function liveLogin(redirectUrl?: string, inviteToken?: null | string) {
+export async function liveLogin(options: ExternalLoginOptions = {}) {
     if (!microsoftClientId) {
         throw new Error('Live client id not set');
     }
@@ -135,9 +136,8 @@ export async function liveLogin(redirectUrl?: string, inviteToken?: null | strin
         extraParams: {
             display: 'popup'
         },
-        inviteToken,
+        ...options,
         provider: 'live',
-        redirectUrl,
         scope: 'wl.emails'
     });
 }
@@ -169,7 +169,14 @@ export async function slackOAuthLogin(): Promise<string> {
 async function oauthLogin(options: OAuthLoginOptions) {
     const data = await openOAuthPopup(options);
 
-    const client = useFetchClient();
+    // The API links the provider to whoever the request authenticates as, so a sign-in must not send the current session.
+    const client = useFetchClient(
+        options.linkToCurrentUser
+            ? undefined
+            : {
+                  accessTokenFunc: () => null
+              }
+    );
     const response = await client.postJSON<TokenResult>(`auth/${options.provider}`, {
         clientId: options.clientId,
         code: data.code,

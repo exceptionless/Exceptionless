@@ -38,8 +38,17 @@
     const inviteToken = page.url.searchParams.get('token');
     const redirectUrl = inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add');
 
+    const externalLoginOptions = {
+        inviteToken,
+        redirectUrl
+    };
+
+    // Only an invitation ends the current session: it must be accepted as the invited user. Every login shares one
+    // server token, so ending the session on any visit would sign out the user's other tabs and devices.
+    const isEndingSessionForInvite = !!inviteToken && !!accessToken.current;
+
     onMount(async () => {
-        if (accessToken.current) {
+        if (isEndingSessionForInvite) {
             try {
                 await logout();
             } catch {
@@ -70,7 +79,7 @@
     }));
 </script>
 
-<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg" inert={!!accessToken.current}>
+<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg" inert={!!inviteToken && !!accessToken.current}>
     <Card.Header>
         <Logo />
         <Card.Title class="text-center text-2xl">Signup for a FREE account in seconds</Card.Title>
@@ -81,22 +90,22 @@
                 <P class="text-center">Sign up with</P>
                 <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
                     {#if microsoftClientId}
-                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with Microsoft" onclick={() => liveLogin(externalLoginOptions)}>
                             <MicrosoftIcon class="size-4" /> Microsoft
                         </Button>
                     {/if}
                     {#if googleClientId}
-                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(externalLoginOptions)}>
                             <GoogleIcon class="size-4" /> Google
                         </Button>
                     {/if}
                     {#if facebookClientId}
-                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with Facebook" onclick={() => facebookLogin(externalLoginOptions)}>
                             <FacebookIcon class="size-4" /> Facebook
                         </Button>
                     {/if}
                     {#if gitHubClientId}
-                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl, inviteToken)}>
+                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(externalLoginOptions)}>
                             <GitHubIcon class="size-4" /> GitHub
                         </Button>
                     {/if}
