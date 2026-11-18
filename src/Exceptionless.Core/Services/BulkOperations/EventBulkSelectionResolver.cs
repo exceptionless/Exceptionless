@@ -4,12 +4,12 @@ using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Options;
 using Exceptionless.Core.Repositories.Queries;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
-using Exceptionless.Core.Repositories.Base;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
@@ -23,7 +23,6 @@ namespace Exceptionless.Core.Services.BulkOperations;
 /// </summary>
 public class EventBulkSelectionResolver : IBulkSelectionResolver
 {
-    private const string CreatedUtcField = "created_utc";
     private const string PremiumSearchUpgradeMessage = "Please upgrade your plan to use premium search features.";
     private readonly IEventRepository _eventRepository;
     private readonly IOrganizationRepository _organizationRepository;
@@ -41,14 +40,6 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         _validator = validator;
         _serializer = serializer;
         _configuration = configuration;
-    }
-
-    private ValueTask<bool> IsDateFieldAsync(string field)
-    {
-        // Event searches also support stack dates, so fall back to the stacks mapping.
-        var property = _configuration.Events.MappingResolver.GetMappingProperty(field, followAlias: true)
-            ?? _configuration.Stacks.MappingResolver.GetMappingProperty(field, followAlias: true);
-        return ValueTask.FromResult(property is DateProperty);
     }
 
     public BulkOperationEntity Entity => BulkOperationEntity.Events;
@@ -113,7 +104,8 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
         if (appFilter is null || pinnedState is null)
             return new BulkSelectionPage([], null);
 
-        var pinned = _serializer.Deserialize<PinnedEventSelection>(pinnedState) ?? new PinnedEventSelection();
+        var pinned = _serializer.Deserialize<PinnedEventSelection>(pinnedState)
+            ?? throw new BulkSelectionRejectedException(BulkOperationCheckResult.Invalid("selection", "The saved selection could not be read."));
         var query = ApplyScope(new RepositoryQuery<PersistentEvent>(), appFilter, task.Bulk!.Selection)
             .FilterExpression(pinned.EventFilter)
             .Include(e => e.Id)
@@ -126,12 +118,20 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
             query.ExcludeStack(pinned.ExcludedStackIds);
 
         // Paging only needs the next ids; the total was counted once when the task was created.
-        var options = new CommandOptions<PersistentEvent>().SearchAfterToken(cursor, _serializer).PageLimit(size).TrackTotalHits(false);
-        var results = await _eventRepository.FindAsync(query, options);
+        var results = await _eventRepository.FindAsync(query,
+            new CommandOptions<PersistentEvent>().SearchAfterToken(cursor, _serializer).PageLimit(size).TrackTotalHits(false));
 
         string[] ids = results.Hits.Select(h => h.Id).Where(id => !String.IsNullOrEmpty(id)).Select(id => id!).ToArray();
         string? nextCursor = results.Hits.LastOrDefault()?.GetSortToken(_serializer);
         return new BulkSelectionPage(ids, ids.Length > 0 ? nextCursor : null);
+    }
+
+    private ValueTask<bool> IsDateFieldAsync(string field)
+    {
+        // Event searches also support stack dates, so fall back to the stacks mapping.
+        var property = _configuration.Events.MappingResolver.GetMappingProperty(field, followAlias: true)
+            ?? _configuration.Stacks.MappingResolver.GetMappingProperty(field, followAlias: true);
+        return ValueTask.FromResult(property is DateProperty);
     }
 
     private static RepositoryQuery<PersistentEvent> ApplyScope(RepositoryQuery<PersistentEvent> query, AppFilter appFilter, BulkOperationSelection selection)
@@ -146,7 +146,7 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
 
         // The event date is chosen by the client, so an old-dated event can still arrive after the task was created.
         if (selection.UtcCreatedBefore.HasValue)
-            query.DateRange(null, selection.UtcCreatedBefore, CreatedUtcField);
+            query.DateRange(null, selection.UtcCreatedBefore, (PersistentEvent e) => e.CreatedUtc);
 
         return query;
     }
@@ -182,10 +182,10 @@ public class EventBulkSelectionResolver : IBulkSelectionResolver
     }
 
     /// <summary>What the stack level filter resolved to when the task was created.</summary>
-    private sealed class PinnedEventSelection
+    private sealed record PinnedEventSelection
     {
-        public string? EventFilter { get; set; }
-        public string[] ExcludedStackIds { get; set; } = [];
-        public string[] StackIds { get; set; } = [];
+        public string? EventFilter { get; init; }
+        public string[] ExcludedStackIds { get; init; } = [];
+        public string[] StackIds { get; init; } = [];
     }
 }

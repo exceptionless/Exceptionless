@@ -85,7 +85,7 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
         for (int p = 0; p < projectList.Count; p++)
         {
             int projectEventCount = eventsPerProject + (p < remainder ? 1 : 0);
-            if (projectEventCount == 0)
+            if (projectEventCount is 0)
                 continue;
 
             if (context.CancellationToken.IsCancellationRequested)

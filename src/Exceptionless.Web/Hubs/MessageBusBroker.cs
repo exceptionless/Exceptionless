@@ -35,13 +35,13 @@ public sealed class MessageBusBroker : IStartupAction
 
         _logger.LogDebug("Subscribing to message bus notifications");
         await Task.WhenAll(
+            _subscriber.SubscribeAsync<BackgroundTaskUpdated>(OnBackgroundTaskUpdatedAsync, shutdownToken),
             _subscriber.SubscribeAsync<EntityChanged>(OnEntityChangedAsync, shutdownToken),
             _subscriber.SubscribeAsync<PlanChanged>(OnPlanChangedAsync, shutdownToken),
             _subscriber.SubscribeAsync<PlanOverage>(OnPlanOverageAsync, shutdownToken),
-            _subscriber.SubscribeAsync<BackgroundTaskUpdated>(OnBackgroundTaskUpdatedAsync, shutdownToken),
-            _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, shutdownToken),
             _subscriber.SubscribeAsync<ReleaseNotification>(OnReleaseNotificationAsync, shutdownToken),
-            _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync, shutdownToken)
+            _subscriber.SubscribeAsync<SystemNotification>(OnSystemNotificationAsync, shutdownToken),
+            _subscriber.SubscribeAsync<UserMembershipChanged>(OnUserMembershipChangedAsync, shutdownToken)
         );
         _logger.LogDebug("Subscribed to message bus notifications");
     }

@@ -6,7 +6,6 @@ namespace Exceptionless.Core.Models.BulkOperations;
 public class BulkOperationDetails
 {
     public BulkOperationSelection Selection { get; set; } = null!;
-    public Dictionary<string, string> Parameters { get; set; } = new();
 
     /// <summary>Consecutive batches that failed with a temporary error. Reset by the next successful batch.</summary>
     public int RetryCount { get; set; }
@@ -33,7 +32,7 @@ public enum BulkOperationSelectionKind
 /// Either an explicit list of ids or a filter. A filter selection always carries the absolute UTC window that was
 /// resolved when the operation was created, so items that arrive afterwards are never included.
 /// </summary>
-public class BulkOperationSelection
+public record BulkOperationSelection
 {
     public BulkOperationSelectionKind Kind { get; set; }
     public List<string>? Ids { get; set; }

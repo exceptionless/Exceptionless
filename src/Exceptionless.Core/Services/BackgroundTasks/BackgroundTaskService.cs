@@ -1,5 +1,7 @@
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models.BackgroundTasks;
+using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
@@ -10,12 +12,6 @@ using Foundatio.Resilience;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services.BackgroundTasks;
-
-public class BackgroundTaskOptions
-{
-    /// <summary>How long one attempt to lock a task waits. A busy lock is retried by the resilience policy.</summary>
-    public TimeSpan LockAcquireTimeout { get; set; } = TimeSpan.FromSeconds(5);
-}
 
 /// <summary>
 /// Stores background tasks in the cache (with a limited lifetime), keeps a per-organization index and an index of the
@@ -35,7 +31,6 @@ public class BackgroundTaskService
     public const string KeyPrefix = "background-tasks";
 
     private const int IndexPageSize = 500;
-    private const int MaxIndexPages = 100;
     private readonly ICacheClient _cache;
     private readonly ILockProvider _lockProvider;
     private readonly IMessagePublisher _publisher;
@@ -61,11 +56,12 @@ public class BackgroundTaskService
     }
 
     public static string GetTaskCacheKey(string id) => $"{KeyPrefix}:{id}";
+    public static string GetPinnedSelectionCacheKey(string id) => $"{GetTaskCacheKey(id)}:selection";
     public static string GetCancelCacheKey(string id) => $"{KeyPrefix}:{id}:cancel";
     public static string GetOrganizationIndexCacheKey(string organizationId) => $"{KeyPrefix}:organization:{organizationId}";
-    public static string GetActiveIndexCacheKey(string organizationId) => $"{KeyPrefix}:organization:{organizationId}:active";
+    public static string GetActiveIndexCacheKey(string organizationId) => $"{GetOrganizationIndexCacheKey(organizationId)}:active";
     public static string GetUpdateLockResource(string id) => $"{KeyPrefix}:update:{id}";
-    public static string GetCreateLockResource(string organizationId) => $"{KeyPrefix}:create:{organizationId}";
+    public static string GetCreateLockResource(string organizationId) => $"{GetOrganizationIndexCacheKey(organizationId)}:create";
 
     public async Task<BackgroundTask?> GetAsync(string id)
     {
@@ -93,19 +89,38 @@ public class BackgroundTaskService
 
         var tasks = new List<BackgroundTask>();
         var expired = new List<string>();
+        var records = await _cache.GetAllAsync<BackgroundTask>(newestIds.Select(GetTaskCacheKey));
         foreach (string id in newestIds)
         {
-            var task = await GetAsync(id);
-            if (task is null)
+            if (!records.TryGetValue(GetTaskCacheKey(id), out var record) || !record.HasValue)
                 expired.Add(id);
-            else if (String.Equals(task.OrganizationId, organizationId, StringComparison.Ordinal))
-                tasks.Add(task);
+            else if (String.Equals(record.Value.OrganizationId, organizationId, StringComparison.Ordinal))
+                tasks.Add(record.Value);
         }
 
         if (expired.Count > 0)
             await _cache.ListRemoveAsync(GetOrganizationIndexCacheKey(organizationId), expired);
 
         return tasks.OrderByDescending(t => t.CreatedUtc).ThenByDescending(t => t.Id, StringComparer.Ordinal).ToList();
+    }
+
+    public async Task RemoveByOrganizationAsync(string organizationId, CancellationToken cancellationToken)
+    {
+        string historyKey = GetOrganizationIndexCacheKey(organizationId);
+        string activeKey = GetActiveIndexCacheKey(organizationId);
+        var ids = await GetIndexedIdsAsync(historyKey);
+        ids.AddRange(await GetIndexedIdsAsync(activeKey));
+        foreach (string id in ids.Distinct(StringComparer.Ordinal))
+        {
+            await using var updateLock = await AcquireUpdateLockAsync(id, cancellationToken);
+            var task = await GetAsync(id);
+            if (task is not null && !String.Equals(task.OrganizationId, organizationId, StringComparison.Ordinal))
+                continue;
+
+            await _cache.RemoveAllAsync([GetTaskCacheKey(id), GetPinnedSelectionCacheKey(id), GetCancelCacheKey(id)]);
+        }
+
+        await _cache.RemoveAllAsync([historyKey, activeKey]);
     }
 
     /// <summary>The ids of the organization's tasks that have not finished.</summary>
@@ -117,7 +132,7 @@ public class BackgroundTaskService
     /// <summary>Puts a task that is running again (for example after a queue retry) back into the active index.</summary>
     public Task AddToActiveIndexAsync(string organizationId, string id)
     {
-        return _cache.ListAddAsync(GetActiveIndexCacheKey(organizationId), [id], TaskLifetime);
+        return _cache.ListAddAsync(GetActiveIndexCacheKey(organizationId), [id], GetIndexLifetime(_timeProvider.GetUtcNow().UtcDateTime));
     }
 
     /// <summary>Removes finished (or expired) ids from the active index of the organization.</summary>
@@ -129,19 +144,23 @@ public class BackgroundTaskService
     /// <summary>
     /// Gives the task an id, stores it as queued and adds it to the indexes. Nothing is published or queued yet.
     /// </summary>
-    public async Task AddAsync(BackgroundTask task)
+    public async Task AddAsync(BackgroundTask task, string? pinnedSelection = null)
     {
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
         task.Id = ObjectId.GenerateNewId(utcNow).ToString();
         task.Status = BackgroundTaskStatus.Queued;
         task.CreatedUtc = utcNow;
-        task.UpdatedUtc = utcNow;
+
+        // The worker needs its selection before the task becomes visible in either index.
+        if (pinnedSelection is not null && !await _cache.SetAsync(GetPinnedSelectionCacheKey(task.Id), pinnedSelection, TaskLifetime))
+            throw new InvalidOperationException("The bulk selection could not be saved.");
 
         await SaveAsync(task);
-        if (await _cache.ListAddAsync(GetOrganizationIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime) != 1)
+        var indexLifetime = GetIndexLifetime(task.UpdatedUtc);
+        if (await _cache.ListAddAsync(GetOrganizationIndexCacheKey(task.OrganizationId), [task.Id], indexLifetime) is not 1)
             throw new InvalidOperationException("The background task could not be added to the organization index.");
 
-        if (await _cache.ListAddAsync(GetActiveIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime) != 1)
+        if (await _cache.ListAddAsync(GetActiveIndexCacheKey(task.OrganizationId), [task.Id], indexLifetime) is not 1)
             throw new InvalidOperationException("The background task could not be added to the active index.");
     }
 
@@ -170,7 +189,6 @@ public class BackgroundTaskService
             _logger.LogError(ex, "Unable to queue background task {TaskId}: {Message}", task.Id, ex.Message);
             var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
             task.Finish(BackgroundTaskStatus.Failed, "The task could not be started. Please try again.", utcNow);
-            task.UpdatedUtc = utcNow;
             await SaveAsync(task);
             await RemoveFromActiveIndexAsync(task.OrganizationId, [task.Id]);
             await PublishAsync(task);
@@ -199,8 +217,7 @@ public class BackgroundTaskService
     /// </remarks>
     public async Task<BackgroundTask?> UpdateAsync(string id, Func<BackgroundTask, bool> update)
     {
-        await using var updateLock = await _lockPolicy.ExecuteAsync(async ct =>
-            await _lockProvider.AcquireAsync(GetUpdateLockResource(id), TimeSpan.FromSeconds(30), _options.LockAcquireTimeout), CancellationToken.None);
+        await using var updateLock = await AcquireUpdateLockAsync(id, CancellationToken.None);
 
         var task = await GetAsync(id);
         if (task is null)
@@ -209,7 +226,6 @@ public class BackgroundTaskService
         if (!update(task))
             return task;
 
-        task.UpdatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
         await SaveAsync(task);
         if (!task.IsActive)
             await RemoveFromActiveIndexAsync(task.OrganizationId, [task.Id]);
@@ -233,7 +249,7 @@ public class BackgroundTaskService
         if (!task.IsActive)
             return BackgroundTaskCancelResult.Cancelled(task);
 
-        bool isAbandoned = utcNow - task.UpdatedUtc >= StaleAfter;
+        bool isAbandoned = IsStale(task, utcNow);
         if (!task.CanCancel && !isAbandoned)
             return BackgroundTaskCancelResult.NotCancellable(task);
 
@@ -245,13 +261,12 @@ public class BackgroundTaskService
 
             // Progress may have resumed after the initial read. Decide eligibility against the locked state.
             var currentUtcNow = _timeProvider.GetUtcNow().UtcDateTime;
-            bool isAbandonedNow = currentUtcNow - current.UpdatedUtc >= StaleAfter;
-            if (!current.CanCancel && !isAbandonedNow)
+            bool isStale = IsStale(current, currentUtcNow);
+            if (!current.CanCancel && !isStale)
                 return false;
 
             requestCancellation = true;
-            bool isRunningNow = current.Status is BackgroundTaskStatus.Running && !isAbandonedNow;
-            if (isRunningNow)
+            if (current.Status is BackgroundTaskStatus.Running && !isStale)
                 return false;
 
             current.Finish(BackgroundTaskStatus.Cancelled, current.Status is BackgroundTaskStatus.Queued ? "Cancelled before it started." : "Cancelled after it stopped responding.", currentUtcNow);
@@ -278,6 +293,15 @@ public class BackgroundTaskService
 
     public async Task SaveAsync(BackgroundTask task)
     {
+        var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
+        if (task.UpdatedUtc != default && task.UpdatedUtc.Date != utcNow.Date)
+        {
+            await RefreshIndexAsync(GetOrganizationIndexCacheKey(task.OrganizationId), task.Id, utcNow);
+            if (task.IsActive)
+                await RefreshIndexAsync(GetActiveIndexCacheKey(task.OrganizationId), task.Id, utcNow);
+        }
+
+        task.UpdatedUtc = utcNow;
         if (!await _cache.SetAsync(GetTaskCacheKey(task.Id), task, TaskLifetime))
             throw new InvalidOperationException("The background task could not be saved.");
     }
@@ -319,13 +343,32 @@ public class BackgroundTaskService
         }
     }
 
+    internal static bool IsStale(BackgroundTask task, DateTime utcNow) => task.UpdatedUtc.IsBeforeOrEqual(utcNow - StaleAfter);
+
+    // Index entries cover every record saved on this UTC day, so progress within the day only rewrites the record.
+    private static TimeSpan GetIndexLifetime(DateTime utcNow) => TaskLifetime + (utcNow.Date.AddDays(1) - utcNow);
+
+    private async Task RefreshIndexAsync(string key, string id, DateTime utcNow)
+    {
+        var lifetime = GetIndexLifetime(utcNow);
+        await _cache.ListAddAsync(key, [id], lifetime);
+        // Updating an existing Redis sorted-set member refreshes its score, but can leave the set's TTL at the old deadline.
+        await _cache.SetExpirationAsync(key, lifetime);
+    }
+
+    private async Task<ILock> AcquireUpdateLockAsync(string id, CancellationToken cancellationToken)
+    {
+        return await _lockPolicy.ExecuteAsync(async ct =>
+            await _lockProvider.AcquireAsync(GetUpdateLockResource(id), TimeSpan.FromSeconds(30), _options.LockAcquireTimeout), cancellationToken);
+    }
+
     private async Task<List<string>> GetIndexedIdsAsync(string key)
     {
         var ids = new List<string>();
-        for (int page = 1; page <= MaxIndexPages; page++)
+        for (int page = 1; ; page++)
         {
             var batch = await _cache.GetListAsync<string>(key, page, IndexPageSize);
-            if (!batch.HasValue || batch.Value.Count == 0)
+            if (!batch.HasValue || batch.Value.Count is 0)
                 break;
 
             ids.AddRange(batch.Value);

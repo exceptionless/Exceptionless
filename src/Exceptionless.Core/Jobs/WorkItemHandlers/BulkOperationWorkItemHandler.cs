@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Models.WorkItems;
@@ -17,11 +18,6 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 /// </summary>
 public class BulkOperationWorkItemHandler : WorkItemHandlerBase
 {
-    /// <summary>
-    /// How many temporary errors in a row (without a batch completing in between) end the task.
-    /// </summary>
-    public const int MaxTransientFailures = 3;
-
     /// <summary>
     /// Saved as the cursor once the last batch is done, so a run that restarts before the task is marked complete finds
     /// nothing left to do instead of starting the selection over.
@@ -134,7 +130,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
                 }
 
                 var page = await GetPageAsync(task, resolver, pinnedSelection, context.CancellationToken);
-                if (page.Ids.Count == 0)
+                if (page.Ids.Count is 0)
                     break;
 
                 // The user who started the task is authorized once, when it is created. Each batch re-checks the scope
@@ -188,18 +184,17 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         }
         catch (Exception ex) when (!IsPermanent(ex))
         {
-            // Elasticsearch, cache and network hiccups: continue in a new work item from the saved counts and cursor. Rethrowing
-            // would use the queue's retries, which cover the whole work item, so an task that makes progress between errors
-            // would run out of deliveries while still marked running. After MaxTransientFailures in a row, give up.
+            // Retry from the checkpoint. A successful batch resets the consecutive failure count.
             var failed = await _taskService.UpdateAsync(workItem.TaskId, current =>
             {
                 if (!current.IsActive)
                     return false;
 
                 current.Bulk!.RetryCount++;
-                current.Message = current.Bulk!.RetryCount >= MaxTransientFailures ? "The operation stopped because of repeated errors." : "Retrying after a temporary error.";
-                if (current.Bulk!.RetryCount >= MaxTransientFailures)
-                    current.Finish(BackgroundTaskStatus.Failed, current.Message, UtcNow);
+                if (current.Bulk.RetryCount >= _options.MaxTransientFailures)
+                    current.Finish(BackgroundTaskStatus.Failed, "The operation stopped because of repeated errors.", UtcNow);
+                else
+                    current.Message = "Retrying after a temporary error.";
 
                 return true;
             });
@@ -217,7 +212,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
             if (_options.RetryDelay > TimeSpan.Zero)
                 await Task.Delay(_options.RetryDelay * failed.Bulk!.RetryCount, _timeProvider, context.CancellationToken);
 
-            await _service.ContinueAsync(workItem);
+            await _taskService.ContinueAsync(workItem);
         }
         catch (Exception ex)
         {
@@ -228,7 +223,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
 
     /// <summary>
     /// Errors that retrying cannot fix. Everything else (Elasticsearch, cache and network failures surface as many different
-    /// exception types) is treated as temporary and bounded by <see cref="MaxTransientFailures"/>.
+    /// exception types) is treated as temporary and bounded by <see cref="BulkOperationOptions.MaxTransientFailures"/>.
     /// </summary>
     internal static bool IsPermanent(Exception exception)
     {
@@ -244,7 +239,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
     private async Task<BulkSelectionPage> GetPageAsync(BackgroundTask task, IBulkSelectionResolver resolver, string? pinnedSelection, CancellationToken cancellationToken)
     {
         int size = Math.Max(1, _options.BatchSize);
-        if (task.Bulk!.Cursor == ExhaustedCursor)
+        if (String.Equals(task.Bulk!.Cursor, ExhaustedCursor, StringComparison.Ordinal))
             return new BulkSelectionPage([], null);
 
         if (task.Bulk!.Selection.Kind is not BulkOperationSelectionKind.Ids)

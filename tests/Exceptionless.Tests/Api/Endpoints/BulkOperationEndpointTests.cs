@@ -1,4 +1,5 @@
 using System.Net;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.BackgroundTasks;
@@ -256,8 +257,8 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
             d.Event().TestProject();
             d.Event().FreeProject();
         });
-        var own = events.Single(e => e.OrganizationId == SampleDataService.TEST_ORG_ID);
-        var foreign = events.Single(e => e.OrganizationId == SampleDataService.FREE_ORG_ID);
+        var own = events.Single(e => String.Equals(e.OrganizationId, SampleDataService.TEST_ORG_ID, StringComparison.Ordinal));
+        var foreign = events.Single(e => String.Equals(e.OrganizationId, SampleDataService.FREE_ORG_ID, StringComparison.Ordinal));
 
         // Act
         var created = await CreateOperationAsync(new NewBulkOperation
@@ -285,7 +286,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
             d.Event().TestProject();
             d.Event().TestProject().Project(SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID);
         });
-        var otherProject = events.Single(e => e.ProjectId == SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID);
+        var otherProject = events.Single(e => String.Equals(e.ProjectId, SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, StringComparison.Ordinal));
 
         // Act
         var created = await CreateOperationAsync(new NewBulkOperation
@@ -455,6 +456,8 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
             // An unparseable time parses as unbounded and must not widen the delete to everything within retention.
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "not a time range"),
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "not a time range*"),
+            FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "|last 7 days"),
+            FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "][*"),
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "", "[now-7d TO"),
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Filter, Ids = ["537650f3b77efe23a47914f3"] } },
             FilterRequest(SampleDataService.TEST_ORG_ID, null, "") with { Selection = new NewBulkOperationSelection { Kind = BulkOperationSelectionKind.Ids, Ids = [] } },
@@ -477,6 +480,8 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
     [InlineData("")]
     [InlineData("all")]
     [InlineData("[* TO *]")]
+    [InlineData("* TO *")]
+    [InlineData("date|last 7 days")]
     [InlineData("[now-30d TO *]")]
     [InlineData("[* TO now-1d]")]
     [InlineData("last 7 days")]
@@ -538,7 +543,7 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
 
         // Act
         await RunOperationAsync(_bulkOperationService, created.Id, batchSize: 2, TestCancellationToken);
-        await WaitForAsync(() => messages.Any(m => m.Status == BackgroundTaskStatus.Completed));
+        await WaitForAsync(() => messages.Any(m => m.Status is BackgroundTaskStatus.Completed));
 
         // Assert
         var finished = await GetOperationAsync(created.Id);
@@ -547,10 +552,10 @@ public partial class BulkOperationEndpointTests : IntegrationTestsBase
         Assert.Equal(5, finished.Succeeded);
         Assert.Empty(await GetRemainingMessagesAsync(events));
 
-        var forOperation = messages.Where(m => m.Id == created.Id).ToList();
-        Assert.Contains(forOperation, m => m.Status == BackgroundTaskStatus.Running && m.Processed == 2);
-        Assert.Contains(forOperation, m => m.Status == BackgroundTaskStatus.Running && m.Processed == 4);
-        Assert.Contains(forOperation, m => m.Status == BackgroundTaskStatus.Running && m.Processed == 5);
+        var forOperation = messages.Where(m => String.Equals(m.Id, created.Id, StringComparison.Ordinal)).ToList();
+        Assert.Contains(forOperation, m => m.Status is BackgroundTaskStatus.Running && m.Processed is 2);
+        Assert.Contains(forOperation, m => m.Status is BackgroundTaskStatus.Running && m.Processed is 4);
+        Assert.Contains(forOperation, m => m.Status is BackgroundTaskStatus.Running && m.Processed is 5);
         var last = forOperation.OrderBy(m => m.UpdatedUtc).ThenBy(m => m.Processed).Last();
         Assert.Equal(BackgroundTaskStatus.Completed, last.Status);
         Assert.All(forOperation, m => Assert.Equal(SampleDataService.TEST_ORG_ID, m.OrganizationId));

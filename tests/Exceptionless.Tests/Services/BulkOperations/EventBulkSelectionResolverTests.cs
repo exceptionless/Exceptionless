@@ -106,7 +106,7 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
         });
         var task = NewFilterTask("status:open");
         var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
-        var openStack = stacks.Single(s => s.Status == StackStatus.Open);
+        var openStack = stacks.Single(s => s.Status is StackStatus.Open);
         openStack.Status = StackStatus.Fixed;
         await GetService<IStackRepository>().SaveAsync(openStack, o => o.ImmediateConsistency());
 
@@ -115,7 +115,7 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
 
         // Assert
         Assert.Equal(1, preparation.Total);
-        Assert.Equal([events.Single(e => e.Message == "open").Id], pages.SelectMany(p => p).ToArray());
+        Assert.Equal([events.Single(e => String.Equals(e.Message, "open", StringComparison.Ordinal)).Id], pages.SelectMany(p => p).ToArray());
     }
 
     [Fact]
@@ -131,6 +131,19 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
         // Assert
         Assert.Empty(page.Ids);
         Assert.Null(page.NextCursor);
+    }
+
+    [Fact]
+    public async Task GetPageAsync_SavedSelectionIsJsonNull_RejectsTheSelection()
+    {
+        // Arrange
+        var task = NewFilterTask("type:error");
+
+        // Act
+        var error = await Record.ExceptionAsync(async () => await _resolver.GetPageAsync(task, "null", null, 10, TestCancellationToken));
+
+        // Assert
+        Assert.IsType<BulkSelectionRejectedException>(error);
     }
 
     [Fact]
@@ -153,7 +166,7 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
 
         // Assert
         Assert.Equal(1, preparation.Total);
-        Assert.Equal([events.Single(e => e.Message == "own").Id], pages.SelectMany(p => p).ToArray());
+        Assert.Equal([events.Single(e => String.Equals(e.Message, "own", StringComparison.Ordinal)).Id], pages.SelectMany(p => p).ToArray());
     }
 
     [Fact]
@@ -299,7 +312,7 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
         for (int guard = 0; guard < 20; guard++)
         {
             var page = await _resolver.GetPageAsync(task, pinnedState, cursor, size, TestCancellationToken);
-            if (page.Ids.Count == 0)
+            if (page.Ids.Count is 0)
                 return pages;
 
             pages.Add(page.Ids.ToList());

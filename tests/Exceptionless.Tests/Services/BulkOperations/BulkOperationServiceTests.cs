@@ -157,7 +157,7 @@ public class BulkOperationServiceTests : TestWithLoggingBase, IDisposable
         Assert.Equal(BackgroundTaskStatus.Failed, retired!.Status);
         Assert.NotNull(retired.CompletedUtc);
         Assert.Equal([replacement.Task.Id], (await _harness.Tasks.GetActiveIdsAsync(OrganizationId)).ToArray());
-        Assert.Contains(_harness.Publisher.Updates, u => u.Id == stale.Task.Id && u.Status == BackgroundTaskStatus.Failed);
+        Assert.Contains(_harness.Publisher.Updates, u => String.Equals(u.Id, stale.Task.Id, StringComparison.Ordinal) && u.Status is BackgroundTaskStatus.Failed);
     }
 
     [Fact]
@@ -207,6 +207,36 @@ public class BulkOperationServiceTests : TestWithLoggingBase, IDisposable
         Assert.Empty(activeAfterFailure);
         Assert.NotNull(retry.Task);
         Assert.Equal(BackgroundTaskStatus.Queued, retry.Task.Status);
+    }
+
+    [Fact]
+    public async Task CreateAsync_RejectedSelectionWrite_DoesNotQueueOrBlockReplacement()
+    {
+        // Arrange
+        const string selection = "large selection";
+        using var harness = new BackgroundTaskTestHarness(_time, Log, configureCache: options =>
+        {
+            options.MaxEntrySize = 1;
+            options.SizeCalculator = value => value is string text && String.Equals(text, selection, StringComparison.Ordinal) ? 2 : 1;
+            options.ShouldThrowOnMaxEntrySizeExceeded = false;
+        });
+        var resolver = new Mock<IBulkSelectionResolver>();
+        resolver.Setup(r => r.PrepareAsync(It.IsAny<BackgroundTask>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new BulkSelectionPreparation(BulkOperationCheckResult.Ok, 1, selection));
+        var service = new BulkOperationService(harness.Tasks, harness.Cache, harness.LockProvider,
+            [new StubHandler("test.destructive", true)], [resolver.Object], _time);
+        var task = NewTask("test.destructive", ProjectId);
+        task.Bulk!.Selection = new BulkOperationSelection { Kind = BulkOperationSelectionKind.Filter };
+
+        // Act
+        var error = await Record.ExceptionAsync(async () => await service.CreateAsync(task));
+        var queued = await harness.Queue.GetQueueStatsAsync();
+        var retry = await service.CreateAsync(NewTask("test.destructive", ProjectId));
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(error);
+        Assert.Equal(0, queued.Enqueued);
+        Assert.NotNull(retry.Task);
     }
 
     [Fact]

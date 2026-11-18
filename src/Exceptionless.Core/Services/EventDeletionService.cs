@@ -25,7 +25,7 @@ public class EventDeletionService
     /// <summary>Deletes events the caller has already verified access to.</summary>
     public async Task DeleteAsync(IReadOnlyCollection<PersistentEvent> events)
     {
-        if (events.Count == 0)
+        if (events.Count is 0)
             return;
 
         await _eventRepository.RemoveAsync(events);
