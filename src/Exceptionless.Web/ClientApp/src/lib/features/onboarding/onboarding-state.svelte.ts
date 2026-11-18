@@ -72,7 +72,8 @@ export function useOrganizationOnboarding(getOrganizationId: () => string | unde
         },
         /** True once there is enough information to decide whether events have arrived. */
         get isSettled() {
-            return projectsQuery.isSuccess && (projectsReportEvents || eventCountQuery.isSuccess || eventCountQuery.isError);
+            // A failed project load can't show first-run states, so callers fall back to their normal view instead of waiting forever.
+            return projectsQuery.isError || (projectsQuery.isSuccess && (projectsReportEvents || eventCountQuery.isSuccess || eventCountQuery.isError));
         },
         get projects() {
             return projects;

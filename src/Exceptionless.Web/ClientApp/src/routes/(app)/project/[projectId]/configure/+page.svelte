@@ -81,6 +81,19 @@
     let sampleDataRequested = $state(false);
     let isTakingAWhile = $state(false);
     let troubleshootingOpen = $state(false);
+
+    // SvelteKit reuses this page when only the project changes (e.g. from the command palette), so start each project fresh.
+    $effect(() => {
+        void projectId;
+        return () => {
+            firstEventReceived = false;
+            celebrationOpen = false;
+            sampleDataRequested = false;
+            isTakingAWhile = false;
+            troubleshootingOpen = false;
+        };
+    });
+
     const tourActions = createProductTourActions();
     const projectConfigureCheckpoint = $derived(productTourCheckpoint.current?.tourName === 'project-configure' ? productTourCheckpoint.current : undefined);
 

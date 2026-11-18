@@ -178,6 +178,8 @@ public sealed class WebSocketTests : TestWithServices
             // Assert
             await WaitForMessageAsync(memberSocket);
             await WaitForMessageAsync(userSocket);
+            // Sends run on the thread pool; give a duplicate (group send plus direct send) time to arrive before counting.
+            await Task.Delay(TimeSpan.FromMilliseconds(250), TestCancellationToken);
             Assert.Single(memberSocket.SentMessages);
             Assert.Single(userSocket.SentMessages);
             Assert.Contains("\"UserMembershipChanged\"", userSocket.SentMessages[0]);

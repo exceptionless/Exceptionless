@@ -178,14 +178,10 @@
         <HourlyOverageNotification name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if isExceededRequestLimit}
         <RequestLimitNotification name={organization.name} {isChatEnabled} {openChat} {...restProps} />
-    {:else if hasNoProjects || needsProjectConfiguration}
-        {#if ignoreSetupPrompts}
-            <!-- The page's own setup prompt takes this slot. -->
-        {:else if hasNoProjects}
-            <SetupFirstProjectNotification {...restProps} />
-        {:else}
-            <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
-        {/if}
+    {:else if !ignoreSetupPrompts && hasNoProjects}
+        <SetupFirstProjectNotification {...restProps} />
+    {:else if !ignoreSetupPrompts && needsProjectConfiguration}
+        <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
     {:else if requiresPremiumUpgrade}
         <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} {premiumFeatureName} {...restProps} />
     {:else if showUsageWarning && monthlyEventUsage}
