@@ -4,6 +4,7 @@ import type { E2EApiClient } from '../fixtures/api-client';
 
 import { type E2EScenario, expect, test } from '../fixtures/e2e-test';
 
+test.skip(process.env.E2E_ENV === 'production', 'The checklist specs read verification links from local Mailpit.');
 test.use({ e2eDismissGettingStartedChecklist: false, e2eUseGeneratedUser: true });
 
 function checklist(page: Page) {

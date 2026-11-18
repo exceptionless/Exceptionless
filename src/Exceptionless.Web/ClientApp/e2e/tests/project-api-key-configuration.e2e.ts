@@ -17,7 +17,7 @@ test('operator can manage project API keys and follow first-event redirect', asy
         await page.locator(`a[href="/project/${e2eScenario.projectId}/configure"]`).filter({ hasText: 'Client setup' }).last().click();
 
         await expect(page).toHaveURL(new RegExp(`/project/${e2eScenario.projectId}/configure(?:[?#]|$)`));
-        await expect(page.getByRole('heading', { name: `Send Events to ${e2eScenario.projectName}` })).toBeVisible();
+        await expect(page.getByRole('heading', { name: `Send events to ${e2eScenario.projectName}` })).toBeVisible();
     });
 
     await test.step('celebrate the first event and open project Events', async () => {

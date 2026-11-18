@@ -3,6 +3,9 @@ import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
 test.skip(process.env.E2E_ENV === 'production', 'Email verification requires local Mailpit.');
 test.use({ e2eInjectBrowserToken: false, e2eUseInvitedUser: true });
 
+// Verified users continue into the app; with a project and no events yet, the root route sends them to client setup.
+const IN_APP_LANDING = /\/(?:project\/[^/]+\/configure|stack\/|event\/)/;
+
 test('an invalid verification link preserves the unverified account @signup', async ({ e2eApi, e2eScenario, page }) => {
     // Arrange
     const invalidLink = '/account/verify?token=invalidverificationtoken1234567890';
@@ -42,7 +45,7 @@ test('verification in another tab refreshes the original account page @signup', 
     expect(initialUser?.is_email_address_verified).toBe(false);
     expect(verifiedUser?.is_email_address_verified).toBe(true);
     // Verifying your own account continues into the app instead of stopping on Account settings.
-    await expect(confirmationPage).not.toHaveURL(/\/account\/(?:manage|verify)(?:[?#]|$)/);
+    await expect(confirmationPage).toHaveURL(IN_APP_LANDING);
     await expect(page.getByText('Email not verified.')).toHaveCount(0);
 });
 
@@ -86,7 +89,7 @@ test('a link for another account leaves the signed-in account able to resend ver
 
         // Assert
         expect(verifiedSignedInUser?.is_email_address_verified).toBe(true);
-        await expect(page).not.toHaveURL(/\/account\/(?:manage|verify)(?:[?#]|$)/);
+        await expect(page).toHaveURL(IN_APP_LANDING);
     } finally {
         if (otherUserToken) {
             await e2eApi.deleteCurrentUser(otherUserToken);
@@ -114,5 +117,5 @@ test('a legacy verification link survives the login redirect @signup', async ({ 
 
     // Assert
     expect(user?.is_email_address_verified).toBe(true);
-    await expect(page).not.toHaveURL(/\/account\/(?:manage|verify)(?:[?#]|$)/);
+    await expect(page).toHaveURL(IN_APP_LANDING);
 });
