@@ -6,12 +6,12 @@
         @if (Model.IsNewAccount)
         {
             <h1 style="@EmailStyles.Heading1">Welcome, @Model.UserFullName!</h1>
-            <p style="@EmailStyles.Lead">Your Exceptionless account is ready to use. Confirm your email address to turn on email notifications.</p>
+            <p style="@EmailStyles.Lead">Your Exceptionless account is ready to use. Confirm your email address to finish setting it up and turn on email notifications.</p>
         }
         else
         {
             <h1 style="@EmailStyles.Heading1">Hello @Model.UserFullName,</h1>
-            <p style="@EmailStyles.Lead">Confirm your email address to turn on email notifications.</p>
+            <p style="@EmailStyles.Lead">Confirm your email address to finish setting up your account and turn on email notifications.</p>
         }
         <EmailButton Url="@Model.Action!.Url">Confirm Email Address</EmailButton>
         <p style="@EmailStyles.Paragraph">This link expires in 24 hours.</p>
