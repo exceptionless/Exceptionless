@@ -77,8 +77,8 @@ public class BackgroundTaskService
     }
 
     /// <summary>
-    /// The newest tasks of the organization that are still stored, newest first. Every indexed id is read so a busy
-    /// organization cannot push recent tasks out of the list; only the history that is shown is limited.
+    /// The newest tasks of the organization that are still stored, newest first, plus every task that is still active.
+    /// An older active task stays listed no matter how many newer tasks finished; only the finished history is limited.
     /// </summary>
     public async Task<IReadOnlyList<BackgroundTask>> GetByOrganizationAsync(string organizationId, int limit = ListLimit)
     {
@@ -86,7 +86,10 @@ public class BackgroundTaskService
         var newestIds = (await GetIndexedIdsAsync(GetOrganizationIndexCacheKey(organizationId)))
             .Distinct(StringComparer.Ordinal)
             .OrderByDescending(id => id, StringComparer.Ordinal)
-            .Take(limit);
+            .Take(limit)
+            .Concat(await GetActiveIdsAsync(organizationId))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
 
         var tasks = new List<BackgroundTask>();
         var expired = new List<string>();
@@ -135,8 +138,11 @@ public class BackgroundTaskService
         task.UpdatedUtc = utcNow;
 
         await SaveAsync(task);
-        await _cache.ListAddAsync(GetOrganizationIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime);
-        await _cache.ListAddAsync(GetActiveIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime);
+        if (await _cache.ListAddAsync(GetOrganizationIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime) != 1)
+            throw new InvalidOperationException("The background task could not be added to the organization index.");
+
+        if (await _cache.ListAddAsync(GetActiveIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime) != 1)
+            throw new InvalidOperationException("The background task could not be added to the active index.");
     }
 
     /// <summary>
@@ -231,22 +237,38 @@ public class BackgroundTaskService
         if (!task.CanCancel && !isAbandoned)
             return BackgroundTaskCancelResult.NotCancellable(task);
 
-        await _cache.SetAsync(GetCancelCacheKey(id), true, TaskLifetime);
-
+        bool requestCancellation = false;
         var updated = await UpdateAsync(id, current =>
         {
             if (!current.IsActive)
                 return false;
 
-            bool isRunningNow = current.Status is BackgroundTaskStatus.Running && utcNow - current.UpdatedUtc < StaleAfter;
+            // Progress may have resumed after the initial read. Decide eligibility against the locked state.
+            var currentUtcNow = _timeProvider.GetUtcNow().UtcDateTime;
+            bool isAbandonedNow = currentUtcNow - current.UpdatedUtc >= StaleAfter;
+            if (!current.CanCancel && !isAbandonedNow)
+                return false;
+
+            requestCancellation = true;
+            bool isRunningNow = current.Status is BackgroundTaskStatus.Running && !isAbandonedNow;
             if (isRunningNow)
                 return false;
 
-            current.Finish(BackgroundTaskStatus.Cancelled, current.Status is BackgroundTaskStatus.Queued ? "Cancelled before it started." : "Cancelled after it stopped responding.", utcNow);
+            current.Finish(BackgroundTaskStatus.Cancelled, current.Status is BackgroundTaskStatus.Queued ? "Cancelled before it started." : "Cancelled after it stopped responding.", currentUtcNow);
             return true;
         });
 
-        return updated is null ? BackgroundTaskCancelResult.NotFound : BackgroundTaskCancelResult.Cancelled(updated);
+        if (updated is null)
+            return BackgroundTaskCancelResult.NotFound;
+
+        if (!requestCancellation)
+            return updated.IsActive ? BackgroundTaskCancelResult.NotCancellable(updated) : BackgroundTaskCancelResult.Cancelled(updated);
+
+        // A queued or abandoned task is already stopped. Never undo that state if signaling fails.
+        if (!await _cache.SetAsync(GetCancelCacheKey(id), true, TaskLifetime))
+            throw new InvalidOperationException("The cancellation request could not be saved.");
+
+        return BackgroundTaskCancelResult.Cancelled(updated);
     }
 
     public async Task<bool> IsCancelRequestedAsync(string id)
@@ -254,7 +276,11 @@ public class BackgroundTaskService
         return (await _cache.GetAsync<bool>(GetCancelCacheKey(id))).HasValue;
     }
 
-    public Task SaveAsync(BackgroundTask task) => _cache.SetAsync(GetTaskCacheKey(task.Id), task, TaskLifetime);
+    public async Task SaveAsync(BackgroundTask task)
+    {
+        if (!await _cache.SetAsync(GetTaskCacheKey(task.Id), task, TaskLifetime))
+            throw new InvalidOperationException("The background task could not be saved.");
+    }
 
     public Task PublishAsync(BackgroundTask task)
     {

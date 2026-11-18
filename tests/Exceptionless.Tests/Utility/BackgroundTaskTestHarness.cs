@@ -17,10 +17,12 @@ namespace Exceptionless.Tests.Utility;
 public sealed class BackgroundTaskTestHarness : IDisposable
 {
     public BackgroundTaskTestHarness(TimeProvider timeProvider, ILoggerFactory loggerFactory, BackgroundTaskOptions? options = null, Func<ILockProvider, ILockProvider>? decorateLockProvider = null,
-        IQueue<WorkItemData>? queue = null, int lockAttempts = 3)
+        IQueue<WorkItemData>? queue = null, int lockAttempts = 3, Action<InMemoryCacheClientOptions>? configureCache = null, Func<ICacheClient, ICacheClient>? decorateCache = null)
     {
         TimeProvider = timeProvider;
-        Cache = new InMemoryCacheClient(new InMemoryCacheClientOptions { CloneValues = true, TimeProvider = timeProvider, LoggerFactory = loggerFactory });
+        var cacheOptions = new InMemoryCacheClientOptions { CloneValues = true, TimeProvider = timeProvider, LoggerFactory = loggerFactory };
+        configureCache?.Invoke(cacheOptions);
+        Cache = new InMemoryCacheClient(cacheOptions);
         MessageBus = new InMemoryMessageBus(new InMemoryMessageBusOptions { TimeProvider = timeProvider, LoggerFactory = loggerFactory });
         LockProvider = new CacheLockProvider(Cache, MessageBus, timeProvider, loggerFactory);
         if (decorateLockProvider is not null)
@@ -30,7 +32,8 @@ public sealed class BackgroundTaskTestHarness : IDisposable
 
         var policies = new ResiliencePolicyProvider(timeProvider, loggerFactory)
             .WithPolicy<BackgroundTaskService>(b => b.WithMaxAttempts(lockAttempts).WithDelay(TimeSpan.FromMilliseconds(10)));
-        Tasks = new BackgroundTaskService(Cache, LockProvider, Publisher, Queue, policies, options ?? new BackgroundTaskOptions { LockAcquireTimeout = TimeSpan.FromMilliseconds(100) },
+        var taskCache = decorateCache?.Invoke(Cache) ?? Cache;
+        Tasks = new BackgroundTaskService(taskCache, LockProvider, Publisher, Queue, policies, options ?? new BackgroundTaskOptions { LockAcquireTimeout = TimeSpan.FromMilliseconds(100) },
             timeProvider, loggerFactory.CreateLogger<BackgroundTaskService>());
     }
 

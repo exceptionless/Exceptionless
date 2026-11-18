@@ -10,9 +10,8 @@ namespace Exceptionless.Core.Jobs.WorkItemHandlers;
 
 /// <summary>
 /// Wraps the handler of a work item that is tracked by a background task. Progress, success and failure are written to the
-/// task in the job process that runs the work (not from a bus subscriber, which every web instance would run), then the
-/// original behavior happens: the wrapped handler runs and the job's own progress callback still renews the locks. Work items
-/// without a task id pass straight through.
+/// task in the job process that runs the work (not from a bus subscriber, which every web instance would run). Progress reaches
+/// the job's own callback first, so locks are renewed before any tracking I/O. Work items without a task id pass straight through.
 /// </summary>
 internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
 {
@@ -65,6 +64,9 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
         string? lastMessage = null;
         var tracked = new WorkItemContext(context.Data, context.JobId, context.WorkItemLock, context.CancellationToken, async (progress, message) =>
         {
+            // Give the job its renewal opportunity before tracking waits on cache or messaging.
+            await context.ReportProgressAsync(progress, message);
+
             lastMessage = message ?? lastMessage;
             await TryUpdateAsync(taskId, task =>
             {
@@ -76,8 +78,6 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
                 task.Message = message;
                 return true;
             });
-
-            await context.ReportProgressAsync(progress, message);
         });
 
         await StartAsync(taskId);

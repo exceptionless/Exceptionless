@@ -199,6 +199,25 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
     }
 
     [Fact]
+    public async Task HandleItemAsync_ProgressReport_ReachesTheJobCallbackBeforeTrackingWritesTheTask()
+    {
+        // Arrange
+        var task = await AddTaskAsync();
+        string? messageWhenJobWasNotified = null;
+        var handler = CreateHandler(context => context.ReportProgressAsync(50, "Halfway"));
+
+        // Act
+        await handler.HandleItemAsync(CreateContext(task.Id, async (progress, message) =>
+        {
+            if (progress == 50)
+                messageWhenJobWasNotified = (await _harness.Tasks.GetAsync(task.Id))!.Message;
+        }));
+
+        // Assert
+        Assert.NotEqual("Halfway", messageWhenJobWasNotified);
+    }
+
+    [Fact]
     public void Handler_DelegatesTheJobSettingsToTheWrappedHandler()
     {
         // Arrange

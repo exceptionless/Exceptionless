@@ -2,6 +2,7 @@ using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Queues;
@@ -57,7 +58,7 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
     }
 
     [Fact]
-    public async Task GetByOrganizationAsync_ManyTasks_ReturnsTheNewestFirstUpToTheLimit()
+    public async Task GetByOrganizationAsync_ManyFinishedTasks_ReturnsTheNewestFirstUpToTheLimit()
     {
         // Arrange
         var ids = new List<string>();
@@ -65,6 +66,11 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         {
             var task = NewTask();
             await Tasks.AddAsync(task);
+            await Tasks.UpdateAsync(task.Id, current =>
+            {
+                current.Finish(BackgroundTaskStatus.Completed, "Completed.", _time.GetUtcNow().UtcDateTime);
+                return true;
+            });
             ids.Add(task.Id);
             _time.Advance(TimeSpan.FromSeconds(5));
         }
@@ -74,6 +80,120 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
 
         // Assert
         Assert.Equal([ids[3], ids[2]], newestTwo.Select(t => t.Id).ToArray());
+    }
+
+    [Fact]
+    public async Task GetByOrganizationAsync_ActiveTaskOlderThanTheLimit_StaysListedBesideTheNewestFinishedTasks()
+    {
+        // Arrange
+        var active = NewTask();
+        await Tasks.AddAsync(active);
+        var finishedIds = new List<string>();
+        for (int index = 0; index < 3; index++)
+        {
+            _time.Advance(TimeSpan.FromSeconds(5));
+            var task = NewTask();
+            await Tasks.AddAsync(task);
+            await Tasks.UpdateAsync(task.Id, current =>
+            {
+                current.Finish(BackgroundTaskStatus.Completed, "Completed.", _time.GetUtcNow().UtcDateTime);
+                return true;
+            });
+            finishedIds.Add(task.Id);
+        }
+
+        // Act
+        var listed = await Tasks.GetByOrganizationAsync(OrganizationId, limit: 2);
+
+        // Assert
+        Assert.Equal([finishedIds[2], finishedIds[1], active.Id], listed.Select(t => t.Id).ToArray());
+    }
+
+    [Fact]
+    public async Task AddAsync_TaskCannotBeSaved_Throws()
+    {
+        // Arrange
+        using var harness = new BackgroundTaskTestHarness(_time, Log, configureCache: options =>
+        {
+            options.MaxEntrySize = 1;
+            options.SizeCalculator = _ => 2;
+            options.ShouldThrowOnMaxEntrySizeExceeded = false;
+        });
+
+        // Act
+        var thrown = await Record.ExceptionAsync(() => harness.Tasks.AddAsync(NewTask()));
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(thrown);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CancelAsync_RequestCannotBeStored_ThrowsAndPreservesCommittedState(bool startTask)
+    {
+        // Arrange
+        using var harness = new BackgroundTaskTestHarness(_time, Log, configureCache: options =>
+        {
+            options.MaxEntrySize = 1;
+            options.SizeCalculator = value => value is bool ? 2 : 1;
+            options.ShouldThrowOnMaxEntrySizeExceeded = false;
+        });
+        var task = NewTask(canCancel: true);
+        await harness.Tasks.AddAsync(task);
+        if (startTask)
+        {
+            await harness.Tasks.UpdateAsync(task.Id, current =>
+            {
+                current.Start(_time.GetUtcNow().UtcDateTime);
+                return true;
+            });
+        }
+
+        // Act
+        var thrown = await Record.ExceptionAsync(async () => await harness.Tasks.CancelAsync(task.Id));
+        var stored = await harness.Tasks.GetAsync(task.Id);
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(thrown);
+        Assert.Equal(startTask ? BackgroundTaskStatus.Running : BackgroundTaskStatus.Cancelled, stored!.Status);
+        Assert.False(await harness.Tasks.IsCancelRequestedAsync(task.Id));
+    }
+
+    [Fact]
+    public async Task CancelAsync_AbandonedNonCancellableTaskReportsProgress_RejectsCancellationWithoutLeavingARequest()
+    {
+        // Arrange
+        ObservingCancellationCacheClient? cache = null;
+        using var harness = new BackgroundTaskTestHarness(_time, Log, decorateCache: inner => cache = new ObservingCancellationCacheClient(inner));
+        var task = NewTask(canCancel: false);
+        await harness.Tasks.AddAsync(task);
+        await harness.Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Start(_time.GetUtcNow().UtcDateTime);
+            return true;
+        });
+        _time.Advance(BackgroundTaskService.StaleAfter + TimeSpan.FromMinutes(1));
+        cache!.AfterTaskRead = async () =>
+        {
+            await harness.Tasks.UpdateAsync(task.Id, current =>
+            {
+                // Progress resumes after cancellation read the abandoned snapshot.
+                current.Start(_time.GetUtcNow().UtcDateTime);
+                current.Progress = 50;
+                return true;
+            });
+        };
+
+        // Act
+        var result = await harness.Tasks.CancelAsync(task.Id);
+        var stored = await harness.Tasks.GetAsync(task.Id);
+
+        // Assert
+        Assert.True(result.IsNotCancellable);
+        Assert.Equal(BackgroundTaskStatus.Running, stored!.Status);
+        Assert.Equal(50, stored.Progress);
+        Assert.False(await harness.Tasks.IsCancelRequestedAsync(task.Id));
     }
 
     [Fact]
@@ -509,6 +629,23 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
                     return await inner.AcquireAsync(resource, expires, releaseOnDispose, cancellationToken);
                 });
             return mock.Object;
+        }
+    }
+
+    private sealed class ObservingCancellationCacheClient(ICacheClient inner) : ScopedCacheClient(inner, null), ICacheClient
+    {
+        public Func<Task>? AfterTaskRead { get; set; }
+
+        async Task<CacheValue<T>> ICacheClient.GetAsync<T>(string key)
+        {
+            var value = await UnscopedCache.GetAsync<T>(key);
+            if (typeof(T) == typeof(BackgroundTask) && AfterTaskRead is { } observe)
+            {
+                AfterTaskRead = null;
+                await observe();
+            }
+
+            return value;
         }
     }
 }
