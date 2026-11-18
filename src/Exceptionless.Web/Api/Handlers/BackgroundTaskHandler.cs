@@ -31,7 +31,6 @@ public class BackgroundTaskHandler(
     ILogger<BackgroundTaskHandler> logger)
 {
     private const int MaxIds = 1000;
-    private static readonly ICollection<string> _allowedDateFields = new List<string> { EventIndex.Alias.Date };
 
     private HttpContext HttpContext => httpContextAccessor.HttpContext ?? throw new InvalidOperationException("HttpContext is unavailable.");
 
@@ -87,8 +86,7 @@ public class BackgroundTaskHandler(
             CreatedByUserId = user.Id,
             Bulk = new BulkOperationDetails
             {
-                Selection = selection,
-                Parameters = new Dictionary<string, string>(parameters)
+                Selection = selection
             }
         };
 
@@ -173,7 +171,7 @@ public class BackgroundTaskHandler(
                 return (null, Result.Invalid(ValidationError.Create("selection", "An id selection cannot include a filter or time.")));
 
             var ids = (model.Ids ?? []).Distinct(StringComparer.Ordinal).ToList();
-            if (ids.Count == 0)
+            if (ids.Count is 0)
                 return (null, Result.Invalid(ValidationError.Create("selection.ids", "At least one id is required.")));
 
             if (ids.Count > MaxIds)
@@ -197,14 +195,27 @@ public class BackgroundTaskHandler(
         // arrive after the operation is created are not part of it.
         // An unparseable time parses to the same unbounded range as a blank one. Without this check it would silently widen the
         // delete to everything inside retention, so reject it instead of guessing.
-        if (!String.IsNullOrWhiteSpace(model.Time) && IsUnparseableTime(model.Time, model.Offset))
+        string time = model.Time?.Trim() ?? String.Empty;
+        if (time.StartsWith(EventIndex.Alias.Date + "|", StringComparison.Ordinal))
+        {
+            time = time[(EventIndex.Alias.Date.Length + 1)..].Trim();
+            if (time.Length is 0)
+                return (null, Result.Invalid(ValidationError.Create("selection.time", "The time range is not valid.")));
+        }
+
+        if (!TimeRangeParser.TryGetOffset(model.Offset, out var offset)
+            || offset < TimeSpan.FromHours(-14) || offset > TimeSpan.FromHours(14)
+            || offset.Ticks % TimeSpan.TicksPerMinute is not 0)
+            return (null, Result.Invalid(ValidationError.Create("selection.offset", "The UTC offset is not valid.")));
+
+        var range = DateTimeRange.Parse(time, new DateTimeOffset(utcNow).ToOffset(offset));
+        if (range.Start == DateTime.MinValue && range.End == DateTime.MaxValue && !IsUnboundedTime(time))
             return (null, Result.Invalid(ValidationError.Create("selection.time", "The time range is not valid.")));
 
-        var timeInfo = TimeRangeParser.GetTimeInfo(model.Time, model.Offset, timeProvider, _allowedDateFields, EventIndex.Alias.Date,
-            organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider));
-        var utcStart = timeInfo.Range.UtcStart;
-        var utcEnd = timeInfo.Range.UtcEnd > utcNow ? utcNow : timeInfo.Range.UtcEnd;
-        if (utcStart > utcEnd)
+        var retentionStart = organization.GetRetentionUtcCutoff(appOptions.MaximumRetentionDays, timeProvider);
+        var utcStart = range.UtcStart.IsBefore(retentionStart) ? retentionStart : range.UtcStart;
+        var utcEnd = range.UtcEnd.IsAfter(utcNow) ? utcNow : range.UtcEnd;
+        if (utcStart.IsAfter(utcEnd))
             return (null, Result.Invalid(ValidationError.Create("selection.time", "The time range does not include any past time.")));
 
         var selection = new BulkOperationSelection
@@ -220,21 +231,15 @@ public class BackgroundTaskHandler(
         return (selection, null);
     }
 
-    private bool IsUnparseableTime(string time, string? offset)
+    private static bool IsUnboundedTime(string time)
     {
-        string range = (time.Contains('|') ? time[(time.IndexOf('|') + 1)..] : time).Trim();
-        if (range.Equals("all", StringComparison.OrdinalIgnoreCase) || IsWildcardRange(range))
-            return false;
+        if (time is "" or "*" || String.Equals(time, "all", StringComparison.OrdinalIgnoreCase))
+            return true;
 
-        // A value that does not parse comes back with neither bound set. A range with one wildcard bound still has the other.
-        var parsed = DateTimeRange.Parse(range, timeProvider.GetUtcNow().ToOffset(TimeRangeParser.GetOffset(offset)));
-        return parsed.Start == DateTime.MinValue && parsed.End == DateTime.MaxValue;
-    }
-
-    private static bool IsWildcardRange(string range)
-    {
-        string bounds = String.Concat(range.Where(c => !Char.IsWhiteSpace(c) && c is not ('[' or ']' or '{' or '}')));
-        return bounds is "*" || bounds.Equals("*TO*", StringComparison.OrdinalIgnoreCase);
+        var bounds = time.AsSpan();
+        if (bounds is ['[' or '{', .., ']' or '}'])
+            bounds = bounds[1..^1].Trim();
+        return bounds is ['*', .., '*'] && bounds[1..^1].Trim().Equals("TO", StringComparison.OrdinalIgnoreCase);
     }
 
     private static Result<T> ToResult<T>(BulkOperationCheckResult check)

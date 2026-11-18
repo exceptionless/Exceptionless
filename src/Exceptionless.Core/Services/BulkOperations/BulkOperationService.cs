@@ -5,18 +5,8 @@ using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Services.BackgroundTasks;
 using Foundatio.Caching;
 using Foundatio.Lock;
-using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services.BulkOperations;
-
-public class BulkOperationOptions
-{
-    /// <summary>How many ids are resolved and executed per batch.</summary>
-    public int BatchSize { get; set; } = 500;
-
-    /// <summary>How long to wait before continuing after a temporary error. Multiplied by the number of errors in a row.</summary>
-    public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(5);
-}
 
 /// <summary>
 /// The bulk specific part of background tasks: the registry of handlers and selection resolvers, counting and pinning a
@@ -43,19 +33,11 @@ public class BulkOperationService
         _timeProvider = timeProvider;
     }
 
-    public static string GetPinnedSelectionCacheKey(string id) => $"{BackgroundTaskService.KeyPrefix}:{id}:selection";
-
     public IBulkOperationHandler? GetHandler(string type) => _handlers.GetValueOrDefault(type);
-
-    /// <summary>
-    /// Queues another run that continues from the saved cursor. The queue's retries cover a whole work item, so a long task
-    /// continues in a new work item after a temporary error instead of using up the retries of the current one.
-    /// </summary>
-    public Task ContinueAsync(BulkOperationWorkItem workItem) => _taskService.ContinueAsync(workItem);
 
     public async Task<string?> GetPinnedSelectionAsync(string id)
     {
-        var cached = await _cache.GetAsync<string>(GetPinnedSelectionCacheKey(id));
+        var cached = await _cache.GetAsync<string>(BackgroundTaskService.GetPinnedSelectionCacheKey(id));
         return cached.HasValue ? cached.Value : null;
     }
 
@@ -77,7 +59,7 @@ public class BulkOperationService
             if (!_resolvers.TryGetValue(handler.Entity, out var resolver))
                 throw new InvalidOperationException($"No selection resolver is registered for {handler.Entity}.");
 
-            task.CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+            bulk.Selection.UtcCreatedBefore ??= _timeProvider.GetUtcNow().UtcDateTime;
             var preparation = await resolver.PrepareAsync(task, CancellationToken.None);
             if (!preparation.Check.IsOk)
                 return BulkOperationCreateResult.Rejected(preparation.Check);
@@ -103,9 +85,7 @@ public class BulkOperationService
                 return BulkOperationCreateResult.Conflicting(conflict);
         }
 
-        await _taskService.AddAsync(task);
-        if (pinnedSelection is not null)
-            await _cache.SetAsync(GetPinnedSelectionCacheKey(task.Id), pinnedSelection, BackgroundTaskService.TaskLifetime);
+        await _taskService.AddAsync(task, pinnedSelection);
 
         await _taskService.EnqueueAsync(task, new BulkOperationWorkItem
         {
@@ -160,12 +140,12 @@ public class BulkOperationService
             if (!overlaps)
                 continue;
 
-            if (utcNow - existing.UpdatedUtc >= BackgroundTaskService.StaleAfter)
+            if (BackgroundTaskService.IsStale(existing, utcNow))
             {
                 // Retire it before admitting a replacement, so a delayed delivery cannot run it alongside the new one.
                 var retired = await _taskService.UpdateAsync(existing.Id, current =>
                 {
-                    if (!current.IsActive || utcNow - current.UpdatedUtc < BackgroundTaskService.StaleAfter)
+                    if (!current.IsActive || !BackgroundTaskService.IsStale(current, utcNow))
                         return false;
 
                     current.Finish(BackgroundTaskStatus.Failed, "Stopped because it made no progress for two hours.", utcNow);
@@ -192,11 +172,10 @@ public record BulkOperationCreateResult
 {
     public BackgroundTask? Task { get; init; }
     public BackgroundTask? Conflict { get; init; }
-    public bool IsBusy { get; init; }
     public BulkOperationCheckResult? Rejection { get; init; }
 
     public static BulkOperationCreateResult Created(BackgroundTask task) => new() { Task = task };
     public static BulkOperationCreateResult Conflicting(BackgroundTask conflict) => new() { Conflict = conflict };
-    public static BulkOperationCreateResult Busy() => new() { IsBusy = true };
+    public static BulkOperationCreateResult Busy() => new();
     public static BulkOperationCreateResult Rejected(BulkOperationCheckResult rejection) => new() { Rejection = rejection };
 }

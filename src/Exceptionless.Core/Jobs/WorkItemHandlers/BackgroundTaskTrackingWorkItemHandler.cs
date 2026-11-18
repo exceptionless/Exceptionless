@@ -81,7 +81,7 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
         });
 
         // A cancelled task must not run when a delayed delivery arrives, for example a project reset cancelled as abandoned.
-        if (!await StartAsync(taskId))
+        if (!await StartAsync(taskId, requireTask: context.Data is ResetProjectDataWorkItem))
             return;
 
         try
@@ -124,19 +124,16 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
     /// <summary>
     /// Marks the task running. A queue retry runs the work item again after it failed, which brings the task back to running
     /// and back into the active index. A cancelled or completed task stays as it is and returns false so it is not run again.
-    /// When tracking is unavailable the work still runs.
+    /// A tracked project reset requires a live record. A read failure is retried by the queue, and an expired record
+    /// cannot authorize a delayed reset.
     /// </summary>
-    private async Task<bool> StartAsync(string taskId)
+    private async Task<bool> StartAsync(string taskId, bool requireTask)
     {
         bool wasFinished = false;
-        bool isTerminal = false;
-        var task = await TryUpdateAsync(taskId, current =>
+        bool Start(BackgroundTask current)
         {
             if (current.Status is BackgroundTaskStatus.Cancelled or BackgroundTaskStatus.Completed)
-            {
-                isTerminal = true;
                 return false;
-            }
 
             wasFinished = current.Status is BackgroundTaskStatus.Failed;
             current.Start(UtcNow);
@@ -148,12 +145,16 @@ internal sealed class BackgroundTaskTrackingWorkItemHandler : IWorkItemHandler
             }
 
             return true;
-        });
+        }
+
+        var task = requireTask
+            ? await _taskService.UpdateAsync(taskId, Start)
+            : await TryUpdateAsync(taskId, Start);
 
         if (wasFinished && task is not null)
             await TryAsync(taskId, () => _taskService.AddToActiveIndexAsync(task.OrganizationId, task.Id));
 
-        return !isTerminal;
+        return task is null ? !requireTask : task.Status is BackgroundTaskStatus.Running;
     }
 
     private async Task<BackgroundTask?> TryUpdateAsync(string taskId, Func<BackgroundTask, bool> update)

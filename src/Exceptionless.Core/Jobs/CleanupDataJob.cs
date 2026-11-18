@@ -4,6 +4,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
@@ -33,6 +34,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
 
     private readonly IOrganizationRepository _organizationRepository;
     private readonly OrganizationService _organizationService;
+    private readonly BackgroundTaskService _backgroundTaskService;
     private readonly IUserRepository _userRepository;
     private readonly IProjectRepository _projectRepository;
     private readonly IStackRepository _stackRepository;
@@ -54,6 +56,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     public CleanupDataJob(
         IOrganizationRepository organizationRepository,
         OrganizationService organizationService,
+        BackgroundTaskService backgroundTaskService,
         IUserRepository userRepository,
         IProjectRepository projectRepository,
         IStackRepository stackRepository,
@@ -77,6 +80,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
     {
         _organizationRepository = organizationRepository;
         _organizationService = organizationService;
+        _backgroundTaskService = backgroundTaskService;
         _userRepository = userRepository;
         _projectRepository = projectRepository;
         _stackRepository = stackRepository;
@@ -367,6 +371,7 @@ public class CleanupDataJob : JobWithLockBase, IHealthCheck
         await RenewLockAsync(context);
         await RemoveOrganizationFilesAsync(organization, context);
 
+        await _backgroundTaskService.RemoveByOrganizationAsync(organization.Id, context.CancellationToken);
         await _organizationRepository.RemoveAsync(organization);
         _logger.RemoveOrganizationComplete(organization.Name, organization.Id, removedProjects, removedStacks, removedEvents);
     }

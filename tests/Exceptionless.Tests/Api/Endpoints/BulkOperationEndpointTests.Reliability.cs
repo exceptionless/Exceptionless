@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.BackgroundTasks;
@@ -82,7 +83,7 @@ public partial class BulkOperationEndpointTests
             d.Event().TestProject().Message("fixed").Status(StackStatus.Fixed);
         });
         var created = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, null, "status:open"));
-        var openStacks = stacks.Where(s => s.Status == StackStatus.Open).ToList();
+        var openStacks = stacks.Where(s => s.Status is StackStatus.Open).ToList();
 
         // Act
         foreach (var stack in openStacks)
@@ -158,7 +159,7 @@ public partial class BulkOperationEndpointTests
             for (int i = 0; i < 5; i++)
                 d.Event().TestProject().Date(now.AddMinutes(-i - 1));
         });
-        var recorder = new RecordingHandler { Failure = call => call == 2 ? new TimeoutException("Elasticsearch timed out") : null };
+        var recorder = new RecordingHandler { Failure = call => call is 2 ? new TimeoutException("Elasticsearch timed out") : null };
         var service = CreateService(recorder);
         var created = await CreateRecordingOperationAsync(service);
 
@@ -219,7 +220,7 @@ public partial class BulkOperationEndpointTests
                 d.Event().TestProject().Date(now.AddMinutes(-i - 1));
         });
         // A temporary error after every completed batch: more errors in total than the queue's retries for one work item.
-        var recorder = new RecordingHandler { Failure = call => call % 2 == 0 ? new TimeoutException("Elasticsearch timed out") : null };
+        var recorder = new RecordingHandler { Failure = call => call % 2 is 0 ? new TimeoutException("Elasticsearch timed out") : null };
         var service = CreateService(recorder);
         var created = await CreateRecordingOperationAsync(service);
         long enqueuedBefore = await GetEnqueuedWorkItemCountAsync();

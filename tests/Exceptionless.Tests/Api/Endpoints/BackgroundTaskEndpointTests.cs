@@ -271,7 +271,7 @@ public class BackgroundTaskEndpointTests : IntegrationTestsBase
         var task = new BackgroundTask
         {
             OrganizationId = organizationId,
-            ProjectId = organizationId == SampleDataService.TEST_ORG_ID ? SampleDataService.TEST_PROJECT_ID : SampleDataService.FREE_PROJECT_ID,
+            ProjectId = String.Equals(organizationId, SampleDataService.TEST_ORG_ID, StringComparison.Ordinal) ? SampleDataService.TEST_PROJECT_ID : SampleDataService.FREE_PROJECT_ID,
             Type = bulk ? "events.delete" : BackgroundTaskTypes.ResetProjectData,
             Description = bulk ? "Delete 2 selected events" : "Reset data for Test",
             Progress = progress,

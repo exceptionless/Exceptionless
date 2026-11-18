@@ -58,6 +58,31 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
     }
 
     [Fact]
+    public async Task UpdateAsync_TaskOutlivesItsOriginalIndexes_RemainsListedAndCanBePurged()
+    {
+        // Arrange
+        var task = NewTask();
+        await Tasks.AddAsync(task);
+        _time.Advance(BackgroundTaskService.TaskLifetime - TimeSpan.FromMinutes(1));
+        await Tasks.UpdateAsync(task.Id, current =>
+        {
+            current.Start(_time.GetUtcNow().UtcDateTime);
+            return true;
+        });
+        _time.Advance(TimeSpan.FromDays(2));
+
+        // Act
+        var listed = await Tasks.GetByOrganizationAsync(OrganizationId);
+        var active = await Tasks.GetActiveIdsAsync(OrganizationId);
+        await Tasks.RemoveByOrganizationAsync(OrganizationId, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(task.Id, Assert.Single(listed).Id);
+        Assert.Equal(task.Id, Assert.Single(active));
+        Assert.Null(await Tasks.GetAsync(task.Id));
+    }
+
+    [Fact]
     public async Task GetByOrganizationAsync_ManyFinishedTasks_ReturnsTheNewestFirstUpToTheLimit()
     {
         // Arrange
@@ -125,6 +150,29 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
 
         // Assert
         Assert.IsType<InvalidOperationException>(thrown);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AddAsync_IndexWriteFails_DiscardsUnqueuedTaskAndSelection(bool failActiveIndex)
+    {
+        // Arrange
+        var task = NewTask();
+        string history = BackgroundTaskService.GetOrganizationIndexCacheKey(OrganizationId);
+        string active = BackgroundTaskService.GetActiveIndexCacheKey(OrganizationId);
+        // An incompatible existing value makes the real cache reject a list write.
+        await _harness.Cache.SetAsync(failActiveIndex ? active : history, "existing value");
+
+        // Act
+        var error = await Record.ExceptionAsync(() => Tasks.AddAsync(task, "saved selection"));
+        var otherIndex = await _harness.Cache.GetListAsync<string>(failActiveIndex ? history : active);
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(error);
+        Assert.Null(await Tasks.GetAsync(task.Id));
+        Assert.False(await _harness.Cache.ExistsAsync(BackgroundTaskService.GetPinnedSelectionCacheKey(task.Id)));
+        Assert.DoesNotContain(task.Id, otherIndex.Value ?? []);
     }
 
     [Theory]
@@ -354,7 +402,7 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         counting.OnAttempt = attempts =>
         {
             // Release only after one attempt gave up, so the update can only succeed through a retry.
-            if (attempts == 2)
+            if (attempts is 2)
                 held.ReleaseAsync().GetAwaiter().GetResult();
         };
 
@@ -580,7 +628,7 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
             BackgroundTaskService.GetCancelCacheKey("a"),
             BackgroundTaskService.GetOrganizationIndexCacheKey("o"),
             BackgroundTaskService.GetActiveIndexCacheKey("o"),
-            BulkOperationService_GetPinnedSelectionCacheKey("a")
+            BackgroundTaskService.GetPinnedSelectionCacheKey("a")
         ];
         string[] lockResources = [BackgroundTaskService.GetUpdateLockResource("a"), BackgroundTaskService.GetCreateLockResource("o")];
 
@@ -590,9 +638,8 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         // Assert
         Assert.All(all, key => Assert.StartsWith(BackgroundTaskService.KeyPrefix + ":", key));
         Assert.Equal(all.Count, all.Distinct().Count());
+        Assert.Equal("background-tasks:create:o", BackgroundTaskService.GetCreateLockResource("o"));
     }
-
-    private static string BulkOperationService_GetPinnedSelectionCacheKey(string id) => Exceptionless.Core.Services.BulkOperations.BulkOperationService.GetPinnedSelectionCacheKey(id);
 
     private static BackgroundTask NewTask(string organizationId = OrganizationId, bool canCancel = false)
     {

@@ -1,6 +1,7 @@
 using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
 using Foundatio.Utility;
@@ -55,7 +56,7 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
         Assert.Equal(50, duringWork.Progress);
         Assert.Equal("Halfway", duringWork.Message);
         Assert.NotNull(duringWork.StartedUtc);
-        Assert.Contains(_harness.Publisher.Updates, u => u.Status == BackgroundTaskStatus.Running && u.Progress == 50);
+        Assert.Contains(_harness.Publisher.Updates, u => u.Status is BackgroundTaskStatus.Running && u.Progress is 50);
     }
 
     [Fact]
@@ -92,7 +93,7 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
         IReadOnlyList<string>? activeDuringRetry = null;
         var handler = CreateHandler(async context =>
         {
-            if (++calls == 1)
+            if (++calls is 1)
                 throw new InvalidOperationException("Elasticsearch unavailable");
 
             duringRetry = await _harness.Tasks.GetAsync(task.Id);
@@ -165,9 +166,12 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
     }
 
     [Fact]
-    public async Task HandleItemAsync_TaskRecordIsGone_StillRunsTheWork()
+    public async Task HandleItemAsync_CancelledResetRecordHasExpired_SkipsTheWork()
     {
         // Arrange
+        var task = await AddTaskAsync(canCancel: true);
+        await _harness.Tasks.CancelAsync(task.Id);
+        _time.Advance(BackgroundTaskService.TaskLifetime + TimeSpan.FromMinutes(1));
         bool ran = false;
         var handler = CreateHandler(async context =>
         {
@@ -176,11 +180,11 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
         });
 
         // Act
-        await handler.HandleItemAsync(CreateContext(Foundatio.Repositories.Utility.ObjectId.GenerateNewId().ToString()));
+        await handler.HandleItemAsync(CreateContext(task.Id));
 
         // Assert
-        Assert.True(ran);
-        Assert.Empty(_harness.Publisher.Updates);
+        Assert.False(ran);
+        Assert.Null(await _harness.Tasks.GetAsync(task.Id));
     }
 
     [Fact]
@@ -215,7 +219,7 @@ public class BackgroundTaskTrackingWorkItemHandlerTests : TestWithLoggingBase, I
         // Act
         await handler.HandleItemAsync(CreateContext(task.Id, async (progress, message) =>
         {
-            if (progress == 50)
+            if (progress is 50)
                 messageWhenJobWasNotified = (await _harness.Tasks.GetAsync(task.Id))!.Message;
         }));
 

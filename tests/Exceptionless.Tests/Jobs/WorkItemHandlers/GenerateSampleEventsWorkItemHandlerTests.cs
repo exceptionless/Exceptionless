@@ -49,7 +49,7 @@ public class GenerateSampleEventsWorkItemHandlerTests(ITestOutputHelper output) 
         projects.Setup(repository => repository.GetByIdAsync(project.Id, It.IsAny<ICommandOptions>()))
             .ReturnsAsync(project);
         var hits = Enumerable.Range(0, projectCount)
-            .Select(index => new Project { Id = index == 0 ? project.Id : SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, OrganizationId = organization.Id })
+            .Select(index => new Project { Id = index is 0 ? project.Id : SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, OrganizationId = organization.Id })
             .Select(item => new FindHit<Project>(item.Id, item, 0));
         projects.Setup(repository => repository.GetByOrganizationIdAsync(organization.Id, It.IsAny<CommandOptionsDescriptor<Project>>()))
             .ReturnsAsync(new FindResults<Project>(hits, projectCount));

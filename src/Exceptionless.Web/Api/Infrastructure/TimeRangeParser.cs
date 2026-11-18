@@ -9,10 +9,21 @@ public static class TimeRangeParser
 
     public static TimeSpan GetOffset(string? offset)
     {
-        if (!String.IsNullOrEmpty(offset) && TimeUnit.TryParse(offset, out var value) && value.HasValue)
-            return value.Value;
+        TryGetOffset(offset, out var parsed);
+        return parsed;
+    }
 
-        return TimeSpan.Zero;
+    public static bool TryGetOffset(string? offset, out TimeSpan parsed)
+    {
+        parsed = TimeSpan.Zero;
+        if (String.IsNullOrEmpty(offset))
+            return true;
+
+        if (!TimeUnit.TryParse(offset, out var value) || !value.HasValue)
+            return false;
+
+        parsed = value.Value;
+        return true;
     }
 
     public static TimeInfo GetTimeInfo(string? time, string? offset, TimeProvider timeProvider, ICollection<string>? allowedDateFields = null, string defaultDateField = "created_utc", DateTime? minimumUtcStartDate = null)
