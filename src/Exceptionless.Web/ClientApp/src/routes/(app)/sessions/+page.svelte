@@ -769,26 +769,25 @@
         }
     });
 
-    const table = createTable(
-        getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
-            columnPersistenceKey: 'sessions-column-visibility',
-            get columns() {
-                return getSessionColumns();
-            },
-            defaultColumnVisibility: defaultSessionColumnVisibility,
-            enableColumnResizing: true,
-            paginationStrategy: 'cursor',
-            get queryData() {
-                return sessionsQuery.data?.data ?? [];
-            },
-            get queryMeta() {
-                return sessionsQuery.data?.meta;
-            },
-            get queryParameters() {
-                return eventsQueryParameters;
-            }
-        })
-    );
+    const tableOptions = getSharedTableOptions<EventSummaryModel<SummaryTemplateKeys>>({
+        columnPersistenceKey: 'sessions-column-visibility',
+        get columns() {
+            return getSessionColumns();
+        },
+        defaultColumnVisibility: defaultSessionColumnVisibility,
+        enableColumnResizing: true,
+        paginationStrategy: 'cursor',
+        get queryData() {
+            return sessionsQuery.data?.data ?? [];
+        },
+        get queryMeta() {
+            return sessionsQuery.data?.meta;
+        },
+        get queryParameters() {
+            return eventsQueryParameters;
+        }
+    });
+    const table = createTable(tableOptions);
 
     async function handleRefresh() {
         table.resetRowSelection();
@@ -813,7 +812,7 @@
 
         if (message.id) {
             removeTableSelection(table, message.id);
-            removeTableData(table, (document) => document.id === message.id);
+            removeTableData(tableOptions, (document) => document.id === message.id);
         }
 
         debouncedRefetch();

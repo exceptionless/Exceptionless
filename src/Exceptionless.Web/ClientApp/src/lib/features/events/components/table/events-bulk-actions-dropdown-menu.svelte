@@ -10,6 +10,7 @@
     import { Button } from '#comp/ui/button/index.ts';
     import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
     import { deleteEvent } from '#features/events/api.svelte.ts';
+    import { organization } from '#features/organizations/context.svelte.ts';
 
     import RemoveEventDialog from '../dialogs/remove-event-dialog.svelte';
 
@@ -25,17 +26,15 @@
     let open = $state(false);
     let openRemoveEventDialog = $state<boolean>(false);
 
-    const removeEvents = deleteEvent({
-        route: {
-            get ids() {
-                return ids;
-            }
-        }
-    });
+    const removeEvents = deleteEvent();
 
     async function remove() {
-        const deletedCount = ids.length;
-        await removeEvents.mutateAsync();
+        const deletedIds = [...ids];
+        const deletedCount = deletedIds.length;
+        await removeEvents.mutateAsync({
+            ids: deletedIds,
+            organizationId: organization.current
+        });
 
         if (deletedCount === 1) {
             toast.success('Successfully deleted event.');

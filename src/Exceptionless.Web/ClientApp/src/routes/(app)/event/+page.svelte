@@ -61,7 +61,7 @@
     import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
     import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '#features/saved-views/use-saved-views.svelte.ts';
     import * as agg from '#features/shared/api/aggregations.ts';
-    import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '#features/shared/table.svelte.ts';
+    import { createPageSizePreference, getSharedTableOptions, removeTableSelection } from '#features/shared/table.svelte.ts';
     import { fillDateSeries } from '#features/shared/utils/charts.ts';
     import { toDateMathRange } from '#features/shared/utils/datemath.ts';
     import { parseDateMathRange } from '#features/shared/utils/datemath.ts';
@@ -841,11 +841,11 @@
     });
 
     function onPersistentEventChanged(message: WebSocketMessageValue<'PersistentEventChanged'>) {
-        let removedFromTable = false;
+        let wasVisible = false;
         if (message.id && message.change_type === ChangeType.Removed) {
             removeTableSelection(table, message.id);
 
-            removedFromTable = removeTableData(table, (doc: EventSummaryModel<SummaryTemplateKeys>) => doc.id === message.id);
+            wasVisible = table.options.data.some((document) => document.id === message.id);
         }
 
         if (message.change_type === ChangeType.Removed) {
@@ -854,7 +854,7 @@
             // is not on the visible page.
             if (
                 shouldRefreshPersistentEventRemoval(
-                    removedFromTable,
+                    wasVisible,
                     filters,
                     queryParams.filter,
                     message.organization_id,

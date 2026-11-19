@@ -1,12 +1,12 @@
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
-import { createMutation, createQuery, keepPreviousData, QueryClient, useQueryClient } from '@tanstack/svelte-query';
+import { createMutation, createQuery, keepPreviousData, QueryClient, type QueryFilters, useQueryClient } from '@tanstack/svelte-query';
 import { SvelteSet } from 'svelte/reactivity';
 
-import type { WebSocketMessageValue } from '#features/websockets/models.ts';
 import type { CountResult, WorkInProgressResult } from '#shared/models/index.ts';
 
 import { accessToken } from '#features/auth/index.svelte.ts';
 import { queryKeys as stackQueryKeys } from '#features/stacks/api.svelte.ts';
+import { ChangeType, type WebSocketMessageValue } from '#features/websockets/models.ts';
 import { DEFAULT_OFFSET } from '#shared/api/api.svelte.ts';
 
 import type { EventSummaryModel, SummaryTemplateKeys } from './components/summary/index';
@@ -18,6 +18,8 @@ export interface OrganizationEventNotificationRefresher {
     cancel: () => void;
     schedule: (organizationId?: string, refreshImmediately?: boolean) => void;
 }
+
+type OrganizationEventsResponse = Pick<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, 'data' | 'meta'>;
 
 export function createOrganizationEventNotificationRefresher(queryClient: QueryClient): OrganizationEventNotificationRefresher {
     const pendingOrganizationIds = new SvelteSet<string | undefined>();
@@ -64,6 +66,9 @@ export function createOrganizationEventNotificationRefresher(queryClient: QueryC
 export async function invalidatePersistentEventQueries(queryClient: QueryClient, message: WebSocketMessageValue<'PersistentEventChanged'>) {
     const { id, organization_id, project_id, stack_id } = message;
     if (id) {
+        if (message.change_type === ChangeType.Removed) {
+            await removeDeletedEventsFromQueries(queryClient, [id], organization_id);
+        }
         await queryClient.invalidateQueries({
             queryKey: queryKeys.id(id)
         });
@@ -98,8 +103,38 @@ export async function invalidatePersistentEventQueries(queryClient: QueryClient,
     }
 }
 
+async function removeDeletedEventsFromQueries(queryClient: QueryClient, ids: readonly string[], organizationId?: string) {
+    if (!ids.length) {
+        return;
+    }
+
+    const deletedIds = new Set(ids);
+    const filters: QueryFilters = {
+        predicate: (query) => {
+            if (!isOrganizationEventsQueryKey(query.queryKey) || (organizationId && query.queryKey[2] !== organizationId)) {
+                return false;
+            }
+            const mode = (query.queryKey[4] as GetEventsParams | undefined)?.mode;
+            return !mode || mode === 'summary';
+        },
+        queryKey: queryKeys.type
+    };
+
+    // Ignore pre-deletion reads before updating the cache shared by mounted and future grids.
+    await queryClient.cancelQueries(filters);
+    for (const [queryKey, response] of queryClient.getQueriesData<OrganizationEventsResponse>(filters)) {
+        if (!response?.data?.some((event) => deletedIds.has(event.id))) {
+            continue;
+        }
+        queryClient.setQueryData<OrganizationEventsResponse>(queryKey, {
+            ...response,
+            data: response.data.filter((event) => !deletedIds.has(event.id))
+        });
+    }
+}
+
 export const queryKeys = {
-    deleteEvent: (ids: string[] | undefined) => [...queryKeys.type, 'delete', ...(ids ?? [])] as const,
+    deleteEvent: () => [...queryKeys.type, 'delete'] as const,
     eventsByReference: (referenceId: string | undefined, projectId?: string | undefined, params?: GetEventsByReferenceRequest['params']) =>
         [...queryKeys.type, 'by-ref', referenceId, projectId, params] as const,
     id: (id: string | undefined) => [...queryKeys.type, id] as const,
@@ -128,9 +163,8 @@ export const ORGANIZATION_EVENT_QUERY_STALE_TIME_MS = 60 * 1000;
 export const ORGANIZATION_EVENT_NOTIFICATION_THROTTLE_MS = 5 * 1000;
 
 export interface DeleteEventsRequest {
-    route: {
-        ids: string[] | undefined;
-    };
+    ids: string[];
+    organizationId?: string;
 }
 
 export interface EventNavigation {
@@ -335,26 +369,26 @@ export function createEventWithNavigationQueryOptions(request: GetEventRequest, 
     };
 }
 
-export function deleteEvent(request: DeleteEventsRequest) {
+export function deleteEvent() {
     const queryClient = useQueryClient();
-    return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
-        enabled: () => !!accessToken.current && !!request.route.ids?.length,
-        mutationFn: async () => {
+    return createMutation<WorkInProgressResult, ProblemDetails, DeleteEventsRequest>(() => ({
+        mutationFn: async ({ ids }) => {
             const client = useFetchClient();
-            const response = await client.deleteJSON<WorkInProgressResult>(`events/${request.route.ids?.join(',')}`);
+            const response = await client.deleteJSON<WorkInProgressResult>(`events/${ids.join(',')}`);
 
             return response.data!;
         },
-        mutationKey: queryKeys.deleteEvent(request.route.ids),
-        onError: () => {
-            request.route.ids?.forEach((id) =>
+        mutationKey: queryKeys.deleteEvent(),
+        onError: (_, { ids }) => {
+            ids.forEach((id) =>
                 queryClient.invalidateQueries({
                     queryKey: queryKeys.id(id)
                 })
             );
         },
-        onSuccess: () => {
-            request.route.ids?.forEach((id) =>
+        onSuccess: async (_, { ids, organizationId }) => {
+            await removeDeletedEventsFromQueries(queryClient, ids, organizationId);
+            ids.forEach((id) =>
                 queryClient.invalidateQueries({
                     queryKey: queryKeys.id(id)
                 })
@@ -457,7 +491,7 @@ export function getOrganizationCountQuery(request: GetOrganizationCountRequest) 
 }
 
 export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest) {
-    return createQuery<FetchClientResponse<EventSummaryModel<SummaryTemplateKeys>[]>, ProblemDetails>(() => {
+    return createQuery<OrganizationEventsResponse, ProblemDetails>(() => {
         const requestEnabled = request.enabled?.() ?? true;
         const organizationId = request.route.organizationId;
         const params = request.params
@@ -471,9 +505,13 @@ export function getOrganizationEventsQuery(request: GetOrganizationEventsRequest
             placeholderData: keepPreviousData,
             queryFn: async () => {
                 const client = useFetchClient();
-                return await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
+                const response = await client.getJSON<EventSummaryModel<SummaryTemplateKeys>[]>(`organizations/${organizationId}/events`, {
                     params: params as Record<string, unknown>
                 });
+                return {
+                    data: response.data,
+                    meta: response.meta
+                };
             },
             queryKey: queryKeys.organizationsEvents(organizationId, params),
             staleTime: ORGANIZATION_EVENT_QUERY_STALE_TIME_MS
