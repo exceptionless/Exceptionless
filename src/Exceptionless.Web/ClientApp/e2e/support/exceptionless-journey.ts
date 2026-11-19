@@ -112,7 +112,7 @@ export class ExceptionlessE2EJourney {
             await expect(this.page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
 
             await this.page.getByLabel('Project Name', { exact: true }).fill(this.projectName);
-            await this.page.getByRole('button', { name: 'Add Project' }).click();
+            await this.page.getByRole('button', { name: 'Continue to Client Setup' }).click();
 
             await this.page.waitForURL(/\/project\/[^/]+\/configure/, { timeout: 30_000 });
             this.projectId = getIdFromUrl(this.page, /\/project\/([^/]+)\/configure/);

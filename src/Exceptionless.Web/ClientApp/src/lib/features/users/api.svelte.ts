@@ -9,7 +9,16 @@ import type { WorkInProgressResult } from '#shared/models/index.ts';
 import { accessToken } from '#features/auth/index.svelte.ts';
 import { fetchApiJson } from '#features/shared/api/api.svelte.ts';
 
-import type { OAuthGrant, RecordProductTourResult, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
+import type {
+    OAuthGrant,
+    RecordProductTourResult,
+    UpdateEmailAddressResult,
+    UpdateUser,
+    UpdateUserEmailAddress,
+    VerifyEmailAddressResult,
+    ViewCurrentUser,
+    ViewUser
+} from './models';
 
 /**
  * Refreshes the user queries a `UserChanged` message affects. Returns whether the signed-in user may have changed, so
@@ -90,6 +99,8 @@ export interface UserAvatarRequest {
         id: string | undefined;
     };
 }
+
+export type VerifyEmailAddressOutcome = { emailAddress?: string; status: 'verified' } | { status: 'expired' | 'invalid' };
 
 export function deleteCurrentUser() {
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
@@ -365,6 +376,40 @@ export function uploadUserAvatar(request: UserAvatarRequest) {
             }
         }
     }));
+}
+
+/**
+ * Verifies the current user's email address with the token from the emailed link.
+ * Refreshes the current user so the verification prompt disappears.
+ */
+export async function verifyEmailAddress(queryClient: QueryClient, token: string): Promise<VerifyEmailAddressOutcome> {
+    const client = useFetchClient();
+    const response = await client.getJSON<VerifyEmailAddressResult>(`users/verify-email-address/${encodeURIComponent(token)}`, {
+        expectedStatusCodes: [404, 422]
+    });
+
+    if (response.status === 404) {
+        return {
+            status: 'invalid'
+        };
+    }
+
+    if (response.status === 422) {
+        return {
+            status: 'expired'
+        };
+    }
+
+    // Reset rather than invalidate so pages never render the cached unverified user while the refetch runs.
+    await queryClient.resetQueries({
+        exact: true,
+        queryKey: queryKeys.me()
+    });
+
+    return {
+        emailAddress: response.data?.email_address,
+        status: 'verified'
+    };
 }
 
 function setCurrentUser(queryClient: QueryClient, currentUser: ViewCurrentUser, changes: Partial<ViewCurrentUser>): void {

@@ -14,6 +14,8 @@ internal sealed class AppUrlBuilder
         _baseUrl = baseUrl.GetOrigin();
     }
 
+    public string Home() => Build(String.Empty);
+
     public string Event(string eventId) => Build($"event/{eventId}");
 
     public string Stack(string stackId) => Build($"stack/{stackId}");

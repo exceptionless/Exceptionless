@@ -535,20 +535,20 @@ export function postProject() {
         onSuccess: async (project: ViewProject) => {
             queryClient.setQueryData(queryKeys.id(project.id), project);
 
-            const organizationProjectsQueryKey = [
-                ...queryKeys.organization(project.organization_id),
-                {
-                    params: undefined
-                }
-            ] as const;
-            queryClient.setQueryData<FetchClientResponse<ViewProject[]> | undefined>(organizationProjectsQueryKey, (response) => {
-                if (!response || response.data?.some((existingProject) => existingProject.id === project.id)) {
+            // Add the project to every cached list for its organization. The invalidation below refetches them,
+            // and the API makes new projects searchable before responding, so the refetch includes it too.
+            const organizationProjectsFilter = {
+                queryKey: queryKeys.organization(project.organization_id)
+            };
+            queryClient.setQueriesData<FetchClientResponse<ViewProject[]> | undefined>(organizationProjectsFilter, (response) => {
+                // The prefix also matches non-list queries for the organization; only extend project arrays.
+                if (!response || !Array.isArray(response.data) || response.data.some((existingProject) => existingProject.id === project.id)) {
                     return response;
                 }
 
                 return {
                     ...response,
-                    data: [...(response.data ?? []), project]
+                    data: [...response.data, project]
                 };
             });
 

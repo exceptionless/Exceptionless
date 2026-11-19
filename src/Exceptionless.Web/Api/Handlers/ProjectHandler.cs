@@ -564,7 +564,8 @@ public class ProjectHandler(
         value.AddDefaultNotificationSettings(GetCurrentUserId(httpContext));
         value.SetDefaultUserAgentBotPatterns();
         value.Configuration.IncrementVersion();
-        // The next capacity check uses a search count, so creation must be visible before releasing the billing lock.
+        // The next capacity check uses a search count, and first-run setup lists the organization's projects right
+        // after creating one, so creation must be visible before releasing the billing lock and responding.
         return repository.AddAsync(value, o => o.Cache().ImmediateConsistency());
     }
 

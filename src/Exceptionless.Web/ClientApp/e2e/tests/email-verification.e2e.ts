@@ -18,7 +18,7 @@ test('an invalid verification link preserves the unverified account @signup', as
 
     // Assert
     expect(user?.is_email_address_verified).toBe(false);
-    await expect(page.getByText('An error occurred while verifying your account.')).toBeVisible();
+    await expect(page.getByText(/This verification link is invalid or has already been used./)).toBeVisible();
 });
 
 test('verification in another tab refreshes the original account page @signup', async ({ e2eApi, e2eScenario, page }) => {

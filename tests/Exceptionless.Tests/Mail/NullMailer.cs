@@ -45,7 +45,7 @@ public class NullMailer : IMailer
         return Task.CompletedTask;
     }
 
-    public Task SendUserEmailVerifyAsync(User user)
+    public Task SendUserEmailVerifyAsync(User user, bool isNewAccount = false)
     {
         return Task.CompletedTask;
     }
