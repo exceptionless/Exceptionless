@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('$app/navigation', () => ({ goto: mocks.goto }));
-vi.mock('$app/paths', () => ({ resolve: (path: string) => path.replace('/(app)', '') }));
+vi.mock('$app/paths', () => ({ resolve: (path: string) => path.replace('/(app)', '') || '/' }));
 vi.mock('$app/state', () => ({ page: mocks.page }));
 vi.mock('svelte-sonner', () => ({ toast: mocks.toast }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
@@ -47,23 +47,42 @@ describe('Verify email address page', () => {
         mocks.page.url = new URL(`http://localhost/account/verify?token=${token}`);
     });
 
-    it('VerifyEmailAddress_ValidToken_VerifiesWithGetAndResetsCurrentUser', async () => {
+    function respondAsVerified(verifiedEmail: string, signedInEmail: string) {
+        fetch.mockImplementation(async (input) =>
+            (input as Request).url.endsWith('/users/me')
+                ? Response.json({ email_address: signedInEmail, id: 'user-id', is_email_address_verified: verifiedEmail === signedInEmail })
+                : Response.json({ email_address: verifiedEmail })
+        );
+    }
+
+    it('VerifyEmailAddress_ValidToken_VerifiesWithGetAndContinuesIntoTheApp', async () => {
         // Arrange
-        fetch.mockResolvedValue(Response.json({ email_address: 'alice@example.com' }));
+        respondAsVerified('alice@example.com', 'Alice@Example.com');
+
+        // Act
+        render(VerifyPage);
+
+        // Assert
+        await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/'));
+        const request = fetch.mock.calls[0]![0] as Request;
+        expect(request.url).toBe(`http://localhost/api/v2/users/verify-email-address/${token}`);
+        expect(request.method).toBe('GET');
+        expect(resetQueries).toHaveBeenCalledWith({ exact: true, queryKey: queryKeys.me() });
+        expect(mocks.toast.success).toHaveBeenCalledWith('Verified alice@example.com.');
+        expect(mocks.toast.error).not.toHaveBeenCalled();
+    });
+
+    it('VerifyEmailAddress_LinkForAnotherAccount_StaysWhereTheSignedInUserCanResend', async () => {
+        // Arrange
+        respondAsVerified('other@example.com', 'alice@example.com');
 
         // Act
         render(VerifyPage);
 
         // Assert
         await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/account/manage'));
-        expect(fetch).toHaveBeenCalledOnce();
-        const request = fetch.mock.calls[0]![0] as Request;
-        expect(request.url).toBe(`http://localhost/api/v2/users/verify-email-address/${token}`);
-        expect(request.method).toBe('GET');
-        expect(resetQueries).toHaveBeenCalledWith({ exact: true, queryKey: queryKeys.me() });
-        // The link may belong to a different account than the one signed in, so name the address it verified.
-        expect(mocks.toast.success).toHaveBeenCalledWith('Verified alice@example.com.');
-        expect(mocks.toast.error).not.toHaveBeenCalled();
+        // Name the address: the signed-in account is still unverified.
+        expect(mocks.toast.success).toHaveBeenCalledWith('Verified other@example.com.');
     });
 
     it.each([

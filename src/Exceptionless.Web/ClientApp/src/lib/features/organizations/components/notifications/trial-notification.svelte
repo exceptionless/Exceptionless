@@ -26,13 +26,13 @@
         {/if}
     {/snippet}
     {#if !hasEnded}
-        <NotificationTitle>The {name} free trial ends <TimeAgo value={endsUtc} />.</NotificationTitle>
+        <NotificationTitle>Your free trial for {name} ends <TimeAgo value={endsUtc} />.</NotificationTitle>
         <NotificationDescription>
             <A onclick={() => showUpgradeDialog(organizationId, 'Upgrade to keep Exie, alerts, integrations, and 90-day retention.')}>Upgrade now</A>
             to keep Exie, alerts, integrations, and 90-day retention when your trial ends.
         </NotificationDescription>
     {:else}
-        <NotificationTitle>The {name} free trial has ended.</NotificationTitle>
+        <NotificationTitle>Your free trial for {name} has ended.</NotificationTitle>
         <NotificationDescription>
             <A onclick={() => showUpgradeDialog(organizationId, 'Upgrade to keep Exie, alerts, integrations, and 90-day retention.')}>Upgrade now</A>
             to keep Exie, alerts, integrations, and 90-day retention. This organization is moving to the Free plan.

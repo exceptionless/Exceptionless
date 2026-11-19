@@ -33,7 +33,10 @@ test('invited user can accept an organization invitation @signup', async ({ brow
 
             try {
                 await invitedPage.goto(inviteLink);
-                await expect(invitedPage.getByRole('link', { name: 'Log In' })).toHaveAttribute('href', `/login?token=${encodeURIComponent(inviteToken)}`);
+                await expect(invitedPage.getByRole('link', { exact: true, name: 'Log in' })).toHaveAttribute(
+                    'href',
+                    `/login?token=${encodeURIComponent(inviteToken)}`
+                );
                 await invitedPage.getByLabel('Name', { exact: true }).fill(`Invited User ${e2eScenario.run}`);
                 await invitedPage.getByLabel('Email', { exact: true }).fill(invitedEmail);
                 await waitForEmailValidation(invitedPage);
@@ -45,14 +48,15 @@ test('invited user can accept an organization invitation @signup', async ({ brow
                 });
 
                 invitedUserSignupAttempted = true;
-                await invitedPage.getByRole('button', { name: 'Create My Account' }).click();
+                await invitedPage.getByRole('button', { name: 'Create account' }).click();
                 expect((await signupResponse).ok()).toBe(true);
 
                 invitedUserToken = await getUserToken(invitedPage);
-                await expect(invitedPage).toHaveURL(/\/project\/add(?:[?#]|$)/, { timeout: 30_000 });
+                // Invited users join an existing organization, so they skip organization setup.
+                await expect(invitedPage).not.toHaveURL(/\/(?:signup|organization\/add)(?:[?#]|$)/, { timeout: 30_000 });
                 await e2eApi.waitForOrganizationListed(invitedUserToken, e2eScenario.organizationId, 60_000);
                 await invitedPage.reload();
-                await expect(invitedPage.getByRole('heading', { name: 'Add Project' })).toBeVisible();
+                await expect(invitedPage).not.toHaveURL(/\/organization\/add(?:[?#]|$)/);
                 await expect(invitedPage.getByRole('button').filter({ hasText: e2eScenario.organizationName }).filter({ visible: true }).first()).toBeVisible();
             } finally {
                 await invitedContext.close();
@@ -108,8 +112,12 @@ test('existing invited user can accept an organization invitation when logging i
             });
 
             await invitedPage.goto(`/login?token=${encodeURIComponent(inviteToken)}`);
+            // An existing session is never ended silently; the user chooses to sign out.
+            await expect(invitedPage.getByText(`You're signed in as ${invitedEmail}`)).toBeVisible();
+            await expect(invitedPage.getByRole('link', { name: `Continue as ${invitedEmail} without accepting` })).toBeVisible();
+            await invitedPage.getByRole('button', { exact: true, name: 'Sign out and accept invitation' }).click();
             expect((await logoutResponse).ok()).toBe(true);
-            await expect(invitedPage.getByRole('link', { name: 'Start a free trial' })).toHaveAttribute(
+            await expect(invitedPage.getByRole('link', { name: 'Create an account' })).toHaveAttribute(
                 'href',
                 `/signup?token=${encodeURIComponent(inviteToken)}`
             );

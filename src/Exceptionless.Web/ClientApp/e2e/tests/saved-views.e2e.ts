@@ -2,6 +2,7 @@ import type { Locator, Page, Request } from '@playwright/test';
 
 import { expect, test } from '../fixtures/e2e-test';
 import { isApplicationApiRequest, trackPendingApiRequests } from '../support/api-request-monitor';
+import { seedRepresentativeEvent } from '../support/event-data';
 import { ExceptionlessE2EJourney } from '../support/exceptionless-journey';
 import { getHistoryPageState, getVisibleText } from '../support/page-helpers';
 
@@ -18,6 +19,8 @@ test('home navigation honors personal and organization saved views and survives 
     });
     const journey = ExceptionlessE2EJourney.fromScenario(page, e2eApi, e2eScenario);
     const viewName = `E2E Home ${journey.run.slice(-36)}`;
+    // New organizations without events land on client setup; give this one an event so it lands on Stacks.
+    await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eScenario);
     const viewSlug = savedViewSlug(viewName);
 
     // Act & Assert: each step exercises and verifies a home-view transition.
@@ -412,7 +415,9 @@ test('an open saved view deleted elsewhere returns to the page instead of showin
     await expect(page.getByText('This view was deleted.')).toBeVisible();
 });
 
-test('switching saved views preserves each view temporary filter overrides across page reloads', async ({ e2eScenario, page, request }) => {
+test('switching saved views preserves each view temporary filter overrides across page reloads', async ({ e2eApi, e2eScenario, page, request }) => {
+    // Column headers only render once the organization has events; until then the list shows Exie's empty state.
+    await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eScenario);
     const pendingApiRequests = trackPendingApiRequests(page);
     const failedApiRequests = captureFailedApiRequests(page);
     const suffix = e2eScenario.run.slice(-28);

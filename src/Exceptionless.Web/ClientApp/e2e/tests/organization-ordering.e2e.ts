@@ -131,8 +131,8 @@ test('Organizations_WithOrderedApiResultsAndDuplicateNames_KeepOrderAndSelection
     await test.step('create an organization and re-sort cached and refetched lists', async () => {
         // Act
         await page.goto('/organization/add');
-        await page.getByLabel('Organization Name', { exact: true }).fill('AAA Created Organization');
-        await page.getByLabel('Project Name', { exact: true }).fill('Created Ordering Project');
+        await page.getByLabel("What's your app called?", { exact: true }).fill('Created Ordering Project');
+        await page.getByLabel('Organization name', { exact: true }).fill('AAA Created Organization');
         await page.getByRole('button', { exact: true, name: 'Continue' }).click();
         await expect(page).toHaveURL(/\/configure/);
         await openSwitcher(page, 'AAA Created Organization');

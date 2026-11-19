@@ -1,4 +1,5 @@
 import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
+import { seedRepresentativeEvent } from '../support/event-data';
 
 const RESET_PASSWORD = `${E2E_TEST_PASSWORD}-reset`;
 
@@ -6,6 +7,9 @@ test.skip(process.env.E2E_ENV === 'production', 'Password recovery requires loca
 test.use({ e2eCleanupPassword: RESET_PASSWORD, e2eInjectBrowserToken: false, e2eUseInvitedUser: true });
 
 test('user can reset a forgotten password and log in @signup', async ({ e2eApi, e2eScenario, page }) => {
+    // New organizations without events land on client setup; give this one an event so it lands on Stacks.
+    await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eScenario);
+
     await test.step('request a password reset through the UI', async () => {
         await page.goto('/forgot-password');
         await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);

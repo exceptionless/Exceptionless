@@ -100,7 +100,14 @@ export interface UserAvatarRequest {
     };
 }
 
-export type VerifyEmailAddressOutcome = { emailAddress?: string; status: 'verified' } | { status: 'expired' | 'invalid' };
+export type VerifyEmailAddressOutcome =
+    | {
+          emailAddress?: string;
+          /** False when the link belonged to a different account than the one signed in. */
+          isCurrentUser: boolean;
+          status: 'verified';
+      }
+    | { status: 'expired' | 'invalid' };
 
 export function deleteCurrentUser() {
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
@@ -161,14 +168,7 @@ export function getMeQuery() {
             queryClient.setQueryData(queryKeys.id(data.id!), data);
         },
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<ViewCurrentUser>('users/me', {
-                signal
-            });
-
-            return response.data!;
-        },
+        queryFn: ({ signal }: { signal: AbortSignal }) => fetchCurrentUser(signal),
         queryKey: queryKeys.me()
     }));
 }
@@ -406,10 +406,29 @@ export async function verifyEmailAddress(queryClient: QueryClient, token: string
         queryKey: queryKeys.me()
     });
 
+    const emailAddress = response.data?.email_address;
+    const currentUser = await queryClient
+        .fetchQuery({
+            queryFn: ({ signal }) => fetchCurrentUser(signal),
+            queryKey: queryKeys.me()
+        })
+        .catch(() => undefined);
+    const isCurrentUser = !emailAddress || currentUser?.email_address.toLowerCase() === emailAddress.toLowerCase();
+
     return {
-        emailAddress: response.data?.email_address,
+        emailAddress,
+        isCurrentUser,
         status: 'verified'
     };
+}
+
+async function fetchCurrentUser(signal?: AbortSignal): Promise<ViewCurrentUser> {
+    const client = useFetchClient();
+    const response = await client.getJSON<ViewCurrentUser>('users/me', {
+        signal
+    });
+
+    return response.data!;
 }
 
 function setCurrentUser(queryClient: QueryClient, currentUser: ViewCurrentUser, changes: Partial<ViewCurrentUser>): void {

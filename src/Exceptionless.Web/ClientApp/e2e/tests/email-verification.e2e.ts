@@ -3,6 +3,9 @@ import { E2E_TEST_PASSWORD, expect, test } from '../fixtures/e2e-test';
 test.skip(process.env.E2E_ENV === 'production', 'Email verification requires local Mailpit.');
 test.use({ e2eInjectBrowserToken: false, e2eUseInvitedUser: true });
 
+// Verified users continue into the app; with a project and no events yet, the root route sends them to client setup.
+const IN_APP_LANDING = /\/(?:project\/[^/]+\/configure|stack\/|event\/)/;
+
 test('an invalid verification link preserves the unverified account @signup', async ({ e2eApi, e2eScenario, page }) => {
     // Arrange
     const invalidLink = '/account/verify?token=invalidverificationtoken1234567890';
@@ -34,17 +37,15 @@ test('verification in another tab refreshes the original account page @signup', 
     await page.waitForURL(/\/account\/manage(?:[?#]|$)/);
     const confirmationPage = await page.context().newPage();
     await confirmationPage.goto(verificationLink);
-    await confirmationPage.waitForURL(/\/account\/manage(?:[?#]|$)/);
     await confirmationPage.getByText(`Verified ${e2eScenario.email}.`).waitFor();
     const verifiedUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
-    await confirmationPage.reload();
     await page.bringToFront();
 
     // Assert
     expect(initialUser?.is_email_address_verified).toBe(false);
     expect(verifiedUser?.is_email_address_verified).toBe(true);
-    await expect(confirmationPage.getByLabel('Email', { exact: true })).toHaveValue(e2eScenario.email);
-    await expect(confirmationPage.getByText('Email not verified.')).toHaveCount(0);
+    // Verifying your own account continues into the app instead of stopping on Account settings.
+    await expect(confirmationPage).toHaveURL(IN_APP_LANDING);
     await expect(page.getByText('Email not verified.')).toHaveCount(0);
 });
 
@@ -83,13 +84,12 @@ test('a link for another account leaves the signed-in account able to resend ver
         // Act
         const newVerificationLink = await e2eApi.pollForMailLink(e2eScenario.email, 'verify-email');
         await page.goto(newVerificationLink);
-        await page.waitForURL(/\/account\/manage(?:[?#]|$)/);
+        await expect(page.getByText(`Verified ${e2eScenario.email}.`)).toBeVisible();
         const verifiedSignedInUser = await e2eApi.getCurrentUser(e2eScenario.userToken);
 
         // Assert
         expect(verifiedSignedInUser?.is_email_address_verified).toBe(true);
-        await expect(page.getByText('Email not verified.')).toHaveCount(0);
-        await expect(page.getByText(`Verified ${e2eScenario.email}.`)).toBeVisible();
+        await expect(page).toHaveURL(IN_APP_LANDING);
     } finally {
         if (otherUserToken) {
             await e2eApi.deleteCurrentUser(otherUserToken);
@@ -112,10 +112,10 @@ test('a legacy verification link survives the login redirect @signup', async ({ 
     await page.getByLabel('Email', { exact: true }).fill(e2eScenario.email);
     await page.getByPlaceholder('Enter password').fill(E2E_TEST_PASSWORD);
     await page.getByRole('button', { exact: true, name: 'Login' }).click();
-    await page.waitForURL(/\/account\/manage(?:[?#]|$)/);
+    await expect(page.getByText(`Verified ${e2eScenario.email}.`)).toBeVisible({ timeout: 30_000 });
     const user = await e2eApi.getCurrentUser(e2eScenario.userToken);
 
     // Assert
     expect(user?.is_email_address_verified).toBe(true);
-    await expect(page.getByText(`Verified ${e2eScenario.email}.`)).toBeVisible();
+    await expect(page).toHaveURL(IN_APP_LANDING);
 });

@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
 
+    import { useOrganizationOnboarding } from '#features/onboarding/onboarding-state.svelte.ts';
     import { getOrganizationQuery, getOrganizationsQuery } from '#features/organizations/api.svelte.ts';
     import { organization } from '#features/organizations/context.svelte.ts';
     import { getSavedViewsQuery, isSavedViewDeleted } from '#features/saved-views/api.svelte.ts';
@@ -26,6 +27,9 @@
         }
     });
     const currentOrganization = $derived(membershipOrganization ?? currentOrganizationQuery.data);
+    const onboarding = useOrganizationOnboarding(() => organization.current);
+    // First-run users belong in setup, not an empty Stacks view. Impersonated organizations keep the normal landing.
+    const setupHref = $derived(membershipOrganization && onboarding.isAwaitingFirstEvent ? onboarding.continueSetupHref : undefined);
     const savedViews = $derived((savedViewsQuery.data ?? []).filter((savedView) => !isSavedViewDeleted(savedView)));
     const defaults = $derived.by(() => {
         return resolveSavedViewDefaults({
@@ -42,8 +46,16 @@
             currentUserQuery.isPending ||
             organizationsQuery.isPending ||
             savedViewsQuery.isPending ||
+            !onboarding.isSettled ||
             (organizationIdToLoad && currentOrganizationQuery.isPending)
         ) {
+            return;
+        }
+
+        if (setupHref) {
+            void goto(`${setupHref}${setupHref.endsWith('/configure') ? '?redirect=true' : ''}`, {
+                replace: true
+            });
             return;
         }
 

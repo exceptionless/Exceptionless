@@ -143,7 +143,8 @@ public class ProjectHandler(
         if (message.Changes.ContainsChangedProperty(p => p.PromotedTabs!))
             original.PromotedTabs = NormalizePromotedTabs(original.PromotedTabs);
 
-        await repository.SaveAsync(original, o => o.Cache());
+        // Clients list the organization's projects right after a rename, so the change must be searchable before we respond.
+        await repository.SaveAsync(original, o => o.Cache().ImmediateConsistency());
         return await MapToViewAsync(original);
     }
 
@@ -605,7 +606,8 @@ public class ProjectHandler(
         foreach (var project in projects.OfType<ISupportSoftDeletes>())
             project.IsDeleted = true;
 
-        // A suspended organization needs the updated project count before checking whether ingestion can resume.
+        // Clients list the organization's projects right after a delete, and a suspended organization needs the updated
+        // project count before checking whether ingestion can resume, so the soft delete must be searchable first.
         await repository.SaveAsync(projects, command => command.ImmediateConsistency());
         foreach (string organizationId in projects.Select(project => project.OrganizationId).Distinct(StringComparer.Ordinal))
             await billingManager.RecheckPlanLimitSuspensionAsync(organizationId);

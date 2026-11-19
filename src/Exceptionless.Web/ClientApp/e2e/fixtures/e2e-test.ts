@@ -43,6 +43,7 @@ export interface E2ESecondaryProject {
 interface E2EFixtures {
     e2eApi: E2EApiClient;
     e2eCleanupPassword: string;
+    e2eDismissGettingStartedChecklist: boolean;
     e2eDismissProductTourWelcome: boolean;
     e2eInjectBrowserToken: boolean;
     e2eScenario: E2EScenario;
@@ -61,12 +62,23 @@ export const test = base.extend<E2EFixtures>({
 
     e2eCleanupPassword: [E2E_TEST_PASSWORD, { option: true }],
 
+    e2eDismissGettingStartedChecklist: [true, { option: true }],
+
     e2eDismissProductTourWelcome: [true, { option: true }],
 
     e2eInjectBrowserToken: [true, { option: true }],
 
     e2eScenario: async (
-        { e2eApi, e2eCleanupPassword, e2eDismissProductTourWelcome, e2eInjectBrowserToken, e2eUseGeneratedUser, e2eUserInvitation, page },
+        {
+            e2eApi,
+            e2eCleanupPassword,
+            e2eDismissGettingStartedChecklist,
+            e2eDismissProductTourWelcome,
+            e2eInjectBrowserToken,
+            e2eUseGeneratedUser,
+            e2eUserInvitation,
+            page
+        },
         use,
         testInfo
     ) => {
@@ -103,6 +115,11 @@ export const test = base.extend<E2EFixtures>({
             const projectToken = await e2eApi.getProjectDefaultToken(userToken, project.id);
             if (e2eDismissProductTourWelcome) {
                 await e2eApi.recordProductTour(userToken, 'app-welcome');
+            }
+
+            // New organizations show Exie's checklist above the lists; most tests exercise other layouts.
+            if (e2eDismissGettingStartedChecklist) {
+                await e2eApi.recordProductTour(userToken, 'checklist-dismissed');
             }
 
             if (e2eInjectBrowserToken) {
