@@ -1,5 +1,9 @@
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
+using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services;
@@ -17,19 +21,39 @@ public sealed class AuthService
     private static readonly TimeSpan AdmissionWaitTimeout = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan AdmissionRetryDelay = TimeSpan.FromMilliseconds(50);
     private readonly ICacheClient _cache;
+    private readonly IUserRepository _userRepository;
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
     private int _admissionWaiters;
 
-    public AuthService(ICacheClient cacheClient, TimeProvider timeProvider, ILoggerFactory loggerFactory)
+    public AuthService(IUserRepository userRepository, ICacheClient cacheClient, TimeProvider timeProvider, ILoggerFactory loggerFactory)
     {
+        ArgumentNullException.ThrowIfNull(userRepository);
         ArgumentNullException.ThrowIfNull(cacheClient);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(loggerFactory);
 
         _cache = new ScopedCacheClient(cacheClient, "Auth");
+        _userRepository = userRepository;
         _timeProvider = timeProvider;
         _logger = loggerFactory.CreateLogger<AuthService>();
+    }
+
+    public async Task<User?> AuthenticateAsync(string emailAddress, string password)
+    {
+        var user = await _userRepository.GetByEmailAddressAsync(emailAddress);
+        if (user is null)
+            return null;
+
+        // A delayed email lookup can cache an old snapshot after a concurrent save.
+        // Reading by ID without caching uses current credentials and permissions.
+        var current = await _userRepository.GetByIdAsync(user.Id);
+        if (current is not { IsActive: true } ||
+            !String.Equals(current.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase) ||
+            !current.IsCorrectPassword(password))
+            return null;
+
+        return current;
     }
 
     public async Task<LoginAttempt?> TryBeginLoginAsync(string emailAddress, string? ipAddress, CancellationToken cancellationToken = default)

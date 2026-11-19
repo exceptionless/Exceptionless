@@ -1,5 +1,11 @@
+using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
+using Foundatio.Repositories;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -11,11 +17,65 @@ public sealed class AuthServiceTests : TestWithServices
 {
     private const string EmailAddress = "user@exceptionless.test";
     private const string IpAddress = "192.0.2.1";
+    private const string Password = "Password:1$";
+    private const string Salt = "1234567890123456";
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
 
     public AuthServiceTests(ITestOutputHelper output) : base(output)
     {
         TimeProvider.SetUtcNow(new DateTimeOffset(2026, 1, 1, 12, 1, 0, TimeSpan.Zero));
+    }
+
+    [Theory]
+    [InlineData(false, true, EmailAddress, Password)]
+    [InlineData(true, false, EmailAddress, Password)]
+    [InlineData(true, true, "changed@exceptionless.test", Password)]
+    [InlineData(true, true, EmailAddress, "ChangedPassword:2$")]
+    public async Task AuthenticateAsync_StaleAccount_RejectsInvalidCredentials(bool exists, bool isActive, string emailAddress, string password)
+    {
+        // Arrange
+        var cached = CreateUser();
+        var current = CreateUser() with { IsActive = isActive, EmailAddress = emailAddress, Password = password.ToSaltedHash(Salt) };
+        var repository = new Mock<IUserRepository>(MockBehavior.Strict);
+        repository.Setup(value => value.GetByEmailAddressAsync(EmailAddress)).ReturnsAsync(cached);
+        repository.Setup(value => value.GetByIdAsync(cached.Id, (ICommandOptions?)null)).ReturnsAsync(exists ? current : null);
+        var service = new AuthService(repository.Object, GetService<ICacheClient>(), TimeProvider, Log);
+
+        // Act
+        var authenticated = await service.AuthenticateAsync(EmailAddress, Password);
+
+        // Assert
+        Assert.Null(authenticated);
+        repository.Verify(value => value.GetByEmailAddressAsync(EmailAddress), Times.Once);
+        repository.Verify(value => value.GetByIdAsync(cached.Id, (ICommandOptions?)null), Times.Once);
+        repository.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task AuthenticateAsync_StalePermissions_ReturnsCurrentUserWithoutChangingCredentials()
+    {
+        // Arrange
+        var cached = CreateUser();
+        cached.Roles.Add(AuthorizationRoles.GlobalAdmin);
+        var current = CreateUser() with { EmailAddress = EmailAddress.ToUpperInvariant() };
+        string? passwordHash = current.Password;
+        var repository = new Mock<IUserRepository>(MockBehavior.Strict);
+        repository.Setup(value => value.GetByEmailAddressAsync(EmailAddress)).ReturnsAsync(cached);
+        repository.Setup(value => value.GetByIdAsync(cached.Id, (ICommandOptions?)null)).ReturnsAsync(current);
+        var service = new AuthService(repository.Object, GetService<ICacheClient>(), TimeProvider, Log);
+
+        // Act
+        var authenticated = await service.AuthenticateAsync(EmailAddress, Password);
+
+        // Assert
+        Assert.NotNull(authenticated);
+        Assert.Same(current, authenticated);
+        Assert.DoesNotContain(AuthorizationRoles.GlobalAdmin, authenticated.Roles);
+        Assert.Equal(passwordHash, current.Password);
+        Assert.Equal(Salt, current.Salt);
+        repository.Verify(value => value.GetByEmailAddressAsync(EmailAddress), Times.Once);
+        repository.Verify(value => value.GetByIdAsync(cached.Id, (ICommandOptions?)null), Times.Once);
+        repository.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -99,11 +159,13 @@ public sealed class AuthServiceTests : TestWithServices
         var cache = GetService<ICacheClient>();
 
         // Act
-        Action withoutCache = () => _ = new AuthService(null!, TimeProvider, Log);
-        Action withoutTimeProvider = () => _ = new AuthService(cache, null!, Log);
-        Action withoutLoggerFactory = () => _ = new AuthService(cache, TimeProvider, null!);
+        Action withoutRepository = () => _ = new AuthService(null!, cache, TimeProvider, Log);
+        Action withoutCache = () => _ = new AuthService(Mock.Of<IUserRepository>(), null!, TimeProvider, Log);
+        Action withoutTimeProvider = () => _ = new AuthService(Mock.Of<IUserRepository>(), cache, null!, Log);
+        Action withoutLoggerFactory = () => _ = new AuthService(Mock.Of<IUserRepository>(), cache, TimeProvider, null!);
 
         // Assert
+        Assert.Equal("userRepository", Assert.Throws<ArgumentNullException>(withoutRepository).ParamName);
         Assert.Equal("cacheClient", Assert.Throws<ArgumentNullException>(withoutCache).ParamName);
         Assert.Equal("timeProvider", Assert.Throws<ArgumentNullException>(withoutTimeProvider).ParamName);
         Assert.Equal("loggerFactory", Assert.Throws<ArgumentNullException>(withoutLoggerFactory).ParamName);
@@ -1049,7 +1111,16 @@ public sealed class AuthServiceTests : TestWithServices
         return mock;
     }
 
-    private AuthService CreateService(ICacheClient cache) => new(cache, TimeProvider, Log);
+    private AuthService CreateService(ICacheClient cache) => new(Mock.Of<IUserRepository>(), cache, TimeProvider, Log);
+
+    private static User CreateUser() => new()
+    {
+        Id = TestConstants.UserId,
+        EmailAddress = EmailAddress,
+        Password = Password.ToSaltedHash(Salt),
+        Salt = Salt,
+        Roles = new HashSet<string> { AuthorizationRoles.User }
+    };
 
     private static Task DisposeAttemptsAsync(IEnumerable<AuthService.LoginAttempt?> attempts)
         => Task.WhenAll(attempts.Where(attempt => attempt is not null).Select(attempt => attempt!.DisposeAsync().AsTask()));
