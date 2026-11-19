@@ -8,7 +8,7 @@
     import CircleCheck from '@lucide/svelte/icons/circle-check';
     import NotificationSettings from '@lucide/svelte/icons/mail';
     import { useEventListener } from 'runed';
-    import { tick } from 'svelte';
+    import { tick, untrack } from 'svelte';
     import { toast } from 'svelte-sonner';
 
     import { Notification, NotificationDescription, NotificationTitle } from '#comp/notification/index.ts';
@@ -77,6 +77,9 @@
     let toastId = $state<number | string>();
     let openEnableTokenDialog = $state(false);
     let firstEventReceived = $state(false);
+    // The project this visit saw waiting for its first event, so a configured flag that arrives before the event
+    // notification still celebrates.
+    let awaitingFirstEventProjectId = $state<string>();
     let celebrationOpen = $state(false);
     let sampleDataRequested = $state(false);
     let isTakingAWhile = $state(false);
@@ -87,6 +90,7 @@
         void projectId;
         return () => {
             firstEventReceived = false;
+            awaitingFirstEventProjectId = undefined;
             celebrationOpen = false;
             sampleDataRequested = false;
             isTakingAWhile = false;
@@ -159,6 +163,24 @@
         return projectQuery.data.is_configured === false ? 'waiting' : 'receiving';
     });
 
+    $effect(() => {
+        const project = projectQuery.data;
+        if (!project?.id || project.id !== projectId) {
+            return;
+        }
+
+        if (project.is_configured === false) {
+            awaitingFirstEventProjectId = project.id;
+        } else if (untrack(() => awaitingFirstEventProjectId === project.id && !firstEventReceived)) {
+            celebrateFirstEvent();
+        }
+    });
+
+    function celebrateFirstEvent(): void {
+        firstEventReceived = true;
+        celebrationOpen = true;
+    }
+
     const exieMood = $derived.by(() => {
         if (eventStatus === 'received') {
             return 'celebrate' as const;
@@ -199,8 +221,7 @@
 
         const checkpoint = projectConfigureCheckpoint;
         if (eventStatus === 'waiting') {
-            firstEventReceived = true;
-            celebrationOpen = true;
+            celebrateFirstEvent();
         }
 
         if (checkpoint) {

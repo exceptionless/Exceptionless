@@ -20,11 +20,25 @@ async function rejectedTokenExchange(title: string): Promise<unknown> {
 
 describe('getOAuthErrorMessage', () => {
     it('explains a blocked popup', () => {
-        expect(getOAuthErrorMessage(new Error('Failed to open popup window'), 'GitHub').title).toBe('Your browser blocked the GitHub sign-in window');
+        // Arrange
+        const error = new Error('Failed to open popup window');
+
+        // Act
+        const message = getOAuthErrorMessage(error, 'GitHub');
+
+        // Assert
+        expect(message.title).toBe('Your browser blocked the GitHub sign-in window');
     });
 
-    it.each(['The popup window was closed', 'access_denied'])('treats %s as a cancellation', (message) => {
-        expect(getOAuthErrorMessage(new Error(message), 'Google').title).toBe('Google sign-in was cancelled');
+    it.each(['The popup window was closed', 'access_denied'])('treats %s as a cancellation', (reason) => {
+        // Arrange
+        const error = new Error(reason);
+
+        // Act
+        const message = getOAuthErrorMessage(error, 'Google');
+
+        // Assert
+        expect(message.title).toBe('Google sign-in was cancelled');
     });
 
     it('shows the server explanation from a rejected token exchange', async () => {
