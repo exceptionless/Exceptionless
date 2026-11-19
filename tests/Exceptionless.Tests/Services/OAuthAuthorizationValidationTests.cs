@@ -10,6 +10,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Options;
 using Foundatio.Repositories.Utility;
 using Moq;
 using Xunit;
@@ -27,6 +28,47 @@ public sealed class OAuthAuthorizationValidationTests(ITestOutputHelper output) 
     {
         base.RegisterServices(services, options);
         services.AddSingleton(new OAuthServerOptions());
+    }
+
+    [Theory]
+    [InlineData("active", true, 1)]
+    [InlineData("disabled", false, 1)]
+    [InlineData("deleted", false, 2)]
+    [InlineData("renamed", false, 2)]
+    public async Task IsAccessTokenClientValidAsync_WarmClient_ReadsCurrentApplicationById(string state, bool expectedValid, int expectedSearches)
+    {
+        // Arrange
+        string clientId = Guid.NewGuid().ToString("N");
+        var original = new OAuthApplication { Id = ObjectId.GenerateNewId().ToString(), ClientId = clientId };
+        var current = state == "deleted" ? null : new OAuthApplication
+        {
+            Id = original.Id, ClientId = state == "renamed" ? "renamed" : clientId, IsDisabled = state == "disabled"
+        };
+        var applications = new Mock<IOAuthApplicationRepository>(MockBehavior.Strict);
+        applications.SetupSequence(repository => repository.GetByClientIdAsync(clientId, It.IsAny<CommandOptionsDescriptor<OAuthApplication>>()))
+            .ReturnsAsync(original).ReturnsAsync(state is "deleted" or "renamed" ? null : current);
+        bool readCache = true;
+        applications.Setup(repository => repository.GetByIdAsync(original.Id, It.IsAny<CommandOptionsDescriptor<OAuthApplication>>()))
+            .Callback<Id, CommandOptionsDescriptor<OAuthApplication>>((_, configure) =>
+            {
+                var options = new CommandOptions<OAuthApplication>();
+                configure(options);
+                readCache = options.ShouldReadCache();
+            }).ReturnsAsync(current);
+        var service = new OAuthService(GetService<OAuthServerOptions>(), GetService<ICacheClient>(), GetService<ILockProvider>(),
+            applications.Object, GetService<IOAuthClientMetadataService>(), Mock.Of<IOAuthTokenRepository>(), Mock.Of<IUserRepository>(), TimeProvider);
+
+        // Act
+        bool initialValid = await service.IsAccessTokenClientValidAsync(clientId);
+        bool currentValid = await service.IsAccessTokenClientValidAsync(clientId);
+
+        // Assert
+        Assert.True(initialValid);
+        Assert.Equal(expectedValid, currentValid);
+        Assert.False(readCache);
+        applications.Verify(repository => repository.GetByClientIdAsync(clientId, It.IsAny<CommandOptionsDescriptor<OAuthApplication>>()), Times.Exactly(expectedSearches));
+        applications.Verify(repository => repository.GetByIdAsync(original.Id, It.IsAny<CommandOptionsDescriptor<OAuthApplication>>()), Times.Once);
+        applications.VerifyNoOtherCalls();
     }
 
     [Theory]
