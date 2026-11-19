@@ -97,7 +97,7 @@
         "clsx": "^2.1.1",
         "d3-scale": "^4.0.3",
         "dompurify": "^3.4.17",
-        "driver.js": "^1.11.0",
+        "driver.js": "^1.12.1",
         "layerchart": "^2.10.0",
         "mode-watcher": "^1.1.0",
         "oidc-client-ts": "^3.5.0",
