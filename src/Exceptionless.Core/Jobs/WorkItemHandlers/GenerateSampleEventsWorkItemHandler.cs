@@ -84,18 +84,27 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
 
         for (int p = 0; p < projectList.Count; p++)
         {
+            int projectEventCount = eventsPerProject + (p < remainder ? 1 : 0);
+            if (projectEventCount == 0)
+                continue;
+
             if (context.CancellationToken.IsCancellationRequested)
-                break;
+            {
+                context.Result = JobResult.CancelledWithMessage("Stopping sample event generation for shutdown");
+                return;
+            }
 
             var project = projectList[p];
-            int projectEventCount = eventsPerProject + (p < remainder ? 1 : 0);
 
             var events = generator.Generate(organization.Id, project.Id, projectEventCount, minDate, utcNow);
 
             foreach (var batch in events.Chunk(batchSize))
             {
                 if (context.CancellationToken.IsCancellationRequested)
-                    break;
+                {
+                    context.Result = JobResult.CancelledWithMessage("Stopping sample event generation for shutdown");
+                    return;
+                }
 
                 await _eventPipeline.RunAsync(batch, organization, project, allowExtendedEventDateRange: true);
                 totalProcessed += batch.Length;
@@ -138,7 +147,10 @@ public class GenerateSampleEventsWorkItemHandler : WorkItemHandlerBase
         foreach (var batch in events.Chunk(batchSize))
         {
             if (context.CancellationToken.IsCancellationRequested)
-                break;
+            {
+                context.Result = JobResult.CancelledWithMessage("Stopping sample event generation for shutdown");
+                return;
+            }
 
             await _eventPipeline.RunAsync(batch, organization, project, allowExtendedEventDateRange: true);
             totalProcessed += batch.Length;

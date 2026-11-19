@@ -875,6 +875,20 @@
   },
   {
     "method": "POST",
+    "route": "/api/v2/bulk-operations",
+    "displayName": "HTTP: POST api/v2/bulk-operations",
+    "tags": [
+      "BackgroundTask"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
     "route": "/api/v2/contact",
     "displayName": "HTTP: POST api/v2/contact",
     "tags": [],
@@ -1679,6 +1693,20 @@
     "allowAnonymous": false,
     "authorizationPolicies": [
       "StacksReadPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/organizations/{organizationId:objectid}/tasks",
+    "displayName": "HTTP: GET api/v2/organizations/{organizationId:objectid}/tasks",
+    "tags": [
+      "BackgroundTask"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
     ],
     "authorizationRoles": [],
     "authenticationSchemes": []
@@ -2659,6 +2687,34 @@
     "tags": [],
     "allowAnonymous": true,
     "authorizationPolicies": [],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "GET",
+    "route": "/api/v2/tasks/{id:objectid}",
+    "displayName": "HTTP: GET api/v2/tasks/{id:objectid}",
+    "tags": [
+      "BackgroundTask"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
+    "method": "POST",
+    "route": "/api/v2/tasks/{id:objectid}/cancel",
+    "displayName": "HTTP: POST api/v2/tasks/{id:objectid}/cancel",
+    "tags": [
+      "BackgroundTask"
+    ],
+    "allowAnonymous": false,
+    "authorizationPolicies": [
+      "UserPolicy"
+    ],
     "authorizationRoles": [],
     "authenticationSchemes": []
   },

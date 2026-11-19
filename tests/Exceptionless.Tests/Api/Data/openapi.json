@@ -4067,6 +4067,236 @@
         }
       }
     },
+    "/api/v2/bulk-operations": {
+      "post": {
+        "tags": [
+          "BackgroundTask"
+        ],
+        "summary": "Create",
+        "description": "Starts an action, such as \u0060events.delete\u0060, on everything that matches a selection. The selection is either a list of ids\nor a filter with a time range. The time range is resolved to absolute UTC dates when the operation is created, and events\nstored after that moment are never included. The operation runs in the background and is returned as a task; poll\n\u0060GET api/v2/tasks/{id}\u0060 or listen for \u0060BackgroundTaskUpdated\u0060 messages to follow its progress.",
+        "requestBody": {
+          "description": "The bulk operation to start.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewBulkOperation"
+              }
+            },
+            "application/*\u002Bjson": {
+              "schema": {
+                "$ref": "#/components/schemas/NewBulkOperation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewBackgroundTask"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The action is not permitted for this organization or project.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization or project could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A destructive operation is already running for this project.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The request is not valid.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "The filter uses a feature that requires a plan upgrade.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/tasks/{id}": {
+      "get": {
+        "tags": [
+          "BackgroundTask"
+        ],
+        "summary": "Get by id",
+        "description": "Returns the progress of a task, such as a bulk action, a project data reset or sample data generation. Tasks are kept for seven days.",
+        "operationId": "GetBackgroundTaskById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the task.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewBackgroundTask"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The task could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/organizations/{organizationId}/tasks": {
+      "get": {
+        "tags": [
+          "BackgroundTask"
+        ],
+        "summary": "Get by organization",
+        "description": "Returns the active and recently finished tasks of the organization, newest first. Finished tasks are kept for seven days.",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "in": "path",
+            "description": "The identifier of the organization.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ViewBackgroundTask"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The organization could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/tasks/{id}/cancel": {
+      "post": {
+        "tags": [
+          "BackgroundTask"
+        ],
+        "summary": "Cancel",
+        "description": "Requests cancellation. A running bulk action stops after the batch it is processing; work already done is not undone. Cancelling a finished task has no effect. Tasks that cannot be stopped, such as a project data reset, are rejected.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The identifier of the task.",
+            "required": true,
+            "schema": {
+              "pattern": "^[a-zA-Z\\d]{24,36}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewBackgroundTask"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The task could not be found.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The task cannot be cancelled.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v2/users/me": {
       "get": {
         "tags": [
@@ -12151,6 +12381,22 @@
           }
         }
       },
+      "BackgroundTaskStatus": {
+        "enum": [
+          "Queued",
+          "Running",
+          "Completed",
+          "Failed",
+          "Cancelled"
+        ],
+        "x-enumNames": [
+          "Queued",
+          "Running",
+          "Completed",
+          "Failed",
+          "Cancelled"
+        ]
+      },
       "BillingPlan": {
         "required": [
           "id",
@@ -12218,6 +12464,16 @@
           "PastDue",
           "Canceled",
           "Unpaid"
+        ]
+      },
+      "BulkOperationSelectionKind": {
+        "enum": [
+          "Ids",
+          "Filter"
+        ],
+        "x-enumNames": [
+          "Ids",
+          "Filter"
         ]
       },
       "ChangePasswordModel": {
@@ -12585,6 +12841,96 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "NewBulkOperation": {
+        "required": [
+          "type",
+          "selection",
+          "organization_id"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "maxLength": 100,
+            "type": "string",
+            "description": "The action to run, e.g. events.delete."
+          },
+          "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optionally limits the operation to one project of the organization."
+          },
+          "selection": {
+            "$ref": "#/components/schemas/NewBulkOperationSelection"
+          },
+          "parameters": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Action specific parameters. Actions without parameters reject any value here."
+          }
+        }
+      },
+      "NewBulkOperationSelection": {
+        "required": [
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/BulkOperationSelectionKind"
+          },
+          "ids": {
+            "maxItems": 1000,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "The ids to process when Kind is ids."
+          },
+          "filter": {
+            "maxLength": 2000,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The search filter when Kind is filter. An empty filter matches everything in the time window."
+          },
+          "time": {
+            "maxLength": 100,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The time range of the filter, e.g. [now-7d TO now]. It is resolved to absolute UTC dates when the\noperation is created."
+          },
+          "offset": {
+            "maxLength": 20,
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The UTC offset used to resolve Time, e.g. -5h."
           }
         }
       },
@@ -14497,6 +14843,177 @@
         },
         "description": "The account whose email address the link verified, which may not be the account that\u0027s signed in."
       },
+      "ViewBackgroundTask": {
+        "required": [
+          "id",
+          "organization_id",
+          "type",
+          "description",
+          "status",
+          "progress",
+          "total",
+          "processed",
+          "succeeded",
+          "failed",
+          "can_cancel",
+          "created_by_user_id",
+          "created_utc",
+          "updated_utc"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "organization_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "project_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "description": "What the task does, e.g. events.delete, projects.reset-data or projects.sample-data."
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BackgroundTaskStatus"
+          },
+          "progress": {
+            "type": "integer",
+            "description": "Percent complete, 0 to 100.",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "description": "The item counts. All zero for tasks that only report a percent.",
+            "format": "int64"
+          },
+          "processed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "succeeded": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "can_cancel": {
+            "type": "boolean",
+            "description": "Whether the task can be stopped with the cancel endpoint."
+          },
+          "selection": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "What a bulk action applies to. Only set for bulk actions.",
+                "$ref": "#/components/schemas/ViewBulkOperationSelection"
+              }
+            ]
+          },
+          "created_by_user_id": {
+            "maxLength": 24,
+            "minLength": 24,
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "type": "string"
+          },
+          "created_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "started_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "completed_utc": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updated_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ViewBulkOperationSelection": {
+        "required": [
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/BulkOperationSelectionKind"
+          },
+          "id_count": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "The number of ids when the selection is an id list.",
+            "format": "int32"
+          },
+          "filter": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "time": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "utc_start": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The absolute start of the resolved time window.",
+            "format": "date-time"
+          },
+          "utc_end": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The absolute end of the resolved time window, never later than when the task was created.",
+            "format": "date-time"
+          }
+        },
+        "description": "What a bulk action applies to. Only set for bulk actions."
+      },
       "ViewCurrentUser": {
         "required": [
           "has_local_account",
@@ -15367,6 +15884,9 @@
     },
     {
       "name": "Auth"
+    },
+    {
+      "name": "BackgroundTask"
     },
     {
       "name": "Event"
