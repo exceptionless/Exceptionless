@@ -1,21 +1,19 @@
 ---
 layout: layouts/base.vto
+bodyClass: layout-post
 ---
-<div class="page-header margin-top">
-  <h1 id="news">News</h1>
-</div>
-
-<div id="wrap" class="container" role="document">
-  <div id="content" class="row-fluid">
-    <div id="main" class="span12" role="main">
-      <article class="post type-post status-publish format-standard hentry category-uncategorized">
-        <header>
-          <h1 class="entry-title">{{ title }}</h1>
-        </header>
-        <div class="entry-content">
-          {{ content }}
-        </div>
-      </article>
+<div class="container">
+  <header class="post-header">
+    <a class="back-link" href="/news/">{{ icons["arrow-right"] }} All news</a>
+    <h1 class="entry-title">{{ title }}</h1>
+    {{ if author }}<p class="post-meta">By {{ author }}</p>{{ /if }}
+  </header>
+  <article class="post-body prose">
+    <div class="entry-content">
+      {{ content }}
     </div>
+  </article>
+  <div class="post-cta">
+    {{ include "partials/signup-banner.vto" { cta: "news-post", title: "Catch errors before your users do", text: "Errors, logs, and feature usage from your .NET, JavaScript, and React Native apps, grouped and ready to fix. Set up in minutes, no credit card required." } }}
   </div>
 </div>

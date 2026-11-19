@@ -2,7 +2,7 @@
 title: "Exceptionless API Usage and Overview"
 ---
 
-# THESE DOCS HAVE BEEN UPDATED. SEE THE [NEW DOCS HERE](/docs/api/).
+**These docs have been updated. See the [new API docs](/docs/api/).**
 
 ![Exceptionless API](/assets/img/news/Screenshot-2015-05-06-16.26.42-300x220.png)
 

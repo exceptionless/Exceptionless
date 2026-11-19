@@ -23,6 +23,7 @@ export function initializeSiteSearch(modal) {
   const loadSearchIndex = createSearchIndexLoader()
   let visibleResults = []
   let visibleResultsQuery = ""
+  let selectionChosen = false
 
   document.querySelectorAll("[data-site-search-open]").forEach((trigger) => {
     trigger.addEventListener("click", (event) => {
@@ -52,12 +53,14 @@ export function initializeSiteSearch(modal) {
 
     if (event.key === "ArrowDown") {
       event.preventDefault()
+      selectionChosen = true
       setActiveResult(Math.min(activeIndex + 1, visibleResults.length - 1))
       return
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault()
+      selectionChosen = true
       setActiveResult(Math.max(activeIndex - 1, 0))
     }
   })
@@ -69,13 +72,19 @@ export function initializeSiteSearch(modal) {
   })
 
   modal.addEventListener("close", () => {
+    if (modal.open) {
+      return
+    }
+
+    window.clearTimeout(debounceTimer)
+    activeSearchId++
     document.body.classList.remove("site-search-open")
     if (lastActiveElement instanceof HTMLElement) {
       lastActiveElement.focus()
     }
   })
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault()
     const currentQuery = input.value.trim()
     if (!currentQuery) {
@@ -83,21 +92,41 @@ export function initializeSiteSearch(modal) {
       return
     }
 
-    if (visibleResultsQuery !== currentQuery) {
-      window.clearTimeout(debounceTimer)
-      void performSearch(currentQuery)
+    // A result chosen since the last edit wins, even if a newer search is still pending.
+    const activeResult = visibleResults[activeIndex]
+    if (activeResult && (selectionChosen || visibleResultsQuery === currentQuery)) {
+      openResult(activeResult.url)
       return
     }
 
-    const activeResult = visibleResults[activeIndex]
-    if (activeResult) {
-      window.location.href = activeResult.url
+    // Otherwise finish searching for what was typed and open its top result.
+    window.clearTimeout(debounceTimer)
+    const searchId = await performSearch(currentQuery)
+    if (searchId !== activeSearchId || !modal.open) {
+      return
+    }
+
+    const topResult = visibleResultsQuery === currentQuery ? visibleResults[activeIndex] : undefined
+    if (topResult) {
+      openResult(topResult.url)
     }
   })
+
+  globalThis.addEventListener("pageshow", (event) => {
+    if (event.persisted && modal instanceof HTMLDialogElement && modal.open) {
+      closeSearch()
+    }
+  })
+
+  function openResult(url) {
+    closeSearch()
+    window.location.assign(url)
+  }
 
   input.addEventListener("input", () => {
     window.clearTimeout(debounceTimer)
     activeSearchId++
+    selectionChosen = false
     const query = input.value.trim()
     if (!query) {
       clearResults()
@@ -124,17 +153,23 @@ export function initializeSiteSearch(modal) {
       return
     }
 
+    selectionChosen = true
     setActiveResult(Number(item.dataset.siteSearchResultIndex))
   })
 
   function openSearch(sourceElement) {
     lastActiveElement = sourceElement instanceof HTMLElement ? sourceElement : document.activeElement
+    const query = input.value.trim()
     if (modal instanceof HTMLDialogElement && !modal.open) {
+      activeSearchId++
       modal.showModal()
+      if (query) {
+        performSearch(query)
+      }
     }
     document.body.classList.add("site-search-open")
 
-    if (!input.value.trim()) {
+    if (!query) {
       clearResults()
     }
 
@@ -145,6 +180,8 @@ export function initializeSiteSearch(modal) {
   }
 
   function closeSearch() {
+    window.clearTimeout(debounceTimer)
+    activeSearchId++
     if (modal instanceof HTMLDialogElement && modal.open) {
       modal.close()
     }
@@ -171,6 +208,7 @@ export function initializeSiteSearch(modal) {
       const matches = searchEntries(entries, trimmedQuery)
       visibleResults = matches.slice(0, 30)
       renderResults(trimmedQuery, matches.length)
+      return searchId
     } catch (error) {
       if (searchId !== activeSearchId) {
         return
@@ -184,6 +222,7 @@ export function initializeSiteSearch(modal) {
 
   function renderResults(query, totalCount) {
     visibleResultsQuery = query.trim()
+    selectionChosen = false
     resultsList.replaceChildren(...visibleResults.map((result, index) => renderResult(result, index, query)))
     input.setAttribute("aria-expanded", String(visibleResults.length > 0))
     setActiveResult(visibleResults.length ? 0 : -1)
