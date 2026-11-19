@@ -40,6 +40,16 @@ describe('getting started checklist', () => {
         expect(isChecklistComplete(items)).toBe(true);
     });
 
+    it('lists asking Exie after verifying the email only when Exie is offered', () => {
+        const input = { emailVerified: true, hasEvents: true, hasProject: true };
+
+        expect(getChecklistItems(input).map((item) => item.id)).not.toContain('ask-exie');
+
+        const items = getChecklistItems({ ...input, includeAskExie: true, productTours: { checklist_ask_exie: '2026-10-01T00:00:00Z' } });
+        expect(items.map((item) => item.id).slice(3, 5)).toEqual(['verify-email', 'ask-exie']);
+        expect(items.find((item) => item.id === 'ask-exie')).toEqual({ complete: true, id: 'ask-exie', kind: 'visit' });
+    });
+
     it('shows only for new organizations that have not dismissed it', () => {
         const now = new Date('2026-10-21T00:00:00Z');
 

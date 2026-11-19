@@ -18,6 +18,8 @@
     import * as Card from '#comp/ui/card/index.ts';
     import * as Collapsible from '#comp/ui/collapsible/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
+    import { getAssistantAccessQuery } from '#features/assistant/api.svelte.ts';
+    import { tryUseAssistantControls } from '#features/assistant/controls.svelte.ts';
     import { FREE_PLAN_ID, TRIAL_PLAN_ID } from '#features/billing/index.ts';
     import { getOrganizationQuery } from '#features/organizations/api.svelte.ts';
     import { organization } from '#features/organizations/context.svelte.ts';
@@ -48,6 +50,18 @@
         }
     });
     const onboarding = useOrganizationOnboarding(() => organization.current);
+    const assistant = tryUseAssistantControls();
+    const assistantAccessQuery = getAssistantAccessQuery({
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
+    const assistantAccess = $derived(assistantAccessQuery.data);
+    // Offer Exie where the organization has it, or will once the email is verified (trials); skip it where it needs an upgrade.
+    const includeAskExie = $derived(!!assistantAccess?.enabled && (assistantAccess.has_access || !!assistantAccess.email_verification_required));
+    const canAskExie = $derived(!!assistantAccess?.has_access && onboarding.hasReceivedEvents && !!assistant?.enabled());
     const recordMutation = putCurrentUserProductTour();
     const resendMutation = resendVerificationEmail({
         route: {
@@ -70,6 +84,7 @@
             emailVerified: !!meQuery.data?.is_email_address_verified,
             hasEvents: onboarding.hasReceivedEvents,
             hasProject: onboarding.hasProject,
+            includeAskExie,
             productTours: meQuery.data?.product_tours
         }).map((item) =>
             item.kind === 'visit' && visitedItems.has(item.id as ChecklistVisitItemId)
@@ -87,6 +102,8 @@
         !dismissed &&
             !!meQuery.data &&
             onboarding.isReady &&
+            // Wait for Exie's access so the item count doesn't jump (or finish the list early) when it loads.
+            !assistantAccessQuery.isPending &&
             shouldShowChecklist({
                 organizationCreatedUtc: organizationQuery.data?.created_utc,
                 productTours: meQuery.data.product_tours
@@ -114,6 +131,7 @@
     });
 
     interface ItemCopy {
+        action?: () => void;
         description?: string;
         external?: boolean;
         href?: string;
@@ -145,6 +163,16 @@
                     description: 'Ask about errors from your editor or chat. Works on every plan.',
                     href: resolve('/(app)/account/ai-tools'),
                     label: 'Connect your AI assistant via MCP'
+                };
+            case 'ask-exie':
+                return {
+                    action: canAskExie ? () => assistant?.ask('Find my most recent error and explain what went wrong and how to fix it.') : undefined,
+                    description: assistantAccess?.has_access
+                        ? onboarding.hasReceivedEvents
+                            ? 'Exie explains what went wrong and how to fix it.'
+                            : 'Available once your first event arrives.'
+                        : 'Verify your email to unlock Exie.',
+                    label: 'Ask Exie about your first error'
                 };
             case 'first-event':
                 return {
@@ -285,6 +313,16 @@
                                         rel={nextCopy.external ? 'noopener noreferrer' : undefined}
                                         target={nextCopy.external ? '_blank' : undefined}>{nextCopy.label}</a
                                     >
+                                {:else if nextCopy.action}
+                                    {@const action = nextCopy.action}
+                                    <button
+                                        class="text-foreground font-medium underline-offset-4 hover:underline"
+                                        onclick={() => {
+                                            recordVisit(nextItem);
+                                            action();
+                                        }}
+                                        type="button">{nextCopy.label}</button
+                                    >
                                 {:else}
                                     <button
                                         class="text-foreground font-medium underline-offset-4 hover:underline"
@@ -352,6 +390,18 @@
                                                 <Badge class="ml-auto shrink-0" variant="secondary">Paid plans</Badge>
                                             {/if}
                                         </a>
+                                    {:else if copy.action && !item.complete}
+                                        {@const action = copy.action}
+                                        <button
+                                            class="hover:bg-muted focus-visible:ring-ring/50 flex w-full items-start gap-2 rounded-md p-2 text-left outline-none focus-visible:ring-3"
+                                            onclick={() => {
+                                                recordVisit(item);
+                                                action();
+                                            }}
+                                            type="button"
+                                        >
+                                            {@render row()}
+                                        </button>
                                     {:else}
                                         <div class="flex items-start gap-2 p-2">
                                             {@render row()}

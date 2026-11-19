@@ -5,6 +5,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import GettingStartedChecklist from './getting-started-checklist.svelte';
 
 const recordTour = vi.hoisted(() => vi.fn());
+const askAssistant = vi.hoisted(() => vi.fn());
+const assistantAccessState = vi.hoisted(() => ({
+    current: { enabled: false, has_access: false, upgrade_required: false } as {
+        email_verification_required?: boolean;
+        enabled: boolean;
+        has_access: boolean;
+        upgrade_required: boolean;
+    }
+}));
 const toastMock = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 const meState = vi.hoisted(() => ({
     current: undefined as
@@ -23,6 +32,19 @@ vi.mock('$app/paths', () => ({
 }));
 
 vi.mock('svelte-sonner', () => ({ toast: toastMock }));
+
+vi.mock('#features/assistant/api.svelte.ts', () => ({
+    getAssistantAccessQuery: () => ({
+        get data() {
+            return assistantAccessState.current;
+        },
+        isPending: false
+    })
+}));
+
+vi.mock('#features/assistant/controls.svelte.ts', () => ({
+    tryUseAssistantControls: () => ({ ask: askAssistant, enabled: () => true })
+}));
 
 vi.mock('#features/organizations/api.svelte.ts', () => ({
     getOrganizationQuery: () => ({ data: { created_utc: new Date().toISOString(), id: 'organization-id', plan_id: 'EX_MEDIUM' } })
@@ -67,6 +89,8 @@ describe('GettingStartedChecklist', () => {
     beforeEach(() => {
         localStorage.clear();
         recordTour.mockReset().mockResolvedValue({ recorded_utc: recordedAt });
+        askAssistant.mockReset();
+        assistantAccessState.current = { enabled: false, has_access: false, upgrade_required: false };
         toastMock.error.mockReset();
         toastMock.success.mockReset();
     });
@@ -114,6 +138,47 @@ describe('GettingStartedChecklist', () => {
         expect(nextLink).toBeInTheDocument();
         expect(nextLink).toHaveAttribute('href', '/account/notifications');
         await waitFor(() => expect(screen.getByRole('link', { name: 'Connect your AI assistant via MCP' })).toBeInTheDocument());
+    });
+
+    it('asks Exie about the latest error and checks the item off', async () => {
+        // Arrange
+        assistantAccessState.current = { enabled: true, has_access: true, upgrade_required: false };
+        setUser({});
+        render(GettingStartedChecklist);
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: /Ask Exie about your first error/ }));
+
+        // Assert
+        expect(askAssistant).toHaveBeenCalledWith(expect.stringContaining('most recent error'));
+        expect(recordTour).toHaveBeenCalledWith(expect.objectContaining({ tourName: 'checklist-ask-exie' }));
+        await waitFor(() => expect(screen.getByText(/Ask Exie about your first error/).closest('button')).toBeNull());
+    });
+
+    it('waits for a verified email before asking Exie', () => {
+        // Arrange
+        assistantAccessState.current = { email_verification_required: true, enabled: true, has_access: false, upgrade_required: false };
+        setUser({}, false);
+
+        // Act
+        render(GettingStartedChecklist);
+
+        // Assert
+        expect(screen.getByText('Verify your email to unlock Exie.')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Ask Exie about your first error/ })).not.toBeInTheDocument();
+    });
+
+    it('leaves Exie off the list when it needs an upgrade', () => {
+        // Arrange
+        assistantAccessState.current = { enabled: true, has_access: false, upgrade_required: true };
+        setUser({});
+
+        // Act
+        render(GettingStartedChecklist);
+
+        // Assert
+        expect(screen.queryByText(/Ask Exie about your first error/)).not.toBeInTheDocument();
+        expect(screen.getByText('4 of 8 done')).toBeInTheDocument();
     });
 
     it('stays up while items remain', () => {

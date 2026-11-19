@@ -2,13 +2,14 @@ import type { ProductTourState } from '#features/users/models.ts';
 
 import { getProductTourRecordedAt } from '#features/product-tours/eligibility.ts';
 
-export type ChecklistItemId = 'account' | 'ai-tools' | 'first-event' | 'invite-team' | 'notifications' | 'project' | 'verify-email' | 'versions';
+export type ChecklistItemId = 'account' | 'ai-tools' | 'ask-exie' | 'first-event' | 'invite-team' | 'notifications' | 'project' | 'verify-email' | 'versions';
 
 /** Items the user completes by visiting them. Their state is stored with the product tours. */
-export type ChecklistVisitItemId = Extract<ChecklistItemId, 'ai-tools' | 'invite-team' | 'notifications' | 'versions'>;
+export type ChecklistVisitItemId = Extract<ChecklistItemId, 'ai-tools' | 'ask-exie' | 'invite-team' | 'notifications' | 'versions'>;
 
 export const CHECKLIST_VISIT_KEYS = {
     'ai-tools': 'checklist-ai-tools',
+    'ask-exie': 'checklist-ask-exie',
     'invite-team': 'checklist-invite-team',
     notifications: 'checklist-notifications',
     versions: 'checklist-versions'
@@ -25,6 +26,8 @@ export interface ChecklistInput {
     emailVerified: boolean;
     hasEvents: boolean;
     hasProject: boolean;
+    /** Exie is listed only where the organization can use it (or can once the email is verified). */
+    includeAskExie?: boolean;
     productTours?: ProductTourState;
 }
 
@@ -35,7 +38,17 @@ export interface ChecklistItem {
     kind: 'data' | 'visit';
 }
 
-const ITEM_ORDER: readonly ChecklistItemId[] = ['account', 'project', 'first-event', 'verify-email', 'notifications', 'ai-tools', 'invite-team', 'versions'];
+const ITEM_ORDER: readonly ChecklistItemId[] = [
+    'account',
+    'project',
+    'first-event',
+    'verify-email',
+    'ask-exie',
+    'notifications',
+    'ai-tools',
+    'invite-team',
+    'versions'
+];
 
 export interface ChecklistVisibilityInput {
     now?: Date;
@@ -43,8 +56,8 @@ export interface ChecklistVisibilityInput {
     productTours?: ProductTourState;
 }
 
-export function getChecklistItems({ emailVerified, hasEvents, hasProject, productTours }: ChecklistInput): ChecklistItem[] {
-    return ITEM_ORDER.map((id): ChecklistItem => {
+export function getChecklistItems({ emailVerified, hasEvents, hasProject, includeAskExie = false, productTours }: ChecklistInput): ChecklistItem[] {
+    return ITEM_ORDER.filter((id) => includeAskExie || id !== 'ask-exie').map((id): ChecklistItem => {
         switch (id) {
             case 'account':
                 return { complete: true, id, kind: 'data' };
