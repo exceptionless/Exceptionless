@@ -11,14 +11,6 @@ function checklist(page: Page) {
     return page.getByRole('region', { name: "Exie's checklist" });
 }
 
-/** Exie's item is listed only where Exie is enabled, so check how many items remain rather than the total. */
-async function expectItemsLeft(page: Page, left: number): Promise<void> {
-    await expect(async () => {
-        const [, done, total] = /(\d+) of (\d+) done/.exec((await checklist(page).textContent()) ?? '') ?? [];
-        expect(Number(total) - Number(done)).toBe(left);
-    }).toPass({ timeout: 30_000 });
-}
-
 async function expectChecklistStaysHidden(page: Page): Promise<void> {
     await page.reload();
     await expect(page.getByRole('table')).toBeVisible({ timeout: 30_000 });
@@ -27,6 +19,14 @@ async function expectChecklistStaysHidden(page: Page): Promise<void> {
     await page.goto('/event/all');
     await expect(page.getByRole('table')).toBeVisible({ timeout: 30_000 });
     await expect(checklist(page)).toBeHidden();
+}
+
+/** Exie's item is listed only where Exie is enabled, so check how many items remain rather than the total. */
+async function expectItemsLeft(page: Page, left: number): Promise<void> {
+    await expect(async () => {
+        const [, done, total] = /(\d+) of (\d+) done/.exec((await checklist(page).textContent()) ?? '') ?? [];
+        expect(Number(total) - Number(done)).toBe(left);
+    }).toPass({ timeout: 30_000 });
 }
 
 async function seedFirstEvent(e2eApi: E2EApiClient, scenario: E2EScenario): Promise<void> {
