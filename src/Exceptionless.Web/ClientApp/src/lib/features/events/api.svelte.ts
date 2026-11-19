@@ -589,7 +589,10 @@ export function getProjectCountQuery(request: GetProjectCountRequest) {
  * Get events within a session by session ID.
  * Uses endpoint: /events/sessions/{sessionId}
  */
-/** The newest event in a project, for example the first event after client setup. */
+/**
+ * The newest event in a project, for example the first event after client setup. Session tracking events are skipped
+ * because the server records a session start alongside the first event from an identified user.
+ */
 export function getProjectLatestEventQuery(request: GetProjectLatestEventRequest) {
     return createQuery<null | PersistentEvent, ProblemDetails>(() => {
         const projectId = request.route.projectId;
@@ -606,6 +609,7 @@ export function getProjectLatestEventQuery(request: GetProjectLatestEventRequest
                                   offset: DEFAULT_OFFSET
                               }
                             : {}),
+                        filter: '-type:session -type:sessionend -type:heartbeat',
                         limit: 1,
                         sort: '-date'
                     },
