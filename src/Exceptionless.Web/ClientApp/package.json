@@ -37,7 +37,7 @@
         "@chromatic-com/storybook": "^5.6.0",
         "@eslint/compat": "^2.1.1",
         "@eslint/js": "^10.0.1",
-        "@iconify-json/lucide": "^1.2.153",
+        "@iconify-json/lucide": "^1.2.154",
         "@playwright/test": "^1.65.0",
         "@storybook/addon-a11y": "^10.6.7",
         "@storybook/addon-docs": "^10.6.7",
