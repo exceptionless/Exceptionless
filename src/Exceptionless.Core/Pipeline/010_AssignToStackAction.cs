@@ -34,7 +34,8 @@ public class AssignToStackAction : EventPipelineActionBase
 
     public override async Task ProcessBatchAsync(ICollection<EventContext> contexts)
     {
-        var stacks = new Dictionary<string, StackInfo>();
+        var stacksBySignatureHash = new Dictionary<string, StackInfo>();
+        var stacksById = new Dictionary<string, StackInfo>();
 
         foreach (var ctx in contexts)
         {
@@ -50,15 +51,13 @@ public class AssignToStackAction : EventPipelineActionBase
                 string signatureHash = ctx.StackSignatureData.Values.ToSHA1();
                 ctx.SignatureHash = signatureHash;
 
-                if (stacks.TryGetValue(signatureHash, out var value))
+                if (stacksBySignatureHash.TryGetValue(signatureHash, out var value))
                 {
                     ctx.Stack = value.Stack;
                 }
                 else
                 {
                     ctx.Stack = await _stackRepository.GetStackBySignatureHashAsync(ctx.Event.ProjectId, signatureHash);
-                    if (ctx.Stack is not null)
-                        stacks.Add(signatureHash, new StackInfo { IsNew = false, ShouldSave = false, Stack = ctx.Stack });
                 }
 
                 // create new stack in distributed lock
@@ -98,8 +97,6 @@ public class AssignToStackAction : EventPipelineActionBase
 
                         ctx.Stack = stack;
                         await _stackRepository.AddAsync(stack, o => o.Cache());
-
-                        stacks.Add(signatureHash, new StackInfo { IsNew = true, ShouldSave = false, Stack = ctx.Stack });
                     }, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10));
 
                     if (!success)
@@ -111,7 +108,9 @@ public class AssignToStackAction : EventPipelineActionBase
             }
             else
             {
-                ctx.Stack = await _stackRepository.GetByIdAsync(ctx.Event.StackId, o => o.Cache());
+                ctx.Stack = stacksById.TryGetValue(ctx.Event.StackId, out var existing)
+                    ? existing.Stack
+                    : await _stackRepository.GetByIdAsync(ctx.Event.StackId, o => o.Cache());
                 if (ctx.Stack is null || ctx.Stack.ProjectId != ctx.Event.ProjectId)
                 {
                     ctx.SetError("Invalid StackId.");
@@ -119,12 +118,17 @@ public class AssignToStackAction : EventPipelineActionBase
                 }
 
                 ctx.SignatureHash = ctx.Stack.SignatureHash;
-
-                if (!stacks.ContainsKey(ctx.Stack.SignatureHash))
-                    stacks.Add(ctx.Stack.SignatureHash, new StackInfo { IsNew = false, ShouldSave = false, Stack = ctx.Stack });
-                else
-                    stacks[ctx.Stack.SignatureHash].Stack = ctx.Stack;
             }
+
+            // New stacks have an ID after AddAsync; share one instance per ID for the rest of the batch.
+            if (!stacksById.TryGetValue(ctx.Stack!.Id, out var stackInfo))
+            {
+                stackInfo = new StackInfo { IsNew = ctx.IsNew, ShouldSave = false, Stack = ctx.Stack };
+                stacksById.Add(ctx.Stack.Id, stackInfo);
+            }
+
+            ctx.Stack = stackInfo.Stack;
+            stacksBySignatureHash[ctx.SignatureHash!] = stackInfo;
 
             if (ctx.Stack!.Status == StackStatus.Discarded)
             {
@@ -142,17 +146,14 @@ public class AssignToStackAction : EventPipelineActionBase
                     ctx.Stack.Tags.AddRange(newTags);
                     ctx.Stack.Tags.RemoveExcessTags();
 
-                    if (!stacks.ContainsKey(ctx.Stack.SignatureHash))
-                        stacks.Add(ctx.Stack.SignatureHash, new StackInfo { IsNew = false, ShouldSave = true, Stack = ctx.Stack });
-                    else
-                        stacks[ctx.Stack.SignatureHash].ShouldSave = true;
+                    stackInfo.ShouldSave = true;
                 }
             }
 
             ctx.Event.IsFirstOccurrence = ctx.IsNew;
         }
 
-        var addedStacks = stacks.Where(s => s.Value.IsNew).Select(kvp => kvp.Value.Stack).ToList();
+        var addedStacks = stacksById.Values.Where(s => s.IsNew).Select(s => s.Stack).ToList();
         if (addedStacks.Count > 0)
         {
             await _publisher.PublishAsync(new EntityChanged
@@ -167,7 +168,7 @@ public class AssignToStackAction : EventPipelineActionBase
             });
         }
 
-        var stacksToSave = stacks.Where(s => s.Value.ShouldSave).Select(kvp => kvp.Value.Stack).ToList();
+        var stacksToSave = stacksById.Values.Where(s => s.ShouldSave).Select(s => s.Stack).ToList();
         if (stacksToSave.Count > 0)
             await _stackRepository.SaveAsync(stacksToSave, o => o.Cache().Notifications(false)); // notification will get sent later in the update stats step
 
@@ -183,10 +184,10 @@ public class AssignToStackAction : EventPipelineActionBase
         return Task.CompletedTask;
     }
 
-    private record StackInfo
+    private sealed class StackInfo
     {
         public required bool IsNew { get; init; }
         public required bool ShouldSave { get; set; }
-        public required Stack Stack { get; set; }
+        public required Stack Stack { get; init; }
     }
 }

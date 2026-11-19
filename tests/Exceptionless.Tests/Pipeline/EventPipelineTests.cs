@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -9,18 +10,22 @@ using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Lock;
+using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Serializer;
 using Foundatio.Storage;
 using McSherry.SemanticVersioning;
+using Moq;
 using Xunit;
 using DataDictionary = Exceptionless.Core.Models.DataDictionary;
 
@@ -730,21 +735,39 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Contains(Event.KnownTags.Critical, stack.Tags);
     }
 
-    [Fact]
-    public async Task EnsureSingleNewStackAsync()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task RunAsync_NewStackBatch_AssignsAndReusesDistinctStackIds(int stackCount)
     {
-        string source = Guid.NewGuid().ToString();
-        var contexts = new List<EventContext> {
-                new(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = DateTime.UtcNow, Type = Event.KnownTypes.Log }, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject()),
-                new(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = DateTime.UtcNow, Type = Event.KnownTypes.Log }, _organizationData.GenerateSampleOrganization(_billingManager, _plans), _projectData.GenerateSampleProject()),
-            };
+        // Arrange
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var project = _projectData.GenerateSampleProject();
+        var utcNow = TimeProvider.GetUtcNow();
+        var contexts = new List<EventContext>();
+        for (int i = 0; i < stackCount; i++)
+        {
+            string source = Guid.NewGuid().ToString();
+            contexts.AddRange(Enumerable.Range(0, 2).Select(_ => new EventContext(
+                _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, occurrenceDate: utcNow, generateTags: false, generateData: false, type: Event.KnownTypes.Log, source: source), organization, project)));
+        }
 
+        // Act
         await _pipeline.RunAsync(contexts);
-        Assert.True(contexts.All(c => !c.HasError));
-        Assert.True(contexts.All(c => c.Stack?.Id == contexts.First().Stack?.Id));
-        Assert.Equal(1, contexts.Count(c => c.IsNew));
-        Assert.Equal(1, contexts.Count(c => !c.IsNew));
-        Assert.Equal(2, contexts.Count(c => !c.IsRegression));
+
+        // Assert
+        Assert.All(contexts, context => Assert.False(context.HasError, context.ErrorMessage));
+        Assert.All(contexts, context => Assert.True(context.IsProcessed));
+        Assert.All(contexts, context => Assert.False(String.IsNullOrEmpty(context.Stack?.Id)));
+        Assert.Equal(stackCount, contexts.Select(context => context.Stack!.Id).Distinct().Count());
+        Assert.Equal(stackCount, contexts.Count(context => context.IsNew));
+        Assert.Equal(stackCount, contexts.Count(context => !context.IsNew));
+        Assert.All(contexts, context => Assert.False(context.IsRegression));
+        foreach (var stackContexts in contexts.GroupBy(context => context.Event.Source))
+        {
+            Assert.Same(stackContexts.First().Stack, stackContexts.Last().Stack);
+            Assert.Equal(2, stackContexts.First().Stack!.TotalOccurrences);
+        }
     }
 
     [Fact]
@@ -775,6 +798,126 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal(1, contexts.Count(c => c.IsNew));
         Assert.Equal(1, contexts.Count(c => !c.IsNew));
         Assert.Equal(2, contexts.Count(c => !c.IsRegression));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task RunAsync_ExistingStackBatch_AggregatesTagsAndOccurrenceCounts(bool firstUsesExplicitStackId, bool secondUsesExplicitStackId)
+    {
+        // Arrange
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var project = _projectData.GenerateSampleProject();
+        var source = Guid.NewGuid().ToString();
+        var utcNow = TimeProvider.GetUtcNow();
+        var initialEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, occurrenceDate: utcNow.AddMinutes(-3), generateTags: false, generateData: false, type: Event.KnownTypes.Log, source: source);
+        var initialContext = await _pipeline.RunAsync(initialEvent, organization, project);
+        var stackId = initialContext.Stack!.Id;
+        await RefreshDataAsync();
+
+        var firstEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, stackId: firstUsesExplicitStackId ? stackId : null, occurrenceDate: utcNow.AddMinutes(-2), generateTags: false, generateData: false, type: Event.KnownTypes.Log, source: source);
+        firstEvent.Tags = new TagSet { "first-tag" };
+        var secondEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, stackId: secondUsesExplicitStackId ? stackId : null, occurrenceDate: utcNow.AddMinutes(-1), generateTags: false, generateData: false, type: Event.KnownTypes.Log, source: source);
+        secondEvent.Tags = new TagSet { "second-tag" };
+
+        // Act
+        var contexts = await _pipeline.RunAsync([firstEvent, secondEvent], organization, project);
+        await RefreshDataAsync();
+
+        // Assert
+        Assert.All(contexts, context => Assert.False(context.HasError, context.ErrorMessage));
+        Assert.All(contexts, context => Assert.True(context.IsProcessed));
+        Assert.Same(contexts.First().Stack, contexts.Last().Stack);
+        Assert.Equal(3, contexts.First().Stack!.TotalOccurrences);
+
+        var savedStack = await _stackRepository.GetByIdAsync(stackId, o => o.Cache());
+        Assert.NotNull(savedStack);
+        Assert.Equal(new[] { "first-tag", "second-tag" }, savedStack.Tags.Order(StringComparer.Ordinal).ToArray());
+    }
+
+    [Fact]
+    public async Task ProcessBatchAsync_StackFoundInsideCreationLock_ReusesStackForRemainingEvents()
+    {
+        // Arrange
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var project = _projectData.GenerateSampleProject();
+        var source = Guid.NewGuid().ToString();
+        var signatureHash = new[] { Event.KnownTypes.Log, source }.ToSHA1();
+        var stackData = GetService<StackData>();
+        var stack = stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, signatureHash: signatureHash);
+        stack.Tags.Clear();
+        await _stackRepository.AddAsync(stack, o => o.ImmediateConsistency().Cache());
+
+        int signatureReads = 0;
+        var repository = new Mock<IStackRepository>(MockBehavior.Strict);
+        repository.Setup(r => r.GetStackBySignatureHashAsync(project.Id, signatureHash)).Returns(() =>
+            ++signatureReads == 1 ? Task.FromResult<Stack?>(null) : _stackRepository.GetByIdAsync(stack.Id, o => o.Cache()));
+        repository.Setup(r => r.SaveAsync(It.IsAny<IEnumerable<Stack>>(), It.IsAny<CommandOptionsDescriptor<Stack>>()))
+            .Returns((IEnumerable<Stack> stacks, CommandOptionsDescriptor<Stack> options) => _stackRepository.SaveAsync(stacks, options));
+
+        var formatting = GetService<FormattingPluginManager>();
+        var publisher = GetService<IMessagePublisher>();
+        var options = GetService<AppOptions>();
+        var lockProvider = GetService<ILockProvider>();
+        var action = new AssignToStackAction(repository.Object, formatting, publisher, options, lockProvider, Log);
+        var utcNow = TimeProvider.GetUtcNow();
+        var firstEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, occurrenceDate: utcNow, generateTags: false, generateData: false, type: Event.KnownTypes.Log, source: source);
+        var secondEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, occurrenceDate: utcNow, generateTags: false, generateData: false, type: Event.KnownTypes.Log, source: source);
+        secondEvent.Tags = new TagSet { "second-tag" };
+        var contexts = new[] { new EventContext(firstEvent, organization, project), new EventContext(secondEvent, organization, project) };
+
+        // Act
+        await action.ProcessBatchAsync(contexts);
+
+        // Assert
+        Assert.All(contexts, context => Assert.False(context.HasError, context.ErrorMessage));
+        Assert.All(contexts, context => Assert.False(context.IsNew));
+        Assert.All(contexts, context => Assert.Equal(stack.Id, context.Event.StackId));
+        Assert.Same(contexts[0].Stack, contexts[1].Stack);
+        Assert.Equal(2, signatureReads);
+        var savedStack = await _stackRepository.GetByIdAsync(stack.Id, o => o.Cache());
+        Assert.Contains("second-tag", savedStack!.Tags);
+    }
+
+    [Fact]
+    public async Task RunAsync_DifferentStackIdsWithSameSignature_PreservesBothStacks()
+    {
+        // Arrange
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        var project = _projectData.GenerateSampleProject();
+        var stackData = GetService<StackData>();
+        var signatureHash = Guid.NewGuid().ToString("N");
+        var firstStack = stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, signatureHash: signatureHash);
+        var secondStack = stackData.GenerateStack(generateId: true, organizationId: organization.Id, projectId: project.Id, type: Event.KnownTypes.Log, signatureHash: signatureHash);
+        firstStack.Tags.Clear();
+        secondStack.Tags.Clear();
+        await _stackRepository.AddAsync(firstStack, o => o.ImmediateConsistency().Cache());
+        await _stackRepository.AddAsync(secondStack, o => o.ImmediateConsistency().Cache());
+
+        var utcNow = TimeProvider.GetUtcNow();
+        var firstEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, stackId: firstStack.Id, occurrenceDate: utcNow.AddMinutes(-2), generateTags: false, generateData: false, type: Event.KnownTypes.Log);
+        firstEvent.Tags = new TagSet { "first-tag" };
+        var secondEvent = _eventData.GenerateEvent(organizationId: organization.Id, projectId: project.Id, stackId: secondStack.Id, occurrenceDate: utcNow.AddMinutes(-1), generateTags: false, generateData: false, type: Event.KnownTypes.Log);
+        secondEvent.Tags = new TagSet { "second-tag" };
+        await RefreshDataAsync();
+
+        // Act
+        var contexts = await _pipeline.RunAsync([firstEvent, secondEvent], organization, project);
+        await RefreshDataAsync();
+
+        // Assert
+        Assert.All(contexts, context => Assert.False(context.HasError, context.ErrorMessage));
+        Assert.All(contexts, context => Assert.True(context.IsProcessed));
+        Assert.NotSame(contexts.First().Stack, contexts.Last().Stack);
+        Assert.Equal(firstStack.Id, contexts.First().Event.StackId);
+        Assert.Equal(secondStack.Id, contexts.Last().Event.StackId);
+
+        var savedFirstStack = await _stackRepository.GetByIdAsync(firstStack.Id, o => o.Cache());
+        var savedSecondStack = await _stackRepository.GetByIdAsync(secondStack.Id, o => o.Cache());
+        Assert.Contains("first-tag", savedFirstStack!.Tags);
+        Assert.Contains("second-tag", savedSecondStack!.Tags);
     }
 
     [Fact]
