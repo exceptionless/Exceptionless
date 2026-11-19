@@ -807,7 +807,7 @@
             }
           },
           {
-            "name": "identityname",
+            "name": "identity.name",
             "in": "query",
             "description": "The user\u0027s friendly name that the event happened to.",
             "schema": {
@@ -978,7 +978,7 @@
             }
           },
           {
-            "name": "identityname",
+            "name": "identity.name",
             "in": "query",
             "description": "The user\u0027s friendly name that the event happened to.",
             "schema": {
@@ -1149,7 +1149,7 @@
             }
           },
           {
-            "name": "identityname",
+            "name": "identity.name",
             "in": "query",
             "description": "The user\u0027s friendly name that the event happened to.",
             "schema": {
@@ -1329,7 +1329,7 @@
             }
           },
           {
-            "name": "identityname",
+            "name": "identity.name",
             "in": "query",
             "description": "The user\u0027s friendly name that the event happened to.",
             "schema": {
@@ -2251,7 +2251,7 @@
           "Token"
         ],
         "summary": "Create for organization",
-        "description": "This is a helper action that makes it easier to create a token for a specific organization. You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.",
+        "description": "This is a helper action that makes it easier to create a token for a specific organization. You may also specify a scope when creating a token. Valid scopes are client, user and global (global administrators only).",
         "parameters": [
           {
             "name": "organizationId",
@@ -2396,7 +2396,7 @@
           "Token"
         ],
         "summary": "Create for project",
-        "description": "This is a helper action that makes it easier to create a token for a specific project. Valid scopes are client, user, admin, and source-maps:write.",
+        "description": "This is a helper action that makes it easier to create a token for a specific project. Valid scopes are client, user, global (global administrators only), and source-maps:write.",
         "parameters": [
           {
             "name": "projectId",
@@ -2705,7 +2705,7 @@
           "Token"
         ],
         "summary": "Create",
-        "description": "To create a new token, you must specify an organization_id and project_id. Valid scopes are client, user, admin, and source-maps:write. The source-maps:write scope requires a project-scoped token.",
+        "description": "To create a new token, you must specify an organization_id and project_id. Valid scopes are client, user, global (global administrators only), and source-maps:write. The source-maps:write scope requires a project-scoped token.",
         "requestBody": {
           "description": "The token.",
           "content": {
@@ -10978,7 +10978,7 @@
             }
           },
           {
-            "name": "identityname",
+            "name": "identity.name",
             "in": "query",
             "description": "The user\u0027s friendly name that the event happened to.",
             "schema": {
@@ -11151,7 +11151,7 @@
             }
           },
           {
-            "name": "identityname",
+            "name": "identity.name",
             "in": "query",
             "description": "The user\u0027s friendly name that the event happened to.",
             "schema": {
@@ -11331,7 +11331,7 @@
             }
           },
           {
-            "name": "identityname",
+            "name": "identity.name",
             "in": "query",
             "description": "The user\u0027s friendly name that the event happened to.",
             "schema": {
@@ -11514,7 +11514,7 @@
             }
           },
           {
-            "name": "identityname",
+            "name": "identity.name",
             "in": "query",
             "description": "The user\u0027s friendly name that the event happened to.",
             "schema": {
