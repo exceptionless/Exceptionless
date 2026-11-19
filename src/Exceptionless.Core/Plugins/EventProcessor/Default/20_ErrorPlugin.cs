@@ -32,12 +32,20 @@ public sealed class ErrorPlugin : EventProcessorPluginBase
         if (context.StackSignatureData.Count > 0)
             return Task.CompletedTask;
 
+        // The project settings page saves these as project configuration settings.
+        // Older projects may still have them in project data, which is loaded into the context properties.
+        var settings = context.Project.Configuration.Settings;
+
         string[]? userCommonMethods = ["DataContext.SubmitChanges", "Entities.SaveChanges"];
-        if (context.HasProperty("CommonMethods"))
+        if (settings.TryGetValue("CommonMethods", out string? commonMethods))
+            userCommonMethods = commonMethods?.SplitAndTrim([',']);
+        else if (context.HasProperty("CommonMethods"))
             userCommonMethods = context.GetProperty<string>("CommonMethods")?.SplitAndTrim([',']);
 
         string[]? userNamespaces = null;
-        if (context.HasProperty("UserNamespaces"))
+        if (settings.TryGetValue("UserNamespaces", out string? namespaces))
+            userNamespaces = namespaces?.SplitAndTrim([',']);
+        else if (context.HasProperty("UserNamespaces"))
             userNamespaces = context.GetProperty<string>("UserNamespaces")?.SplitAndTrim([',']);
 
         var signature = new ErrorSignature(error, _serializer, userNamespaces, userCommonMethods);
