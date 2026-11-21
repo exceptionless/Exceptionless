@@ -330,9 +330,9 @@ jobs:
         run: |
           export PATH="$HOME/.dotnet/tools:$PATH"
           if dotnet tool list --global | grep -Eiq '^aspire\.cli[[:space:]]'; then
-            dotnet tool update --global Aspire.Cli --version 13.6.5
+            dotnet tool update --global Aspire.Cli --version 17.0.0
           else
-            dotnet tool install --global Aspire.Cli --version 13.6.5
+            dotnet tool install --global Aspire.Cli --version 17.0.0
           fi
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           aspire --version
@@ -364,8 +364,7 @@ jobs:
       - name: Start AppHost
         run: |
           mkdir -p "$HOME/.aspnet/https"
-          # Aspire builds the AppHost and its referenced projects in Debug. Do not build
-          # the entire solution in Release first (including an unused test assembly).
+          # Aspire builds the AppHost and starts the API and Jobs projects in Debug.
           aspire run --apphost src/Exceptionless.AppHost --non-interactive --nologo -- --ci-e2e > aspire-run.log 2>&1 &
           echo "$!" > aspire-run.pid
           sleep 5
