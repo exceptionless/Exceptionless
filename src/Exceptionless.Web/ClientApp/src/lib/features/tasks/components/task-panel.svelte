@@ -39,19 +39,44 @@
         return () => window.clearInterval(timer);
     });
 
-    // A task that was seen running and is now finished changed events and stacks, whichever way the update arrived.
+    // Tasks already in the organization's first list are history; anything after that is new.
+    let knownTasksOrganizationId: string | undefined;
+    const knownTaskIds = new SvelteSet<string>();
+
+    // A task that finished after the panel loaded changed events and stacks, whichever way the update arrived. That
+    // includes one that finished before the panel ever saw it running, for example when push updates are unavailable.
     $effect(() => {
-        for (const task of tasksQuery.data ?? []) {
+        const tasks = tasksQuery.data;
+        if (!tasks) {
+            return;
+        }
+
+        const isFirstList = knownTasksOrganizationId !== organization.current;
+        if (isFirstList) {
+            knownTasksOrganizationId = organization.current;
+            knownTaskIds.clear();
+            activeSeenIds.clear();
+        }
+
+        let finishedSinceLoad = false;
+        for (const task of tasks) {
+            const isNewTask = !isFirstList && !knownTaskIds.has(task.id);
+            knownTaskIds.add(task.id);
+
             if (isTaskActive(task.status)) {
                 activeSeenIds.add(task.id);
                 continue;
             }
 
-            if (!activeSeenIds.delete(task.id)) {
+            if (!activeSeenIds.delete(task.id) && !isNewTask) {
                 continue;
             }
 
             cancellingIds.delete(task.id);
+            finishedSinceLoad = true;
+        }
+
+        if (finishedSinceLoad) {
             void invalidateTaskAffectedQueries(queryClient);
         }
     });

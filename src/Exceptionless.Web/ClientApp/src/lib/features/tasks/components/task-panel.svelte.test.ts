@@ -113,6 +113,24 @@ describe('TaskPanel', () => {
         expect(document.querySelector('[data-slot="task-progress"]')?.textContent).toContain('Completed');
     });
 
+    it('refreshes events and stacks once when a task is first seen already finished', async () => {
+        // Arrange
+        state.set('tasks', [createTask({ id: 'long-finished', status: BackgroundTaskStatus.Completed, updated_utc: '2020-01-01T00:00:00Z' })]);
+        render(TaskPanel);
+        await tick();
+        const reset = createTask({ id: 'reset', status: BackgroundTaskStatus.Completed, type: 'projects.reset-data' });
+
+        // Act
+        state.set('tasks', [reset, createTask({ id: 'long-finished', status: BackgroundTaskStatus.Completed, updated_utc: '2020-01-01T00:00:00Z' })]);
+        await tick();
+        state.set('tasks', [{ ...reset, updated_utc: new Date().toISOString() }]);
+        await tick();
+
+        // Assert
+        expect(mocks.invalidateAffected).toHaveBeenCalledTimes(1);
+        expect(mocks.invalidateAffected).toHaveBeenCalledWith(mocks.queryClient);
+    });
+
     it('requests cancellation of a running task', async () => {
         // Arrange
         state.set('tasks', [createTask()]);
