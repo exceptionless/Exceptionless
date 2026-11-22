@@ -161,6 +161,29 @@ describe('EventsBulkActionsDropdownMenu', () => {
             expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('Deleting 1,234 events'));
         });
 
+        it('sends one request when the confirmation is clicked again while the first is pending', async () => {
+            // Arrange
+            let finishRequest!: () => void;
+            startBulkOperation.mockReturnValue(new Promise<void>((resolve) => (finishRequest = resolve)));
+            const table = { getSelectedRowModel: () => ({ flatRows: [] }), resetRowSelection: vi.fn() } as never;
+            render(EventsBulkActionsDropdownMenu, { props: { allMatching, table } });
+            await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+            await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
+            const confirm = screen.getByRole('button', { name: 'Delete 1,234 Events' }) as HTMLButtonElement;
+
+            // Act
+            await fireEvent.click(confirm);
+            await fireEvent.click(confirm);
+            confirm.click();
+
+            // Assert
+            expect(startBulkOperation).toHaveBeenCalledOnce();
+            expect(confirm.disabled).toBe(true);
+            finishRequest();
+            await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+            expect(startBulkOperation).toHaveBeenCalledOnce();
+        });
+
         it('keeps the selection when starting the operation fails', async () => {
             // Arrange
             startBulkOperation.mockRejectedValue({ title: 'Another destructive operation is already running for this project.' });

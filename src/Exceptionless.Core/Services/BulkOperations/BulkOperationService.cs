@@ -141,14 +141,15 @@ public class BulkOperationService
         // Only active tasks can conflict, and every one of them is in the active index no matter how much history
         // the organization has.
         var utcNow = _timeProvider.GetUtcNow().UtcDateTime;
-        var finished = new List<string>();
+        var indexEntriesToRemove = new List<string>();
         BackgroundTask? conflict = null;
         foreach (string id in await _taskService.GetActiveIdsAsync(candidate.OrganizationId))
         {
+            // A stale entry can point at another organization's task; it never blocks or retires that task.
             var existing = await _taskService.GetAsync(id);
-            if (existing is null || !existing.IsActive)
+            if (existing is null || !existing.IsActive || !String.Equals(existing.OrganizationId, candidate.OrganizationId, StringComparison.Ordinal))
             {
-                finished.Add(id);
+                indexEntriesToRemove.Add(id);
                 continue;
             }
 
@@ -181,8 +182,8 @@ public class BulkOperationService
             conflict ??= existing;
         }
 
-        if (finished.Count > 0)
-            await _taskService.RemoveFromActiveIndexAsync(candidate.OrganizationId, finished);
+        if (indexEntriesToRemove.Count > 0)
+            await _taskService.RemoveFromActiveIndexAsync(candidate.OrganizationId, indexEntriesToRemove);
 
         return conflict;
     }

@@ -43,6 +43,8 @@
     let open = $state(false);
     let openRemoveEventDialog = $state<boolean>(false);
     let confirmedSelectionIdentity = $state<string>();
+    // Set before the first await so a second click on the confirmation can't start another delete.
+    let isRemoving = false;
 
     // Navigation or a live update can change the selection while the confirmation is open. Close it instead of letting
     // the user confirm a delete for something other than what they were shown.
@@ -68,25 +70,21 @@
     }
 
     async function remove() {
-        if (confirmedSelectionIdentity !== selectionIdentity) {
+        if (isRemoving || confirmedSelectionIdentity !== selectionIdentity) {
             return;
         }
 
-        if (allMatching) {
-            await removeAllMatching(allMatching);
-            return;
+        isRemoving = true;
+        try {
+            if (allMatching) {
+                await removeAllMatching(allMatching);
+                return;
+            }
+
+            await removeSelected();
+        } finally {
+            isRemoving = false;
         }
-
-        const deletedCount = ids.length;
-        await removeEvents.mutateAsync();
-
-        if (deletedCount === 1) {
-            toast.success('Successfully deleted event.');
-        } else {
-            toast.success(`Successfully deleted ${Intl.NumberFormat().format(deletedCount)} events.`);
-        }
-
-        table.resetRowSelection();
     }
 
     async function removeAllMatching(target: AllMatchingTarget) {
@@ -110,6 +108,19 @@
         toast.success(`Deleting ${Intl.NumberFormat().format(target.count)} events. Progress is shown at the bottom of the page.`);
         table.resetRowSelection();
         onAllMatchingStarted?.();
+    }
+
+    async function removeSelected() {
+        const deletedCount = ids.length;
+        await removeEvents.mutateAsync();
+
+        if (deletedCount === 1) {
+            toast.success('Successfully deleted event.');
+        } else {
+            toast.success(`Successfully deleted ${Intl.NumberFormat().format(deletedCount)} events.`);
+        }
+
+        table.resetRowSelection();
     }
 
     function setOpen(isOpen: boolean): void {

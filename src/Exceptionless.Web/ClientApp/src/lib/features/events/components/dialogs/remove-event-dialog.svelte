@@ -13,9 +13,20 @@
 
     let { count = 1, matchingFilter = false, open = $bindable(), remove }: Props = $props();
 
+    let isSubmitting = $state(false);
+
     async function onSubmit() {
-        await remove();
-        open = false;
+        if (isSubmitting) {
+            return;
+        }
+
+        isSubmitting = true;
+        try {
+            await remove();
+            open = false;
+        } finally {
+            isSubmitting = false;
+        }
     }
 </script>
 
@@ -50,6 +61,7 @@
                 class={buttonVariants({
                     variant: 'destructive'
                 })}
+                disabled={isSubmitting}
                 onclick={onSubmit}
             >
                 Delete

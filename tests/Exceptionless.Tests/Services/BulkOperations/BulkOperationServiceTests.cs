@@ -124,6 +124,25 @@ public class BulkOperationServiceTests : TestWithLoggingBase, IDisposable
     }
 
     [Fact]
+    public async Task CreateAsync_ActiveIndexEntryForAnotherOrganizationsTask_NeitherConflictsNorRetiresIt()
+    {
+        // Arrange
+        var otherOrganizationTask = (await _service.CreateAsync(NewTask("test.destructive", null, OtherOrganizationId))).Task!;
+        await _harness.Tasks.AddToActiveIndexAsync(OrganizationId, otherOrganizationTask.Id);
+        _time.Advance(BackgroundTaskService.StaleAfter);
+
+        // Act
+        var candidate = await _service.CreateAsync(NewTask("test.destructive", ProjectId));
+
+        // Assert
+        Assert.NotNull(candidate.Task);
+        Assert.Null(candidate.Conflict);
+        Assert.Equal(BackgroundTaskStatus.Queued, (await _harness.Tasks.GetAsync(otherOrganizationTask.Id))!.Status);
+        Assert.Equal([candidate.Task.Id], (await _harness.Tasks.GetActiveIdsAsync(OrganizationId)).ToArray());
+        Assert.Equal([otherOrganizationTask.Id], (await _harness.Tasks.GetActiveIdsAsync(OtherOrganizationId)).ToArray());
+    }
+
+    [Fact]
     public async Task CreateAsync_NonDestructiveTasks_NeitherConflictNorBlockDestructiveOnes()
     {
         // Arrange
