@@ -46,8 +46,9 @@ Notes:
 
 1. Running `Exceptionless.AppHost` starts the app and required infrastructure together.
 2. Backend tests bootstrap required infrastructure automatically.
-3. Use Aspire CLI 13.6.5 or newer (`aspire update --self` to update). The AppHost uses the CLI bundle for the dashboard and resource orchestrator; when no CLI is installed, the SDK downloads the matching version through DNX.
+3. Use Aspire CLI 17.0.0 or newer (`aspire update --self` to update). The AppHost uses the CLI bundle for the dashboard and resource orchestrator; when no CLI is installed, the AppHost can fetch the matching version through DNX.
 4. Try `dotnet build -mt` for multithreaded builds. Performance depends on the workload and machine.
+5. With the AppHost running, use `aspire describe --apphost src/Exceptionless.AppHost --format mermaid` to export the local resource dependency graph.
 
 ## UI Development
 
