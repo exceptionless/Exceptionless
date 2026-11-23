@@ -72,6 +72,32 @@ public partial class BulkOperationEndpointTests
     }
 
     [Fact]
+    public async Task Execute_EventChangesAfterCreation_DeletesWhatMatchesWhenTheWorkerRuns()
+    {
+        // Arrange
+        var (_, events) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Message("matched").Value(90);
+            d.Event().TestProject().Message("starts matching").Value(30);
+            d.Event().TestProject().Message("stops matching").Value(100);
+            d.Event().TestProject().Message("never matched").Value(10);
+        });
+        var created = await CreateOperationAsync(FilterRequest(SampleDataService.TEST_ORG_ID, null, "value:[60 TO 120]"));
+        var startsMatching = events.Single(e => e.Message == "starts matching");
+        var stopsMatching = events.Single(e => e.Message == "stops matching");
+
+        // Act
+        startsMatching.Value = 90;
+        stopsMatching.Value = 20;
+        await GetService<IEventRepository>().SaveAsync([startsMatching, stopsMatching], o => o.ImmediateConsistency());
+        await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
+
+        // Assert
+        Assert.Equal(2, created.Total);
+        Assert.Equal(["never matched", "stops matching"], (await GetRemainingMessagesAsync(events)).ToArray());
+    }
+
+    [Fact]
     public async Task Execute_StackStatusChangesAfterCreation_StillDeletesTheEventsThatWereConfirmed()
     {
         // Arrange

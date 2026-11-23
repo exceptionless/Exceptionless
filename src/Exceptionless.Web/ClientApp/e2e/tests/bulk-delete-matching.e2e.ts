@@ -65,15 +65,14 @@ test('deleting everything matching the filter runs in the background and shows p
         await page.getByRole('menuitem', { name: 'Delete' }).click();
 
         // Assert
-        await expect(page.getByRole('alertdialog')).toContainText(`Delete ${EVENT_COUNT} events matching this filter? This can't be undone.`);
+        await expect(page.getByRole('alertdialog')).toContainText(
+            `About ${EVENT_COUNT} events match this filter. The final count may differ. This can't be undone.`
+        );
     });
 
     await test.step('confirming runs in the background and the progress panel reaches completion', async () => {
         // Act
-        await page
-            .getByRole('alertdialog')
-            .getByRole('button', { name: `Delete ${EVENT_COUNT} Events` })
-            .click();
+        await page.getByRole('alertdialog').getByRole('button', { name: 'Delete Matching Events' }).click();
 
         // Assert
         const panel = page.getByRole('region', { name: 'Background tasks' });

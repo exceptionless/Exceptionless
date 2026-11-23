@@ -120,7 +120,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
     describe('when everything matching the filter is selected', () => {
         const allMatching = { count: 1234, filter: 'type:error', offset: '-300m', organizationId: 'organization-id', time: '[now-7d TO now]' };
 
-        it('enables the menu without selected rows and confirms the exact count', async () => {
+        it('enables the menu without selected rows and confirms an estimated count', async () => {
             // Arrange
             const table = { getSelectedRowModel: () => ({ flatRows: [] }), resetRowSelection: vi.fn() } as never;
             render(EventsBulkActionsDropdownMenu, { props: { allMatching, table } });
@@ -132,8 +132,9 @@ describe('EventsBulkActionsDropdownMenu', () => {
 
             // Assert
             expect(trigger.getAttribute('aria-disabled')).toBe('false');
-            expect(screen.getByText(/Delete\s+1,234\s+events matching this filter\? This can't be undone\./)).toBeTruthy();
-            expect(screen.getByRole('button', { name: 'Delete 1,234 Events' })).toBeTruthy();
+            expect(screen.getByRole('heading', { name: 'Delete Matching Events' })).toBeTruthy();
+            expect(screen.getByText(/About\s+1,234\s+events match this filter\. The final count may differ\. This can't be undone\./)).toBeTruthy();
+            expect(screen.getByRole('button', { name: 'Delete Matching Events' })).toBeTruthy();
         });
 
         it('deletes against the filter instead of the selected rows', async () => {
@@ -146,7 +147,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
             // Act
             await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
             await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
-            await fireEvent.click(screen.getByRole('button', { name: 'Delete 1,234 Events' }));
+            await fireEvent.click(screen.getByRole('button', { name: 'Delete Matching Events' }));
 
             // Assert
             await waitFor(() => expect(startBulkOperation).toHaveBeenCalledOnce());
@@ -158,7 +159,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
             expect(mutateAsync).not.toHaveBeenCalled();
             expect(resetRowSelection).toHaveBeenCalledOnce();
             expect(onAllMatchingStarted).toHaveBeenCalledOnce();
-            expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('Deleting 1,234 events'));
+            expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('Deleting about 1,234 events'));
         });
 
         it('sends one request when the confirmation is clicked again while the first is pending', async () => {
@@ -169,7 +170,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
             render(EventsBulkActionsDropdownMenu, { props: { allMatching, table } });
             await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
             await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
-            const confirm = screen.getByRole('button', { name: 'Delete 1,234 Events' }) as HTMLButtonElement;
+            const confirm = screen.getByRole('button', { name: 'Delete Matching Events' }) as HTMLButtonElement;
 
             // Act
             await fireEvent.click(confirm);
@@ -195,7 +196,7 @@ describe('EventsBulkActionsDropdownMenu', () => {
             // Act
             await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
             await fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
-            await fireEvent.click(screen.getByRole('button', { name: 'Delete 1,234 Events' }));
+            await fireEvent.click(screen.getByRole('button', { name: 'Delete Matching Events' }));
 
             // Assert
             await waitFor(() => expect(startBulkOperation).toHaveBeenCalledOnce());

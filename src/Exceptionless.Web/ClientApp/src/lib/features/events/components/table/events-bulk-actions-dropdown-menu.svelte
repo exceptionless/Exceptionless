@@ -105,7 +105,7 @@
             return;
         }
 
-        toast.success(`Deleting ${Intl.NumberFormat().format(target.count)} events. Progress is shown at the bottom of the page.`);
+        toast.success(`Deleting about ${Intl.NumberFormat().format(target.count)} events. Progress is shown at the bottom of the page.`);
         table.resetRowSelection();
         onAllMatchingStarted?.();
     }

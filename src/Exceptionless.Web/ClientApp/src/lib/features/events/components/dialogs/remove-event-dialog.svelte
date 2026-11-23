@@ -34,17 +34,21 @@
     <AlertDialog.Content>
         <AlertDialog.Header>
             <AlertDialog.Title>
-                Delete
-                {#if count === 1}
-                    Event
+                {#if matchingFilter}
+                    Delete Matching Events
                 {:else}
-                    <Number value={count} /> Events
+                    Delete
+                    {#if count === 1}
+                        Event
+                    {:else}
+                        <Number value={count} /> Events
+                    {/if}
                 {/if}
             </AlertDialog.Title>
             <AlertDialog.Description>
                 {#if matchingFilter}
-                    Delete <Number value={count} />
-                    {count === 1 ? 'event' : 'events'} matching this filter? This can't be undone.
+                    About <Number value={count} />
+                    {count === 1 ? 'event matches' : 'events match'} this filter. The final count may differ. This can't be undone.
                 {:else}
                     Are you sure you want to delete
                     {#if count === 1}
@@ -64,11 +68,15 @@
                 disabled={isSubmitting}
                 onclick={onSubmit}
             >
-                Delete
-                {#if count === 1}
-                    Event
+                {#if matchingFilter}
+                    Delete Matching Events
                 {:else}
-                    <Number value={count} /> Events
+                    Delete
+                    {#if count === 1}
+                        Event
+                    {:else}
+                        <Number value={count} /> Events
+                    {/if}
                 {/if}
             </AlertDialog.Action>
         </AlertDialog.Footer>
