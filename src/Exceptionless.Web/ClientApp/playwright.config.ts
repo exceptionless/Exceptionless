@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 const isCi = !!process.env.CI;
 const appUrl = process.env.E2E_URL || 'https://web-ex.dev.localhost:7131';
 const isSharded = !!process.env.E2E_SHARD;
+// Run against an installed branded browser (e.g. chrome, chrome-beta) instead of bundled Chromium.
+const browserChannel = process.env.E2E_BROWSER_CHANNEL || undefined;
 
 export default defineConfig({
     expect: {
@@ -23,7 +25,8 @@ export default defineConfig({
         {
             name: 'chromium',
             use: {
-                ...devices['Desktop Chrome']
+                ...devices['Desktop Chrome'],
+                channel: browserChannel
             }
         }
     ],

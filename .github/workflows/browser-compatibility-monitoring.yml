@@ -1,0 +1,119 @@
+name: Browser Compatibility Monitoring
+
+# Browser releases can change how the published app's Content Security Policy applies without any
+# change on our side (Chrome 158 blocked the SvelteKit bootstrap under 'strict-dynamic'). Chrome Beta
+# runs about four weeks ahead of Stable, so a failure there is an early warning.
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Published app URL to check
+        default: https://dev-app.exceptionless.io
+        required: true
+  schedule:
+    - cron: "0 15 * * *"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: browser-compatibility-monitoring
+  cancel-in-progress: false
+
+jobs:
+  csp:
+    name: csp (${{ matrix.channel }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: [chrome, chrome-beta]
+    env:
+      E2E_URL: ${{ inputs.url || 'https://dev-app.exceptionless.io' }}
+      E2E_BROWSER_CHANNEL: ${{ matrix.channel }}
+    defaults:
+      run:
+        working-directory: src/Exceptionless.Web/ClientApp
+
+    steps:
+      - name: Check Environment is Running
+        id: environment
+        working-directory: .
+        run: |
+          # The dev environment stops itself when idle; skip instead of reporting a false failure.
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 30 "$E2E_URL/login" || true)
+          if [[ "$status" == "200" ]]; then
+            echo "running=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Skipping: $E2E_URL/login returned HTTP $status."
+            echo "running=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: ${{ steps.environment.outputs.running == 'true' }}
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js environment
+        if: ${{ steps.environment.outputs.running == 'true' }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26
+
+      - name: Install Npm Packages
+        if: ${{ steps.environment.outputs.running == 'true' }}
+        run: npm ci
+
+      - name: Install ${{ matrix.channel }}
+        if: ${{ steps.environment.outputs.running == 'true' }}
+        run: npx playwright install ${{ matrix.channel }} --with-deps
+
+      - name: Run Content Security Policy Checks
+        if: ${{ steps.environment.outputs.running == 'true' }}
+        run: npx playwright test --project=chromium --grep @csp
+
+      - name: Upload Playwright Report
+        if: ${{ !cancelled() && steps.environment.outputs.running == 'true' }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: browser-compatibility-${{ matrix.channel }}-playwright-report
+          path: src/Exceptionless.Web/ClientApp/playwright-report/
+          retention-days: 14
+
+      - name: Open Failure Alert Issue
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        uses: actions/github-script@v9
+        env:
+          CHANNEL: ${{ matrix.channel }}
+        with:
+          script: |
+            const title = "Browser Compatibility Monitoring is failing";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              `The published app failed its Content Security Policy checks in ${process.env.CHANNEL}.`,
+              "",
+              `- Run: ${runUrl}`,
+              `- URL: ${process.env.E2E_URL}`,
+              "",
+              "Review the Playwright report attached to the workflow run."
+            ].join("\n");
+            const { owner, repo } = context.repo;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              creator: "github-actions[bot]",
+              per_page: 100
+            });
+            const existing = issues.find((issue) => issue.title === title && !issue.pull_request);
+
+            if (existing) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body });
+              core.notice(`Updated browser compatibility alert issue #${existing.number}.`);
+              return;
+            }
+
+            const issue = await github.rest.issues.create({ owner, repo, title, body });
+            core.notice(`Created browser compatibility alert issue #${issue.data.number}.`);

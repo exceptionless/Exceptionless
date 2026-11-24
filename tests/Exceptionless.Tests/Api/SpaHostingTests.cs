@@ -148,6 +148,48 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Assert.Contains("'self'", scriptSources);
         Assert.Contains("https://*.stripe.com", scriptSources);
         Assert.Contains("https://*.intercom.io", scriptSources);
+
+        // Violations are reported so a blocked resource is noticed instead of silently breaking the app.
+        string reports = Assert.Single(policy.Split(';'), directive => directive.StartsWith("report-uri ", StringComparison.Ordinal));
+        Assert.Equal(["report-uri", "/api/v2/csp-reports"], reports.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+    }
+
+    [Theory]
+    [InlineData("{\"csp-report\":{\"document-uri\":\"https://app.localhost/\",\"effective-directive\":\"script-src-elem\",\"blocked-uri\":\"https://app.localhost/_app/env.js\",\"disposition\":\"enforce\"}}")]
+    [InlineData("{\"csp-report\":{\"blocked-uri\":\"chrome-extension://abc/inject.js\"}}")]
+    [InlineData("{\"csp-report\":{\"blocked-uri\":\"eval\",\"line-number\":\"not a number\"}}")]
+    [InlineData("{\"unexpected\":true}")]
+    [InlineData("[1,2,3]")]
+    [InlineData("not json")]
+    [InlineData("")]
+    public async Task PostAsync_CspReport_AcceptsAnonymousReportsWithoutFailing(string body)
+    {
+        // Arrange
+        await _factory.Server.WaitForReadyAsync();
+        using var client = _factory.CreateClient();
+        using var content = new StringContent(body, Encoding.UTF8, "application/csp-report");
+
+        // Act
+        using var response = await client.PostAsync("/api/v2/csp-reports", content, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostAsync_OversizedCspReport_IsIgnored()
+    {
+        // Arrange
+        await _factory.Server.WaitForReadyAsync();
+        using var client = _factory.CreateClient();
+        string body = $"{{\"csp-report\":{{\"blocked-uri\":\"{new string('a', 32 * 1024)}\"}}}}";
+        using var content = new StringContent(body, Encoding.UTF8, "application/csp-report");
+
+        // Act
+        using var response = await client.PostAsync("/api/v2/csp-reports", content, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
     [Fact]

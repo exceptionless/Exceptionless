@@ -11,6 +11,7 @@ public static class ApiEndpoints
         app.MapAssistantEndpoints();
         app.MapUtilityEndpoints();
         app.MapContactEndpoints();
+        app.MapCspReportEndpoints();
         app.MapAuthEndpoints();
         app.MapTokenEndpoints();
         app.MapWebHookEndpoints();
