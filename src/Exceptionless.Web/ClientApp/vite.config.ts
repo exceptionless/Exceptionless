@@ -172,7 +172,8 @@ export default defineConfig({
                     ],
                     'media-src': ['https://js.intercomcdn.com'],
                     'object-src': ['none'],
-                    'script-src': ['self', 'strict-dynamic', 'https://*.stripe.com', 'https://*.intercom.io', 'https://js.intercomcdn.com'],
+                    // No 'strict-dynamic': it blocks the hashed bootstrap's import() calls (Chrome 158+).
+                    'script-src': ['self', 'https://*.stripe.com', 'https://*.intercom.io', 'https://js.intercomcdn.com'],
                     'style-src': ['self', 'unsafe-inline'],
                     // Explicitly deny workers; without this, worker-src falls back to script-src.
                     'worker-src': ['none']

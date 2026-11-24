@@ -22,12 +22,13 @@ internal static partial class FrontendContentSecurityPolicy
         // Deny resource types unless their directive explicitly allows them.
         csp.ByDefaultAllow.FromNowhere();
 
-        // Nonces/hashes authorize our bootstrap; strict-dynamic trusts scripts it loads.
+        // The build hash authorizes SvelteKit's inline bootstrap and 'self' its import() calls.
+        // No 'strict-dynamic': hashes don't propagate to import() from parser-inserted scripts,
+        // so Chrome 158+ would block env.js (only nonces propagate, and we don't rewrite HTML).
         // Provider host wildcards consolidate Stripe.js and Intercom's script host families.
         csp.AllowScripts
             .FromSelf()
             .AddNonce()
-            .WithStrictDynamic()
             .From("https://*.stripe.com")
             .From("https://*.intercom.io")
             .From("https://js.intercomcdn.com");

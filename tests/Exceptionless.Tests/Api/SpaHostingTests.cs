@@ -143,7 +143,9 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         string[] scriptSources = scripts.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         Assert.DoesNotContain("'unsafe-inline'", scriptSources);
         Assert.DoesNotContain("'unsafe-eval'", scriptSources);
-        Assert.Contains("'strict-dynamic'", scriptSources);
+        // strict-dynamic would ignore 'self' and block the hashed bootstrap's import() calls.
+        Assert.DoesNotContain("'strict-dynamic'", scriptSources);
+        Assert.Contains("'self'", scriptSources);
         Assert.Contains("https://*.stripe.com", scriptSources);
         Assert.Contains("https://*.intercom.io", scriptSources);
     }
@@ -156,7 +158,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Directory.CreateDirectory(webRoot);
         const string bootstrap = "import(\"/_app/env.js?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\");start()";
         string hash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(bootstrap)));
-        string html = $"""<meta http-equiv="Content-Security-Policy" content="script-src 'strict-dynamic' 'sha256-{hash}'"><script>{bootstrap}</script>""";
+        string html = $"""<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-{hash}'"><script>{bootstrap}</script>""";
         string injectedHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes("injected()")));
         string changedHtml = html + "<script>injected()</script>";
 
