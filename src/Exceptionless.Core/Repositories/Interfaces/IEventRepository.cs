@@ -14,7 +14,19 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
     Task<long> RemoveAllByOrganizationAndClientIpAsync(string organizationId, string? clientIpAddress, DateTime? startUtc, DateTime? endUtc, CommandOptionsDescriptor<PersistentEvent>? options = null);
     Task<long> RemoveAllByProjectAndClientIpAsync(string organizationId, string projectId, string clientIpAddress, DateTime? startUtc, DateTime? endUtc, CommandOptionsDescriptor<PersistentEvent>? options = null);
     Task<long> RemoveAllByStackIdsAsync(string[] stackIds);
+
+    /// <summary>
+    /// Pages the distinct stack ids of the events that match the query in ascending id order. The position is the last id of the
+    /// previous page, so paging stays correct while events or stacks change between pages.
+    /// </summary>
+    Task<StackIdPage> GetStackIdPageAsync(IRepositoryQuery query, string? afterStackId, int size);
+
+    /// <summary>Approximately how many distinct stacks the events matching the query belong to.</summary>
+    Task<long> CountStacksAsync(IRepositoryQuery query);
 }
+
+/// <summary>A page of distinct stack ids. <see cref="NextAfterStackId"/> is null when there are no more pages.</summary>
+public record StackIdPage(IReadOnlyList<string> StackIds, string? NextAfterStackId);
 
 public static class EventRepositoryExtensions
 {

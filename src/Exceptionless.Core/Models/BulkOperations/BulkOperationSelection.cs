@@ -19,7 +19,8 @@ public class BulkOperationDetails
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum BulkOperationEntity
 {
-    Events
+    Events,
+    Stacks
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]

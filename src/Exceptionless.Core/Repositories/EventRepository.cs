@@ -1,16 +1,22 @@
-﻿using Elastic.Clients.Elasticsearch.QueryDsl;
+﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Aggregations;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories;
 
 public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository
 {
+    private const string StackIdsAggregation = "stack_ids";
+    private const string CompositeStackIdSource = "stack_id";
     private readonly TimeProvider _timeProvider;
 
     public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, MiniValidationValidator validator)
@@ -204,6 +210,40 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
         return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
+    }
+
+    public async Task<StackIdPage> GetStackIdPageAsync(IRepositoryQuery query, string? afterStackId, int size)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+
+        var options = ConfigureOptions(new CommandOptions<PersistentEvent>().TrackTotalHits(false));
+        var search = await CreateSearchDescriptorAsync(query, options);
+        var composite = new CompositeAggregation
+        {
+            Size = size,
+            Sources = [new KeyValuePair<string, CompositeAggregationSource>(CompositeStackIdSource, new CompositeAggregationSource { Terms = new CompositeTermsAggregation { Field = InferField(e => e.StackId) } })]
+        };
+
+        if (!String.IsNullOrEmpty(afterStackId))
+            composite.After = new Dictionary<Field, FieldValue> { [CompositeStackIdSource] = afterStackId };
+
+        search.Size(0).Aggregations(a => a.Add(StackIdsAggregation, new Aggregation { Composite = composite }));
+
+        var response = await _client.SearchAsync<PersistentEvent>(search);
+        if (!response.IsValidResponse)
+            throw new DocumentException($"Error while paging stack ids: {response.ElasticsearchServerError?.Error?.Reason ?? response.DebugInformation}", response.ApiCallDetails.OriginalException);
+
+        var buckets = response.Aggregations?.GetComposite(StackIdsAggregation)?.Buckets ?? [];
+        string[] stackIds = buckets.Select(b => b.Key[CompositeStackIdSource].ToString()!).ToArray();
+        return new StackIdPage(stackIds, stackIds.Length >= size ? stackIds[^1] : null);
+    }
+
+    public async Task<long> CountStacksAsync(IRepositoryQuery query)
+    {
+        var result = await CountAsync(query.AggregationsExpression("cardinality:stack_id"), new CommandOptions<PersistentEvent>().TrackTotalHits(false));
+        double? count = result.Aggregations.Cardinality("cardinality_stack_id")?.Value;
+        return count.HasValue ? Convert.ToInt64(count.Value) : 0;
     }
 
     public Task<long> RemoveAllByStackIdsAsync(string[] stackIds)
