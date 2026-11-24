@@ -51,14 +51,15 @@
     import UsageWarningNotification from './notifications/usage-warning-notification.svelte';
 
     interface Props extends NotificationProps {
-        ignoreConfigureProjects?: boolean;
+        /** The page shows its own setup prompt (Exie's empty state), so don't add a second one. */
+        ignoreSetupPrompts?: boolean;
         isChatEnabled: boolean;
         openChat: () => void;
         premiumFeatureName?: string;
         requiresPremium?: boolean;
     }
 
-    let { ignoreConfigureProjects = false, isChatEnabled, openChat, premiumFeatureName, requiresPremium = false, ...restProps }: Props = $props();
+    let { ignoreSetupPrompts = false, isChatEnabled, openChat, premiumFeatureName, requiresPremium = false, ...restProps }: Props = $props();
 
     const meQuery = getMeQuery();
     const isGlobalAdmin = $derived(!!meQuery.data?.roles?.includes('global'));
@@ -134,9 +135,7 @@
         isFreePlan && !isImpersonating && !!organization && hasTrialEndedWithoutSubscribing(organization) && !!meQuery.data && !isTrialEndedNoticeDismissed
     );
     const hasNoProjects = $derived(projectsQuery.isSuccess && projects.length === 0);
-    const needsProjectConfiguration = $derived(
-        projectsQuery.isSuccess && !ignoreConfigureProjects && projects.length > 0 && projectsNeedingConfig.length === projects.length
-    );
+    const needsProjectConfiguration = $derived(projectsQuery.isSuccess && projects.length > 0 && projectsNeedingConfig.length === projects.length);
     const requiresPremiumUpgrade = $derived(requiresPremium && !organization?.has_premium_features && !needsProjectConfiguration);
 
     function dismissTrialEnded(): void {
@@ -179,9 +178,9 @@
         <HourlyOverageNotification name={organization.name} organizationId={organization.id} {...restProps} />
     {:else if isExceededRequestLimit}
         <RequestLimitNotification name={organization.name} {isChatEnabled} {openChat} {...restProps} />
-    {:else if hasNoProjects}
+    {:else if !ignoreSetupPrompts && hasNoProjects}
         <SetupFirstProjectNotification {...restProps} />
-    {:else if needsProjectConfiguration}
+    {:else if !ignoreSetupPrompts && needsProjectConfiguration}
         <ProjectConfigurationNotification projects={projectsNeedingConfig} {...restProps} />
     {:else if requiresPremiumUpgrade}
         <PremiumUpgradeNotification name={organization.name} organizationId={organization.id} {premiumFeatureName} {...restProps} />

@@ -16,7 +16,8 @@ test('project dropdown layout preserves its search and footer while listing many
     await page.setViewportSize({ height: 720, width: 1280 });
     await page.goto('/stack?time=all');
     await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
-    await expect(page.getByText('No data was found with the current filter.', { exact: true })).toBeVisible();
+    // The scenario organization has no events yet, so the list shows Exie's empty state.
+    await expect(page.getByText("Nothing yet — I'm listening!", { exact: true })).toBeVisible();
 
     const projectFilter = page.getByRole('button', { name: /^Project/ }).first();
     await expect(projectFilter).toBeVisible();
@@ -106,7 +107,8 @@ test('project dropdown keeps its controls visible in mobile viewports and a 200%
         await page.setViewportSize({ height: viewport.height, width: viewport.width });
         await page.goto('/stack?time=all');
         await expect(page.getByRole('heading', { name: 'Stacks' })).toBeVisible();
-        await expect(page.getByText('No data was found with the current filter.', { exact: true })).toBeVisible();
+        // The scenario organization has no events yet, so the list shows Exie's empty state.
+        await expect(page.getByText("Nothing yet — I'm listening!", { exact: true })).toBeVisible();
 
         const projectFilter = page.getByRole('button', { name: /^Project/ }).first();
         await expect(projectFilter).toBeVisible();
