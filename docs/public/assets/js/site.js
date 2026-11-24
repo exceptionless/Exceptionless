@@ -461,47 +461,52 @@ function initializeFaq() {
     })
 
     summary.addEventListener("click", (event) => {
-      if (reducedMotion.matches || typeof details.animate !== "function") {
+      if (reducedMotion.matches || typeof body.animate !== "function") {
         return
       }
 
       event.preventDefault()
 
-      const startHeight = details.getBoundingClientRect().height
+      // Animate only the answer, so the question text never sits inside an animating or clipped box.
+      // A closed answer still reports its full size, so start a fresh open from zero.
+      const from = details.open ? body.getBoundingClientRect().height : 0
       const opening = !details.open || details.classList.contains("is-closing")
       animation?.cancel()
 
-      details.open = false
-      const closedHeight = details.getBoundingClientRect().height
       details.open = true
-      const openHeight = details.getBoundingClientRect().height
-
       details.classList.toggle("is-closing", !opening)
-      details.style.overflow = "hidden"
-
-      animation = details.animate(
-        { height: [`${startHeight}px`, `${opening ? openHeight : closedHeight}px`] },
-        { duration: 240, easing: "cubic-bezier(0.2, 0, 0, 1)" },
-      )
-      if (opening) {
-        body.animate({ opacity: [0, 1], transform: ["translateY(-4px)", "none"] }, {
-          duration: 240,
-          easing: "ease-out",
-        })
+      const fullHeight = body.getBoundingClientRect().height
+      const fullPadding = getComputedStyle(body).paddingBottom
+      const progress = fullHeight > 0 ? from / fullHeight : 0
+      const collapsed = { height: "0px", paddingBottom: "0px", opacity: 0 }
+      const expanded = { height: `${fullHeight}px`, paddingBottom: fullPadding, opacity: 1 }
+      const current = {
+        height: `${from}px`,
+        paddingBottom: `${parseFloat(fullPadding) * progress}px`,
+        opacity: progress,
       }
 
-      const current = animation
-      current.onfinish = () => {
-        if (animation !== current) {
+      body.style.overflow = "hidden"
+      const running = body.animate([current, opening ? expanded : collapsed], {
+        duration: 260,
+        easing: "cubic-bezier(0.2, 0, 0, 1)",
+        fill: "forwards",
+      })
+      animation = running
+
+      running.onfinish = () => {
+        if (animation !== running) {
           return
         }
 
-        animation = null
-        details.style.overflow = ""
-        if (details.classList.contains("is-closing")) {
-          details.classList.remove("is-closing")
+        if (!opening) {
           details.open = false
+          details.classList.remove("is-closing")
         }
+
+        animation = null
+        running.cancel()
+        body.style.overflow = ""
       }
     })
   })
