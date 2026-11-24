@@ -77,13 +77,17 @@ const REACT_NATIVE_DOCS_URL = 'https://github.com/exceptionless/Exceptionless.Ja
 const API_DOCS_URL = 'https://exceptionless.com/docs/api/';
 
 const DOTNET_DEBUG_LOGGING =
-    'Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration, then check exceptionless.log for submission errors.';
+    'Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your AddExceptionless configuration, then check exceptionless.log. "Sent 1 events" means the server accepted it. builder.AddExceptionless(c => c.UseFileLogger(...)) still reads appsettings.json.';
+const DOTNET_CLIENT_DEBUG_LOGGING =
+    'Call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) before Startup() or Register(), then check exceptionless.log. "Sent 1 events" means the server accepted it.';
 const DOTNET_FRAMEWORK_DEBUG_LOGGING =
     'Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.';
-const JAVASCRIPT_DEBUG_LOGGING = 'Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console.';
+const JAVASCRIPT_DEBUG_LOGGING =
+    'Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console. "Sent 1 events" means the server accepted it.';
 const RAW_HTTP_DEBUG_LOGGING = 'A 202 Accepted response means the event was queued. A 401 means the API key is wrong or disabled.';
 
-const DOTNET_TEST_ERROR = `new Exception("${TEST_ERROR_MESSAGE}").ToExceptionless().Submit();`;
+// Thrown so the event has a stack trace.
+const DOTNET_TEST_ERROR = `try { throw new Exception("${TEST_ERROR_MESSAGE}"); } catch (Exception ex) { ex.ToExceptionless().Submit(); }`;
 const JAVASCRIPT_TEST_ERROR = `Exceptionless.submitException(new Error("${TEST_ERROR_MESSAGE}"));`;
 
 function desktopDotnetSteps(packageName: string, entryPoint: 'App.xaml.cs' | 'Program.cs', context: PlatformSetupContext): PlatformStep[] {
@@ -122,6 +126,18 @@ ${dotnetDefaultClientConfiguration(context, '        ')}
         },
         dotnetTestError('Add this after Register() and run your app once.')
     ];
+}
+
+/** The hosting packages read an "Exceptionless" configuration section when AddExceptionless() has no arguments. */
+function dotnetAppSettingsStep({ apiKey, sdkServerUrl }: PlatformSetupContext): PlatformStep {
+    const settings = sdkServerUrl ? `"ApiKey": "${apiKey}",\n    "ServerUrl": "${sdkServerUrl}"` : `"ApiKey": "${apiKey}"`;
+    return {
+        blocks: [{ code: `{\n  "Exceptionless": {\n    ${settings}\n  }\n}`, language: 'json' }],
+        description:
+            'To keep settings out of code, put them in appsettings.json (or Exceptionless__ApiKey environment variables) and call builder.AddExceptionless() with no arguments.',
+        optional: true,
+        title: 'Keep settings in configuration'
+    };
 }
 
 /** `c => { ... }` configuration lambda shared by the .NET hosting integrations. */
@@ -246,10 +262,11 @@ app.UseExceptionless();`,
                         language: 'csharp'
                     }
                 ],
-                description: 'Register the client and middleware in Program.cs. Settings in appsettings.json under "Exceptionless" work too.',
+                description: 'Register the client and middleware in Program.cs.',
                 title: 'Add Exceptionless to Program.cs'
             },
             dotnetTestError('Add this after app.UseExceptionless(), run your app once, then remove it.'),
+            dotnetAppSettingsStep(context),
             {
                 blocks: [
                     { code: 'dotnet add package Exceptionless.Extensions.Logging', language: 'shellscript' },
@@ -264,7 +281,7 @@ app.UseExceptionless();`,
     },
     {
         category: '.NET',
-        debugLogging: DOTNET_DEBUG_LOGGING,
+        debugLogging: DOTNET_CLIENT_DEBUG_LOGGING,
         docsUrl: DOTNET_DOCS_URL,
         group: 'popular',
         icon: 'square-terminal',
@@ -287,7 +304,8 @@ await ExceptionlessClient.Default.ProcessQueueAsync();`,
                         language: 'csharp'
                     }
                 ],
-                description: 'Start the client when your app starts. The second line sends a test error so you can see it arrive.',
+                description:
+                    'Start the client when your app starts. The Submit() line sends a test error so you can see it arrive; remove only that line afterwards.',
                 title: 'Start Exceptionless and send a test error'
             }
         ],
@@ -324,21 +342,21 @@ host.Run();`,
             {
                 blocks: [
                     {
-                        code: `host.Services.GetRequiredService<ExceptionlessClient>()
-    .SubmitException(new Exception("${TEST_ERROR_MESSAGE}"));`,
+                        code: `try { throw new Exception("${TEST_ERROR_MESSAGE}"); }
+catch (Exception ex) { host.Services.GetRequiredService<ExceptionlessClient>().SubmitException(ex); }`,
                         language: 'csharp'
                     }
                 ],
                 description: 'Add this just before host.Run(), run your worker once, then remove it.',
                 title: 'Send a test error'
             },
+            dotnetAppSettingsStep(context),
             {
                 blocks: [
                     { code: 'dotnet add package Exceptionless.Extensions.Logging', language: 'shellscript' },
                     { code: 'builder.Logging.AddExceptionless();', language: 'csharp' }
                 ],
-                description: 'Send warnings and errors from ILogger too.',
-                optional: true,
+                description: "The host logs a worker's exceptions instead of crashing, so send ILogger warnings and errors to Exceptionless too.",
                 title: 'Send your logs'
             }
         ],
@@ -370,7 +388,7 @@ ${javascriptStartup(context)}`,
             },
             {
                 blocks: [{ code: JAVASCRIPT_TEST_ERROR, language: 'javascript' }],
-                description: 'Run this once after startup, for example from your browser console or a button.',
+                description: 'Add this in your entry file right after startup, load the page once, then remove it.',
                 title: 'Send a test error'
             }
         ],
@@ -396,13 +414,28 @@ ${javascriptStartup(context)}`,
                         language: 'javascript'
                     }
                 ],
-                description: 'Run this once when your process starts, before the rest of your code.',
+                description:
+                    'Run this once when your process starts, before the rest of your code. Unsent events wait in a .exceptionless folder; add it to .gitignore.',
                 title: 'Start Exceptionless'
             },
             {
                 blocks: [{ code: JAVASCRIPT_TEST_ERROR, language: 'javascript' }],
                 description: 'Run this once after startup. Queued events are sent before the process exits.',
                 title: 'Send a test error'
+            },
+            {
+                blocks: [
+                    {
+                        code: `app.use((error, req, res, next) => {
+  Exceptionless.submitException(error);
+  next(error);
+});`,
+                        language: 'javascript'
+                    }
+                ],
+                description: 'Express catches route errors itself, so report them from an error handler added after your routes.',
+                optional: true,
+                title: 'Report Express route errors'
             }
         ],
         tip: 'Uncaught exceptions and unhandled rejections are captured, and the queue flushes before exit.'
@@ -424,22 +457,23 @@ ${javascriptStartup(context)}`,
                     {
                         code: `import { Exceptionless, ExceptionlessErrorBoundary } from "@exceptionless/react";
 
-${javascriptStartup(context)}
-
-root.render(
-  <ExceptionlessErrorBoundary fallback={<p>Something went wrong.</p>}>
-    <App />
-  </ExceptionlessErrorBoundary>
-);`,
+${javascriptStartup(context)}`,
+                        language: 'javascript'
+                    },
+                    {
+                        code: `<ExceptionlessErrorBoundary fallback={<p>Something went wrong.</p>}>
+  <App />
+</ExceptionlessErrorBoundary>`,
                         language: 'javascript'
                     }
                 ],
-                description: 'Start the client in your entry file and wrap your app in the error boundary to catch render errors.',
+                description:
+                    'Start the client at the top of your entry file (main.jsx or main.tsx), then wrap <App /> in the error boundary where it renders, inside StrictMode if you use it.',
                 title: 'Start Exceptionless and add the error boundary'
             },
             {
                 blocks: [{ code: JAVASCRIPT_TEST_ERROR, language: 'javascript' }],
-                description: 'Run this once after startup, for example from a button click.',
+                description: 'Add this in your entry file right after startup, load the page once, then remove it.',
                 title: 'Send a test error'
             }
         ],
@@ -467,17 +501,20 @@ import App from "./App.vue";
 ${javascriptStartup(context)}
 
 const app = createApp(App);
-app.config.errorHandler = ExceptionlessErrorHandler;
+app.config.errorHandler = (error, instance, info) => {
+  console.error(error);
+  ExceptionlessErrorHandler(error instanceof Error ? error : new Error(String(error)), instance, info);
+};
 app.mount("#app");`,
                         language: 'javascript'
                     }
                 ],
-                description: 'Start the client in main.js and hand component errors to Exceptionless.',
+                description: 'Start the client in main.js or main.ts and hand component errors to Exceptionless. Keep your existing imports.',
                 title: 'Start Exceptionless and add the error handler'
             },
             {
                 blocks: [{ code: JAVASCRIPT_TEST_ERROR, language: 'javascript' }],
-                description: 'Run this once after startup, for example from a button click.',
+                description: 'Add this in your entry file right after startup, load the page once, then remove it.',
                 title: 'Send a test error'
             }
         ],
@@ -498,12 +535,21 @@ app.mount("#app");`,
             {
                 blocks: [
                     {
-                        code: `import { ErrorHandler, Injectable } from "@angular/core";
+                        code: `// main.ts
 import { bootstrapApplication } from "@angular/platform-browser";
-import { Exceptionless, toError } from "@exceptionless/browser";
-import { AppComponent } from "./app/app.component";
+import { Exceptionless } from "@exceptionless/browser";
+import { App } from "./app/app";
+import { appConfig } from "./app/app.config";
 
 ${javascriptStartup(context)}
+
+bootstrapApplication(App, appConfig);`,
+                        language: 'javascript'
+                    },
+                    {
+                        code: `// app.config.ts
+import { type ApplicationConfig, ErrorHandler, Injectable } from "@angular/core";
+import { Exceptionless, toError } from "@exceptionless/browser";
 
 @Injectable()
 export class ExceptionlessErrorHandler implements ErrorHandler {
@@ -513,18 +559,22 @@ export class ExceptionlessErrorHandler implements ErrorHandler {
   }
 }
 
-bootstrapApplication(AppComponent, {
-  providers: [{ provide: ErrorHandler, useClass: ExceptionlessErrorHandler }]
-});`,
+export const appConfig: ApplicationConfig = {
+  providers: [
+    // ...your existing providers
+    { provide: ErrorHandler, useClass: ExceptionlessErrorHandler }
+  ]
+};`,
                         language: 'javascript'
                     }
                 ],
-                description: 'Start the client in main.ts and route Angular’s errors to Exceptionless with an ErrorHandler.',
+                description:
+                    'Start the client in main.ts, and add the ErrorHandler to your providers in app.config.ts. Apps that bootstrap AppComponent work the same way.',
                 title: 'Start Exceptionless and add an ErrorHandler'
             },
             {
                 blocks: [{ code: JAVASCRIPT_TEST_ERROR, language: 'javascript' }],
-                description: 'Run this once after startup, for example from a button click.',
+                description: 'Add this in your entry file right after startup, load the page once, then remove it.',
                 title: 'Send a test error'
             }
         ],
@@ -553,7 +603,7 @@ bootstrapApplication(AppComponent, {
             reactNativeStartupStep(context),
             {
                 blocks: [{ code: JAVASCRIPT_TEST_ERROR, language: 'javascript' }],
-                description: 'Run this once after startup, for example from a button press.',
+                description: 'Add this inside the same useEffect, right after startup. Run the app once, then remove it.',
                 title: 'Send a test error'
             }
         ],
@@ -591,7 +641,7 @@ bootstrapApplication(AppComponent, {
             reactNativeStartupStep(context),
             {
                 blocks: [{ code: JAVASCRIPT_TEST_ERROR, language: 'javascript' }],
-                description: 'Run this once after startup, for example from a button press.',
+                description: 'Add this inside the same useEffect, right after startup. Run the app once, then remove it.',
                 title: 'Send a test error'
             }
         ],
@@ -599,7 +649,7 @@ bootstrapApplication(AppComponent, {
     },
     {
         category: '.NET',
-        debugLogging: DOTNET_DEBUG_LOGGING,
+        debugLogging: DOTNET_CLIENT_DEBUG_LOGGING,
         docsUrl: DOTNET_DOCS_URL,
         group: 'popular',
         icon: 'app-window',
@@ -611,7 +661,7 @@ bootstrapApplication(AppComponent, {
     },
     {
         category: '.NET',
-        debugLogging: DOTNET_DEBUG_LOGGING,
+        debugLogging: DOTNET_CLIENT_DEBUG_LOGGING,
         docsUrl: DOTNET_DOCS_URL,
         group: 'popular',
         icon: 'panels-top-left',
@@ -711,7 +761,7 @@ ExceptionlessClient.Default.ProcessQueueAsync().GetAwaiter().GetResult();`,
                         language: 'csharp'
                     }
                 ],
-                description: 'Start the client in Main. The middle line sends a test error so you can see it arrive.',
+                description: 'Start the client in Main. The Submit() line sends a test error so you can see it arrive; remove only that line afterwards.',
                 title: 'Start Exceptionless and send a test error'
             }
         ],
@@ -867,14 +917,14 @@ ${javascriptStartup(context, '    ')}
 
   return (
     <ExceptionlessErrorBoundary>
-      <Root />
+      <YourApp />
     </ExceptionlessErrorBoundary>
   );
 }`,
                 language: 'javascript'
             }
         ],
-        description: 'Start the client once when your app mounts and wrap your app in the error boundary.',
+        description: 'Start the client once when your app mounts, and wrap your existing root component (YourApp here) in the error boundary.',
         title: 'Start Exceptionless'
     };
 }

@@ -69,7 +69,7 @@
 </script>
 
 <div class="mx-auto flex w-full max-w-md flex-col items-center gap-4 md:self-center">
-    <Logo class="h-9 max-h-none w-auto object-contain" />
+    <Logo class="h-14 max-h-none w-auto object-contain" />
 
     {#if isLeaving}
         <Card.Root class="w-full">
