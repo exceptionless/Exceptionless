@@ -161,8 +161,9 @@
 
         // Pin the scope that is counted, so the delete can't run against another project if the page moves on while counting.
         const scope = {
- organizationId: project?.organization_id, projectId 
-};
+            organizationId: project?.organization_id,
+            projectId
+        };
         if (!scope.organizationId) {
             return;
         }
