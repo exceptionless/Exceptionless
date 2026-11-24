@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Exceptionless.Core;
+using Exceptionless.Web.Api.Endpoints;
 using Joonasw.AspNetCore.SecurityHeaders.Csp.Builder;
 using Microsoft.Extensions.FileProviders;
 
@@ -114,6 +115,9 @@ internal static partial class FrontendContentSecurityPolicy
         csp.AllowFraming.FromNowhere();
         if (options.EnableSsl)
             csp.SetUpgradeInsecureRequests();
+
+        // The browser can report a blocked app script before the JavaScript SDK starts.
+        csp.ReportViolationsTo(SpaCspReportEndpoint.Path);
 
         csp.OnSendingHeader = context =>
         {

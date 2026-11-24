@@ -908,6 +908,16 @@
     "authenticationSchemes": []
   },
   {
+    "method": "POST",
+    "route": "/api/v2/csp-reports",
+    "displayName": "HTTP: POST /api/v2/csp-reports => ReceiveAsync",
+    "tags": [],
+    "allowAnonymous": true,
+    "authorizationPolicies": [],
+    "authorizationRoles": [],
+    "authenticationSchemes": []
+  },
+  {
     "method": "GET",
     "route": "/api/v2/events",
     "displayName": "HTTP: GET api/v2/events",
