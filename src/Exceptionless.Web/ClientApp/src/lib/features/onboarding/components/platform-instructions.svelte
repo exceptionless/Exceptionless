@@ -5,6 +5,8 @@
 
     import type { Platform, PlatformSetupContext, PlatformStep } from '../platforms';
 
+    import AgentSetupMenu from './agent-setup-menu.svelte';
+
     interface Props {
         context: PlatformSetupContext;
         platform: Platform;
@@ -42,7 +44,10 @@
         <h2 class="text-foreground scroll-mt-4 text-base font-semibold outline-none" id="platform-instructions-heading" tabindex="-1">
             Connect {platform.label}
         </h2>
-        <A class="text-sm" href={platform.docsUrl} target="_blank">{platform.isRawHttp ? 'Event API docs' : `${platform.category} client docs`}</A>
+        <div class="flex flex-wrap items-center gap-3">
+            <A class="text-sm" href={platform.docsUrl} target="_blank">{platform.isRawHttp ? 'Event API docs' : `${platform.category} client docs`}</A>
+            <AgentSetupMenu {context} {platform} />
+        </div>
     </div>
 
     <ol class="flex flex-col gap-5">

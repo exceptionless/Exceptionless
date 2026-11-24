@@ -19,6 +19,7 @@
     import { ProjectFilter } from '#features/events/components/filters/index.ts';
     import { openSupportChat } from '#features/intercom/chat.ts';
     import { getIntercom } from '#features/intercom/index.ts';
+    import AgentSetupMenu from '#features/onboarding/components/agent-setup-menu.svelte';
     import ApiKeyCard from '#features/onboarding/components/api-key-card.svelte';
     import ExieGuide from '#features/onboarding/components/exie-guide.svelte';
     import FirstEventCelebration from '#features/onboarding/components/first-event-celebration.svelte';
@@ -289,6 +290,18 @@
         </Card.Root>
     {:else}
         <Skeleton class="h-14 w-full" />
+    {/if}
+
+    {#if !selectedPlatform && apiKey}
+        <div class="bg-card ring-foreground/10 flex flex-wrap items-center justify-between gap-3 rounded-xl p-3 ring-1" data-agent-setup>
+            <p class="text-muted-foreground min-w-0 flex-1 text-sm">Using a coding agent? It can work out your stack and set everything up.</p>
+            <AgentSetupMenu
+                context={{
+                    apiKey,
+                    ...serverUrls
+                }}
+            />
+        </div>
     {/if}
 
     <PlatformPicker onSelect={selectPlatform} selectedId={selectedPlatform?.id} />

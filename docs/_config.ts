@@ -36,6 +36,9 @@ site.add("public/assets/img/dashboard-2-1024x594.png", "assets/img/dashboard-2-1
 site.add("public/assets/img/toexceptionless.png", "assets/img/toexceptionless.png")
 site.add("public/assets/img/logs-2.jpg", "assets/img/logs-2.jpg")
 site.add("public/assets/img/slider-github.jpg", "assets/img/slider-github.jpg")
+// Coding agents fetch these setup instructions as raw markdown. The app generates them from its client setup steps; the .txt
+// source keeps Lume from rendering them to HTML.
+site.add("public/setup.md.txt", "setup.md")
 
 site.hooks.markdownIt((markdownIt: any) => {
   const defaultHeadingOpen = markdownIt.renderer.rules.heading_open ??
