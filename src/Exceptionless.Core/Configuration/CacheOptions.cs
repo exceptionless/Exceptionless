@@ -1,6 +1,4 @@
-﻿using Exceptionless.Core.Extensions;
-using Foundatio.Utility;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 
 namespace Exceptionless.Core.Configuration;
 
@@ -8,7 +6,7 @@ public class CacheOptions
 {
     public string? ConnectionString { get; internal set; }
     public string? Provider { get; internal set; }
-    public Dictionary<string, string?> Data { get; internal set; } = null!;
+    public Dictionary<string, string?> Data { get; internal set; } = new(StringComparer.OrdinalIgnoreCase);
 
     public string Scope { get; internal set; } = null!;
     public string ScopePrefix { get; internal set; } = null!;
@@ -18,28 +16,10 @@ public class CacheOptions
         var options = new CacheOptions { Scope = appOptions.AppScope };
         options.ScopePrefix = !String.IsNullOrEmpty(options.Scope) ? $"{options.Scope}-" : String.Empty;
 
-        string? cs = config.GetConnectionString("Cache");
-        if (cs != null)
-        {
-            options.Data = cs.ParseConnectionString();
-            options.Provider = options.Data.GetString(nameof(options.Provider));
-            string? providerConnectionString = !String.IsNullOrEmpty(options.Provider) ? config.GetConnectionString(options.Provider) : null;
-
-            var providerOptions = providerConnectionString.ParseConnectionString(defaultKey: "server");
-            options.Data ??= new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-            options.Data.AddRange(providerOptions);
-
-            options.ConnectionString = options.Data.BuildConnectionString(new HashSet<string> { nameof(options.Provider) });
-        }
-        else
-        {
-            string? redisConnectionString = config.GetConnectionString("Redis");
-            if (!String.IsNullOrEmpty(redisConnectionString))
-            {
-                options.Provider = "redis";
-                options.ConnectionString = redisConnectionString;
-            }
-        }
+        var providerConfiguration = ProviderConfigurationResolver.Resolve(config, ProviderRole.Cache);
+        options.Data = providerConfiguration.Data;
+        options.Provider = providerConfiguration.Provider;
+        options.ConnectionString = providerConfiguration.ConnectionString;
 
         return options;
     }
