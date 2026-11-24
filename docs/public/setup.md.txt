@@ -7,10 +7,21 @@ Instructions for a coding agent adding Exceptionless error and event tracking to
 - Replace `YOUR_API_KEY` with the API key the user gave you. If they didn't give one, ask for it. It's on the project's API Keys page in Exceptionless.
 - Replace `YOUR_SERVER_URL` with the server URL the user gave you. If they didn't give one, leave out the lines that set the server URL, and send REST API requests to `https://collector.exceptionless.io`.
 - The API key can only submit events, so it is fine in client code and committed config, like any client SDK key. If the project keeps settings in configuration or environment variables, put the key and server URL there.
+- JavaScript clients queue events until `Exceptionless.startup()` finishes, so there is no need to await it.
+- A `localhost` server URL only works on the user's own machine. Phones and emulators need the machine's network address instead (`10.0.2.2` on the Android emulator).
+
+## If you can't see the user's code
+
+If you're a chat assistant that can't read or edit the user's files:
+
+1. Ask which language and framework the app uses, and to paste its entry file if they want exact placement.
+2. In the same reply, give them the REST API (curl) or PowerShell example with their key and server filled in, so they can check both right away. A 202 response means it worked.
+3. Once you know the stack, give only that section's steps with their key and server filled in.
+4. Tell them to run the app once, look for "Hello from Exceptionless setup" in their Exceptionless project, then remove the test error.
 
 ## Steps
 
-1. Work out the app's language and framework, and find its section below: ASP.NET Core, Console app (.NET), Worker Service (.NET), Browser JavaScript, Node.js, React, Vue, Angular, React Native, Expo, WPF (.NET), Windows Forms (.NET), REST API (curl), PowerShell, Console app (.NET Framework), ASP.NET MVC, ASP.NET Web API, ASP.NET Web Forms, Windows Forms (.NET Framework), WPF (.NET Framework), or Other languages.
+1. Work out the app's language and framework from its code, and find its section below: ASP.NET Core, Console app (.NET), Worker Service (.NET), Browser JavaScript, Node.js, React, Vue, Angular, React Native, Expo, WPF (.NET), Windows Forms (.NET), REST API (curl), PowerShell, Console app (.NET Framework), ASP.NET MVC, ASP.NET Web API, ASP.NET Web Forms, Windows Forms (.NET Framework), WPF (.NET Framework), or Other languages.
 2. Follow its required steps, adapting file names and structure to this project. Do an Optional step when it fits the app, and mention the others to the user.
 3. Run the app so it sends the test error "Hello from Exceptionless setup". In browser and mobile apps, put the test error in the entry file right after startup, not in a component. Clients send queued events within about 10 seconds, and on a graceful exit.
 4. Check it worked with the section's "Check it worked" step, and wait for that before stopping servers, workers, and browser pages (stop them with Ctrl+C or SIGINT). The API key can't read events back, so a 403 when you try is expected. If you can't run the app or a browser, check the key and server with the REST API example and ask the user to run the app.
@@ -83,7 +94,7 @@ builder.Logging.AddExceptionless();
 
 ### Check it worked
 
-Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration, then check exceptionless.log. "Sent 1 events" means the server accepted it. builder.AddExceptionless(c => c.UseFileLogger(...)) still reads appsettings.json; for Startup(), call ExceptionlessClient.Default.Configuration.UseFileLogger(...) first.
+Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your AddExceptionless configuration, then check exceptionless.log. "Sent 1 events" means the server accepted it. builder.AddExceptionless(c => c.UseFileLogger(...)) still reads appsettings.json.
 
 ## Console app (.NET)
 
@@ -115,7 +126,7 @@ await ExceptionlessClient.Default.ProcessQueueAsync();
 
 ### Check it worked
 
-Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration, then check exceptionless.log. "Sent 1 events" means the server accepted it. builder.AddExceptionless(c => c.UseFileLogger(...)) still reads appsettings.json; for Startup(), call ExceptionlessClient.Default.Configuration.UseFileLogger(...) first.
+Call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) before Startup() or Register(), then check exceptionless.log. "Sent 1 events" means the server accepted it.
 
 ## Worker Service (.NET)
 
@@ -183,7 +194,7 @@ To keep settings out of code, put them in appsettings.json (or Exceptionless__Ap
 
 ### Check it worked
 
-Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration, then check exceptionless.log. "Sent 1 events" means the server accepted it. builder.AddExceptionless(c => c.UseFileLogger(...)) still reads appsettings.json; for Startup(), call ExceptionlessClient.Default.Configuration.UseFileLogger(...) first.
+Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your AddExceptionless configuration, then check exceptionless.log. "Sent 1 events" means the server accepted it. builder.AddExceptionless(c => c.UseFileLogger(...)) still reads appsettings.json.
 
 ## Browser JavaScript
 
@@ -212,7 +223,7 @@ Exceptionless.startup((c) => {
 
 ### 3. Send a test error
 
-Run this once after startup, for example from your browser console or a button.
+Add this in your entry file right after startup, load the page once, then remove it.
 
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
@@ -284,31 +295,26 @@ npm install @exceptionless/react
 
 ### 2. Start Exceptionless and add the error boundary
 
-Start the client in your entry file and wrap your app in the error boundary to catch render errors.
+Start the client at the top of your entry file (main.jsx or main.tsx), then wrap <App /> in the error boundary where it renders, inside StrictMode if you use it.
 
 ```javascript
 import { Exceptionless, ExceptionlessErrorBoundary } from "@exceptionless/react";
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
 
 Exceptionless.startup((c) => {
   c.apiKey = "YOUR_API_KEY";
   c.serverUrl = "YOUR_SERVER_URL";
 });
+```
 
-createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <ExceptionlessErrorBoundary fallback={<p>Something went wrong.</p>}>
-      <App />
-    </ExceptionlessErrorBoundary>
-  </StrictMode>
-);
+```javascript
+<ExceptionlessErrorBoundary fallback={<p>Something went wrong.</p>}>
+  <App />
+</ExceptionlessErrorBoundary>
 ```
 
 ### 3. Send a test error
 
-Run this once after startup, for example from a button click.
+Add this in your entry file right after startup, load the page once, then remove it.
 
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
@@ -332,7 +338,7 @@ npm install @exceptionless/vue
 
 ### 2. Start Exceptionless and add the error handler
 
-Start the client in main.js and hand component errors to Exceptionless.
+Start the client in main.js or main.ts and hand component errors to Exceptionless. Keep your existing imports.
 
 ```javascript
 import { createApp } from "vue";
@@ -345,13 +351,16 @@ Exceptionless.startup((c) => {
 });
 
 const app = createApp(App);
-app.config.errorHandler = ExceptionlessErrorHandler;
+app.config.errorHandler = (error, instance, info) => {
+  console.error(error);
+  ExceptionlessErrorHandler(error instanceof Error ? error : new Error(String(error)), instance, info);
+};
 app.mount("#app");
 ```
 
 ### 3. Send a test error
 
-Run this once after startup, for example from a button click.
+Add this in your entry file right after startup, load the page once, then remove it.
 
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
@@ -375,18 +384,27 @@ npm install @exceptionless/browser
 
 ### 2. Start Exceptionless and add an ErrorHandler
 
-Start the client in main.ts and route Angular’s errors to Exceptionless with an ErrorHandler.
+Start the client in main.ts, and add the ErrorHandler to your providers in app.config.ts. Apps that bootstrap AppComponent work the same way.
 
 ```javascript
-import { ErrorHandler, Injectable } from "@angular/core";
+// main.ts
 import { bootstrapApplication } from "@angular/platform-browser";
-import { Exceptionless, toError } from "@exceptionless/browser";
-import { AppComponent } from "./app/app.component";
+import { Exceptionless } from "@exceptionless/browser";
+import { App } from "./app/app";
+import { appConfig } from "./app/app.config";
 
 Exceptionless.startup((c) => {
   c.apiKey = "YOUR_API_KEY";
   c.serverUrl = "YOUR_SERVER_URL";
 });
+
+bootstrapApplication(App, appConfig);
+```
+
+```javascript
+// app.config.ts
+import { type ApplicationConfig, ErrorHandler, Injectable } from "@angular/core";
+import { Exceptionless, toError } from "@exceptionless/browser";
 
 @Injectable()
 export class ExceptionlessErrorHandler implements ErrorHandler {
@@ -396,14 +414,17 @@ export class ExceptionlessErrorHandler implements ErrorHandler {
   }
 }
 
-bootstrapApplication(AppComponent, {
-  providers: [{ provide: ErrorHandler, useClass: ExceptionlessErrorHandler }]
-});
+export const appConfig: ApplicationConfig = {
+  providers: [
+    // ...your existing providers
+    { provide: ErrorHandler, useClass: ExceptionlessErrorHandler }
+  ]
+};
 ```
 
 ### 3. Send a test error
 
-Run this once after startup, for example from a button click.
+Add this in your entry file right after startup, load the page once, then remove it.
 
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
@@ -428,7 +449,7 @@ cd ios && pod install
 
 ### 2. Start Exceptionless
 
-Start the client once when your app mounts and wrap your app in the error boundary.
+Start the client once when your app mounts, and wrap your existing root component (YourApp here) in the error boundary.
 
 ```javascript
 import { useEffect } from "react";
@@ -444,7 +465,7 @@ export default function App() {
 
   return (
     <ExceptionlessErrorBoundary>
-      <Root />
+      <YourApp />
     </ExceptionlessErrorBoundary>
   );
 }
@@ -452,7 +473,7 @@ export default function App() {
 
 ### 3. Send a test error
 
-Run this once after startup, for example from a button press.
+Add this inside the same useEffect, right after startup. Run the app once, then remove it.
 
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
@@ -488,7 +509,7 @@ Add the config plugin to app.json for development and standalone builds. Expo Go
 
 ### 3. Start Exceptionless
 
-Start the client once when your app mounts and wrap your app in the error boundary.
+Start the client once when your app mounts, and wrap your existing root component (YourApp here) in the error boundary.
 
 ```javascript
 import { useEffect } from "react";
@@ -504,7 +525,7 @@ export default function App() {
 
   return (
     <ExceptionlessErrorBoundary>
-      <Root />
+      <YourApp />
     </ExceptionlessErrorBoundary>
   );
 }
@@ -512,7 +533,7 @@ export default function App() {
 
 ### 4. Send a test error
 
-Run this once after startup, for example from a button press.
+Add this inside the same useEffect, right after startup. Run the app once, then remove it.
 
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
@@ -560,7 +581,7 @@ try { throw new Exception("Hello from Exceptionless setup"); } catch (Exception 
 
 ### Check it worked
 
-Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration, then check exceptionless.log. "Sent 1 events" means the server accepted it. builder.AddExceptionless(c => c.UseFileLogger(...)) still reads appsettings.json; for Startup(), call ExceptionlessClient.Default.Configuration.UseFileLogger(...) first.
+Call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) before Startup() or Register(), then check exceptionless.log. "Sent 1 events" means the server accepted it.
 
 ## Windows Forms (.NET)
 
@@ -604,7 +625,7 @@ try { throw new Exception("Hello from Exceptionless setup"); } catch (Exception 
 
 ### Check it worked
 
-Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration, then check exceptionless.log. "Sent 1 events" means the server accepted it. builder.AddExceptionless(c => c.UseFileLogger(...)) still reads appsettings.json; for Startup(), call ExceptionlessClient.Default.Configuration.UseFileLogger(...) first.
+Call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) before Startup() or Register(), then check exceptionless.log. "Sent 1 events" means the server accepted it.
 
 ## REST API (curl)
 
@@ -943,6 +964,10 @@ Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> elem
 There are official clients only for .NET and JavaScript. Packages named "exceptionless" in other registries are not ours, so don't install them. Report errors through the REST API instead:
 
 1. Hook the framework's error handler (for example Flask or Django `got_request_exception`, FastAPI `add_exception_handler`, Go `recover` middleware, Rails `rescue_from`). POST each unhandled error to `YOUR_SERVER_URL/api/v2/events` with the headers `Authorization: Bearer YOUR_API_KEY` and `Content-Type: application/json`.
-2. Send a body like the REST API example. In `@simple_error`, use the error's message, its class name as the type (for example `ValueError`), and the language's formatted stack trace. Set `environment` from the app's own environment name.
-3. Send in the background with a short timeout, and never let a failed send break the app.
-4. A 202 response means the event was accepted. Send the test error the same way from a temporary script or route, wait for the response, and log its status while you check.
+2. Send a body like the REST API example. In `@simple_error`, use the error's message, its class name as the type (for example `ValueError`), and the language's formatted stack trace. Set `environment` from the app's environment name, or an `ENVIRONMENT` variable that defaults to `production`.
+3. Send in the background with a short timeout, let shutdown wait for a send in progress, and never let a failed send break the app.
+4. Send the test error through that handler, for example from a temporary route that raises it.
+
+### Check it worked
+
+Temporarily log the response status. A 202 means the event was accepted. Remove the log line and the temporary route afterwards.
