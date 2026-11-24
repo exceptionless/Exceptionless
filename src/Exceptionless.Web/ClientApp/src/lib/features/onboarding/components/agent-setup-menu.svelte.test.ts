@@ -42,7 +42,7 @@ describe('AgentSetupMenu', () => {
     it('opens each agent in a new tab with the prompt filled in', async () => {
         // Arrange
         render(AgentSetupMenu, { props: { context } });
-        const encoded = new URLSearchParams({ p: buildAgentSetupPrompt(context) }).toString().slice(2);
+        const encoded = encodeURIComponent(buildAgentSetupPrompt(context));
 
         // Act
         await fireEvent.click(screen.getByRole('button', { name: 'Set up with your agent' }));

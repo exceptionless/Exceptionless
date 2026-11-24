@@ -61,15 +61,16 @@ export function buildAgentSetupPrompt(context: PlatformSetupContext, platform?: 
     return `Fetch and follow the instructions at ${AGENT_SETUP_URL} to set up Exceptionless for me${app}. My API key is ${context.apiKey}.${server}`;
 }
 
-/** Opens the agent with the prompt filled in. */
+/** Opens the agent with the prompt filled in. Spaces are %20, which every reader of the query decodes; some leave `+` as is. */
 export function getAgentUrl(target: AgentTarget, prompt: string): string {
+    const text = encodeURIComponent(prompt);
     switch (target) {
         case 'chatgpt':
-            return `https://chatgpt.com/?${new URLSearchParams({ q: prompt })}`;
+            return `https://chatgpt.com/?q=${text}`;
         case 'claude':
-            return `https://claude.ai/new?${new URLSearchParams({ q: prompt })}`;
+            return `https://claude.ai/new?q=${text}`;
         case 'cursor':
-            return `https://cursor.com/link/prompt?${new URLSearchParams({ text: prompt })}`;
+            return `https://cursor.com/link/prompt?text=${text}`;
     }
 }
 

@@ -36,7 +36,7 @@ describe('agent setup', () => {
         const url = getAgentUrl(target, 'Set up Exceptionless & send "a test"');
 
         // Assert
-        expect(url).toBe(`${prefix}Set+up+Exceptionless+%26+send+%22a+test%22`);
+        expect(url).toBe(`${prefix}Set%20up%20Exceptionless%20%26%20send%20%22a%20test%22`);
     });
 
     it('covers every platform with a placeholder API key and the test error', () => {

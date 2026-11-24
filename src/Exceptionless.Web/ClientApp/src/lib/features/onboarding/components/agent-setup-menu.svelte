@@ -22,9 +22,12 @@
     let { context, platform }: Props = $props();
 
     const prompt = $derived(buildAgentSetupPrompt(context, platform));
-    const targets = $derived(AGENT_TARGETS.map((target) => ({
- ...target, url: getAgentUrl(target.id, prompt) 
-})));
+    const targets = $derived(
+        AGENT_TARGETS.map((target) => ({
+            ...target,
+            url: getAgentUrl(target.id, prompt)
+        }))
+    );
     const clipboard = new UseClipboard();
 
     async function copyPrompt(): Promise<void> {
