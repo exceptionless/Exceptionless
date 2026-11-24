@@ -910,7 +910,7 @@
   {
     "method": "POST",
     "route": "/api/v2/csp-reports",
-    "displayName": "HTTP: POST /api/v2/csp-reports => ReceiveAsync",
+    "displayName": "HTTP: POST /api/v2/csp-reports =\u003E ReceiveAsync",
     "tags": [],
     "allowAnonymous": true,
     "authorizationPolicies": [],

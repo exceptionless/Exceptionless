@@ -1,9 +1,8 @@
 using System.Text.Json;
-using Exceptionless.Models;
-using Exceptionless.Models.Data;
 using Foundatio.Caching;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.Net.Http.Headers;
+using ExceptionlessLogLevel = Exceptionless.Logging.LogLevel;
 
 namespace Exceptionless.Web.Api.Endpoints;
 
@@ -60,19 +59,15 @@ internal static class SpaCspReportEndpoint
             return TypedResults.NoContent();
         }
 
-        string title = $"Content Security Policy blocked {asset}";
         var client = request.HttpContext.RequestServices.GetService<ExceptionlessClient>();
         if (client is { Configuration.Enabled: true })
         {
             string userAgent = request.Headers.UserAgent.ToString();
-            client.CreateEvent()
+            client.CreateLog(nameof(SpaCspReportEndpoint), $"Content Security Policy blocked {asset}", ExceptionlessLogLevel.Warn)
                 // Keep the SDK from enriching this anonymous report with the ambient request or user.
                 .SetHttpContext(new DefaultHttpContext())
-                .SetType(Event.KnownTypes.Error)
-                .SetMessage(title)
-                .SetProperty(Event.KnownDataKeys.SimpleError, new SimpleError { Type = "ContentSecurityPolicyViolation", Message = title })
+                .SetProperty("Blocked Asset", asset)
                 .SetProperty("Browser User Agent", userAgent.Length > 256 ? userAgent[..256] : userAgent)
-                .SetManualStackingInfo(title, new Dictionary<string, string> { ["CSP SPA asset"] = asset })
                 .AddTags("csp")
                 .Submit();
         }
