@@ -4,16 +4,18 @@ Instructions for a coding agent adding Exceptionless error and event tracking to
 
 ## Before you start
 
-- Use the API key the user gave you in place of `YOUR_API_KEY`. If they didn't give one, ask for it. It's on the project's API Keys page in Exceptionless.
-- If the user gave you a server URL, they run their own Exceptionless server. Set the client's server URL to it (`c.ServerUrl` in .NET, `c.serverUrl` in JavaScript), and send REST API requests to it instead of `https://collector.exceptionless.io`. Otherwise keep the client's default server.
-- If the project already keeps settings like this in configuration or environment variables, put the API key there.
+- Replace `YOUR_API_KEY` with the API key the user gave you. If they didn't give one, ask for it. It's on the project's API Keys page in Exceptionless.
+- Replace `YOUR_SERVER_URL` with the server URL the user gave you. If they didn't give one, leave out the lines that set the server URL, and send REST API requests to `https://collector.exceptionless.io`.
+- The API key can only submit events, so it is fine in client code and committed config, like any client SDK key. If the project keeps settings in configuration or environment variables, put the key and server URL there.
 
 ## Steps
 
-1. Work out the app's language and framework, and find the matching section below. For a platform that isn't listed, use REST API (curl).
+1. Work out the app's language and framework, and find its section below. For anything else, see Other languages.
 2. Follow its steps, adapting file names and structure to this project.
-3. Run the app once so the test error "Hello from Exceptionless setup" is sent. Confirm it was accepted, then remove the test code.
-4. Tell the user what you changed. The test event appears in Exceptionless within a few seconds.
+3. Run the app so it sends the test error "Hello from Exceptionless setup". Clients send queued events within about 10 seconds, and on exit. Keep servers, workers, and browser pages running for about 15 seconds before you stop them.
+4. Check it worked with the section's "Check it worked" step. The API key can't read events back, so a 403 when you try is expected.
+5. Remove the test error and any logging you added to check it. Keep everything else.
+6. Tell the user what you changed, where the API key lives, and that the test error is waiting for them in Exceptionless.
 
 ## ASP.NET Core
 
@@ -29,7 +31,7 @@ dotnet add package Exceptionless.AspNetCore
 
 ### 2. Add Exceptionless to Program.cs
 
-Register the client and middleware in Program.cs. Settings in appsettings.json under "Exceptionless" work too.
+Register the client and middleware in Program.cs.
 
 ```csharp
 using Exceptionless;
@@ -37,6 +39,7 @@ using Exceptionless;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddExceptionless(c => {
     c.ApiKey = "YOUR_API_KEY";
+    c.ServerUrl = "YOUR_SERVER_URL";
 });
 builder.Services.AddProblemDetails();
 
@@ -53,6 +56,19 @@ Add this after app.UseExceptionless(), run your app once, then remove it.
 new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
 ```
 
+### Optional: Keep settings in configuration
+
+To keep settings out of code, put them in appsettings.json (or Exceptionless__ApiKey environment variables) and call builder.AddExceptionless() with no arguments.
+
+```json
+{
+  "Exceptionless": {
+    "ApiKey": "YOUR_API_KEY",
+    "ServerUrl": "YOUR_SERVER_URL"
+  }
+}
+```
+
 ### Optional: Send your logs
 
 Send warnings and errors from ILogger too. You can tune log levels per source later from project settings.
@@ -64,6 +80,10 @@ dotnet add package Exceptionless.Extensions.Logging
 ```csharp
 builder.Logging.AddExceptionless();
 ```
+
+### Check it worked
+
+Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration (or ExceptionlessClient.Default.Configuration.UseFileLogger(...) before Startup), then check exceptionless.log. "Sent 1 events" means the server accepted it.
 
 ## Console app (.NET)
 
@@ -79,11 +99,12 @@ dotnet add package Exceptionless
 
 ### 2. Start Exceptionless and send a test error
 
-Start the client when your app starts. The second line sends a test error so you can see it arrive.
+Start the client when your app starts. The Submit() line sends a test error so you can see it arrive; remove only that line afterwards.
 
 ```csharp
 using Exceptionless;
 
+ExceptionlessClient.Default.Configuration.ServerUrl = "YOUR_SERVER_URL";
 ExceptionlessClient.Default.Startup("YOUR_API_KEY");
 
 new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
@@ -91,6 +112,10 @@ new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
 // Console apps exit quickly, so send anything queued before exiting.
 await ExceptionlessClient.Default.ProcessQueueAsync();
 ```
+
+### Check it worked
+
+Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration (or ExceptionlessClient.Default.Configuration.UseFileLogger(...) before Startup), then check exceptionless.log. "Sent 1 events" means the server accepted it.
 
 ## Worker Service (.NET)
 
@@ -114,6 +139,7 @@ using Exceptionless;
 var builder = Host.CreateApplicationBuilder(args);
 builder.AddExceptionless(c => {
     c.ApiKey = "YOUR_API_KEY";
+    c.ServerUrl = "YOUR_SERVER_URL";
 });
 builder.Services.AddHostedService<Worker>();
 
@@ -130,6 +156,19 @@ host.Services.GetRequiredService<ExceptionlessClient>()
     .SubmitException(new Exception("Hello from Exceptionless setup"));
 ```
 
+### Optional: Keep settings in configuration
+
+To keep settings out of code, put them in appsettings.json (or Exceptionless__ApiKey environment variables) and call builder.AddExceptionless() with no arguments.
+
+```json
+{
+  "Exceptionless": {
+    "ApiKey": "YOUR_API_KEY",
+    "ServerUrl": "YOUR_SERVER_URL"
+  }
+}
+```
+
 ### Optional: Send your logs
 
 Send warnings and errors from ILogger too.
@@ -141,6 +180,10 @@ dotnet add package Exceptionless.Extensions.Logging
 ```csharp
 builder.Logging.AddExceptionless();
 ```
+
+### Check it worked
+
+Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration (or ExceptionlessClient.Default.Configuration.UseFileLogger(...) before Startup), then check exceptionless.log. "Sent 1 events" means the server accepted it.
 
 ## Browser JavaScript
 
@@ -163,6 +206,7 @@ import { Exceptionless } from "@exceptionless/browser";
 
 Exceptionless.startup((c) => {
   c.apiKey = "YOUR_API_KEY";
+  c.serverUrl = "YOUR_SERVER_URL";
 });
 ```
 
@@ -173,6 +217,10 @@ Run this once after startup, for example from your browser console or a button.
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
 ```
+
+### Check it worked
+
+Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console. "Sent 1 events" means the server accepted it.
 
 ## Node.js
 
@@ -188,13 +236,14 @@ npm install @exceptionless/node
 
 ### 2. Start Exceptionless
 
-Run this once when your process starts, before the rest of your code.
+Run this once when your process starts, before the rest of your code. Unsent events wait in a .exceptionless folder; add it to .gitignore.
 
 ```javascript
 import { Exceptionless } from "@exceptionless/node";
 
 Exceptionless.startup((c) => {
   c.apiKey = "YOUR_API_KEY";
+  c.serverUrl = "YOUR_SERVER_URL";
 });
 ```
 
@@ -205,6 +254,21 @@ Run this once after startup. Queued events are sent before the process exits.
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
 ```
+
+### Optional: Report Express route errors
+
+Express catches route errors itself, so report them from an error handler added after your routes.
+
+```javascript
+app.use((error, req, res, next) => {
+  Exceptionless.submitException(error);
+  next(error);
+});
+```
+
+### Check it worked
+
+Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console. "Sent 1 events" means the server accepted it.
 
 ## React
 
@@ -224,12 +288,14 @@ Start the client in your entry file and wrap your app in the error boundary to c
 
 ```javascript
 import { Exceptionless, ExceptionlessErrorBoundary } from "@exceptionless/react";
+import { createRoot } from "react-dom/client";
 
 Exceptionless.startup((c) => {
   c.apiKey = "YOUR_API_KEY";
+  c.serverUrl = "YOUR_SERVER_URL";
 });
 
-root.render(
+createRoot(document.getElementById("root")).render(
   <ExceptionlessErrorBoundary fallback={<p>Something went wrong.</p>}>
     <App />
   </ExceptionlessErrorBoundary>
@@ -243,6 +309,10 @@ Run this once after startup, for example from a button click.
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
 ```
+
+### Check it worked
+
+Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console. "Sent 1 events" means the server accepted it.
 
 ## Vue
 
@@ -267,6 +337,7 @@ import App from "./App.vue";
 
 Exceptionless.startup((c) => {
   c.apiKey = "YOUR_API_KEY";
+  c.serverUrl = "YOUR_SERVER_URL";
 });
 
 const app = createApp(App);
@@ -281,6 +352,10 @@ Run this once after startup, for example from a button click.
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
 ```
+
+### Check it worked
+
+Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console. "Sent 1 events" means the server accepted it.
 
 ## Angular
 
@@ -306,6 +381,7 @@ import { AppComponent } from "./app/app.component";
 
 Exceptionless.startup((c) => {
   c.apiKey = "YOUR_API_KEY";
+  c.serverUrl = "YOUR_SERVER_URL";
 });
 
 @Injectable()
@@ -328,6 +404,10 @@ Run this once after startup, for example from a button click.
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
 ```
+
+### Check it worked
+
+Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console. "Sent 1 events" means the server accepted it.
 
 ## React Native
 
@@ -354,6 +434,7 @@ export default function App() {
   useEffect(() => {
     Exceptionless.startup((c) => {
       c.apiKey = "YOUR_API_KEY";
+      c.serverUrl = "YOUR_SERVER_URL";
     });
   }, []);
 
@@ -372,6 +453,10 @@ Run this once after startup, for example from a button press.
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
 ```
+
+### Check it worked
+
+Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console. "Sent 1 events" means the server accepted it.
 
 ## Expo
 
@@ -409,6 +494,7 @@ export default function App() {
   useEffect(() => {
     Exceptionless.startup((c) => {
       c.apiKey = "YOUR_API_KEY";
+      c.serverUrl = "YOUR_SERVER_URL";
     });
   }, []);
 
@@ -427,6 +513,10 @@ Run this once after startup, for example from a button press.
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
 ```
+
+### Check it worked
+
+Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console. "Sent 1 events" means the server accepted it.
 
 ## WPF (.NET)
 
@@ -450,6 +540,7 @@ using Exceptionless;
 public partial class App : Application {
     private void Application_Startup(object sender, StartupEventArgs e) {
         ExceptionlessClient.Default.Configuration.ApiKey = "YOUR_API_KEY";
+        ExceptionlessClient.Default.Configuration.ServerUrl = "YOUR_SERVER_URL";
         ExceptionlessClient.Default.Register();
     }
 }
@@ -462,6 +553,10 @@ Add this after Register() and run your app once.
 ```csharp
 new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
 ```
+
+### Check it worked
+
+Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration (or ExceptionlessClient.Default.Configuration.UseFileLogger(...) before Startup), then check exceptionless.log. "Sent 1 events" means the server accepted it.
 
 ## Windows Forms (.NET)
 
@@ -486,6 +581,7 @@ internal static class Program {
     [STAThread]
     private static void Main() {
         ExceptionlessClient.Default.Configuration.ApiKey = "YOUR_API_KEY";
+        ExceptionlessClient.Default.Configuration.ServerUrl = "YOUR_SERVER_URL";
         ExceptionlessClient.Default.Register();
 
         ApplicationConfiguration.Initialize();
@@ -502,6 +598,10 @@ Add this after Register() and run your app once.
 new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
 ```
 
+### Check it worked
+
+Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration (or ExceptionlessClient.Default.Configuration.UseFileLogger(...) before Startup), then check exceptionless.log. "Sent 1 events" means the server accepted it.
+
 ## REST API (curl)
 
 Command line. Docs: https://exceptionless.com/docs/api/
@@ -511,12 +611,16 @@ Command line. Docs: https://exceptionless.com/docs/api/
 Run this in your terminal. Any language that can make an HTTP request can send events the same way.
 
 ```bash
-curl "https://collector.exceptionless.io/api/v2/events" \
+curl "YOUR_SERVER_URL/api/v2/events" \
   --request POST \
   --header "Authorization: Bearer YOUR_API_KEY" \
   --header "Content-Type: application/json" \
   --data-binary '{"type":"error","environment":"production","@simple_error":{"message":"Hello from Exceptionless setup","type":"System.Exception","stack_trace":"   at Setup.SendTestError()"}}'
 ```
+
+### Check it worked
+
+A 202 Accepted response means the event was queued. A 401 means the API key is wrong or disabled.
 
 ## PowerShell
 
@@ -537,10 +641,14 @@ $body = @{
   }
 } | ConvertTo-Json -Depth 5
 
-Invoke-RestMethod -Method Post -Uri "https://collector.exceptionless.io/api/v2/events" `
+Invoke-RestMethod -Method Post -Uri "YOUR_SERVER_URL/api/v2/events" `
   -Headers @{ Authorization = "Bearer YOUR_API_KEY" } `
   -ContentType "application/json" -Body $body
 ```
+
+### Check it worked
+
+A 202 Accepted response means the event was queued. A 401 means the API key is wrong or disabled.
 
 ## Console app (.NET Framework)
 
@@ -556,11 +664,12 @@ Install-Package Exceptionless
 
 ### 2. Start Exceptionless and send a test error
 
-Start the client in Main. The middle line sends a test error so you can see it arrive.
+Start the client in Main. The Submit() line sends a test error so you can see it arrive; remove only that line afterwards.
 
 ```csharp
 using Exceptionless;
 
+ExceptionlessClient.Default.Configuration.ServerUrl = "YOUR_SERVER_URL";
 ExceptionlessClient.Default.Startup("YOUR_API_KEY");
 
 new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
@@ -568,6 +677,10 @@ new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
 // Send anything queued before the app exits.
 ExceptionlessClient.Default.ProcessQueueAsync().GetAwaiter().GetResult();
 ```
+
+### Check it worked
+
+Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.
 
 ## ASP.NET MVC
 
@@ -590,7 +703,7 @@ NuGet adds this to web.config for packages.config projects. Check it is there wi
   <section name="exceptionless" type="Exceptionless.ExceptionlessSection, Exceptionless" />
 </configSections>
 
-<exceptionless apiKey="YOUR_API_KEY" />
+<exceptionless apiKey="YOUR_API_KEY" serverUrl="YOUR_SERVER_URL" />
 ```
 
 ### 3. Check the Exceptionless module
@@ -614,6 +727,10 @@ Run this once from a controller action, for example a temporary test endpoint.
 new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
 ```
 
+### Check it worked
+
+Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.
+
 ## ASP.NET Web API
 
 .NET Framework. Docs: https://exceptionless.com/docs/clients/dotnet/
@@ -635,7 +752,7 @@ NuGet adds this to web.config for packages.config projects. Check it is there wi
   <section name="exceptionless" type="Exceptionless.ExceptionlessSection, Exceptionless" />
 </configSections>
 
-<exceptionless apiKey="YOUR_API_KEY" />
+<exceptionless apiKey="YOUR_API_KEY" serverUrl="YOUR_SERVER_URL" />
 ```
 
 ### 3. Register Exceptionless with Web API
@@ -661,6 +778,10 @@ Run this once from a controller action, for example a temporary test endpoint.
 new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
 ```
 
+### Check it worked
+
+Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.
+
 ## ASP.NET Web Forms
 
 .NET Framework. Docs: https://exceptionless.com/docs/clients/dotnet/
@@ -682,7 +803,7 @@ NuGet adds this to web.config for packages.config projects. Check it is there wi
   <section name="exceptionless" type="Exceptionless.ExceptionlessSection, Exceptionless" />
 </configSections>
 
-<exceptionless apiKey="YOUR_API_KEY" />
+<exceptionless apiKey="YOUR_API_KEY" serverUrl="YOUR_SERVER_URL" />
 ```
 
 ### 3. Check the Exceptionless module
@@ -706,6 +827,10 @@ Run this once from a page, for example a temporary test button.
 new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
 ```
 
+### Check it worked
+
+Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.
+
 ## Windows Forms (.NET Framework)
 
 .NET Framework. Docs: https://exceptionless.com/docs/clients/dotnet/
@@ -727,7 +852,7 @@ NuGet adds this to app.config for packages.config projects. Check it is there wi
   <section name="exceptionless" type="Exceptionless.ExceptionlessSection, Exceptionless" />
 </configSections>
 
-<exceptionless apiKey="YOUR_API_KEY" />
+<exceptionless apiKey="YOUR_API_KEY" serverUrl="YOUR_SERVER_URL" />
 ```
 
 ### 3. Register Exceptionless in Program.cs
@@ -755,6 +880,10 @@ Add this after Register() and run your app once.
 new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
 ```
 
+### Check it worked
+
+Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.
+
 ## WPF (.NET Framework)
 
 .NET Framework. Docs: https://exceptionless.com/docs/clients/dotnet/
@@ -776,7 +905,7 @@ NuGet adds this to app.config for packages.config projects. Check it is there wi
   <section name="exceptionless" type="Exceptionless.ExceptionlessSection, Exceptionless" />
 </configSections>
 
-<exceptionless apiKey="YOUR_API_KEY" />
+<exceptionless apiKey="YOUR_API_KEY" serverUrl="YOUR_SERVER_URL" />
 ```
 
 ### 3. Register Exceptionless in App.xaml.cs
@@ -800,3 +929,16 @@ Add this after Register() and run your app once.
 ```csharp
 new Exception("Hello from Exceptionless setup").ToExceptionless().Submit();
 ```
+
+### Check it worked
+
+Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.
+
+## Other languages
+
+There are official clients only for .NET and JavaScript. Packages named "exceptionless" in other registries are not ours, so don't install them. Report errors through the REST API instead:
+
+1. In the app's global error handler, POST each unhandled error to `YOUR_SERVER_URL/api/v2/events` with the headers `Authorization: Bearer YOUR_API_KEY` and `Content-Type: application/json`.
+2. Send a body like the REST API example, filling `@simple_error` with the error's message, its full type name, and its formatted stack trace.
+3. Send in the background with a short timeout, and never let a failed send break the app.
+4. A 202 response means the event was accepted. Use the same request to send the test error.

@@ -77,10 +77,11 @@ const REACT_NATIVE_DOCS_URL = 'https://github.com/exceptionless/Exceptionless.Ja
 const API_DOCS_URL = 'https://exceptionless.com/docs/api/';
 
 const DOTNET_DEBUG_LOGGING =
-    'Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration, then check exceptionless.log for submission errors.';
+    'Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration (or ExceptionlessClient.Default.Configuration.UseFileLogger(...) before Startup), then check exceptionless.log. "Sent 1 events" means the server accepted it.';
 const DOTNET_FRAMEWORK_DEBUG_LOGGING =
     'Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.';
-const JAVASCRIPT_DEBUG_LOGGING = 'Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console.';
+const JAVASCRIPT_DEBUG_LOGGING =
+    'Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console. "Sent 1 events" means the server accepted it.';
 const RAW_HTTP_DEBUG_LOGGING = 'A 202 Accepted response means the event was queued. A 401 means the API key is wrong or disabled.';
 
 const DOTNET_TEST_ERROR = `new Exception("${TEST_ERROR_MESSAGE}").ToExceptionless().Submit();`;
@@ -122,6 +123,18 @@ ${dotnetDefaultClientConfiguration(context, '        ')}
         },
         dotnetTestError('Add this after Register() and run your app once.')
     ];
+}
+
+/** The hosting packages read an "Exceptionless" configuration section when AddExceptionless() has no arguments. */
+function dotnetAppSettingsStep({ apiKey, sdkServerUrl }: PlatformSetupContext): PlatformStep {
+    const settings = sdkServerUrl ? `"ApiKey": "${apiKey}",\n    "ServerUrl": "${sdkServerUrl}"` : `"ApiKey": "${apiKey}"`;
+    return {
+        blocks: [{ code: `{\n  "Exceptionless": {\n    ${settings}\n  }\n}`, language: 'json' }],
+        description:
+            'To keep settings out of code, put them in appsettings.json (or Exceptionless__ApiKey environment variables) and call builder.AddExceptionless() with no arguments.',
+        optional: true,
+        title: 'Keep settings in configuration'
+    };
 }
 
 /** `c => { ... }` configuration lambda shared by the .NET hosting integrations. */
@@ -246,10 +259,11 @@ app.UseExceptionless();`,
                         language: 'csharp'
                     }
                 ],
-                description: 'Register the client and middleware in Program.cs. Settings in appsettings.json under "Exceptionless" work too.',
+                description: 'Register the client and middleware in Program.cs.',
                 title: 'Add Exceptionless to Program.cs'
             },
             dotnetTestError('Add this after app.UseExceptionless(), run your app once, then remove it.'),
+            dotnetAppSettingsStep(context),
             {
                 blocks: [
                     { code: 'dotnet add package Exceptionless.Extensions.Logging', language: 'shellscript' },
@@ -287,7 +301,8 @@ await ExceptionlessClient.Default.ProcessQueueAsync();`,
                         language: 'csharp'
                     }
                 ],
-                description: 'Start the client when your app starts. The second line sends a test error so you can see it arrive.',
+                description:
+                    'Start the client when your app starts. The Submit() line sends a test error so you can see it arrive; remove only that line afterwards.',
                 title: 'Start Exceptionless and send a test error'
             }
         ],
@@ -332,6 +347,7 @@ host.Run();`,
                 description: 'Add this just before host.Run(), run your worker once, then remove it.',
                 title: 'Send a test error'
             },
+            dotnetAppSettingsStep(context),
             {
                 blocks: [
                     { code: 'dotnet add package Exceptionless.Extensions.Logging', language: 'shellscript' },
@@ -396,13 +412,28 @@ ${javascriptStartup(context)}`,
                         language: 'javascript'
                     }
                 ],
-                description: 'Run this once when your process starts, before the rest of your code.',
+                description:
+                    'Run this once when your process starts, before the rest of your code. Unsent events wait in a .exceptionless folder; add it to .gitignore.',
                 title: 'Start Exceptionless'
             },
             {
                 blocks: [{ code: JAVASCRIPT_TEST_ERROR, language: 'javascript' }],
                 description: 'Run this once after startup. Queued events are sent before the process exits.',
                 title: 'Send a test error'
+            },
+            {
+                blocks: [
+                    {
+                        code: `app.use((error, req, res, next) => {
+  Exceptionless.submitException(error);
+  next(error);
+});`,
+                        language: 'javascript'
+                    }
+                ],
+                description: 'Express catches route errors itself, so report them from an error handler added after your routes.',
+                optional: true,
+                title: 'Report Express route errors'
             }
         ],
         tip: 'Uncaught exceptions and unhandled rejections are captured, and the queue flushes before exit.'
@@ -423,10 +454,11 @@ ${javascriptStartup(context)}`,
                 blocks: [
                     {
                         code: `import { Exceptionless, ExceptionlessErrorBoundary } from "@exceptionless/react";
+import { createRoot } from "react-dom/client";
 
 ${javascriptStartup(context)}
 
-root.render(
+createRoot(document.getElementById("root")).render(
   <ExceptionlessErrorBoundary fallback={<p>Something went wrong.</p>}>
     <App />
   </ExceptionlessErrorBoundary>
@@ -711,7 +743,7 @@ ExceptionlessClient.Default.ProcessQueueAsync().GetAwaiter().GetResult();`,
                         language: 'csharp'
                     }
                 ],
-                description: 'Start the client in Main. The middle line sends a test error so you can see it arrive.',
+                description: 'Start the client in Main. The Submit() line sends a test error so you can see it arrive; remove only that line afterwards.',
                 title: 'Start Exceptionless and send a test error'
             }
         ],

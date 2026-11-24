@@ -31,26 +31,36 @@ const FENCE_LANGUAGES: Record<CodeLanguage, string> = {
 
 /** The instructions published at {@link AGENT_SETUP_URL}, built from the same steps the setup page shows. */
 export function buildAgentSetupMarkdown(): string {
-    const context: PlatformSetupContext = { apiKey: 'YOUR_API_KEY', submissionServerUrl: DEFAULT_SUBMISSION_URL };
+    const context: PlatformSetupContext = { apiKey: 'YOUR_API_KEY', sdkServerUrl: 'YOUR_SERVER_URL', submissionServerUrl: 'YOUR_SERVER_URL' };
 
     return [
         '# Set up Exceptionless',
         'Instructions for a coding agent adding Exceptionless error and event tracking to an app.',
         '## Before you start',
         [
-            "- Use the API key the user gave you in place of `YOUR_API_KEY`. If they didn't give one, ask for it. It's on the project's API Keys page in Exceptionless.",
-            "- If the user gave you a server URL, they run their own Exceptionless server. Set the client's server URL to it (`c.ServerUrl` in .NET, `c.serverUrl` in JavaScript), and send REST API requests to it instead of " +
-                `\`${DEFAULT_SUBMISSION_URL}\`. Otherwise keep the client's default server.`,
-            '- If the project already keeps settings like this in configuration or environment variables, put the API key there.'
+            "- Replace `YOUR_API_KEY` with the API key the user gave you. If they didn't give one, ask for it. It's on the project's API Keys page in Exceptionless.",
+            `- Replace \`YOUR_SERVER_URL\` with the server URL the user gave you. If they didn't give one, leave out the lines that set the server URL, and send REST API requests to \`${DEFAULT_SUBMISSION_URL}\`.`,
+            '- The API key can only submit events, so it is fine in client code and committed config, like any client SDK key. If the project keeps settings in configuration or environment variables, put the key and server URL there.'
         ].join('\n'),
         '## Steps',
         [
-            "1. Work out the app's language and framework, and find the matching section below. For a platform that isn't listed, use REST API (curl).",
+            "1. Work out the app's language and framework, and find its section below. For anything else, see Other languages.",
             '2. Follow its steps, adapting file names and structure to this project.',
-            `3. Run the app once so the test error "${TEST_ERROR_MESSAGE}" is sent. Confirm it was accepted, then remove the test code.`,
-            '4. Tell the user what you changed. The test event appears in Exceptionless within a few seconds.'
+            `3. Run the app so it sends the test error "${TEST_ERROR_MESSAGE}". Clients send queued events within about 10 seconds, and on exit. Keep servers, workers, and browser pages running for about 15 seconds before you stop them.`,
+            '4. Check it worked with the section\'s "Check it worked" step. The API key can\'t read events back, so a 403 when you try is expected.',
+            '5. Remove the test error and any logging you added to check it. Keep everything else.',
+            '6. Tell the user what you changed, where the API key lives, and that the test error is waiting for them in Exceptionless.'
         ].join('\n'),
-        ...PLATFORMS.map((platform) => formatPlatform(platform, context))
+        ...PLATFORMS.map((platform) => formatPlatform(platform, context)),
+        '## Other languages',
+        [
+            'There are official clients only for .NET and JavaScript. Packages named "exceptionless" in other registries are not ours, so don\'t install them. Report errors through the REST API instead:',
+            '',
+            "1. In the app's global error handler, POST each unhandled error to `YOUR_SERVER_URL/api/v2/events` with the headers `Authorization: Bearer YOUR_API_KEY` and `Content-Type: application/json`.",
+            "2. Send a body like the REST API example, filling `@simple_error` with the error's message, its full type name, and its formatted stack trace.",
+            '3. Send in the background with a short timeout, and never let a failed send break the app.',
+            '4. A 202 response means the event was accepted. Use the same request to send the test error.'
+        ].join('\n')
     ].join('\n\n');
 }
 
@@ -80,7 +90,8 @@ function formatPlatform(platform: Platform, context: PlatformSetupContext): stri
         `## ${platform.label}`,
         `${platform.category}. Docs: ${platform.docsUrl}`,
         ...steps.filter((step) => !step.optional).map((step, index) => formatStep(`${index + 1}. ${step.title}`, step)),
-        ...steps.filter((step) => step.optional).map((step) => formatStep(`Optional: ${step.title}`, step))
+        ...steps.filter((step) => step.optional).map((step) => formatStep(`Optional: ${step.title}`, step)),
+        `### Check it worked\n\n${platform.debugLogging}`
     ].join('\n\n');
 }
 
