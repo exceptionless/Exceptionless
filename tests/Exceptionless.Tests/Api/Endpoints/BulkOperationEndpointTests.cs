@@ -1,3 +1,4 @@
+using Exceptionless.Core.Configuration;
 using System.Net;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;

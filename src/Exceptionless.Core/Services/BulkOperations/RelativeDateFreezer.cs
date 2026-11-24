@@ -135,7 +135,7 @@ public static class RelativeDateFreezer
 
         private static bool IsRelative(string? value)
         {
-            return value is not null && value.StartsWith("now", StringComparison.Ordinal) && (value.Length == 3 || value[3] is '+' or '-' or '/');
+            return value is not null && value.StartsWith("now", StringComparison.Ordinal) && (value.Length is 3 || value[3] is '+' or '-' or '/');
         }
     }
 }

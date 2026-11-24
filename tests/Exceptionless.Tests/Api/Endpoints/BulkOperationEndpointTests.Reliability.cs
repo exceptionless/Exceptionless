@@ -1,3 +1,4 @@
+using Exceptionless.Core.Configuration;
 using System.Collections.Concurrent;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;

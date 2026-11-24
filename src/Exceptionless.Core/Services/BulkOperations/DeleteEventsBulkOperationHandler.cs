@@ -11,8 +11,6 @@ namespace Exceptionless.Core.Services.BulkOperations;
 /// </summary>
 public class DeleteEventsBulkOperationHandler : IBulkOperationHandler
 {
-    public const string OperationType = "events.delete";
-
     private readonly IEventRepository _eventRepository;
     private readonly EventDeletionService _eventDeletionService;
 
@@ -22,7 +20,7 @@ public class DeleteEventsBulkOperationHandler : IBulkOperationHandler
         _eventDeletionService = eventDeletionService;
     }
 
-    public string Type => OperationType;
+    public string Type => "events.delete";
     public BulkOperationEntity Entity => BulkOperationEntity.Events;
     public bool IsDestructive => true;
 
