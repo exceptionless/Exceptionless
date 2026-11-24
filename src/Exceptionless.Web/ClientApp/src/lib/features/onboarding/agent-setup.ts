@@ -44,11 +44,11 @@ export function buildAgentSetupMarkdown(): string {
         ].join('\n'),
         '## Steps',
         [
-            "1. Work out the app's language and framework, and find its section below. For anything else, see Other languages.",
-            '2. Follow its steps, adapting file names and structure to this project.',
-            `3. Run the app so it sends the test error "${TEST_ERROR_MESSAGE}". Clients send queued events within about 10 seconds, and on exit. Keep servers, workers, and browser pages running for about 15 seconds before you stop them.`,
-            '4. Check it worked with the section\'s "Check it worked" step. The API key can\'t read events back, so a 403 when you try is expected.',
-            '5. Remove the test error and any logging you added to check it. Keep everything else.',
+            `1. Work out the app's language and framework, and find its section below: ${PLATFORMS.map((platform) => platform.label).join(', ')}, or Other languages.`,
+            '2. Follow its required steps, adapting file names and structure to this project. Do an Optional step when it fits the app, and mention the others to the user.',
+            `3. Run the app so it sends the test error "${TEST_ERROR_MESSAGE}". In browser and mobile apps, put the test error in the entry file right after startup, not in a component. Clients send queued events within about 10 seconds, and on a graceful exit.`,
+            "4. Check it worked with the section's \"Check it worked\" step, and wait for that before stopping servers, workers, and browser pages (stop them with Ctrl+C or SIGINT). The API key can't read events back, so a 403 when you try is expected. If you can't run the app or a browser, check the key and server with the REST API example and ask the user to run the app.",
+            '5. Remove the test error, the logging you added to check it, and any log file it wrote. Keep everything else.',
             '6. Tell the user what you changed, where the API key lives, and that the test error is waiting for them in Exceptionless.'
         ].join('\n'),
         ...PLATFORMS.map((platform) => formatPlatform(platform, context)),
@@ -56,10 +56,10 @@ export function buildAgentSetupMarkdown(): string {
         [
             'There are official clients only for .NET and JavaScript. Packages named "exceptionless" in other registries are not ours, so don\'t install them. Report errors through the REST API instead:',
             '',
-            "1. In the app's global error handler, POST each unhandled error to `YOUR_SERVER_URL/api/v2/events` with the headers `Authorization: Bearer YOUR_API_KEY` and `Content-Type: application/json`.",
-            "2. Send a body like the REST API example, filling `@simple_error` with the error's message, its full type name, and its formatted stack trace.",
+            "1. Hook the framework's error handler (for example Flask or Django `got_request_exception`, FastAPI `add_exception_handler`, Go `recover` middleware, Rails `rescue_from`). POST each unhandled error to `YOUR_SERVER_URL/api/v2/events` with the headers `Authorization: Bearer YOUR_API_KEY` and `Content-Type: application/json`.",
+            "2. Send a body like the REST API example. In `@simple_error`, use the error's message, its class name as the type (for example `ValueError`), and the language's formatted stack trace. Set `environment` from the app's own environment name.",
             '3. Send in the background with a short timeout, and never let a failed send break the app.',
-            '4. A 202 response means the event was accepted. Use the same request to send the test error.'
+            '4. A 202 response means the event was accepted. Send the test error the same way from a temporary script or route, wait for the response, and log its status while you check.'
         ].join('\n')
     ].join('\n\n');
 }

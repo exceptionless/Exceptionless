@@ -77,14 +77,15 @@ const REACT_NATIVE_DOCS_URL = 'https://github.com/exceptionless/Exceptionless.Ja
 const API_DOCS_URL = 'https://exceptionless.com/docs/api/';
 
 const DOTNET_DEBUG_LOGGING =
-    'Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration (or ExceptionlessClient.Default.Configuration.UseFileLogger(...) before Startup), then check exceptionless.log. "Sent 1 events" means the server accepted it.';
+    'Add c.UseFileLogger("exceptionless.log", Exceptionless.Logging.LogLevel.Debug) to your Exceptionless configuration, then check exceptionless.log. "Sent 1 events" means the server accepted it. builder.AddExceptionless(c => c.UseFileLogger(...)) still reads appsettings.json; for Startup(), call ExceptionlessClient.Default.Configuration.UseFileLogger(...) first.';
 const DOTNET_FRAMEWORK_DEBUG_LOGGING =
     'Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.';
 const JAVASCRIPT_DEBUG_LOGGING =
     'Call c.useDebugLogger() inside Exceptionless.startup to log what the client is doing to the console. "Sent 1 events" means the server accepted it.';
 const RAW_HTTP_DEBUG_LOGGING = 'A 202 Accepted response means the event was queued. A 401 means the API key is wrong or disabled.';
 
-const DOTNET_TEST_ERROR = `new Exception("${TEST_ERROR_MESSAGE}").ToExceptionless().Submit();`;
+// Thrown so the event has a stack trace.
+const DOTNET_TEST_ERROR = `try { throw new Exception("${TEST_ERROR_MESSAGE}"); } catch (Exception ex) { ex.ToExceptionless().Submit(); }`;
 const JAVASCRIPT_TEST_ERROR = `Exceptionless.submitException(new Error("${TEST_ERROR_MESSAGE}"));`;
 
 function desktopDotnetSteps(packageName: string, entryPoint: 'App.xaml.cs' | 'Program.cs', context: PlatformSetupContext): PlatformStep[] {
@@ -339,8 +340,8 @@ host.Run();`,
             {
                 blocks: [
                     {
-                        code: `host.Services.GetRequiredService<ExceptionlessClient>()
-    .SubmitException(new Exception("${TEST_ERROR_MESSAGE}"));`,
+                        code: `try { throw new Exception("${TEST_ERROR_MESSAGE}"); }
+catch (Exception ex) { host.Services.GetRequiredService<ExceptionlessClient>().SubmitException(ex); }`,
                         language: 'csharp'
                     }
                 ],
@@ -353,8 +354,7 @@ host.Run();`,
                     { code: 'dotnet add package Exceptionless.Extensions.Logging', language: 'shellscript' },
                     { code: 'builder.Logging.AddExceptionless();', language: 'csharp' }
                 ],
-                description: 'Send warnings and errors from ILogger too.',
-                optional: true,
+                description: "The host logs a worker's exceptions instead of crashing, so send ILogger warnings and errors to Exceptionless too.",
                 title: 'Send your logs'
             }
         ],
@@ -454,14 +454,18 @@ ${javascriptStartup(context)}`,
                 blocks: [
                     {
                         code: `import { Exceptionless, ExceptionlessErrorBoundary } from "@exceptionless/react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import App from "./App";
 
 ${javascriptStartup(context)}
 
 createRoot(document.getElementById("root")).render(
-  <ExceptionlessErrorBoundary fallback={<p>Something went wrong.</p>}>
-    <App />
-  </ExceptionlessErrorBoundary>
+  <StrictMode>
+    <ExceptionlessErrorBoundary fallback={<p>Something went wrong.</p>}>
+      <App />
+    </ExceptionlessErrorBoundary>
+  </StrictMode>
 );`,
                         language: 'javascript'
                     }
