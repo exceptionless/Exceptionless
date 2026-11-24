@@ -1,11 +1,14 @@
 using System.Text.Json;
 using Exceptionless.Web.Api.Endpoints;
+using Foundatio.Xunit;
 using Xunit;
 
 namespace Exceptionless.Tests.Api;
 
-public sealed class CspReportEndpointsTests
+public sealed class CspReportEndpointsTests : TestWithLoggingBase
 {
+    public CspReportEndpointsTests(ITestOutputHelper output) : base(output) { }
+
     [Fact]
     public void Parse_VersionedScript_StacksWithoutQueryAndKeepsDetails()
     {
