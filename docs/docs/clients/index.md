@@ -1,12 +1,18 @@
 ---
 title: "Choose a client"
 description: "Choose an Exceptionless client for your language, see each client's install command and setup, or send events from any language over HTTP."
+sources:
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/configure/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/agent-setup-menu.svelte
 ---
 
 # Choose a client
 
 A client library captures errors and other events in your app and sends them to Exceptionless. Pick your language below
 to see the package to install and the setup code, then follow the link to its full guide.
+
+In the app, a project's **Client Setup** page shows the same steps with your API key filled in, and **Set up with your
+agent** gives a coding agent a prompt to do the setup for you. See [Quickstart](/docs/getting-started/).
 
 ```clients
 ```

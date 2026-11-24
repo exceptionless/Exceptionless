@@ -51,9 +51,9 @@ The `POST` body can also be an array of events, each with its own environment. S
 [Posting events](/docs/api/posting-events/) and the [event format](/docs/reference/event-format/).
 
 > [!IMPORTANT]
-> The current .NET (6.2.0) and JavaScript (3.2.1) clients don't set an environment yet, so their events show as
-> **Unspecified**. Setting a custom data property named `environment`, for example with `SetProperty` or `setProperty`,
-> adds custom data and doesn't set the event's environment.
+> The .NET 6.2.0 and JavaScript 3.2.1 clients don't set an environment, so their events show as **Unspecified**. Setting
+> a custom data property named `environment`, for example with `SetProperty` or `setProperty`, adds custom data and
+> doesn't set the event's environment.
 
 > [!NOTE]
 > On a self-hosted instance, use your own API URL instead of `https://api.exceptionless.io`.
@@ -124,10 +124,10 @@ don't carry an environment, so a heartbeat keeps the user's open sessions active
 
 ## Self-hosting
 
-The 9.0 upgrade adds the environment field to existing event indexes without reindexing. Let the migration job finish
-before the new API and job instances process events. Events stored in an existing index before the migration ran keep
-their environment, but you can't filter or count them by it. See
-[Upgrading](/docs/self-hosting/upgrading-self-hosted-instance/).
+The 9.0 upgrade adds the environment field to existing event indexes without reindexing. Before you accept or process
+events with the upgraded deployment, let that migration finish, using the
+[ordered upgrade procedure](/docs/self-hosting/upgrading-self-hosted-instance/#upgrade). Events stored in an existing
+index before the migration ran keep their environment, but you can't filter or count them by it.
 
 ## Ask Exie
 

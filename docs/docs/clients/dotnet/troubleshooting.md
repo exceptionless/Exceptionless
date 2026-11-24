@@ -24,8 +24,9 @@ key, a process that exits before its queue is sent, or an event the client drops
 
 ## Update the client
 
-Make sure every Exceptionless package in your app is on the same, latest version (6.2.0 at the time of writing). See
-[Upgrading](/docs/clients/dotnet/upgrading/).
+Make sure every Exceptionless package in your app is on the same, latest version. See
+[Upgrading](/docs/clients/dotnet/upgrading/) and
+[Releases](https://github.com/exceptionless/Exceptionless.Net/releases).
 
 ## Turn on client logging {#enable-client-logging}
 

@@ -70,7 +70,7 @@ The `Exceptionless` section supports these keys:
 | `ServerUrl`                      | The hosted service | Your self-hosted Exceptionless URL. Only set it if you self-host.                                                                                                                 |
 | `Enabled`                        | `true`             | `false` turns the client off. Only `false` has an effect.                                                                                                                         |
 | `IncludePrivateInformation`      | `true`             | `false` leaves out user names, machine names, IP addresses, headers, cookies, POST data, and query strings. See [Private information](/docs/clients/dotnet/private-information/). |
-| `ProcessQueueOnCompletedRequest` | `false`            | `true` sends the queue at the end of every ASP.NET Core request. For [serverless](/docs/clients/dotnet/serverless/) hosts.                                                        |
+| `ProcessQueueOnCompletedRequest` | `false`            | `true` processes the queue after each ASP.NET Core response completes. For [serverless](/docs/clients/dotnet/serverless/) hosts.                                                  |
 | `StoragePath`                    | in memory          | A folder for the queue. See [Queue storage](#queue-storage).                                                                                                                      |
 | `StorageSerializer`              | JSON               | An assembly-qualified type that serializes the stored queue.                                                                                                                      |
 | `QueueMaxAge`                    | `7.00:00:00`       | How long a queued event is kept and retried, as a `TimeSpan`.                                                                                                                     |
@@ -96,12 +96,12 @@ Exceptionless__DefaultData__Region=us-east
 `Startup()` and `ReadFromEnvironmentalVariables()` read four variables directly from the process environment, with
 either `:` or `__` as the separator:
 
-| Variable                                        | What it sets                                                     |
-| ----------------------------------------------- | ---------------------------------------------------------------- |
-| `Exceptionless__ApiKey`                         | `ApiKey`                                                         |
-| `Exceptionless__ServerUrl`                      | `ServerUrl`                                                      |
-| `Exceptionless__Enabled`                        | `false` turns the client off.                                    |
-| `Exceptionless__ProcessQueueOnCompletedRequest` | `true` sends the queue at the end of every ASP.NET Core request. |
+| Variable                                        | What it sets                                                           |
+| ----------------------------------------------- | ---------------------------------------------------------------------- |
+| `Exceptionless__ApiKey`                         | `ApiKey`                                                               |
+| `Exceptionless__ServerUrl`                      | `ServerUrl`                                                            |
+| `Exceptionless__Enabled`                        | `false` turns the client off.                                          |
+| `Exceptionless__ProcessQueueOnCompletedRequest` | `true` processes the queue after each ASP.NET Core response completes. |
 
 When `Exceptionless__ProcessQueueOnCompletedRequest` isn't set and the `FUNCTIONS_WORKER_RUNTIME` variable is (as it is
 in Azure Functions), the client turns `ProcessQueueOnCompletedRequest` on.
@@ -148,7 +148,7 @@ builder.AddExceptionless(c => {
 | `QueueMaxAge`                         | 7 days                      | How long a queued event is kept and retried.                                                                                      |
 | `QueueMaxAttempts`                    | `3`                         | How many times the client tries to send an event.                                                                                 |
 | `SubmissionBatchSize`                 | `50`                        | How many events are sent in one request.                                                                                          |
-| `ProcessQueueOnCompletedRequest`      | `false`                     | Sends the queue at the end of every ASP.NET Core request.                                                                         |
+| `ProcessQueueOnCompletedRequest`      | `false`                     | Processes the queue after each ASP.NET Core response completes.                                                                   |
 | `UpdateSettingsWhenIdleInterval`      | 2 minutes after `Startup()` | How often to check for new client configuration values while no events are sent. Minimum 2 minutes. `TimeSpan.Zero` turns it off. |
 | `Proxy`                               | system proxy                | An `IWebProxy` for requests to Exceptionless. See [Troubleshooting](/docs/clients/dotnet/troubleshooting/#proxies).               |
 | `ServerCertificateValidationCallback` | none                        | Custom server certificate validation. See [Troubleshooting](/docs/clients/dotnet/troubleshooting/#certificates).                  |

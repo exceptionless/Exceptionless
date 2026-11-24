@@ -5,6 +5,10 @@ navTitle: "Your account"
 sources:
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/account/routes.svelte.ts
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/account/manage/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/account/verify/+page.svelte
+  - src/Exceptionless.EmailTemplates/Templates/UserEmailVerify.razor
+  - src/Exceptionless.Web/Assistant/AssistantAccessService.cs
+  - src/Exceptionless.Web/Api/Handlers/OrganizationHandler.cs
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/account/appearance/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/account/notifications/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/account/ai-tools/+page.svelte
@@ -41,9 +45,10 @@ On the **General** page:
 - **Email:** saves as you type, once the app confirms no other account uses the address. You can change it up to three
   times an hour.
 
-When you change your email address, you need to verify the new one, unless it matches the email address of one of your
-external logins. Until you verify, Exceptionless doesn't send you email notifications. If your address isn't verified,
-the page shows **Email not verified** with a link to resend the verification email.
+When you sign up or change your email address, you need to verify it, unless it matches the email address of one of your
+external logins. Until you verify, Exceptionless doesn't send you email notifications, you can't invite users to a Free
+or trial organization, and you can't use Exie during a [free trial](/docs/organizations/#free-trial). If your address
+isn't verified, the page shows **Email not verified** with a **Resend** link. Verification links expire after 24 hours.
 
 ## Appearance
 
@@ -58,9 +63,9 @@ which emails you get for each project. See [Notifications](/docs/notifications/)
 ## AI Tools
 
 The **AI Tools** page has setup commands for connecting a coding agent to the Exceptionless
-[MCP server](/docs/ai/mcp-server/). Choose **Claude Code**, **Codex**, **Cursor**, **Copilot**, **OpenCode**, or
-**VS Code**, then follow its commands or install link. The setup already contains your instance's server URL. When the agent connects, you approve its
-access in the browser.
+[MCP server](/docs/ai/mcp-server/). Choose **Claude Code**, **Codex**, **Cursor**, **Copilot**, **OpenCode**, or **VS
+Code**, then follow its commands or install link. The setup already contains your instance's server URL. When the agent
+connects, you approve its access in the browser.
 
 The page ends with **Try asking**, a list of prompts to try once your agent is connected.
 

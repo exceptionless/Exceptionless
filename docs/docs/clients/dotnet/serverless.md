@@ -17,8 +17,9 @@ Exceptionless works in AWS Lambda and Azure Functions, with one rule: send the q
 client queues events and sends them in the background, and a serverless platform can freeze or stop your process as soon
 as the invocation ends, taking unsent events with it.
 
-`await client.ProcessQueueAsync()` sends everything in the queue and waits until it's done. Call it at the end of every
-invocation, including when the function throws.
+Await `client.ProcessQueueAsync()` at the end of every invocation, including when the function throws. It sends batches
+until the queue is empty or a send fails, and waits for those requests. Events from a failed send stay in memory, and
+are lost if the platform stops the process before a later invocation sends them.
 
 ## AWS Lambda
 
@@ -68,7 +69,7 @@ handler throws, so they never reach an unhandled exception handler. Catch them, 
 ### ASP.NET Core on Lambda
 
 An ASP.NET Core app hosted on Lambda uses the [ASP.NET Core](/docs/clients/dotnet/aspnet-core/) setup. Add
-`ProcessQueueOnCompletedRequest` so the queue is sent at the end of every request:
+`ProcessQueueOnCompletedRequest` so the client processes the queue after each response completes:
 
 <!-- source: Exceptionless.Net:samples/Exceptionless.SampleLambdaAspNetCore/appsettings.json -->
 
@@ -81,7 +82,8 @@ An ASP.NET Core app hosted on Lambda uses the [ASP.NET Core](/docs/clients/dotne
 }
 ```
 
-This sends events from inside the request, which adds a little time to each request that submitted something.
+The queue is processed in the response's completion callback, the same way as `ProcessQueueAsync()`, so a failed send
+leaves events in the queue.
 
 ## Azure Functions
 

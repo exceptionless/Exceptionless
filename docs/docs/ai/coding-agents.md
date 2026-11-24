@@ -4,6 +4,10 @@ metaTitle: "Use Exceptionless with AI coding agents"
 description: "Set up Exceptionless with a coding agent, give it project instructions and the SDK agent skills, and copy prompts for fixing and triaging errors."
 sources:
   - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/agent-setup.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/agent-setup-menu.svelte
+  - docs/public/setup.md.txt
+  - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.SavedViews.cs
   - Exceptionless.Net:.agents/skills/exceptionless-dotnet/SKILL.md
   - Exceptionless.JavaScript:.agents/skills/exceptionless-javascript/SKILL.md
 ---
@@ -14,19 +18,24 @@ A coding agent such as Claude Code, Codex, or GitHub Copilot can add Exceptionle
 [MCP server](/docs/ai/mcp-server/) to read your production errors and fix them in your code. This page covers setup,
 instructions to keep in your repository, the SDK agent skills, and prompts for common jobs.
 
-The recipes need the MCP server connected. The ones that change stacks need the **Stacks Write** permission.
+The recipes need the MCP server connected. The ones that change stacks need the **Stacks Write** permission, and the one
+that saves a view needs **Saved Views Write**.
 
 ## Set up Exceptionless with an agent
 
-Create a project in Exceptionless first and copy its API key (see [Quickstart](/docs/getting-started/)). Then give your
-agent this prompt in your app's repository:
+Create a project in Exceptionless first (see [Quickstart](/docs/getting-started/)). On the project's **Client Setup**
+page, select **Set up with your agent**, then **Copy setup prompt** to paste into your agent, or open **Cursor**,
+**Claude**, or **ChatGPT** with the prompt filled in. The prompt contains your API key and points the agent at
+[exceptionless.com/setup.md](https://exceptionless.com/setup.md), setup steps written for agents:
 
 ```prompt agent
-Add Exceptionless error monitoring to this app. Read https://exceptionless.com/docs/clients.md to choose the client for this app's language and framework, then follow that client's setup page. Read the API key from configuration or an environment variable instead of hard-coding it, and ask me for the key. Finally, add a temporary way to throw a test error so I can check that it reaches Exceptionless.
+Fetch and follow the instructions at https://exceptionless.com/setup.md to set up Exceptionless for me. My API key is YOUR_API_KEY.
 ```
 
-Every docs page has a Markdown copy at the same URL with `.md` in place of the trailing slash, so the agent can read the
-client docs directly. See [Docs for AI](/docs/ai/docs-for-ai/).
+The agent works out your app's platform, installs and configures the client, sends a test error with the message
+`Hello from Exceptionless setup`, and removes the test code. Every docs page also has a Markdown copy at the same URL
+with `.md` in place of the trailing slash, so the agent can read the full client docs. See
+[Docs for AI](/docs/ai/docs-for-ai/).
 
 With the MCP server connected, the agent can also check that the test error arrived:
 
@@ -130,10 +139,10 @@ This uses `update_stack_status` with `fixedInVersion` and `add_stack_reference_l
 We deployed version 2.4.1 to production about two hours ago. Use Exceptionless to find currently regressed stacks that occurred in production since then and new error stacks first seen since then. Rank them by production occurrences since deployment. For the top three, read a recent event and tell me whether the deploy likely caused it and which code to look at. Don't change any stacks.
 ```
 
-The agent counts currently regressed errors with `count_events` (`filter` `type:error environment:production
-status:regressed`, `groupBy` `stack`, `time` `[now-2h TO now]`). For new errors, it uses the first-occurrence search above
-with a two-hour range, then counts each candidate's production events in that range. Grouping a stack's events by
-`version` helps compare releases.
+The agent counts currently regressed errors with `count_events` (`filter`
+`type:error environment:production status:regressed`, `groupBy` `stack`, `time` `[now-2h TO now]`). For new errors, it
+uses the first-occurrence search above with a two-hour range, then counts each candidate's production events in that
+range. Grouping a stack's events by `version` helps compare releases.
 
 Current status and recent occurrences don't establish when a stack regressed: the tools expose no regression timestamp,
 and `search_stacks` applies its `time` argument to the last occurrence. Treat a connection to the deployment as an
@@ -148,9 +157,8 @@ I fixed the Exceptionless stack https://be.exceptionless.io/stack/STACK_ID in ve
 The agent reads the stack's status and fixed version with `get_stack`, then counts occurrences with `count_events`
 (`filter` `stack:STACK_ID`, `time` `[now-3d TO now]`, `groupBy` `version`, `interval` `1h`).
 
-Grouped results can omit less frequent versions. To check a particular release, count it with an exact `version`
-filter; a version missing from the groups doesn't establish zero occurrences. The result covers only the selected
-time range.
+Grouped results can omit less frequent versions. To check a particular release, count it with an exact `version` filter;
+a version missing from the groups doesn't establish zero occurrences. The result covers only the selected time range.
 
 ### Clean up noisy stacks
 
@@ -161,6 +169,18 @@ Use Exceptionless to find the 10 stacks that happened most in my project over th
 The agent ranks stacks with `count_events` and reads samples with `get_event`. After you confirm, it uses `snooze_stack`
 (for example, `duration` `1w`) or `update_stack_status` with `ignored`. To keep a stack visible but stop marking its new
 occurrences critical, ask for `set_stack_critical` with `critical` false.
+
+### Save a view for the code you own
+
+```prompt agent
+Create a shared Exceptionless saved view named Checkout errors for my project, showing open and regressed error stacks in production from the last 7 days that are tagged checkout. Tell me what it shows.
+```
+
+The agent finds the project with `list_projects`, then calls `create_saved_view` with `viewType` `stacks`, `projectIds`,
+`types` `error`, `environments` `production`, `tags` `checkout`, and `shared` true. New views include open and regressed
+stacks and the last 7 days unless you ask for something else. Leave out "shared" to keep the view private to you; who
+can see a view can't be changed after it's created. To change it later, the agent finds it with `list_saved_views` and
+calls `update_saved_view`. See [Saved views](/docs/saved-views/).
 
 > [!WARNING]
 > Event data comes from your users and your apps, so it can contain text written to manipulate an agent. Review what the

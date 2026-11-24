@@ -79,7 +79,8 @@ everything from `@exceptionless/browser`.
 
 ### The error boundary
 
-When a component inside `ExceptionlessErrorBoundary` throws while rendering, the boundary:
+When a component inside `ExceptionlessErrorBoundary` throws while rendering, in a lifecycle method, or synchronously in
+an effect, the boundary:
 
 1. submits the error with React's component stack attached;
 2. renders `fallback` in place of its children. With no `fallback`, it renders nothing.
@@ -108,9 +109,9 @@ export default function DashboardPanel() {
 }
 ```
 
-Ordinary event handlers and asynchronous callbacks such as timers run outside the error boundary. Unhandled errors from
-them reach the browser's global handlers, which the client already listens to. Errors you catch yourself are not
-reported unless you submit them:
+Errors in event handlers and in asynchronous code, such as timers, rejected promises, and `await` inside an effect,
+don't reach the error boundary. Unhandled errors from them reach the browser's global handlers, which the client already
+listens to. Errors you catch yourself are not reported unless you submit them:
 
 ```jsx
 import { Exceptionless, toError } from "@exceptionless/react"
@@ -184,5 +185,5 @@ Show me the stack trace of the latest event in this stack.
 With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can do the same:
 
 ```prompt agent
-Find the newest error stack in my Exceptionless project from the last 24 hours, read its latest event, fix the React component that throws, and mark the stack fixed in the next version.
+Find the newest error stack in my Exceptionless project from the last 24 hours, read its latest event, fix the React component that throws, and run the relevant tests. Tell me which stack you addressed and what you changed.
 ```

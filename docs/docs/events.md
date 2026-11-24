@@ -1,7 +1,7 @@
 ---
 title: "Events"
 metaTitle: "Viewing events in Exceptionless"
-description: "Browse Exceptionless events, read every tab of the event details, watch lists update live, and find an event by its reference ID."
+description: "Browse Exceptionless events, read the event details, find an event by reference ID, and delete events in bulk with background task progress."
 sources:
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/event/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/stream/+page.svelte
@@ -17,6 +17,18 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/views/request.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/views/session-events.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/table/options.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/table/events-bulk-actions-dropdown-menu.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/table/events-select-all-banner.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/table/all-matching-selection.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/dialogs/remove-event-dialog.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/tasks/models.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/tasks/components/task-panel.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/tasks/components/task-item.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/exie-empty-state.svelte
+  - src/Exceptionless.Web/Api/Endpoints/BackgroundTaskEndpoints.cs
+  - src/Exceptionless.Web/Api/Handlers/BackgroundTaskHandler.cs
+  - src/Exceptionless.Core/Services/BulkOperations/BulkOperationService.cs
+  - src/Exceptionless.Core/Services/BulkOperations/DeleteEventsBulkOperationHandler.cs
   - src/Exceptionless.Web/ClientApp/src/lib/features/events/persistent-event.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/detail-sheet.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/streaming-indicator-button.svelte
@@ -54,6 +66,10 @@ Columns...**. See [Saved views](/docs/saved-views/) to keep your columns, and
 
 The **Stacks** lists work the same way, with one row per stack instead of one per event. See
 [Stacks](/docs/managing-stacks/).
+
+Until a project in the organization receives its first event, the **Events**, **Stacks**, and **Event Stream** pages
+show Exie in place of the list. Select **Continue setup** to finish connecting your app, or **Explore with sample data**
+to add demo events to the project.
 
 ## Live updates
 
@@ -136,10 +152,53 @@ A reference ID is an ID your app assigns to an event, so a user or support agent
 > [!NOTE]
 > On a self-hosted instance, use your own app URL instead of `https://be.exceptionless.io`.
 
-## Delete events
+## Delete events {#delete-events}
 
-Select events in a list, then open **Actions** and select **Delete**. To delete every event in a stack, delete the stack
-instead. See [Bulk actions](/docs/managing-stacks/#bulk-actions).
+To delete events from an **Events** view:
+
+1. Select the check box on each event, or the check box in the header to select every event on the page.
+2. Open **Actions** above the list and select **Delete**.
+3. Confirm with **Delete Event**, or **Delete** _N_ **Events** when you selected more than one.
+
+To delete every event in a stack, delete the stack instead. See [Stacks](/docs/managing-stacks/#delete-a-stack).
+
+### Delete every matching event
+
+When you select every event on the page and more events match the view's filters and date range, a bar above the list
+says **All** _N_ **events on this page are selected.** Select **Select all** _N_ **events matching this filter** to
+select all of them. The bar then reads **All** _N_ **events are selected**, with **Clear selection** to go back.
+
+Open **Actions** and select **Delete**. The **Delete Matching Events** dialog shows about how many events match; the
+final count can differ. Select **Delete Matching Events** to start. The delete runs as a
+[background task](#background-tasks), and the list refreshes when it finishes.
+
+- The selection belongs to the filters it was made for. Changing the filters, date range, saved view, or organization,
+  or clearing a check box on the page, drops it.
+- The date range is fixed when the delete starts, so events that arrive later aren't deleted.
+- Only one delete of matching events runs at a time in an organization. Wait for the running one to finish, or cancel
+  it, before you start another.
+- Selecting every matching event is available on **Events** views only. The **Stacks** lists act on the rows you select.
+
+## Background tasks {#background-tasks}
+
+Long-running work, such as deleting matching events, **Reset Project Data**, and generating sample data, runs in the
+background. Its progress shows in a panel at the bottom left of the app, next to the sidebar. Everyone in the
+organization sees its tasks.
+
+Each task shows what it's doing, such as "Delete 12,480 events matching filter", and its progress:
+
+- **Waiting to start**, then how many items are done, such as **3,000 of 12,480**, or a percentage.
+- **Completed**, with how many items were processed and any that failed.
+- **Cancelled** or **Failed**, with how far it got.
+
+Select **Cancel** to stop a delete of matching events. It stops after the batch it's working on, and events already
+deleted stay deleted. A project data reset can't be cancelled. If a task stops reporting progress for two hours,
+**Cancel** appears on it too, so you can clear it.
+
+Finished tasks leave the panel after two minutes. Select the **X** to dismiss one sooner.
+
+The REST API lists an organization's tasks at `GET /api/v2/organizations/{organizationId}/tasks`, returns one at
+`GET /api/v2/tasks/{id}`, and cancels one with `POST /api/v2/tasks/{id}/cancel`. Finished tasks are kept for seven days.
 
 ## Ask Exie
 

@@ -126,6 +126,10 @@ scope. To control access:
 - **Stop new self-registration.** Set `EX_OAuthServer__DynamicClientRegistrationIpLimit` to `0` and
   `EX_OAuthServer__EnableClientIdMetadataDocuments` to `false`. Existing self-registered apps can still connect. To
   allow only administrator-managed apps, also disable the other apps under **Settings** > **System** > **OAuth Apps**.
+- **Restrict one client's scopes.** A self-registered client can request any supported scope, and the person who
+  approves it decides what it gets. To enforce a list, open the client under **OAuth Apps**, choose its **Scopes**, and
+  select **Save Changes**. From then on, the consent screen offers only those scopes, and changes to the client's
+  metadata document no longer update it.
 - **Cut off one client.** Under **OAuth Apps**, open the client, check **Disabled**, and select **Save Changes**.
   Disabled clients can't authorize, refresh, or use existing access tokens.
 - **Turn it off.** Block `/mcp` at your reverse proxy.

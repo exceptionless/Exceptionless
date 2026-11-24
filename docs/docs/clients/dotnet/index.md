@@ -23,8 +23,9 @@ sources:
 
 # .NET client
 
-Exceptionless.Net reports errors, logs, feature usage, and sessions from .NET apps. The current release is 6.2.0. Pick
-your app type below to set it up, or let your coding agent do it.
+Exceptionless.Net reports errors, logs, feature usage, and sessions from .NET apps. Pick your app type below to set it
+up, or let your coding agent do it. See [Releases](https://github.com/exceptionless/Exceptionless.Net/releases) for what
+changed in each version.
 
 ## Install with your coding agent
 

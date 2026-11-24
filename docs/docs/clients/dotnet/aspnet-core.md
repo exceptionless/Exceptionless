@@ -212,8 +212,9 @@ Events you submit during a request get the request details automatically, becaus
 Requests from bots are ignored using the project's user agent bot patterns. To keep private data such as IP addresses,
 cookies, and request bodies out of events, see [Private information](/docs/clients/dotnet/private-information/).
 
-Queued events are sent in the background and flushed when the app shuts down. To flush after every request, for example
-on AWS Lambda, set `ProcessQueueOnCompletedRequest` to `true` (see [Serverless](/docs/clients/dotnet/serverless/)).
+Queued events are sent in the background and processed again when the app shuts down. To process the queue after every
+response, for example on AWS Lambda, set `ProcessQueueOnCompletedRequest` to `true` (see
+[Serverless](/docs/clients/dotnet/serverless/)).
 
 ## Next steps
 

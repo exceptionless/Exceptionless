@@ -148,8 +148,12 @@ config:
   EX_ConnectionStrings__OAuth: GitHubId=YOUR_ID;GitHubSecret=YOUR_SECRET
 ```
 
-Quote values that YAML would otherwise read as booleans or numbers. A config map isn't encrypted, so keep secrets such
-as API keys and passwords in a values file you protect, or manage the config map with your own secrets tooling.
+Quote values that YAML would otherwise read as booleans or numbers.
+
+The chart writes every setting, including the connection strings and any API keys or passwords in them, into that config
+map in plain text. Protecting your values file doesn't change that: anyone who can read config maps in the namespace, or
+the Helm release, can read them. The chart has no setting for Kubernetes Secrets, so limit who can read config maps and
+Helm releases in the namespace.
 
 Leave `EX_ApiUrl` unset. The web UI then calls the API on the app domain, where WebSockets are on, and OAuth and the MCP
 server use the app domain too. Clients send events to the API domain.
@@ -228,7 +232,8 @@ Trust only addresses your ingress connects from, not the whole cluster network. 
 
 ## Run migrations {#run-migrations}
 
-Start the migration job by hand after the first install and after every upgrade:
+Start the migration job by hand after the first install. To upgrade, follow [Upgrade](#upgrade) instead, which runs it
+while event processing is stopped.
 
 ```bash
 kubectl create job --from=cronjob/exceptionless-jobs-migration exceptionless-migration-1 --namespace exceptionless
@@ -242,13 +247,10 @@ exceptionless`, or under **Settings** > **System** >
 
 ## Upgrade {#upgrade}
 
-1. Set `version` to the new release in your values file.
-2. Run
-   `helm upgrade exceptionless ./Exceptionless/k8s/exceptionless --namespace exceptionless --values exceptionless-values.yaml`,
-   from an up-to-date clone of the repository.
-3. [Run the migrations](#run-migrations).
-
-See [Upgrading](/docs/self-hosting/upgrading-self-hosted-instance/) for what changed between versions.
+Don't upgrade with a single `helm upgrade`: the new deployments would process events before the migrations have run.
+Follow the [upgrade procedure](/docs/self-hosting/upgrading-self-hosted-instance/#upgrade-kubernetes), which scales the
+app, API, and jobs to zero, runs the migration job, checks it, and then scales them back up. See
+[Upgrading](/docs/self-hosting/upgrading-self-hosted-instance/) for what changed between versions.
 
 ## Active Directory authentication {#active-directory-authentication}
 

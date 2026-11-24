@@ -13,8 +13,9 @@ sources:
 # Other languages and custom clients
 
 If there's no Exceptionless client for your language, you can still send errors, logs, and feature usage. Send one or
-more events in an HTTP request to the REST API. This page shows how to send events from shell scripts and other languages;
-the [client specification](/docs/reference/client-spec/) covers what a full client library does on top of that.
+more events in an HTTP request to the REST API. This page shows how to send events from shell scripts and other
+languages; the [client specification](/docs/reference/client-spec/) covers what a full client library does on top of
+that.
 
 ## Before you start {#before-you-start}
 
@@ -131,6 +132,7 @@ These examples report a caught error and only use the standard library. They rea
 # Python 3.10 or later
 import json
 import os
+import sys
 import traceback
 import urllib.request
 from datetime import datetime, timezone
@@ -154,23 +156,29 @@ def submit(events):
 
 
 def report_exception(error):
-    return submit([{
-        "type": "error",
-        "date": datetime.now(timezone.utc).isoformat(),
-        "data": {
-            "@simple_error": {
-                "message": str(error),
-                "type": type(error).__name__,
-                "stack_trace": "".join(traceback.format_tb(error.__traceback__)),
+    """Reports the error. Returns the HTTP status, or None if the report failed."""
+    try:
+        return submit([{
+            "type": "error",
+            "date": datetime.now(timezone.utc).isoformat(),
+            "data": {
+                "@simple_error": {
+                    "message": str(error),
+                    "type": type(error).__name__,
+                    "stack_trace": "".join(traceback.format_tb(error.__traceback__)),
+                },
             },
-        },
-    }])
+        }])
+    except Exception as report_error:
+        # A failed report must not replace the error being reported.
+        print(f"Exceptionless report failed: {report_error}", file=sys.stderr)
+        return None
 
 
 try:
     1 / 0
 except ZeroDivisionError as error:
-    print(report_exception(error))  # 202
+    print(report_exception(error))  # 202, or None if the report failed
 ```
 
 ```go tab="Go"
@@ -220,8 +228,10 @@ func submit(events []event) (int, error) {
 	return resp.StatusCode, nil
 }
 
-// stackTrace lists function, file, and line for each caller. Unlike debug.Stack, it has no
-// goroutine IDs or argument values, so the same error from the same place stacks together.
+// stackTrace lists function, file, and line for each caller of reportError. Go errors don't
+// carry a stack, so this is where the error was reported, not where it was created. Unlike
+// debug.Stack, it has no goroutine IDs or argument values, so the same error reported from
+// the same place stacks together.
 func stackTrace() string {
 	pcs := make([]uintptr, 32)
 	frames := runtime.CallersFrames(pcs[:runtime.Callers(2, pcs)])
@@ -250,15 +260,24 @@ func reportError(err error) (int, error) {
 }
 
 func main() {
-	status, err := reportError(errors.New("payment provider timed out"))
-	fmt.Println(status, err) // 202 <nil>
+	if err := chargeCard(); err != nil {
+		// Report where the error is handled, so the stack points at this code.
+		status, reportErr := reportError(err)
+		fmt.Println(status, reportErr) // 202 <nil>, or 0 and the reason the report failed
+	}
+}
+
+func chargeCard() error {
+	return errors.New("payment provider timed out")
 }
 ```
 
 Exceptionless groups `@simple_error` events into stacks by the error `type` and the exact `stack_trace` text, so the
 same error from the same place lands in one stack. Keep values that change between occurrences, such as the error
 message, IDs, or memory addresses, out of `stack_trace`. That's why the Python example uses `format_tb`, which leaves
-out the message line that `format_exception` adds.
+out the message line that `format_exception` adds. The Go example records the stack where `reportError` is called,
+because Go errors don't carry one. To report where an error was created, capture the stack there, for example in your
+own error type, and send that instead.
 
 ## Build a client library {#build-a-client}
 

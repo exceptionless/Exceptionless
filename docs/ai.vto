@@ -2,7 +2,7 @@
 title: AI error monitoring
 metaTitle: "AI error monitoring: Exie assistant and MCP server"
 layout: layouts/base.vto
-description: Exceptionless brings AI to error monitoring. Ask Exie about production errors, or connect Claude Code, Codex, or GitHub Copilot through the MCP server.
+description: Exceptionless brings AI to error monitoring. Ask Exie about production errors, or connect Claude Code, Codex, Cursor, or GitHub Copilot through the MCP server.
 ---
 <section class="page-hero">
   <div class="container">
@@ -27,7 +27,7 @@ description: Exceptionless brings AI to error monitoring. Ask Exie about product
       <a class="card reveal" href="#mcp">
         <span class="feature-icon">{{ icons.plug }}</span>
         <h3>MCP, in your editor</h3>
-        <p>Claude Code, Codex, GitHub Copilot, and OpenCode can query Exceptionless while they work on the fix. Included on every plan.</p>
+        <p>Claude Code, Codex, Cursor, GitHub Copilot, and OpenCode can query Exceptionless while they work on the fix. Included on every plan.</p>
       </a>
       <a class="card reveal" href="#docs-for-ai">
         <span class="feature-icon">{{ icons["book-open"] }}</span>
@@ -51,7 +51,7 @@ description: Exceptionless brings AI to error monitoring. Ask Exie about product
           <li>{{ icons.check }}<span><strong>Root cause:</strong> explanations grounded in your stack traces, requests, and environment data, with links back to every stack it mentions.</span></li>
           <li>{{ icons.check }}<span><strong>Up front about limits:</strong> when the data can't answer a question, Exie says so and tells you what it could find.</span></li>
           <li>{{ icons.check }}<span><strong>Acts on your request:</strong> Exie is instructed to mark a stack fixed in a version, snooze it, flag it critical, or attach an issue link only when you ask for that change.</span></li>
-          <li>{{ icons.check }}<span><strong>Saved views:</strong> ask Exie to create, rename, or change a view. It asks for confirmation before deleting a view or changing a shared one.</span></li>
+          <li>{{ icons.check }}<span><strong>Saved views:</strong> ask Exie to create, rename, change, or delete a view. It asks for confirmation before deleting a view or changing a shared one.</span></li>
           <li>{{ icons.check }}<span><strong>Your access, nothing more:</strong> Exie works inside the current organization and only sees what your account can see.</span></li>
         </ul>
         <p class="note">Exie is included with Medium plans and up, with a monthly AI usage allowance. Self-hosted installs can enable it with their own model provider key.</p>
@@ -69,11 +69,11 @@ description: Exceptionless brings AI to error monitoring. Ask Exie about product
       <div class="feature-copy">
         <p class="eyebrow">{{ icons.plug }} MCP server</p>
         <h2>Production errors, inside your coding agent</h2>
-        <p>The Model Context Protocol lets AI coding agents call tools. Add the Exceptionless MCP server, approve access in your browser, and your agent can find the error, read the stack trace and request that caused it, then write the fix and mark the stack fixed.</p>
+        <p>The Model Context Protocol lets AI coding agents call tools. Add the Exceptionless MCP server, approve access in your browser, and your agent can find the error, read the stack trace and request that caused it, then write the fix, mark the stack fixed, and save a view for the errors you want to watch.</p>
         <ul class="check-list">
           <li>{{ icons.check }}<span><strong>Hosted endpoint:</strong> <code>https://be.exceptionless.io/mcp</code> over streamable HTTP.</span></li>
           <li>{{ icons.check }}<span><strong>OAuth sign-in:</strong> no API keys to paste into config files.</span></li>
-          <li>{{ icons.check }}<span><strong>Works with your tools:</strong> setup commands for Claude Code, Codex, GitHub Copilot CLI, and OpenCode.</span></li>
+          <li>{{ icons.check }}<span><strong>Works with your tools:</strong> setup steps for Claude Code, Codex, Cursor, VS Code, GitHub Copilot CLI, and OpenCode, with install links for Cursor and VS Code.</span></li>
           <li>{{ icons.check }}<span><strong>On every plan:</strong> included with all plans, including Free, at no extra cost.</span></li>
         </ul>
       </div>
@@ -100,13 +100,15 @@ timeout. I added a retry with backoff and a test.
 
     <div class="section-head reveal">
       <h2 class="section-title">Set up in under a minute</h2>
-      <p class="section-lead">Run the command for your agent, then approve access when the browser opens. You choose which organizations it can use.</p>
+      <p class="section-lead">Run the command or add the configuration for your agent, then approve access when the browser opens. You choose which organizations and permissions it gets.</p>
     </div>
 
     <div class="code-window code-window-dark reveal" data-tabs>
       <div class="tab-list" role="tablist" aria-label="MCP setup commands">
         <button type="button" role="tab" id="tab-claude" aria-controls="panel-claude" aria-selected="true">Claude Code</button>
         <button type="button" role="tab" id="tab-codex" aria-controls="panel-codex" aria-selected="false" tabindex="-1">Codex</button>
+        <button type="button" role="tab" id="tab-cursor" aria-controls="panel-cursor" aria-selected="false" tabindex="-1">Cursor</button>
+        <button type="button" role="tab" id="tab-vscode" aria-controls="panel-vscode" aria-selected="false" tabindex="-1">VS Code</button>
         <button type="button" role="tab" id="tab-copilot" aria-controls="panel-copilot" aria-selected="false" tabindex="-1">GitHub Copilot</button>
         <button type="button" role="tab" id="tab-opencode" aria-controls="panel-opencode" aria-selected="false" tabindex="-1">OpenCode</button>
       </div>
@@ -116,6 +118,22 @@ claude mcp login exceptionless</code></pre>
       </div>
       <div role="tabpanel" id="panel-codex" aria-labelledby="tab-codex" hidden>
 <pre><code>codex mcp add exceptionless --url https://be.exceptionless.io/mcp</code></pre>
+      </div>
+      <div role="tabpanel" id="panel-cursor" aria-labelledby="tab-cursor" hidden>
+<pre><code>{
+  "mcpServers": {
+    "exceptionless": { "url": "https://be.exceptionless.io/mcp" }
+  }
+}</code></pre>
+        <p class="code-caption">Add to <code>~/.cursor/mcp.json</code>, or use <strong>Add to Cursor</strong> on the app's AI Tools page.</p>
+      </div>
+      <div role="tabpanel" id="panel-vscode" aria-labelledby="tab-vscode" hidden>
+<pre><code>{
+  "servers": {
+    "exceptionless": { "type": "http", "url": "https://be.exceptionless.io/mcp" }
+  }
+}</code></pre>
+        <p class="code-caption">Add to <code>.vscode/mcp.json</code>, or use <strong>Add to VS Code</strong> on the app's AI Tools page.</p>
       </div>
       <div role="tabpanel" id="panel-copilot" aria-labelledby="tab-copilot" hidden>
 <pre><code>copilot mcp add --transport http exceptionless https://be.exceptionless.io/mcp
@@ -146,7 +164,7 @@ opencode mcp auth exceptionless</code></pre>
       <div class="card reveal">
         <span class="feature-icon">{{ icons["eye-off"] }}</span>
         <h3>Read-only if you want</h3>
-        <p>Uncheck both Stacks Write and Saved Views Write on the consent screen to keep your MCP connection read-only.</p>
+        <p>Write permissions start selected when an agent requests them. Clear Stacks Write and Saved Views Write on the consent screen to keep your MCP connection read-only.</p>
       </div>
       <div class="card reveal">
         <span class="feature-icon">{{ icons["rotate-ccw"] }}</span>

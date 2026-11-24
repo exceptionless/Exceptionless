@@ -14,6 +14,7 @@ sources:
   - src/Exceptionless.Web/Api/Endpoints/ProjectEndpoints.cs
   - src/Exceptionless.Web/Api/Handlers/OrganizationHandler.cs
   - src/Exceptionless.Web/Assistant/AssistantService.cs
+  - src/Exceptionless.Core/Services/OAuthService.cs
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/settings/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/api-keys/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(auth)/login/+page.svelte
@@ -141,6 +142,10 @@ organizations for people who shouldn't see each other's data.
 
 To take away someone's access, open the organization's **Users** page and choose **Remove User**. See
 [Organizations and billing](/docs/organizations/).
+
+Apps and AI coding agents that connect with OAuth, such as an agent using the [MCP server](/docs/ai/mcp-server/), act as
+the user who approved them. They get only the organizations and scopes that user approved, and lose access to an
+organization when the user leaves it. Each user reviews and revokes them under **My Account** > **Applications**.
 
 Users sign in with an email address and password, or with GitHub, Google, or Microsoft. Passwords are stored as salted
 hashes. Self-hosted instances choose which sign-in options to offer; see

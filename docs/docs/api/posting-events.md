@@ -90,7 +90,6 @@ curl https://api.exceptionless.io/api/v2/events \
   --header "Content-Type: application/json" \
   --data '{
     "type": "error",
-    "reference_id": "a1b2c3d4e5",
     "data": {
       "@simple_error": {
         "message": "Payment provider timed out",
@@ -103,7 +102,8 @@ curl https://api.exceptionless.io/api/v2/events \
 ```
 
 For structured stack frames, use `@error` instead; see [Error](/docs/reference/event-format/#error). Set `@version` to
-your app's version so a fixed stack can [regress](/docs/versioning/) when the error returns in the fixed version or later.
+your app's version so a fixed stack can [regress](/docs/versioning/) when the error returns in the fixed version or
+later.
 
 ## Send feature usage {#feature-usage}
 
@@ -153,31 +153,33 @@ path must be the key's project, or the server responds `404`.
 
 ## Add a user description {#user-description}
 
-To attach a user's email address and comments to an event you sent with a `reference_id`:
+To attach a user's email address and comments to an event you sent with a `reference_id`, replace `YOUR_REFERENCE_ID`
+with that event's reference ID:
 
 ```bash
-curl https://api.exceptionless.io/api/v2/events/by-ref/a1b2c3d4e5/user-description \
+curl https://api.exceptionless.io/api/v2/events/by-ref/YOUR_REFERENCE_ID/user-description \
   --request POST \
   --header "Authorization: Bearer YOUR_API_KEY" \
   --header "Content-Type: application/json" \
   --data '{ "email_address": "ana@example.com", "description": "I clicked Pay twice." }'
 ```
 
-The server responds `202`. See [Reference IDs](/docs/references-ids/).
+The server responds `202`. Use a new reference ID for every event you send: the server discards a second event with the
+same `reference_id` in the same project within a day. See [Reference IDs](/docs/references-ids/).
 
 ## Responses {#responses}
 
-| Status | What to do                                                                              |
-| ------ | --------------------------------------------------------------------------------------- |
-| `202`  | Nothing. The events were accepted.                                                      |
-| `400`  | Check the request. A user token with no project needs the [project route](#project).    |
-| `401`  | Check the API key. It may be wrong, disabled, or blocked because its organization is suspended. |
+| Status | What to do                                                                                                                                                      |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `202`  | Nothing. The events were accepted.                                                                                                                              |
+| `400`  | Check the request. A user token with no project needs the [project route](#project).                                                                            |
+| `401`  | Check the API key. It may be wrong, disabled, or blocked because its organization is suspended.                                                                 |
 | `402`  | The monthly event limit or five-minute event throttle was reached, or a user token submitted to a suspended organization. See [Limits](/docs/concepts/limits/). |
-| `411`  | Send a body.                                                                            |
-| `413`  | Send fewer events per request.                                                          |
-| `415`  | Use `Content-Type: application/json` or `text/plain`.                                   |
-| `429`  | Slow down until the next 15-minute window. See [Rate limits](/docs/api/#rate-limits).   |
-| `503`  | The server isn't accepting events right now. Try again in a few minutes.                |
+| `411`  | Send a body.                                                                                                                                                    |
+| `413`  | Send fewer events per request.                                                                                                                                  |
+| `415`  | Use `Content-Type: application/json` or `text/plain`.                                                                                                           |
+| `429`  | Slow down until the next 15-minute window. See [Rate limits](/docs/api/#rate-limits).                                                                           |
+| `503`  | The server isn't accepting events right now. Try again in a few minutes.                                                                                        |
 
 If you're writing a client library that retries and queues, follow the
 [client specification](/docs/reference/client-spec/#responses).

@@ -17,6 +17,7 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/dialogs/requires-promoted-web-hook-dialog.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/dialogs/stacking-information-dialog.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/table/events-bulk-actions-dropdown-menu.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/dialogs/remove-stack-dialog.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/stacks/+page.svelte
   - src/Exceptionless.Web/Api/Handlers/StackHandler.cs
   - src/Exceptionless.Core/Models/Stack.cs
@@ -110,9 +111,9 @@ built-in views.
 
 ### Discard a stack
 
-Choose **Discarded** when you don't want the stack's events at all. After you confirm in the **Discard Stack** dialog,
-new events for the stack are dropped when they arrive and don't count against your plan's event limit. Events already
-stored stay until you delete the stack or they age out.
+Choose **Discarded** when you don't want the stack's future events, and confirm with **Discard Stack**. New events for
+the stack are then dropped when they arrive and don't count against your plan's event limit. Existing events are kept
+until you delete the stack or they age out.
 
 ### Find fixed, ignored, and discarded stacks
 
@@ -154,7 +155,7 @@ Promoting a stack needs a paid plan or an active trial.
 type and the method that threw. Use it to understand why two events did or didn't land in the same stack. See
 [Stacking](/docs/concepts/stacking/).
 
-## Delete a stack
+## Delete a stack {#delete-a-stack}
 
 **Delete** in **Stack options** removes the stack and all of its events after you confirm. Deleting runs in the
 background. If the same error happens again, it starts a new stack.
@@ -170,9 +171,11 @@ the page. Then open **Actions** above the list.
 
 In a stack list, **Actions** has **Mark Open**, **Mark Fixed**, **Mark Snoozed**, **Mark Ignored**, **Mark Discarded**,
 and **Delete**. They work like the single-stack actions above. **Mark Fixed** asks for one version for all the selected
-stacks.
+stacks, and **Mark Discarded** and **Delete** ask you to confirm.
 
-In an event list, **Actions** has **Delete**, which deletes the selected events.
+Stack bulk actions apply to the rows you select on the current page. In an **Events** view, **Actions** has **Delete**,
+which deletes the selected events or every event that matches the view's filters. A delete of matching events runs as a
+background task with its progress at the bottom of the app. See [Delete events](/docs/events/#delete-events).
 
 **Actions** stays disabled until you select at least one row.
 

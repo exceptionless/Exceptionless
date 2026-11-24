@@ -132,5 +132,5 @@ Snooze this stack for a week.
 With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can do the same:
 
 ```prompt agent
-Find the most frequent new error in my Exceptionless project this week, read its latest event, fix the Vue component that throws it, and mark the stack fixed in the next version.
+Find the most frequent new error in my Exceptionless project this week, read its latest event, fix the Vue component that throws it, and run the relevant tests. Tell me which stack you addressed and what you changed.
 ```

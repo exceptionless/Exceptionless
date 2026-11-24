@@ -53,9 +53,8 @@ You can also set `ExceptionlessClient.Default.Configuration.ApiKey` in code befo
 
 ### WPF
 
-Call `Register()` from your `Application.Startup` handler in `App.xaml.cs`:
-
-<!-- source: Exceptionless.Net:samples/Exceptionless.SampleWpf/App.xaml.cs -->
+Override `OnStartup` in `App.xaml.cs` and call `Register()` there. WPF calls `OnStartup` before it opens the
+`StartupUri` window, so no `App.xaml` changes are needed:
 
 ```csharp
 using System.Windows;
@@ -63,8 +62,9 @@ using Exceptionless;
 
 namespace MyApp {
     public partial class App : Application {
-        private void Application_Startup(object sender, StartupEventArgs e) {
+        protected override void OnStartup(StartupEventArgs e) {
             ExceptionlessClient.Default.Register();
+            base.OnStartup(e);
         }
     }
 }
@@ -116,20 +116,49 @@ ExceptionlessClient.Default.Register(showDialog: false);
 ### Send events before the app closes
 
 Unhandled exceptions are sent right away, because the app is about to close. Other events are queued and sent in the
-background. `Register()` installs a handler that flushes the queue when the process exits normally.
+background. `Register()` installs a handler that processes the queue when the process exits normally.
 
-If your app controls shutdown, await `UnregisterAsync()` before initiating it. For example, in an asynchronous WPF
-quit workflow that keeps the app open until the flush completes:
+To send queued events and the session end while the app is still running, await `UnregisterAsync()` before the app shuts
+down. WPF doesn't wait for an `async void` handler on `Application.Exit`, so do it from the main window instead: cancel
+the first close, await `UnregisterAsync()`, then close the window again.
 
 ```csharp
-await ExceptionlessClient.Default.UnregisterAsync();
-Application.Current.Shutdown();
+using System.ComponentModel;
+using System.Windows;
+using Exceptionless;
+
+namespace MyApp {
+    public partial class MainWindow : Window {
+        private bool _exceptionlessUnregistered;
+
+        public MainWindow() {
+            InitializeComponent();
+        }
+
+        protected override async void OnClosing(CancelEventArgs e) {
+            base.OnClosing(e);
+            if (e.Cancel || _exceptionlessUnregistered)
+                return;
+
+            // Keep the window open until Exceptionless has tried to send its queue.
+            e.Cancel = true;
+            _exceptionlessUnregistered = true;
+            IsEnabled = false;
+
+            try {
+                await ExceptionlessClient.Default.UnregisterAsync();
+            } finally {
+                // Close again after this Closing event has finished. The flag lets the second close through.
+                _ = Dispatcher.InvokeAsync(Close);
+            }
+        }
+    }
+}
 ```
 
-Don't start this asynchronous cleanup from `Application.Exit`: WPF doesn't wait for an `async void` exit handler.
-
-Desktop users often lose their connection. To keep unsent events across restarts, store the queue on disk before calling
-`Register()`:
+`UnregisterAsync()` sends batches until the queue is empty or a send fails, and doesn't retry a failed send. If the
+network is down, events still in memory are lost when the app exits. Desktop users often lose their connection, so to
+keep unsent events across restarts, store the queue on disk before calling `Register()`:
 
 ```csharp
 ExceptionlessClient.Default.Configuration.UseFolderStorage(

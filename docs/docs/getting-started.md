@@ -5,19 +5,34 @@ metaTitle: "Exceptionless quickstart: send your first event"
 description: "Create an Exceptionless account and project, install a client or let your coding agent do it, send a test error, and find it in the app."
 sources:
   - src/Exceptionless.Web/ClientApp/src/routes/(auth)/signup/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/auth/redirects.ts
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/+layout.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/organization/add/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/add/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/+layout.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/configure/+page.svelte
-  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/routes.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/routes.svelte.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/table/project-actions-cell.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/agent-setup.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/agent-setup-menu.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/api-key-card.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/listening-status.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/platform-picker.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/platform-instructions.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/sample-data-button.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/first-event-celebration.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/getting-started-checklist.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/checklist.ts
+  - src/Exceptionless.EmailTemplates/Templates/UserEmailVerify.razor
   - src/Exceptionless.Web/Api/Endpoints/EventEndpoints.cs
   - src/Exceptionless.Web/Api/Handlers/OrganizationHandler.cs
   - src/Exceptionless.Core/Billing/BillingManager.cs
+  - src/Exceptionless.Core/Configuration/BillingOptions.cs
   - src/Exceptionless.Web/Mcp/ExceptionlessMcpTools.cs
   - src/Exceptionless.Web/Assistant/AssistantToolDefinitions.cs
-  - Exceptionless.Net:.agents/skills/exceptionless-dotnet/SKILL.md
+  - docs/public/setup.md.txt
   - Exceptionless.Net:src/Exceptionless/Extensions/ExceptionExtensions.cs
-  - Exceptionless.JavaScript:.agents/skills/exceptionless-javascript/SKILL.md
   - Exceptionless.JavaScript:packages/core/src/ExceptionlessClient.ts
 ---
 
@@ -33,28 +48,36 @@ install the client yourself or hand that step to your coding agent.
 ## 1. Create an account
 
 Go to [be.exceptionless.io/signup](https://be.exceptionless.io/signup). Sign up with **Microsoft**, **Google**, or
-**GitHub**, or enter your **Name**, **Email**, and **Password** and select **Create My Account**.
+**GitHub**, or enter your **Name**, **Email**, and **Password** and select **Create account**.
 
-On the hosted service, new organizations start with a [free trial](/docs/organizations/#free-trial) when trials are
-enabled and the account is eligible; otherwise they start on Free. See [pricing](/pricing/) for what each plan includes.
+Your account works right away. Exceptionless also emails you a link to confirm your address. Confirm it within 24 hours
+to turn on email notifications; you can resend the link from your account's **General** page.
 
-## 2. Create an organization and a project
+On the hosted service, your first organization starts with a 14-day [free trial](/docs/organizations/#free-trial), with
+no credit card, if your account is eligible. Otherwise it starts on Free. See [pricing](/pricing/) for what each plan
+includes.
 
-After you sign up, the **Set Up Exceptionless** page asks for two names:
+## 2. Name your project and organization
 
-- **Organization Name**: your team or company. An organization holds your projects, users, and plan.
-- **Project Name**: the app you're connecting, such as `Storefront API`. Each project has its own API key and events.
+After you sign up, the **Set up Exceptionless** page asks for two names:
 
-Select **Continue**. Exceptionless creates both and opens **Client Setup** for the new project.
+- **What's your app called?**: the app you're connecting, such as `Storefront API`. This becomes your first project.
+  Each project has its own API key and events.
+- **Organization name**: your team or company, filled in with a suggestion you can change. An organization holds your
+  projects, users, and plan.
 
-To add another project later, go to **Settings** > **Projects** in the sidebar and select **Add Project** (the plus
-button).
+Select **Continue**. Exceptionless creates both and opens **Client Setup** for the new project. Until your project
+receives its first event, opening the app brings you back to setup.
+
+To add another project later, go to **Settings** > **Projects** in the sidebar, select **Add Project** (the plus
+button), name it, and select **Continue to Client Setup**.
 
 ## 3. Install a client
 
-The **Client Setup** page, titled **Send Events to** your project name, shows **Waiting for your first event** while it
-listens for data. Choose your project type from the list, and the page shows the install command and startup code with
-your project's API key already filled in. Copy them into your app.
+The **Client Setup** page, titled **Send events to** your project name, shows **Listening for your first event…** until
+data arrives. Under **Pick your platform**, choose your app's platform or search for it. The page shows the install
+command and startup code for that platform with your project's API key already filled in. Copy them into your app. The
+**Your API key** card shows the key for your configuration files and environment variables.
 
 The same setup for each client, with `YOUR_API_KEY` in place of your key:
 
@@ -64,25 +87,29 @@ The same setup for each client, with `YOUR_API_KEY` in place of your key:
 You can come back to this page any time: open **Settings** > **Projects** in the sidebar, open the project's actions
 menu, and choose **Client Setup**. The project's keys are on its **API Keys** settings page.
 
+To look around before your app is connected, select **Explore with sample data** to add demo events to the project. You
+can clear them later with **Reset project data** in the project's settings.
+
 For framework-specific setup, such as ASP.NET Core, React, or Express, see [Send data](/docs/clients/).
 
-### Or install with your coding agent
+### Or set up with your coding agent
 
-Paste this prompt into Claude Code, Codex, Copilot, or another coding agent, and replace `YOUR_API_KEY` with the key
-from **Client Setup**:
+On **Client Setup**, select **Set up with your agent**:
+
+- **Copy setup prompt** copies a prompt to paste into Claude Code, Codex, Copilot, or another coding agent.
+- Under **Open in**, **Cursor**, **Claude**, or **ChatGPT** opens that tool with the prompt filled in.
+
+The menu is at the top of the page before you choose a platform, and next to the setup steps after you choose one. The
+prompt contains your API key and points the agent at [exceptionless.com/setup.md](https://exceptionless.com/setup.md),
+the same setup steps written for agents:
 
 ```prompt agent
-Add Exceptionless error reporting to this app. My Exceptionless API key is YOUR_API_KEY.
-
-1. Work out the app's language and framework. Then read the matching Exceptionless setup guide as Markdown. The client list is at https://exceptionless.com/docs/clients.md, and each guide has a .md URL, for example https://exceptionless.com/docs/clients/dotnet/aspnet-core.md for ASP.NET Core.
-2. If you can use agent skills, follow the official Exceptionless skill for the language: https://github.com/exceptionless/Exceptionless.Net/tree/main/.agents/skills/exceptionless-dotnet for .NET, or https://github.com/exceptionless/Exceptionless.JavaScript/tree/main/.agents/skills/exceptionless-javascript for JavaScript.
-3. Install the right package for the app type and configure it at startup. Put the API key in the app's configuration, not inline in code, where the framework supports it.
-4. Send one test error so I can check that it arrives in Exceptionless, then tell me how to remove the test code.
+Fetch and follow the instructions at https://exceptionless.com/setup.md to set up Exceptionless for me. My API key is YOUR_API_KEY.
 ```
 
-The agent skills are part of the [Exceptionless.Net](https://github.com/exceptionless/Exceptionless.Net) and
-[Exceptionless.JavaScript](https://github.com/exceptionless/Exceptionless.JavaScript) repositories. For more agent
-workflows, see [Coding agents](/docs/ai/coding-agents/).
+When **Client Setup** shows a server URL, such as on a self-hosted server, the prompt includes it too. The agent works
+out your app's platform, installs and configures the client, and sends a test error, `Hello from Exceptionless setup`.
+For agent skills and more agent workflows, see [Coding agents](/docs/ai/coding-agents/).
 
 ## 4. Send a test error
 
@@ -119,8 +146,9 @@ curl "https://api.exceptionless.io/api/v2/events" \
 ```
 
 Clients queue events and send them in the background, so a test error can take a few seconds to arrive. In a console
-app, script, or serverless function that exits right away, flush the queue before it exits: call
-`await ExceptionlessClient.Default.ProcessQueueAsync()` in .NET or `await Exceptionless.processQueue()` in JavaScript.
+app, script, or serverless function that exits right away, send the queue before it exits: in .NET,
+`await ExceptionlessClient.Default.ProcessQueueAsync()` sends until the queue is empty or a send fails. In JavaScript,
+`await Exceptionless.processQueue()` sends one batch of up to 50 events.
 
 > [!NOTE]
 > On a self-hosted server, use your own API URL instead of `https://api.exceptionless.io`, and set the client's server
@@ -128,8 +156,9 @@ app, script, or serverless function that exits right away, flush the queue befor
 
 ## 5. Find it in Exceptionless
 
-If **Client Setup** is still open from step 2, it opens **Events** for your project as soon as the first event arrives.
-Otherwise, select **Events** or **Stacks** in the sidebar.
+If **Client Setup** is open when the first event arrives, a **You caught your first event!** dialog shows it. Select
+**Take me to it** to open the event, or **See all events** to open **Events** for your project. Otherwise, select
+**Events** or **Stacks** in the sidebar.
 
 - **Events** lists each occurrence. Select the test error to open its details; the **Exception** tab shows the stack
   trace.
@@ -139,17 +168,20 @@ Otherwise, select **Events** or **Stacks** in the sidebar.
 Once you've seen the test error, set its stack's status to **Fixed** or **Discarded** so it doesn't stay in your open
 errors. [Manage stacks](/docs/managing-stacks/) explains each status.
 
-Nothing showing up? Check that the API key matches the project and is enabled on the project's **API Keys** page, then
-see troubleshooting for [.NET](/docs/clients/dotnet/troubleshooting/) or
-[JavaScript](/docs/clients/javascript/troubleshooting/).
+Nothing showing up? After a short wait, **Client Setup** shows **Not seeing anything?** with tips for your platform.
+Check that the API key matches the project and is enabled on the project's **API Keys** page, then see troubleshooting
+for [.NET](/docs/clients/dotnet/troubleshooting/) or [JavaScript](/docs/clients/javascript/troubleshooting/).
 
 ## Next steps
 
+For the first 30 days of a new organization, **Exie's checklist** on **Stacks** and **Events** tracks the next steps,
+such as verifying your email, reviewing notifications, and inviting your team. Dismiss it when you're done.
+
 - **Connect your coding agent.** The [MCP server](/docs/ai/mcp-server/), available on every plan, lets an agent such as
   Claude Code or Codex look up your stacks and events and update them while it works in your code. Choose **AI Tools**
-  in your user menu for the setup commands for your agent.
+  in your user menu, or **Set Up AI Tools** on **Client Setup**, for the setup commands for your agent.
 - **Ask Exie.** [Exie](/docs/ai/exie/) is the assistant built into the app. Open it with **Ask Exie** in the top bar or
-  press <kbd>A</kbd>. Exie is on Medium plans and up.
+  press <kbd>A</kbd>. Exie is on Medium plans and up, and during a free trial once you verify your email.
 - **Learn the model.** [Core concepts](/docs/concepts/) explains events, stacks, environments, and saved views.
 - **Get alerted.** Set up [notifications](/docs/notifications/) for new errors and regressions.
 - **Send more.** Logs, feature usage, and user context are covered in your client's [sending events](/docs/clients/)

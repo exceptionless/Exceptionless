@@ -13,6 +13,11 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/date-range-picker/date-range-picker.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/components/assistant-fix-button.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(auth)/oauth/authorize/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/organization/add/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/configure/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/agent-setup-menu.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/getting-started-checklist.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/organization-notifications.svelte
   - src/Exceptionless.Core/Seed/predefined-saved-views.json
   - src/Exceptionless.Core/Models/Event.cs
   - src/Exceptionless.Core/Configuration/AuthOptions.cs
@@ -62,6 +67,20 @@ that start with `/next` aren't redirected; remove `/next` from them.
 
 See [Navigating the app](/docs/navigation/).
 
+## Guided setup
+
+- **First run.** After you sign up, **Set up Exceptionless** asks for your app's name and your organization's name, then
+  opens **Client Setup**. Until the first event arrives, the app brings you back there.
+- **Client Setup.** Pick your platform to see its setup steps with your API key filled in. The page listens for your
+  first event, shows tips under **Not seeing anything?** if it takes a while, and can add sample data with **Explore
+  with sample data**.
+- **Set up with your agent.** Copy a setup prompt for your coding agent, or open Cursor, Claude, or ChatGPT with it
+  filled in. The prompt points the agent at [exceptionless.com/setup.md](https://exceptionless.com/setup.md).
+- **Exie's checklist.** New organizations get a checklist on **Stacks** and **Events** with the next steps, such as
+  verifying your email and reviewing notifications.
+
+See [Quickstart](/docs/getting-started/).
+
 ## Saved views replace the fixed dashboards
 
 The classic app had a fixed set of dashboards for each event type: a dashboard, most frequent, new, and recent. The new
@@ -89,8 +108,8 @@ the **Absolute** tab. The **Relative** tab keeps the date math expressions, such
 
 Exie is an assistant built into the app. Ask it which errors matter this week, what changed after a release, or why a
 stack keeps happening. It searches your stacks, looks up their events, counts events over time, and reads stack traces.
-When you ask it to, it also marks a stack fixed, snoozes or ignores it, marks it critical, or adds a reference link.
-It can create and manage saved views too. Exie is instructed to change data only when you ask for that exact change.
+When you ask it to, it also marks a stack fixed, snoozes or ignores it, marks it critical, or adds a reference link. It
+can create and manage saved views too. Exie is instructed to change data only when you ask for that exact change.
 Deleting a saved view or updating a shared view also requires confirmation in your next message. Creating a view or
 updating a private view doesn't require this extra step. See [Saved views](/docs/saved-views/#ask-exie).
 
@@ -106,7 +125,12 @@ email verification. See [Exie](/docs/ai/exie/).
 
 All paid plans now include unlimited projects and users. Eligible accounts can start with a no-card free trial when
 trials are enabled; the default is 14 days. If you don't subscribe, the organization moves to Free when the trial ends.
-See [Organizations and billing](/docs/organizations/#free-trial) for eligibility, allowances, and what happens at expiry.
+See [Organizations and billing](/docs/organizations/#free-trial) for eligibility, allowances, and what happens at
+expiry.
+
+The Free plan banner is gone. Instead, the app shows a notice when something needs attention: a usage warning at 80% of
+the monthly event limit, a reminder in the last 3 days of a trial, and a one-time notice when a trial ends. You can
+dismiss each of them.
 
 ## The MCP server and connected apps
 

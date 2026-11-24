@@ -9,6 +9,8 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/project-command-actions.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/manage/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/api-keys/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/configure/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/agent-setup-menu.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/settings/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/configuration-values/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/project/[projectId]/source-maps/+page.svelte
@@ -66,7 +68,8 @@ In the sidebar, open **Settings** > **Projects** and click the project. The sett
 
 The **General** tab also has **Go To Stacks**, **Client Setup** (install a client and send your first event),
 **Notifications** (your own email notifications for this project, see [Notifications](/docs/notifications/)), and
-**Generate Sample Data**, which queues sample events so you can try the app.
+**Generate Sample Data**, which adds sample events so you can try the app. It runs as a
+[background task](/docs/events/#background-tasks).
 
 From anywhere, press <kbd>/</kbd> and type **Project** to use a **Project Actions** command, such as **Project API
 Keys** or **Project Webhooks & Integrations**, then pick the project. While you're in a project's settings, the palette
@@ -91,7 +94,9 @@ The same menu has **Edit Notes**, **Disable Token** (or **Enable Token**), and *
 through in the list and stops working until you enable it again. To rotate a key, add a new one, deploy it, then disable
 or delete the old one.
 
-To install a client with the key, open **Client Setup** on the **General** tab or see [Choose a client](/docs/clients/).
+To install a client with the key, open **Client Setup** on the **General** tab, or the **Client setup** link at the top
+of the **API Keys** tab. It shows the setup steps for your platform with the key filled in, and **Set up with your
+agent** hands them to a coding agent. See [Quickstart](/docs/getting-started/) and [Choose a client](/docs/clients/).
 
 ## Client configuration values {#client-configuration}
 
@@ -166,9 +171,9 @@ Enter a comma-separated list of field names. Matching is case-insensitive, and `
 
 The clients remove matching fields from the data they collect, such as extended data properties, form fields, cookies,
 and query string parameters, before an event leaves your app. The server also removes matching cookies, query string
-parameters, and supported key/value POST data fields, so those exclusions apply even to clients that don't support
-them. Filter headers and other request body formats before sending; see
-[request data](/docs/reference/event-format/#request). Changes save when you leave the field.
+parameters, and supported key/value POST data fields, so those exclusions apply even to clients that don't support them.
+Filter headers and other request body formats before sending; see [request data](/docs/reference/event-format/#request).
+Changes save when you leave the field.
 
 JavaScript 3.2.1 filters properties inside custom-data objects, but not the outer name passed to `setProperty` or used
 in `defaultData`. Omit sensitive top-level values yourself; see
@@ -221,7 +226,7 @@ start fresh after testing.
 1. On the **General** tab, click the warning button (**Reset project data**).
 2. Click **Reset Project Data** to confirm.
 
-The reset runs in the background and can't be undone.
+The reset runs as a [background task](/docs/events/#background-tasks). It can't be cancelled or undone.
 
 ## Delete a project {#delete-a-project}
 

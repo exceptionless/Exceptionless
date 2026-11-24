@@ -58,7 +58,7 @@ allowance. When the trial ends without a subscription, Free-plan limits apply.
 - Limits apply to the whole organization, across all of its projects.
 - The event count resets at the start of each calendar month, in UTC.
 - The user limit counts pending invites as well as members.
-- You can create at most one Free or trial organization at a time.
+- You can own at most one Free or trial organization at a time.
 
 ### What counts as an event
 
@@ -144,7 +144,7 @@ Deleting stacks or resetting a project's data doesn't give back events already c
 When the same error happens many times in a few seconds, such as an exception thrown in a loop, the clients merge the
 repeats into one event with a count:
 
-1. The first occurrence is sent right away.
+1. The first occurrence is queued and sent as usual.
 2. Identical occurrences within the window are held and counted instead of being sent.
 3. When the window ends, the client sends one event with the total in its `count` field and the date of the latest
    occurrence.

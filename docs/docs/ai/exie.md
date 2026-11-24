@@ -24,6 +24,7 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/components/assistant-conversation-sharing.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/components/assistant-tool-trace.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/assistant-starters.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/components/getting-started-checklist.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/assistant/conversation-history.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/shared/keyboard-shortcuts.ts
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/(components)/navigation-command.svelte
@@ -33,7 +34,8 @@ sources:
 # Exie
 
 Exie is the AI assistant in the Exceptionless app. Ask it about your errors in plain words. It looks up your stacks,
-events, and saved views, and shows each step it takes. It is instructed to change data only when you ask for that change.
+events, and saved views, and shows each step it takes. It is instructed to change data only when you ask for that
+change.
 
 Exie works in the organization you're viewing and sees only data your account can access. It's included with the Medium
 plan and up. Eligible accounts can also use it during an active [free trial](/docs/organizations/#free-trial), after
@@ -50,6 +52,9 @@ verifying their email. On the Free or Small plan, opening Exie shows **Upgrade P
 - The command palette (<kbd>/</kbd>) has an **Exie** group: **Ask Exie** opens the panel, **Triage Recent Errors**
   summarizes the most important recent errors, and **Analyze Error Trends** looks for spikes and regressions over the
   last 7 days.
+- **Ask Exie about your first error** on **Exie's checklist**, the getting-started list in a new organization, asks Exie
+  to find your most recent error and explain what went wrong and how to fix it. It's available once your first event
+  arrives.
 
 See [Navigating the app](/docs/navigation/) for the other shortcuts and the **Meet Exie** guided tour.
 
@@ -106,13 +111,13 @@ When you ask, Exie can:
 | `set_stack_critical`          | Mark future occurrences of a stack critical, or stop marking them                            |
 | `add_stack_reference_link`    | Add a link to an issue, pull request, deployment, or incident                                |
 | `remove_stack_reference_link` | Remove a reference link                                                                      |
-| `create_saved_view`           | Create a private or shared view with projects, filters, a time range, and sort                 |
-| `update_saved_view`           | Rename a view or change its projects, filters, time range, or sort; its URL stays the same      |
-| `delete_saved_view`           | Permanently delete a saved view; deleting a shared view removes it for everyone                |
+| `create_saved_view`           | Create a private or shared view with projects, filters, a time range, and sort               |
+| `update_saved_view`           | Rename a view or change its projects, filters, time range, or sort; its URL stays the same   |
+| `delete_saved_view`           | Permanently delete a saved view; deleting a shared view removes it for everyone              |
 
-Exie is instructed to make only the change your message asks for. Stack changes, creating a private or shared view,
-and updating a private view don't require a separate confirmation. After a change, Exie says what changed, or that
-nothing needed to change, and the change appears as a step above the answer.
+Exie is instructed to make only the change your message asks for. Stack changes, creating a private or shared view, and
+updating a private view don't require a separate confirmation. After a change, Exie says what changed, or that nothing
+needed to change, and the change appears as a step above the answer.
 
 Before deleting any saved view or changing a shared view, Exie asks you to confirm in the chat. Select **Yes, continue**
 or reply with a plain "yes" in your next message. The server checks that the tool repeats the same action; one reply can
@@ -133,9 +138,9 @@ can't be undone. See [Stacks](/docs/managing-stacks/) and [AI privacy and securi
 - Recent chat history is saved in your browser for 30 days, is separate for each organization, and is removed when you
   sign out. It doesn't follow you to another browser. Optional conversation logging is controlled by **Chat sharing**.
 
-When you continue a chat, Exie reuses the results it already looked up, until 30 minutes pass without activity.
-After that, it looks them up again. See [AI privacy and security](/docs/ai/privacy/#exie-conversations) for what is
-stored where.
+When you continue a chat, Exie reuses the results it already looked up, until 30 minutes pass without activity. After
+that, it looks them up again. See [AI privacy and security](/docs/ai/privacy/#exie-conversations) for what is stored
+where.
 
 ## Messages and feedback
 
@@ -223,6 +228,10 @@ Snooze this stack for 3 days.
 
 ```prompt exie
 Create a private saved view named Production Errors for errors in this project in production over the last 7 days.
+```
+
+```prompt exie
+Change this view to show only the last 24 hours.
 ```
 
 With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can do the same from your editor and fix the

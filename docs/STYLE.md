@@ -55,7 +55,8 @@ sources: # code the page is checked against; not rendered
 - Complete and runnable, with imports and package installs.
 - Use the `YOUR_API_KEY` placeholder for API keys.
 - Hosted URLs: the API is `https://api.exceptionless.io`, and the web app is `https://be.exceptionless.io`. Never
-  `collector.exceptionless.io`. Self-hosted overrides go in a note.
+  `collector.exceptionless.io`, except where the JavaScript troubleshooting page lists the SDK's default endpoints for a
+  Content Security Policy. Self-hosted overrides go in a note.
 - Modern setup first: ASP.NET Core minimal hosting with `appsettings.json`, ES modules. .NET Framework and `web.config`
   belong on the legacy ASP.NET page.
 - Only document released APIs: Exceptionless.Net 6.2.0 and Exceptionless.JavaScript 3.2.1.

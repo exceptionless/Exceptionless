@@ -16,8 +16,8 @@ stacks, and shows you what to fix first. These docs cover the hosted service at
 
 ## Start here
 
-**Send your first event.** Create a free account, add a client to your app, and see a test error in a few minutes.
-[Quickstart](/docs/getting-started/)
+**Send your first event.** Create a free account, add a client to your app or have your coding agent add it, and see a
+test error in a few minutes. [Quickstart](/docs/getting-started/)
 
 **Connect your AI agent.** Ask Exie, the assistant in the app, about your errors, or connect Claude Code, Codex,
 Copilot, or another coding agent through the Exceptionless MCP server so it can find and fix them in your code.

@@ -107,7 +107,8 @@ You need [Docker](https://docs.docker.com/get-started/get-docker/) with Docker C
    ```
 
    The first start takes a minute or two while Elasticsearch starts and Exceptionless creates its indexes. The jobs
-   container runs any pending migrations each time it starts.
+   container runs any pending migrations each time it starts, alongside the jobs that process events, so upgrades need
+   the order in [Upgrade](#upgrade).
 
 3. Open `http://localhost:7110` and sign up. The first account on a new instance is a global administrator.
 
@@ -189,8 +190,8 @@ and sends email through SMTP.
    dotnet dev-certs https -ep ~/.aspnet/https/aspnetapp.pfx -p password
    ```
 
-   For a real server, use a certificate for your host name in PFX format. The container runs as a non-root user, so the
-   file must be readable by others.
+   For a real server, use a certificate for your host name in PFX format. The container runs as the non-root
+   `elasticsearch` user (UID 1000), so give that user read access to the file. Don't make the file readable by everyone.
 
 2. Run the container:
 
@@ -218,17 +219,12 @@ and sends email through SMTP.
 The same `ASPNETCORE_URLS` and certificate settings work on the `app` container in the Compose file. Most production
 setups terminate HTTPS at a [reverse proxy](/docs/self-hosting/reverse-proxy/) instead.
 
-## Upgrade
+## Upgrade {#upgrade}
 
-Pull the new images and recreate the containers:
-
-```bash
-docker compose pull
-docker compose up -d
-```
-
-Migrations run when the jobs container starts. See [Upgrading](/docs/self-hosting/upgrading-self-hosted-instance/) for
-what to check first.
+Don't upgrade by pulling new images and running `docker compose up -d`: the new jobs container would process events
+while its migrations are still running. Follow the
+[upgrade procedure](/docs/self-hosting/upgrading-self-hosted-instance/#upgrade), which stops the app and jobs, runs the
+migrations on their own, and then starts the new version.
 
 ## Set it up with a coding agent
 

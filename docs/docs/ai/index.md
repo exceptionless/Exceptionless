@@ -31,14 +31,14 @@ Exie is included with the Medium plan and up. Eligible accounts can also use it 
 
 ## The MCP server
 
-The [Exceptionless MCP server](/docs/ai/mcp-server/) lets AI coding agents such as Claude Code, Codex, and GitHub
-Copilot in VS Code use your Exceptionless data while they work in your code. Your agent can find your top errors, read
-the event details behind one, fix the code, and, if you granted write access, mark the stack fixed in the version that
-ships the fix.
+The [Exceptionless MCP server](/docs/ai/mcp-server/) lets AI coding agents such as Claude Code, Codex, Cursor, and
+GitHub Copilot use your Exceptionless data while they work in your code. Your agent can find your top errors, read the
+event details behind one, fix the code, and, if you granted write access, mark the stack fixed in the version that ships
+the fix. With write access, it can also create and manage saved views.
 
 You sign in with OAuth and choose which organizations and permissions the agent gets. **Stacks Write** allows stack
-changes; **Saved Views Write** allows creating, updating, and deleting saved views. Leave both off for read-only access.
-The MCP server is included on every plan, including Free.
+changes; **Saved Views Write** allows creating, updating, and deleting saved views. Both start selected when the agent
+requests them, so clear both for read-only access. The MCP server is included on every plan, including Free.
 
 ## Which one to use
 
@@ -49,20 +49,20 @@ The MCP server is included on every plan, including Free.
 | Fix an error in your code with an agent that can read it | The MCP server                                                  |
 | Check production from your editor or terminal            | The MCP server                                                  |
 | Mark a stack fixed when the fix ships                    | Either. Exie acts on request; the agent needs **Stacks Write**. |
-| Create or manage a saved view                           | Either. The agent needs **Saved Views Write**.                  |
+| Create or manage a saved view                            | Either. The agent needs **Saved Views Write**.                  |
 | Add Exceptionless to a new project                       | A [coding agent](/docs/ai/coding-agents/) and the client docs   |
 
 The main differences:
 
-|                     | Exie                                                    | MCP server                                     |
-| ------------------- | ------------------------------------------------------- | ---------------------------------------------- |
-| Where it runs       | In the Exceptionless app                                | In your coding agent                           |
-| Plans               | Medium and up; eligible active trials                   | Every plan                                     |
-| Scope               | The organization you're viewing                         | The organizations you approve when you connect |
-| Changes stacks      | Instructed to act on explicit requests                  | Only with the **Stacks Write** permission      |
+|                     | Exie                                                    | MCP server                                                     |
+| ------------------- | ------------------------------------------------------- | -------------------------------------------------------------- |
+| Where it runs       | In the Exceptionless app                                | In your coding agent                                           |
+| Plans               | Medium and up; eligible active trials                   | Every plan                                                     |
+| Scope               | The organization you're viewing                         | The organizations you approve when you connect                 |
+| Changes stacks      | Instructed to act on explicit requests                  | Only with the **Stacks Write** permission                      |
 | Manages saved views | Confirms deletion and changes to shared views           | Only with **Saved Views Write**; approvals depend on the agent |
-| Which model answers | The model Exceptionless runs Exie on                    | Your agent's own model                         |
-| Tools               | A subset of the MCP tools, scoped to the page you're on | [Every MCP tool](/docs/ai/mcp-server/#tools)   |
+| Which model answers | The model Exceptionless runs Exie on                    | Your agent's own model                                         |
+| Tools               | A subset of the MCP tools, scoped to the page you're on | [Every MCP tool](/docs/ai/mcp-server/#tools)                   |
 
 ## More
 

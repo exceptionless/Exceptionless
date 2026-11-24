@@ -67,7 +67,7 @@ Calling `startup()` again with no arguments resumes a client that was suspended.
 | `configServerUrl`                | The hosted service, or `serverUrl` | Kept for compatibility. In 3.2.1, the client gets [configuration values](/docs/clients/javascript/client-configuration-values/) from `serverUrl`.                       |
 | `version`                        | Not set                            | Your app's version, sent with every event. It enables [regression detection](/docs/versioning/).                                                                        |
 | `defaultTags`                    | `[]`                               | Tags added to every event.                                                                                                                                              |
-| `defaultData`                    | `{}`                               | Extended data added to every event, unless the event already has a value with the same key. [Data exclusions](#data-exclusions) filter properties inside its values.   |
+| `defaultData`                    | `{}`                               | Extended data added to every event, unless the event already has a value with the same key. [Data exclusions](#data-exclusions) filter properties inside its values.    |
 | `enabled`                        | `true`                             | When `false`, the client discards events and stops checking for configuration values.                                                                                   |
 | `submissionBatchSize`            | `50`                               | The most events sent in one request. The client lowers it on its own if the server rejects a batch as too large.                                                        |
 | `updateSettingsWhenIdleInterval` | `120000`                           | How often, in milliseconds, the client checks for new configuration values. Values below `120000` are raised to `120000`. `0` or a negative value turns the check off.  |
@@ -145,10 +145,9 @@ await Exceptionless.startup((c) => {
 })
 ```
 
-In 3.2.1, exclusions don't check the outer name passed to `setProperty` or used in `defaultData`.
-For example, `setProperty("password", value)` still sends the value, while
-`setProperty("credentials", { password: value })` removes the nested `password` with the patterns above. Omit sensitive
-top-level values or remove them with a [plugin](#plugins).
+In 3.2.1, exclusions don't check the outer name passed to `setProperty` or used in `defaultData`. For example,
+`setProperty("password", value)` still sends the value, while `setProperty("credentials", { password: value })` removes
+the nested `password` with the patterns above. Omit sensitive top-level values or remove them with a [plugin](#plugins).
 
 The client also applies the **Data Exclusions** list from your project's settings, which it receives as a
 [configuration value](/docs/clients/javascript/client-configuration-values/). See [Security](/docs/security/) for how
@@ -179,7 +178,8 @@ await Exceptionless.startup((c) => {
 | `@exceptionless/react-native` | AsyncStorage. The persisted queue is on by default.                                          |
 | `@exceptionless/core`         | Memory, unless you call `useLocalStorage()`                                                  |
 
-To send the queue right away, call `await Exceptionless.processQueue()`. See
+Await `Exceptionless.processQueue()` to try to send a batch before a process or invocation ends. One call sends at most
+one batch, so it doesn't guarantee that every queued event was delivered. See
 [short-lived processes](/docs/clients/javascript/guides/node/#short-lived-processes-and-serverless).
 
 ## Plugins {#plugins}

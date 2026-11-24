@@ -131,7 +131,7 @@ export async function onRequestError(error, request, context) {
     .setProperty("routeType", context.routeType)
     .submit()
 
-  // Send now: a serverless function can be frozen right after the response.
+  // Attempt to submit a batch before the invocation finishes.
   await Exceptionless.processQueue()
 }
 
@@ -160,6 +160,10 @@ function toRequestInfo(request) {
 
 The `digest` property matches the digest Next.js shows in the browser for a server error, so you can connect what a user
 saw with the server event.
+
+`processQueue()` sends at most one batch of up to 50 events per call, and returns without sending if the queue is
+already being processed, so it doesn't guarantee that every queued event was delivered. See
+[short-lived processes](/docs/clients/javascript/guides/node/#short-lived-processes-and-serverless).
 
 ### 4. Report client render errors
 
@@ -235,7 +239,8 @@ export default function GlobalError({ error, retry }) {
 
 ### 5. Send events from route handlers
 
-Start the server client and send events as usual. Use `after()` to send the queue once the response is on its way:
+Start the server client and send events as usual. Use `after()` to attempt to submit a batch once the response is on its
+way:
 
 ```js
 import { after } from "next/server"

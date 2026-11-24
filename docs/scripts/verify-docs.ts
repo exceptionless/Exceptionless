@@ -16,6 +16,13 @@ const apiHostname = new URL(site.apiUrl).hostname
 const appHostname = new URL(site.appUrl).hostname
 /** Hostnames that must never appear in published pages outside /news/. */
 const bannedHostnames = ["collector.exceptionless.io"]
+/**
+ * Pages allowed to name the banned hostnames. The JavaScript troubleshooting page lists the 3.2.1 client's default
+ * hosted URLs for a Content Security Policy.
+ */
+const bannedHostnameRoutes = new Set(["/docs/clients/javascript/troubleshooting/"])
+/** Files that bundle the Markdown copies of docs pages. They may repeat what the exempt pages say, and nothing more. */
+const markdownBundleFiles = new Set(["/llms-full.txt", "/llms-small.txt"])
 /** Paths that belong to the API. The web app hostname must not serve them in docs. */
 const apiPathsOnAppHost = ["/api", "/docs"]
 /** Routes allowed to use an API path on the app host. The contact form posts to the app origin that allows its CORS. */
@@ -172,6 +179,17 @@ async function verifyHostnames(): Promise<void> {
     "g",
   )
 
+  const exemptFiles = new Set(
+    [...bannedHostnameRoutes].flatMap((route) => [`${route}index.html`, markdownPath(route)]),
+  )
+  const exemptMentions = new Map(bannedHostnames.map((hostname) => [hostname, 0]))
+  for (const route of bannedHostnameRoutes) {
+    const text = await Deno.readTextFile(`${siteRoot}${markdownPath(route)}`)
+    for (const hostname of bannedHostnames) {
+      exemptMentions.set(hostname, exemptMentions.get(hostname)! + text.split(hostname).length - 1)
+    }
+  }
+
   for await (const path of walk(siteRoot)) {
     const relative = path.slice(siteRoot.length)
     if (relative.startsWith("/news/") || !/\.(?:html|md|txt)$/.test(relative)) {
@@ -187,7 +205,12 @@ async function verifyHostnames(): Promise<void> {
     }
 
     for (const hostname of bannedHostnames) {
-      if (text.includes(hostname)) {
+      if (exemptFiles.has(relative)) {
+        continue
+      }
+
+      const allowed = markdownBundleFiles.has(relative) ? exemptMentions.get(hostname)! : 0
+      if (text.split(hostname).length - 1 > allowed) {
         errors.push(`${relative}: mentions ${hostname}. Use ${site.apiUrl} for the hosted API.`)
       }
     }

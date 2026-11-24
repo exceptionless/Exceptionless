@@ -91,7 +91,7 @@ export async function handleError({ kind, error, event }) {
 
   await Exceptionless.createException(toError(error)).setProperty("path", event.url.pathname).submit()
 
-  // Send now in case the platform stops the function after the response.
+  // Attempt to submit a batch before the invocation finishes.
   await Exceptionless.processQueue()
 }
 ```
@@ -100,6 +100,10 @@ SvelteKit passes every error to `handleError`, including errors you raise with i
 and 404s for unknown routes (`kind` is `"framework"`). The `kind` check skips those and reports only errors your code
 didn't expect. `toError` turns any thrown value into an `Error`. `startup` sets the API key right away, so the hooks
 don't need to wait for it.
+
+`processQueue()` sends at most one batch of up to 50 events per call, and returns without sending if the queue is
+already being processed, so it doesn't guarantee that every queued event was delivered. See
+[short-lived processes](/docs/clients/javascript/guides/node/#short-lived-processes-and-serverless).
 
 To report a caught error elsewhere, import `Exceptionless` from the package for that side and call
 `Exceptionless.submitException(toError(error))`.

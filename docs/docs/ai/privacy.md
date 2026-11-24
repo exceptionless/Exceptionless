@@ -33,13 +33,14 @@ Exie acts as you, inside the organization you're viewing:
 
 - It sees only what your account can see in that organization. It can't reach other organizations, even ones you belong
   to.
-- It can read projects, stacks, events, and visible saved views, including stack traces, request details, and custom data.
+- It can read projects, stacks, events, and visible saved views, including stack traces, request details, and custom
+  data.
 - It can change stack status, snooze, critical flags, and reference links. It can also create, update, and permanently
   delete saved views. Deleting or changing a shared view affects everyone in the organization.
-- It is instructed to change data only when your message asks for that change, and every change appears as a step
-  above Exie's answer. Deleting a saved view or changing a shared view also requires confirmation in your next message,
-  enforced by the server. Creating private or shared views, updating private views, and stack changes don't require
-  this extra confirmation.
+- It is instructed to change data only when your message asks for that change, and every change appears as a step above
+  Exie's answer. Deleting a saved view or changing a shared view also requires confirmation in your next message,
+  enforced by the server. Creating private or shared views, updating private views, and stack changes don't require this
+  extra confirmation.
 - It can't delete events, stacks, projects, or organizations, or change project or organization settings.
 
 See [Exie](/docs/ai/exie/) for the full list of tools.
@@ -49,7 +50,8 @@ See [Exie](/docs/ai/exie/) for the full list of tools.
 A coding agent connected to the MCP server acts as you, limited to what you approved when it connected:
 
 - **Organizations:** only the ones you selected, and only while you're still a member.
-- **Permissions:** the scopes you approved. For read-only access, leave both **Stacks Write** and **Saved Views Write** off.
+- **Permissions:** the scopes you approved. Every requested scope starts selected on the consent screen, so for
+  read-only access, clear both **Stacks Write** and **Saved Views Write**.
 - It can read projects, stacks, and events, and with **Projects Read** it can read a React Native or Expo project's API
   key through `get_client_setup_instructions`.
 - With **Stacks Write**, it can make the same stack changes as Exie. **Saved Views Read** allows listing visible views;
@@ -132,9 +134,9 @@ How to limit it with the MCP server:
 
 ## Read-only access
 
-An MCP connection is read-only when you grant neither **Stacks Write** nor **Saved Views Write**. Requested, allowed
-scopes start selected on the consent screen, so clear both write permissions before approving read-only access. See
-[Keep a connection read-only](/docs/ai/mcp-server/#read-only).
+An MCP connection is read-only when you grant neither **Stacks Write** nor **Saved Views Write**. MCP clients usually
+request every scope, and every requested scope the application allows starts selected on the consent screen, so clear
+both write permissions before you select **Approve**. See [Keep a connection read-only](/docs/ai/mcp-server/#read-only).
 
 Exie has no read-only mode. Anyone who can use Exie in an organization can ask it to change stacks and saved views they
 can access there, just as they can in the app.

@@ -85,26 +85,26 @@ account need a user token or an OAuth token. See [Authentication](/docs/api/auth
 
 ## Status codes {#status-codes}
 
-| Code  | Meaning                                                                                                      |
-| ----- | ------------------------------------------------------------------------------------------------------------ |
-| `200` | Success. The body has the result.                                                                            |
-| `201` | Created. The `Location` header points to the new resource.                                                   |
-| `202` | Accepted for background processing. Event submissions, user descriptions, and bulk deletes return this.      |
-| `304` | Not modified. Returned by `GET /api/v2/projects/config` when the `v` you sent is current.                    |
-| `400` | Bad request, such as an invalid filter, or an event submitted with a user token that has no default project. |
-| `401` | No token, or the token is invalid, expired, disabled, or suspended. A suspended organization blocks its client keys. |
+| Code  | Meaning                                                                                                                    |
+| ----- | -------------------------------------------------------------------------------------------------------------------------- |
+| `200` | Success. The body has the result.                                                                                          |
+| `201` | Created. The `Location` header points to the new resource.                                                                 |
+| `202` | Accepted for background processing. Event submissions, user descriptions, and bulk deletes return this.                    |
+| `304` | Not modified. Returned by `GET /api/v2/projects/config` when the `v` you sent is current.                                  |
+| `400` | Bad request, such as an invalid filter, or an event submitted with a user token that has no default project.               |
+| `401` | No token, or the token is invalid, expired, disabled, or suspended. A suspended organization blocks its client keys.       |
 | `402` | The monthly event limit or five-minute throttle was reached, or a user token submitted events to a suspended organization. |
-| `403` | The token is valid but not allowed to do this. For example, a client-scoped key can't read events.           |
-| `404` | Not found, or you don't have access to it.                                                                   |
-| `409` | Conflict, such as a duplicate.                                                                               |
-| `411` | An event submission had an empty body.                                                                       |
-| `413` | The request body is larger than the event size limit (200,000 bytes by default). Send smaller batches.       |
-| `415` | Unsupported content type. Event submissions accept `application/json` and `text/plain`.                      |
-| `422` | Validation failed. The `errors` object says which fields.                                                    |
-| `426` | Upgrade required. The query uses a feature your plan doesn't include, or the organization is suspended.      |
-| `429` | Too many requests. See [Rate limits](#rate-limits).                                                          |
-| `500` | Server error. The response may include a `reference-id` to give to support.                                  |
-| `503` | The server isn't accepting events right now. Retry later.                                                    |
+| `403` | The token is valid but not allowed to do this. For example, a client-scoped key can't read events.                         |
+| `404` | Not found, or you don't have access to it.                                                                                 |
+| `409` | Conflict, such as a duplicate.                                                                                             |
+| `411` | An event submission had an empty body.                                                                                     |
+| `413` | The request body is larger than the event size limit (200,000 bytes by default). Send smaller batches.                     |
+| `415` | Unsupported content type. Event submissions accept `application/json` and `text/plain`.                                    |
+| `422` | Validation failed. The `errors` object says which fields.                                                                  |
+| `426` | Upgrade required. The query uses a feature your plan doesn't include, or the organization is suspended.                    |
+| `429` | Too many requests. See [Rate limits](#rate-limits).                                                                        |
+| `500` | Server error. The response may include a `reference-id` to give to support.                                                |
+| `503` | The server isn't accepting events right now. Retry later.                                                                  |
 
 ## Rate limits {#rate-limits}
 
@@ -121,7 +121,8 @@ keys and OAuth tokens, per user for user tokens, and per IP address for requests
 count: `GET /api/v2/projects/config`, `GET /api/v2/events/session/heartbeat`, and the app's live update connection.
 
 Event submissions also count against the organization's monthly event limit. When it's used up, submissions get `402`
-until the plan resets or you upgrade. See [Limits and deduplication](/docs/concepts/limits/).
+until the plan resets or you upgrade. Submissions also get `402` while the organization is throttled for sending too
+many events in a five-minute window. See [Limits and deduplication](/docs/concepts/limits/).
 
 ## Browser requests {#cors}
 

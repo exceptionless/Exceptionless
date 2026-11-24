@@ -67,6 +67,9 @@ Property names are `snake_case`. Dates are ISO 8601 strings with a UTC offset.
 }
 ```
 
+The values in this example, including the date, are illustrative. When you send an event, leave out `date` or set it to
+the current time: the server discards events dated more than three days in the past. See [`date`](#event-fields).
+
 ## Event fields {#event-fields}
 
 | Field          | Type             | Description                                                                                                                                                                                                                                            |
@@ -229,11 +232,11 @@ and `column`.
 | `query_string`      | object  | Query parameters mapped to values.                                  |
 | `data`              | object  | Extra values, including the browser and OS keys below.              |
 
-The server applies the project's [data exclusions](/docs/project-settings/#data-exclusions) to cookies, query parameters,
-and post data represented as a dictionary of string values or JSON that can be read as one. It replaces long values in
-those fields with a placeholder. Filter headers and other request body formats before sending; the server doesn't apply
-these exclusions to them. When the project excludes private information, it removes the client IP address, cookies,
-post data, and query string.
+The server applies the project's [data exclusions](/docs/project-settings/#data-exclusions) to cookies, query
+parameters, and post data represented as a dictionary of string values or JSON that can be read as one. It replaces long
+values in those fields with a placeholder. Filter headers and other request body formats before sending; the server
+doesn't apply these exclusions to them. When the project excludes private information, it removes the client IP address,
+cookies, post data, and query string.
 
 #### Browser and OS keys {#browser-and-os-keys}
 

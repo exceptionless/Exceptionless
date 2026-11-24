@@ -50,12 +50,15 @@ Check these in order:
    and make sure it isn't disabled.
 3. **The client is enabled.** `c.enabled = false` discards every event.
 4. **The process lived long enough.** Events wait in a queue that's sent every 10 seconds. A script, serverless
-   function, or page that ends first loses them. Call `await Exceptionless.processQueue()` before it ends. See
+   function, or page that ends first loses them. Await `Exceptionless.processQueue()` before it ends to try to send a
+   batch of up to 50 events. See
    [Node.js and serverless](/docs/clients/javascript/guides/node/#short-lived-processes-and-serverless).
 5. **The request isn't blocked.** In the browser, look for a failed request in the network tab. If your site has a
-   Content Security Policy, its `connect-src` must allow your Exceptionless server. For the hosted service, set
-   `c.serverUrl = "https://api.exceptionless.io"` and allow that origin. Exceptionless accepts cross-origin requests
-   from any site, so on a self-hosted server, check that a proxy in front of it doesn't block them.
+   Content Security Policy, its `connect-src` must allow the URLs the client sends to. For the hosted service, keep the
+   client's default URLs and allow the 3.2.1 packages' default hosted endpoints: `https://collector.exceptionless.io`,
+   `https://config.exceptionless.io`, and `https://heartbeat.exceptionless.io`. On a self-hosted server, allow the
+   `serverUrl` you set. Exceptionless accepts cross-origin requests from any site, so on a self-hosted server, also
+   check that a proxy in front of it doesn't block them.
 
 ## The client stopped sending
 

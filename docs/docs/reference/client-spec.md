@@ -61,7 +61,7 @@ without writing a client, see [Other languages and custom clients](/docs/clients
 
 ## Endpoints {#endpoints}
 
-All paths are relative to the server URL, `https://api.exceptionless.io` for the hosted service.
+All paths are relative to the server URL. A new client can use `https://api.exceptionless.io` for the hosted service.
 
 | Method and path                                             | Purpose                                                                                        |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -78,7 +78,9 @@ A client must let the app set:
 - **API key.** A client-scoped key from the project's **API Keys** settings (see
   [Client-scoped tokens](/docs/api/project-tokens/)). Both official clients treat a key shorter than 10 characters as
   invalid and send nothing.
-- **Server URL.** Use `https://api.exceptionless.io` for the hosted REST API. Self-hosted users set it to their own URL.
+- **Server URL.** Self-hosted users set it to their own URL. A new client can default to `https://api.exceptionless.io`,
+  the hosted REST API. The official .NET and JavaScript clients ship with their own hosted service URLs, so apps that
+  use the hosted service leave this setting alone.
 - **Enabled.** A switch that turns off all submission.
 
 A client should also let the app set default tags and data added to every event, the app version (`@version`), local
@@ -144,14 +146,14 @@ too old.
 
 ## Offline queue {#offline-queue}
 
-On temporary network or server failures, clients keep events in the queue and retry, subject to the limits below and
-the [response handling rules](#responses).
+On temporary network or server failures, clients keep events in the queue and retry, subject to the limits below and the
+[response handling rules](#responses).
 
 - **Cap the queue.** The JavaScript client keeps at most 250 events and drops the oldest. The .NET client deletes queued
   events after 7 days or 3 failed attempts.
 - **Persist it where you can.** The .NET, browser, and Node.js clients keep the queue in memory by default. The browser
-  client can persist it in `localStorage` and Node.js in a local folder (`usePersistedQueueStorage`); the .NET client can
-  use folder storage. React Native persists the queue in AsyncStorage by default.
+  client can persist it in `localStorage` and Node.js in a local folder (`usePersistedQueueStorage`); the .NET client
+  can use folder storage. React Native persists the queue in AsyncStorage by default.
 - **Don't hold events too long.** The server discards events dated more than three days in the past.
 - **Flush on shutdown.** Process the queue once more when the app exits or the page is hidden.
 
@@ -203,10 +205,13 @@ Authorization: Bearer YOUR_API_KEY
 A client must keep settings current:
 
 1. On startup, load the last saved settings and version, then fetch settings shortly after startup (the official clients
-   wait 5 to 15 seconds).
+   wait 5 to 15 seconds once idle checks are on; see step 3).
 2. Read `X-Exceptionless-ConfigVersion` from every `200` or `202` response to an event or user-description submission.
    When it's higher than the saved version, fetch settings.
-3. While the app is idle, fetch settings on an interval: every 2 minutes by default, and never more often.
+3. While the app is idle, fetch settings on an interval: every 2 minutes by default, and never more often. The
+   JavaScript client does this after `startup()`. The .NET client turns it on in `Startup()`, which the ASP.NET Core,
+   WPF, and Windows Forms integrations call; a .NET client created without `Startup()` fetches settings only when step 2
+   finds a newer version.
 4. Save the settings and version so they apply on the next start. Replace the previous server settings; remove keys the
    server no longer sends.
 
@@ -233,8 +238,8 @@ the `@@DataExclusions` setting and remove every matching key from:
 - custom data and the `data` of errors and other reserved objects,
 - request headers, cookies, query string parameters, and form data.
 
-JavaScript 3.2.1 filters properties inside values passed to `setProperty` or `defaultData`, but doesn't check their outer
-data keys. Omit sensitive top-level values or remove them in a plugin; see
+JavaScript 3.2.1 filters properties inside values passed to `setProperty` or `defaultData`, but doesn't check their
+outer data keys. Omit sensitive top-level values or remove them in a plugin; see
 [JavaScript data exclusions](/docs/clients/javascript/client-configuration/#data-exclusions). The .NET client checks
 those outer names too.
 
@@ -250,9 +255,9 @@ address, request headers, cookies, post data, and query string. The official cli
 identities, user descriptions, or custom data the app adds explicitly.
 
 When the project turns off private information in its settings, the server removes the user (`@user`), the email address
-in a user description, the IP addresses, machine name, cookies, post data, and query string from events it receives.
-The server can infer IP addresses independently of the client flags, so use the project setting to keep those out of
-stored events. See [Security and privacy](/docs/security/#remove-private-information-on-the-server).
+in a user description, the IP addresses, machine name, cookies, post data, and query string from events it receives. The
+server can infer IP addresses independently of the client flags, so use the project setting to keep those out of stored
+events. See [Security and privacy](/docs/security/#remove-private-information-on-the-server).
 
 ## Deduplication {#deduplication}
 
@@ -314,11 +319,13 @@ should set a `reference_id` on every error event; both official clients can gene
 ## Environment {#environment}
 
 A client should let the app set a default deployment environment and override it per event, and send it in the top-level
-`environment` field. The current .NET (6.2.0) and JavaScript (3.2.1) clients don't set it yet. See
+`environment` field. The .NET 6.2.0 and JavaScript 3.2.1 clients don't set it. See
 [Event format](/docs/reference/event-format/#environment) for the rules and [Environments](/docs/environments/) for how
 the app uses it.
 
 ## Errors in the client {#client-errors}
 
-A client must never throw into the app. Catch errors in plugins, serialization, and network calls, log them to the
-client's own log, and keep going.
+Failures while collecting, processing, or sending events must not throw into the app. Catch errors in plugins,
+serialization, storage, and network calls, log them to the client's own log, and keep going. Invalid arguments the app
+passes explicitly are different: both official clients throw for some, such as an invalid reference ID or geo
+coordinates.

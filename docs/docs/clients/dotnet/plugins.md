@@ -11,7 +11,7 @@ sources:
   - Exceptionless.Net:src/Exceptionless/Plugins/Default/010_EventExclusionPlugin.cs
   - Exceptionless.Net:src/Exceptionless/Configuration/ExceptionlessConfiguration.cs
   - Exceptionless.Net:src/Exceptionless/ExceptionlessClient.cs
-  - Exceptionless.Net:samples/Exceptionless.SampleConsole/Plugins/SystemUptimePlugin.cs
+  - Exceptionless.Net:src/Exceptionless/Extensions/DataDictionaryExtensions.cs
   - Exceptionless.Net:samples/Exceptionless.SampleConsole/Program.cs
 ---
 
@@ -34,28 +34,25 @@ Implement `IEventPlugin`. The `Run` method gets an `EventPluginContext`:
 | `Log`         | The client's diagnostic log.                                                                                                                                  |
 | `Cancel`      | Set to `true` to drop the event. No later plugins run.                                                                                                        |
 
-This plugin adds how long the machine has been up to every feature usage event. It works on Windows, Linux, and macOS:
-
-<!-- source: Exceptionless.Net:samples/Exceptionless.SampleConsole/Plugins/SystemUptimePlugin.cs -->
+This plugin adds deployment details to every event. It reads them once from environment variables that your deployment
+sets, so use the names your build and hosting already provide:
 
 ```csharp
 using System;
-using System.Diagnostics;
 using Exceptionless;
-using Exceptionless.Models;
 using Exceptionless.Plugins;
 
 [Priority(100)]
-public class SystemUptimePlugin : IEventPlugin {
+public class DeploymentInfoPlugin : IEventPlugin {
+    private readonly object _deployment = new {
+        Build = Environment.GetEnvironmentVariable("BUILD_ID"),
+        Region = Environment.GetEnvironmentVariable("DEPLOYMENT_REGION"),
+        Component = Environment.GetEnvironmentVariable("APP_COMPONENT")
+    };
+
     public void Run(EventPluginContext context) {
-        // Only update feature usage events.
-        if (context.Event.Type != Event.KnownTypes.FeatureUsage)
-            return;
-
-        var uptime = TimeSpan.FromSeconds((double)Stopwatch.GetTimestamp() / Stopwatch.Frequency);
-
         // Shown in its own section on the event's Extended Data tab.
-        context.Event.SetProperty("System Uptime", $"{uptime.Days} Days {uptime.Hours} Hours {uptime.Minutes} Minutes {uptime.Seconds} Seconds");
+        context.Event.SetProperty("Deployment", _deployment);
     }
 }
 ```
@@ -71,13 +68,13 @@ Register a plugin class before the client starts:
 ```csharp
 using Exceptionless;
 
-ExceptionlessClient.Default.Configuration.AddPlugin<SystemUptimePlugin>();
+ExceptionlessClient.Default.Configuration.AddPlugin<DeploymentInfoPlugin>();
 ```
 
 In ASP.NET Core or worker services, do it in the configuration lambda:
 
 ```csharp
-builder.AddExceptionless(c => c.AddPlugin<SystemUptimePlugin>());
+builder.AddExceptionless(c => c.AddPlugin<DeploymentInfoPlugin>());
 ```
 
 For something small, pass a key, a priority, and an action instead of writing a class. The key lets you remove it later:
@@ -145,7 +142,7 @@ Pick a priority based on what you need:
 Remove a class plugin by type, and an action plugin by its key:
 
 ```csharp
-ExceptionlessClient.Default.Configuration.RemovePlugin<SystemUptimePlugin>();
+ExceptionlessClient.Default.Configuration.RemovePlugin<DeploymentInfoPlugin>();
 ExceptionlessClient.Default.Configuration.RemovePlugin("region");
 ```
 

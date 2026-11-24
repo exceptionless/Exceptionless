@@ -167,7 +167,7 @@ await Exceptionless.updateUserEmailAndDescription(referenceId, "jane@example.com
 ```
 
 ```bash tab="curl"
-curl -X POST "https://api.exceptionless.io/api/v2/events/by-ref/9f4a1c2b3d/user-description" \
+curl -X POST "https://api.exceptionless.io/api/v2/events/by-ref/YOUR_REFERENCE_ID/user-description" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"email_address":"jane@example.com","description":"I clicked Place order twice."}'
@@ -189,19 +189,19 @@ On an event's **Overview** tab, the **Reference** row shows its reference ID and
 
 ## Ask Exie
 
-[Exie](/docs/ai/exie/) is on Medium plans and up.
+[Exie](/docs/ai/exie/) is on Medium plans and up. Replace `REFERENCE_ID` with the ID your customer gave you.
 
 ```prompt exie
-Find the error with reference ID 9f4a1c2b3d and explain what went wrong.
+Find the error with reference ID REFERENCE_ID and explain what went wrong.
 ```
 
 ```prompt exie
-How many times has the error behind reference 9f4a1c2b3d happened this week?
+How many times has the error behind reference REFERENCE_ID happened this week?
 ```
 
 With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can take a support ticket from reference ID to
 fix:
 
 ```prompt agent
-A customer reported Exceptionless reference ID 9f4a1c2b3d. Find that event, read its stack trace and request, find the cause in this repository, and propose a fix.
+A customer reported Exceptionless reference ID REFERENCE_ID. Find that event, read its stack trace and request, find the cause in this repository, and propose a fix.
 ```

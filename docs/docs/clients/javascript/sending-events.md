@@ -104,8 +104,6 @@ try {
   throw new Error("Unable to create order from quote")
 } catch (error) {
   await Exceptionless.createException(error)
-    // Set your own reference ID so you can find this event later.
-    .setReferenceId("order-12345678")
     // Add the order without its card number, up to 4 levels deep.
     .setProperty("Order", order, 4, ["creditCardNumber"])
     .setProperty("Quote", 123)
@@ -117,6 +115,10 @@ try {
     .submit()
 }
 ```
+
+Error events get a random reference ID automatically. If you set your own with `setReferenceId`, use a new value for
+every event, such as `crypto.randomUUID()`: the server discards a second event with the same reference ID in the same
+project within a day.
 
 The builder methods are `createException`, `createUnhandledException`, `createLog`, `createFeatureUsage`,
 `createNotFound`, `createSessionStart`, and `createEvent`.
@@ -178,7 +180,7 @@ await Exceptionless.updateUserEmailAndDescription(referenceId, "jane@example.com
 ## Send right away
 
 `submit` puts the event in a queue that the client sends every 10 seconds. Before a short-lived process exits, or before
-a hard page navigation, send the queue yourself:
+a hard page navigation, await `processQueue()` to try to send a batch:
 
 ```js
 import { Exceptionless } from "@exceptionless/browser"
@@ -186,7 +188,9 @@ import { Exceptionless } from "@exceptionless/browser"
 await Exceptionless.processQueue()
 ```
 
-See [Node.js and serverless](/docs/clients/javascript/guides/node/#short-lived-processes-and-serverless).
+One call sends at most one batch of up to 50 events, and returns without sending if the queue is already being
+processed, so it doesn't guarantee that every queued event was delivered. See
+[Node.js and serverless](/docs/clients/javascript/guides/node/#short-lived-processes-and-serverless).
 
 ## Ask Exie
 

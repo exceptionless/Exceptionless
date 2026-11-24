@@ -16,9 +16,9 @@ sources:
 
 # Client-scoped tokens
 
-A client-scoped token, or client API key, lets an app send events and read client configuration for one project. Create one for each
-app or environment so you can turn it off on its own. This page shows how to manage keys in the app and with the API.
-For what each kind of token can do, see [Authentication](/docs/api/authentication/).
+A client-scoped token, or client API key, lets an app send events and read client configuration for one project. Create
+one for each app or environment so you can turn it off on its own. This page shows how to manage keys in the app and
+with the API. For what each kind of token can do, see [Authentication](/docs/api/authentication/).
 
 ## Manage keys in the app {#in-the-app}
 
@@ -124,8 +124,22 @@ curl https://api.exceptionless.io/api/v2/tokens/YOUR_API_KEY \
   --data '{ "is_disabled": true }'
 ```
 
+## Rotate a key {#rotate}
+
+Replace a key without losing events by running the old and new keys side by side:
+
+1. Create a new client API key for the project, with a note that names the app.
+2. Store it where the app reads its key, such as a secret store or an environment variable.
+3. Deploy the app with the new key.
+4. Check that events from the new deployment arrive on the project's **Events** page.
+5. Disable the old key. Any app still using it gets `401`, and you can enable the key again if something breaks.
+6. Delete the old key once you no longer need to re-enable it.
+
 ## Use a coding agent {#coding-agent}
 
+Replace `PROJECT_NAME` with your project's name and `SECRET_STORE_COMMAND` with the command that saves a secret for your
+app:
+
 ```prompt agent
-Write a script that uses my Exceptionless user token from an environment variable to create a client API key for each project in my organization with the note "rotated" and print the project name and new key.
+Write a script that creates a new Exceptionless client API key for the project PROJECT_NAME, using my user token from the EXCEPTIONLESS_USER_TOKEN environment variable and the API in https://exceptionless.com/docs/api/project-tokens.md. Pass the new key straight to SECRET_STORE_COMMAND without printing or logging it, and don't disable or delete the old key.
 ```

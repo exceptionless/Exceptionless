@@ -152,5 +152,5 @@ Compare errors by version for the last 14 days. Did the release after my client 
 With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can do the upgrade:
 
 ```prompt agent
-Upgrade the Exceptionless packages in this repository to 6.2.0. Read https://exceptionless.com/docs/clients/dotnet/upgrading.md and apply every change that affects this code, then build and run the tests. Afterwards, check my Exceptionless project for new errors from this app.
+Upgrade the Exceptionless packages in this repository to 6.2.0. Read https://exceptionless.com/docs/clients/dotnet/upgrading.md and apply every change that affects this code, then build and run the tests. Tell me which packages changed and what migration work is left.
 ```

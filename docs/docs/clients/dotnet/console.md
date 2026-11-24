@@ -64,7 +64,7 @@ ExceptionlessClient.Default.Startup("YOUR_API_KEY");
 ## Send events before the app exits
 
 The client queues events and sends them in the background. `Startup()` flushes the queue when the process exits
-normally, but a CLI tool that does its work and returns should flush explicitly so nothing is lost:
+normally, but a CLI tool that does its work and returns should process the queue explicitly:
 
 ```csharp
 using Exceptionless;
@@ -81,8 +81,10 @@ try {
 }
 ```
 
-`ProcessQueueAsync()` sends everything in the queue and waits for it to finish. To also send a session end and
-unregister the client's handlers, call `await ExceptionlessClient.Default.ShutdownAsync()` instead.
+`ProcessQueueAsync()` sends batches until the queue is empty or a send fails, and waits for those requests. Events from
+a failed send stay in the queue, and are lost when the process exits unless you
+[store the queue on disk](/docs/clients/dotnet/configuration/#queue-storage). To also send a session end and unregister
+the client's handlers, call `await ExceptionlessClient.Default.ShutdownAsync()` instead.
 
 ## Verify
 

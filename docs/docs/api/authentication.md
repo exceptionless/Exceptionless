@@ -16,6 +16,7 @@ sources:
   - src/Exceptionless.Core/Services/OAuthService.cs
   - src/Exceptionless.Core/Configuration/OAuthServerOptions.cs
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/account/security/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(auth)/oauth/authorize/+page.svelte
 ---
 
 # Authentication
@@ -86,6 +87,10 @@ For the REST API, request the resource `https://be.exceptionless.io/api/v2` and 
 | `events:read`    | Listing, counting, and reading events and sessions.                                                      |
 | `offline_access` | A refresh token, so the app can get new access tokens without asking the user again.                     |
 
+On the consent screen, every scope the app requested starts selected, and the user can clear any of them before
+approving. The token response's `scope` lists what the user granted, so check it rather than assuming the app got
+everything it asked for.
+
 An OAuth access token works only on the routes its scopes allow, and only in the approved organizations that the user
 still belongs to. It can't send events or manage projects, tokens, or users. Access tokens last one hour and refresh
 tokens 30 days by default.
@@ -98,6 +103,10 @@ themselves to `https://api.exceptionless.io`. Apps find the endpoints through di
   scopes.
 - `https://be.exceptionless.io/.well-known/oauth-authorization-server` lists the authorization, token, registration, and
   revocation endpoints.
+
+Public clients register through dynamic client registration, or use an HTTPS URL to a client ID metadata document as
+their client ID. No client secret is needed. An app that registers itself this way can request any supported scope; the
+user's approval limits what it gets. Once an administrator saves an app's scopes, the consent screen offers only those.
 
 > [!NOTE]
 > On a self-hosted instance, the origin is `EX_ApiUrl` if you set it, otherwise `EX_BaseURL`.

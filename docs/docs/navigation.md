@@ -16,6 +16,8 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/product-tours/catalog.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/product-tours/components/dialogs/product-tour-catalog-dialog.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/product-tours/components/alerts/product-tour-welcome.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/product-tours/components/product-tour-host.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/onboarding/checklist.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/product-tours/components/alerts/product-tour-feature-announcement.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/product-tours/components/product-tour-shell-spotlight.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/product-tours/components/product-tour-spotlight.svelte
@@ -97,9 +99,10 @@ Each tour shows **Start**, **Continue** if you left it partway through, or **Res
 tours are marked **Completed**. If a tour isn't available yet, the list says why, such as **Send an error report before
 starting this guide.**
 
-When you first sign in, a **Welcome to Exceptionless** card suggests a tour until you start one or close the card:
-**Continue setup** if you haven't connected an app yet, or **Explore Exceptionless** if you have. **Browse guides**
-opens the full list.
+A **Welcome to Exceptionless** card suggests a tour until you start one or close the card: **Continue setup** if you
+haven't connected an app yet, or **Explore Exceptionless** if you have. **Browse guides** opens the full list. In an
+organization created in the last 30 days, **Exie's checklist** leads you instead, and the welcome card appears only
+after you dismiss the checklist.
 
 ## Ask Exie
 
