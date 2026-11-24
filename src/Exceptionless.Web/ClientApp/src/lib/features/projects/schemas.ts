@@ -25,6 +25,11 @@ export const ClientConfigurationSettingSchema = object({
 });
 export type ClientConfigurationSettingFormData = Infer<typeof ClientConfigurationSettingSchema>;
 
+/** Project creation from the UI: whitespace-only names are rejected before the request. */
+export const AddProjectSchema = NewProjectSchema.extend({
+    name: string().trim().min(1, 'Give your app a name').max(100, 'Name must be at most 100 characters')
+});
+
 export const UpdateProjectSchema = GeneratedUpdateProjectSchema.partial();
 export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;
 

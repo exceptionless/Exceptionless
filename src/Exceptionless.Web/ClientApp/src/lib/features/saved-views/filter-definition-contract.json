@@ -1,0 +1,49 @@
+[
+    {
+        "name": "no criteria",
+        "definitions": [
+            { "type": "project", "value": [] },
+            { "type": "date", "term": "date", "value": "[now-7d TO now]" }
+        ],
+        "filter": ""
+    },
+    {
+        "name": "the chips Exie creates, in order",
+        "definitions": [
+            { "type": "project", "value": ["537650f3b77efe23a47914f3"] },
+            { "type": "type", "value": ["error", "404"] },
+            { "type": "status", "value": ["open", "regressed"], "hidden": true },
+            { "type": "environment", "value": ["Production", "staging qa", ""] },
+            { "type": "level", "value": ["error", "fatal"] },
+            { "type": "tag", "value": ["checkout", "needs review"] },
+            { "type": "keyword", "value": " error.type:\"System.Exception\" " },
+            { "type": "date", "term": "date", "value": "[now-30d TO now]" }
+        ],
+        "filter": "project:537650f3b77efe23a47914f3 (type:error OR type:404) (status:open OR status:regressed) (environment:production OR environment:\"staging qa\" OR _missing_:environment) (level:error OR level:fatal) (tag:checkout OR tag:\"needs review\") error.type:\"System.Exception\""
+    },
+    {
+        "name": "single values drop the parentheses",
+        "definitions": [
+            { "type": "project", "value": ["537650f3b77efe23a47914f3"] },
+            { "type": "status", "value": ["fixed"] },
+            { "type": "environment", "value": ["prod.eu-1"] },
+            { "type": "tag", "value": ["\"already quoted\""] }
+        ],
+        "filter": "project:537650f3b77efe23a47914f3 status:fixed environment:prod.eu-1 tag:\"already quoted\""
+    },
+    {
+        "name": "chips Exie keeps when it changes another chip",
+        "definitions": [
+            { "type": "boolean", "term": "first", "value": true },
+            { "type": "boolean", "term": "hidden" },
+            { "type": "number", "term": "value", "value": 1.5 },
+            { "type": "reference", "value": "abc 123" },
+            { "type": "session", "value": "session-1" },
+            { "type": "string", "term": "user.name", "value": "Jane Doe" },
+            { "type": "string", "term": "source" },
+            { "type": "version", "term": "version", "value": "1.0.0" },
+            { "type": "unknown", "value": "ignored" }
+        ],
+        "filter": "first:true _missing_:hidden value:1.5 reference:\"abc 123\" (reference:\"session-1\" OR ref.session:\"session-1\") user.name:\"Jane Doe\" _missing_:source version:1.0.0"
+    }
+]

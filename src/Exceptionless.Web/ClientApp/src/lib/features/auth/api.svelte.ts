@@ -15,6 +15,11 @@ const queryKeys = {
     intercom: (accessToken: null | string) => ['Auth', 'intercom', getIntercomTokenSessionKey(accessToken)] as const
 };
 
+const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password';
+const TOO_MANY_LOGIN_ATTEMPTS_MESSAGE = 'Too many attempts. Wait a few minutes and try again, or reset your password.';
+const TOO_MANY_SIGNUP_ATTEMPTS_MESSAGE = 'Too many sign up attempts. Wait a while and try again.';
+const EXISTING_ACCOUNT_MESSAGE = 'An account with this email address already exists. Log in, or reset your password if you forgot it.';
+
 export async function cancelResetPassword(token: string) {
     const client = useFetchClient();
     const response = await client.post(`auth/cancel-reset-password/${token}`, {
@@ -95,7 +100,7 @@ export async function login(email: string, password: string, inviteToken?: null 
     if (response.ok && response.data?.token) {
         accessToken.current = response.data.token;
     } else if (response.status === 401) {
-        response.problem.setErrorMessage('Invalid email or password');
+        response.problem.setErrorMessage(getUnauthorizedMessage(response.problem, 'login'));
     }
 
     return response;
@@ -152,7 +157,7 @@ export async function signup(name: string, email: string, password: string, invi
     if (response.ok && response.data?.token) {
         accessToken.current = response.data.token;
     } else if (response.status === 401) {
-        response.problem.setErrorMessage('Invalid email or password');
+        response.problem.setErrorMessage(getUnauthorizedMessage(response.problem, 'signup'));
     }
 
     return response;
@@ -171,4 +176,22 @@ export async function unlinkOAuthAccount(provider: string, providerUserId: strin
     );
 
     return response;
+}
+
+/**
+ * Maps an unauthorized login or signup response to a message for the form.
+ * The API returns 401 with these titles for rate-limit denials ("Login denied." / "Signup denied.").
+ * A signup for an existing account is attempted as a login, so a failed login title means the account exists.
+ */
+function getUnauthorizedMessage(problem: Pick<ProblemDetails, 'title'>, operation: 'login' | 'signup'): string {
+    switch (problem.title) {
+        case 'Login denied.':
+            return TOO_MANY_LOGIN_ATTEMPTS_MESSAGE;
+        case 'Login failed.':
+            return operation === 'signup' ? EXISTING_ACCOUNT_MESSAGE : INVALID_CREDENTIALS_MESSAGE;
+        case 'Signup denied.':
+            return TOO_MANY_SIGNUP_ATTEMPTS_MESSAGE;
+        default:
+            return INVALID_CREDENTIALS_MESSAGE;
+    }
 }

@@ -37,6 +37,8 @@ for (const resource of ['project', 'stack', 'event', 'stack event', 'project sta
                 break;
         }
 
+        // Switching back lands on Stacks only once the organization has events; new ones go to client setup.
+        await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eScenario);
         await page.goto('/stack/all');
         await expectOrganization(page, e2eScenario.organizationId);
         await page.goto(href);

@@ -85,13 +85,15 @@
 
     async function addSlack() {
         toast.dismiss(toastId);
+        const requestProjectId = projectId;
+        const requestOrganizationId = organization.current;
 
         try {
             const code = await slackOAuthLogin();
             await addSlackMutation.mutateAsync(code);
             toastId = toast.success('Successfully connected Slack integration.');
         } catch (error) {
-            if (showBillingDialogOnUpgradeProblem(error, organization.current, () => addSlack())) {
+            if (showUpgradeDialogForProject(error, requestProjectId, requestOrganizationId, () => addSlack())) {
                 return;
             }
 
@@ -126,13 +128,34 @@
         }
     }
 
+    // Project-scoped mutations read the current route when they run, so a late upgrade
+    // retry must not run after the user has moved to another project.
+    function showUpgradeDialogForProject(
+        error: unknown,
+        requestProjectId: string,
+        requestOrganizationId: string | undefined,
+        retry: () => Promise<void>
+    ): boolean {
+        return showBillingDialogOnUpgradeProblem(error, requestOrganizationId, async () => {
+            if (projectId === requestProjectId) {
+                await retry();
+            }
+        });
+    }
+
     async function updateSlackNotificationSettings(settings: NotificationSettings) {
         toast.dismiss(toastId);
+        const requestProjectId = projectId;
+        const requestOrganizationId = organization.current;
 
         try {
             await updateSlackNotificationSettingsResponse.mutateAsync(settings);
             toastId = toast.success('Successfully updated Slack notification settings.');
-        } catch {
+        } catch (error) {
+            if (showUpgradeDialogForProject(error, requestProjectId, requestOrganizationId, () => updateSlackNotificationSettings(settings))) {
+                return;
+            }
+
             toastId = toast.error('Error updating Slack notification settings. Please try again.');
         }
     }

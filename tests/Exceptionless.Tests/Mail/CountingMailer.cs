@@ -11,11 +11,20 @@ public class CountingMailer : IMailer
 
     public List<OrganizationNoticeCall> OrganizationNoticeCalls { get; } = [];
 
+    public List<OrganizationTrialEndingCall> OrganizationTrialEndingCalls { get; } = [];
+
+    public List<UserEmailVerifyCall> UserEmailVerifyCalls { get; } = [];
+
     /// <summary>
     /// When true, <see cref="SendOrganizationNoticeAsync"/> throws instead of recording a call.
     /// Reset by <see cref="Reset"/>.
     /// </summary>
     public bool ShouldThrow { get; set; }
+
+    /// <summary>
+    /// Runs after each recorded <see cref="SendOrganizationTrialEndingAsync"/> call. Reset by <see cref="Reset"/>.
+    /// </summary>
+    public Action? OnOrganizationTrialEnding { get; set; }
 
     public Task<bool> SendContactRequestAsync(string name, string emailAddress, string? company, string? subject, string message, string? clientIpAddress, string? userAgent, string? referrer)
     {
@@ -62,13 +71,29 @@ public class CountingMailer : IMailer
         return Task.CompletedTask;
     }
 
+    public Task SendOrganizationTrialEndingAsync(User user, Organization organization)
+    {
+        lock (OrganizationTrialEndingCalls)
+        {
+            OrganizationTrialEndingCalls.Add(new OrganizationTrialEndingCall(user.Id, organization.Id));
+        }
+
+        OnOrganizationTrialEnding?.Invoke();
+        return Task.CompletedTask;
+    }
+
     public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
     {
         return Task.CompletedTask;
     }
 
-    public Task SendUserEmailVerifyAsync(User user)
+    public Task SendUserEmailVerifyAsync(User user, bool isNewAccount = false)
     {
+        lock (UserEmailVerifyCalls)
+        {
+            UserEmailVerifyCalls.Add(new UserEmailVerifyCall(user.EmailAddress, isNewAccount));
+        }
+
         return Task.CompletedTask;
     }
 
@@ -89,10 +114,23 @@ public class CountingMailer : IMailer
         {
             EventNoticeCalls.Clear();
         }
+        lock (OrganizationTrialEndingCalls)
+        {
+            OrganizationTrialEndingCalls.Clear();
+        }
+        lock (UserEmailVerifyCalls)
+        {
+            UserEmailVerifyCalls.Clear();
+        }
         ShouldThrow = false;
+        OnOrganizationTrialEnding = null;
     }
 }
 
 public record OrganizationNoticeCall(string UserId, string OrganizationId, bool IsOverMonthlyLimit, bool IsOverHourlyLimit);
 
 public record EventNoticeCall(string UserId, string EventId, bool IsNew, bool IsRegression);
+
+public record OrganizationTrialEndingCall(string UserId, string OrganizationId);
+
+public record UserEmailVerifyCall(string EmailAddress, bool IsNewAccount);

@@ -973,6 +973,39 @@ public sealed class UserEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task VerifyEmailAddressAsync_TokenForAnotherAccount_ReturnsTheVerifiedAccount()
+    {
+        // Arrange
+        var signedInUser = await _userRepository.GetByEmailAddressAsync(SampleDataService.TEST_ORG_USER_EMAIL);
+        Assert.NotNull(signedInUser);
+        signedInUser.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        await _userRepository.SaveAsync(signedInUser, o => o.ImmediateConsistency());
+
+        var otherUser = new User { EmailAddress = "verify-other@exceptionless.test", FullName = "Other User" };
+        otherUser.Roles.Add(AuthorizationRoles.Client);
+        otherUser.Roles.Add(AuthorizationRoles.User);
+        otherUser.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        await _userRepository.AddAsync(otherUser, o => o.ImmediateConsistency());
+
+        // Act
+        var result = await SendRequestAsAsync<VerifyEmailAddressResult>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("users", "verify-email-address", otherUser.VerifyEmailAddressToken!)
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(otherUser.EmailAddress, result.EmailAddress);
+        var verifiedUser = await _userRepository.GetByIdAsync(otherUser.Id);
+        Assert.NotNull(verifiedUser);
+        Assert.True(verifiedUser.IsEmailAddressVerified);
+        var unchangedUser = await _userRepository.GetByIdAsync(signedInUser.Id);
+        Assert.NotNull(unchangedUser);
+        Assert.False(unchangedUser.IsEmailAddressVerified);
+    }
+
+    [Fact]
     public Task UnverifyEmailAddressAsync_NonAdmin_ReturnsForbidden()
     {
         return SendRequestAsync(r => r

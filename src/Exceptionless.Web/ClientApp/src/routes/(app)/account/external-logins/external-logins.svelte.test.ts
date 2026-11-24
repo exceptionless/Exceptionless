@@ -1,10 +1,13 @@
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const state = vi.hoisted(() => ({
-    enableOAuthLogin: false,
-    hasLocalAccount: true,
-    oauthAccounts: [{ provider: 'facebook', provider_user_id: 'legacy-facebook-id', username: 'legacy-user' }]
+const { googleLogin, state } = vi.hoisted(() => ({
+    googleLogin: vi.fn(),
+    state: {
+        enableOAuthLogin: false,
+        hasLocalAccount: true,
+        oauthAccounts: [{ provider: 'facebook', provider_user_id: 'legacy-facebook-id', username: 'legacy-user' }]
+    }
 }));
 
 import ExternalLogins from './+page.svelte';
@@ -18,7 +21,7 @@ vi.mock('#features/auth/index.svelte.ts', () => ({
     get googleClientId() {
         return state.enableOAuthLogin ? 'google-client-id' : '';
     },
-    googleLogin: vi.fn(),
+    googleLogin,
     microsoftClientId: '',
     microsoftLogin: vi.fn()
 }));
@@ -34,6 +37,7 @@ vi.mock('#features/users/api.svelte.ts', () => ({
 
 describe('external logins', () => {
     beforeEach(() => {
+        vi.clearAllMocks();
         state.enableOAuthLogin = false;
         state.hasLocalAccount = true;
         state.oauthAccounts = [{ provider: 'facebook', provider_user_id: 'legacy-facebook-id', username: 'legacy-user' }];
@@ -74,5 +78,17 @@ describe('external logins', () => {
         render(ExternalLogins);
 
         expect(screen.getByRole('button', { name: 'Remove google account' })).toBeEnabled();
+    });
+
+    it('links the provider to the signed-in user', async () => {
+        // Arrange
+        state.enableOAuthLogin = true;
+        render(ExternalLogins);
+
+        // Act
+        await fireEvent.click(screen.getByRole('button', { name: 'Link Google account' }));
+
+        // Assert
+        expect(googleLogin).toHaveBeenCalledExactlyOnceWith({ linkToCurrentUser: true });
     });
 });

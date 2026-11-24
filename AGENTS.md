@@ -1,6 +1,6 @@
 # Exceptionless
 
-Real-time error monitoring platform on .NET 10, Aspire, and Svelte 5. Keep changes readable, narrow, and backwards compatible.
+Real-time error monitoring platform on .NET 11, Aspire, and Svelte 5. Keep changes readable, narrow, and backwards compatible.
 
 This file is root-scope agent guidance. When working in a subtree, read any nested `AGENTS.md` there too. Prefer nearby repo skills for detailed backend, frontend, testing, repository, and dogfood workflows.
 
@@ -64,6 +64,7 @@ tests/                         # C# tests and HTTP samples
   - API health fallback for command-line tools with local TLS issues: `http://api-ex.dev.localhost:7110/api/v2/about`
 - Aspire may assign dynamic local ports; when it does, use the endpoints emitted by the AppHost rather than assuming the fixed URLs above.
 - With the AppHost running, discover current endpoints with `aspire describe --apphost src/Exceptionless.AppHost --format Json --non-interactive`; use the reported resource endpoint instead of guessing a port.
+- After backend code changes, run `aspire resource Api rebuild` (or `Jobs`). Start and Restart reuse the last build.
 - Dogfood, browser automation, E2E, and API smoke tests must target localhost only unless the user explicitly provides an external URL and asks to use it. Never use production URLs in scripts or tests.
 - If infrastructure is required, start or verify Aspire once. If it still blocks verification, report the exact blocker and command output instead of looping.
 - For bug reports, work on reproducing the reported behavior locally before attempting a fix. If reproduction is blocked, document the exact blocker and get confirmation before moving from diagnosis to implementation.
@@ -86,7 +87,9 @@ tests/                         # C# tests and HTTP samples
 
 ## Pull Requests
 
-- Fill out the existing PR template when creating a PR.
+- Fill out `.github/pull_request_template.md` when creating a PR.
+- Write descriptions for a human skimming them. Aim for 150–400 words. Open with one sentence on what the PR does. Use tables for settings or options, a mermaid diagram for flows or decision logic, short bullets instead of paragraphs, and a code sample when the PR adds API surface.
+- Leave out file lists, implementation narration, test inventories, and per-review-round history. After review rounds, rewrite the description to match the current state instead of appending to it.
 - Use `feature/` for feature branch names and `issue/` for bug fix or issue branch names; keep PR titles neutral and project-facing, and do not add tool or automation branding unless the user explicitly asks for it.
 - Before creating a PR branch, fetch the default branch and branch from `origin/main` (or the repository default), never from a detached or unknown worktree `HEAD`. Before pushing a long-running change, fetch again and rebase if the base branch moved.
 - Keep descriptions concise: what changed, why, affected APIs/behaviors, verification, and breaking changes.

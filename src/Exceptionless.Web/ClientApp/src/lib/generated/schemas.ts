@@ -27,12 +27,20 @@ export const StackStatusSchema = zodEnum([
   "ignored",
   "discarded",
 ]);
+export const BulkOperationSelectionKindSchema = zodEnum(["Ids", "Filter"]);
 export const BillingStatusSchema = union([
   literal(0),
   literal(1),
   literal(2),
   literal(3),
   literal(4),
+]);
+export const BackgroundTaskStatusSchema = zodEnum([
+  "Queued",
+  "Running",
+  "Completed",
+  "Failed",
+  "Cancelled",
 ]);
 
 export const AdminAssistantOrganizationUsageSchema = object({
@@ -84,6 +92,7 @@ export const AssistantAccessResponseSchema = object({
     .min(1, "Minimum plan id is required")
     .nullable()
     .optional(),
+  email_verification_required: boolean(),
 });
 export type AssistantAccessResponseFormData = Infer<
   typeof AssistantAccessResponseSchema
@@ -303,6 +312,46 @@ export const LoginSchema = object({
     .optional(),
 });
 export type LoginFormData = Infer<typeof LoginSchema>;
+
+export const NewBulkOperationSchema = object({
+  type: string()
+    .min(1, "Type is required")
+    .max(100, "Type must be at most 100 characters"),
+  organization_id: string()
+    .length(24, "Organization id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
+  project_id: string()
+    .length(24, "Project id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Project id has invalid format")
+    .nullable()
+    .optional(),
+  selection: lazy(() => NewBulkOperationSelectionSchema),
+  parameters: record(string(), string()).nullable().optional(),
+});
+export type NewBulkOperationFormData = Infer<typeof NewBulkOperationSchema>;
+
+export const NewBulkOperationSelectionSchema = object({
+  kind: BulkOperationSelectionKindSchema,
+  ids: array(string()).nullable().optional(),
+  filter: string()
+    .min(1, "Filter is required")
+    .max(2000, "Filter must be at most 2000 characters")
+    .nullable()
+    .optional(),
+  time: string()
+    .min(1, "Time is required")
+    .max(100, "Time must be at most 100 characters")
+    .nullable()
+    .optional(),
+  offset: string()
+    .min(1, "Offset is required")
+    .max(20, "Offset must be at most 20 characters")
+    .nullable()
+    .optional(),
+});
+export type NewBulkOperationSelectionFormData = Infer<
+  typeof NewBulkOperationSelectionSchema
+>;
 
 export const NewOrganizationSchema = object({
   name: string().min(1, "Name is required"),
@@ -807,6 +856,13 @@ export const TokenResultSchema = object({
 });
 export type TokenResultFormData = Infer<typeof TokenResultSchema>;
 
+export const TrialSettingsSchema = object({
+  blocked_email_domains: array(string()),
+  default_blocked_email_domains: array(string()),
+  is_default: boolean(),
+});
+export type TrialSettingsFormData = Infer<typeof TrialSettingsSchema>;
+
 export const UpdateAssistantConversationSharingSchema = object({
   enabled: boolean().nullable(),
 });
@@ -927,6 +983,13 @@ export const UpdateTokenSchema = object({
 });
 export type UpdateTokenFormData = Infer<typeof UpdateTokenSchema>;
 
+export const UpdateTrialSettingsSchema = object({
+  blocked_email_domains: array(string()).nullable().optional(),
+});
+export type UpdateTrialSettingsFormData = Infer<
+  typeof UpdateTrialSettingsSchema
+>;
+
 export const UpdateUserSchema = object({
   full_name: string().min(1, "Full name is required").optional(),
   email_notifications_enabled: boolean().optional(),
@@ -986,6 +1049,7 @@ export const UserSchema = object({
     .nullable()
     .optional(),
   verify_email_address_token_expiration: iso.datetime(),
+  trial_started_utc: iso.datetime().nullable().optional(),
   is_active: boolean(),
   roles: array(string()),
   created_utc: iso.datetime(),
@@ -1021,6 +1085,58 @@ export const UserSavedViewOrderPreferenceSchema = object({
 });
 export type UserSavedViewOrderPreferenceFormData = Infer<
   typeof UserSavedViewOrderPreferenceSchema
+>;
+
+export const VerifyEmailAddressResultSchema = object({
+  email_address: email(),
+});
+export type VerifyEmailAddressResultFormData = Infer<
+  typeof VerifyEmailAddressResultSchema
+>;
+
+export const ViewBackgroundTaskSchema = object({
+  id: string()
+    .length(24, "Id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Id has invalid format"),
+  organization_id: string()
+    .length(24, "Organization id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Organization id has invalid format"),
+  project_id: string()
+    .length(24, "Project id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Project id has invalid format")
+    .nullable()
+    .optional(),
+  type: string().min(1, "Type is required"),
+  description: string().min(1, "Description is required"),
+  status: BackgroundTaskStatusSchema,
+  progress: int32(),
+  total: int(),
+  processed: int(),
+  succeeded: int(),
+  failed: int(),
+  can_cancel: boolean(),
+  selection: lazy(() => ViewBulkOperationSelectionSchema).optional(),
+  created_by_user_id: string()
+    .length(24, "Created by user id must be exactly 24 characters")
+    .regex(/^[a-fA-F0-9]{24}$/, "Created by user id has invalid format"),
+  created_utc: iso.datetime(),
+  started_utc: iso.datetime().nullable().optional(),
+  completed_utc: iso.datetime().nullable().optional(),
+  updated_utc: iso.datetime(),
+  message: string().min(1, "Message is required").nullable().optional(),
+});
+export type ViewBackgroundTaskFormData = Infer<typeof ViewBackgroundTaskSchema>;
+
+export const ViewBulkOperationSelectionSchema = object({
+  kind: BulkOperationSelectionKindSchema,
+  id_count: int32().nullable().optional(),
+  filter: string().min(1, "Filter is required").nullable().optional(),
+  time: string().min(1, "Time is required").nullable().optional(),
+  utc_start: iso.datetime().nullable().optional(),
+  utc_end: iso.datetime().nullable().optional(),
+});
+export type ViewBulkOperationSelectionFormData = Infer<
+  typeof ViewBulkOperationSelectionSchema
 >;
 
 export const ViewCurrentUserSchema = object({
@@ -1095,6 +1211,7 @@ export const ViewOrganizationSchema = object({
     .optional(),
   billing_status: BillingStatusSchema,
   billing_price: number(),
+  trial_ends_utc: iso.datetime().nullable().optional(),
   max_events_per_month: int32(),
   bonus_events_per_month: int32(),
   bonus_expiration: iso.datetime().nullable().optional(),

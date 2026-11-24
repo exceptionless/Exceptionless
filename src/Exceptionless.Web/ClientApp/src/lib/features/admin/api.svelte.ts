@@ -1,15 +1,17 @@
 import { type FetchClientResponse, type ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, useQueryClient } from '@tanstack/svelte-query';
 
-import type { WorkInProgressResult } from '#generated/api.ts';
+import type { ChangePlanResult, WorkInProgressResult } from '#generated/api.ts';
 
 import { invalidateAssistantAccessQueries } from '#features/assistant/api.svelte.ts';
+import { queryKeys as organizationQueryKeys } from '#features/organizations/api.svelte.ts';
 
 import type {
     AdminAssistantSettings,
     AdminAssistantUsage,
     AdminEventSubmissionSettings,
     AdminStats,
+    AdminTrialSettings,
     ElasticsearchInfo,
     ElasticsearchSnapshotsResponse,
     MigrationRerunOperation,
@@ -20,7 +22,8 @@ import type {
     UpdateAssistantConversationSharingSettingsRequest,
     UpdateAssistantEnabledSettingsRequest,
     UpdateAssistantSettingsRequest,
-    UpdateEventSubmissionSettingsRequest
+    UpdateEventSubmissionSettingsRequest,
+    UpdateTrialSettingsRequest
 } from './models';
 
 export type GetOAuthApplicationsParams = {
@@ -52,7 +55,8 @@ export const queryKeys = {
     oauthApplication: (id: string | undefined) => [...queryKeys.oauthApplications, id] as const,
     oauthApplications: ['admin', 'oauth-applications'] as const,
     snapshots: ['admin', 'elasticsearch', 'snapshots'] as const,
-    stats: ['admin', 'stats'] as const
+    stats: ['admin', 'stats'] as const,
+    trialSettings: ['admin', 'trial-settings'] as const
 };
 
 export function deleteOAuthApplicationMutation() {
@@ -290,6 +294,20 @@ export function getPredefinedSavedViewsMutation() {
     }));
 }
 
+export function getTrialSettingsQuery() {
+    return createQuery<AdminTrialSettings, ProblemDetails>(() => ({
+        queryFn: async ({ signal }: { signal: AbortSignal }) => {
+            const client = useFetchClient();
+            const response = await client.getJSON<AdminTrialSettings>('admin/trial-settings', {
+                signal
+            });
+
+            return response.data!;
+        },
+        queryKey: queryKeys.trialSettings
+    }));
+}
+
 export function postForceUpdatePredefinedSavedViewsMutation() {
     return createMutation<void, ProblemDetails, void>(() => ({
         mutationFn: async () => {
@@ -458,6 +476,22 @@ export function putPredefinedSavedViewsMutation() {
     }));
 }
 
+export function putTrialSettingsMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<AdminTrialSettings, ProblemDetails, UpdateTrialSettingsRequest>(() => ({
+        mutationFn: async (request) => {
+            const client = useFetchClient();
+            const response = await client.putJSON<AdminTrialSettings>('admin/trial-settings', request);
+
+            return response.data!;
+        },
+        onSuccess: (settings) => {
+            queryClient.setQueryData(queryKeys.trialSettings, settings);
+        }
+    }));
+}
+
 export function runMaintenanceJobMutation() {
     return createMutation<void, ProblemDetails, RunMaintenanceJobParams>(() => ({
         mutationFn: async (params: RunMaintenanceJobParams) => {
@@ -468,6 +502,31 @@ export function runMaintenanceJobMutation() {
                     utcEnd: params.utcEnd?.toISOString(),
                     utcStart: params.utcStart?.toISOString()
                 }
+            });
+        }
+    }));
+}
+
+export function setTrialEndMutation() {
+    const queryClient = useQueryClient();
+
+    return createMutation<void, ProblemDetails, { organizationId: string; trialEndsUtc: string }>(() => ({
+        mutationFn: async ({ organizationId, trialEndsUtc }) => {
+            const client = useFetchClient();
+            const response = await client.postJSON<ChangePlanResult>('admin/change-plan', undefined, {
+                params: {
+                    organizationId,
+                    planId: 'EX_TRIAL',
+                    trialEndsUtc
+                }
+            });
+            if (!response.data?.success) {
+                throw new Error(response.data?.message ?? 'Failed to update the trial end date.');
+            }
+        },
+        onSuccess: async (_, { organizationId }) => {
+            await queryClient.invalidateQueries({
+                queryKey: organizationQueryKeys.id(organizationId, undefined)
             });
         }
     }));

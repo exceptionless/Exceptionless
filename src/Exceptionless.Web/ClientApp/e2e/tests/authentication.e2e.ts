@@ -4,6 +4,8 @@ import { seedRepresentativeEvent } from '../support/event-data';
 test.use({ e2eUseGeneratedUser: true });
 
 test('user can recover from a failed login, restore the session, and log out', async ({ browser, e2eApi, e2eScenario }) => {
+    // A project that has received events lands on Stacks; one still waiting for its first event goes to client setup.
+    await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eScenario);
     const authenticationContext = await browser.newContext({ baseURL: e2eApi.environment.appUrl, ignoreHTTPSErrors: true });
     const page = await authenticationContext.newPage();
 
@@ -50,6 +52,36 @@ test('user can recover from a failed login, restore the session, and log out', a
     } finally {
         await authenticationContext.close();
     }
+});
+
+test('reloading a login or signup tab keeps the session in other tabs', async ({ e2eApi, e2eScenario, page }) => {
+    // Arrange
+    const logouts: string[] = [];
+    page.context().on('request', (request) => {
+        if (new URL(request.url()).pathname.endsWith('/auth/logout')) logouts.push(request.url());
+    });
+    await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eScenario);
+    await page.goto('/stack/all');
+    await page.getByRole('heading', { name: 'All' }).waitFor({ timeout: 30_000 });
+    const authPage = await page.context().newPage();
+
+    for (const path of ['/login', '/signup']) {
+        // Act
+        await authPage.goto(path);
+        await authPage.reload();
+
+        // Assert: a signed-in visitor without an invitation is sent back into the app instead of being signed out.
+        await expect(authPage).toHaveURL(/\/stack\/all(?:[?#]|$)/, { timeout: 30_000 });
+    }
+
+    // Act
+    await page.reload();
+
+    // Assert
+    expect(logouts).toEqual([]);
+    expect(await e2eApi.getCurrentUser(e2eScenario.userToken)).toBeDefined();
+    await expect(page.getByRole('heading', { name: 'All' })).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/\/stack\/all(?:[?#]|$)/);
 });
 
 test('login restores the full notification settings link and selected project', async ({ browser, e2eApi, e2eScenario, e2eSecondaryProject }) => {

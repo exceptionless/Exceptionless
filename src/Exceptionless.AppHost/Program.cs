@@ -1,4 +1,3 @@
-using System.Reflection;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.JavaScript;
 using Microsoft.Extensions.Hosting;
@@ -120,7 +119,7 @@ mail = mail
 
 if (!servicesOnly)
 {
-    var api = builder.AddProject<Projects.Exceptionless_Web>("Api")
+    var api = builder.AddDotnetProject("Api", "../Exceptionless.Web/Exceptionless.Web.csproj")
         .WithReference(cache)
         .WithReference(elastic)
         .WithReference(storageBlobs, "AzureStorage")
@@ -153,7 +152,7 @@ if (!servicesOnly)
             .WithEndpoint("https", e => e.Port = worktreePorts.ApiHttps);
     }
 
-    var jobs = builder.AddProject<Projects.Exceptionless_Job>("Jobs", "AllJobs")
+    var jobs = builder.AddDotnetProject("Jobs", "../Exceptionless.Job/Exceptionless.Job.csproj", options => options.LaunchProfileName = "AllJobs")
         .WithReference(cache)
         .WithReference(elastic)
         .WithReference(storageBlobs, "AzureStorage")
@@ -222,7 +221,6 @@ if (!servicesOnly)
 
     if (includeDevTools)
     {
-#pragma warning disable ASPIREDENO001
         builder.AddJavaScriptApp("Docs", "../../docs", "serve")
             .WithDeno()
             .WithBrowserLogs()
@@ -237,7 +235,6 @@ if (!servicesOnly)
                 u.DisplayText = "Open Docs";
             })
             .WithParentRelationship(api);
-#pragma warning restore ASPIREDENO001
     }
 #pragma warning restore ASPIREBROWSERLOGS001
 }

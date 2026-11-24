@@ -3,10 +3,12 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Core.Utility;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
@@ -28,15 +30,16 @@ namespace Exceptionless.Web.Api.Handlers;
 
 public class ProjectHandler(
     IOrganizationRepository organizationRepository,
+    BillingManager billingManager,
     IProjectRepository repository,
     IStackRepository stackRepository,
     IEventRepository eventRepository,
     ITokenRepository tokenRepository,
     IQueue<WorkItemData> workItemQueue,
-    BillingManager billingManager,
     SlackService slackService,
     IOAuthProviderClient oauthProviderClient,
     SampleDataService sampleDataService,
+    BackgroundTaskService backgroundTaskService,
     ApiMapper mapper,
     ITextSerializer serializer,
     AppOptions options,
@@ -110,6 +113,11 @@ public class ProjectHandler(
         if (String.IsNullOrEmpty(model.OrganizationId) && message.Context.Request.GetAssociatedOrganizationIds().Count > 0)
             model.OrganizationId = message.Context.Request.GetDefaultOrganizationId()!;
 
+        if (String.IsNullOrWhiteSpace(model.OrganizationId) || !message.Context.Request.CanAccessOrganization(model.OrganizationId))
+            return Result.BadRequest("Invalid organization id specified.");
+
+        await using var billingLock = await billingManager.AcquireOrganizationLockAsync(model.OrganizationId);
+
         var error = await CanAddAsync(model, message.Context);
         if (error is not null)
             return error;
@@ -139,7 +147,8 @@ public class ProjectHandler(
         if (message.Changes.ContainsChangedProperty(p => p.PromotedTabs!))
             original.PromotedTabs = NormalizePromotedTabs(original.PromotedTabs);
 
-        await repository.SaveAsync(original, o => o.Cache());
+        // Clients list the organization's projects right after a rename, so the change must be searchable before we respond.
+        await repository.SaveAsync(original, o => o.Cache().ImmediateConsistency());
         return await MapToViewAsync(original);
     }
 
@@ -224,8 +233,8 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        string workItemId = await sampleDataService.EnqueueSampleEventsAsync(project.OrganizationId, project.Id);
-        return new WorkInProgressResult([workItemId]);
+        string taskId = await sampleDataService.EnqueueSampleEventsAsync(project, GetCurrentUser(message.Context).Id);
+        return new WorkInProgressResult([taskId]);
     }
 
     public async Task<Result<WorkInProgressResult>> Handle(ResetProjectData message)
@@ -234,13 +243,22 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        string workItemId = await workItemQueue.EnqueueAsync(new ResetProjectDataWorkItem
+        // The returned id is the background task that tracks the reset, so the progress panel can follow it.
+        var task = await backgroundTaskService.CreateAndEnqueueAsync(new BackgroundTask
         {
             OrganizationId = project.OrganizationId,
-            ProjectId = project.Id
+            ProjectId = project.Id,
+            Type = BackgroundTaskTypes.ResetProjectData,
+            Description = $"Reset data for {project.Name}",
+            CreatedByUserId = GetCurrentUser(message.Context).Id
+        }, t => new ResetProjectDataWorkItem
+        {
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
+            TaskId = t.Id
         });
 
-        return new WorkInProgressResult([workItemId]);
+        return new WorkInProgressResult([task.Id]);
     }
 
     public async Task<Result<IDictionary<string, NotificationSettings>>> Handle(GetProjectNotificationSettings message)
@@ -646,7 +664,8 @@ public class ProjectHandler(
         if (!await IsProjectNameAvailableInternalAsync(value.OrganizationId, value.Name, null, httpContext))
             return Result.BadRequest("A project with this name already exists.");
 
-        if (!await billingManager.CanAddProjectAsync(value))
+        bool canAddProject = await billingManager.CanAddProjectAsync(value);
+        if (!canAddProject)
             return Result.Invalid(ValidationError.Create(ApiValidationErrorIdentifiers.PlanLimit, "Please upgrade your plan to add additional projects."));
 
         return null;
@@ -660,7 +679,9 @@ public class ProjectHandler(
         value.AddDefaultNotificationSettings(GetCurrentUserId(httpContext));
         value.SetDefaultUserAgentBotPatterns();
         value.Configuration.IncrementVersion();
-        return repository.AddAsync(value, o => o.Cache());
+        // The next capacity check uses a search count, and first-run setup lists the organization's projects right
+        // after creating one, so creation must be visible before releasing the billing lock and responding.
+        return repository.AddAsync(value, o => o.Cache().ImmediateConsistency());
     }
 
     private async Task<Result<ViewProject>?> CanUpdateAsync(Project original, Delta<UpdateProject> changes, HttpContext httpContext)
@@ -699,7 +720,11 @@ public class ProjectHandler(
         foreach (var project in projects.OfType<ISupportSoftDeletes>())
             project.IsDeleted = true;
 
-        await repository.SaveAsync(projects);
+        // Clients list the organization's projects right after a delete, and a suspended organization needs the updated
+        // project count before checking whether ingestion can resume, so the soft delete must be searchable first.
+        await repository.SaveAsync(projects, command => command.ImmediateConsistency());
+        foreach (string organizationId in projects.Select(project => project.OrganizationId).Distinct(StringComparer.Ordinal))
+            await billingManager.RecheckPlanLimitSuspensionAsync(organizationId);
         return [];
     }
 

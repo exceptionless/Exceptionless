@@ -11,6 +11,7 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web.Assistant;
+using Foundatio.Repositories;
 using Xunit;
 
 namespace Exceptionless.Tests.Assistant;
@@ -201,6 +202,33 @@ public sealed class AssistantQualityEvaluationTests : IntegrationTestsBase
         Assert.DoesNotContain("search_stacks", explanation.ToolCalls);
         // The answer should be grounded in the captured frame, not a generic null reference explanation.
         Assert.Contains("CalculateTotal", explanation.Text, StringComparison.Ordinal);
+    }
+
+    [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]
+    [Trait("Category", "AssistantEvaluation")]
+    public async Task ProjectPage_CreatesASavedViewForTheCurrentProject()
+    {
+        // Arrange
+        RequireEvaluationConfiguration();
+
+        // Act
+        var create = await SendAssistantTurnAsync(
+            "Create a view of production errors from the last 30 days.",
+            $"/project/{SampleDataService.TEST_PROJECT_ID}/stacks",
+            SampleDataService.TEST_PROJECT_ID);
+        await RefreshDataAsync();
+        var savedViews = await GetService<ISavedViewRepository>().GetByOrganizationIdAsync(SampleDataService.TEST_ORG_ID, o => o.PageLimit(100));
+
+        // Assert
+        AssertSuccessfulAnswer(create);
+        Assert.Equal(1, create.ToolCalls.Count(call => call == "create_saved_view"));
+        Assert.DoesNotContain("list_projects", create.ToolCalls);
+        var savedView = Assert.Single(savedViews.Documents, view => view.PredefinedKey is null);
+        Assert.NotNull(savedView.UserId);
+        Assert.Equal("[now-30d TO now]", savedView.Time);
+        Assert.Contains($"project:{SampleDataService.TEST_PROJECT_ID}", savedView.Filter);
+        Assert.Contains("environment:production", savedView.Filter);
+        Assert.Contains("type:error", savedView.Filter);
     }
 
     [Fact(Skip = "Set RUN_ASSISTANT_EVALS=true to run the billable assistant quality gate.", SkipUnless = nameof(EvaluationsEnabled))]

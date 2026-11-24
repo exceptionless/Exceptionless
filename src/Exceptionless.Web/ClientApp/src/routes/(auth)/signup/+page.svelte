@@ -5,11 +5,8 @@
     import { onMount } from 'svelte';
 
     import ErrorMessage from '#comp/error-message.svelte';
-    import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
-    import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
-    import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
     import Logo from '#comp/logo.svelte';
-    import { A, P } from '#comp/typography/index.ts';
+    import { A, Muted } from '#comp/typography/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
     import * as Card from '#comp/ui/card/index.ts';
     import * as Field from '#comp/ui/field/index.ts';
@@ -17,32 +14,34 @@
     import { Input } from '#comp/ui/input/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
     import { signup } from '#features/auth/api.svelte.ts';
-    import {
-        accessToken,
-        enableOAuthLogin,
-        gitHubClientId,
-        githubLogin,
-        googleClientId,
-        googleLogin,
-        logout,
-        microsoftClientId,
-        microsoftLogin
-    } from '#features/auth/index.svelte.ts';
+    import OAuthProviderButtons from '#features/auth/components/oauth-provider-buttons.svelte';
+    import PasswordInput from '#features/auth/components/password-input.svelte';
+    import SignedInNotice from '#features/auth/components/signed-in-notice.svelte';
+    import { accessToken, enableOAuthLogin, validateEmailAvailability } from '#features/auth/index.svelte.ts';
+    import { buildAuthPageHref, getAuthPageParams, getPostLoginRedirect, getPostSignupRedirect } from '#features/auth/redirects.ts';
     import { type SignupFormData, SignupSchema } from '#features/auth/schemas.ts';
-    import { validateEmailAvailability } from '#features/auth/validators.ts';
+    import { isStripeEnabled } from '#features/billing/stripe.svelte.ts';
     import { gotoRedirect } from '#features/navigation/redirect.ts';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
+    import ExieGuide from '#features/onboarding/components/exie-guide.svelte';
+    import OnboardingStepper from '#features/onboarding/components/onboarding-stepper.svelte';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors, submitWhenValidated } from '#shared/validation.ts';
 
-    const inviteToken = page.url.searchParams.get('token');
-    const redirectUrl = inviteToken ? resolve('/(app)/project/add') : resolve('/(app)/organization/add');
+    const params = getAuthPageParams(page.url.searchParams);
+    const inviteToken = params.token;
+    const loginHref = buildAuthPageHref(resolve('/(auth)/login'), params);
+    // Hosted signups start a no-card trial of every feature; self-hosted installs and invited users don't.
+    const signupTagline = isStripeEnabled() && !inviteToken ? 'Try every feature free · No credit card required' : 'Free to start · No credit card required';
 
-    onMount(async () => {
-        if (accessToken.current) {
-            try {
-                await logout();
-            } catch {
-                // The signup flow can continue when an existing session cannot be ended.
-            }
+    // Only a session that existed when the page opened is "already signed in"; a successful signup also sets one.
+    const hadSessionOnLoad = !!accessToken.current;
+    const isSignedIn = $derived(hadSessionOnLoad && !!accessToken.current);
+    const isLeaving = $derived(isSignedIn && !inviteToken);
+
+    onMount(() => {
+        if (isLeaving) {
+            void gotoRedirect(getPostLoginRedirect(params), {
+                replace: true
+            });
         }
     });
 
@@ -56,9 +55,9 @@
         validators: {
             onSubmit: SignupSchema,
             onSubmitAsync: async ({ value }) => {
-                const response = await signup(value.name, value.email, value.password, value.invite_token);
+                const response = await signup(value.name.trim(), value.email.trim(), value.password, value.invite_token);
                 if (response.ok) {
-                    await gotoRedirect(redirectUrl);
+                    await gotoRedirect(getPostSignupRedirect(params, 'password'));
                     return null;
                 }
 
@@ -68,151 +67,158 @@
     }));
 </script>
 
-<Card.Root class="mx-auto w-[calc(100vw-2rem)] max-w-lg" inert={!!accessToken.current}>
-    <Card.Header>
-        <Logo />
-        <Card.Title class="text-center text-2xl">Signup for a FREE account in seconds</Card.Title>
-    </Card.Header>
-    <Card.Content>
-        <div>
-            {#if enableOAuthLogin}
-                <P class="text-center">Sign up with</P>
-                <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
-                    {#if microsoftClientId}
-                        <Button aria-label="Sign up with Microsoft" onclick={() => microsoftLogin(redirectUrl, inviteToken)}>
-                            <MicrosoftIcon class="size-4" /> Microsoft
-                        </Button>
-                    {/if}
-                    {#if googleClientId}
-                        <Button aria-label="Sign up with Google" onclick={() => googleLogin(redirectUrl, inviteToken)}>
-                            <GoogleIcon class="size-4" /> Google
-                        </Button>
-                    {/if}
-                    {#if gitHubClientId}
-                        <Button aria-label="Sign up with GitHub" onclick={() => githubLogin(redirectUrl, inviteToken)}>
-                            <GitHubIcon class="size-4" /> GitHub
-                        </Button>
-                    {/if}
-                </div>
-
-                <div class="my-4 flex w-full items-center">
-                    <hr class="w-full" />
-                    <P class="mt-0! px-3">OR</P>
-                    <hr class="w-full" />
-                </div>
-            {/if}
-
-            <form
-                onsubmit={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    form.handleSubmit();
-                }}
-            >
-                <form.Subscribe selector={(state) => state.errors}>
-                    {#snippet children(errors)}
-                        <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
-                    {/snippet}
-                </form.Subscribe>
-                <form.Field name="name">
-                    {#snippet children(field)}
-                        <Field.Field data-invalid={ariaInvalid(field)}>
-                            <Field.Label for={field.name}>Name</Field.Label>
-                            <Input
-                                id={field.name}
-                                name={field.name}
-                                type="text"
-                                placeholder="Your first and last name"
-                                autocomplete="name"
-                                autocapitalize="words"
-                                required
-                                value={field.state.value}
-                                onblur={field.handleBlur}
-                                oninput={(e) => field.handleChange(e.currentTarget.value)}
-                                aria-invalid={ariaInvalid(field)}
-                            />
-                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                        </Field.Field>
-                    {/snippet}
-                </form.Field>
-                <form.Field
-                    name="email"
-                    validators={{
-                        onChangeAsync: ({ value }) => validateEmailAvailability(value),
-                        onChangeAsyncDebounceMs: 1000
-                    }}
-                >
-                    {#snippet children(field)}
-                        <Field.Field data-invalid={ariaInvalid(field)}>
-                            <Field.Label for={field.name}>Email</Field.Label>
-                            <InputGroup.Root>
-                                <InputGroup.Input
-                                    id={field.name}
-                                    name={field.name}
-                                    type="email"
-                                    placeholder="Email address (no spam)"
-                                    autocomplete="email"
-                                    required
-                                    value={field.state.value}
-                                    onblur={field.handleBlur}
-                                    oninput={(e) => field.handleChange(e.currentTarget.value)}
-                                    aria-invalid={ariaInvalid(field)}
-                                />
-                                {#if field.state.meta.isValidating}
-                                    <InputGroup.Addon align="inline-end" aria-label="Validating email">
-                                        <Spinner class="size-4" />
-                                    </InputGroup.Addon>
-                                {/if}
-                            </InputGroup.Root>
-                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                        </Field.Field>
-                    {/snippet}
-                </form.Field>
-                <form.Field name="password">
-                    {#snippet children(field)}
-                        <Field.Field data-invalid={ariaInvalid(field)}>
-                            <Field.Label for={field.name}>Password</Field.Label>
-                            <Input
-                                id={field.name}
-                                name={field.name}
-                                type="password"
-                                placeholder="Password"
-                                autocomplete="new-password"
-                                maxlength={100}
-                                minlength={6}
-                                required
-                                value={field.state.value}
-                                onblur={field.handleBlur}
-                                oninput={(e) => field.handleChange(e.currentTarget.value)}
-                                aria-invalid={ariaInvalid(field)}
-                            />
-                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                        </Field.Field>
-                    {/snippet}
-                </form.Field>
-                <form.Subscribe selector={(state) => state.isSubmitting}>
-                    {#snippet children(isSubmitting)}
-                        <Button type="submit" class="mt-4 w-full" disabled={isSubmitting}>
-                            {#if isSubmitting}
-                                <Spinner /> Creating Account...
-                            {:else}
-                                Create My Account
-                            {/if}
-                        </Button>
-                    {/snippet}
-                </form.Subscribe>
-            </form>
-
-            <P class="mt-4 text-center text-sm">
-                Already have an account?
-                <A href={inviteToken ? `${resolve('/(auth)/login')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/login')}>Log In</A>
-            </P>
-
-            <P class="text-center text-sm">
-                By signing up, you agree to our <A href="https://exceptionless.com/privacy" target="_blank">Privacy Policy</A>
-                and
-                <A href="https://exceptionless.com/terms" target="_blank">Terms of Service</A>.
-            </P>
+<div class="mx-auto grid w-full max-w-5xl items-center gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] md:gap-12 md:self-center">
+    <section aria-label="Getting started with Exie" class="hidden flex-col gap-8 md:flex">
+        <Logo class="mx-0 h-14 max-h-none w-auto self-start object-contain" />
+        <ExieGuide live={false} mood="hello" size={120} title="Hi, I'm Exie!">I'll help you catch your first error in about 5 minutes.</ExieGuide>
+        <div class="flex flex-col gap-3">
+            <p class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Here's the plan</p>
+            <OnboardingStepper orientation="vertical" showDescriptions />
         </div>
-    </Card.Content>
-</Card.Root>
+    </section>
+
+    <div class="flex w-full flex-col gap-4">
+        <div class="flex flex-col items-center gap-4 md:hidden">
+            <Logo class="h-11 max-h-none w-auto object-contain" />
+            <ExieGuide class="w-full" live={false} mood="hello" size={48}>Hi, I'm Exie! Let's catch your first error in about 5 minutes.</ExieGuide>
+        </div>
+
+        {#if isLeaving}
+            <Card.Root class="w-full">
+                <Card.Content class="flex items-center gap-3">
+                    <Spinner /> You're already signed in. Taking you to Exceptionless…
+                </Card.Content>
+            </Card.Root>
+        {:else if isSignedIn}
+            <SignedInNotice continueHref={getPostLoginRedirect(params)} />
+        {:else}
+            <Card.Root class="w-full">
+                <Card.Header>
+                    <h1 class="text-foreground text-2xl font-semibold tracking-tight">Create your account</h1>
+                    <Card.Description>{signupTagline}</Card.Description>
+                </Card.Header>
+                <Card.Content class="flex flex-col gap-4">
+                    {#if enableOAuthLogin}
+                        <OAuthProviderButtons {inviteToken} mode="signup" redirectUrl={getPostSignupRedirect(params, 'oauth')} />
+                        <Field.Separator class="*:data-[slot=field-separator-content]:bg-card">or use your email</Field.Separator>
+                    {/if}
+
+                    <form
+                        novalidate
+                        onsubmit={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            void submitWhenValidated(form);
+                        }}
+                    >
+                        <Field.Group>
+                            <form.Subscribe selector={(state) => state.errors}>
+                                {#snippet children(errors)}
+                                    <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                                {/snippet}
+                            </form.Subscribe>
+                            <form.Field name="name">
+                                {#snippet children(field)}
+                                    <Field.Field data-invalid={ariaInvalid(field)}>
+                                        <Field.Label for={field.name}>Name</Field.Label>
+                                        <Input
+                                            aria-invalid={ariaInvalid(field)}
+                                            autocapitalize="words"
+                                            autocomplete="name"
+                                            autofocus
+                                            id={field.name}
+                                            name={field.name}
+                                            onblur={field.handleBlur}
+                                            oninput={(e) => field.handleChange(e.currentTarget.value)}
+                                            placeholder="Your first and last name"
+                                            required
+                                            type="text"
+                                            value={field.state.value}
+                                        />
+                                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                                    </Field.Field>
+                                {/snippet}
+                            </form.Field>
+                            <form.Field
+                                name="email"
+                                validators={{
+                                    onChangeAsync: ({ value }) => validateEmailAvailability(value),
+                                    onChangeAsyncDebounceMs: 1000
+                                }}
+                            >
+                                {#snippet children(field)}
+                                    <Field.Field data-invalid={ariaInvalid(field)}>
+                                        <Field.Label for={field.name}>Email</Field.Label>
+                                        <InputGroup.Root>
+                                            <InputGroup.Input
+                                                aria-invalid={ariaInvalid(field)}
+                                                autocomplete="email"
+                                                id={field.name}
+                                                name={field.name}
+                                                onblur={field.handleBlur}
+                                                oninput={(e) => field.handleChange(e.currentTarget.value)}
+                                                placeholder="you@company.com"
+                                                required
+                                                type="email"
+                                                value={field.state.value}
+                                            />
+                                            {#if field.state.meta.isValidating}
+                                                <InputGroup.Addon align="inline-end" aria-label="Validating email">
+                                                    <Spinner class="size-4" />
+                                                </InputGroup.Addon>
+                                            {/if}
+                                        </InputGroup.Root>
+                                        <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                                    </Field.Field>
+                                {/snippet}
+                            </form.Field>
+                            <form.Field name="password">
+                                {#snippet children(field)}
+                                    <Field.Field data-invalid={ariaInvalid(field)}>
+                                        <Field.Label for={field.name}>Password</Field.Label>
+                                        <PasswordInput
+                                            aria-describedby={field.state.meta.errors.length > 0 ? undefined : 'password-hint'}
+                                            aria-invalid={ariaInvalid(field)}
+                                            autocomplete="new-password"
+                                            id={field.name}
+                                            maxlength={100}
+                                            minlength={6}
+                                            name={field.name}
+                                            onblur={field.handleBlur}
+                                            oninput={(e) => field.handleChange(e.currentTarget.value)}
+                                            required
+                                            value={field.state.value}
+                                        />
+                                        {#if field.state.meta.errors.length > 0}
+                                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                                        {:else}
+                                            <Field.Description id="password-hint">At least 6 characters</Field.Description>
+                                        {/if}
+                                    </Field.Field>
+                                {/snippet}
+                            </form.Field>
+                            <form.Subscribe selector={(state) => state.isSubmitting}>
+                                {#snippet children(isSubmitting)}
+                                    <Button class="w-full" disabled={isSubmitting} size="lg" type="submit">
+                                        {#if isSubmitting}
+                                            <Spinner data-icon="inline-start" /> Creating your account…
+                                        {:else}
+                                            Create account
+                                        {/if}
+                                    </Button>
+                                {/snippet}
+                            </form.Subscribe>
+                        </Field.Group>
+                    </form>
+                </Card.Content>
+                <Card.Footer class="flex-col gap-2 text-center text-sm">
+                    <p>Already have an account? <A href={loginHref}>Log in</A></p>
+                    <Muted class="text-xs">
+                        By signing up, you agree to our <A href="https://exceptionless.com/privacy" target="_blank">Privacy Policy</A> and
+                        <A href="https://exceptionless.com/terms" target="_blank">Terms of Service</A>.
+                    </Muted>
+                </Card.Footer>
+            </Card.Root>
+        {/if}
+    </div>
+</div>

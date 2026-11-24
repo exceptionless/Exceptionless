@@ -1,6 +1,7 @@
 import { type FetchClientResponse, ProblemDetails, useFetchClient } from '@foundatiofx/fetchclient';
 import { createMutation, createQuery, QueryClient, useQueryClient } from '@tanstack/svelte-query';
 
+import type { TrialEndedNoticeKey } from '#features/billing/trial.ts';
 import type { ProductTourKey } from '#features/product-tours/models.ts';
 import type { WebSocketMessageValue } from '#features/websockets/models.ts';
 import type { WorkInProgressResult } from '#shared/models/index.ts';
@@ -8,9 +9,22 @@ import type { WorkInProgressResult } from '#shared/models/index.ts';
 import { accessToken } from '#features/auth/index.svelte.ts';
 import { fetchApiJson } from '#features/shared/api/api.svelte.ts';
 
-import type { OAuthGrant, RecordProductTourResult, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
+import type {
+    OAuthGrant,
+    RecordProductTourResult,
+    UpdateEmailAddressResult,
+    UpdateUser,
+    UpdateUserEmailAddress,
+    VerifyEmailAddressResult,
+    ViewCurrentUser,
+    ViewUser
+} from './models';
 
-export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>) {
+/**
+ * Refreshes the user queries a `UserChanged` message affects. Returns whether the signed-in user may have changed, so
+ * callers can refresh state derived from them, such as Exie access after an email is verified in another tab.
+ */
+export async function invalidateUserQueries(queryClient: QueryClient, message: WebSocketMessageValue<'UserChanged'>): Promise<boolean> {
     const { id } = message;
     if (id) {
         await queryClient.invalidateQueries({
@@ -18,16 +32,20 @@ export async function invalidateUserQueries(queryClient: QueryClient, message: W
         });
 
         const currentUser = queryClient.getQueryData<ViewCurrentUser>(queryKeys.me());
-        if (currentUser?.id === id) {
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.me()
-            });
+        if (currentUser?.id !== id) {
+            return false;
         }
-    } else {
+
         await queryClient.invalidateQueries({
-            queryKey: queryKeys.type
+            queryKey: queryKeys.me()
         });
+        return true;
     }
+
+    await queryClient.invalidateQueries({
+        queryKey: queryKeys.type
+    });
+    return true;
 }
 
 export const queryKeys = {
@@ -81,6 +99,15 @@ export interface UserAvatarRequest {
         id: string | undefined;
     };
 }
+
+export type VerifyEmailAddressOutcome =
+    | {
+          emailAddress?: string;
+          /** False when the link belonged to a different account than the one signed in. */
+          isCurrentUser: boolean;
+          status: 'verified';
+      }
+    | { status: 'expired' | 'invalid' };
 
 export function deleteCurrentUser() {
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
@@ -141,14 +168,7 @@ export function getMeQuery() {
             queryClient.setQueryData(queryKeys.id(data.id!), data);
         },
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<ViewCurrentUser>('users/me', {
-                signal
-            });
-
-            return response.data!;
-        },
+        queryFn: ({ signal }: { signal: AbortSignal }) => fetchCurrentUser(signal),
         queryKey: queryKeys.me()
     }));
 }
@@ -263,7 +283,7 @@ export function postEmailAddress(request: PostEmailAddressRequest) {
 
 export function putCurrentUserProductTour() {
     const queryClient = useQueryClient();
-    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey; userId: string }>(() => ({
+    return createMutation<RecordProductTourResult, ProblemDetails, { tourName: ProductTourKey | TrialEndedNoticeKey; userId: string }>(() => ({
         enabled: () => !!accessToken.current,
         mutationFn: async ({ tourName, userId }) => {
             if (queryClient.getQueryData<ViewCurrentUser>(queryKeys.me())?.id !== userId) {
@@ -356,6 +376,59 @@ export function uploadUserAvatar(request: UserAvatarRequest) {
             }
         }
     }));
+}
+
+/**
+ * Verifies the current user's email address with the token from the emailed link.
+ * Refreshes the current user so the verification prompt disappears.
+ */
+export async function verifyEmailAddress(queryClient: QueryClient, token: string): Promise<VerifyEmailAddressOutcome> {
+    const client = useFetchClient();
+    const response = await client.getJSON<VerifyEmailAddressResult>(`users/verify-email-address/${encodeURIComponent(token)}`, {
+        expectedStatusCodes: [404, 422]
+    });
+
+    if (response.status === 404) {
+        return {
+            status: 'invalid'
+        };
+    }
+
+    if (response.status === 422) {
+        return {
+            status: 'expired'
+        };
+    }
+
+    // Reset rather than invalidate so pages never render the cached unverified user while the refetch runs.
+    await queryClient.resetQueries({
+        exact: true,
+        queryKey: queryKeys.me()
+    });
+
+    const emailAddress = response.data?.email_address;
+    const currentUser = await queryClient
+        .fetchQuery({
+            queryFn: ({ signal }) => fetchCurrentUser(signal),
+            queryKey: queryKeys.me()
+        })
+        .catch(() => undefined);
+    const isCurrentUser = !emailAddress || currentUser?.email_address.toLowerCase() === emailAddress.toLowerCase();
+
+    return {
+        emailAddress,
+        isCurrentUser,
+        status: 'verified'
+    };
+}
+
+async function fetchCurrentUser(signal?: AbortSignal): Promise<ViewCurrentUser> {
+    const client = useFetchClient();
+    const response = await client.getJSON<ViewCurrentUser>('users/me', {
+        signal
+    });
+
+    return response.data!;
 }
 
 function setCurrentUser(queryClient: QueryClient, currentUser: ViewCurrentUser, changes: Partial<ViewCurrentUser>): void {

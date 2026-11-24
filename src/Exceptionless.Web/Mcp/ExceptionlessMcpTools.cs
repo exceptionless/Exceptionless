@@ -18,6 +18,7 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Extensions;
 using Exceptionless.Web.Assistant;
+using Foundatio.Mediator;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Extensions;
@@ -29,7 +30,7 @@ using ModelContextProtocol.Server;
 namespace Exceptionless.Web.Mcp;
 
 [McpServerToolType]
-public sealed class ExceptionlessMcpTools
+public sealed partial class ExceptionlessMcpTools
 {
     private const int DefaultLimit = 10;
     private const int MaxSummaryLimit = 100;
@@ -43,7 +44,7 @@ public sealed class ExceptionlessMcpTools
     private const string TimeZoneDescription = "Optional IANA time zone, such as America/Chicago, that time is resolved in, so now/d is the user's midnight. Defaults to UTC.";
     private const string EventGroupByDescription = "Optional dimension to group counts by. Supported values: environment, version, type, source, status, tag, stack, user, level, error.type, error.code, os, os.version, browser. Multi-value fields such as tag, error.type, and error.code can place one event into multiple groups, so group totals may sum higher than the overall event total.";
     private const string SnoozeDurationDescription = "Optional relative snooze duration such as 2h, 3d, or 1w. Do not combine with snoozeUntilUtc.";
-    private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc.";
+    private const string ProjectFilterDescription = "Optional Exceptionless filter expression applied to projects. Supported fields: id, name, organization_id, created_utc, updated_utc, last_event_date_utc. name matches whole words, such as name:web, or word prefixes, such as name:web*; leading wildcards such as name:*web* are not supported.";
     private const string StackFilterDescription = "Optional Exceptionless filter expression. Supported fields include: stack, project, project_id, organization, organization_id, type, status, title, description, tag, tags, references, fixed, hidden, regressed, error, first, first_occurrence, last, last_occurrence, occurrences, total_occurrences.";
     private const string EventFilterDescription = "Optional Exceptionless filter expression applied to events. Supported fields include: id, project, project_id, stack, stack_id, organization, organization_id, type, environment, source, message, date, tag, tags, user, user.name, user.email, path, error, error.type, error.message, error.code, status, data.*. data.* works for custom data values that were indexed for search; arbitrary event detail data is returned by get_event but is not searchable unless indexed.";
 
@@ -62,6 +63,7 @@ public sealed class ExceptionlessMcpTools
     private readonly ITextSerializer _serializer;
     private readonly ILogger<ExceptionlessMcpTools> _logger;
     private readonly TimeProvider _timeProvider;
+    private readonly IMediator _mediator;
     private readonly AssistantToolContext? _assistantToolContext;
 
     public ExceptionlessMcpTools(
@@ -78,6 +80,7 @@ public sealed class ExceptionlessMcpTools
         ITextSerializer serializer,
         ILogger<ExceptionlessMcpTools> logger,
         TimeProvider timeProvider,
+        IMediator mediator,
         AssistantToolContext? assistantToolContext = null)
     {
         _httpContextAccessor = httpContextAccessor;
@@ -92,6 +95,7 @@ public sealed class ExceptionlessMcpTools
         _serializer = serializer;
         _logger = logger;
         _timeProvider = timeProvider;
+        _mediator = mediator;
         _mcpContextService = mcpContextService;
         _assistantToolContext = assistantToolContext;
     }
@@ -258,7 +262,7 @@ public sealed class ExceptionlessMcpTools
                     new McpProjectSetupClient(".NET", "current"),
                     new McpProjectSetupClient("React Native", "current"),
                     new McpProjectSetupClient("Expo", "current"),
-                    new McpProjectSetupClient("JavaScript / Node.js", "legacy")
+                    new McpProjectSetupClient("JavaScript / Node.js", "current")
                 ],
                 ["Use the project's Client Setup page for the server URL, API key, and current installation instructions."]));
         }
@@ -1139,9 +1143,9 @@ public sealed class ExceptionlessMcpTools
         if (!TryValidateSort(sort, ProjectSortFields, out string? sortError))
             return SearchValidationResult.Failed(McpErrors.InvalidSort(sortError ?? "Invalid sort.", sort, ProjectSortFields));
 
-        var filterFieldError = GetFilterFieldError(filter, ProjectFilterFields, allowIndexedDataFields: false);
-        if (filterFieldError is not null)
-            return SearchValidationResult.Failed(filterFieldError);
+        var filterError = GetLeadingWildcardError(filter) ?? GetFilterFieldError(filter, ProjectFilterFields, allowIndexedDataFields: false);
+        if (filterError is not null)
+            return SearchValidationResult.Failed(filterError);
 
         return new SearchValidationResult(resolvedLimit, warning);
     }
@@ -1161,19 +1165,34 @@ public sealed class ExceptionlessMcpTools
         if (!TryValidateSort(sort, allowedSortFields, out string? sortError))
             return SearchValidationResult.Failed(McpErrors.InvalidSort(sortError ?? "Invalid sort.", sort, allowedSortFields));
 
-        var queryValidation = await queryValidator.ValidateQueryAsync(filter);
-        if (!queryValidation.IsValid)
-            return SearchValidationResult.Failed(McpErrors.InvalidFilter($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}"));
-
-        // Elasticsearch rejects leading wildcards, which would otherwise fail the whole search.
-        if (filter is not null && s_leadingWildcardPattern.IsMatch(filter))
-            return SearchValidationResult.Failed(McpErrors.InvalidFilter("Invalid filter: leading wildcards such as *timeout* are not supported. Search for a whole word instead, such as title:timeout or timeout."));
+        var filterError = await ValidateFilterExpressionAsync(filter, queryValidator);
+        if (filterError is not null)
+            return SearchValidationResult.Failed(filterError);
 
         var filterFieldError = GetFilterFieldError(filter, allowedFilterFields, allowIndexedDataFields);
         if (filterFieldError is not null)
             return SearchValidationResult.Failed(filterFieldError);
 
         return new SearchValidationResult(resolvedLimit, warning);
+    }
+
+    /// <summary>Checks that a filter will run, without limiting the fields it may use.</summary>
+    private static async Task<McpErrorInfo?> ValidateFilterExpressionAsync(string? filter, AppQueryValidator queryValidator)
+    {
+        var queryValidation = await queryValidator.ValidateQueryAsync(filter);
+        if (!queryValidation.IsValid)
+            return McpErrors.InvalidFilter($"Invalid filter: {queryValidation.Message ?? "Unable to parse filter."}");
+
+        return GetLeadingWildcardError(filter);
+    }
+
+    /// <summary>Elasticsearch rejects leading wildcards, which would otherwise fail the whole search.</summary>
+    private static McpErrorInfo? GetLeadingWildcardError(string? filter)
+    {
+        if (filter is null || !s_leadingWildcardPattern.IsMatch(filter))
+            return null;
+
+        return McpErrors.InvalidFilter("Invalid filter: leading wildcards such as *timeout* are not supported. Search for a whole word or a word prefix instead, such as title:timeout or title:time*.");
     }
 
     private static bool TryValidateSort(string? sort, IReadOnlySet<string> allowedSortFields, out string? error)

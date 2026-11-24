@@ -53,6 +53,13 @@ public sealed record OrganizationPaymentFailedEmail(
     string BillingUrl)
     : EmailTemplate(Subject, new EmailAction("Update Billing Information", BillingUrl));
 
+public sealed record OrganizationTrialEndingEmail(
+    string Subject,
+    string OrganizationName,
+    string TrialEndsDate,
+    string UpgradeUrl)
+    : EmailTemplate(Subject, new EmailAction("Upgrade Plan", UpgradeUrl));
+
 public sealed record ProjectDailySummaryEmail(
     string Subject,
     string ProjectName,
@@ -78,7 +85,7 @@ public sealed record ProjectDailySummaryEmail(
 
 public sealed record StackSummary(string Title, string? TypeName, bool IsRegressed, string Url);
 
-public sealed record UserEmailVerifyEmail(string Subject, string UserFullName, EmailAction Action)
+public sealed record UserEmailVerifyEmail(string Subject, string UserFullName, bool IsNewAccount, string AppUrl, EmailAction Action)
     : EmailTemplate(Subject, Action);
 
 public sealed record UserPasswordResetEmail(string Subject, string UserFullName, string CancelUrl, EmailAction Action)

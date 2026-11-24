@@ -1,5 +1,5 @@
 #:sdk Microsoft.NET.Sdk
-#:property TargetFramework=net10.0
+#:property TargetFramework=net11.0
 #:project ../src/Exceptionless.EmailTemplates/Exceptionless.EmailTemplates.csproj
 
 // Run from the repository root.
@@ -201,6 +201,11 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             "[Engineering] Payment failed! Update billing information to avoid service interruption!",
             "Engineering",
             $"{appUrl}/organization/organization-1/billing")),
+        new("organization-trial-ending", "Trial ending", new OrganizationTrialEndingEmail(
+            "[Engineering] Your free trial ends soon",
+            "Engineering",
+            "Friday, October 30, 2026",
+            $"{appUrl}/organization/organization-1/upgrade")),
         new("project-daily-summary", "Daily summary", new ProjectDailySummaryEmail(
             "[Storefront API] Summary for August 24, 2026",
             "Storefront API",
@@ -258,10 +263,18 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             $"{appUrl}/project/project-1/dashboard?type=error&view=stacks",
             $"{appUrl}/project/project-1/dashboard?type=error&view=stacks",
             $"{appUrl}/account/notifications?project=project-1")),
-        new("user-email-verify", "Email verification", new UserEmailVerifyEmail(
-            "Exceptionless Account Confirmation",
+        new("user-email-verify-welcome", "Welcome and email verification", new UserEmailVerifyEmail(
+            "Welcome to Exceptionless — confirm your email",
             "Ada Lovelace",
-            new EmailAction("Verify Address", $"{appUrl}/account/verify?token=preview-token"))),
+            true,
+            $"{appUrl}/",
+            new EmailAction("Confirm Email Address", $"{appUrl}/account/verify?token=preview-token"))),
+        new("user-email-verify", "Email verification", new UserEmailVerifyEmail(
+            "Confirm your Exceptionless email address",
+            "Ada Lovelace",
+            false,
+            $"{appUrl}/",
+            new EmailAction("Confirm Email Address", $"{appUrl}/account/verify?token=preview-token"))),
         new("user-password-reset", "Password reset", new UserPasswordResetEmail(
             "Exceptionless Password Reset",
             "Ada Lovelace",

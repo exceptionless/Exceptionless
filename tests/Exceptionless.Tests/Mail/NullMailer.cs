@@ -35,12 +35,17 @@ public class NullMailer : IMailer
         return Task.CompletedTask;
     }
 
+    public Task SendOrganizationTrialEndingAsync(User user, Organization organization)
+    {
+        return Task.CompletedTask;
+    }
+
     public Task SendProjectDailySummaryAsync(User user, Project project, IEnumerable<Stack>? mostFrequent, IEnumerable<Stack>? newest, DateTime startDate, bool hasSubmittedEvents, double count, double uniqueCount, double newCount, double fixedCount, int blockedCount, int tooBigCount, bool isFreePlan)
     {
         return Task.CompletedTask;
     }
 
-    public Task SendUserEmailVerifyAsync(User user)
+    public Task SendUserEmailVerifyAsync(User user, bool isNewAccount = false)
     {
         return Task.CompletedTask;
     }

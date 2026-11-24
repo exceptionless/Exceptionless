@@ -33,6 +33,8 @@
     import OrganizationDefaultsFacetedFilterBuilder from '#features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
     import { defaultEventColumnVisibility, getColumns } from '#features/events/components/table/options.svelte.ts';
+    import ExieEmptyState from '#features/onboarding/components/exie-empty-state.svelte';
+    import { useOrganizationOnboarding } from '#features/onboarding/onboarding-state.svelte.ts';
     import { organization } from '#features/organizations/context.svelte.ts';
     import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
     import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '#features/saved-views/use-saved-views.svelte.ts';
@@ -381,6 +383,8 @@
 
         loadData();
     });
+
+    const onboarding = useOrganizationOnboarding(() => organization.current);
 </script>
 
 <DataTable.Root>
@@ -418,29 +422,41 @@
             <StreamingIndicatorButton onToggle={handleToggle} {paused} size="icon-lg" />
         </div>
     </div>
-    <DataTable.Footer {table}>
-        <div class="flex w-full items-center justify-center gap-4">
-            <DataTable.PageSize bind:value={queryParams.limit!} {table} />
-            <div class="text-center">
-                <ErrorMessage message={clientResponse?.problem?.errors.general} />
+    {#if onboarding.isAwaitingFirstEvent}
+        <ExieEmptyState
+            continueSetupHref={onboarding.continueSetupHref}
+            sampleProject={onboarding.firstProject
+                ? {
+                      id: onboarding.firstProject.id,
+                      name: onboarding.firstProject.name
+                  }
+                : undefined}
+        />
+    {:else}
+        <DataTable.Footer {table}>
+            <div class="flex w-full items-center justify-center gap-4">
+                <DataTable.PageSize bind:value={queryParams.limit!} {table} />
+                <div class="text-center">
+                    <ErrorMessage message={clientResponse?.problem?.errors.general} />
+                </div>
             </div>
-        </div>
-    </DataTable.Footer>
-    <DataTable.Body
-        autoFillColumnId={savedViewsState.autoFillColumnId}
-        rowClick={rowclick}
-        {rowHref}
-        {table}
-        wrappedColumnIds={savedViewsState.wrappedColumnIds}
-    >
-        {#if isSavedViewPending || clientStatus.isLoading}
-            <DelayedRender>
-                <DataTable.Loading {table} />
-            </DelayedRender>
-        {:else}
-            <DataTable.Empty {table} />
-        {/if}
-    </DataTable.Body>
+        </DataTable.Footer>
+        <DataTable.Body
+            autoFillColumnId={savedViewsState.autoFillColumnId}
+            rowClick={rowclick}
+            {rowHref}
+            {table}
+            wrappedColumnIds={savedViewsState.wrappedColumnIds}
+        >
+            {#if isSavedViewPending || clientStatus.isLoading}
+                <DelayedRender>
+                    <DataTable.Loading {table} />
+                </DelayedRender>
+            {:else}
+                <DataTable.Empty {table}>No events match these filters.</DataTable.Empty>
+            {/if}
+        </DataTable.Body>
+    {/if}
 </DataTable.Root>
 
 <EventDetailSheet bind:eventId={selectedEventId} filterChanged={onFilterChanged} onClose={() => (selectedEventId = null)} onError={handleEventError} />

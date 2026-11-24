@@ -98,6 +98,7 @@ public sealed class MailerTests : TestWithServices
         // Act
         (string Path, string Url)[] routes =
         [
+            ("", appUrls.Home()),
             ("event/event-1", appUrls.Event("event-1")),
             ("stack/stack-1", appUrls.Stack("stack-1")),
             ("stack/stack-1/mark-fixed", appUrls.MarkStackFixed("stack-1")),
@@ -190,7 +191,9 @@ public sealed class MailerTests : TestWithServices
             new UserEmailVerifyEmail(
                 $"Verify account {index}",
                 $"User {index}",
-                new EmailAction("Verify Address", $"https://example.com/verify/{index}"))));
+                false,
+                "https://example.com/",
+                new EmailAction("Confirm Email Address", $"https://example.com/verify/{index}"))));
 
         string[] bodies = await Task.WhenAll(renderTasks);
 
@@ -597,6 +600,24 @@ public sealed class MailerTests : TestWithServices
     }
 
     [Fact]
+    public async Task SendOrganizationTrialEndingAsync_WithTrialOrganization_RendersUpgradeLink()
+    {
+        // Arrange
+        var user = _userData.GenerateSampleUser();
+        var organization = _organizationData.GenerateSampleOrganization(_billingManager, _plans);
+        _billingManager.ApplyTrialPlan(organization);
+
+        // Act
+        await _mailer.SendOrganizationTrialEndingAsync(user, organization);
+        var body = await RunMailJobAsync();
+
+        // Assert
+        Assert.Contains("Your trial ends soon", body, StringComparison.Ordinal);
+        Assert.Contains($"organization/{organization.Id}/upgrade", body, StringComparison.Ordinal);
+        Assert.Contains("Events older than 3 days will be deleted", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SendProjectDailySummaryAsync_WithSubmittedEvents_RendersTimelineLinks()
     {
         // Arrange
@@ -747,19 +768,31 @@ public sealed class MailerTests : TestWithServices
         Assert.Contains("click here to cancel the password reset request", body, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public async Task SendUserEmailVerifyAsync_WithVerificationToken_RendersVerificationLink()
+    [Theory]
+    [InlineData(true, "Welcome to Exceptionless — confirm your email")]
+    [InlineData(false, "Confirm your Exceptionless email address")]
+    public async Task SendUserEmailVerifyAsync_WithVerificationToken_RendersVerificationLink(bool isNewAccount, string expectedSubject)
     {
         // Arrange
         var user = _userData.GenerateSampleUser();
         user.ResetVerifyEmailAddressTokenAndExpiration(TimeProvider);
+        string appUrl = $"{_options.BaseURL.GetOrigin()}/";
 
         // Act
-        await _mailer.SendUserEmailVerifyAsync(user);
+        await _mailer.SendUserEmailVerifyAsync(user, isNewAccount);
         var body = await RunMailJobAsync();
 
         // Assert
-        Assert.Contains("Verify Address", body, StringComparison.Ordinal);
+        var sender = Assert.IsType<InMemoryMailSender>(GetService<IMailSender>());
+        // Non-production mail goes to the test address with the original recipient prefixed to the subject.
+        Assert.EndsWith($"] {expectedSubject}", sender.LastMessage?.Subject);
+        var hrefs = GetHrefs(body);
+        Assert.Contains($"{_options.BaseURL.GetOrigin()}/account/verify?token={user.VerifyEmailAddressToken}", hrefs);
+        Assert.Contains("Confirm Email Address", body, StringComparison.Ordinal);
+        Assert.Contains("This link expires in 24 hours.", body, StringComparison.Ordinal);
+        Assert.Contains("turn on email notifications", body, StringComparison.Ordinal);
+        Assert.Equal(isNewAccount, hrefs.Contains(appUrl));
+        Assert.Equal(isNewAccount, body.Contains("connect your app", StringComparison.Ordinal));
     }
 
     private async Task<string> RunMailJobAsync(bool requireUrls = true)
@@ -827,7 +860,7 @@ public sealed class MailerTests : TestWithServices
     private static void AssertValidInternalUrl(Uri uri)
     {
         Assert.Empty(uri.Fragment);
-        Assert.Matches(@"^/(?:event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|dashboard)|account/(?:notifications|verify)|organization/[^/]+/(?:dashboard|usage|billing|upgrade)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
+        Assert.Matches(@"^/(?:$|event/[^/]+|stack/[^/]+(?:/(?:mark-fixed|ignored|discarded))?|project/[^/]+/(?:configure|dashboard)|account/(?:notifications|verify)|organization/[^/]+/(?:dashboard|usage|billing|upgrade)|signup|reset-password/[^/]+)$", uri.AbsolutePath);
 
         if (uri.AbsolutePath is "/account/verify" or "/signup")
         {

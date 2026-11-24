@@ -23,6 +23,11 @@ public sealed class SystemSettings : IIdentity, IHaveDates
 
     public SystemNotification? SystemNotification { get; set; }
 
+    /// <summary>
+    /// Email domains that can't start a free trial. Null uses <see cref="Exceptionless.Core.Billing.TrialEmailAddress.DefaultBlockedDomains"/>.
+    /// </summary>
+    public List<string>? TrialBlockedEmailDomains { get; set; }
+
     [ObjectId]
     public string CreatedByUserId { get; set; } = null!;
 
