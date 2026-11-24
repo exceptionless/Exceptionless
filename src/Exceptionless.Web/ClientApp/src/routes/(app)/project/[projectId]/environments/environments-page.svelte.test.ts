@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     project: undefined as unknown,
     startBulk: vi.fn(),
     toast: { error: vi.fn(), success: vi.fn() },
+    updateEnvironment: vi.fn(),
     updateSettings: vi.fn()
 }));
 
@@ -48,7 +49,7 @@ vi.mock('#features/projects/api.svelte.ts', () => ({
         isError: false,
         isLoading: false
     }),
-    patchProjectEnvironment: () => ({ isPending: false, mutateAsync: vi.fn() }),
+    patchProjectEnvironment: () => ({ isPending: false, mutateAsync: mocks.updateEnvironment }),
     postProjectEnvironment: () => ({ isPending: false, mutateAsync: mocks.addEnvironment }),
     putProjectEnvironmentSettings: () => ({ isPending: false, mutateAsync: mocks.updateSettings })
 }));
@@ -81,6 +82,7 @@ const observed = (...environments: { count: number; key: string }[]) => ({
 describe('Environments page', () => {
     beforeEach(() => {
         mocks.addEnvironment.mockResolvedValue({});
+        mocks.updateEnvironment.mockResolvedValue({});
         mocks.updateSettings.mockResolvedValue({});
         mocks.countData = observed();
         mocks.project = project([]);
@@ -234,5 +236,36 @@ describe('Environments page', () => {
         // Assert
         await waitFor(() => expect(mocks.toast.error).toHaveBeenCalled());
         expect(mocks.toast.success).not.toHaveBeenCalled();
+    });
+
+    it('puts the setting back when saving it fails', async () => {
+        // Arrange
+        mocks.updateSettings.mockRejectedValue(new Error('Request failed'));
+        mocks.project = { ...project([{ created_utc: '2026-11-01T00:00:00Z', name: 'Production', notify: true }]), discard_unlisted_environments: true };
+        render(EnvironmentsPage);
+        const any = () => screen.getByRole('radio', { name: 'Any environment' });
+
+        // Act
+        await userEvent.click(any());
+
+        // Assert
+        await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ discard_unlisted_environments: false }));
+        await waitFor(() => expect(any().getAttribute('aria-checked')).toBe('false'));
+        expect(screen.getByRole('radio', { name: 'Only environments in this list' }).getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('puts the notification switch back when saving it fails', async () => {
+        // Arrange
+        mocks.updateEnvironment.mockRejectedValue(new Error('Request failed'));
+        mocks.project = project([{ created_utc: '2026-11-01T00:00:00Z', name: 'Production', notify: true }]);
+        render(EnvironmentsPage);
+        const notify = () => screen.getByRole('switch', { name: 'Send notifications for Production' });
+
+        // Act
+        await userEvent.click(notify());
+
+        // Assert
+        await waitFor(() => expect(mocks.updateEnvironment).toHaveBeenCalled());
+        await waitFor(() => expect(notify().getAttribute('aria-checked')).toBe('true'));
     });
 });

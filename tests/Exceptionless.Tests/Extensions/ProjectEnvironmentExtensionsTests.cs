@@ -1,10 +1,11 @@
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Foundatio.Xunit;
 using Xunit;
 
 namespace Exceptionless.Tests.Extensions;
 
-public class ProjectEnvironmentExtensionsTests
+public sealed class ProjectEnvironmentExtensionsTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
     [Theory]
     [InlineData(null)]
