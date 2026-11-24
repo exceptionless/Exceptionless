@@ -62,7 +62,8 @@ migration.
 
 ### Docker Compose {#upgrade-docker-compose}
 
-With the [Docker Compose setup](/docs/self-hosting/docker/), change pinned image tags in `compose.yaml` first, then:
+With the [Docker Compose setup](/docs/self-hosting/docker/), set the new version in the `app` and `jobs` image tags in
+`compose.yaml` first. If you use `latest`, `docker compose pull` fetches the new images. Then:
 
 ```bash
 docker compose stop app jobs

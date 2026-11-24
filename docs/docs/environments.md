@@ -1,6 +1,9 @@
 ---
 title: "Environments"
 description: "Tag Exceptionless events with a deployment environment such as production or staging, then filter and compare every list by environment."
+keywords:
+  - "production"
+  - "staging"
 sources:
   - src/Exceptionless.Core/Models/Event.cs
   - src/Exceptionless.Core/Serialization/EventEnvironmentConverter.cs

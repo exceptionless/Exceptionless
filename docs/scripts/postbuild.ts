@@ -34,7 +34,21 @@ type SearchIndexEntry = {
   description: string
   prose: string
   text: string
+  /** Where the page sits in the docs nav (section, then groups), using the labels readers see in the sidebar. */
+  path?: string[]
+  /** The h2 and h3 headings that have an anchor, so a result can link straight to a section. */
+  headings?: SearchHeading[]
+  /** Synonyms from the page's `keywords` front matter. */
+  keywords?: string[]
+  /** News posts only, as YYYY-MM-DD. */
+  date?: string
   codeBlocks?: SearchCodeBlock[]
+}
+
+type SearchHeading = {
+  id: string
+  text: string
+  level: number
 }
 
 type SearchCodeBlock = {
@@ -92,7 +106,7 @@ await writeDocsMarkdown(generated.docsPages)
 await rewriteNewsIndex(generated.newsPosts)
 
 const routes = await collectHtmlRoutes("_site")
-await writeSearchIndex("_site", routes)
+await writeSearchIndex("_site", routes, generated.newsPosts)
 // Redirect stubs are written after the sitemap and search routes are collected, so they never appear in either.
 await writeRedirectStubs(generated.redirects)
 const aliases = await collectRedirectAliases("_site", generated.newsPosts)
@@ -419,6 +433,7 @@ async function renderNewsArticles(posts: ContentPage[]): Promise<string> {
       articles.push(
         [
           `<a class="news-item" href="${post.url}">`,
+          post.date ? `  ${renderPostDate(post.date)}` : "",
           `  <h2 id="${slugify(post.title)}">${escapeHtml(post.title)}</h2>`,
           excerpt ? `  <p>${escapeHtml(excerpt)}</p>` : "",
           '  <span class="text-link">Read more <span aria-hidden="true">&rarr;</span></span>',
@@ -431,6 +446,17 @@ async function renderNewsArticles(posts: ContentPage[]): Promise<string> {
   }
 
   return `<div class="news-list">\n${articles.join("\n\n")}\n</div>`
+}
+
+function renderPostDate(date: string): string {
+  const day = date.slice(0, 10)
+  const label = new Date(`${day}T00:00:00.000Z`).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  })
+  return `<time datetime="${day}">${label}</time>`
 }
 
 function postExcerpt(html: string): string {
@@ -510,8 +536,9 @@ async function collectHtmlRoutes(root: string): Promise<string[]> {
   return [...new Set(routes)].sort()
 }
 
-async function writeSearchIndex(root: string, routes: string[]): Promise<void> {
+async function writeSearchIndex(root: string, routes: string[], posts: ContentPage[]): Promise<void> {
   const entries: SearchIndexEntry[] = []
+  const postDates = new Map(posts.map((post) => [post.url, post.date]))
 
   for (const route of routes) {
     if (!shouldIndexRoute(route)) {
@@ -526,6 +553,7 @@ async function writeSearchIndex(root: string, routes: string[]): Promise<void> {
       continue
     }
 
+    const path = searchPathFor(route)
     const cleanedHtml = stripSearchIgnoredContent(stripHtmlComments(html))
     const mainHtml = extractMainHtml(cleanedHtml) || cleanedHtml
     const codeBlocks = extractSearchCodeBlocks(mainHtml)
@@ -535,17 +563,45 @@ async function writeSearchIndex(root: string, routes: string[]): Promise<void> {
       continue
     }
 
+    const headings = extractSearchHeadings(mainHtml)
+    const keywords = pageKeywords(cleanedHtml)
+    const date = postDates.get(route)?.slice(0, 10)
     entries.push({
       title: pageTitle(cleanedHtml) || titleFromRoute(route),
       url: route,
       description: pageDescription(cleanedHtml),
       prose,
       text,
+      ...(path.length ? { path } : {}),
+      ...(headings.length ? { headings } : {}),
+      ...(keywords.length ? { keywords } : {}),
+      ...(date ? { date } : {}),
       ...(codeBlocks.length ? { codeBlocks } : {}),
     })
   }
 
   await Deno.writeTextFile(`${root}/search-index.json`, JSON.stringify({ entries }, null, 2))
+}
+
+/** The docs nav section and groups that contain a page, as the sidebar labels them. */
+function searchPathFor(route: string): string[] {
+  const location = flattenNav(navSections).find((page) => page.url === route)
+  if (!location) {
+    return []
+  }
+
+  return [location.section.title, ...location.groups.filter((group) => group.url !== route).map((group) => group.title)]
+}
+
+function extractSearchHeadings(html: string): SearchHeading[] {
+  return [...html.matchAll(/<h([23])\b[^>]*\bid=["']([^"']+)["'][^>]*>([\s\S]*?)<\/h\1>/gi)]
+    .map((match) => ({ id: match[2], text: normalizeHtmlText(match[3]), level: Number(match[1]) }))
+    .filter((heading) => heading.text)
+}
+
+function pageKeywords(html: string): string[] {
+  const content = html.match(/<meta\s+name=["']keywords["'][^>]*content=["']([^"']*)["'][^>]*>/i)?.[1] ?? ""
+  return normalizeHtmlText(content).split(",").map((keyword) => keyword.trim()).filter(Boolean)
 }
 
 function shouldIndexRoute(route: string): boolean {

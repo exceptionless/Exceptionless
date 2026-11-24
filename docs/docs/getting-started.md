@@ -165,8 +165,8 @@ If **Client Setup** is open when the first event arrives, a **You caught your fi
 - **Stacks** groups repeats of the same error into one stack, with its event count, first and last occurrence, and
   status.
 
-Once you've seen the test error, set its stack's status to **Fixed** or **Discarded** so it doesn't stay in your open
-errors. [Manage stacks](/docs/managing-stacks/) explains each status.
+Once you've seen the test error, set its stack's status to **Fixed** so it doesn't stay in your open errors. The
+[status table](/docs/managing-stacks/#stack-statuses) explains each status.
 
 Nothing showing up? After a short wait, **Client Setup** shows **Not seeing anything?** with tips for your platform.
 Check that the API key matches the project and is enabled on the project's **API Keys** page, then see troubleshooting

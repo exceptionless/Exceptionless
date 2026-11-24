@@ -2,6 +2,9 @@
 title: "Sessions"
 metaTitle: "Track user sessions in Exceptionless"
 description: "See what a user did before an error: how Exceptionless groups events into sessions, how clients start, heartbeat, and end them, and the Sessions view."
+keywords:
+  - "users"
+  - "active users"
 sources:
   - src/Exceptionless.Core/Plugins/EventProcessor/Default/70_SessionPlugin.cs
   - src/Exceptionless.Core/Jobs/CloseInactiveSessionsJob.cs
@@ -102,8 +105,8 @@ await Exceptionless.startup((c) => {
 ```
 
 Both clients accept options on `UseSessions()` and `useSessions()`: whether to send heartbeats, the heartbeat interval
-(one minute by default), and whether the client generates its own session ID. The JavaScript client accepts intervals
-of at least 30 seconds. In .NET 6.2.0, use the default one-minute interval: custom intervals are checked with
+(one minute by default), and whether the client generates its own session ID. The JavaScript client accepts intervals of
+at least 30 seconds. In .NET 6.2.0, use the default one-minute interval: custom intervals are checked with
 `TimeSpan.Seconds`, so whole-minute values also fall back to one minute.
 
 Don't turn on client sessions in a server app that handles many users. Set the user identity on each event instead, as
@@ -142,6 +145,9 @@ with its **Summary**, **User**, and **Session Time**. On a session start event, 
 
 Click an event in the list to open it. Click **Open events filtered to this session** (the button above the list) to see
 the session's events in the **Events** view, where you can filter and sort them.
+
+To see all of one user's events, not only a session's, see
+[Find a user's events](/docs/filtering-and-searching/#find-a-users-events).
 
 ## Ask Exie
 

@@ -61,7 +61,7 @@ copy icon copies a link to it. The stack card at the top shows:
 Below the card is the stack's most recent event. Use **Older event** and **Newer event** to step through its
 occurrences. See [Events](/docs/events/) for the event tabs.
 
-## Stack statuses
+## Stack statuses {#stack-statuses}
 
 The status button in the stack card shows the current status. Select it to change it.
 

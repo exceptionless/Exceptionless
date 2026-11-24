@@ -33,14 +33,14 @@ deployments. This page shows how to install it, which values to set, and how to 
 
 ## What the chart deploys
 
-| Resource                       | What it runs                                                                                                                   |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `<release>-app`                | The `exceptionless/app` image: the web UI and API for your app domains, with real-time updates. Jobs don't run in it.          |
-| `<release>-api`                | The `exceptionless/api` image: the API for your API domains, where clients send events. WebSockets are off.                    |
-| `<release>-jobs-*` deployments | One deployment per continuous job, such as `event-posts`, `event-notifications`, `mail-message`, `web-hooks`, and `work-item`. |
-| `<release>-jobs-*` cron jobs   | Scheduled jobs: `cleanup-data`, `cleanup-orphaned-data`, `download-geoip-database`, and `maintain-indexes`.                    |
-| `<release>-jobs-migration`     | A cron job for migrations. Start it by hand after each install or upgrade. See [Run migrations](#run-migrations).              |
-| `<release>-config`             | A config map with the `EX_` settings, shared by every pod.                                                                     |
+| Resource                       | What it runs                                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `<release>-app`                | The `exceptionless/app` image: the web UI and API for your app domains, with real-time updates. Jobs don't run in it.           |
+| `<release>-api`                | The `exceptionless/api` image: the API for your API domains, where clients send events. WebSockets are off.                     |
+| `<release>-jobs-*` deployments | One deployment per continuous job, such as `event-posts`, `event-notifications`, `mail-message`, `web-hooks`, and `work-item`.  |
+| `<release>-jobs-*` cron jobs   | Scheduled jobs: `cleanup-data`, `cleanup-orphaned-data`, `download-geoip-database`, `maintain-indexes`, and `trial-expiration`. |
+| `<release>-jobs-migration`     | A cron job for migrations. Start it by hand after each install or upgrade. See [Run migrations](#run-migrations).               |
+| `<release>-config`             | A config map with the `EX_` settings, shared by every pod.                                                                      |
 
 `<release>` is the Helm release name.
 
@@ -127,7 +127,7 @@ The chart isn't published to a Helm repository. Install it from a clone of the r
 | `forwardedHeaders.knownNetworks`                                                  | `[]`                | Trusted ingress networks. See [Trust your ingress](#trust-your-ingress).                                                                                                                                                                                                                         |
 | `ingress.enabled`                                                                 | `false`             | Creates ingress resources for Azure Application Gateway for Containers. Leave it off on other clusters.                                                                                                                                                                                          |
 | `service.type`                                                                    | `ClusterIP`         | The type of the chart's services.                                                                                                                                                                                                                                                                |
-| `otel.enabled`                                                                    | `true`              | Sends OpenTelemetry data to a collector on port 4317 of each node. Set it to `false` unless you run one.                                                                                                                                                                                         |
+| `otel.enabled`                                                                    | `true`              | Sends OpenTelemetry data to an OTLP endpoint on port 4317 of each node. Set it to `false` unless you run one.                                                                                                                                                                                    |
 
 Always set `elasticsearch.connectionString` and `redis.connectionString` to services you run. When they're empty, the
 chart adds single-pod Elasticsearch and Redis deployments that aren't suitable for real use; that Elasticsearch keeps

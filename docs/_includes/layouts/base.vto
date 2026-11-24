@@ -25,6 +25,7 @@
     <title>{{ pageTitle }}</title>
 
     <meta name="description" content="{{ description || site.description }}">
+    {{ if keywords && keywords.length }}<meta name="keywords" content="{{ keywords.join(", ") }}">{{ /if }}
     <meta name="robots" content="{{ robots || "index,follow" }}">
     <meta name="author" content="{{ author || site.author }}">
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
@@ -187,7 +188,7 @@
               <li><a href="/docs/getting-started/">Getting started</a></li>
               <li><a href="/docs/clients/dotnet/">.NET client</a></li>
               <li><a href="/docs/clients/javascript/">JavaScript client</a></li>
-              <li><a href="/docs/api/api-getting-started/">API</a></li>
+              <li><a href="/docs/api/">API</a></li>
               <li><a href="/docs/ai/mcp-server/">MCP server</a></li>
               <li><a href="/llms.txt">llms.txt</a></li>
             </ul>

@@ -47,6 +47,9 @@ The images are published to Docker Hub:
 | `exceptionless/exceptionless` | The all-in-one image: the app, the jobs, and a single-node Elasticsearch in one container, on port 8080.                                              |
 | `exceptionless/elasticsearch` | Elasticsearch 8.19.22 with the `mapper-size` plugin installed. Use it, or install the plugin in your own cluster.                                     |
 
+On ARM64 hosts, use the `latest-arm64` or `<version>-arm64` tags for the app, job, and all-in-one images, such as
+`exceptionless/app:latest-arm64`.
+
 The app and job images run the same code and read the same [configuration](/docs/self-hosting/configuration/), so give
 them the same settings.
 

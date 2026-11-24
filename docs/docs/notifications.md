@@ -2,6 +2,11 @@
 title: "Notifications"
 metaTitle: "Exceptionless email and Slack notifications"
 description: "Get an email or Slack message when a new error, critical error, or regression happens, and a daily summary of each project's errors."
+keywords:
+  - "mute"
+  - "unsubscribe"
+  - "stop emails"
+  - "alerts"
 sources:
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/account/notifications/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/projects/components/user-notification-settings-form.svelte
@@ -72,6 +77,20 @@ Some things to know:
 - When you create a project, your **Daily Project Summary**, **New Errors**, **Critical Errors**, and **Error
   Regressions** notifications start on. Other members of the organization start with nothing turned on for it.
 - On the Free plan, the **Event Notifications** switches are disabled, with an **Upgrade now** link.
+
+## Stop notifications for one stack {#stop-notifications-for-one-stack}
+
+To quiet a noisy error without turning off notifications for the whole project, change that stack's status in
+[Stacks](/docs/managing-stacks/#stack-statuses). A stack that's fixed, snoozed, ignored, or discarded sends no
+notifications:
+
+- **Snoozed** is the best choice for something temporary. Pick 6 hours, 1 day, 1 week, or 1 month, and the stack goes
+  back to **Open**, and notifies again, when the time is up.
+- **Ignored** keeps recording events, counts them against your plan, and never notifies.
+- **Discarded** drops new events for the stack, so they don't count against your plan.
+
+If the stack keeps sending critical notifications, also turn off **Future Occurrences Are Critical** in **Stack
+options**. See [Mark future occurrences critical](/docs/managing-stacks/#mark-future-occurrences-critical).
 
 ## Daily project summary
 

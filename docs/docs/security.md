@@ -151,7 +151,7 @@ Users sign in with an email address and password, or with GitHub, Google, or Mic
 hashes. Self-hosted instances choose which sign-in options to offer; see
 [Configuration](/docs/self-hosting/configuration/).
 
-## API keys
+## API keys {#api-keys}
 
 Projects send events with a client API key, which you manage on the project's **API Keys** page. A client API key can
 only:
@@ -160,9 +160,15 @@ only:
 - read the project's client configuration values
 - connect the project to Zapier, which then receives the project's new events
 
-It can't read events or stacks through the API or change project settings. That makes it fit to ship in browser, mobile,
-and desktop apps, but anyone who has the key can do the things above. Don't store secrets in client configuration
-values.
+It can't read events or stacks through the API or change project settings. That makes it fine to ship in browser,
+mobile, and desktop apps, but anyone who has the key can do the things above. Don't store secrets in client
+configuration values.
+
+- **Prefer configuration or an environment variable** over a hard-coded key, so you can rotate the key without a code
+  change. In a browser app the key is visible to anyone who loads the page, and that's expected.
+- **Never use a user token, an OAuth token, or a key with broader scopes in client code.** Those can read your events
+  and change your settings. Only client API keys belong in shipped apps.
+- Treat a source map upload token like a build secret. Keep it in CI, not in your app.
 
 A **Source map upload token**, added on the same page, is for uploading source maps to its project from CI.
 

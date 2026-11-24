@@ -102,7 +102,7 @@
         "install": "dotnet add package Exceptionless.AspNetCore",
         "language": "csharp",
         "code": "using Exceptionless;\n\nvar builder = WebApplication.CreateBuilder(args);\nbuilder.AddExceptionless(\"YOUR_API_KEY\");\nbuilder.Services.AddProblemDetails();\n\nvar app = builder.Build();\napp.UseExceptionHandler();\napp.UseExceptionless();\n\napp.Run();",
-        "caption": "Reads your API key from the Exceptionless section of appsettings.json when you call AddExceptionless() with no arguments.",
+        "caption": "Pass your API key as shown, or call AddExceptionless() with no arguments to read it from the Exceptionless section of appsettings.json.",
         "docsUrl": "/docs/clients/dotnet/aspnet-core/"
       },
       {

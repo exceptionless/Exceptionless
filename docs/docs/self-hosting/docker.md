@@ -115,6 +115,10 @@ You need [Docker](https://docs.docker.com/get-started/get-docker/) with Docker C
 4. Create an organization and a project, then [send your first event](/docs/getting-started/). Point your client at your
    server, for example `serverUrl: "http://localhost:7110"` in JavaScript or `ServerUrl` in .NET.
 
+For production, pin a version tag instead of `latest`, such as `exceptionless/app:<version>` and
+`exceptionless/job:<version>`, so an upgrade happens when you choose it. On ARM64 hosts, use the `latest-arm64` or
+`<version>-arm64` tags.
+
 What the file sets up:
 
 - The `app` container serves the web UI and the API on port 7110. `EX_RunJobsInProcess: "false"` leaves the background

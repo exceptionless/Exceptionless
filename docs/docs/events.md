@@ -2,6 +2,9 @@
 title: "Events"
 metaTitle: "Viewing events in Exceptionless"
 description: "Browse Exceptionless events, read the event details, find an event by reference ID, and delete events in bulk with background task progress."
+keywords:
+  - "delete events"
+  - "bulk delete"
 sources:
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/event/+page.svelte
   - src/Exceptionless.Web/ClientApp/src/routes/(app)/stream/+page.svelte

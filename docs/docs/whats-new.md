@@ -101,7 +101,7 @@ they are saved with it, instead of a global picker at the top of the app. See [S
 
 Choose **Custom range** in the date filter to pick dates on a calendar or type them into **From** and **To** fields on
 the **Absolute** tab. The **Relative** tab keeps the date math expressions, such as `now-7d`. The quick ranges, from
-**Last 15 minutes** to **Last 90 days**, still apply with one click. See
+**Last 5 minutes** to **Last 90 days**, still apply with one click. See
 [Filtering and searching](/docs/filtering-and-searching/).
 
 ## Exie, the AI assistant

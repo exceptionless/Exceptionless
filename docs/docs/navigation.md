@@ -36,7 +36,8 @@ the arrow keys to pick an item, press <kbd>Enter</kbd> to open it, and press <kb
 Type at least two characters to also search the current organization's events and stacks from the last 7 days. The
 palette shows up to three of each, with **View all matching events** and **View all matching stacks** to open the full
 results. It searches the same fields as the filter bar's text search, so you can paste an event ID, a
-[reference ID](/docs/references-ids/), an error message, or a URL path.
+[reference ID](/docs/references-ids/), an error message, or a URL path. On the Free plan, searching events and stacks
+from the palette needs a paid plan or an active trial.
 
 The palette also lists:
 
@@ -63,7 +64,7 @@ Press <kbd>?</kbd> to see this list in the app.
 | Key              | Action                                                                                   |
 | ---------------- | ---------------------------------------------------------------------------------------- |
 | <kbd>I</kbd>     | Go to **Stacks**                                                                         |
-| <kbd>E</kbd>     | Go to **Events** (all events)                                                            |
+| <kbd>E</kbd>     | Go to **Events**, filtered to open and regressed stacks by default                       |
 | <kbd>/</kbd>     | Open the command palette                                                                 |
 | <kbd>A</kbd>     | Open or close [Exie](/docs/ai/exie/), when Exie is available                             |
 | <kbd>O</kbd>     | Open the organization switcher, or the organization's settings if you belong to only one |

@@ -10,6 +10,7 @@ initializeDocsNav()
 initializeTabs()
 initializeHeadingAnchors()
 initializeCopyButtons()
+initializeScrollHints()
 initializeCopyMarkdown()
 initializePageToc()
 initializeLightbox()
@@ -233,7 +234,15 @@ function initializeCopyButtons() {
       const code = pre.querySelector("code") ?? pre
       void copyWithFeedback(code.innerText.trimEnd(), button)
     })
-    pre.append(button)
+
+    // The pre scrolls sideways, so a button inside it would scroll away with the code. Put it in a
+    // non-scrolling parent instead: the tab panel or inline block that holds this pre, or a wrapper.
+    const parent = pre.parentElement
+    const host = parent?.matches(".inline-code-block, .code-window [role='tabpanel']") &&
+        parent.querySelectorAll("pre").length === 1
+      ? parent
+      : wrapCodeBlock(pre)
+    host.append(button)
   })
 
   document.querySelectorAll("[data-copy-target]").forEach((button) => {
@@ -244,6 +253,59 @@ function initializeCopyButtons() {
         void copyWithFeedback(target.innerText.trim(), label)
       }
     })
+  })
+}
+
+function wrapCodeBlock(pre) {
+  const wrapper = document.createElement("div")
+  wrapper.className = "code-block"
+  pre.replaceWith(wrapper)
+  wrapper.append(pre)
+  return wrapper
+}
+
+/** Fades the edges of wide tables while there is more to scroll to, so a clipped column reads as scrollable. */
+function initializeScrollHints() {
+  document.querySelectorAll(".prose table").forEach((table) => {
+    if (table.closest(".table-scroll")) {
+      return
+    }
+
+    const hint = document.createElement("div")
+    hint.className = "scroll-hint prose-table"
+    const scroller = document.createElement("div")
+    scroller.className = "table-scroll"
+    table.replaceWith(hint)
+    scroller.append(table)
+    hint.append(scroller)
+  })
+
+  document.querySelectorAll(".table-scroll, .table-wrap").forEach((scroller) => {
+    let hint = scroller.parentElement
+    if (!hint?.classList.contains("scroll-hint")) {
+      hint = document.createElement("div")
+      hint.className = "scroll-hint table-wrap-hint"
+      scroller.replaceWith(hint)
+      hint.append(scroller)
+    }
+
+    const update = () => {
+      const overflow = scroller.scrollWidth - scroller.clientWidth
+      hint.classList.toggle("can-scroll-start", scroller.scrollLeft > 1)
+      hint.classList.toggle("can-scroll-end", scroller.scrollLeft < overflow - 1)
+      if (overflow > 1) {
+        scroller.tabIndex = 0
+      } else {
+        scroller.removeAttribute("tabindex")
+      }
+    }
+
+    update()
+    scroller.addEventListener("scroll", update, { passive: true })
+    globalThis.addEventListener("resize", update)
+    if (globalThis.ResizeObserver) {
+      new ResizeObserver(update).observe(scroller)
+    }
   })
 }
 

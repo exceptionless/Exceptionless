@@ -1,7 +1,14 @@
 ---
 title: "Organizations and billing"
 description: "Create organizations, invite users, change plans, check usage, and view invoices for your Exceptionless organization."
-navTitle: "Organizations"
+navTitle: "Organizations and users"
+keywords:
+  - "team"
+  - "teammate"
+  - "invite"
+  - "users"
+  - "members"
+  - "billing"
 sources:
   - docs/_data/plans.json
   - src/Exceptionless.Core/Billing/BillingPlans.cs
@@ -72,9 +79,9 @@ To switch to another organization, use the organization switcher, or press <kbd>
    **Organization name**, then click **Continue**.
 3. Connect your app on the **Client Setup** page that opens. See [Quickstart](/docs/getting-started/).
 
-When trials are enabled, an eligible account's first organization starts with a [free trial](#free-trial). Otherwise,
-new organizations start on the Free plan. You can own at most one Free or trial organization at a time; upgrade that
-organization before creating another.
+An eligible account's first organization starts with a [free trial](#free-trial). Otherwise, new organizations start on
+the Free plan. You can own at most one Free or trial organization at a time; upgrade that organization before creating
+another.
 
 ## Change organization settings
 
@@ -140,13 +147,14 @@ Trial notices are described under [Free trial](#free-trial).
 
 ## Free trial {#free-trial}
 
-Eligible accounts can try premium features without a credit card when trials are enabled. The default trial lasts 14
-days and includes unlimited projects and users, 75,000 events per calendar month, and 90-day retention. It also includes
+Eligible new accounts can try premium features without a credit card. The trial lasts 14 days by default and includes
+unlimited projects and users, 75,000 events per calendar month, and 90-day retention. It also includes
 [Exie](/docs/ai/exie/), after you verify your email address, with a smaller AI allowance than the Medium plan.
 
 Trials are for accounts that don't belong to an organization and have no existing organizations they created. A recent
 trial for the same mailbox, including an alias or a deleted account, or a blocked disposable email domain can make an
-account ineligible. Trial length and eligibility settings can differ on self-hosted instances that enable billing.
+account ineligible. On a self-hosted instance that enables billing, the administrator sets the trial length, and a
+length of 0 turns trials off.
 
 While the trial runs, the sidebar shows when it ends, such as **Trial ends in 9 days**. Click it to choose a plan. In
 the last 3 days, a notice such as **Your free trial for Acme ends in 2 days.** appears at the top of the page;
@@ -157,8 +165,10 @@ that day.
 
 The trial doesn't charge you automatically. If you don't choose a paid plan, the organization moves to Free when the
 trial ends, and the app shows **Your trial has ended** until you dismiss it. Its projects and users aren't deleted, but
-Free-plan limits apply. If it has more projects or users (including pending invitations) than Free allows, event intake
-is suspended until you remove the excess or upgrade.
+Free-plan limits apply. If it has more projects or users (including pending invitations) than Free allows, the
+organization is suspended: the app shows **{name} has been suspended.** at the top of the page with links to upgrade or
+remove the excess users, invitations, and projects, and events sent while it's suspended are discarded. Intake resumes
+automatically once the organization is within the Free limits.
 
 ## Change your plan
 

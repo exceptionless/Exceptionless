@@ -29,7 +29,7 @@
   --border-strong: #d0d6de;
   --text: #111827;
   --text-muted: #5b6474;
-  --text-subtle: #8a93a3;
+  --text-subtle: #636d7d;
 
   --primary: #66c02a;
   --primary-strong: #57a823;
@@ -71,7 +71,7 @@
   --border-strong: #2a3542;
   --text: #f5f7fa;
   --text-muted: #a7b2c0;
-  --text-subtle: #6f7b8b;
+  --text-subtle: #7a8696;
 
   --primary: #6bc72d;
   --primary-strong: #7ed23f;
@@ -1175,7 +1175,7 @@ a.shot {
   letter-spacing: -0.035em;
 }
 
-.feature-copy > p {
+.feature-copy > p:not(.eyebrow) {
   color: var(--text-muted);
   font-size: 17px;
 }
@@ -1668,10 +1668,10 @@ a.card:hover {
 /* ---------- MCP / AI ---------- */
 
 .ai-panel {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 24px 0;
 }
 
 .ai-client {
@@ -1679,20 +1679,14 @@ a.card:hover {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px;
+  padding: 10px 16px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
   color: var(--text);
   font-size: 14px;
   font-weight: 600;
-  text-align: center;
-}
-
-@media (max-width: 640px) {
-  .ai-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  white-space: nowrap;
 }
 
 .terminal {
@@ -1790,7 +1784,7 @@ a.card:hover {
 
 @media (max-width: 860px) {
   .split-panel {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .split-panel > div {
@@ -1886,6 +1880,23 @@ a.card:hover {
   justify-content: center;
 }
 
+/* The closing call to action gets the same space above and below (the footer's margin is the space below). */
+.section:has(> .container > .cta) {
+  padding: 96px 0 0;
+}
+
+.section:not(.section-subtle, .section-sm) + .section:has(> .container > .cta) {
+  padding-top: 0;
+}
+
+.section-sm:not(.section-subtle) + .section:has(> .container > .cta) {
+  padding-top: 32px;
+}
+
+main:has(> .section:last-child > .container > .cta) ~ .site-footer {
+  margin-top: 96px;
+}
+
 @media (max-width: 640px) {
   .cta {
     padding: 52px 24px;
@@ -1920,7 +1931,7 @@ a.card:hover {
   line-height: 1.05;
 }
 
-.page-hero p {
+.page-hero p:not(.eyebrow) {
   max-width: 680px;
   margin: 0 auto;
   color: var(--text-muted);
@@ -2165,7 +2176,8 @@ a.card:hover {
 
 .plan-row {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   padding: 20px 24px;
@@ -2185,9 +2197,27 @@ a.card:hover {
   font-size: 14px;
 }
 
+.plan-row > div:first-child {
+  min-width: 0;
+}
+
 .plan-row .plan-row-price {
   flex: none;
-  text-align: right;
+}
+
+@media (max-width: 900px) and (min-width: 561px) {
+  .plan-row {
+    flex-direction: row;
+    gap: 24px;
+  }
+
+  .plan-row > div:first-child {
+    flex: 1 1 0;
+  }
+
+  .plan-row .plan-row-price {
+    text-align: right;
+  }
 }
 
 .plan-row .plan-row-price strong {
@@ -2628,7 +2658,7 @@ a.card:hover {
   height: 14px;
 }
 
-pre:hover > .copy-code,
+.code-block:hover .copy-code,
 .code-window [role="tabpanel"]:hover .copy-code,
 .inline-code-block:hover .copy-code,
 .copy-code:focus-visible {
@@ -2639,9 +2669,29 @@ pre:hover > .copy-code,
   color: var(--code-text);
 }
 
+.prose .code-block {
+  position: relative;
+  margin: 0 0 1.25em;
+}
+
+.prose .code-block > pre {
+  margin: 0;
+}
+
+.prose .code-window .code-block + .code-block {
+  border-top: 1px solid var(--code-border);
+}
+
 @media (hover: none) {
   .copy-code {
     opacity: 1;
+  }
+
+  /* There is no hover to reveal the button, so keep it in its own band above the code instead of over the first line. */
+  .prose pre,
+  .code-window pre,
+  .inline-code-block pre {
+    padding-top: 44px;
   }
 }
 
@@ -3335,9 +3385,102 @@ pre:hover > .copy-code,
     transform: none;
   }
 
+  /* Clicking the dimmed page closes the drawer (see initializeDocsNav). */
+  body.docs-nav-open::after {
+    content: "";
+    position: fixed;
+    inset: var(--header-height) 0 0;
+    z-index: 44;
+    background: rgb(4 7 11 / 55%);
+    animation: docs-backdrop-in 0.2s ease;
+  }
+
   .docs-main {
     padding-top: 24px;
   }
+}
+
+@keyframes docs-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- Scroll hints for wide tables ---------- */
+
+.scroll-hint {
+  --scroll-fade: var(--bg);
+  position: relative;
+}
+
+.scroll-hint.table-wrap-hint {
+  --scroll-fade: var(--surface);
+}
+
+.scroll-hint::before,
+.scroll-hint::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 36px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.scroll-hint::before {
+  left: 0;
+  background: linear-gradient(to right, var(--scroll-fade) 10%, transparent);
+  box-shadow: inset 8px 0 8px -8px rgb(0 0 0 / 25%);
+}
+
+.scroll-hint::after {
+  right: 0;
+  background: linear-gradient(to left, var(--scroll-fade) 10%, transparent);
+  box-shadow: inset -8px 0 8px -8px rgb(0 0 0 / 25%);
+}
+
+.scroll-hint.can-scroll-start::before,
+.scroll-hint.can-scroll-end::after {
+  opacity: 1;
+}
+
+.scroll-hint.table-wrap-hint::before,
+.scroll-hint.table-wrap-hint::after {
+  top: 1px;
+  bottom: 1px;
+}
+
+.scroll-hint.table-wrap-hint::before {
+  left: 1px;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+
+.scroll-hint.table-wrap-hint::after {
+  right: 1px;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+
+.scroll-hint.prose-table {
+  margin: 0 0 1.25em;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table-scroll > table {
+  display: table;
+  width: 100%;
+  margin: 0;
+  overflow: visible;
+}
+
+.table-scroll:focus-visible {
+  outline: 2px solid var(--primary-ring);
+  outline-offset: 2px;
 }
 
 /* ---------- News ---------- */
@@ -3364,6 +3507,10 @@ pre:hover > .copy-code,
   box-shadow: var(--shadow-md);
   text-decoration: none;
   transform: translateY(-1px);
+}
+
+.news-item time {
+  display: block;
 }
 
 .news-item time,
@@ -3909,4 +4056,10 @@ pre:hover > .copy-code,
   font-weight: 600;
   text-align: left;
   cursor: pointer;
+}
+
+.framework-note {
+  margin-top: 20px;
+  font-size: 0.9375rem;
+  color: var(--text-muted);
 }

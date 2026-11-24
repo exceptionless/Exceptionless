@@ -365,6 +365,80 @@ class TestElement {
   select() {}
 }
 
+Deno.test("searchEntries links to the best matching heading and ignores stopwords", () => {
+  // Arrange
+  const entries = [
+    {
+      ...entry("Organizations and billing", "/docs/organizations/", "Manage your plan"),
+      headings: [{ id: "users-and-invites", text: "Users and invites", level: 2 }],
+    },
+  ]
+
+  // Act
+  const results = searchEntries(entries, "invite the users")
+
+  // Assert
+  assertEquals(results.map((result) => result.targetUrl), ["/docs/organizations/#users-and-invites"])
+})
+
+Deno.test("searchEntries lands on the page when its title already matches", () => {
+  // Arrange
+  const entries = [
+    {
+      ...entry("Notifications", "/docs/notifications/", "Email and Slack"),
+      headings: [{ id: "notifications-setup", text: "Notifications setup", level: 2 }],
+    },
+  ]
+
+  // Act
+  const results = searchEntries(entries, "notifications")
+
+  // Assert
+  assertEquals(results.map((result) => result.targetUrl), [undefined])
+})
+
+Deno.test("searchEntries weights keywords above body text", () => {
+  // Arrange
+  const entries = [
+    entry("Core concepts", "/docs/concepts/", "Invite a teammate is mentioned here once"),
+    { ...entry("Organizations", "/docs/organizations/", "Plans"), keywords: ["invite teammate", "add user"] },
+  ]
+
+  // Act
+  const results = searchEntries(entries, "invite teammate")
+
+  // Assert
+  assertEquals(results.map((result) => result.url), ["/docs/organizations/", "/docs/concepts/"])
+})
+
+Deno.test("searchEntries lists news after every docs result", () => {
+  // Arrange
+  const entries = [
+    entry("Team news", "/news/2014/team-news/", "team team team"),
+    entry("Organizations", "/docs/organizations/", "Invite your team"),
+    entry("Pricing", "/pricing/", "team plans"),
+  ]
+
+  // Act
+  const results = searchEntries(entries, "team")
+
+  // Assert
+  assertEquals(results.map((result) => result.url), ["/docs/organizations/", "/pricing/", "/news/2014/team-news/"])
+})
+
+Deno.test("searchEntries matches simple plurals and verb forms", () => {
+  // Arrange
+  const entries = [entry("Events", "/docs/events/", "Delete an event or a user")]
+
+  // Act
+  const deleting = searchEntries(entries, "deleting events")
+  const users = searchEntries(entries, "users")
+
+  // Assert
+  assertEquals(deleting.length, 1)
+  assertEquals(users.length, 1)
+})
+
 function entry(title, url, text) {
   return { title, url, description: "", prose: text, text }
 }

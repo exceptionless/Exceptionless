@@ -65,7 +65,8 @@ The package is ES modules only. From a CommonJS file, load it with a dynamic `im
 ## Short-lived processes and serverless {#short-lived-processes-and-serverless}
 
 The client sends its queue every 10 seconds, and those timers don't keep the process alive. In a long-running server
-that's all you need. In a script that ends on its own, the client sends what's left when Node.js emits `beforeExit`.
+that's all you need. In a script that ends on its own, the client sends one more batch of up to 50 events when Node.js
+emits `beforeExit`, so a larger backlog can be left behind.
 
 Call `await Exceptionless.processQueue()` yourself when the process can end before that:
 

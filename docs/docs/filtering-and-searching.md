@@ -2,6 +2,10 @@
 title: "Filtering and searching"
 metaTitle: "Filtering and searching events in Exceptionless"
 description: "Narrow any Exceptionless list with the filter bar: field filters, environments, raw filter queries, and the date range."
+keywords:
+  - "user"
+  - "customer"
+  - "find errors for a user"
 sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/faceted-filter/faceted-filter-builder.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/faceted-filter/faceted-filter-keyword.svelte
@@ -58,6 +62,18 @@ To change a filter, select its button. At the bottom of each filter:
 You don't have to start from the filter bar. In an event's or stack's details, select the filter icon next to a value,
 such as its type, source, version, environment, or user, to filter the list by it. Select a tag to filter by that tag,
 and select **Open events for this stack** on a stack to list its events. See [Events](/docs/events/).
+
+## Find a user's events {#find-a-users-events}
+
+To see everything one customer ran into, filter by the user:
+
+- In an event's details, open **User Info** and select the filter icon next to the user's identity or name.
+- Or open **Raw Filter** and type `user:jane@example.com`. `user` and `user.email` match the identity your app set,
+  `user.name:"Jane Doe"` matches the display name, and `user.description` matches text the user submitted with an error.
+
+Add `type:error` to narrow it to errors, or open the user's [sessions](/docs/user-sessions/) to see what they did in
+order. Filtering by user needs a paid plan or an active trial. See
+[Free plan searches](/docs/reference/search-syntax/#free-plan-searches).
 
 ## Hidden filters
 
@@ -123,8 +139,8 @@ See the [search syntax reference](/docs/reference/search-syntax/) for every fiel
 
 The **Date** filter sets the time range of the list. Select it, then pick a range:
 
-- **Last 15 minutes**, **Last 1 hour**, **Last 4 hours**, **Last 24 hours**, **Last 7 days**, **Last 30 days**, or
-  **Last 90 days**.
+- A quick range, from **Last 5 minutes** to **Last 90 days**, such as **Last 24 hours**, **Last 7 days**, or **This
+  month so far**.
 - **Custom range** for anything else.
 
 A custom range has two tabs:
@@ -149,7 +165,7 @@ Open **View** to save them to the view, save them as a new view, or reset. See [
 ## Search from anywhere
 
 Press <kbd>/</kbd> to open the command palette and type at least two characters to search recent events and stacks. See
-[Navigating the app](/docs/navigation/).
+[Navigating the app](/docs/navigation/). On the Free plan, this search needs a paid plan or an active trial.
 
 ## Ask Exie
 

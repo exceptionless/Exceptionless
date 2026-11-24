@@ -89,9 +89,9 @@ Then add your API key to `appsettings.json`. Find the key in the app under your 
 }
 ```
 
-Keep the key out of source control in production by setting the `Exceptionless__ApiKey` environment variable or using
-your secret store instead. Every setting you can put in this section is on the
-[configuration reference](/docs/clients/dotnet/configuration/).
+Prefer the `Exceptionless__ApiKey` environment variable or your secret store over a key committed in `appsettings.json`,
+so you can rotate it without a code change. See [API keys](/docs/security/#api-keys). Every setting you can put in this
+section is on the [configuration reference](/docs/clients/dotnet/configuration/).
 
 You can also configure the client in code. The lambda runs after the configuration section is read:
 

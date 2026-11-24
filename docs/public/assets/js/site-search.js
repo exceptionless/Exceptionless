@@ -95,7 +95,7 @@ export function initializeSiteSearch(modal) {
     // A result chosen since the last edit wins, even if a newer search is still pending.
     const activeResult = visibleResults[activeIndex]
     if (activeResult && (selectionChosen || visibleResultsQuery === currentQuery)) {
-      openResult(activeResult.url)
+      openResult(activeResult.targetUrl ?? activeResult.url)
       return
     }
 
@@ -108,7 +108,7 @@ export function initializeSiteSearch(modal) {
 
     const topResult = visibleResultsQuery === currentQuery ? visibleResults[activeIndex] : undefined
     if (topResult) {
-      openResult(topResult.url)
+      openResult(topResult.targetUrl ?? topResult.url)
     }
   })
 
@@ -250,7 +250,7 @@ export function initializeSiteSearch(modal) {
 
     const link = document.createElement("a")
     link.className = "site-search-result-title"
-    link.href = result.url
+    link.href = result.targetUrl ?? result.url
     appendHighlightedText(link, result.title, query)
     item.append(link)
 
@@ -262,11 +262,14 @@ export function initializeSiteSearch(modal) {
     type.textContent = resultType(result.url)
     metadata.append(type)
 
-    const path = document.createElement("span")
-    path.className = "site-search-result-path"
-    path.textContent = formatResultPath(result.url)
-    path.title = result.url
-    metadata.append(path)
+    const pathText = formatResultPath(result)
+    if (pathText) {
+      const path = document.createElement("span")
+      path.className = "site-search-result-path"
+      path.textContent = pathText
+      path.title = result.targetUrl ?? result.url
+      metadata.append(path)
+    }
     item.append(metadata)
 
     if (result.excerpt) {
@@ -385,33 +388,52 @@ export function searchEntries(entries, query) {
   const phrase = normalizeSearchText(query)
   return entries
     .map((entry) => {
-      const score = scoreSearchEntry(entry, tokens, phrase)
-      if (score <= 0) {
+      const match = scoreSearchEntry(entry, tokens, phrase)
+      if (match.score <= 0) {
         return null
       }
 
       const codeExcerpt = codeExcerptFor(entry.codeBlocks || [], tokens)
-      return { ...entry, excerpt: excerptFor(entry, tokens, Boolean(codeExcerpt)), codeExcerpt, score }
+      const section = match.section
+      return {
+        ...entry,
+        excerpt: excerptFor(entry, tokens, Boolean(codeExcerpt)),
+        codeExcerpt,
+        score: match.score,
+        ...(section ? { section, targetUrl: `${entry.url}#${section.id}` } : {}),
+      }
     })
     .filter(Boolean)
-    .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
+    .sort((a, b) => Number(isNews(a)) - Number(isNews(b)) || b.score - a.score || a.title.localeCompare(b.title))
 }
+
+// News is background reading, so every docs and site match is listed before any post.
+function isNews(entry) {
+  return Boolean(entry.url?.startsWith("/news/"))
+}
+
+const docsBonus = 40
 
 function scoreSearchEntry(entry, tokens, phrase) {
   const title = normalizeSearchText(entry.title)
   const description = normalizeSearchText(entry.description)
   const text = normalizeSearchText(entry.text)
   const url = normalizeSearchText(entry.url)
-  const haystack = `${title} ${description} ${text} ${url}`
+  const keywords = (entry.keywords || []).map(normalizeSearchText)
+  const headings = (entry.headings || []).map((heading) => ({ heading, text: normalizeSearchText(heading.text) }))
+  const haystack = `${title} ${description} ${text} ${url} ${keywords.join(" ")} ${
+    headings.map((h) => h.text).join(" ")
+  }`
 
   if (!tokens.every((token) => haystack.includes(token))) {
-    return 0
+    return { score: 0 }
   }
 
+  const tokenPhrase = tokens.join(" ")
   let score = 0
-  if (title === phrase) {
+  if (title === phrase || title === tokenPhrase) {
     score += 100
-  } else if (title.includes(phrase)) {
+  } else if (title.includes(phrase) || title.includes(tokenPhrase)) {
     score += 70
   }
 
@@ -419,15 +441,49 @@ function scoreSearchEntry(entry, tokens, phrase) {
     score += 30
   }
 
-  if (entry.url?.startsWith("/docs/")) {
-    score += 18
+  // Keywords are synonyms the authors chose for the page, so a match is a strong signal.
+  if (keywords.some((keyword) => keyword === phrase || keyword === tokenPhrase)) {
+    score += 90
+  } else if (
+    keywords.some((keyword) => keyword.includes(tokenPhrase) || (keyword.length > 2 && tokenPhrase.includes(keyword)))
+  ) {
+    score += 60
   }
 
+  // A heading that has every token is the section the reader is looking for.
+  let section = null
+  let sectionScore = 0
+  for (const { heading, text: headingText } of headings) {
+    if (!tokens.every((token) => headingText.includes(token))) {
+      continue
+    }
+
+    const headingScore = (heading.level === 2 ? 60 : 52) +
+      (headingText === phrase || headingText === tokenPhrase ? 20 : 0)
+    if (headingScore > sectionScore) {
+      section = heading
+      sectionScore = headingScore
+    }
+  }
+  score += sectionScore
+
+  const titleHasEveryToken = tokens.every((token) => title.includes(token))
+  const keywordText = keywords.join(" ")
+  const headingText = headings.map((h) => h.text).join(" ")
+  const titleWords = title.split(/\s+/)
   for (const token of tokens) {
-    if (title.split(/\s+/).includes(token)) {
+    if (titleWords.includes(token)) {
       score += 32
     } else if (title.includes(token)) {
       score += 24
+    }
+
+    if (keywordText.includes(token)) {
+      score += 20
+    }
+
+    if (headingText.includes(token)) {
+      score += 10
     }
 
     if (description.includes(token)) {
@@ -443,7 +499,12 @@ function scoreSearchEntry(entry, tokens, phrase) {
     }
   }
 
-  return score
+  if (entry.url?.startsWith("/docs/")) {
+    score += docsBonus
+  }
+
+  // The page title already answers the query, so land on the page, not a section inside it.
+  return { score, section: titleHasEveryToken ? null : section }
 }
 
 function excerptFor(entry, tokens, hasCodeExcerpt) {
@@ -568,8 +629,26 @@ function resultType(url) {
   return "Site"
 }
 
-function formatResultPath(url) {
-  const segments = url
+function formatResultPath(result) {
+  const parts = resultPathParts(result)
+  if (result.section?.text) {
+    parts.push(result.section.text)
+  }
+
+  return parts.join(" › ")
+}
+
+function resultPathParts(result) {
+  // The index records the sidebar labels (section, groups) for docs pages, and the publish date for news posts.
+  if (Array.isArray(result.path) && result.path.length) {
+    return [...result.path]
+  }
+
+  if (result.date) {
+    return [formatResultDate(result.date)]
+  }
+
+  const segments = result.url
     .split(/[?#]/, 1)[0]
     .split("/")
     .filter(Boolean)
@@ -578,7 +657,15 @@ function formatResultPath(url) {
     segments.shift()
   }
 
-  return segments.length ? segments.map(formatPathSegment).join(" › ") : "Home"
+  // A docs page directly under /docs/ has no section; the type label already says "Docs".
+  return result.url.startsWith("/docs/") && segments.length <= 1 ? [] : segments.slice(0, -1).map(formatPathSegment)
+}
+
+function formatResultDate(value) {
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00Z`)
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" })
 }
 
 function formatPathSegment(segment) {
@@ -615,8 +702,45 @@ function appendHighlightedText(parent, text, query) {
   }
 }
 
+const stopWords = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "can",
+  "do",
+  "for",
+  "how",
+  "i",
+  "in",
+  "is",
+  "me",
+  "my",
+  "of",
+  "on",
+  "only",
+  "or",
+  "the",
+  "to",
+  "we",
+  "with",
+])
+
 function tokenize(value) {
-  return [...new Set(normalizeSearchText(value).match(/[a-z0-9#.+-]+/g) ?? [])]
+  const words = [...new Set(normalizeSearchText(value).match(/[a-z0-9#.+-]+/g) ?? [])]
+  const meaningful = words.filter((word) => !stopWords.has(word))
+  return [...new Set((meaningful.length ? meaningful : words).map(stemToken))]
+}
+
+// A light stem so "users" finds "user" and "deleting" finds "deleted". Tokens are matched as substrings.
+function stemToken(token) {
+  for (const suffix of ["ing", "ed", "s"]) {
+    if (token.length - suffix.length >= 4 && token.endsWith(suffix) && !token.endsWith("ss")) {
+      return token.slice(0, -suffix.length)
+    }
+  }
+
+  return token
 }
 
 function normalizeSearchText(value) {

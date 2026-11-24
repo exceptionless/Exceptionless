@@ -173,6 +173,7 @@ The package adds Exceptionless helpers to NLog's fluent log builder:
 
 ```csharp
 using Exceptionless.NLog;
+using NLog;
 
 var logger = LogManager.GetCurrentClassLogger();
 logger.ForWarnEvent()

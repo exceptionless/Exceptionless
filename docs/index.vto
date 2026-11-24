@@ -14,13 +14,13 @@ description: Open source error monitoring for .NET, JavaScript, and React Native
         {{ icons["arrow-right"] }}
       </a>
       <h1 class="hero-title">Find and fix errors <span class="text-gradient">before your users notice</span></h1>
-      <p class="hero-lead">Exceptionless captures exceptions, logs, and feature usage from your .NET, JavaScript, and React Native apps, groups them into stacks, and alerts you the moment something breaks. Then Exie and your AI coding agent help you fix it.</p>
+      <p class="hero-lead">Exceptionless captures exceptions, logs, and feature usage from your .NET, JavaScript, and React Native apps, groups them into stacks, and alerts you when something breaks. Then Exie and your AI coding agent help you fix it.</p>
       <div class="btn-group">
         <a class="btn btn-primary btn-lg" href="{{ site.signupUrl }}" data-cta="home-hero">Get started {{ icons["arrow-right"] }}</a>
         <a class="btn btn-secondary btn-lg" href="/tour/">See how it works</a>
       </div>
       <ul class="hero-meta">
-        <li>{{ icons["circle-check"] }} No credit card required</li>
+        <li>{{ icons["circle-check"] }} 14-day free trial, no credit card</li>
         <li>{{ icons["circle-check"] }} Open source, no lock-in</li>
         <li>{{ icons["circle-check"] }} Set up in minutes</li>
       </ul>
@@ -69,6 +69,7 @@ description: Open source error monitoring for .NET, JavaScript, and React Native
         <a class="btn btn-primary" href="{{ site.signupUrl }}" data-cta="home-setup">Get your API key {{ icons["arrow-right"] }}</a>
         <a class="btn btn-ghost" href="/docs/getting-started/">Getting started guide</a>
       </div>
+      <p class="framework-note">Building with a framework? Follow the guide for <a href="/docs/clients/javascript/guides/react/">React</a>, <a href="/docs/clients/javascript/guides/vue/">Vue</a>, <a href="/docs/clients/javascript/guides/angular/">Angular</a>, <a href="/docs/clients/javascript/guides/nextjs/">Next.js</a>, <a href="/docs/clients/javascript/guides/sveltekit/">SvelteKit</a>, or <a href="/docs/clients/javascript/guides/express/">Express</a>.</p>
     </div>
 
     {{ homeClientTabs() }}
@@ -89,11 +90,11 @@ description: Open source error monitoring for .NET, JavaScript, and React Native
         <h3>Thousands of events. A handful of stacks.</h3>
         <p>Every occurrence is grouped by error type and where it happened in your code, so you work through real problems instead of duplicate alerts.</p>
         <ul class="check-list">
-          <li>{{ icons.check }}<span><strong>Most frequent, newest, and regressed</strong> views show you what to fix first.</span></li>
+          <li>{{ icons.check }}<span><strong>Built-in views</strong> for most frequent errors, most frequent 404s, and most used features show you what to fix first.</span></li>
           <li>{{ icons.check }}<span><strong>Mark it fixed in a version</strong> and hear about it if it ever comes back.</span></li>
-          <li>{{ icons.check }}<span><strong>Snooze, ignore, or mark critical</strong> in bulk, right from the list.</span></li>
+          <li>{{ icons.check }}<span><strong>Snooze, ignore, or discard</strong> many stacks at once, right from the list.</span></li>
         </ul>
-        <a class="text-link" href="/docs/managing-stacks/">How stacking works {{ icons["arrow-right"] }}</a>
+        <a class="text-link" href="/docs/concepts/stacking/">How stacking works {{ icons["arrow-right"] }}</a>
       </div>
       <div class="feature-media">
         {{ productShot("most-frequent", "Most frequent errors saved view with occurrence counts and user impact") }}
@@ -117,7 +118,7 @@ description: Open source error monitoring for .NET, JavaScript, and React Native
       </div>
     </div>
 
-    {{ include "partials/signup-banner.vto" { cta: "home-features", title: "Know the moment something breaks", text: "Real-time alerts for new and regressed errors, with the full context to fix them. Set up in minutes, no credit card required.", secondaryHref: "/tour/", secondaryLabel: "Take the tour" } }}
+    {{ include "partials/signup-banner.vto" { cta: "home-features", title: "Know the moment something breaks", text: "Real-time alerts for new and regressed errors, with the full context to fix them. Try them free for 14 days, no credit card required.", secondaryHref: "/tour/", secondaryLabel: "Take the tour" } }}
   </div>
 </section>
 
@@ -145,12 +146,14 @@ description: Open source error monitoring for .NET, JavaScript, and React Native
       <div class="feature-copy">
         <p class="eyebrow">{{ icons.plug }} MCP server</p>
         <h2>Bring production errors into your coding agent</h2>
-        <p>Connect Claude Code, Codex, GitHub Copilot, or OpenCode to the Exceptionless MCP server. Your agent can search stacks, read events, and pull stack traces while it works on the fix, all through a secure OAuth sign-in. It's included on every plan, including Free.</p>
+        <p>Connect Claude Code, Codex, Cursor, GitHub Copilot, OpenCode, or VS Code to the Exceptionless MCP server. Your agent can search stacks, read events, and pull stack traces while it works on the fix, all through a secure OAuth sign-in. It's included on every plan, including Free.</p>
         <div class="ai-panel">
           <span class="ai-client">Claude Code</span>
           <span class="ai-client">Codex</span>
+          <span class="ai-client">Cursor</span>
           <span class="ai-client">GitHub Copilot</span>
           <span class="ai-client">OpenCode</span>
+          <span class="ai-client">VS Code</span>
         </div>
         <a class="text-link" href="/docs/ai/mcp-server/">Set up the MCP server {{ icons["arrow-right"] }}</a>
       </div>
@@ -255,7 +258,7 @@ for guest checkouts. I'll add a guard and a regression test.</pre>
 <section class="section" id="open-source">
   <div class="container">
     <div class="section-head reveal">
-      <p class="eyebrow">{{ icons.github }} Open source since 2014</p>
+      <p class="eyebrow">{{ icons.github }} Open source and self-hostable</p>
       <h2 class="section-title">Your cloud or ours</h2>
       <p class="section-lead">The hosted service and the code on GitHub are the same product, so you are never locked in. Most teams let us run it; some need it on their own servers.</p>
     </div>
@@ -277,7 +280,8 @@ for guest checkouts. I'll add a guard and a regression test.</pre>
         <h3>{{ icons.server }} Self-hosted</h3>
         <p>Need full control or strict data residency? Run the same product on your own infrastructure with Docker or Kubernetes. You operate Elasticsearch, storage, backups, and upgrades.</p>
         <div class="inline-code-block">
-<pre><code>docker run --rm -it -p 5200:8080 \
+<pre><code>docker run --rm -it -p 7110:8080 \
+  -e EX_BaseURL=http://localhost:7110 \
   exceptionless/exceptionless:latest</code></pre>
         </div>
         <div class="btn-group">
@@ -289,8 +293,12 @@ for guest checkouts. I'll add a guard and a regression test.</pre>
   </div>
 </section>
 
-<section class="section section-sm" aria-label="What developers say">
+<section class="section section-sm" aria-labelledby="testimonials-title">
   <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow">{{ icons.users }} What customers say</p>
+      <h2 class="section-title" id="testimonials-title">Trusted by developers shipping to production</h2>
+    </div>
     <div class="grid grid-2">
       <figure class="card quote-card reveal">
         <blockquote>"Exceptionless is awesome. I've stopped worrying about whether I'm losing customers to bugs I don't know about."</blockquote>
@@ -320,7 +328,7 @@ for guest checkouts. I'll add a guard and a regression test.</pre>
       </details>
       <details>
         <summary>How does Exceptionless use AI? {{ icons["chevron-down"] }}</summary>
-        <div class="faq-body">Exie, the built-in assistant, answers questions about your errors, updates stacks, and manages saved views when you ask. The MCP server, included on every plan, lets coding agents like Claude Code, Codex, GitHub Copilot, and OpenCode search your errors and read stack traces while they write the fix. <a href="/ai/">Learn more about AI in Exceptionless</a>.</div>
+        <div class="faq-body">Exie, the built-in assistant, answers questions about your errors, updates stacks, and manages saved views when you ask. The MCP server, included on every plan, lets coding agents like Claude Code, Codex, Cursor, GitHub Copilot, OpenCode, and VS Code search your errors and read stack traces while they write the fix. <a href="/ai/">Learn more about AI in Exceptionless</a>.</div>
       </details>
       <details>
         <summary>Is Exceptionless open source? Can I self-host it? {{ icons["chevron-down"] }}</summary>

@@ -61,10 +61,11 @@ For errors, Exceptionless looks for the method in your code that threw. It start
 out through the inner exceptions, reading each stack trace from the top. The first frame that counts as your code is the
 stacking target:
 
-- If the project has **User Namespaces** set, a frame is your code when its namespace starts with one of them.
-- Otherwise, any frame whose namespace doesn't start with `System` or `Microsoft` is your code. A frame with no
-  namespace, as in most JavaScript stack traces, also counts.
-- Frames whose method signature contains one of the project's **Common Methods** are skipped.
+- A frame with no namespace, as in most JavaScript stack traces, always counts as your code, even when the project has
+  **User Namespaces** set.
+- For frames with a namespace: if the project has **User Namespaces** set, a frame is your code when its namespace
+  starts with one of them. Otherwise, any namespace that doesn't start with `System` or `Microsoft` is your code.
+- Frames whose method signature contains one of the project's **Common Methods** are skipped, in either case.
 
 When no frame qualifies, Exceptionless uses the innermost exception's target method, then its top stack frame, and
 finally the exception type alone.

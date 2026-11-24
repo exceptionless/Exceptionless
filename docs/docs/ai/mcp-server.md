@@ -43,6 +43,12 @@ The **AI Tools** page under **My Account** in the app shows setup instructions w
 for Claude Code, Codex, Cursor, Copilot (the GitHub Copilot CLI), OpenCode, and VS Code. The Cursor and VS Code options
 include an **Add to Cursor** or **Add to VS Code** install link and configuration you can copy.
 
+## Before you start
+
+You need an Exceptionless account and a project that is sending events. If you don't have one, follow the
+[Quickstart](/docs/getting-started/), or let your agent do it with
+[Set up Exceptionless with an agent](/docs/ai/coding-agents/#set-up-exceptionless-with-an-agent).
+
 ## Connect your agent
 
 Add the server to your agent, then approve access in the browser window that opens. See
@@ -264,8 +270,9 @@ saved views in results include a `url` with their REST API path. Dates in result
 | `count_events`                  | `events:read`   | Counts events and occurrences in a project. `interval` (such as `1h` or `1d`) returns trend buckets. `groupBy` groups by `stack`, `version`, `environment`, `type`, `source`, `status`, `tag`, `user`, `level`, `error.type`, `error.code`, `os`, `os.version`, or `browser`, up to 25 groups. |
 
 `count_events` with `groupBy` `stack` ranks the stacks that happened most in a time range and includes each stack's
-first occurrence, so a stack first seen in the range is a new error. Use it, not `search_stacks`, to find what happened
-in a period.
+first occurrence. Use it to find what happened most in a period or to count a stack's occurrences. It returns only the
+top groups (10 by default, at most 25), so older, busier errors can push a new error out of the results. To find new
+errors, use `search_stacks` with a `first_occurrence` filter, then count each candidate with `count_events`.
 
 Project, stack, and event list tools return 10 rows by default and up to 100. When `pagination.hasMore` is true, pass
 `pagination.after` or `pagination.before` to page. Saved-view lists have a separate limit below.
@@ -353,8 +360,9 @@ For step-by-step jobs, see the recipes in [Coding agents](/docs/ai/coding-agents
 - **Grant only what the agent needs.** Clear **Stacks Write** unless the agent should change stacks, and **Saved Views
   Write** unless it should create, update, or delete views. Approve only the organizations it needs.
 - **The API key in setup results.** `get_client_setup_instructions` returns the project's API key so the agent can
-  configure a client. Anyone with the key can send events to the project, so treat it like any other configuration
-  secret.
+  configure a client. A client API key can only send events and read client configuration, so it's fine in shipped
+  client code. Keep it in configuration or an environment variable so you can rotate it. See
+  [API keys](/docs/security/#api-keys).
 - **Review connected applications** under **My Account** > **Applications**, and revoke any you don't use.
 
 See [AI privacy and security](/docs/ai/privacy/) for how Exie and the MCP server handle your data.

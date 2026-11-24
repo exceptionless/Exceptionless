@@ -148,7 +148,7 @@ Hover over a message to see its actions:
 
 - **Copy message**.
 - **Edit and resend** on your own messages.
-- **Regenerate response** on Exie's answers.
+- **Regenerate response** on Exie's latest answer only.
 - **Good response** and **Poor response**. **Poor response** asks what went wrong: **Incorrect**, **Incomplete**, **Not
   relevant**, **Wrong change**, or **Something else**.
 
