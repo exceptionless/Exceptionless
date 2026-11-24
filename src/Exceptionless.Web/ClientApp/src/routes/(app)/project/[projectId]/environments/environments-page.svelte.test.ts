@@ -13,8 +13,13 @@ const mocks = vi.hoisted(() => ({
     updateSettings: vi.fn()
 }));
 
+// Read lazily, so the route can change during a test.
+const pageState = $state({ params: { projectId: 'project-id' } });
+
 vi.mock('$app/state', () => ({
-    page: { params: { projectId: 'project-id' } }
+    get page() {
+        return pageState;
+    }
 }));
 
 vi.mock('svelte-sonner', () => ({ toast: mocks.toast }));
@@ -87,6 +92,7 @@ describe('Environments page', () => {
         mocks.countData = observed();
         mocks.project = project([]);
         mocks.countMatching.mockResolvedValue(42);
+        pageState.params = { projectId: 'project-id' };
         mocks.startBulk.mockResolvedValue({});
     });
 
@@ -221,6 +227,25 @@ describe('Environments page', () => {
                 type: 'events.delete'
             })
         );
+    });
+
+    it('drops the delete when the page moves to another project while counting', async () => {
+        // Arrange
+        let resolveCount: (count: number) => void = () => {};
+        mocks.countMatching.mockReturnValue(new Promise<number>((resolve) => (resolveCount = resolve)));
+        mocks.project = project([{ created_utc: '2026-11-01T00:00:00Z', name: 'Production', notify: true }]);
+        render(EnvironmentsPage);
+        await userEvent.click(screen.getByRole('button', { name: 'Delete events in Production' }));
+
+        // Act
+        pageState.params = { projectId: 'other-project-id' };
+        resolveCount(42);
+
+        // Assert
+        await waitFor(() => expect(mocks.countMatching).toHaveBeenCalledWith('project-id', 'environment:production'));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(screen.queryByRole('button', { name: 'Delete Matching Events' })).toBeNull();
+        expect(mocks.startBulk).not.toHaveBeenCalled();
     });
 
     it('reports the problem when the delete cannot start', async () => {

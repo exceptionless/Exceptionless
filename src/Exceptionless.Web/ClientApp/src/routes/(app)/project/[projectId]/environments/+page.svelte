@@ -60,7 +60,7 @@
     const startBulk = postBulkOperation();
 
     let environmentToRemove = $state<EnvironmentRow>();
-    let eventsToDelete = $state<{ count: number; filter: string; name: string }>();
+    let eventsToDelete = $state<{ count: number; filter: string; name: string; organizationId: string; projectId: string }>();
     let showDeleteEventsDialog = $state(false);
     let isCountingEvents = false;
     let showRemoveDialog = $state(false);
@@ -127,6 +127,14 @@
         return change(settings);
     }
 
+    // A confirmation belongs to the project it was counted in.
+    $effect(() => {
+        if (eventsToDelete && eventsToDelete.projectId !== projectId) {
+            eventsToDelete = undefined;
+            showDeleteEventsDialog = false;
+        }
+    });
+
     // Cancel, Escape and clicking outside all close the dialog without confirming.
     $effect(() => {
         if (!showDiscardDialog && pendingSettings) {
@@ -151,14 +159,28 @@
             return;
         }
 
+        // Pin the scope that is counted, so the delete can't run against another project if the page moves on while counting.
+        const scope = {
+ organizationId: project?.organization_id, projectId 
+};
+        if (!scope.organizationId) {
+            return;
+        }
+
         isCountingEvents = true;
         try {
             const filter = new EnvironmentFilter([row.name]).toFilter();
-            const count = await getProjectMatchingEventCount(projectId, filter);
+            const count = await getProjectMatchingEventCount(scope.projectId, filter);
+            if (scope.projectId !== projectId) {
+                return;
+            }
+
             eventsToDelete = {
                 count,
                 filter,
-                name: row.name
+                name: row.name,
+                organizationId: scope.organizationId,
+                projectId: scope.projectId
             };
             showDeleteEventsDialog = true;
         } catch (error) {
@@ -184,15 +206,14 @@
 
     async function deleteEvents() {
         const target = eventsToDelete;
-        const organizationId = project?.organization_id;
-        if (!target || !organizationId) {
+        if (!target || target.projectId !== projectId) {
             return;
         }
 
         try {
             await startBulk.mutateAsync({
-                organization_id: organizationId,
-                project_id: projectId,
+                organization_id: target.organizationId,
+                project_id: target.projectId,
                 selection: {
                     filter: target.filter,
                     kind: BulkOperationSelectionKind.Filter
