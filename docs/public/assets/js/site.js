@@ -15,6 +15,7 @@ initializeCopyMarkdown()
 initializePageToc()
 initializeLightbox()
 initializeBillingToggle()
+initializeFaq()
 initializeAnchorNav()
 initializeReveal()
 initializeGitHubStars()
@@ -433,6 +434,77 @@ function initializeBillingToggle() {
   }
 
   buttons.forEach((button) => button.addEventListener("click", () => select(button.dataset.billing)))
+}
+
+function initializeFaq() {
+  const items = document.querySelectorAll(".faq details")
+  if (!items.length) {
+    return
+  }
+
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)")
+
+  items.forEach((details) => {
+    const summary = details.querySelector("summary")
+    const body = details.querySelector(".faq-body")
+    if (!summary || !body) {
+      return
+    }
+
+    let animation = null
+
+    // Clicking a question more than once in a row would otherwise select the answer's text.
+    summary.addEventListener("mousedown", (event) => {
+      if (event.detail > 1) {
+        event.preventDefault()
+      }
+    })
+
+    summary.addEventListener("click", (event) => {
+      if (reducedMotion.matches || typeof details.animate !== "function") {
+        return
+      }
+
+      event.preventDefault()
+
+      const startHeight = details.getBoundingClientRect().height
+      const opening = !details.open || details.classList.contains("is-closing")
+      animation?.cancel()
+
+      details.open = false
+      const closedHeight = details.getBoundingClientRect().height
+      details.open = true
+      const openHeight = details.getBoundingClientRect().height
+
+      details.classList.toggle("is-closing", !opening)
+      details.style.overflow = "hidden"
+
+      animation = details.animate(
+        { height: [`${startHeight}px`, `${opening ? openHeight : closedHeight}px`] },
+        { duration: 240, easing: "cubic-bezier(0.2, 0, 0, 1)" },
+      )
+      if (opening) {
+        body.animate({ opacity: [0, 1], transform: ["translateY(-4px)", "none"] }, {
+          duration: 240,
+          easing: "ease-out",
+        })
+      }
+
+      const current = animation
+      current.onfinish = () => {
+        if (animation !== current) {
+          return
+        }
+
+        animation = null
+        details.style.overflow = ""
+        if (details.classList.contains("is-closing")) {
+          details.classList.remove("is-closing")
+          details.open = false
+        }
+      }
+    })
+  })
 }
 
 function initializeAnchorNav() {

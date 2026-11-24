@@ -2311,6 +2311,8 @@ main:has(> .section:last-child > .container > .cta) ~ .site-footer {
 }
 
 .faq summary {
+  -webkit-user-select: none;
+  user-select: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2331,11 +2333,15 @@ main:has(> .section:last-child > .container > .cta) ~ .site-footer {
   width: 18px;
   height: 18px;
   color: var(--text-subtle);
-  transition: transform 0.2s;
+  transition: transform 0.24s cubic-bezier(0.2, 0, 0, 1);
 }
 
-.faq details[open] summary .icon {
+.faq details[open]:not(.is-closing) summary .icon {
   transform: rotate(180deg);
+}
+
+.faq summary:hover .icon {
+  color: var(--text-muted);
 }
 
 .faq .faq-body {
