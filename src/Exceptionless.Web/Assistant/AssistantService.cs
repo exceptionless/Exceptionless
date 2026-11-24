@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
 using System.Web;
 using Exceptionless.Core;
@@ -40,7 +41,15 @@ public sealed partial class AssistantService(
     private const string SnoozeStackTool = "snooze_stack";
     private const string UpdateSavedViewTool = "update_saved_view";
     private const string UpdateStackStatusTool = "update_stack_status";
-    private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
+    private static readonly JsonSerializerOptions s_jsonOptions = CreateJsonOptions();
+
+    private static JsonSerializerOptions CreateJsonOptions()
+    {
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web).ConfigureExceptionlessApiDefaults();
+        // Exie reads the same tool results as MCP clients, so its dates need the same UTC marker.
+        options.TypeInfoResolver = options.TypeInfoResolver!.WithAddedModifier(McpJsonSerializerOptions.WriteDatesAsUtc);
+        return options;
+    }
 
     public IAsyncEnumerable<AssistantStreamEvent> StreamAsync(
         AssistantChatRequest request,

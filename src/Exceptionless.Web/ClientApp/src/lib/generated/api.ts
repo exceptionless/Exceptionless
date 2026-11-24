@@ -7,12 +7,25 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
+export enum BulkOperationSelectionKind {
+  Ids = "Ids",
+  Filter = "Filter",
+}
+
 export enum BillingStatus {
   Trialing = 0,
   Active = 1,
   PastDue = 2,
   Canceled = 3,
   Unpaid = 4,
+}
+
+export enum BackgroundTaskStatus {
+  Queued = "Queued",
+  Running = "Running",
+  Completed = "Completed",
+  Failed = "Failed",
+  Cancelled = "Cancelled",
 }
 
 export interface AdminAssistantOrganizationUsage {
@@ -240,6 +253,36 @@ export interface Login {
   email: string;
   password: string;
   invite_token?: null | string;
+}
+
+export interface NewBulkOperation {
+  /** The action to run, e.g. events.delete. */
+  type: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  /**
+   * Optionally limits the operation to one project of the organization.
+   * @pattern ^[a-fA-F0-9]{24}$
+   */
+  project_id?: null | string;
+  selection: NewBulkOperationSelection;
+  /** Action specific parameters. Actions without parameters reject any value here. */
+  parameters?: null | Record<string, string>;
+}
+
+export interface NewBulkOperationSelection {
+  kind: BulkOperationSelectionKind;
+  /** The ids to process when Kind is ids. */
+  ids?: string[] | null;
+  /** The search filter when Kind is filter. An empty filter matches everything in the time window. */
+  filter?: null | string;
+  /**
+   * The time range of the filter, e.g. [now-7d TO now]. It is resolved to absolute UTC dates when the
+   * operation is created.
+   */
+  time?: null | string;
+  /** The UTC offset used to resolve Time, e.g. -5h. */
+  offset?: null | string;
 }
 
 export interface NewOrganization {
@@ -832,6 +875,72 @@ export interface UserSavedViewOrderPreference {
 /** The account whose email address the link verified, which may not be the account that's signed in. */
 export interface VerifyEmailAddressResult {
   email_address: string;
+}
+
+export interface ViewBackgroundTask {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  project_id?: null | string;
+  /** What the task does, e.g. events.delete, projects.reset-data or projects.sample-data. */
+  type: string;
+  description: string;
+  status: BackgroundTaskStatus;
+  /**
+   * Percent complete, 0 to 100.
+   * @format int32
+   */
+  progress: number;
+  /**
+   * The item counts. All zero for tasks that only report a percent.
+   * @format int64
+   */
+  total: number;
+  /** @format int64 */
+  processed: number;
+  /** @format int64 */
+  succeeded: number;
+  /** @format int64 */
+  failed: number;
+  /** Whether the task can be stopped with the cancel endpoint. */
+  can_cancel: boolean;
+  /** What a bulk action applies to. Only set for bulk actions. */
+  selection?: null | ViewBulkOperationSelection;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  created_by_user_id: string;
+  /** @format date-time */
+  created_utc: string;
+  /** @format date-time */
+  started_utc?: null | string;
+  /** @format date-time */
+  completed_utc?: null | string;
+  /** @format date-time */
+  updated_utc: string;
+  message?: null | string;
+}
+
+/** What a bulk action applies to. Only set for bulk actions. */
+export interface ViewBulkOperationSelection {
+  kind: BulkOperationSelectionKind;
+  /**
+   * The number of ids when the selection is an id list.
+   * @format int32
+   */
+  id_count?: null | number;
+  filter?: null | string;
+  time?: null | string;
+  /**
+   * The absolute start of the resolved time window.
+   * @format date-time
+   */
+  utc_start?: null | string;
+  /**
+   * The absolute end of the resolved time window, never later than when the task was created.
+   * @format date-time
+   */
+  utc_end?: null | string;
 }
 
 export interface ViewCurrentUser {

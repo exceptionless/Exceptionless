@@ -75,7 +75,7 @@
         <div class="flex flex-col gap-1">
             <H3 class="flex flex-wrap items-center gap-x-1">
                 {#if isConfigurePage}
-                    <span>Send Events</span>
+                    <span>Send events</span>
                     {#if projectQuery.isSuccess}
                         <span>to {projectQuery.data.name}</span>
                     {/if}

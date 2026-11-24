@@ -955,6 +955,39 @@ public sealed class ProjectEndpointTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task PatchAsync_RenamedProject_IsListedUnderNewNameImmediately()
+    {
+        // Arrange
+        var project = await SendRequestAsAsync<ViewProject>(r => r
+            .AsTestOrganizationUser()
+            .Post()
+            .AppendPath("projects")
+            .Content(new NewProject { OrganizationId = SampleDataService.TEST_ORG_ID, Name = "Project To Rename" })
+            .StatusCodeShouldBeCreated()
+        );
+        Assert.NotNull(project);
+        string newName = "Renamed Project " + Guid.NewGuid().ToString("N");
+
+        // Act
+        await SendRequestAsync(r => r
+            .AsTestOrganizationUser()
+            .Patch()
+            .AppendPaths("projects", project.Id)
+            .Content(new UpdateProject { Name = newName })
+            .StatusCodeShouldBeOk()
+        );
+        var projects = await SendRequestAsAsync<List<ViewProject>>(r => r
+            .AsTestOrganizationUser()
+            .AppendPaths("organizations", SampleDataService.TEST_ORG_ID, "projects")
+            .StatusCodeShouldBeOk()
+        );
+
+        // Assert
+        Assert.NotNull(projects);
+        Assert.Equal(newName, Assert.Single(projects, p => p.Id == project.Id).Name);
+    }
+
+    [Fact]
     public async Task PatchAsync_DuplicateProjectNameInOrganization_ReturnsBadRequest()
     {
         // Arrange

@@ -5,15 +5,28 @@
 
     interface Props {
         count?: number;
+        /** The delete runs against everything matching the current filter instead of the selected rows. */
+        matchingFilter?: boolean;
         open: boolean;
         remove: () => Promise<void>;
     }
 
-    let { count = 1, open = $bindable(), remove }: Props = $props();
+    let { count = 1, matchingFilter = false, open = $bindable(), remove }: Props = $props();
+
+    let isSubmitting = $state(false);
 
     async function onSubmit() {
-        await remove();
-        open = false;
+        if (isSubmitting) {
+            return;
+        }
+
+        isSubmitting = true;
+        try {
+            await remove();
+            open = false;
+        } finally {
+            isSubmitting = false;
+        }
     }
 </script>
 
@@ -21,20 +34,29 @@
     <AlertDialog.Content>
         <AlertDialog.Header>
             <AlertDialog.Title>
-                Delete
-                {#if count === 1}
-                    Event
+                {#if matchingFilter}
+                    Delete Matching Events
                 {:else}
-                    <Number value={count} /> Events
+                    Delete
+                    {#if count === 1}
+                        Event
+                    {:else}
+                        <Number value={count} /> Events
+                    {/if}
                 {/if}
             </AlertDialog.Title>
             <AlertDialog.Description>
-                Are you sure you want to delete
-                {#if count === 1}
-                    this event
+                {#if matchingFilter}
+                    About <Number value={count} />
+                    {count === 1 ? 'event matches' : 'events match'} this filter. The final count may differ. This can't be undone.
                 {:else}
-                    <Number value={count} /> events
-                {/if}?
+                    Are you sure you want to delete
+                    {#if count === 1}
+                        this event
+                    {:else}
+                        <Number value={count} /> events
+                    {/if}?
+                {/if}
             </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>
@@ -43,13 +65,18 @@
                 class={buttonVariants({
                     variant: 'destructive'
                 })}
+                disabled={isSubmitting}
                 onclick={onSubmit}
             >
-                Delete
-                {#if count === 1}
-                    Event
+                {#if matchingFilter}
+                    Delete Matching Events
                 {:else}
-                    <Number value={count} /> Events
+                    Delete
+                    {#if count === 1}
+                        Event
+                    {:else}
+                        <Number value={count} /> Events
+                    {/if}
                 {/if}
             </AlertDialog.Action>
         </AlertDialog.Footer>

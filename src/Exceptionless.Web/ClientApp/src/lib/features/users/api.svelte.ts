@@ -9,7 +9,16 @@ import type { WorkInProgressResult } from '#shared/models/index.ts';
 import { accessToken } from '#features/auth/index.svelte.ts';
 import { fetchApiJson } from '#features/shared/api/api.svelte.ts';
 
-import type { OAuthGrant, RecordProductTourResult, UpdateEmailAddressResult, UpdateUser, UpdateUserEmailAddress, ViewCurrentUser, ViewUser } from './models';
+import type {
+    OAuthGrant,
+    RecordProductTourResult,
+    UpdateEmailAddressResult,
+    UpdateUser,
+    UpdateUserEmailAddress,
+    VerifyEmailAddressResult,
+    ViewCurrentUser,
+    ViewUser
+} from './models';
 
 /**
  * Refreshes the user queries a `UserChanged` message affects. Returns whether the signed-in user may have changed, so
@@ -91,6 +100,15 @@ export interface UserAvatarRequest {
     };
 }
 
+export type VerifyEmailAddressOutcome =
+    | {
+          emailAddress?: string;
+          /** False when the link belonged to a different account than the one signed in. */
+          isCurrentUser: boolean;
+          status: 'verified';
+      }
+    | { status: 'expired' | 'invalid' };
+
 export function deleteCurrentUser() {
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
         enabled: () => !!accessToken.current,
@@ -150,14 +168,7 @@ export function getMeQuery() {
             queryClient.setQueryData(queryKeys.id(data.id!), data);
         },
         queryClient,
-        queryFn: async ({ signal }: { signal: AbortSignal }) => {
-            const client = useFetchClient();
-            const response = await client.getJSON<ViewCurrentUser>('users/me', {
-                signal
-            });
-
-            return response.data!;
-        },
+        queryFn: ({ signal }: { signal: AbortSignal }) => fetchCurrentUser(signal),
         queryKey: queryKeys.me()
     }));
 }
@@ -365,6 +376,59 @@ export function uploadUserAvatar(request: UserAvatarRequest) {
             }
         }
     }));
+}
+
+/**
+ * Verifies the current user's email address with the token from the emailed link.
+ * Refreshes the current user so the verification prompt disappears.
+ */
+export async function verifyEmailAddress(queryClient: QueryClient, token: string): Promise<VerifyEmailAddressOutcome> {
+    const client = useFetchClient();
+    const response = await client.getJSON<VerifyEmailAddressResult>(`users/verify-email-address/${encodeURIComponent(token)}`, {
+        expectedStatusCodes: [404, 422]
+    });
+
+    if (response.status === 404) {
+        return {
+            status: 'invalid'
+        };
+    }
+
+    if (response.status === 422) {
+        return {
+            status: 'expired'
+        };
+    }
+
+    // Reset rather than invalidate so pages never render the cached unverified user while the refetch runs.
+    await queryClient.resetQueries({
+        exact: true,
+        queryKey: queryKeys.me()
+    });
+
+    const emailAddress = response.data?.email_address;
+    const currentUser = await queryClient
+        .fetchQuery({
+            queryFn: ({ signal }) => fetchCurrentUser(signal),
+            queryKey: queryKeys.me()
+        })
+        .catch(() => undefined);
+    const isCurrentUser = !emailAddress || currentUser?.email_address.toLowerCase() === emailAddress.toLowerCase();
+
+    return {
+        emailAddress,
+        isCurrentUser,
+        status: 'verified'
+    };
+}
+
+async function fetchCurrentUser(signal?: AbortSignal): Promise<ViewCurrentUser> {
+    const client = useFetchClient();
+    const response = await client.getJSON<ViewCurrentUser>('users/me', {
+        signal
+    });
+
+    return response.data!;
 }
 
 function setCurrentUser(queryClient: QueryClient, currentUser: ViewCurrentUser, changes: Partial<ViewCurrentUser>): void {

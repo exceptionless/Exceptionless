@@ -18,7 +18,7 @@ test('events filter builder applies, persists, and clears a reference filter', a
 
         await setReferenceFilter(page, missingReference);
         await expect(page).toHaveURL(new RegExp(`[?&]reference=${escapeRegExp(missingReference)}(?:&|$)`));
-        await expect(getVisibleText(page, 'No data was found with the current filter.')).toBeVisible({ timeout: 30_000 });
+        await expect(getVisibleText(page, 'No events match these filters.')).toBeVisible({ timeout: 30_000 });
 
         await setReferenceFilter(page, journey.referenceId);
         await expect(page).toHaveURL(new RegExp(`[?&]reference=${escapeRegExp(journey.referenceId)}(?:&|$)`));

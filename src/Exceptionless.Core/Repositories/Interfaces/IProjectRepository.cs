@@ -13,4 +13,5 @@ public interface IProjectRepository : IRepositoryOwnedByOrganization<Project>
     Task<FindResults<Project>> GetByOrganizationIdsAsync(ICollection<string> organizationIds, CommandOptionsDescriptor<Project>? options = null);
     Task<FindResults<Project>> GetByFilterAsync(AppFilter systemFilter, string? userFilter, string? sort, CommandOptionsDescriptor<Project>? options = null);
     Task<Project?> GetConfigAsync(string? projectId);
+    Task<bool> SetIsConfiguredAsync(Project project, bool isConfigured);
 }

@@ -41,12 +41,16 @@
     import { isShallowNavigationWithinPage } from '#features/navigation/shallow-navigation.ts';
     import { getVisibleUrl } from '#features/navigation/visible-url.ts';
     import Notifications from '#features/notifications/components/notifications.svelte';
+    import SetupTopBar from '#features/onboarding/components/setup-top-bar.svelte';
+    import { useFirstEventToast } from '#features/onboarding/first-event-toast.svelte.ts';
+    import { useOrganizationOnboarding } from '#features/onboarding/onboarding-state.svelte.ts';
     import {
         getOrganizationQuery,
         getOrganizationsQuery,
         invalidateOrganizationQueries,
         invalidateOrganizationUsageQueries,
-        invalidatePlanOverageQueries
+        invalidatePlanOverageQueries,
+        invalidateUserMembershipQueries
     } from '#features/organizations/api.svelte.ts';
     import OrganizationNotifications from '#features/organizations/components/organization-notifications.svelte';
     import { organization, showOrganizationNotifications } from '#features/organizations/context.svelte.ts';
@@ -62,11 +66,12 @@
     import { savedViewHref } from '#features/saved-views/slugs.ts';
     import { appKeyboardShortcuts, isKeyboardShortcut } from '#features/shared/keyboard-shortcuts.ts';
     import { createProjectStackNotificationRefresher, invalidateStackQueries, type ProjectStackNotificationRefresher } from '#features/stacks/api.svelte.ts';
+    import TaskPanel from '#features/tasks/components/task-panel.svelte';
     import { invalidateTokenQueries } from '#features/tokens/api.svelte.ts';
     import { getMeQuery, invalidateUserQueries } from '#features/users/api.svelte.ts';
     import { getGravatarFromCurrentUser } from '#features/users/gravatar.svelte.ts';
     import { invalidateWebhookQueries } from '#features/webhooks/api.svelte.ts';
-    import { ChangeType, isEntityChangedType, isPlanOverageType, type WebSocketMessageType } from '#features/websockets/models.ts';
+    import { ChangeType, isEntityChangedType, isPlanOverageType, isUserMembershipChangedType, type WebSocketMessageType } from '#features/websockets/models.ts';
     import { WebSocketClient } from '#features/websockets/web-socket-client.svelte.ts';
     import { Telemetry } from '#lib/telemetry/index.ts';
 
@@ -448,6 +453,9 @@
 
         if (isPlanOverageType(data)) {
             await invalidatePlanOverageQueries(queryClient, data.message);
+        } else if (isUserMembershipChangedType(data)) {
+            // Sent when a user is added to or removed from an organization (an invitation, or a member being removed).
+            await invalidateUserMembershipQueries(queryClient, data.message, meQuery.data?.id);
         } else if (isEntityChangedType(data)) {
             switch (data.type) {
                 case 'OrganizationChanged':
@@ -488,12 +496,6 @@
                     break;
             }
         }
-
-        // This event is fired when a user is added or removed from an organization.
-        // if (data.type === "UserMembershipChanged" && data.message?.organization_id) {
-        //     $rootScope.$emit("OrganizationChanged", data.message);
-        //     $rootScope.$emit("ProjectChanged", data.message);
-        // }
     }
 
     // Close Sidebar on page change on mobile
@@ -815,6 +817,26 @@
         intercomUnreadCount = Math.max(0, unreadCount);
     }
 
+    // These pages show Exie's empty state until the first event; while it shows, it replaces the setup notifications.
+    const eventListRouteIds = new Set<null | string>([
+        '/(app)/event',
+        '/(app)/event/[slug=savedview]',
+        '/(app)/stack',
+        '/(app)/stack/[slug=savedview]',
+        '/(app)/stream'
+    ]);
+    const isEventListPage = $derived(eventListRouteIds.has(page.route.id));
+    const eventListOnboarding = useOrganizationOnboarding(() => organization.current, {
+        enabled: () => isEventListPage
+    });
+    const isShowingExieEmptyState = $derived(isEventListPage && eventListOnboarding.isAwaitingFirstEvent);
+    useFirstEventToast({
+        getEventsHref: () => (page.route.id?.startsWith('/(app)/event') ? undefined : resolve('/(app)/event')),
+        getOrganizationId: () => organization.current,
+        hasReceivedEvents: () => eventListOnboarding.hasReceivedEvents,
+        isAwaitingFirstEvent: () => eventListOnboarding.isAwaitingFirstEvent,
+        isOnEmptyStatePage: () => isEventListPage
+    });
     const setupPath = resolve('/(app)/organization/add');
     const isSetupPage = $derived(page.url.pathname === setupPath);
     const suppressAutomaticProductTours = $derived(isProductTourSetupRoute(page.route.id));
@@ -837,9 +859,11 @@
 </script>
 
 {#snippet setupShell()}
-    <div class="flex h-screen w-full items-center justify-center px-4">
-        <main class="w-full">
+    <div class="flex min-h-dvh w-full flex-col">
+        <SetupTopBar canCancel={organizations.length > 0} emailAddress={meQuery.data?.email_address} />
+        <main class="flex w-full flex-1 justify-center px-4 py-6 sm:py-10">
             <div
+                class="w-full"
                 in:fade={{
                     delay: 150,
                     duration: 150
@@ -952,7 +976,14 @@
 
                 {#if !isAssistantPage}
                     {#if showOrganizationNotifications.current}
-                        <OrganizationNotifications {isChatEnabled} {openChat} {requiresPremium} premiumFeatureName={premiumPage.current} class="mb-4" />
+                        <OrganizationNotifications
+                            {isChatEnabled}
+                            ignoreSetupPrompts={isShowingExieEmptyState}
+                            {openChat}
+                            {requiresPremium}
+                            premiumFeatureName={premiumPage.current}
+                            class="mb-4"
+                        />
                     {/if}
 
                     <div
@@ -988,6 +1019,7 @@
         isNavigationOverlayOpen={isProductTourNavigationOverlayOpen}
         isSetupPage={suppressAutomaticProductTours}
         openAssistant={openAssistantPanel}
+        organizationCreatedUtc={organizations.find((organizationItem) => organizationItem.id === organization.current)?.created_utc}
         organizationId={organization.current}
         pathname={page.url.pathname}
         setMobileNavigationOpen={(open) => (sidebar.isMobile ? sidebar.setOpenMobile(open) : sidebar.setOpen(open))}
@@ -1012,6 +1044,7 @@
 
     <ChangePlanDialogHost />
     <UpgradeRequiredDialog />
+    <TaskPanel />
 {/if}
 
 <Telemetry

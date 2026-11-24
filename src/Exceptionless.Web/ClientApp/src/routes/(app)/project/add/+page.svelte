@@ -9,18 +9,21 @@
     import type { NewProject } from '#features/projects/models.ts';
 
     import ErrorMessage from '#comp/error-message.svelte';
-    import { H3, Muted } from '#comp/typography/index.ts';
+    import { H3 } from '#comp/typography/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
+    import * as Card from '#comp/ui/card/index.ts';
     import * as Field from '#comp/ui/field/index.ts';
     import { Input } from '#comp/ui/input/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
     import { showBillingDialogOnUpgradeProblem } from '#features/billing/index.ts';
+    import ExieGuide from '#features/onboarding/components/exie-guide.svelte';
+    import OnboardingStepper from '#features/onboarding/components/onboarding-stepper.svelte';
     import { organization } from '#features/organizations/context.svelte.ts';
     import { createProductTourActions } from '#features/product-tours/actions.svelte.ts';
     import ProductTourSpotlight from '#features/product-tours/components/product-tour-spotlight.svelte';
     import { productTourCheckpoint } from '#features/product-tours/state.svelte.ts';
     import { postProject } from '#features/projects/api.svelte.ts';
-    import { type NewProjectFormData, NewProjectSchema } from '#features/projects/schemas.ts';
+    import { AddProjectSchema, type NewProjectFormData } from '#features/projects/schemas.ts';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#features/shared/validation.ts';
 
     let toastId = $state<number | string>();
@@ -35,19 +38,20 @@
             organization_id: organization.current ?? ''
         } as NewProjectFormData,
         validators: {
-            onSubmit: NewProjectSchema,
+            onSubmit: AddProjectSchema,
             onSubmitAsync: async ({ value }) => {
                 toast.dismiss(toastId);
                 try {
                     const { id } = await createProject.mutateAsync({
                         ...value,
+                        name: value.name.trim(),
                         organization_id: organization.current ?? value.organization_id
                     } as NewProject);
                     const checkpoint = projectConfigureCheckpoint;
                     if (checkpoint) {
                         productTourCheckpoint.advance(checkpoint, 'choose-platform');
                     }
-                    toastId = toast.success('Project added successfully');
+
                     await goto(
                         resolve('/(app)/project/[projectId]/configure', {
                             projectId: id
@@ -79,54 +83,70 @@
     });
 </script>
 
-<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col gap-4">
-    <div class="flex flex-col gap-1">
-        <H3>Add Project</H3>
-        <Muted>Create a project, then configure a client to send your first event.</Muted>
-    </div>
-    <form
-        data-tour="project-setup-form"
-        onsubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
-        }}
-    >
-        <form.Subscribe selector={(state) => state.errors}>
-            {#snippet children(errors)}
-                <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
-            {/snippet}
-        </form.Subscribe>
-        <form.Field name="name">
-            {#snippet children(field)}
-                <Field.Field data-invalid={ariaInvalid(field)}>
-                    <Field.Label for={field.name}>Project Name</Field.Label>
-                    <Input
-                        data-tour="project-name"
-                        id={field.name}
-                        name={field.name}
-                        placeholder="Enter project name"
-                        value={field.state.value}
-                        onblur={field.handleBlur}
-                        oninput={(e) => field.handleChange(e.currentTarget.value)}
-                        aria-invalid={ariaInvalid(field)}
-                    />
-                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                </Field.Field>
-            {/snippet}
-        </form.Field>
-        <form.Subscribe selector={(state) => state.isSubmitting}>
-            {#snippet children(isSubmitting)}
-                <Button type="submit" class="mt-4" disabled={isSubmitting}>
-                    {#if isSubmitting}
-                        <Spinner /> Adding Project...
-                    {:else}
-                        Continue to Client Setup
-                    {/if}
-                </Button>
-            {/snippet}
-        </form.Subscribe>
-    </form>
+<div class="mx-auto flex w-full max-w-xl flex-col gap-6">
+    <H3>Add Project</H3>
+
+    <ExieGuide mood="hello" size={64}>Another app? Love it. Tell me what it's called and I'll show you how to connect it.</ExieGuide>
+
+    <OnboardingStepper current="name-project" />
+
+    <Card.Root>
+        <Card.Content>
+            <form
+                data-tour="project-setup-form"
+                novalidate
+                onsubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    form.handleSubmit();
+                }}
+            >
+                <Field.Group>
+                    <form.Subscribe selector={(state) => state.errors}>
+                        {#snippet children(errors)}
+                            <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                        {/snippet}
+                    </form.Subscribe>
+                    <form.Field name="name">
+                        {#snippet children(field)}
+                            <Field.Field data-invalid={ariaInvalid(field)} data-tour="project-name">
+                                <Field.Label for={field.name}>What's your app called?</Field.Label>
+                                <Input
+                                    aria-describedby="project-name-description"
+                                    aria-invalid={ariaInvalid(field)}
+                                    autocomplete="off"
+                                    autofocus
+                                    id={field.name}
+                                    maxlength={100}
+                                    name={field.name}
+                                    onblur={field.handleBlur}
+                                    oninput={(e) => field.handleChange(e.currentTarget.value)}
+                                    placeholder="e.g. Storefront API"
+                                    required
+                                    value={field.state.value}
+                                />
+                                <Field.Description id="project-name-description"
+                                    >Projects are the apps you monitor. Each gets its own API key.</Field.Description
+                                >
+                                <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                            </Field.Field>
+                        {/snippet}
+                    </form.Field>
+                    <form.Subscribe selector={(state) => state.isSubmitting}>
+                        {#snippet children(isSubmitting)}
+                            <Button class="w-full sm:w-auto sm:self-start" disabled={isSubmitting} size="lg" type="submit">
+                                {#if isSubmitting}
+                                    <Spinner data-icon="inline-start" /> Adding project…
+                                {:else}
+                                    Continue to Client Setup
+                                {/if}
+                            </Button>
+                        {/snippet}
+                    </form.Subscribe>
+                </Field.Group>
+            </form>
+        </Card.Content>
+    </Card.Root>
 </div>
 
 {#if projectConfigureCheckpoint?.checkpointName === 'project-name'}

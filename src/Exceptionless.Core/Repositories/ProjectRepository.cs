@@ -91,6 +91,21 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
             await InvalidateCacheAsync(projects);
     }
 
+    public async Task<bool> SetIsConfiguredAsync(Project project, bool isConfigured)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+
+        // Patch only this field so concurrent project edits and deletions are preserved. An id-only
+        // patch notification has no organization id, so web socket clients never receive it; publish
+        // the change with the project's ownership instead. Clients refetch project lists when notified,
+        // so the change must be searchable before the notification is published.
+        bool modified = await PatchAsync(project.Id, new PartialPatch(new { is_configured = isConfigured }), o => o.ImmediateConsistency().Notifications(false));
+        if (modified)
+            await PublishChangeTypeMessageAsync(ChangeType.Saved, project);
+
+        return modified;
+    }
+
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Project>> findHits, ICommandOptions options, bool isDirtyRead)
     {
         await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead);

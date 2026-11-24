@@ -2,35 +2,48 @@
     import { goto } from '$app/navigation';
     import { resolve } from '$app/paths';
     import { page } from '$app/state';
-    import { useFetchClient } from '@foundatiofx/fetchclient';
     import { useQueryClient } from '@tanstack/svelte-query';
+    import { onMount } from 'svelte';
     import { toast } from 'svelte-sonner';
 
-    import type { VerifyEmailAddressResult } from '#features/users/models.ts';
+    import { Muted } from '#comp/typography/index.ts';
+    import { verifyEmailAddress } from '#features/users/api.svelte.ts';
 
-    import { queryKeys as userQueryKeys } from '#features/users/api.svelte.ts';
-
-    const client = useFetchClient();
     const queryClient = useQueryClient();
-    const token = page.url.searchParams.get('token');
 
     async function verifyAccount() {
-        if (token) {
+        let isVerified = false;
+        const token = page.url.searchParams.get('token')?.trim();
+        if (!token) {
+            toast.error('This verification link is incomplete. Open the link from your email again, or resend the verification email from your account.');
+        } else {
             try {
-                const response = await client.getJSON<VerifyEmailAddressResult>(`/users/verify-email-address/${encodeURIComponent(token)}`);
-                await queryClient.resetQueries({
-                    exact: true,
-                    queryKey: userQueryKeys.me()
-                });
-
-                toast.success(response.data?.email_address ? `Verified ${response.data.email_address}.` : 'Email address verified.');
+                const result = await verifyEmailAddress(queryClient, token);
+                if (result.status === 'verified') {
+                    // A link for another account leaves this one unverified, so keep the user where they can resend theirs.
+                    isVerified = result.isCurrentUser;
+                    // Name the address: the link may belong to a different account than the one signed in.
+                    toast.success(result.emailAddress ? `Verified ${result.emailAddress}.` : 'Email address verified.');
+                } else if (result.status === 'expired') {
+                    toast.error('This verification link has expired. Resend the verification email from your account to get a new link.');
+                } else {
+                    toast.error(
+                        'This verification link is invalid or has already been used. Resend the verification email from your account to get a new link.'
+                    );
+                }
             } catch {
-                toast.error('An error occurred while verifying your account.');
+                toast.error('We could not verify your email address. Try again in a few minutes.');
             }
         }
 
-        await goto(resolve('/(app)/account/manage'));
+        // Verified users carry on in the app, where the root route sends first-run users to setup and Exie's checklist ticks
+        // "Verify your email". Failures go to Account settings, where the toast says to resend the verification email.
+        await goto(isVerified ? resolve('/(app)') : resolve('/(app)/account/manage'));
     }
 
-    verifyAccount();
+    onMount(() => {
+        void verifyAccount();
+    });
 </script>
+
+<Muted role="status">Verifying your email address...</Muted>

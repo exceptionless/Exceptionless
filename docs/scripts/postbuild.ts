@@ -80,6 +80,9 @@ const clients = JSON.parse(await Deno.readTextFile("_data/clients.json")) as Cli
 const clientFeatures = JSON.parse(await Deno.readTextFile("_data/client_features.json")) as FeatureDefinition[]
 
 await copyDir("public", "_site")
+// Coding agents fetch the setup instructions the app links to as raw markdown at /setup.md. The .txt source keeps
+// Lume from rendering them to HTML.
+await Deno.rename("_site/setup.md.txt", "_site/setup.md")
 await copyDirIfExists("docs/img", "_site/docs/img")
 await copyNonMarkdownFiles("news", "_site/news")
 await rewriteHtmlReferences("_site")

@@ -150,6 +150,60 @@ public sealed class WebSocketTests : TestWithServices
         }
     }
 
+    [Theory]
+    [InlineData(ChangeType.Added)]
+    [InlineData(ChangeType.Removed)]
+    public async Task OnUserMembershipChangedAsync_MembershipChanged_NotifiesMemberAndChangedUser(ChangeType changeType)
+    {
+        // Arrange
+        const string userId = "membership-user-id";
+        const string organizationId = "membership-organization-id";
+        var userSocket = new TestWebSocket();
+        var memberSocket = new TestWebSocket();
+        string userConnectionId = _connectionManager.AddWebSocket(userSocket);
+        string memberConnectionId = _connectionManager.AddWebSocket(memberSocket);
+
+        try
+        {
+            await _connectionMapping.UserIdAddAsync(userId, userConnectionId);
+            await _connectionMapping.GroupAddAsync(organizationId, memberConnectionId);
+            if (changeType is ChangeType.Removed)
+                await _connectionMapping.GroupAddAsync(organizationId, userConnectionId);
+
+            var message = new UserMembershipChanged { ChangeType = changeType, UserId = userId, OrganizationId = organizationId };
+
+            // Act
+            await _broker.OnUserMembershipChangedAsync(message, TestCancellationToken);
+
+            // Assert
+            await WaitForMessageAsync(memberSocket);
+            await WaitForMessageAsync(userSocket);
+            // Sends run on the thread pool; give a duplicate (group send plus direct send) time to arrive before counting.
+            await Task.Delay(TimeSpan.FromMilliseconds(250), TestCancellationToken);
+            Assert.Single(memberSocket.SentMessages);
+            Assert.Single(userSocket.SentMessages);
+            Assert.Contains("\"UserMembershipChanged\"", userSocket.SentMessages[0]);
+            Assert.Contains(organizationId, userSocket.SentMessages[0]);
+        }
+        finally
+        {
+            await _connectionMapping.GroupRemoveAsync(organizationId, memberConnectionId);
+            await _connectionMapping.GroupRemoveAsync(organizationId, userConnectionId);
+            await _connectionMapping.UserIdRemoveAsync(userId, userConnectionId);
+            await _connectionManager.RemoveWebSocketAsync(memberConnectionId);
+            await _connectionManager.RemoveWebSocketAsync(userConnectionId);
+        }
+    }
+
+    private async Task WaitForMessageAsync(TestWebSocket socket)
+    {
+        // Sends are queued on the thread pool, so wait for the observable result instead of sleeping a fixed time.
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestCancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+        while (socket.SentMessages.Count == 0)
+            await Task.Delay(10, timeout.Token);
+    }
+
     private sealed class TestWebSocketFeature(WebSocket socket) : IHttpWebSocketFeature
     {
         public bool IsWebSocketRequest => true;
