@@ -104,10 +104,10 @@ await Exceptionless.startup((c) => {
 })
 ```
 
-Both clients accept options on `UseSessions()` and `useSessions()`: whether to send heartbeats, the heartbeat interval
-(one minute by default), and whether the client generates its own session ID. The JavaScript client accepts intervals of
-at least 30 seconds. In .NET 6.2.0, use the default one-minute interval: custom intervals are checked with
-`TimeSpan.Seconds`, so whole-minute values also fall back to one minute.
+The .NET and JavaScript clients accept options on `UseSessions()` and `useSessions()`: whether to send heartbeats, the
+heartbeat interval (one minute by default), and whether the client generates its own session ID. The JavaScript client
+accepts intervals of at least 30 seconds. In .NET 6.2.0, use the default one-minute interval: custom intervals are
+checked with `TimeSpan.Seconds`, so whole-minute values also fall back to one minute.
 
 Don't turn on client sessions in a server app that handles many users. Set the user identity on each event instead, as
 ASP.NET Core does, and Exceptionless groups each user's events into sessions on the server.

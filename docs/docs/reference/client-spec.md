@@ -281,9 +281,9 @@ Sessions show what a user did between starting and leaving the app. See [Session
 
 - **By user.** Set `@user.identity` on every event. The server groups each user's events into sessions automatically.
   The .NET client drops a session start event that has no user identity.
-- **By session ID.** Generate a session ID (8 to 100 letters, digits, or hyphens; both clients use a GUID without
-  hyphens). Put it in the session start event's `reference_id`, and add `"@ref:session": "<session id>"` to the `data`
-  of every other event in the session.
+- **By session ID.** Generate a session ID (8 to 100 letters, digits, or hyphens; the .NET and JavaScript clients use a
+  GUID without hyphens). Put it in the session start event's `reference_id`, and add `"@ref:session": "<session id>"` to
+  the `data` of every other event in the session.
 
 **Heartbeats.** While the session is active, send a heartbeat every minute:
 

@@ -12,8 +12,8 @@ sources:
 
 # Client features
 
-This table shows which features each Exceptionless client supports. The sections below say what each feature does and
-where it's documented.
+This table shows which features each official Exceptionless client supports, and adds new clients as they ship. Each
+cell's note says how that client does it. The sections below explain each feature.
 
 ```clients features
 ```
@@ -24,15 +24,13 @@ where it's documented.
 - **No:** the client doesn't support it yet.
 - **Not applicable:** the feature doesn't apply to the language.
 
-To send events from a language without a client, see
-[Other languages and custom clients](/docs/clients/custom-clients/). For how a client implements each feature, see the
-[client specification](/docs/reference/client-spec/).
+For how a client implements each feature, see the [client specification](/docs/reference/client-spec/). To install a
+client, see [Choose a client](/docs/clients/).
 
 ## Unhandled error capture {#unhandled-errors}
 
 The client hooks into the runtime or framework and reports errors your code doesn't catch, without any calls from you.
-See the language's sending events page: [.NET](/docs/clients/dotnet/sending-events/) or
-[JavaScript](/docs/clients/javascript/sending-events/).
+Each client's guide lists the hooks it installs.
 
 ## Manual error submission {#manual-errors}
 
@@ -77,14 +75,14 @@ you can change settings and feature flags without redeploying. See
 
 ## Plugins {#plugins}
 
-You add code that runs on every event before it's sent, to add data, change the event, or cancel it. See
-[.NET plugins](/docs/clients/dotnet/plugins/).
+You add code that runs on every event before it's sent, to add data, change the event, or cancel it. See the
+[client specification](/docs/reference/client-spec/) and each client's guide.
 
 ## Data exclusions {#data-exclusions}
 
-Exclusion patterns, such as `*password*`, remove matching fields before events leave your app. The scope varies by client;
-see the [JavaScript 3.2.1 limitations](/docs/clients/javascript/client-configuration/#data-exclusions).
-Patterns come from your code and from the project's settings. See [Projects](/docs/project-settings/#data-exclusions).
+Exclusion patterns, such as `*password*`, remove matching fields before events leave your app. Patterns come from your
+code and from the project's settings; each client's configuration guide says which parts of an event they apply to. See
+[Projects](/docs/project-settings/#data-exclusions).
 
 ## Offline queue persistence {#offline-queue}
 
@@ -95,10 +93,10 @@ saved to storage, so queued events survive a restart and are sent when the app s
 ## Deduplication {#deduplication}
 
 The client merges identical events that happen within a short window into one event with a `count`, so a tight loop of
-errors doesn't use up your plan. The .NET client merges any identical event within 60 seconds; the JavaScript client
-merges identical errors within 30 seconds. See [Limits and deduplication](/docs/concepts/limits/#deduplication).
+errors doesn't use up your plan. The window and which event types it merges vary by client; see the table and
+[Limits and deduplication](/docs/concepts/limits/#deduplication).
 
 ## Source maps {#source-maps}
 
-Stack traces from minified JavaScript are mapped back to your original files, functions, and line numbers. See
-[Source maps](/docs/clients/javascript/source-maps/).
+Stack traces from minified or transpiled code are mapped back to your original files, functions, and line numbers. For
+JavaScript, see [Source maps](/docs/clients/javascript/source-maps/).

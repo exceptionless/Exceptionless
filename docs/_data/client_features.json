@@ -67,6 +67,6 @@
   {
     "id": "sourceMaps",
     "label": "Source maps",
-    "description": "Readable stack traces for minified JavaScript."
+    "description": "Readable stack traces for minified or transpiled code."
   }
 ]

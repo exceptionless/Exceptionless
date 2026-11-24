@@ -157,9 +157,9 @@ The merged event counts once against your plan, and the event counts in the app 
 | Identical means     | Same type, source, message, tags, value, and data, such as the error and request details | Same error messages and stack traces, including inner errors |
 | Window              | 60 seconds                                                                               | 30 seconds                                                   |
 
-Each client remembers the last 50 events it sent. Deduplication is done by the `DuplicateCheckerPlugin` in both clients.
-To turn it off, remove the plugin: `RemovePlugin<DuplicateCheckerPlugin>()` on the .NET configuration, or
-`removePlugin("DuplicateCheckerPlugin")` on the JavaScript configuration.
+Each client remembers the last 50 events it sent. Deduplication is done by the `DuplicateCheckerPlugin` in the .NET and
+JavaScript clients. To turn it off, remove the plugin: `RemovePlugin<DuplicateCheckerPlugin>()` on the .NET
+configuration, or `removePlugin("DuplicateCheckerPlugin")` on the JavaScript configuration.
 
 The server also discards an event whose [reference ID](/docs/references-ids/) was already used in the same project in
 the last day, so a client that retries a submission doesn't store the event twice.

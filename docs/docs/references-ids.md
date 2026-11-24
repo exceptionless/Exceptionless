@@ -48,8 +48,8 @@ Optionally, the user can add their email address and a description of what they 
 - **.NET:** call `UseReferenceIds()` on the configuration. It gives every error event a reference ID.
 - **JavaScript:** error events get a reference ID by default.
 
-Both clients only give **error** events a reference ID. To get the last one your app sent, call `GetLastReferenceId()`
-in .NET or `getLastReferenceId()` in JavaScript.
+The .NET and JavaScript clients only give **error** events a reference ID. To get the last one your app sent, call
+`GetLastReferenceId()` in .NET or `getLastReferenceId()` in JavaScript.
 
 You can also set your own with `SetReferenceId()` or `setReferenceId()` on the event builder, for example to reuse an ID
 your app already logs. A reference ID must be 8 to 100 letters, digits, or dashes, and it must be unique: when two
