@@ -40,28 +40,40 @@ async function watchForProblems(page: Page): Promise<PageProblems> {
 }
 
 test('published app boots under its content security policy @csp', async ({ page }) => {
+    // Arrange
     const problems = await watchForProblems(page);
 
+    // Act
     await gotoWithPolicy(page, '/login');
 
+    // Assert
     await expect.soft(page.getByLabel('Email', { exact: true })).toBeVisible({ timeout: 30_000 });
     expect(problems).toEqual({ errors: [], violations: [] });
 });
 
 test('API reference loads under its content security policy @csp', async ({ page }) => {
+    // Arrange
     const problems = await watchForProblems(page);
 
+    // Act
     await gotoWithPolicy(page, '/docs');
 
+    // Assert
     await expect.soft(page.getByText('Exceptionless API').first()).toBeVisible({ timeout: 30_000 });
     expect(problems).toEqual({ errors: [], violations: [] });
 });
 
 test('Stripe payment element mounts under the app content security policy @csp', async ({ page }) => {
+    // Arrange
     const problems = await watchForProblems(page);
+
+    // Act
     await gotoWithPolicy(page, '/login');
+
+    // Assert
     await expect(page.getByLabel('Email', { exact: true }), `App did not boot: ${JSON.stringify(problems)}`).toBeVisible({ timeout: 30_000 });
 
+    // Act
     // Loads Stripe.js the way @stripe/stripe-js does (an injected script) and mounts the Payment
     // Element, without needing a signed-in organization.
     const result = await page.evaluate(async () => {
@@ -93,6 +105,7 @@ test('Stripe payment element mounts under the app content security policy @csp',
         return { configured: true, frames: container.querySelectorAll('iframe').length };
     });
 
+    // Assert
     test.skip(!result.configured, 'Stripe is not configured for this environment.');
     expect(result.frames).toBeGreaterThan(0);
     expect(problems).toEqual({ errors: [], violations: [] });

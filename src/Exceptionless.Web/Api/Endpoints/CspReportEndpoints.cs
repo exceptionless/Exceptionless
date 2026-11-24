@@ -51,12 +51,17 @@ public static class CspReportEndpoints
 
         try
         {
-            using var buffer = new MemoryStream();
-            await request.Body.CopyToAsync(buffer, MaxReportBytes + 1, request.HttpContext.RequestAborted);
-            if (buffer.Length is 0 or > MaxReportBytes)
+            // Read at most one byte past the cap so chunked bodies without Content-Length stay bounded.
+            byte[] buffer = new byte[MaxReportBytes + 1];
+            int length = 0;
+            int read;
+            while (length < buffer.Length && (read = await request.Body.ReadAsync(buffer.AsMemory(length), request.HttpContext.RequestAborted)) > 0)
+                length += read;
+
+            if (length is 0 or > MaxReportBytes)
                 return null;
 
-            using var document = JsonDocument.Parse(buffer.ToArray());
+            using var document = JsonDocument.Parse(buffer.AsMemory(0, length));
             if (document.RootElement.ValueKind is not JsonValueKind.Object ||
                 !document.RootElement.TryGetProperty("csp-report", out var body) || body.ValueKind is not JsonValueKind.Object)
                 return null;

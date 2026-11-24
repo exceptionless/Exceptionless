@@ -176,20 +176,30 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
-    [Fact]
-    public async Task PostAsync_OversizedCspReport_IsIgnored()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PostAsync_OversizedCspReport_IsIgnored(bool chunked)
     {
         // Arrange
         await _factory.Server.WaitForReadyAsync();
         using var client = _factory.CreateClient();
-        string body = $"{{\"csp-report\":{{\"blocked-uri\":\"{new string('a', 32 * 1024)}\"}}}}";
-        using var content = new StringContent(body, Encoding.UTF8, "application/csp-report");
+        byte[] body = Encoding.UTF8.GetBytes($"{{\"csp-report\":{{\"blocked-uri\":\"{new string('a', 1024 * 1024)}\"}}}}");
+        // A non-seekable stream has no Content-Length, so the body is sent chunked.
+        using HttpContent content = chunked ? new StreamContent(new NonSeekableStream(body)) : new ByteArrayContent(body);
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/csp-report");
 
         // Act
         using var response = await client.PostAsync("/api/v2/csp-reports", content, TestCancellationToken);
 
         // Assert
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(chunked, content.Headers.ContentLength is null);
+    }
+
+    private sealed class NonSeekableStream(byte[] data) : MemoryStream(data)
+    {
+        public override bool CanSeek => false;
     }
 
     [Fact]
