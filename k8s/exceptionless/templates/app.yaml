@@ -80,7 +80,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.uid
 {{- include "exceptionless.otel-env" . | indent 12 }}
-            - name: RunJobsInProcess
+            - name: EX_RunJobsInProcess
               value: 'false'
 {{- if (empty .Values.storage.connectionString) }}
           volumeMounts:
