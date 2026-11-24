@@ -9,11 +9,13 @@
     interface Props {
         count?: number;
         discard: () => Promise<void>;
+        /** The action runs against everything matching the current filter; the count is an estimate. */
+        matchingFilter?: boolean;
         open: boolean;
         stackTitle?: string;
     }
 
-    let { count = 1, discard, open = $bindable(), stackTitle }: Props = $props();
+    let { count = 1, discard, matchingFilter = false, open = $bindable(), stackTitle }: Props = $props();
     let submitting = $state(false);
 
     async function onSubmit() {
@@ -36,15 +38,23 @@
     <AlertDialog.Content>
         <AlertDialog.Header>
             <AlertDialog.Title>
-                Discard
-                {#if count === 1}
-                    Stack
+                {#if matchingFilter}
+                    Discard Matching Stacks
                 {:else}
-                    <Number value={count} /> Stacks
+                    Discard
+                    {#if count === 1}
+                        Stack
+                    {:else}
+                        <Number value={count} /> Stacks
+                    {/if}
                 {/if}
             </AlertDialog.Title>
             <AlertDialog.Description>
                 {#if stackTitle}<strong>{stackTitle}</strong><br />{/if}
+                {#if matchingFilter}
+                    About <Number value={count} />
+                    {count === 1 ? 'stack matches' : 'stacks match'} this filter. The final count may differ.
+                {/if}
                 Are you sure you want to discard future events for
                 {#if count === 1}
                     this stack?
@@ -60,11 +70,15 @@
         <AlertDialog.Footer>
             <AlertDialog.Cancel disabled={submitting}>Cancel</AlertDialog.Cancel>
             <Button variant="destructive" disabled={submitting} onclick={onSubmit}>
-                Discard
-                {#if count === 1}
-                    Stack
+                {#if matchingFilter}
+                    Discard Matching Stacks
                 {:else}
-                    <Number value={count} /> Stacks
+                    Discard
+                    {#if count === 1}
+                        Stack
+                    {:else}
+                        <Number value={count} /> Stacks
+                    {/if}
                 {/if}
             </Button>
         </AlertDialog.Footer>

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { createAllMatchingSelection, getEventsQueryIdentity } from './all-matching-selection.svelte';
+import { createAllMatchingSelection, getAllMatchingIdentity } from './all-matching-selection.svelte';
 
 describe('createAllMatchingSelection', () => {
     it('is active only for the query it was made for', () => {
         // Arrange
-        const identity = getEventsQueryIdentity({ filter: 'type:error', organizationId: 'organization-id', time: '[now-7d TO now]' });
+        const identity = getAllMatchingIdentity({ filter: 'type:error', organizationId: 'organization-id', time: '[now-7d TO now]' });
         const selection = createAllMatchingSelection(() => identity);
 
         // Act
@@ -23,12 +23,12 @@ describe('createAllMatchingSelection', () => {
         ['organization', { filter: 'type:error', organizationId: 'another-organization', time: '[now-7d TO now]' }]
     ])('is dropped when the %s changes', (_, changed) => {
         // Arrange
-        let identity = getEventsQueryIdentity({ filter: 'type:error', organizationId: 'organization-id', time: '[now-7d TO now]' });
+        let identity = getAllMatchingIdentity({ filter: 'type:error', organizationId: 'organization-id', time: '[now-7d TO now]' });
         const selection = createAllMatchingSelection(() => identity);
         selection.select(1234);
 
         // Act
-        identity = getEventsQueryIdentity(changed);
+        identity = getAllMatchingIdentity(changed);
 
         // Assert
         expect(selection.active).toBeUndefined();
@@ -36,12 +36,12 @@ describe('createAllMatchingSelection', () => {
 
     it('ignores a count that was fetched for a filter that is no longer showing', () => {
         // Arrange
-        let identity = getEventsQueryIdentity({ filter: 'type:error', organizationId: 'organization-id' });
+        let identity = getAllMatchingIdentity({ filter: 'type:error', organizationId: 'organization-id' });
         const selection = createAllMatchingSelection(() => identity);
         const identityWhenCountingStarted = selection.identity;
 
         // Act
-        identity = getEventsQueryIdentity({ filter: 'type:log', organizationId: 'organization-id' });
+        identity = getAllMatchingIdentity({ filter: 'type:log', organizationId: 'organization-id' });
         const selected = selection.select(1234, identityWhenCountingStarted);
 
         // Assert
@@ -51,13 +51,13 @@ describe('createAllMatchingSelection', () => {
 
     it('does not come back when the original query is restored after being cleared', () => {
         // Arrange
-        const original = getEventsQueryIdentity({ filter: 'type:error', organizationId: 'organization-id' });
+        const original = getAllMatchingIdentity({ filter: 'type:error', organizationId: 'organization-id' });
         let identity = original;
         const selection = createAllMatchingSelection(() => identity);
         selection.select(10);
 
         // Act
-        identity = getEventsQueryIdentity({ filter: 'type:log', organizationId: 'organization-id' });
+        identity = getAllMatchingIdentity({ filter: 'type:log', organizationId: 'organization-id' });
         selection.clear();
         identity = original;
 

@@ -5,11 +5,13 @@
 
     interface Props {
         count?: number;
+        /** The delete runs against everything matching the current filter; the count is an estimate. */
+        matchingFilter?: boolean;
         open: boolean;
         remove: () => Promise<void>;
     }
 
-    let { count = 1, open = $bindable(), remove }: Props = $props();
+    let { count = 1, matchingFilter = false, open = $bindable(), remove }: Props = $props();
 
     async function onSubmit() {
         await remove();
@@ -21,21 +23,31 @@
     <AlertDialog.Content>
         <AlertDialog.Header>
             <AlertDialog.Title>
-                Delete
-                {#if count === 1}
-                    Stack
+                {#if matchingFilter}
+                    Delete Matching Stacks
                 {:else}
-                    <Number value={count} /> Stacks
+                    Delete
+                    {#if count === 1}
+                        Stack
+                    {:else}
+                        <Number value={count} /> Stacks
+                    {/if}
                 {/if}
             </AlertDialog.Title>
             <AlertDialog.Description>
-                Are you sure you want to delete
-                {#if count === 1}
-                    stack
+                {#if matchingFilter}
+                    About <Number value={count} />
+                    {count === 1 ? 'stack matches' : 'stacks match'} this filter. The final count may differ. This will delete them and all related events and can't
+                    be undone.
                 {:else}
-                    <Number value={count} /> stacks
+                    Are you sure you want to delete
+                    {#if count === 1}
+                        stack
+                    {:else}
+                        <Number value={count} /> stacks
+                    {/if}
+                    (including all related events)?
                 {/if}
-                (including all related events)?
             </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>
@@ -46,11 +58,15 @@
                 })}
                 onclick={onSubmit}
             >
-                Delete
-                {#if count === 1}
-                    Stack
+                {#if matchingFilter}
+                    Delete Matching Stacks
                 {:else}
-                    <Number value={count} /> Stacks
+                    Delete
+                    {#if count === 1}
+                        Stack
+                    {:else}
+                        <Number value={count} /> Stacks
+                    {/if}
                 {/if}
             </AlertDialog.Action>
         </AlertDialog.Footer>
