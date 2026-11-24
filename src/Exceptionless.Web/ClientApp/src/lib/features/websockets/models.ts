@@ -93,6 +93,10 @@ export function isPlanOverageType(message: { message: unknown; type: WebSocketMe
     return message.type === 'PlanOverage';
 }
 
+export function isUserMembershipChangedType(message: { message: unknown; type: WebSocketMessageType }): message is WebSocketMessage<'UserMembershipChanged'> {
+    return message.type === 'UserMembershipChanged';
+}
+
 export function isWebSocketMessageType(type: string): type is WebSocketMessageType {
     return (
         (['BackgroundTaskUpdated', 'PlanChanged', 'PlanOverage', 'UserMembershipChanged', 'ReleaseNotification', 'SystemNotification'] as const).includes(

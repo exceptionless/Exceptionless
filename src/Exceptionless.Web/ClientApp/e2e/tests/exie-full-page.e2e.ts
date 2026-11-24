@@ -1,6 +1,9 @@
 import { expect, test } from '../fixtures/e2e-test';
+import { seedRepresentativeEvent } from '../support/event-data';
 
-test('Exie opens from navigation and expands without losing the conversation', async ({ e2eScenario, page }) => {
+test('Exie opens from navigation and expands without losing the conversation', async ({ e2eApi, e2eScenario, page }) => {
+    // New organizations without events land on client setup; give this one an event so it lands on Stacks.
+    await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eScenario);
     await page.route('**/api/v2/assistant/access**', async (route) => {
         await route.fulfill({
             body: JSON.stringify({ enabled: true, has_access: true, upgrade_required: false }),

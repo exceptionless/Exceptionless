@@ -102,6 +102,13 @@
         }
     });
 
+    // Pages that are not navigation items. A <title> in the page itself would be overwritten by the effect below.
+    const unlistedPageTitles: Record<string, string> = {
+        '/(app)/organization/add': 'Set up Exceptionless',
+        '/(app)/project/[projectId]/configure': 'Send events',
+        '/(auth)/signup': 'Sign up'
+    };
+
     const managedTitlePrefixes = [resolve('/(app)/stack'), resolve('/(app)/event'), resolve('/(app)/stream')];
 
     $effect(() => {
@@ -110,12 +117,8 @@
             return;
         }
 
-        const currentRoute = routes().find((route) => page.url.pathname === route.href);
-        if (currentRoute) {
-            document.title = `${currentRoute.title} - Exceptionless`;
-        } else {
-            document.title = 'Exceptionless';
-        }
+        const title = routes().find((route) => page.url.pathname === route.href)?.title ?? (page.route.id ? unlistedPageTitles[page.route.id] : undefined);
+        document.title = title ? `${title} - Exceptionless` : 'Exceptionless';
     });
 
     const queryClient = new QueryClient({

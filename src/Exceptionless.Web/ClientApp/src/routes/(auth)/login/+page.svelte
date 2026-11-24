@@ -6,56 +6,39 @@
     import { onMount } from 'svelte';
 
     import ErrorMessage from '#comp/error-message.svelte';
-    import GitHubIcon from '#comp/icons/GitHubIcon.svelte';
-    import GoogleIcon from '#comp/icons/GoogleIcon.svelte';
-    import MicrosoftIcon from '#comp/icons/MicrosoftIcon.svelte';
     import Logo from '#comp/logo.svelte';
-    import { A, Muted, P } from '#comp/typography/index.ts';
+    import { A, Muted } from '#comp/typography/index.ts';
     import { Button } from '#comp/ui/button/index.ts';
     import * as Card from '#comp/ui/card/index.ts';
     import * as Field from '#comp/ui/field/index.ts';
     import { Input } from '#comp/ui/input/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
     import { login } from '#features/auth/api.svelte.ts';
-    import {
-        accessToken,
-        enableAccountCreation,
-        enableOAuthLogin,
-        gitHubClientId,
-        githubLogin,
-        googleClientId,
-        googleLogin,
-        logout,
-        microsoftClientId,
-        microsoftLogin
-    } from '#features/auth/index.svelte.ts';
+    import OAuthProviderButtons from '#features/auth/components/oauth-provider-buttons.svelte';
+    import PasswordInput from '#features/auth/components/password-input.svelte';
+    import SignedInNotice from '#features/auth/components/signed-in-notice.svelte';
+    import { accessToken, enableAccountCreation, enableOAuthLogin } from '#features/auth/index.svelte.ts';
+    import { buildAuthPageHref, getAuthPageParams, getPostLoginRedirect } from '#features/auth/redirects.ts';
     import { type LoginFormData, LoginSchema } from '#features/auth/schemas.ts';
     import { gotoRedirect } from '#features/navigation/redirect.ts';
-    import { getSafeRedirectUrl } from '#features/shared/url.ts';
     import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
 
-    const defaultRedirect = resolve('/(app)');
-    const redirectUrl = getSafeRedirectUrl(page.url.searchParams.get('redirect'), defaultRedirect);
-    const inviteToken = page.url.searchParams.get('token');
+    const params = getAuthPageParams(page.url.searchParams);
+    const inviteToken = params.token;
+    const redirectUrl = getPostLoginRedirect(params);
     const canSignup = enableAccountCreation || !!inviteToken;
-    const signupUrl = inviteToken ? `${resolve('/(auth)/signup')}?token=${encodeURIComponent(inviteToken)}` : resolve('/(auth)/signup');
+    const signupHref = buildAuthPageHref(resolve('/(auth)/signup'), params);
 
-    const externalLoginOptions = {
-        inviteToken,
-        redirectUrl
-    };
+    // Only a session that existed when the page opened is "already signed in"; a successful login also sets one.
+    const hadSessionOnLoad = !!accessToken.current;
+    const isSignedIn = $derived(hadSessionOnLoad && !!accessToken.current);
+    const isLeaving = $derived(isSignedIn && !inviteToken);
 
-    // Only an invitation ends the current session: it must be accepted as the invited user. Every login shares one
-    // server token, so ending the session on any visit would sign out the user's other tabs and devices.
-    const isEndingSessionForInvite = !!inviteToken && !!accessToken.current;
-
-    onMount(async () => {
-        if (isEndingSessionForInvite) {
-            try {
-                await logout();
-            } catch {
-                // The login flow can continue when an existing session cannot be ended.
-            }
+    onMount(() => {
+        if (isLeaving) {
+            void gotoRedirect(redirectUrl, {
+                replace: true
+            });
         }
     });
 
@@ -68,7 +51,7 @@
         validators: {
             onSubmit: LoginSchema,
             onSubmitAsync: async ({ value }) => {
-                const response = await login(value.email, value.password, value.invite_token);
+                const response = await login(value.email.trim(), value.password, value.invite_token);
                 if (response.ok) {
                     await gotoRedirect(redirectUrl);
                     return null;
@@ -85,136 +68,121 @@
     }
 </script>
 
-<div class="mx-auto flex w-[calc(100vw-2rem)] max-w-lg flex-col items-center" inert={!!inviteToken && !!accessToken.current}>
-    <Card.Root class="w-full">
-        <Card.Header>
-            <Logo />
-        </Card.Header>
-        <Card.Content>
-            <form
-                onsubmit={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    form.handleSubmit();
-                }}
-            >
-                <form.Subscribe selector={(state) => state.errors}>
-                    {#snippet children(errors)}
-                        <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
-                    {/snippet}
-                </form.Subscribe>
-                {#if dev}
-                    <div class="mb-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-xs">
-                        <Muted class="block">
-                            Default credentials: <strong>admin@exceptionless.test</strong> / <strong>tester</strong>
-                        </Muted>
-                        <Button type="button" variant="link" size="xs" class="h-auto px-0 py-0 text-xs" onclick={prefillDevCredentials}>Use</Button>
-                    </div>
+<div class="mx-auto flex w-full max-w-md flex-col items-center gap-4 md:self-center">
+    <Logo class="h-9 max-h-none w-auto object-contain" />
+
+    {#if isLeaving}
+        <Card.Root class="w-full">
+            <Card.Content class="flex items-center gap-3">
+                <Spinner /> You're already signed in. Taking you to Exceptionless…
+            </Card.Content>
+        </Card.Root>
+    {:else if isSignedIn}
+        <SignedInNotice continueHref={redirectUrl} />
+    {:else}
+        <Card.Root class="w-full">
+            <Card.Header>
+                <h1 class="text-foreground text-2xl font-semibold tracking-tight">Welcome back</h1>
+                <Card.Description>Log in to see what your apps have been up to.</Card.Description>
+            </Card.Header>
+            <Card.Content class="flex flex-col gap-4">
+                <form
+                    novalidate
+                    onsubmit={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        form.handleSubmit();
+                    }}
+                >
+                    <Field.Group>
+                        <form.Subscribe selector={(state) => state.errors}>
+                            {#snippet children(errors)}
+                                <ErrorMessage message={getFormErrorMessages(errors)}></ErrorMessage>
+                            {/snippet}
+                        </form.Subscribe>
+                        {#if dev}
+                            <div class="-mb-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-xs">
+                                <Muted class="block">
+                                    Default credentials: <strong>admin@exceptionless.test</strong> / <strong>tester</strong>
+                                </Muted>
+                                <Button type="button" variant="link" size="xs" class="h-auto px-0 py-0 text-xs" onclick={prefillDevCredentials}>Use</Button>
+                            </div>
+                        {/if}
+                        <form.Field name="email">
+                            {#snippet children(field)}
+                                <Field.Field data-invalid={ariaInvalid(field)}>
+                                    <Field.Label for={field.name}>Email</Field.Label>
+                                    <Input
+                                        aria-invalid={ariaInvalid(field)}
+                                        autocomplete="email"
+                                        id={field.name}
+                                        name={field.name}
+                                        onblur={field.handleBlur}
+                                        oninput={(e) => field.handleChange(e.currentTarget.value)}
+                                        placeholder="you@company.com"
+                                        required
+                                        type={dev ? 'text' : 'email'}
+                                        value={field.state.value}
+                                    />
+                                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                                </Field.Field>
+                            {/snippet}
+                        </form.Field>
+                        <form.Field name="password">
+                            {#snippet children(field)}
+                                <Field.Field data-invalid={ariaInvalid(field)}>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <Field.Label for={field.name}>Password</Field.Label>
+                                        <A class="text-sm" href={resolve('/(auth)/forgot-password')}>Forgot password?</A>
+                                    </div>
+                                    <PasswordInput
+                                        aria-invalid={ariaInvalid(field)}
+                                        autocomplete="current-password"
+                                        id={field.name}
+                                        maxlength={100}
+                                        minlength={6}
+                                        name={field.name}
+                                        onblur={field.handleBlur}
+                                        oninput={(e) => field.handleChange(e.currentTarget.value)}
+                                        placeholder="Enter password"
+                                        required
+                                        value={field.state.value}
+                                    />
+                                    <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
+                                </Field.Field>
+                            {/snippet}
+                        </form.Field>
+                        <form.Subscribe selector={(state) => state.isSubmitting}>
+                            {#snippet children(isSubmitting)}
+                                <Button class="w-full" disabled={isSubmitting} size="lg" type="submit">
+                                    {#if isSubmitting}
+                                        <Spinner data-icon="inline-start" /> Logging in…
+                                    {:else}
+                                        Login
+                                    {/if}
+                                </Button>
+                            {/snippet}
+                        </form.Subscribe>
+                    </Field.Group>
+                </form>
+
+                {#if enableOAuthLogin}
+                    <Field.Separator class="*:data-[slot=field-separator-content]:bg-card">or</Field.Separator>
+                    <OAuthProviderButtons {inviteToken} mode="login" {redirectUrl} />
                 {/if}
-                <form.Field name="email">
-                    {#snippet children(field)}
-                        <Field.Field data-invalid={ariaInvalid(field)}>
-                            <Field.Label for={field.name}>Email</Field.Label>
-                            <Input
-                                id={field.name}
-                                name={field.name}
-                                type={dev ? 'text' : 'email'}
-                                placeholder="Enter email address"
-                                autocomplete="email"
-                                required
-                                tabindex={1}
-                                value={field.state.value}
-                                onblur={field.handleBlur}
-                                oninput={(e) => field.handleChange(e.currentTarget.value)}
-                                aria-invalid={ariaInvalid(field)}
-                            />
-                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                        </Field.Field>
-                    {/snippet}
-                </form.Field>
-                <form.Field name="password">
-                    {#snippet children(field)}
-                        <Field.Field data-invalid={ariaInvalid(field)}>
-                            <Field.Label for={field.name}
-                                >Password <Muted class="float-right"><A href={resolve('/(auth)/forgot-password')} tabindex={6}>Forgot password?</A></Muted
-                                ></Field.Label
-                            >
-                            <Input
-                                id={field.name}
-                                name={field.name}
-                                type="password"
-                                placeholder="Enter password"
-                                autocomplete="current-password"
-                                maxlength={100}
-                                minlength={6}
-                                required
-                                tabindex={2}
-                                value={field.state.value}
-                                onblur={field.handleBlur}
-                                oninput={(e) => field.handleChange(e.currentTarget.value)}
-                                aria-invalid={ariaInvalid(field)}
-                            />
-                            <Field.Error errors={mapFieldErrors(field.state.meta.errors)} />
-                        </Field.Field>
-                    {/snippet}
-                </form.Field>
-                <form.Subscribe selector={(state) => state.isSubmitting}>
-                    {#snippet children(isSubmitting)}
-                        <div class={canSignup ? 'mt-4 grid grid-cols-2 gap-3' : 'mt-4'}>
-                            <Button type="submit" class="w-full" tabindex={3} disabled={isSubmitting}>
-                                {#if isSubmitting}
-                                    <Spinner /> Logging in...
-                                {:else}
-                                    Login
-                                {/if}
-                            </Button>
-                            {#if canSignup}
-                                <Button variant="secondary" href={signupUrl} class="w-full" tabindex={4}>Signup</Button>
-                            {/if}
-                        </div>
-                    {/snippet}
-                </form.Subscribe>
-            </form>
-
-            {#if enableOAuthLogin}
-                <div class="my-4 flex w-full items-center">
-                    <hr class="w-full" />
-                    <P class="mt-0! px-3">OR</P>
-                    <hr class="w-full" />
-                </div>
-                <div class="grid grid-flow-col grid-cols-2 grid-rows-2 gap-4">
-                    {#if microsoftClientId}
-                        <Button aria-label="Login with Microsoft" tabindex={4} onclick={() => microsoftLogin(externalLoginOptions)}>
-                            <MicrosoftIcon class="size-4" /> Microsoft
-                        </Button>
-                    {/if}
-                    {#if googleClientId}
-                        <Button aria-label="Login with Google" tabindex={4} onclick={() => googleLogin(externalLoginOptions)}>
-                            <GoogleIcon class="size-4" /> Google
-                        </Button>
-                    {/if}
-                    {#if gitHubClientId}
-                        <Button aria-label="Login with GitHub" tabindex={4} onclick={() => githubLogin(externalLoginOptions)}>
-                            <GitHubIcon class="size-4" /> GitHub
-                        </Button>
-                    {/if}
-                </div>
-            {/if}
-
+            </Card.Content>
             {#if canSignup}
-                <P class="text-center text-sm">
-                    Not a member?
-                    <A href={signupUrl} tabindex={5}>Start a free trial</A>
-                </P>
+                <Card.Footer class="justify-center text-sm">
+                    <p>New to Exceptionless? <A href={signupHref}>Create an account</A></p>
+                </Card.Footer>
             {/if}
-        </Card.Content>
-    </Card.Root>
+        </Card.Root>
 
-    {#if canSignup}
-        <P class="text-muted-foreground mt-3! px-4 text-center text-sm">
-            By signing up, you agree to our <A href="https://exceptionless.com/privacy" target="_blank">Privacy Policy</A>
-            and
-            <A href="https://exceptionless.com/terms" target="_blank">Terms of Service</A>.
-        </P>
+        {#if canSignup}
+            <Muted class="px-4 text-center text-xs">
+                By continuing, you agree to our <A href="https://exceptionless.com/privacy" target="_blank">Privacy Policy</A> and
+                <A href="https://exceptionless.com/terms" target="_blank">Terms of Service</A>.
+            </Muted>
+        {/if}
     {/if}
 </div>

@@ -100,7 +100,8 @@
             </Table.Row>
         </Table.Header>
         <Table.Body>
-            {#each modules as module (module.module_id)}
+            <!-- Module IDs are optional and can repeat in submitted events. -->
+            {#each modules as module, index (index)}
                 <Table.Row>
                     <Table.Cell class="whitespace-nowrap">{module.name}</Table.Cell>
                     <Table.Cell>{module.version}</Table.Cell>

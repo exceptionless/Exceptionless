@@ -34,6 +34,8 @@ export interface E2EToken {
     notes?: string;
 }
 
+type MailLinkPath = 'reset-password' | 'signup' | 'verify-email';
+
 interface TokenResult {
     token: string;
 }
@@ -263,7 +265,7 @@ export class E2EApiClient {
         throw new Error(`Timed out waiting for E2E event with reference id ${referenceId}`);
     }
 
-    public async pollForMailLink(email: string, path: 'reset-password' | 'signup' | 'verify-email', timeoutMs = 30_000): Promise<string> {
+    public async pollForMailLink(email: string, path: MailLinkPath, timeoutMs = 30_000): Promise<string> {
         const deadline = Date.now() + timeoutMs;
         const normalizedEmail = email.toLowerCase();
 
@@ -436,7 +438,7 @@ async function expectStatus(response: APIResponse, expectedStatuses: number[], o
     throw new Error(`${operation} failed with status ${response.status()} ${response.statusText()}${body ? `: ${body}` : ''}`);
 }
 
-function extractMailLink(content: string, path: 'reset-password' | 'signup' | 'verify-email'): string | undefined {
+function extractMailLink(content: string, path: MailLinkPath): string | undefined {
     const links = content.replaceAll('&amp;', '&').match(/https?:\/\/[^"'<\\\s]+/g) ?? [];
     return links.find((link) => {
         const url = new URL(link);

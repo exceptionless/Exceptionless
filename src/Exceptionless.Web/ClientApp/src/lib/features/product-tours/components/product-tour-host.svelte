@@ -12,6 +12,7 @@
     import { showChangePlanDialog } from '#features/billing/change-plan.svelte.ts';
     import { isStripeEnabled } from '#features/billing/stripe.svelte.ts';
     import { getOrganizationEventsQuery } from '#features/events/api.svelte.ts';
+    import { shouldShowChecklist } from '#features/onboarding/checklist.ts';
     import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
     import { putCurrentUserProductTour } from '#features/users/api.svelte.ts';
 
@@ -36,6 +37,8 @@
         isNavigationOverlayOpen: boolean;
         isSetupPage: boolean;
         openAssistant: () => Promise<void>;
+        /** Used to recognize a new organization, which Exie's onboarding guides instead of the welcome card. */
+        organizationCreatedUtc?: string;
         organizationId?: string;
         pathname: string;
         setMobileNavigationOpen: (open: boolean) => void;
@@ -56,6 +59,7 @@
         isNavigationOverlayOpen,
         isSetupPage,
         openAssistant,
+        organizationCreatedUtc,
         organizationId,
         pathname,
         setMobileNavigationOpen,
@@ -128,7 +132,16 @@
     );
     const canUpgrade = $derived(!!organizationId && !!assistantAccess?.upgrade_required && isStripeEnabled());
     const welcomeEligible = $derived(shouldOfferProductTourInvitation(getProductTourRecordedAt(currentUser?.product_tours, 'app_welcome', 'invitation')));
-    const welcomeOpen = $derived(canShowInvitation && automaticSurface === 'welcome' && !pathname.startsWith(SYSTEM_PATH) && welcomeEligible);
+    // Exie's getting-started checklist already leads new organizations; avoid a second welcome.
+    const isOnboardingActive = $derived(
+        shouldShowChecklist({
+            organizationCreatedUtc,
+            productTours: currentUser?.product_tours
+        })
+    );
+    const welcomeOpen = $derived(
+        canShowInvitation && automaticSurface === 'welcome' && !pathname.startsWith(SYSTEM_PATH) && welcomeEligible && !isOnboardingActive
+    );
     const exieAnnouncementOpen = $derived(
         !!(
             canShowInvitation &&
@@ -157,7 +170,10 @@
         }
 
         if (welcomeEligible && !pathname.startsWith(SYSTEM_PATH)) {
-            automaticSurface = 'welcome';
+            if (!isOnboardingActive) {
+                automaticSurface = 'welcome';
+            }
+
             return;
         }
 

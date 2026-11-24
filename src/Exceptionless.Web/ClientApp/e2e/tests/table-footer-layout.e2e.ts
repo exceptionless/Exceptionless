@@ -2,7 +2,7 @@ import { expect, type Page, test } from '@playwright/test';
 
 import { mockTablePage } from '../support/table-layout';
 
-const EMPTY_MESSAGE = 'No data was found with the current filter.';
+const EMPTY_MESSAGE = 'No events match these filters.';
 
 test.afterEach(async ({ page }) => {
     expect(await page.pageErrors()).toEqual([]);

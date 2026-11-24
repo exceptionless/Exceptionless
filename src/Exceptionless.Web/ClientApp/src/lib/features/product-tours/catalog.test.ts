@@ -189,7 +189,7 @@ describe('product tour catalog', () => {
         const platform = definition.start(context({ projects: [{ id: 'project-id', is_configured: false }] }));
 
         // Assert
-        expect(organization).toEqual({ checkpointName: 'organization-name', route: '/organization/add' });
+        expect(organization).toEqual({ checkpointName: 'project-name', route: '/organization/add' });
         expect(project).toEqual({ checkpointName: 'project-name', route: '/project/add' });
         expect(platform).toEqual({
             checkpointName: 'choose-platform',

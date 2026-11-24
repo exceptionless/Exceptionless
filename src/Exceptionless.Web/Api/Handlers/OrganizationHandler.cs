@@ -903,6 +903,7 @@ public class OrganizationHandler(
                 billingManager.ApplyBillingPlan(value, plans.FreePlan, user);
         }
 
+        // First-run setup lists organizations immediately after creating one, so make it searchable before responding.
         var organization = await repository.AddAsync(value, o => o.ImmediateConsistency().Cache());
 
         user.OrganizationIds.Add(organization.Id);

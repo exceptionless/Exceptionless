@@ -208,8 +208,8 @@ public class Mailer : IMailer
                 : $"[{organization.Name}] Events are currently being throttled.";
         string upgradeUrl = _appUrls.OrganizationUpgrade(organization.Id);
         string learnMoreUrl = isOverMonthlyLimit
-            ? "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-what-happens-if-the-organization-plan-limit-is-reached"
-            : "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled";
+            ? "https://exceptionless.com/docs/FAQ/#what-happens-if-the-organization-plan-limit-is-reached"
+            : "https://exceptionless.com/docs/FAQ/#why-is-my-organization-throttled";
         var message = new OrganizationNoticeEmail(
             subject,
             organization.Name,
@@ -316,17 +316,19 @@ public class Mailer : IMailer
             _appUrls.Stack(stack.Id))).ToArray();
     }
 
-    public async Task SendUserEmailVerifyAsync(User user)
+    public async Task SendUserEmailVerifyAsync(User user, bool isNewAccount = false)
     {
         if (String.IsNullOrEmpty(user?.VerifyEmailAddressToken))
             return;
 
         const string template = "user-email-verify";
-        const string subject = "Exceptionless Account Confirmation";
+        string subject = isNewAccount ? "Welcome to Exceptionless — confirm your email" : "Confirm your Exceptionless email address";
         var message = new UserEmailVerifyEmail(
             subject,
             user.FullName,
-            new EmailAction("Verify Address", _appUrls.VerifyEmail(user.VerifyEmailAddressToken)));
+            isNewAccount,
+            _appUrls.Home(),
+            new EmailAction("Confirm Email Address", _appUrls.VerifyEmail(user.VerifyEmailAddressToken)));
 
         await QueueMessageAsync(new MailMessage
         {
