@@ -2,8 +2,10 @@
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Services.BackgroundTasks;
 using Foundatio.Jobs;
 using Foundatio.Queues;
 using Foundatio.Repositories;
@@ -21,6 +23,7 @@ public class SampleDataService
     private readonly BillingPlans _billingPlans;
     private readonly TimeProvider _timeProvider;
     private readonly IUserRepository _userRepository;
+    private readonly BackgroundTaskService _backgroundTaskService;
     private readonly ILogger<SampleDataService> _logger;
 
     public const string TEST_USER_EMAIL = "admin@exceptionless.test";
@@ -48,6 +51,7 @@ public class SampleDataService
         IUserRepository userRepository,
         ITokenRepository tokenRepository,
         IQueue<WorkItemData> workItemQueue,
+        BackgroundTaskService backgroundTaskService,
         BillingManager billingManager,
         BillingPlans billingPlans,
         TimeProvider timeProvider,
@@ -59,6 +63,7 @@ public class SampleDataService
         _userRepository = userRepository;
         _tokenRepository = tokenRepository;
         _workItemQueue = workItemQueue;
+        _backgroundTaskService = backgroundTaskService;
         _billingManager = billingManager;
         _billingPlans = billingPlans;
         _timeProvider = timeProvider;
@@ -287,17 +292,28 @@ public class SampleDataService
         _logger.LogInformation("Enqueued sample event generation: {EventCount} events over {DaysBack} days", eventCount, daysBack);
     }
 
-    public async Task<string> EnqueueSampleEventsAsync(string organizationId, string projectId, int eventCount = 250, int daysBack = 7)
+    /// <summary>
+    /// Queues sample event generation for one project and returns the id of the background task that tracks it.
+    /// </summary>
+    public async Task<string> EnqueueSampleEventsAsync(Project project, string createdByUserId, int eventCount = 250, int daysBack = 7)
     {
-        string workItemId = await _workItemQueue.EnqueueAsync(new GenerateSampleEventsWorkItem
+        var task = await _backgroundTaskService.CreateAndEnqueueAsync(new BackgroundTask
         {
-            OrganizationId = organizationId,
-            ProjectId = projectId,
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
+            Type = BackgroundTaskTypes.GenerateProjectSampleData,
+            Description = $"Generate sample data for {project.Name}",
+            CreatedByUserId = createdByUserId
+        }, t => new GenerateSampleEventsWorkItem
+        {
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
             EventCount = eventCount,
-            DaysBack = daysBack
+            DaysBack = daysBack,
+            TaskId = t.Id
         });
 
-        _logger.LogInformation("Enqueued sample event generation for project {ProjectId}: {EventCount} events over {DaysBack} days", projectId, eventCount, daysBack);
-        return workItemId;
+        _logger.LogInformation("Enqueued sample event generation for project {ProjectId}: {EventCount} events over {DaysBack} days", project.Id, eventCount, daysBack);
+        return task.Id;
     }
 }

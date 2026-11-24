@@ -66,6 +66,7 @@
     import { savedViewHref } from '#features/saved-views/slugs.ts';
     import { appKeyboardShortcuts, isKeyboardShortcut } from '#features/shared/keyboard-shortcuts.ts';
     import { createProjectStackNotificationRefresher, invalidateStackQueries, type ProjectStackNotificationRefresher } from '#features/stacks/api.svelte.ts';
+    import TaskPanel from '#features/tasks/components/task-panel.svelte';
     import { invalidateTokenQueries } from '#features/tokens/api.svelte.ts';
     import { getMeQuery, invalidateUserQueries } from '#features/users/api.svelte.ts';
     import { getGravatarFromCurrentUser } from '#features/users/gravatar.svelte.ts';
@@ -1043,6 +1044,7 @@
 
     <ChangePlanDialogHost />
     <UpgradeRequiredDialog />
+    <TaskPanel />
 {/if}
 
 <Telemetry

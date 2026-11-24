@@ -1,0 +1,118 @@
+<script lang="ts">
+    import { useQueryClient } from '@tanstack/svelte-query';
+    import { useEventListener } from 'runed';
+    import { toast } from 'svelte-sonner';
+    import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+
+    import type { BackgroundTaskUpdated } from '#features/websockets/models.ts';
+
+    import { organization } from '#features/organizations/context.svelte.ts';
+
+    import { cancelTask, getTasksQuery, invalidateTaskAffectedQueries, updateTaskFromMessage } from '../api.svelte';
+    import { canCancelTask, isTaskActive, selectVisibleTasks, type ViewBackgroundTask } from '../models';
+    import TaskItem from './task-item.svelte';
+
+    const queryClient = useQueryClient();
+    const tasksQuery = getTasksQuery({
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
+    const cancelTaskMutation = cancelTask();
+
+    const dismissedUpdates = new SvelteMap<string, string>();
+    const activeSeenIds = new SvelteSet<string>();
+    const cancellingIds = new SvelteSet<string>();
+    let now = $state(Date.now());
+
+    const visibleTasks = $derived(selectVisibleTasks(tasksQuery.data ?? [], dismissedUpdates, now));
+
+    // Finished tasks fade out of the panel on their own, so re-evaluate time while any of them is shown.
+    $effect(() => {
+        if (visibleTasks.length === 0) {
+            return;
+        }
+
+        const timer = window.setInterval(() => (now = Date.now()), 15_000);
+        return () => window.clearInterval(timer);
+    });
+
+    // Tasks already in the organization's first list are history; anything after that is new.
+    let knownTasksOrganizationId: string | undefined;
+    const knownTaskIds = new SvelteSet<string>();
+
+    // A task that finished after the panel loaded changed events and stacks, whichever way the update arrived. That
+    // includes one that finished before the panel ever saw it running, for example when push updates are unavailable.
+    $effect(() => {
+        const tasks = tasksQuery.data;
+        if (!tasks) {
+            return;
+        }
+
+        const isFirstList = knownTasksOrganizationId !== organization.current;
+        if (isFirstList) {
+            knownTasksOrganizationId = organization.current;
+            knownTaskIds.clear();
+            activeSeenIds.clear();
+        }
+
+        let finishedSinceLoad = false;
+        for (const task of tasks) {
+            const isNewTask = !isFirstList && !knownTaskIds.has(task.id);
+            knownTaskIds.add(task.id);
+
+            if (isTaskActive(task.status)) {
+                activeSeenIds.add(task.id);
+                continue;
+            }
+
+            if (!activeSeenIds.delete(task.id) && !isNewTask) {
+                continue;
+            }
+
+            cancellingIds.delete(task.id);
+            finishedSinceLoad = true;
+        }
+
+        if (finishedSinceLoad) {
+            void invalidateTaskAffectedQueries(queryClient);
+        }
+    });
+
+    useEventListener(document, 'BackgroundTaskUpdated', (event) => {
+        const update = (event as CustomEvent<BackgroundTaskUpdated>).detail;
+        if (update.organization_id !== organization.current) {
+            return;
+        }
+
+        updateTaskFromMessage(queryClient, update);
+    });
+
+    async function onCancel(task: ViewBackgroundTask) {
+        cancellingIds.add(task.id);
+        try {
+            await cancelTaskMutation.mutateAsync(task.id);
+        } catch {
+            cancellingIds.delete(task.id);
+            toast.error('Unable to cancel the task.');
+        }
+    }
+
+    function onDismiss(task: ViewBackgroundTask) {
+        dismissedUpdates.set(task.id, task.updated_utc);
+    }
+</script>
+
+{#if visibleTasks.length > 0}
+    <div
+        aria-label="Background tasks"
+        class="fixed bottom-4 left-4 z-40 flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-2 md:left-[calc(var(--sidebar-width,16rem)+1rem)]"
+        role="region"
+    >
+        {#each visibleTasks as task (task.id)}
+            <TaskItem canCancel={canCancelTask(task, now)} isCancelling={cancellingIds.has(task.id)} {onCancel} {onDismiss} {task} />
+        {/each}
+    </div>
+{/if}

@@ -9,6 +9,7 @@ import { accessToken } from '#features/auth/index.svelte.ts';
 import { queryKeys as eventQueryKeys } from '#features/events/api.svelte.ts';
 import { fetchApiJson } from '#features/shared/api/api.svelte.ts';
 import { queryKeys as stackQueryKeys } from '#features/stacks/api.svelte.ts';
+import { invalidateTaskQueries } from '#features/tasks/api.svelte.ts';
 
 export async function invalidateProjectQueries(queryClient: QueryClient, message: WebSocketMessageValue<'ProjectChanged'>) {
     const { id, organization_id } = message;
@@ -377,6 +378,8 @@ export function deleteSourceMapMutation(request: SourceMapRequest) {
 }
 
 export function generateSampleData(request: GenerateSampleDataRequest) {
+    const queryClient = useQueryClient();
+
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async () => {
@@ -387,7 +390,9 @@ export function generateSampleData(request: GenerateSampleDataRequest) {
 
             return response.data!;
         },
-        mutationKey: queryKeys.generateSampleData(request.route.id)
+        mutationKey: queryKeys.generateSampleData(request.route.id),
+        // The request starts a background task; show it in the progress panel.
+        onSuccess: () => invalidateTaskQueries(queryClient)
     }));
 }
 
@@ -724,6 +729,8 @@ export function putProjectIntegrationNotificationSettings(request: PutProjectInt
 }
 
 export function resetData(request: ResetDataRequest) {
+    const queryClient = useQueryClient();
+
     return createMutation<WorkInProgressResult, ProblemDetails, void>(() => ({
         enabled: () => !!accessToken.current && !!request.route.id,
         mutationFn: async () => {
@@ -734,7 +741,9 @@ export function resetData(request: ResetDataRequest) {
 
             return response.data!;
         },
-        mutationKey: queryKeys.resetData(request.route.id)
+        mutationKey: queryKeys.resetData(request.route.id),
+        // The request starts a background task; show it in the progress panel.
+        onSuccess: () => invalidateTaskQueries(queryClient)
     }));
 }
 
