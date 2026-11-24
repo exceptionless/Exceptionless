@@ -36,4 +36,3 @@ Ordinary test navigation uses root routes. `tests/legacy-links.e2e.ts` specifica
 - Triage: mutate stack state and verify the persisted UI after reload.
 - Scoping: select and clear projects through the filter UI.
 - Onboarding: sign up, create an organization/project, and verify setup instructions.
-- Browser compatibility (`@csp`): the published app, API reference, and Stripe load without Content Security Policy violations. Runs daily against dev in Chrome stable and beta (`browser-compatibility-monitoring.yml`); skips under the Vite dev server, which sends no policy header.

@@ -6,6 +6,7 @@ using Exceptionless.Tests.Extensions;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Xunit;
 
@@ -143,9 +144,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         string[] scriptSources = scripts.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         Assert.DoesNotContain("'unsafe-inline'", scriptSources);
         Assert.DoesNotContain("'unsafe-eval'", scriptSources);
-        // strict-dynamic would ignore 'self' and block the hashed bootstrap's import() calls.
-        Assert.DoesNotContain("'strict-dynamic'", scriptSources);
-        Assert.Contains("'self'", scriptSources);
+        Assert.Contains("'strict-dynamic'", scriptSources);
         Assert.Contains("https://*.stripe.com", scriptSources);
         Assert.Contains("https://*.intercom.io", scriptSources);
 
@@ -174,6 +173,42 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
 
         // Assert
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostAsync_CspReport_SubmitsStackedExceptionlessEvent()
+    {
+        // Arrange
+        var submitted = new List<Exceptionless.Models.Event>();
+        var exceptionless = new ExceptionlessClient(configuration =>
+        {
+            configuration.ApiKey = "csp-report-test-api-key";
+            configuration.ServerUrl = "https://collector.localhost";
+            configuration.AddPlugin("capture", 1000, context =>
+            {
+                lock (submitted)
+                    submitted.Add(context.Event);
+
+                context.Cancel = true;
+            });
+        });
+        await using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureServices(services => services.AddSingleton(exceptionless)));
+        await factory.Server.WaitForReadyAsync();
+        using var client = factory.CreateClient();
+        const string body = """{"csp-report":{"document-uri":"https://app.localhost/login?token=secret","effective-directive":"script-src-elem","blocked-uri":"https://app.localhost/_app/env.js?v=1","disposition":"enforce"}}""";
+        using var content = new StringContent(body, Encoding.UTF8, "application/csp-report");
+
+        // Act
+        using var response = await client.PostAsync("/api/v2/csp-reports", content, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var ev = Assert.Single(submitted);
+        Assert.Equal(Exceptionless.Models.Event.KnownTypes.Log, ev.Type);
+        Assert.Equal("CSP blocked https://app.localhost/_app/env.js (script-src-elem)", ev.Message);
+        Assert.Contains("csp", ev.Tags!);
+        Assert.Equal(ev.Message, Assert.IsType<Exceptionless.Models.Data.ManualStackingInfo>(ev.Data!["@stack"]).Title);
+        Assert.Equal("https://app.localhost/login", ev.Data!["Document Uri"]);
     }
 
     [Theory]
@@ -210,7 +245,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Directory.CreateDirectory(webRoot);
         const string bootstrap = "import(\"/_app/env.js?v=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\");start()";
         string hash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(bootstrap)));
-        string html = $"""<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'sha256-{hash}'"><script>{bootstrap}</script>""";
+        string html = $"""<meta http-equiv="Content-Security-Policy" content="script-src 'strict-dynamic' 'sha256-{hash}'"><script>{bootstrap}</script>""";
         string injectedHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes("injected()")));
         string changedHtml = html + "<script>injected()</script>";
 

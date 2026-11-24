@@ -23,13 +23,12 @@ internal static partial class FrontendContentSecurityPolicy
         // Deny resource types unless their directive explicitly allows them.
         csp.ByDefaultAllow.FromNowhere();
 
-        // The build hash authorizes SvelteKit's inline bootstrap and 'self' its import() calls.
-        // No 'strict-dynamic': hashes don't propagate to import() from parser-inserted scripts,
-        // so Chrome 158+ would block env.js (only nonces propagate, and we don't rewrite HTML).
+        // Nonces/hashes authorize our bootstrap; strict-dynamic trusts scripts it loads.
         // Provider host wildcards consolidate Stripe.js and Intercom's script host families.
         csp.AllowScripts
             .FromSelf()
             .AddNonce()
+            .WithStrictDynamic()
             .From("https://*.stripe.com")
             .From("https://*.intercom.io")
             .From("https://js.intercomcdn.com");
@@ -117,8 +116,8 @@ internal static partial class FrontendContentSecurityPolicy
         if (options.EnableSsl)
             csp.SetUpgradeInsecureRequests();
 
-        // Log violations so a blocked resource is noticed instead of silently breaking the app.
-        // report-uri is still honored by Chrome, Firefox and Safari; the meta policy cannot report.
+        // Browsers report violations here even when the blocked script stops the app from booting.
+        // report-uri is honored by Chrome, Firefox and Safari; the meta policy cannot report.
         csp.ReportViolationsTo(CspReportEndpoints.ReportPath);
 
         csp.OnSendingHeader = context =>
