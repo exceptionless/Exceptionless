@@ -4,6 +4,7 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Foundatio.Queues;
 using Microsoft.Extensions.Logging;
 
@@ -17,14 +18,16 @@ public class QueueNotificationAction : EventPipelineActionBase
     private readonly IWebHookRepository _webHookRepository;
     private readonly IStackRepository _stackRepository;
     private readonly WebHookDataPluginManager _webHookDataPluginManager;
+    private readonly SemanticVersionParser _semanticVersionParser;
 
-    public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, IStackRepository stackRepository, WebHookDataPluginManager webHookDataPluginManager, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, IStackRepository stackRepository, WebHookDataPluginManager webHookDataPluginManager, SemanticVersionParser semanticVersionParser, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _notificationQueue = notificationQueue;
         _webHookNotificationQueue = webHookNotificationQueue;
         _webHookRepository = webHookRepository;
         _stackRepository = stackRepository;
         _webHookDataPluginManager = webHookDataPluginManager;
+        _semanticVersionParser = semanticVersionParser;
         ContinueOnError = true;
     }
 
@@ -46,7 +49,7 @@ public class QueueNotificationAction : EventPipelineActionBase
         // pending from a non-notifying environment can't report it a second time.
         bool isRegression = ctx.IsRegression
             ? await _stackRepository.TryReserveNotificationAsync(ctx.Stack, PendingStackNotification.Regression)
-            : await ClaimPendingAsync(ctx, PendingStackNotification.Regression);
+            : IsAfterFix(ctx) && await ClaimPendingAsync(ctx, PendingStackNotification.Regression);
         if (ShouldQueueNotification(ctx, isNew, isRegression))
             await _notificationQueue.EnqueueAsync(new EventNotification
             {
@@ -113,6 +116,23 @@ public class QueueNotificationAction : EventPipelineActionBase
             ctx.Stack.IsRegressionNotificationPending = false;
 
         return claimed;
+    }
+
+    /// <summary>
+    /// A deferred regression is only reported by an occurrence that is itself past the fix. Once the stack is regressed, the regression check
+    /// no longer filters older versions, so an occurrence from before the fix must not claim a regression first seen in another environment.
+    /// </summary>
+    private bool IsAfterFix(EventContext ctx)
+    {
+        var stack = ctx.Stack!;
+        if (!String.IsNullOrEmpty(stack.FixedInVersion))
+        {
+            var fixedInVersion = _semanticVersionParser.Parse(stack.FixedInVersion);
+            var version = _semanticVersionParser.Parse(ctx.Event.GetVersion()) ?? _semanticVersionParser.Default;
+            return fixedInVersion is null || version >= fixedInVersion;
+        }
+
+        return stack.DateFixed is not { } dateFixed || dateFixed < ctx.Event.Date.UtcDateTime;
     }
 
     private bool ShouldCallWebHook(WebHook hook, EventContext ctx, bool isNew, bool isRegression)

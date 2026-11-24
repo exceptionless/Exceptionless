@@ -9,6 +9,7 @@ using Exceptionless.Core.Services;
 using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
 using Foundatio.Queues;
+using McSherry.SemanticVersioning;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using System.Reflection;
@@ -359,19 +360,62 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         ]);
         var dev = await RunAsync(project, "dev");
         var stale = (await _stackRepository.GetByIdAsync(dev.Event.StackId))!;
-        Assert.True(stale.IsNewNotificationPending);
         await RunAsync(project, "production");
-        Assert.Single(await DequeueNotificationsAsync());
+        var firstNotifications = await DequeueNotificationsAsync();
+
+        // Assert
+        Assert.True(stale.IsNewNotificationPending);
+        Assert.Single(firstNotifications);
 
         // Act
         await _stackRepository.SaveAsync(stale, o => o.ImmediateConsistency());
-        Assert.True((await _stackRepository.GetByIdAsync(stale.Id))!.IsNewNotificationPending);
+        var restored = (await _stackRepository.GetByIdAsync(stale.Id))!;
+
+        // Assert
+        Assert.True(restored.IsNewNotificationPending);
+
+        // Act
         await RunAsync(project, "production");
         var notifications = await DequeueNotificationsAsync();
 
         // Assert
         Assert.Empty(notifications);
         Assert.False((await _stackRepository.GetByIdAsync(stale.Id))!.IsNewNotificationPending);
+    }
+
+    [Fact]
+    public async Task RunAsync_WhenAnOlderVersionReachesANotifyingEnvironmentAfterARegression_KeepsTheRegressionPending()
+    {
+        // Arrange
+        var project = await ConfigureProjectAsync(p => p.Environments =
+        [
+            new ProjectEnvironment { Name = "dev", Notify = false },
+            new ProjectEnvironment { Name = "production" }
+        ]);
+        var first = await RunAsync(project, "production", version: "2.3.0");
+        await DequeueNotificationsAsync();
+        await MarkFixedAsync(first.Event.StackId, "2.4.0");
+        var dev = await RunAsync(project, "dev", version: "2.4.1");
+        await DequeueNotificationsAsync();
+
+        // Act
+        await RunAsync(project, "production", version: "2.3.0");
+        var olderNotifications = await DequeueNotificationsAsync();
+        var pendingStack = (await _stackRepository.GetByIdAsync(first.Event.StackId))!;
+
+        // Assert
+        Assert.True(dev.IsRegression);
+        Assert.Empty(olderNotifications);
+        Assert.True(pendingStack.IsRegressionNotificationPending);
+
+        // Act
+        await RunAsync(project, "production", version: "2.4.1");
+        var fixedNotifications = await DequeueNotificationsAsync();
+
+        // Assert
+        var notification = Assert.Single(fixedNotifications);
+        Assert.True(notification.IsRegression);
+        Assert.False((await _stackRepository.GetByIdAsync(first.Event.StackId))!.IsRegressionNotificationPending);
     }
 
     [Fact]
@@ -602,10 +646,10 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         }
     }
 
-    private async Task MarkFixedAsync(string stackId)
+    private async Task MarkFixedAsync(string stackId, string? version = null)
     {
         var stack = (await _stackRepository.GetByIdAsync(stackId))!;
-        stack.MarkFixed(null, TimeProvider);
+        stack.MarkFixed(version is null ? null : SemanticVersion.Parse(version), TimeProvider);
         stack.DateFixed = DateTime.UtcNow.AddHours(-1);
         await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
     }
@@ -641,9 +685,10 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         Assert.False(claimed);
     }
 
-    private async Task<EventContext> RunAsync(Project project, string? environment, string source = "test", bool critical = false)
+    private async Task<EventContext> RunAsync(Project project, string? environment, string source = "test", bool critical = false, string? version = null)
     {
         var ev = NewEvent(environment, source);
+        ev.SetVersion(version);
         if (critical)
             ev.Tags!.Add(Event.KnownTags.Critical);
 
