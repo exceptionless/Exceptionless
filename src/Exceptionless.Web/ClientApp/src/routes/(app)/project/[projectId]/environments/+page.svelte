@@ -58,8 +58,8 @@
     let addName = $state('');
     let pendingSettings = $state<UpdateProjectEnvironmentSettings>();
     let showDiscardDialog = $state(false);
-    // Changing this remounts the settings so a switch that was cancelled goes back to the saved value.
-    let settingsVersion = $state(0);
+    // Changing this remounts the controls so a switch that was cancelled or failed to save goes back to the saved value.
+    let controlsVersion = $state(0);
 
     const project = $derived(projectQuery.data);
     const busy = $derived(addEnvironment.isPending || updateEnvironment.isPending || removeEnvironment.isPending || updateSettings.isPending);
@@ -99,7 +99,7 @@
 
     function cancelDiscard() {
         pendingSettings = undefined;
-        settingsVersion++;
+        controlsVersion++;
     }
 
     function openAddDialog(name = '') {
@@ -130,6 +130,7 @@
             toast.success('Environment settings saved.');
         } catch {
             toast.error('Unable to save the environment settings. Please try again.');
+            controlsVersion++;
         }
     }
 
@@ -173,6 +174,7 @@
             });
         } catch {
             toast.error(`Unable to update notifications for ${row.name}. Please try again.`);
+            controlsVersion++;
         }
     }
 </script>
@@ -189,25 +191,27 @@
         </Button>
     </div>
 
-    <EnvironmentsTable
-        add={(row) => openAddDialog(row.name)}
-        {busy}
-        discardUnlisted={project?.discard_unlisted_environments ?? false}
-        isError={projectQuery.isError || observedQuery.isError}
-        isLoading={projectQuery.isLoading || observedQuery.isLoading}
-        notifyOtherEnvironments={project?.notify_other_environments ?? true}
-        remove={confirmRemove}
-        {rows}
-        {toggleNotify}
-        toggleNotifyOther={(notify) =>
-            change({
-                notify_other_environments: notify
-            })}
-    />
+    {#key controlsVersion}
+        <EnvironmentsTable
+            add={(row) => openAddDialog(row.name)}
+            {busy}
+            discardUnlisted={project?.discard_unlisted_environments ?? false}
+            isError={projectQuery.isError || observedQuery.isError}
+            isLoading={projectQuery.isLoading || observedQuery.isLoading}
+            notifyOtherEnvironments={project?.notify_other_environments ?? true}
+            remove={confirmRemove}
+            {rows}
+            {toggleNotify}
+            toggleNotifyOther={(notify) =>
+                change({
+                    notify_other_environments: notify
+                })}
+        />
+    {/key}
 
     {#if project}
         <section class="rounded-md border p-4">
-            {#key settingsVersion}
+            {#key controlsVersion}
                 <EnvironmentSettings
                     disabled={busy}
                     discardEventsWithoutEnvironment={project.discard_events_without_environment}
