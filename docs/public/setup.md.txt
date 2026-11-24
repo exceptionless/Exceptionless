@@ -5,7 +5,7 @@ Instructions for a coding agent adding Exceptionless error and event tracking to
 ## Before you start
 
 - Replace `YOUR_API_KEY` with the API key the user gave you. If they didn't give one, ask for it. It's on the project's API Keys page in Exceptionless.
-- Replace `YOUR_SERVER_URL` with the server URL the user gave you. If they didn't give one, leave out the lines that set the server URL, and send REST API requests to `https://collector.exceptionless.io`.
+- Replace `YOUR_SERVER_URL` with the server URL the user gave you. If they didn't give one, leave out the lines that set the server URL, and send REST API requests to `https://api.exceptionless.io`.
 - The API key can only submit events, so it is fine in client code and committed config, like any client SDK key. If the project keeps settings in configuration or environment variables, put the key and server URL there.
 - JavaScript clients queue events until `Exceptionless.startup()` finishes, so there is no need to await it.
 - A `localhost` server URL only works on the user's own machine. Phones and emulators need the machine's network address instead (`10.0.2.2` on the Android emulator).

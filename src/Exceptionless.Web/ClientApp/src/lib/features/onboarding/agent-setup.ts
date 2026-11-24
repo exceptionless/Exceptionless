@@ -17,8 +17,8 @@ export const AGENT_TARGETS: readonly AgentTargetOption[] = [
 /** Published from docs/public/setup.md.txt on the website, so hosted agents can read it even for self-hosted installs. */
 export const AGENT_SETUP_URL = 'https://exceptionless.com/setup.md';
 
-/** The hosted collector the clients use by default. */
-const DEFAULT_SUBMISSION_URL = 'https://collector.exceptionless.io';
+/** The hosted REST API, for requests sent without a client. */
+const DEFAULT_SUBMISSION_URL = 'https://api.exceptionless.io';
 
 const FENCE_LANGUAGES: Record<CodeLanguage, string> = {
     csharp: 'csharp',
