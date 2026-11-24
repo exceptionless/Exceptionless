@@ -15,6 +15,8 @@
     interface Props {
         add: (row: EnvironmentRow) => Promise<unknown> | unknown;
         busy?: boolean;
+        /** Opens the confirmation to delete every event of the environment. */
+        deleteEvents?: (row: EnvironmentRow) => void;
         /** Events from environments that are not in the list are being discarded. */
         discardUnlisted: boolean;
         isError?: boolean;
@@ -29,6 +31,7 @@
     let {
         add,
         busy = false,
+        deleteEvents,
         discardUnlisted,
         isError = false,
         isLoading = false,
@@ -48,7 +51,7 @@
                 <Table.Head class="w-32">Notifications</Table.Head>
                 <Table.Head class="w-36 text-right">Events (30 days)</Table.Head>
                 <Table.Head class="w-40 pl-6">Last seen</Table.Head>
-                <Table.Head class="w-24"><span class="sr-only">Actions</span></Table.Head>
+                <Table.Head class="w-32"><span class="sr-only">Actions</span></Table.Head>
             </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -89,7 +92,19 @@
                                 Not in 30 days
                             {/if}
                         </Table.Cell>
-                        <Table.Cell class="text-right">
+                        <Table.Cell class="text-right whitespace-nowrap">
+                            {#if deleteEvents}
+                                <Button
+                                    aria-label={`Delete events in ${row.name}`}
+                                    disabled={busy}
+                                    onclick={() => deleteEvents(row)}
+                                    size="sm"
+                                    title="Delete all events in this environment"
+                                    variant="ghost"
+                                >
+                                    Delete events
+                                </Button>
+                            {/if}
                             {#if row.isListed}
                                 <Button
                                     aria-label={`Remove ${row.name}`}
