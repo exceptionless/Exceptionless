@@ -10,6 +10,7 @@ import Harness from './change-plan-dialog-harness.svelte';
 const MOCK_PLANS: BillingPlan[] = [
     {
         description: 'Free',
+        has_assistant: false,
         has_premium_features: false,
         id: 'EX_FREE',
         is_hidden: false,
@@ -22,6 +23,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Small ($15/month)',
+        has_assistant: false,
         has_premium_features: true,
         id: 'EX_SMALL',
         is_hidden: false,
@@ -34,6 +36,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Small Yearly ($165/year - Save $15)',
+        has_assistant: false,
         has_premium_features: true,
         id: 'EX_SMALL_YEARLY',
         is_hidden: false,
@@ -46,6 +49,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Medium ($49/month)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_MEDIUM',
         is_hidden: false,
@@ -58,6 +62,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Medium Yearly ($539/year - Save $49)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_MEDIUM_YEARLY',
         is_hidden: false,
@@ -70,6 +75,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Large ($99/month)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_LARGE',
         is_hidden: false,
@@ -82,6 +88,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Large Yearly ($1,089/year - Save $99)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_LARGE_YEARLY',
         is_hidden: false,
@@ -94,6 +101,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Extra Large ($199/month)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_XL',
         is_hidden: false,
@@ -106,6 +114,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Extra Large Yearly ($2,189/year - Save $199)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_XL_YEARLY',
         is_hidden: false,
@@ -118,6 +127,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Enterprise ($499/month)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_ENT',
         is_hidden: false,
@@ -130,6 +140,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Enterprise Yearly ($5,489/year - Save $499)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_ENT_YEARLY',
         is_hidden: false,
@@ -255,6 +266,7 @@ export const Trial: Story = {
             ...MOCK_PLANS,
             {
                 description: 'Free Trial',
+                has_assistant: true,
                 has_premium_features: true,
                 id: 'EX_TRIAL',
                 is_hidden: false,

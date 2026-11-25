@@ -1,6 +1,6 @@
 import type { BillingPlan } from '#lib/generated/api.ts';
 
-export type PlanLimits = Pick<BillingPlan, 'has_premium_features' | 'max_events_per_month' | 'retention_days'>;
+export type PlanLimits = Pick<BillingPlan, 'has_assistant' | 'has_premium_features' | 'max_events_per_month' | 'retention_days'>;
 
 /**
  * Describes feature and usage reductions before confirming a plan change.
@@ -15,6 +15,10 @@ export function getDowngradeLosses(current: PlanLimits, next: PlanLimits): strin
 
     if (next.max_events_per_month >= 0 && (current.max_events_per_month < 0 || next.max_events_per_month < current.max_events_per_month)) {
         losses.push(`limit drops to ${next.max_events_per_month.toLocaleString()} events a month`);
+    }
+
+    if (current.has_assistant && !next.has_assistant) {
+        losses.push('Exie turns off');
     }
 
     if (current.has_premium_features && !next.has_premium_features) {

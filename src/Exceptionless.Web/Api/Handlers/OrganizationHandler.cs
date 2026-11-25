@@ -341,7 +341,8 @@ public class OrganizationHandler(
             MaxUsers = organization.MaxUsers,
             RetentionDays = organization.RetentionDays,
             MaxEventsPerMonth = organization.MaxEventsPerMonth,
-            HasPremiumFeatures = organization.HasPremiumFeatures
+            HasPremiumFeatures = organization.HasPremiumFeatures,
+            Assistant = plans.GetPlan(organization.PlanId)?.Assistant
         };
 
         int idx = availablePlans.FindIndex(p => String.Equals(p.Id, organization.PlanId, StringComparison.OrdinalIgnoreCase));
