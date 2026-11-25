@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using Exceptionless.Core;
-using Exceptionless.Web.Api.Endpoints;
 using Joonasw.AspNetCore.SecurityHeaders.Csp.Builder;
 using Microsoft.Extensions.FileProviders;
 
