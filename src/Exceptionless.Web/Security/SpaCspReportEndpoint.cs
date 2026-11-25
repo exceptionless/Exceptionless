@@ -30,7 +30,7 @@ internal static class SpaCspReportEndpoint
         try
         {
             using var report = await JsonDocument.ParseAsync(request.Body, cancellationToken: request.HttpContext.RequestAborted);
-            asset = GetBlockedAsset(report.RootElement, request.Host);
+            asset = GetBlockedAsset(report.RootElement, $"{request.Scheme}://{request.Host}");
         }
         catch (BadHttpRequestException ex)
         {
@@ -65,12 +65,13 @@ internal static class SpaCspReportEndpoint
         return TypedResults.NoContent();
     }
 
-    private static string? GetBlockedAsset(JsonElement root, HostString host)
+    private static string? GetBlockedAsset(JsonElement root, string requestOrigin)
     {
         if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("csp-report", out var report) || report.ValueKind != JsonValueKind.Object ||
             GetString(report, "disposition") != "enforce" || GetString(report, "effective-directive") is not ("script-src" or "script-src-elem") ||
             !Uri.TryCreate(GetString(report, "blocked-uri"), UriKind.Absolute, out var blocked) || blocked.Scheme is not ("http" or "https") ||
-            !HostString.FromUriComponent(blocked).Equals(host))
+            !Uri.TryCreate(requestOrigin, UriKind.Absolute, out var origin) ||
+            Uri.Compare(blocked, origin, UriComponents.SchemeAndServer, UriFormat.UriEscaped, StringComparison.OrdinalIgnoreCase) != 0)
             return null;
 
         // Group hashed modules across builds and keep all reported URLs and tokens out of events.

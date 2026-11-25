@@ -155,8 +155,11 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Assert.Contains("https://*.intercom.io", scriptSources);
     }
 
-    [Fact]
-    public async Task PostAsync_BrowserReport_SubmitsSanitizedWarning()
+    [Theory]
+    [InlineData(null, "https://localhost")]
+    [InlineData(null, "https://localhost:443")]
+    [InlineData("localhost:443", "https://localhost")]
+    public async Task PostAsync_BrowserReport_SubmitsSanitizedWarning(string? hostHeader, string reportedOrigin)
     {
         // Arrange
         const string report = """{"csp-report":{"document-uri":"https://localhost/reset-password?token=private-token","blocked-uri":"https://localhost/_app/env.js?v=private-version","effective-directive":"script-src-elem","disposition":"enforce"}}""";
@@ -165,10 +168,12 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
             report.Replace("enforce", "report", StringComparison.Ordinal),
             report.Replace("script-src-elem", "style-src-elem", StringComparison.Ordinal),
             report.Replace("https://localhost/_app/", "https://other.localhost/_app/", StringComparison.Ordinal),
+            report.Replace("https://localhost/_app/", "http://localhost:443/_app/", StringComparison.Ordinal),
+            report.Replace("https://localhost/_app/", "https://localhost:8443/_app/", StringComparison.Ordinal),
             report.Replace("https://localhost/_app/env.js?v=private-version", "inline", StringComparison.Ordinal),
             report.Replace("script-src-elem", "\\uDEAD", StringComparison.Ordinal),
             "not JSON",
-            report
+            report.Replace("https://localhost/_app/", $"{reportedOrigin}/_app/", StringComparison.Ordinal)
         ];
         var submitted = new ConcurrentQueue<Event>();
         using var telemetry = new ExceptionlessClient(configuration =>
@@ -187,7 +192,8 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
             return telemetry;
         })));
         await factory.Server.WaitForReadyAsync();
-        using var client = factory.CreateClient();
+        using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        client.DefaultRequestHeaders.Host = hostHeader;
         client.DefaultRequestHeaders.Referrer = new Uri("https://localhost/reset-password?token=private-referrer");
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Chromium/158.0");
         using var preflight = new HttpRequestMessage(HttpMethod.Options, "/csp-reports");
@@ -197,19 +203,20 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         // Act
         using var loginResponse = await client.GetAsync("/login", TestCancellationToken);
         using var preflightResponse = await client.SendAsync(preflight, TestCancellationToken);
-        var statuses = new List<HttpStatusCode>();
+        var results = new List<(HttpStatusCode Status, int WarningCount)>();
         foreach (string body in reports)
         {
             using var content = new StringContent(body, Encoding.UTF8, "application/csp-report");
             using var response = await client.PostAsync("/csp-reports", content, TestCancellationToken);
-            statuses.Add(response.StatusCode);
+            results.Add((response.StatusCode, submitted.Count));
         }
 
         // Assert
         string policyHeader = Assert.Single(loginResponse.Headers.GetValues("Content-Security-Policy"));
         Assert.Contains("report-uri /csp-reports", policyHeader.Split(';', StringSplitOptions.TrimEntries));
         Assert.False(preflightResponse.Headers.Contains("Access-Control-Allow-Origin"));
-        Assert.All(statuses, status => Assert.Equal(HttpStatusCode.NoContent, status));
+        Assert.All(results, result => Assert.Equal(HttpStatusCode.NoContent, result.Status));
+        Assert.All(results.SkipLast(1), result => Assert.Equal(0, result.WarningCount));
         var submittedEvent = Assert.Single(submitted);
         Assert.Equal(Event.KnownTypes.Log, submittedEvent.Type);
         Assert.Equal("Content Security Policy blocked the SPA runtime configuration (env.js)", submittedEvent.Message);
