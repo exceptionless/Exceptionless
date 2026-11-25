@@ -3,13 +3,12 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using Exceptionless.AspNetCore;
 using Exceptionless.Models;
 using Exceptionless.Serializer;
 using Exceptionless.Tests.Extensions;
+using Foundatio.Utility;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -156,10 +155,10 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
     }
 
     [Theory]
-    [InlineData(null, "https://localhost")]
-    [InlineData(null, "https://localhost:443")]
-    [InlineData("localhost:443", "https://localhost")]
-    public async Task PostAsync_BrowserReport_SubmitsSanitizedWarning(string? hostHeader, string reportedOrigin)
+    [InlineData(null, "https://localhost", "/_app/env.js", "the SPA runtime configuration (env.js)")]
+    [InlineData(null, "https://localhost:443", "/_app/immutable/entry/start.test.js", "a compiled SPA module")]
+    [InlineData("localhost:443", "https://localhost", "/_app/bootstrap.js", "the SPA bootstrap (bootstrap.js)")]
+    public async Task PostAsync_BrowserReport_SubmitsSanitizedWarning(string? hostHeader, string reportedOrigin, string script, string expectedAsset)
     {
         // Arrange
         const string report = """{"csp-report":{"document-uri":"https://localhost/reset-password?token=private-token","blocked-uri":"https://localhost/_app/env.js?v=private-version","effective-directive":"script-src-elem","disposition":"enforce"}}""";
@@ -170,31 +169,42 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
             report.Replace("https://localhost/_app/", "https://other.localhost/_app/", StringComparison.Ordinal),
             report.Replace("https://localhost/_app/", "http://localhost:443/_app/", StringComparison.Ordinal),
             report.Replace("https://localhost/_app/", "https://localhost:8443/_app/", StringComparison.Ordinal),
+            report.Replace("/_app/env.js", "/_app/immutable/entry/private-unpublished.js", StringComparison.Ordinal),
             report.Replace("https://localhost/_app/env.js?v=private-version", "inline", StringComparison.Ordinal),
             report.Replace("script-src-elem", "\\uDEAD", StringComparison.Ordinal),
             "not JSON",
-            report.Replace("https://localhost/_app/", $"{reportedOrigin}/_app/", StringComparison.Ordinal)
+            report.Replace("https://localhost/_app/env.js", $"{reportedOrigin}{script}", StringComparison.Ordinal)
         ];
+        var webRoot = Directory.CreateTempSubdirectory("spa-csp-");
+        using var cleanup = new DisposableAction(() => webRoot.Delete(recursive: true));
+        var entry = webRoot.CreateSubdirectory("_app/immutable/entry");
+        await File.WriteAllTextAsync(Path.Combine(entry.FullName, "start.test.js"), "export {};", TestCancellationToken);
+        using var files = new PhysicalFileProvider(webRoot.FullName);
         var submitted = new ConcurrentQueue<Event>();
         using var telemetry = new ExceptionlessClient(configuration =>
         {
             configuration.ApiKey = "00000000000000000000000000000000";
+            configuration.ServerUrl = "http://localhost";
+            configuration.IncludePrivateInformation = true;
+            configuration.SetUserIdentity("private-identity");
             configuration.UseInMemoryStorage();
         });
         telemetry.SubmittingEvent += (_, args) =>
         {
-            submitted.Enqueue(args.Event);
+            if (args.Event.Source == "SpaCspReportEndpoint")
+                submitted.Enqueue(args.Event);
             args.Cancel = true;
         };
-        await using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureServices(services => services.AddSingleton(provider =>
+        await using var factory = _factory.WithWebHostBuilder(builder => builder.ConfigureServices((context, services) =>
         {
-            telemetry.Configuration.AddPlugin(new ExceptionlessAspNetCorePlugin(provider.GetRequiredService<IHttpContextAccessor>()));
-            return telemetry;
-        })));
+            context.HostingEnvironment.WebRootFileProvider = new CompositeFileProvider(files, context.HostingEnvironment.WebRootFileProvider);
+            services.AddSingleton(telemetry);
+        }));
         await factory.Server.WaitForReadyAsync();
         using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
         client.DefaultRequestHeaders.Host = hostHeader;
         client.DefaultRequestHeaders.Referrer = new Uri("https://localhost/reset-password?token=private-referrer");
+        client.DefaultRequestHeaders.Add("Cookie", "session=private-cookie");
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Chromium/158.0");
         using var preflight = new HttpRequestMessage(HttpMethod.Options, "/csp-reports");
         preflight.Headers.Add("Origin", "https://other.localhost");
@@ -207,7 +217,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         foreach (string body in reports)
         {
             using var content = new StringContent(body, Encoding.UTF8, "application/csp-report");
-            using var response = await client.PostAsync("/csp-reports", content, TestCancellationToken);
+            using var response = await client.PostAsync("/csp-reports?token=private-request", content, TestCancellationToken);
             results.Add((response.StatusCode, submitted.Count));
         }
 
@@ -219,15 +229,21 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Assert.All(results.SkipLast(1), result => Assert.Equal(0, result.WarningCount));
         var submittedEvent = Assert.Single(submitted);
         Assert.Equal(Event.KnownTypes.Log, submittedEvent.Type);
-        Assert.Equal("Content Security Policy blocked the SPA runtime configuration (env.js)", submittedEvent.Message);
+        Assert.Equal($"Content Security Policy blocked {expectedAsset}", submittedEvent.Message);
         Assert.Contains("csp", submittedEvent.Tags!);
         Assert.Equal("Warn", submittedEvent.Data!["@level"]);
-        Assert.Equal("the SPA runtime configuration (env.js)", submittedEvent.Data["Blocked Asset"]);
-        Assert.Equal("Chromium/158.0", submittedEvent.Data["Browser User Agent"]);
+        Assert.Equal(expectedAsset, submittedEvent.Data["BlockedAsset"]);
+        Assert.Equal("Chromium/158.0", submittedEvent.Data["BrowserUserAgent"]);
+        Assert.False(submittedEvent.Data.ContainsKey(Event.KnownDataKeys.RequestInfo));
+        Assert.False(submittedEvent.Data.ContainsKey(Event.KnownDataKeys.UserInfo));
         string serialized = new DefaultJsonSerializer().Serialize(submittedEvent);
         Assert.DoesNotContain("private-token", serialized, StringComparison.Ordinal);
         Assert.DoesNotContain("private-version", serialized, StringComparison.Ordinal);
         Assert.DoesNotContain("private-referrer", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("private-cookie", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("private-request", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("private-identity", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain(script, serialized, StringComparison.Ordinal);
     }
 
     [Fact]
