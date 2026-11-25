@@ -167,6 +167,7 @@ export const BillingPlanSchema = object({
   max_events_per_month: int32(),
   has_premium_features: boolean(),
   is_hidden: boolean(),
+  has_assistant: boolean(),
 });
 export type BillingPlanFormData = Infer<typeof BillingPlanSchema>;
 

@@ -26,6 +26,7 @@
     import { Skeleton } from '#comp/ui/skeleton/index.ts';
     import { Spinner } from '#comp/ui/spinner/index.ts';
     import * as Tabs from '#comp/ui/tabs/index.ts';
+    import { getAssistantAccessQuery } from '#features/assistant/api.svelte.ts';
     import { submitFeatureUsage } from '#features/auth/exceptionless-session.ts';
     import { FREE_PLAN_ID, isStripeEnabled, StripeProvider, TRIAL_EQUIVALENT_PLAN_ID, TRIAL_PLAN_ID } from '#features/billing/index.ts';
     import { getDowngradeLosses } from '#features/billing/plan-downgrade.ts';
@@ -223,8 +224,34 @@
         return selectedIdx >= 0 && currentTierIndex >= 0 && selectedIdx < currentTierIndex;
     });
 
+    // Only mention Exie when this server has it turned on.
+    const assistantAccessQuery = getAssistantAccessQuery({
+        route: {
+            get organizationId() {
+                return organization.id;
+            }
+        }
+    });
+    const assistantEnabled = $derived(assistantAccessQuery.data?.enabled === true);
+    const currentPlanIncludesAssistant = $derived(
+        assistantEnabled && (plansQuery.data?.find((plan: BillingPlan) => plan.id === organization.plan_id)?.has_assistant ?? false)
+    );
+
     // Organization limits reflect the current plan, including the hidden trial plan.
-    const downgradeLosses = $derived(planDirty && selectedPlan ? getDowngradeLosses(organization, selectedPlan) : []);
+    const downgradeLosses = $derived(
+        planDirty && selectedPlan
+            ? getDowngradeLosses(
+                  {
+                      ...organization,
+                      has_assistant: currentPlanIncludesAssistant
+                  },
+                  {
+                      ...selectedPlan,
+                      has_assistant: assistantEnabled && selectedPlan.has_assistant
+                  }
+              )
+            : []
+    );
 
     let stripe = $state<null | Stripe>(null);
     let stripeElements = $state<StripeElements | undefined>(undefined);
@@ -691,6 +718,10 @@
                                                     <Muted class="text-muted-foreground/60 mx-1 inline text-xs">·</Muted>
                                                     <Muted class="inline text-xs">{formatUsers(planForInterval.max_users)}</Muted>
                                                 {/if}
+                                                {#if assistantEnabled && planForInterval.has_assistant}
+                                                    <Muted class="text-muted-foreground/60 mx-1 inline text-xs">·</Muted>
+                                                    <Muted class="inline text-xs" data-testid="plan-includes-exie">Exie</Muted>
+                                                {/if}
                                             </div>
                                         {/if}
                                     </div>
@@ -784,12 +815,6 @@
                             {:else}
                                 <div class="border-border bg-muted/30 rounded-lg border p-3">
                                     <StripeProvider
-                                        appearance={{
-                                            theme: 'stripe',
-                                            variables: {
-                                                borderRadius: '6px'
-                                            }
-                                        }}
                                         onElementsChange={(elements) => {
                                             stripeElements = elements;
                                         }}

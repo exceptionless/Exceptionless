@@ -39,7 +39,7 @@
         aria-describedby="error-description"
     >
         <div class="max-w-3xl">
-            <Logo class="mx-0 mb-12 max-h-12" />
+            <Logo class="mx-0 mb-12 h-16 max-h-none w-auto object-contain" />
 
             <div class="border-primary/30 bg-primary/10 text-primary mb-8 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium">
                 {#if isNotFound}

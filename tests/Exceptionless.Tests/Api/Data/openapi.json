@@ -12408,7 +12408,8 @@
           "retention_days",
           "max_events_per_month",
           "has_premium_features",
-          "is_hidden"
+          "is_hidden",
+          "has_assistant"
         ],
         "type": "object",
         "properties": {
@@ -12446,6 +12447,11 @@
           },
           "is_hidden": {
             "type": "boolean"
+          },
+          "has_assistant": {
+            "type": "boolean",
+            "description": "Whether the plan includes Exie.",
+            "readOnly": true
           }
         }
       },

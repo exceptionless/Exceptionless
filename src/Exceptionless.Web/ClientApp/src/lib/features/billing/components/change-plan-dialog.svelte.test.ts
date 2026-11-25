@@ -9,6 +9,7 @@ const queryState = vi.hoisted(() => ({ userCount: 1 }));
 const plans: BillingPlan[] = [
     {
         description: 'Free',
+        has_assistant: false,
         has_premium_features: false,
         id: 'EX_FREE',
         is_hidden: false,
@@ -21,6 +22,7 @@ const plans: BillingPlan[] = [
     },
     {
         description: 'Small',
+        has_assistant: false,
         has_premium_features: true,
         id: 'EX_SMALL',
         is_hidden: false,
@@ -33,6 +35,7 @@ const plans: BillingPlan[] = [
     },
     {
         description: 'Small yearly',
+        has_assistant: false,
         has_premium_features: true,
         id: 'EX_SMALL_YEARLY',
         is_hidden: false,
@@ -45,6 +48,7 @@ const plans: BillingPlan[] = [
     },
     {
         description: 'Medium',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_MEDIUM',
         is_hidden: false,
@@ -54,9 +58,25 @@ const plans: BillingPlan[] = [
         name: 'Medium',
         price: 49,
         retention_days: 90
+    },
+    {
+        description: 'Trial',
+        has_assistant: true,
+        has_premium_features: true,
+        id: 'EX_TRIAL',
+        is_hidden: true,
+        max_events_per_month: 75000,
+        max_projects: -1,
+        max_users: -1,
+        name: 'Trial',
+        price: 0,
+        retention_days: 90
     }
 ];
 
+vi.mock('#features/assistant/api.svelte.ts', () => ({
+    getAssistantAccessQuery: () => ({ data: { enabled: true, has_access: true, upgrade_required: false } })
+}));
 vi.mock('#features/organizations/api.svelte.ts', () => ({
     changePlanMutation: () => ({ mutateAsync: vi.fn() }),
     getPlansQuery: () => ({ data: plans, error: null, isLoading: false })
@@ -152,6 +172,9 @@ describe('ChangePlanDialog loss warning', () => {
         const losses = await screen.findByTestId('downgrade-losses');
         expect(losses).toHaveTextContent('event history drops from 90 days to 30 days');
         expect(losses).toHaveTextContent('limit drops to 15,000 events a month');
+        expect(losses).toHaveTextContent('Exie turns off');
+        expect(screen.getByRole('button', { name: /^Small/ })).not.toHaveTextContent('Exie');
+        expect(screen.getByRole('button', { name: /^Medium/ })).toHaveTextContent('Exie');
         expect(screen.getByRole('button', { name: 'Start Small yearly' })).toBeEnabled();
 
         // Act
