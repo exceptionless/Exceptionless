@@ -6,12 +6,15 @@ using System.Text.RegularExpressions;
 using Exceptionless.Models;
 using Exceptionless.Serializer;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Web.Extensions;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Serilog.Core;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using Serilog.Sinks.Exceptionless;
 using Xunit;
 
@@ -189,8 +192,13 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
                 submitted.Enqueue(args.Event);
             args.Cancel = true;
         };
+        using var logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .WriteTo.Sink(new ExceptionlessSink(client: telemetry))
+            .CreateLogger();
+        using var loggerFactory = logger.ToLoggerFactory();
         await using var factory = _factory.WithWebHostBuilder(builder =>
-            builder.ConfigureServices(services => services.AddSingleton<ILogEventSink>(new ExceptionlessSink(client: telemetry))));
+            builder.ConfigureTestServices(services => services.AddSingleton<ILoggerFactory>(loggerFactory)));
         await factory.Server.WaitForReadyAsync();
         using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
         client.DefaultRequestHeaders.Host = hostHeader;
