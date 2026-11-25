@@ -8,7 +8,6 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Validation;
 using Exceptionless.Insulation.Configuration;
 using Exceptionless.Insulation.Security;
-using Exceptionless.Models;
 using Exceptionless.Web.Api;
 using Exceptionless.Web.Api.Results;
 using Exceptionless.Web.Assistant;
@@ -109,8 +108,8 @@ public partial class Program
                     c.ReadFrom.Services(sp);
                     c.Enrich.WithMachineName();
 
-                    if (sp.GetService<ExceptionlessClient>() is { } client)
-                        c.WriteTo.Sink(new ExceptionlessSink(client: client), LogEventLevel.Information);
+                    if (!String.IsNullOrEmpty(options.ExceptionlessApiKey))
+                        c.WriteTo.Sink(new ExceptionlessSink(), LogEventLevel.Information);
                 }, writeToProviders: true)
                 .AddApm(apmConfig);
 
@@ -252,18 +251,8 @@ public partial class Program
             app.UseReadyHealthChecks(readyTags.ToArray());
             app.UseWaitForStartupActionsBeforeServingRequests();
 
-            if (app.Services.GetService<ExceptionlessClient>() is { } telemetry)
-            {
-                app.UseExceptionless(telemetry);
-                // Keep only anonymous warning fields after the ASP.NET plugin adds the current request and user at priority 90.
-                telemetry.Configuration.AddPlugin(nameof(SpaCspReportEndpoint), 100, context =>
-                {
-                    var ev = context.Event;
-                    if (ev.Type == Event.KnownTypes.Log && ev.Source == nameof(SpaCspReportEndpoint))
-                        ev.Data = new(ev.Data.Where(property => property.Key is
-                            Event.KnownDataKeys.Level or Event.KnownDataKeys.Version or "BlockedAsset" or "BrowserUserAgent"));
-                });
-            }
+            if (!String.IsNullOrEmpty(options.ExceptionlessApiKey) && !String.IsNullOrEmpty(options.ExceptionlessServerUrl))
+                app.UseExceptionless(ExceptionlessClient.Default);
 
             app.Use(async (context, next) =>
             {
