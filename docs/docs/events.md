@@ -21,8 +21,8 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/views/session-events.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/table/options.svelte.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/table/events-bulk-actions-dropdown-menu.svelte
-  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/table/events-select-all-banner.svelte
-  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/table/all-matching-selection.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/select-all-banner.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/shared/all-matching-selection.svelte.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/dialogs/remove-event-dialog.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/tasks/models.ts
   - src/Exceptionless.Web/ClientApp/src/lib/features/tasks/components/task-panel.svelte
@@ -178,15 +178,18 @@ final count can differ. Select **Delete Matching Events** to start. The delete r
 - The selection belongs to the filters it was made for. Changing the filters, date range, saved view, or organization,
   or clearing a check box on the page, drops it.
 - The date range is fixed when the delete starts, so events that arrive later aren't deleted.
-- Only one delete of matching events runs at a time in an organization. Wait for the running one to finish, or cancel
-  it, before you start another.
-- Selecting every matching event is available on **Events** views only. The **Stacks** lists act on the rows you select.
+- Only one delete of matching events or stacks runs at a time in a project. Wait for the running one to finish, or
+  cancel it, before you start another.
+- **Stacks** lists can select every matching stack the same way. See
+  [Act on every matching stack](/docs/managing-stacks/#act-on-every-matching-stack).
+- To delete every event from one environment, use **Delete events** on the project's **Environments** settings. See
+  [Delete an environment's events](/docs/environments/#delete-an-environments-events).
 
 ## Background tasks {#background-tasks}
 
-Long-running work, such as deleting matching events, **Reset Project Data**, and generating sample data, runs in the
-background. Its progress shows in a panel at the bottom left of the app, next to the sidebar. Everyone in the
-organization sees its tasks.
+Long-running work, such as deleting matching events, acting on every matching stack, **Reset Project Data**, and
+generating sample data, runs in the background. Its progress shows in a panel at the bottom left of the app, next to the
+sidebar. Everyone in the organization sees its tasks.
 
 Each task shows what it's doing, such as "Delete 12,480 events matching filter", and its progress:
 
@@ -194,9 +197,9 @@ Each task shows what it's doing, such as "Delete 12,480 events matching filter",
 - **Completed**, with how many items were processed and any that failed.
 - **Cancelled** or **Failed**, with how far it got.
 
-Select **Cancel** to stop a delete of matching events. It stops after the batch it's working on, and events already
-deleted stay deleted. A project data reset can't be cancelled. If a task stops reporting progress for two hours,
-**Cancel** appears on it too, so you can clear it.
+Select **Cancel** to stop a delete of matching events or an action on matching stacks. It stops after the batch it's
+working on, and events already deleted stay deleted. A project data reset can't be cancelled. If a task stops reporting
+progress for two hours, **Cancel** appears on it too, so you can clear it.
 
 Finished tasks leave the panel after two minutes. Select the **X** to dismiss one sooner.
 

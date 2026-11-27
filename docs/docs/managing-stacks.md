@@ -11,6 +11,10 @@ sources:
   - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/stack-status-dropdown-menu.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/stack-options-dropdown-menu.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/stacks-bulk-actions-dropdown-menu.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/dialogs/confirm-matching-stacks-dialog.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/shared/components/select-all-banner.svelte
+  - src/Exceptionless.Core/Services/BulkOperations/StackBulkSelectionResolver.cs
+  - src/Exceptionless.Core/Services/StackActionService.cs
   - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/dialogs/mark-stack-fixed-in-version-dialog.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/dialogs/mark-stack-discarded-dialog.svelte
   - src/Exceptionless.Web/ClientApp/src/lib/features/stacks/components/dialogs/add-stack-reference-dialog.svelte
@@ -173,11 +177,25 @@ In a stack list, **Actions** has **Mark Open**, **Mark Fixed**, **Mark Snoozed**
 and **Delete**. They work like the single-stack actions above. **Mark Fixed** asks for one version for all the selected
 stacks, and **Mark Discarded** and **Delete** ask you to confirm.
 
-Stack bulk actions apply to the rows you select on the current page. In an **Events** view, **Actions** has **Delete**,
-which deletes the selected events or every event that matches the view's filters. A delete of matching events runs as a
-background task with its progress at the bottom of the app. See [Delete events](/docs/events/#delete-events).
+In an **Events** view, **Actions** has **Delete**, which deletes the selected events or every event that matches the
+view's filters. See [Delete events](/docs/events/#delete-events).
 
 **Actions** stays disabled until you select at least one row.
+
+### Act on every matching stack {#act-on-every-matching-stack}
+
+When you select every stack on the page and more stacks match the list's filters and date range, a bar above the list
+says **All** _N_ **stacks on this page are selected.** Select **Select all** _N_ **stacks matching this filter** to
+select all of them, or **Clear selection** to go back.
+
+Then pick an action from **Actions**. A dialog such as **Mark Matching Stacks Ignored**, **Snooze Matching Stacks**, or
+**Delete Matching Stacks** shows about how many stacks match; the final count can differ. Confirm to start. The action
+runs as a [background task](/docs/events/#background-tasks), and the list refreshes when it finishes.
+
+- The selection belongs to the filters it was made for. Changing the filters, date range, or saved view, or clearing a
+  check box on the page, drops it.
+- **Delete** on matching stacks deletes each stack and all of its events. Only one delete of matching stacks or events
+  runs at a time in a project.
 
 ## Ask Exie
 

@@ -67,9 +67,9 @@ The `POST` body can also be an array of events, each with its own environment. S
 - A name is 1 to 64 ASCII letters, digits, periods (`.`), underscores (`_`), or hyphens (`-`), and starts with a letter
   or digit. Custom names such as `qa-west`, `staging.eu`, or `dev_local` are fine.
 - Filters ignore case, so `Production` and `production` are the same environment.
-- A value that isn't a valid name, such as `Staging West`, `prod/eu`, an empty string, a number, an object, or a name over
-  64 characters, leaves the event unspecified. The value is kept in the event's custom data under `environment` instead, or `environment1` if
-  that key is already taken.
+- A value that isn't a valid name, such as `Staging West`, `prod/eu`, an empty string, a number, an object, or a name
+  over 64 characters, leaves the event unspecified. The value is kept in the event's custom data under `environment`
+  instead, or `environment1` if that key is already taken.
 
 ### Environment isn't machine information
 
@@ -118,16 +118,16 @@ Notifications do; see [Notifications by environment](#notifications-by-environme
 ## Manage a project's environments
 
 Open **Project Settings** > **Environments** to list the environments a project uses. A listed name is shown in the
-casing you typed, such as `Production`, in the Environment filter, event details, and notification emails. Matching still
-ignores case. A project can list up to 100 environments.
+casing you typed, such as `Production`, in the Environment filter, event details, and notification emails. Matching
+still ignores case. A project can list up to 100 environments.
 
 Adding or removing a name never changes or deletes events, and Exceptionless never adds names to the list on its own.
 Environments that sent events in the last 30 days show up in the table with an **Add** action.
 
 ### Discard events from unlisted environments
 
-Projects accept events from any environment by default. To accept only listed ones, set **Accept events from** to
-**Only environments in this list**:
+Projects accept events from any environment by default. To accept only listed ones, set **Accept events from** to **Only
+environments in this list**:
 
 - Events from an unlisted environment are discarded before they're stored or stacked. They count as discarded events and
   don't count toward your plan limit, like events for a discarded stack.
@@ -138,11 +138,19 @@ Projects accept events from any environment by default. To accept only listed on
 The **Discarded** section lists the names rejected in the last 7 days, up to 50 per project, with an event count and an
 **Allow** action that adds the name to the list. It's the quickest way to spot a misspelling such as `prodution`.
 
+### Delete an environment's events {#delete-an-environments-events}
+
+To remove everything an environment sent, such as test data from a developer's machine, select **Delete events** on its
+row. The dialog shows about how many events from all time will be deleted; the final count can differ. Confirm to start.
+The delete runs as a [background task](/docs/events/#background-tasks) and can't be undone. Deleting events doesn't
+remove the environment from the list. To stop new events from it, also
+[discard unlisted environments](#discard-events-from-unlisted-environments).
+
 ### Notifications by environment
 
-Each listed environment has its own **Notifications** toggle. The **Other environments** row covers unlisted environments
-and events without one. An event sends notifications (email, Slack, and web hooks) only from an environment that
-notifies.
+Each listed environment has its own **Notifications** toggle. The **Other environments** row covers unlisted
+environments and events without one. An event sends notifications (email, Slack, and web hooks) only from an environment
+that notifies.
 
 - **New stacks**: you're notified the first time a stack occurs in a notifying environment. An error first seen in a
   muted `dev` sends nothing; its first occurrence in `Production` sends the new error notification, once.

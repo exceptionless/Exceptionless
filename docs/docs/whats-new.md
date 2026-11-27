@@ -97,6 +97,13 @@ Change the filter or date range, then save your own view. Views are shared with 
 **Private**, and they appear in the sidebar under their page. The project and date range are filters on each view, and
 they are saved with it, instead of a global picker at the top of the app. See [Saved views](/docs/saved-views/).
 
+### Act on everything that matches a filter
+
+On **Stacks** and **Events**, select every row on the page, then **Select all** to cover every stack or event that
+matches the filter. Stacks can then be marked fixed, snoozed, ignored, or deleted together, and events deleted. The work
+runs as a background task with its progress at the bottom of the app. See
+[Bulk actions](/docs/managing-stacks/#bulk-actions) and [Delete events](/docs/events/#delete-events).
+
 ### Custom date ranges
 
 Choose **Custom range** in the date filter to pick dates on a calendar or type them into **From** and **To** fields on
