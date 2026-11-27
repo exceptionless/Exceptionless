@@ -497,12 +497,20 @@ public class ProjectHandler(
         if (project.Environments.Count >= ProjectEnvironment.MaximumCount)
             return Result.Invalid(ValidationError.Create("environments", $"A project cannot list more than {ProjectEnvironment.MaximumCount} environments."));
 
-        project.Environments.Add(new ProjectEnvironment { Name = name, Notify = message.Environment.Notify, CreatedUtc = timeProvider.GetUtcNow().UtcDateTime });
-        await repository.SaveAsync(project, o => o.Cache());
+        var environment = new ProjectEnvironment { Name = name, Notify = message.Environment.Notify, CreatedUtc = timeProvider.GetUtcNow().UtcDateTime };
+        if (!await repository.AddEnvironmentAsync(project, environment))
+        {
+            // A concurrent edit listed the name or filled the list after the checks above.
+            var latest = await GetModelAsync(message.Id, message.Context, useCache: false);
+            if (latest?.FindEnvironment(name) is not null)
+                return Result.Conflict($"The environment '{name}' is already listed. Names are case-insensitive.");
+
+            return Result.Invalid(ValidationError.Create("environments", $"A project cannot list more than {ProjectEnvironment.MaximumCount} environments."));
+        }
 
         // Adding the name means those events are accepted from now on, so stop reporting them as discarded.
         await discardedEnvironmentService.RemoveAsync(project.Id, name);
-        return MapEnvironmentSettings(project);
+        return await GetEnvironmentSettingsAsync(message.Id, message.Context);
     }
 
     public async Task<Result<ProjectEnvironmentSettings>> Handle(ChangeProjectEnvironment message)
@@ -516,12 +524,9 @@ public class ProjectHandler(
             return Result.NotFound("Environment not found.");
 
         if (message.Changes.Notify is { } notify && environment.Notify != notify)
-        {
-            environment.Notify = notify;
-            await repository.SaveAsync(project, o => o.Cache());
-        }
+            await repository.SetEnvironmentNotifyAsync(project, environment.Name, notify);
 
-        return MapEnvironmentSettings(project);
+        return await GetEnvironmentSettingsAsync(message.Id, message.Context);
     }
 
     public async Task<Result<ProjectEnvironmentSettings>> Handle(RemoveProjectEnvironment message)
@@ -532,10 +537,10 @@ public class ProjectHandler(
 
         // Removing a name never touches events. It only changes how new events are treated.
         string? name = ProjectEnvironment.NormalizeName(message.Name);
-        if (name is not null && project.Environments.RemoveAll(e => ProjectEnvironment.NamesMatch(e.Name, name)) > 0)
-            await repository.SaveAsync(project, o => o.Cache());
+        if (name is not null && project.FindEnvironment(name) is not null)
+            await repository.RemoveEnvironmentAsync(project, name);
 
-        return MapEnvironmentSettings(project);
+        return await GetEnvironmentSettingsAsync(message.Id, message.Context);
     }
 
     public async Task<Result<ProjectEnvironmentSettings>> Handle(ChangeProjectEnvironmentSettings message)
@@ -546,15 +551,12 @@ public class ProjectHandler(
 
         var changes = message.Settings;
         bool stoppedDiscardingWithoutEnvironment = changes.DiscardEventsWithoutEnvironment is false && project.DiscardEventsWithoutEnvironment;
-        project.DiscardUnlistedEnvironments = changes.DiscardUnlistedEnvironments ?? project.DiscardUnlistedEnvironments;
-        project.DiscardEventsWithoutEnvironment = changes.DiscardEventsWithoutEnvironment ?? project.DiscardEventsWithoutEnvironment;
-        project.NotifyOtherEnvironments = changes.NotifyOtherEnvironments ?? project.NotifyOtherEnvironments;
-        await repository.SaveAsync(project, o => o.Cache());
+        await repository.SetEnvironmentSettingsAsync(project, changes.DiscardUnlistedEnvironments, changes.DiscardEventsWithoutEnvironment, changes.NotifyOtherEnvironments);
 
         if (stoppedDiscardingWithoutEnvironment)
             await discardedEnvironmentService.RemoveAsync(project.Id, null);
 
-        return MapEnvironmentSettings(project);
+        return await GetEnvironmentSettingsAsync(message.Id, message.Context);
     }
 
     public async Task<Result<ProjectDiscardedEnvironments>> Handle(GetDiscardedProjectEnvironments message)
@@ -572,6 +574,13 @@ public class ProjectHandler(
             OtherNames = discarded.OtherNames,
             OtherNamesCapped = discarded.OtherNamesCapped
         };
+    }
+
+    private async Task<Result<ProjectEnvironmentSettings>> GetEnvironmentSettingsAsync(string id, HttpContext context)
+    {
+        // Read the saved project so the response includes concurrent edits, not just this one.
+        var project = await GetModelAsync(id, context, useCache: false);
+        return project is null ? Result.NotFound("Project not found.") : MapEnvironmentSettings(project);
     }
 
     private static ProjectEnvironmentSettings MapEnvironmentSettings(Project project) => new()

@@ -4,7 +4,7 @@ import type { DiscardedEnvironment, ProjectEnvironment } from '#generated/api.ts
 export const ENVIRONMENT_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 export const MAX_LISTED_ENVIRONMENTS = 100;
 
-export type DiscardUnlistedWarning = 'empty-list' | 'no-recent-events';
+export type DiscardUnlistedWarning = 'empty-list' | 'no-recent-events' | 'unknown-activity';
 
 export interface EnvironmentRow {
     count: number;
@@ -77,7 +77,12 @@ export function getDiscardUnlistedWarning(rows: EnvironmentRow[], observedLoaded
         return 'empty-list';
     }
 
-    return observedLoaded && listed.every((row) => row.count === 0) ? 'no-recent-events' : undefined;
+    // Without recent activity there is no way to tell whether a sending environment is missing from the list, so always confirm.
+    if (!observedLoaded) {
+        return 'unknown-activity';
+    }
+
+    return listed.every((row) => row.count === 0) ? 'no-recent-events' : undefined;
 }
 
 /** Returns the listed casing for a listed environment, otherwise the name as it was given. */

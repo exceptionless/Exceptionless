@@ -145,6 +145,8 @@ export interface BillingPlan {
   max_events_per_month: number;
   has_premium_features: boolean;
   is_hidden: boolean;
+  /** Whether the plan includes Exie. */
+  has_assistant: boolean;
 }
 
 export interface ChangePasswordModel {

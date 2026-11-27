@@ -33,9 +33,16 @@ describe('buildEnvironmentRows', () => {
     });
 
     it('lists environments that have no events yet and handles missing lists', () => {
-        // Act & Assert
-        expect(buildEnvironmentRows([listed('dev')], []).map((row) => row.name)).toEqual(['dev']);
-        expect(buildEnvironmentRows(undefined, [])).toEqual([]);
+        // Arrange
+        const environments = [listed('dev')];
+
+        // Act
+        const rows = buildEnvironmentRows(environments, []);
+        const missing = buildEnvironmentRows(undefined, []);
+
+        // Assert
+        expect(rows.map((row) => row.name)).toEqual(['dev']);
+        expect(missing).toEqual([]);
     });
 });
 
@@ -46,11 +53,25 @@ describe('getEnvironmentDisplayName', () => {
         ['qa-west', 'qa-west'],
         ['QA-West', 'QA-West']
     ])('shows %s as %s', (name, expected) => {
-        expect(getEnvironmentDisplayName([listed('Production')], name)).toBe(expected);
+        // Arrange
+        const environments = [listed('Production')];
+
+        // Act
+        const displayName = getEnvironmentDisplayName(environments, name);
+
+        // Assert
+        expect(displayName).toBe(expected);
     });
 
     it('returns the name when the project has no list', () => {
-        expect(getEnvironmentDisplayName(undefined, 'Staging')).toBe('Staging');
+        // Arrange
+        const name = 'Staging';
+
+        // Act
+        const displayName = getEnvironmentDisplayName(undefined, name);
+
+        // Assert
+        expect(displayName).toBe(name);
     });
 });
 
@@ -63,12 +84,16 @@ describe('getListedEnvironmentNames', () => {
             { environments: undefined, id: 'three' }
         ];
 
-        // Act & Assert
-        expect([...getListedEnvironmentNames(projects)]).toEqual([
+        // Act
+        const names = getListedEnvironmentNames(projects);
+        const limitedNames = getListedEnvironmentNames(projects, ['two']);
+
+        // Assert
+        expect([...names]).toEqual([
             ['production', 'Production'],
             ['staging', 'Staging']
         ]);
-        expect(getListedEnvironmentNames(projects, ['two']).get('production')).toBe('PRODUCTION');
+        expect(limitedNames.get('production')).toBe('PRODUCTION');
     });
 });
 
@@ -91,7 +116,11 @@ describe('normalizeEnvironmentName', () => {
         ['prod\tuction', undefined],
         ['prod\nuction', undefined]
     ])('normalizes %j to %j', (value, expected) => {
-        expect(normalizeEnvironmentName(value)).toBe(expected);
+        // Act
+        const normalized = normalizeEnvironmentName(value);
+
+        // Assert
+        expect(normalized).toBe(expected);
     });
 });
 
@@ -106,11 +135,12 @@ describe('splitDiscardedEnvironments', () => {
 
         // Act
         const { named, unspecified } = splitDiscardedEnvironments(discarded);
+        const missing = splitDiscardedEnvironments(undefined);
 
         // Assert
         expect(named.map((environment) => environment.key)).toEqual(['prodution', 'dev']);
         expect(unspecified?.count).toBe(9);
-        expect(splitDiscardedEnvironments(undefined)).toEqual({ named: [], unspecified: undefined });
+        expect(missing).toEqual({ named: [], unspecified: undefined });
     });
 });
 
@@ -125,16 +155,26 @@ describe('getDiscardUnlistedWarning', () => {
         ['no listed environments', [], true, 'empty-list'],
         ['no listed environment has events', [undefined, 0], true, 'no-recent-events'],
         ['a listed environment has events', [undefined, 3], true, undefined],
-        ['recent activity has not loaded', [undefined], false, undefined]
+        ['recent activity has not loaded', [undefined, 3], false, 'unknown-activity']
     ])('returns the right warning when %s', (_, counts, loaded, expected) => {
-        expect(getDiscardUnlistedWarning(rows(...(counts as (number | undefined)[])), loaded)).toBe(expected);
+        // Arrange
+        const environmentRows = rows(...(counts as (number | undefined)[]));
+
+        // Act
+        const warning = getDiscardUnlistedWarning(environmentRows, loaded);
+
+        // Assert
+        expect(warning).toBe(expected);
     });
 
     it('does not count unlisted environments that have events', () => {
         // Arrange
         const mixed = buildEnvironmentRows([listed('Production')], [{ count: 50, key: 'qa-west' }]);
 
-        // Act & Assert
-        expect(getDiscardUnlistedWarning(mixed, true)).toBe('no-recent-events');
+        // Act
+        const warning = getDiscardUnlistedWarning(mixed, true);
+
+        // Assert
+        expect(warning).toBe('no-recent-events');
     });
 });

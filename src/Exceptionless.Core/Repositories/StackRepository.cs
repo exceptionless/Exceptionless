@@ -189,6 +189,25 @@ if (ctx._source.{field} == true) {{
         return Cache.AddAsync(GetClaimCacheKey(stack, kind), true, _claimGuardExpiration);
     }
 
+    public async Task ReleaseNotificationAsync(Stack stack, PendingStackNotification kind)
+    {
+        // Remove the guard before restoring the flag. While the flag is still clear nobody can claim, so a concurrent claimant can't clear
+        // the restored flag and then be refused by a guard this release is about to remove. If the patch fails the notification is lost,
+        // which is no worse than before the release.
+        await Cache.RemoveAsync(GetClaimCacheKey(stack, kind));
+
+        string field = GetPendingField(kind);
+        try
+        {
+            await PatchAsync(stack.Id, new ScriptPatch($"ctx._source.{field} = true;"), o => o.Notifications(false));
+            await InvalidateStackCacheAsync(stack);
+        }
+        catch (DocumentNotFoundException)
+        {
+            // The stack was deleted, so there is nothing left to notify about.
+        }
+    }
+
     public async Task UpdateTagsAsync(Stack stack)
     {
         // Only the tags change, so patch them instead of saving the whole document. A stale copy must not overwrite fields that other

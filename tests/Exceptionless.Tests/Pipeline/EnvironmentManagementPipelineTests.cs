@@ -194,6 +194,48 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task ProcessAsync_WhenQueueingTheClaimedNotificationFails_TheNextOccurrenceSendsIt()
+    {
+        // Arrange
+        var project = await ConfigureProjectAsync(p => p.Environments =
+        [
+            new ProjectEnvironment { Name = "dev", Notify = false },
+            new ProjectEnvironment { Name = "production" }
+        ]);
+        var dev = await RunAsync(project, "dev");
+        var failingQueue = DispatchProxy.Create<IQueue<EventNotification>, FailingEnqueueProxy>();
+        var action = ActivatorUtilities.CreateInstance<QueueNotificationAction>(GetService<IServiceProvider>(), failingQueue);
+        var ev = NewEvent("production", "test");
+        ev.StackId = dev.Stack!.Id;
+        var context = new EventContext(ev, await GetOrganizationAsync(), project) { Stack = await _stackRepository.GetByIdAsync(dev.Stack.Id) };
+
+        // Act
+        var error = await Record.ExceptionAsync(() => action.ProcessAsync(context));
+        await RefreshDataAsync();
+        bool pendingAfterFailure = (await _stackRepository.GetByIdAsync(dev.Stack.Id))!.IsNewNotificationPending;
+        var retried = await RunAsync(project, "production");
+        var notifications = await DequeueNotificationsAsync();
+
+        // Assert
+        Assert.IsType<InvalidOperationException>(error);
+        Assert.True(pendingAfterFailure);
+        var notification = Assert.Single(notifications);
+        Assert.Equal(retried.Event.Id, notification.EventId);
+        Assert.True(notification.IsNew);
+        Assert.False((await _stackRepository.GetByIdAsync(dev.Stack.Id))!.IsNewNotificationPending);
+    }
+
+    private class FailingEnqueueProxy : DispatchProxy
+    {
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            return targetMethod!.Name == nameof(IQueue<EventNotification>.EnqueueAsync)
+                ? Task.FromException<string>(new InvalidOperationException("The queue is unavailable."))
+                : throw new NotSupportedException(targetMethod.Name);
+        }
+    }
+
+    [Fact]
     public async Task RunAsync_WhenProductionEventsArriveConcurrentlyForPendingStack_NotifiesAsNewExactlyOnce()
     {
         // Arrange
