@@ -33,13 +33,10 @@ public class EventBulkSelectionResolver : EventQueryBulkSelectionResolver
 
     protected override async Task<BulkSelectionPage> FindPageAsync(RepositoryQuery<PersistentEvent> query, string? cursor, int size)
     {
-        query.Include(e => e.Id).SortExpression($"-{EventIndex.Alias.Date}");
+        // The id breaks ties between events of the same date so the cursor never skips or repeats one.
+        query.SortExpression($"-{EventIndex.Alias.Date} id");
 
-        var results = await _eventRepository.FindAsync(query,
-            new CommandOptions<PersistentEvent>().SearchAfterToken(cursor, Serializer).PageLimit(size).TrackTotalHits(false));
-
-        string[] ids = results.Hits.Select(h => h.Id).Where(id => !String.IsNullOrEmpty(id)).Select(id => id!).ToArray();
-        string? nextCursor = results.Hits.LastOrDefault()?.GetSortToken(Serializer);
-        return new BulkSelectionPage(ids, ids.Length > 0 ? nextCursor : null);
+        var page = await _eventRepository.GetEventIdPageAsync(query, cursor, size);
+        return new BulkSelectionPage(page.StackIds.ToArray(), page.NextAfterStackId);
     }
 }

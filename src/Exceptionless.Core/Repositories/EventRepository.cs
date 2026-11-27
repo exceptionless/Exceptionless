@@ -17,6 +17,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 {
     private const string StackIdsAggregation = "stack_ids";
     private const string CompositeStackIdSource = "stack_id";
+    private const string StackCountAggregation = "stack_count";
     private readonly TimeProvider _timeProvider;
 
     public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, MiniValidationValidator validator)
@@ -217,7 +218,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         ArgumentNullException.ThrowIfNull(query);
         ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
 
-        var options = ConfigureOptions(new CommandOptions<PersistentEvent>().TrackTotalHits(false));
+        var options = ConfigureOptions(new CommandOptions<PersistentEvent>().TrackTotalHits(false).SoftDeleteMode(SoftDeleteQueryMode.ActiveOnly));
         var search = await CreateSearchDescriptorAsync(query, options);
         var composite = new CompositeAggregation
         {
@@ -234,16 +235,78 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         if (!response.IsValidResponse)
             throw new DocumentException($"Error while paging stack ids: {response.ElasticsearchServerError?.Error?.Reason ?? response.DebugInformation}", response.ApiCallDetails.OriginalException);
 
+        EnsureComplete(response.Shards, response.TimedOut, "paging stack ids");
+
         var buckets = response.Aggregations?.GetComposite(StackIdsAggregation)?.Buckets ?? [];
         string[] stackIds = buckets.Select(b => b.Key[CompositeStackIdSource].ToString()!).ToArray();
         return new StackIdPage(stackIds, stackIds.Length >= size ? stackIds[^1] : null);
     }
 
+    public async Task<StackIdPage> GetEventIdPageAsync(IRepositoryQuery query, string? cursor, int size)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+
+        var options = ConfigureOptions(new CommandOptions<PersistentEvent>().TrackTotalHits(false).SoftDeleteMode(SoftDeleteQueryMode.ActiveOnly));
+        var search = await CreateSearchDescriptorAsync(query, options);
+        search.Size(size).Source(false);
+        if (!String.IsNullOrEmpty(cursor))
+            search.SearchAfter(DecodeSortValues(cursor));
+
+        var response = await _client.SearchAsync<PersistentEvent>(search);
+        if (!response.IsValidResponse)
+            throw new DocumentException($"Error while paging event ids: {response.ElasticsearchServerError?.Error?.Reason ?? response.DebugInformation}", response.ApiCallDetails.OriginalException);
+
+        EnsureComplete(response.Shards, response.TimedOut, "paging event ids");
+
+        string[] ids = response.Hits.Where(h => !String.IsNullOrEmpty(h.Id)).Select(h => h.Id!).ToArray();
+        var last = response.Hits.LastOrDefault();
+        return new StackIdPage(ids, ids.Length > 0 && last?.Sort is not null ? EncodeSortValues(last.Sort) : null);
+    }
+
     public async Task<long> CountStacksAsync(IRepositoryQuery query)
     {
-        var result = await CountAsync(query.AggregationsExpression("cardinality:stack_id"), new CommandOptions<PersistentEvent>().TrackTotalHits(false));
-        double? count = result.Aggregations.Cardinality("cardinality_stack_id")?.Value;
+        ArgumentNullException.ThrowIfNull(query);
+
+        var options = ConfigureOptions(new CommandOptions<PersistentEvent>().TrackTotalHits(false).SoftDeleteMode(SoftDeleteQueryMode.ActiveOnly));
+        var search = await CreateSearchDescriptorAsync(query, options);
+        search.Size(0).Aggregations(a => a.Add(StackCountAggregation, new Aggregation { Cardinality = new CardinalityAggregation { Field = InferField(e => e.StackId) } }));
+
+        var response = await _client.SearchAsync<PersistentEvent>(search);
+        if (!response.IsValidResponse)
+            throw new DocumentException($"Error while counting stacks: {response.ElasticsearchServerError?.Error?.Reason ?? response.DebugInformation}", response.ApiCallDetails.OriginalException);
+
+        EnsureComplete(response.Shards, response.TimedOut, "counting stacks");
+
+        double? count = response.Aggregations?.GetCardinality(StackCountAggregation)?.Value;
         return count.HasValue ? Convert.ToInt64(count.Value) : 0;
+    }
+
+    /// <summary>
+    /// A search can answer 200 with some shards failed or the search timed out, and then holds only part of the matches. Applying a
+    /// partial page would skip the rest while the task reports success, so such a page is an error and the worker retries it.
+    /// </summary>
+    public static void EnsureComplete(ShardStatistics? shards, bool? timedOut, string operation)
+    {
+        if (timedOut is true)
+            throw new DocumentException($"The search timed out while {operation}; the result may be incomplete.");
+
+        if (shards is not null && shards.Failed > 0)
+            throw new DocumentException($"{shards.Failed} of {shards.Total} shards failed while {operation}; the result may be incomplete.");
+    }
+
+    private static string EncodeSortValues(IEnumerable<FieldValue> values)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(values.Select(v => v.TryGetLong(out long? l) && l.HasValue ? (object)l.Value : v.TryGetString(out string? str) && str is not null ? str : throw new NotSupportedException("Unsupported sort value.")));
+    }
+
+    private static List<FieldValue> DecodeSortValues(string cursor)
+    {
+        var values = new List<FieldValue>();
+        foreach (var element in System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(cursor)!)
+            values.Add(element.ValueKind is System.Text.Json.JsonValueKind.Number ? FieldValue.Long(element.GetInt64()) : FieldValue.String(element.GetString()!));
+
+        return values;
     }
 
     public Task<long> RemoveAllByStackIdsAsync(string[] stackIds)

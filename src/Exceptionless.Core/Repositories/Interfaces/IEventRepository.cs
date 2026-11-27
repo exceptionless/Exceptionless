@@ -21,6 +21,12 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
     /// </summary>
     Task<StackIdPage> GetStackIdPageAsync(IRepositoryQuery query, string? afterStackId, int size);
 
+    /// <summary>
+    /// Pages the ids of the events that match the query in the order of the query's sort. The cursor is the sort position of the last
+    /// event of the previous page. Throws when the search answered only partly (failed shards or a timeout).
+    /// </summary>
+    Task<StackIdPage> GetEventIdPageAsync(IRepositoryQuery query, string? cursor, int size);
+
     /// <summary>Approximately how many distinct stacks the events matching the query belong to.</summary>
     Task<long> CountStacksAsync(IRepositoryQuery query);
 }
