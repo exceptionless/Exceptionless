@@ -189,6 +189,23 @@ if (ctx._source.{field} == true) {{
         return Cache.AddAsync(GetClaimCacheKey(stack, kind), true, _claimGuardExpiration);
     }
 
+    public async Task ReleaseNotificationAsync(Stack stack, PendingStackNotification kind)
+    {
+        string field = GetPendingField(kind);
+        try
+        {
+            await PatchAsync(stack.Id, new ScriptPatch($"ctx._source.{field} = true;"), o => o.Notifications(false));
+            await InvalidateStackCacheAsync(stack);
+        }
+        catch (DocumentNotFoundException)
+        {
+            return;
+        }
+
+        // Remove the guard last. If this fails the flag is set but the next claim is refused, which is no worse than before the release.
+        await Cache.RemoveAsync(GetClaimCacheKey(stack, kind));
+    }
+
     public async Task UpdateTagsAsync(Stack stack)
     {
         // Only the tags change, so patch them instead of saving the whole document. A stale copy must not overwrite fields that other

@@ -51,13 +51,24 @@ public class QueueNotificationAction : EventPipelineActionBase
             ? await _stackRepository.TryReserveNotificationAsync(ctx.Stack, PendingStackNotification.Regression)
             : IsAfterFix(ctx) && await ClaimPendingAsync(ctx, PendingStackNotification.Regression);
         if (ShouldQueueNotification(ctx, isNew, isRegression))
-            await _notificationQueue.EnqueueAsync(new EventNotification
+        {
+            try
             {
-                EventId = ctx.Event.Id,
-                IsNew = isNew,
-                IsRegression = isRegression,
-                TotalOccurrences = ctx.Stack.TotalOccurrences
-            });
+                await _notificationQueue.EnqueueAsync(new EventNotification
+                {
+                    EventId = ctx.Event.Id,
+                    IsNew = isNew,
+                    IsRegression = isRegression,
+                    TotalOccurrences = ctx.Stack.TotalOccurrences
+                });
+            }
+            catch (Exception) when (isNew || isRegression)
+            {
+                // The claim is already spent. Put it back so the next occurrence sends the notification instead of losing it.
+                await ReleaseAsync(ctx.Stack, isNew, isRegression);
+                throw;
+            }
+        }
 
         var webHooks = await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId);
         foreach (var hook in webHooks.Documents)
@@ -98,6 +109,28 @@ public class QueueNotificationAction : EventPipelineActionBase
             return true;
 
         return await ClaimPendingAsync(ctx, PendingStackNotification.New);
+    }
+
+    private async Task ReleaseAsync(Stack stack, bool isNew, bool isRegression)
+    {
+        try
+        {
+            if (isNew)
+            {
+                await _stackRepository.ReleaseNotificationAsync(stack, PendingStackNotification.New);
+                stack.IsNewNotificationPending = true;
+            }
+
+            if (isRegression)
+            {
+                await _stackRepository.ReleaseNotificationAsync(stack, PendingStackNotification.Regression);
+                stack.IsRegressionNotificationPending = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to release the notification claim for stack {StackId}: {Message}", stack.Id, ex.Message);
+        }
     }
 
     /// <summary>

@@ -27,6 +27,11 @@ public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Sta
     Task<bool> TryReserveNotificationAsync(Stack stack, PendingStackNotification kind);
 
     /// <summary>
+    /// Undoes a claim or reservation when the notification could not be queued, so the next occurrence sends it instead.
+    /// </summary>
+    Task ReleaseNotificationAsync(Stack stack, PendingStackNotification kind);
+
+    /// <summary>
     /// Updates only the tags of the stack.
     /// </summary>
     Task UpdateTagsAsync(Stack stack);
