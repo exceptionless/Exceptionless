@@ -10,12 +10,14 @@
         confirm: () => Promise<void>;
         /** The estimated number of matching stacks. */
         count: number;
+        /** What the chosen option does, e.g. how long a snooze lasts. */
+        detail?: string;
         /** What happens, e.g. "Mark Matching Stacks Ignored". Used as the title and the button label. */
         label: string;
         open: boolean;
     }
 
-    let { confirm, count, label, open = $bindable() }: Props = $props();
+    let { confirm, count, detail, label, open = $bindable() }: Props = $props();
     let submitting = $state(false);
 
     async function onSubmit() {
@@ -42,6 +44,9 @@
             <AlertDialog.Description>
                 About <Number value={count} />
                 {count === 1 ? 'stack matches' : 'stacks match'} this filter. The final count may differ.
+                {#if detail}
+                    {detail}
+                {/if}
             </AlertDialog.Description>
         </AlertDialog.Header>
         <AlertDialog.Footer>

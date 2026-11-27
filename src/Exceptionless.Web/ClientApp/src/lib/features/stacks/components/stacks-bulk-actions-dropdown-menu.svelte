@@ -30,6 +30,8 @@
     import RemoveStackDialog from './dialogs/remove-stack-dialog.svelte';
 
     interface PendingConfirm {
+        /** What the choice does, shown in the confirmation, e.g. the snooze duration and when it ends. */
+        detail?: string;
         label: string;
         parameters: Record<string, string>;
         success: string;
@@ -229,26 +231,32 @@
         table.resetRowSelection();
     }
 
-    async function markSnoozed(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
-        let snoozeUntilUtc = new SvelteDate();
+    async function markSnoozed(timePeriod: '6hours' | 'day' | 'month' | 'week') {
+        const snoozeUntilUtc = new SvelteDate();
+        let duration: string;
         switch (timePeriod) {
             case '6hours':
                 snoozeUntilUtc.setHours(snoozeUntilUtc.getHours() + 6);
+                duration = '6 hours';
                 break;
             case 'day':
                 snoozeUntilUtc.setDate(snoozeUntilUtc.getDate() + 1);
+                duration = '1 day';
                 break;
             case 'week':
                 snoozeUntilUtc.setDate(snoozeUntilUtc.getDate() + 7);
+                duration = '1 week';
                 break;
             case 'month':
             default:
                 snoozeUntilUtc.setMonth(snoozeUntilUtc.getMonth() + 1);
+                duration = '1 month';
                 break;
         }
 
         if (allMatching) {
             requestConfirm({
+                detail: `Snooze for ${duration}, until ${snoozeUntilUtc.toLocaleString()}.`,
                 label: 'Snooze Matching Stacks',
                 parameters: {
                     snooze_until_utc: snoozeUntilUtc.toISOString()
@@ -366,9 +374,7 @@
             <DropdownMenu.Item title="Mark stacks as open" onclick={() => markOpen()}>Mark Open</DropdownMenu.Item>
             <DropdownMenu.Item title="Mark stacks as fixed" onclick={() => openDialog('fixed')}>Mark Fixed</DropdownMenu.Item>
             <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger title="Hide stacks from reports and mutes occurrence notifications" onclick={() => markSnoozed()}
-                    >Mark Snoozed</DropdownMenu.SubTrigger
-                >
+                <DropdownMenu.SubTrigger title="Hide stacks from reports and mutes occurrence notifications">Mark Snoozed</DropdownMenu.SubTrigger>
                 <DropdownMenu.SubContent>
                     <DropdownMenu.Item onclick={() => markSnoozed('6hours')}>6 Hours</DropdownMenu.Item>
                     <DropdownMenu.Item onclick={() => markSnoozed('day')}>1 Day</DropdownMenu.Item>
@@ -400,5 +406,11 @@
     <RemoveStackDialog bind:open={openRemoveStackDialog} {remove} count={selectedCount} matchingFilter={!!allMatching} />
 {/if}
 {#if openConfirmDialog && pendingConfirm}
-    <ConfirmMatchingStacksDialog bind:open={openConfirmDialog} confirm={runPending} count={selectedCount} label={pendingConfirm.label} />
+    <ConfirmMatchingStacksDialog
+        bind:open={openConfirmDialog}
+        confirm={runPending}
+        count={selectedCount}
+        detail={pendingConfirm.detail}
+        label={pendingConfirm.label}
+    />
 {/if}

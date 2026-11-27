@@ -114,19 +114,43 @@ describe('StacksBulkActionsDropdownMenu', () => {
         expect(mutations.changeStatus).not.toHaveBeenCalled();
     });
 
-    it('starts a snooze on everything matching with an end time in the future (one month by default)', async () => {
+    it('only opens the snooze durations when the submenu is opened with the keyboard', async () => {
         // Arrange
         renderMatching();
-        await choose('Mark Snoozed');
+        await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+        const trigger = screen.getByRole('menuitem', { name: 'Mark Snoozed' });
+        trigger.focus();
 
         // Act
+        await fireEvent.keyDown(trigger, { key: 'ArrowRight' });
+
+        // Assert
+        expect(await screen.findByRole('menuitem', { name: '6 Hours' })).toBeTruthy();
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+        expect(startBulk).not.toHaveBeenCalled();
+    });
+
+    it('confirms the chosen snooze duration and its end time before snoozing everything matching', async () => {
+        // Arrange
+        renderMatching();
+        await fireEvent.click(screen.getByRole('button', { name: 'Actions' }));
+        const trigger = screen.getByRole('menuitem', { name: 'Mark Snoozed' });
+        trigger.focus();
+        await fireEvent.keyDown(trigger, { key: 'ArrowRight' });
+
+        // Act
+        await fireEvent.click(await screen.findByRole('menuitem', { name: '6 Hours' }));
+        const dialogText = screen.getByRole('alertdialog').textContent?.replace(/\s+/g, ' ');
         await fireEvent.click(screen.getByRole('button', { name: 'Snooze Matching Stacks' }));
 
         // Assert
+        expect(dialogText).toContain('Snooze for 6 hours, until ');
         await waitFor(() => expect(startBulk).toHaveBeenCalledOnce());
         const request = startBulk.mock.calls[0]![0];
         expect(request.type).toBe('stacks.snooze');
-        expect(new Date(request.parameters.snooze_until_utc).getTime()).toBeGreaterThan(Date.now() + 27 * 24 * 3600 * 1000);
+        const hours = (new Date(request.parameters.snooze_until_utc).getTime() - Date.now()) / 3600000;
+        expect(hours).toBeGreaterThan(5.9);
+        expect(hours).toBeLessThan(6.1);
     });
 
     it('starts mark fixed with the optional version and deletes with no parameters', async () => {
