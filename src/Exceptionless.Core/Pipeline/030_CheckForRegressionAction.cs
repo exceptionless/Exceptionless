@@ -80,14 +80,13 @@ public class CheckForRegressionAction : EventPipelineActionBase
                 bool notificationPending = !regressedContext.Project.ShouldNotifyForEnvironment(regressedContext.Event.Environment);
                 await _stackRepository.MarkAsRegressedAsync(stack, notificationPending);
 
-                // Events with an explicit stack id can each carry their own copy of the stack, so update every copy in the group.
+                // Every event in the group shares this stack instance, so update it once.
+                stack.Status = StackStatus.Regressed;
+                stack.IsNewNotificationPending = false;
+                stack.IsRegressionNotificationPending = notificationPending;
+
                 foreach (var ctx in stackGroup)
-                {
-                    ctx.Stack!.Status = StackStatus.Regressed;
-                    ctx.Stack.IsNewNotificationPending = false;
-                    ctx.Stack.IsRegressionNotificationPending = notificationPending;
                     ctx.IsRegression = ctx == regressedContext;
-                }
             }
             catch (Exception ex)
             {
