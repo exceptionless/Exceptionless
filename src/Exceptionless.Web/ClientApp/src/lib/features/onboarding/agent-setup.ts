@@ -17,8 +17,8 @@ export const AGENT_TARGETS: readonly AgentTargetOption[] = [
 /** Published from docs/public/setup.md.txt on the website, so hosted agents can read it even for self-hosted installs. */
 export const AGENT_SETUP_URL = 'https://exceptionless.com/setup.md';
 
-/** The hosted collector the clients use by default. */
-const DEFAULT_SUBMISSION_URL = 'https://collector.exceptionless.io';
+/** The hosted REST API, for requests sent without a client. */
+const DEFAULT_SUBMISSION_URL = 'https://api.exceptionless.io';
 
 const FENCE_LANGUAGES: Record<CodeLanguage, string> = {
     csharp: 'csharp',
@@ -40,7 +40,7 @@ export function buildAgentSetupMarkdown(): string {
         [
             "- Replace `YOUR_API_KEY` with the API key the user gave you. If they didn't give one, ask for it. It's on the project's API Keys page in Exceptionless.",
             `- Replace \`YOUR_SERVER_URL\` with the server URL the user gave you. If they didn't give one, leave out the lines that set the server URL, and send REST API requests to \`${DEFAULT_SUBMISSION_URL}\`.`,
-            '- The API key can only submit events, so it is fine in client code and committed config, like any client SDK key. If the project keeps settings in configuration or environment variables, put the key and server URL there.',
+            '- A client API key can only send events, read client configuration, and connect the project to Zapier, so it is fine in shipped client code. Prefer configuration or environment variables so the key can be rotated. Never put a user or OAuth token in client code.',
             '- JavaScript clients queue events until `Exceptionless.startup()` finishes, so there is no need to await it.',
             "- A `localhost` server URL only works on the user's own machine. Phones and emulators need the machine's network address instead (`10.0.2.2` on the Android emulator)."
         ].join('\n'),

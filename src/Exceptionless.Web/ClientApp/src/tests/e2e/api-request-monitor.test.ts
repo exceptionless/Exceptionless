@@ -12,13 +12,16 @@ test('tracks application requests until they settle without waiting for browser 
     const request = (method: string, path: string) => ({ method: () => method, url: () => `https://web-ex.dev.localhost:7131${path}` }) as Request;
     const telemetry = request('POST', '/api/v2/events');
     const heartbeat = request('GET', '/api/v2/events/session/heartbeat?close=true');
+    const telemetryConfig = request('GET', '/api/v2/projects/config?v=0');
     const detail = request('GET', '/api/v2/events/123456789012345678901234');
     const eventList = request('GET', '/api/v2/organizations/123/events');
+    const projectConfig = request('GET', '/api/v2/projects/123/config');
     const monitor = trackPendingApiRequests(page);
 
     // Act
     events.emit('request', telemetry);
     events.emit('request', heartbeat);
+    events.emit('request', telemetryConfig);
     events.emit('request', detail);
     const waiting = monitor.waitForPendingRequests();
     let settled = false;
@@ -28,8 +31,10 @@ test('tracks application requests until they settle without waiting for browser 
     // Assert
     expect(isApplicationApiRequest(telemetry)).toBe(false);
     expect(isApplicationApiRequest(heartbeat)).toBe(false);
+    expect(isApplicationApiRequest(telemetryConfig)).toBe(false);
     expect(isApplicationApiRequest(detail)).toBe(true);
     expect(isApplicationApiRequest(eventList)).toBe(true);
+    expect(isApplicationApiRequest(projectConfig)).toBe(true);
     expect(settled).toBe(false);
 
     // Act

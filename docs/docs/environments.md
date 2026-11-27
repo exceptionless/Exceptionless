@@ -1,98 +1,196 @@
 ---
 title: "Environments"
+description: "Tag Exceptionless events with a deployment environment such as production or staging, then filter and compare every list by environment."
+keywords:
+  - "production"
+  - "staging"
+sources:
+  - src/Exceptionless.Core/Models/Event.cs
+  - src/Exceptionless.Core/Serialization/EventEnvironmentConverter.cs
+  - src/Exceptionless.Web/Api/Handlers/EventHandler.cs
+  - src/Exceptionless.Web/Api/Endpoints/EventEndpoints.cs
+  - src/Exceptionless.Core/Repositories/Configuration/Indexes/EventIndex.cs
+  - src/Exceptionless.Core/Repositories/Queries/Validation/PersistentEventQueryValidator.cs
+  - src/Exceptionless.Core/Plugins/EventProcessor/Default/70_SessionPlugin.cs
+  - src/Exceptionless.Core/Migrations/010_AddEventEnvironment.cs
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/filters/environment-faceted-filter.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/filters/models.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/views/overview.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/events/components/table/options.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/sessions/components/session-table-columns.ts
+  - tests/http/events.http
+  - Exceptionless.Net:src/Exceptionless/Models/Client/Event.cs
+  - Exceptionless.JavaScript:packages/core/src/models/Event.ts
 ---
 
 # Environments
 
-Use an environment to distinguish production, staging, development, or a custom deployment within one project. Each event can carry one optional top-level `environment` string. The same error still belongs to one stack, with one shared status and fixed version.
+An environment names the deployment an event came from, such as `production`, `staging`, or `development`. With
+environments, one project can hold every deployment of an app, and you can filter any list down to one of them.
 
-## Configure your client
+Each event has at most one environment. The same error in staging and production is still one stack, with one status and
+one fixed version.
 
-Set a default during application startup. In the .NET client:
+## Set an event's environment
 
-```csharp
-client.Configuration.SetEnvironment("production");
-client.CreateLog("Deployment complete").SetEnvironment("staging").Submit();
+An event gets an environment from the `environment` property at the top level of the event:
+
+```bash tab="POST"
+curl -X POST "https://api.exceptionless.io/api/v2/events" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "log",
+    "message": "Deployment complete",
+    "environment": "production"
+  }'
 ```
 
-You can also set `Exceptionless:Environment` in .NET configuration, or the `Exceptionless__Environment` environment variable. The hosting integration uses `IHostEnvironment.EnvironmentName` when no explicit environment is configured. A per-event value overrides the default.
-
-In the JavaScript client:
-
-```javascript
-await Exceptionless.startup((config) => {
-  config.apiKey = "API_KEY_HERE";
-  config.environment = "production";
-});
-
-await Exceptionless.createLog("Deployment complete")
-  .setEnvironment("staging")
-  .submit();
+```bash tab="GET"
+curl "https://api.exceptionless.io/api/v2/events/submit?access_token=YOUR_API_KEY&type=log&message=Deployment+complete&environment=production"
 ```
 
-For direct API submissions:
+The `POST` body can also be an array of events, each with its own environment. See
+[Posting events](/docs/api/posting-events/) and the [event format](/docs/reference/event-format/).
 
-```json
-{
-  "type": "log",
-  "message": "Deployment complete",
-  "environment": "production"
-}
-```
+> [!IMPORTANT]
+> The .NET 6.2.0 and JavaScript 3.2.1 clients don't set an environment, so their events show as **Unspecified**. Setting
+> a custom data property named `environment`, for example with `SetProperty` or `setProperty`, adds custom data and
+> doesn't set the event's environment.
 
-Names are identifiers, so they can be used in filters and scripts: 1 to 64 ASCII letters, digits, periods (`.`), underscores (`_`), or hyphens (`-`), starting with a letter or digit. Surrounding whitespace is trimmed. Events preserve the supplied casing: `" Production "` is stored and returned as `"Production"`. Filtering is case-insensitive, and aggregation keys are normalized to lowercase, so `Production` and `production` share one environment bucket. Custom names such as `qa-west`, `staging.eu`, or `dev_local` are supported. Names with spaces or other characters (for example `Staging West` or `prod/eu`), empty or oversized names, and non-string values are treated as unspecified; they are never rewritten. Historical events and older clients without this field remain unspecified; they are never assumed to be production.
+> [!NOTE]
+> On a self-hosted instance, use your own API URL instead of `https://api.exceptionless.io`.
 
-## Filter your data
+### Naming rules
 
-Choose **Manage filters → Environment** on Events, Stacks, Sessions, or Stream. Select one or more names, or **Unspecified** for events without an environment. Clear the selection to include all environments. The picker discovers names for the selected projects and time range; you can also enter a name that has no current events.
+- Leading and trailing spaces are trimmed, and the name keeps its casing: `" Production "` is stored as `Production`.
+- A name is 1 to 64 ASCII letters, digits, periods (`.`), underscores (`_`), or hyphens (`-`), and starts with a letter
+  or digit. Custom names such as `qa-west`, `staging.eu`, or `dev_local` are fine.
+- Filters ignore case, so `Production` and `production` are the same environment.
+- A value that isn't a valid name, such as `Staging West`, `prod/eu`, an empty string, a number, an object, or a name
+  over 64 characters, leaves the event unspecified. The value is kept in the event's custom data under `environment`
+  instead, or `environment1` if that key is already taken.
 
-Environment selections persist in URLs and saved views. Events, sessions, and stream tables have an optional Environment column. Event details show Environment in the overview when the event has one; **Machine & runtime** contains the existing `data.@environment` diagnostics.
+### Environment isn't machine information
 
-Environment searches and aggregations are available on every plan:
+The **Machine & runtime** tab of an event shows details the client collects about the machine and process, such as the
+machine name, OS, and runtime version. Those aren't the deployment environment and don't set it.
 
-| Search | Meaning |
-| --- | --- |
-| `environment:production` | Production events |
-| `(environment:production OR environment:staging)` | Either deployment |
-| `_missing_:environment` | Historical or unspecified events |
-| `_exists_:environment` | Events with an environment |
-| `environment:"qa west"` | A custom name containing spaces |
+## Filter by environment
 
-Stack dashboard counts and charts use events matching the filter. Stack status remains shared, so changing status while viewing production also changes the same stack seen in staging. Automatic session detection separates the same user's activity by environment. Session heartbeats do not include an environment, so a heartbeat keeps the user's open sessions active in every environment.
+On **Stacks**, **Events**, or **Sessions**, select **Manage filters** > **Environment** and pick one or more names.
+**Unspecified** matches events without an environment. To filter by a name that hasn't sent events in the time range,
+type it and select **Use** _name_.
 
-The **New** view is not environment-aware. A stack is dated from its first event in any environment. For notifications, see [Manage environments](#manage-environments) below.
+Save the filter in a [saved view](/docs/saved-views/), such as "Production errors", so you don't set it each time. In a
+raw filter or the API, use these queries:
 
-## Manage environments
+| Query                                             | Finds                         |
+| ------------------------------------------------- | ----------------------------- |
+| `environment:production`                          | Production events             |
+| `(environment:production OR environment:staging)` | Either environment            |
+| `_missing_:environment`                           | Events without an environment |
+| `_exists_:environment`                            | Events with an environment    |
 
-Open **Project Settings → Environments** to list the environments a project uses. Listed names are shown in the casing you type (for example `Production`) in the Environment filter, event details, and notification emails, while matching stays case-insensitive. Adding or removing a name never changes or deletes events, and the server never adds names to the list on its own: environments that appear in your data show up in the table marked **Not added**, with an **Add** action. A project can list up to 100 environments, and a name follows the same rules as an event's environment.
+Environment filters work on every plan. See the [search syntax](/docs/reference/search-syntax/).
 
-These settings control what happens to events from environments that are not listed. Projects with no list and default settings behave exactly as before.
+## Where environments appear
 
-| Setting | Default | Meaning |
-| --- | --- | --- |
-| **Accept events from:** Only environments in this list | Off (Any environment) | Events whose environment is not in the list are discarded before they are stored or stacked. They count as discarded events in your usage and do not count toward your plan limit, like events for a discarded stack. |
-| **Also accept events that don't send an environment** | On | Only shown when the setting above is on. When unchecked, events without an environment are discarded too. Session heartbeats and session ends, which never carry an environment, are never discarded for this reason. |
-| **Other environments** notifications | On | The last row of the table. Applies to environments that are not listed and to events without an environment. Each listed environment has its own **Notifications** toggle. |
+- **Event details**: the **Overview** tab shows **Environment** when the event has one. Select the filter icon next to
+  it to filter the list by that environment.
+- **Columns**: the **Events** and **Sessions** lists have an **Environment** column, hidden by default. Add it with
+  **View** > **Manage Columns...**. Events without an environment show **Unspecified**.
+- **Stack lists**: there's no environment column, because a stack can span environments. With an environment filter, the
+  event and user counts in the list include only that environment's events.
 
-Ingestion acknowledges events before they are processed, so a client cannot see that an event was discarded. The **Discarded** section, shown while only listed environments are accepted or when anything was discarded, shows the names that were rejected in the last 7 days (up to 50 names per project), how many events each had, and an **Allow** action that adds the name to the list. This is the quickest way to find a misspelled environment such as `prodution`. Events without an environment are shown as their own row.
+## Stacks and statuses across environments
+
+Environments don't split stacks, so a stack's status is shared. Marking a stack fixed while you look at production also
+marks it fixed in staging.
+
+When environments run different releases, mark stacks fixed in a version. If a stack is fixed in `2.4.0` and staging
+already runs it, events from production on `2.3.0` don't reopen the stack. Continue sending your app's version with
+every event so this works. See [Releases and regressions](/docs/versioning/).
+
+**New Stacks** counts don't look at environments: a stack is dated from its first event in any environment.
+Notifications do; see [Notifications by environment](#notifications-by-environment).
+
+## Manage a project's environments
+
+Open **Project Settings** > **Environments** to list the environments a project uses. A listed name is shown in the
+casing you typed, such as `Production`, in the Environment filter, event details, and notification emails. Matching
+still ignores case. A project can list up to 100 environments.
+
+Adding or removing a name never changes or deletes events, and Exceptionless never adds names to the list on its own.
+Environments that sent events in the last 30 days show up in the table with an **Add** action.
+
+### Discard events from unlisted environments
+
+Projects accept events from any environment by default. To accept only listed ones, set **Accept events from** to **Only
+environments in this list**:
+
+- Events from an unlisted environment are discarded before they're stored or stacked. They count as discarded events and
+  don't count toward your plan limit, like events for a discarded stack.
+- **Also accept events that don't send an environment** is on by default. Turn it off to discard those events too.
+  Session heartbeats and session ends never carry an environment and are never discarded for this reason.
+- Clients are told the events were accepted, so nothing looks wrong on their side.
+
+The **Discarded** section lists the names rejected in the last 7 days, up to 50 per project, with an event count and an
+**Allow** action that adds the name to the list. It's the quickest way to spot a misspelling such as `prodution`.
+
+### Delete an environment's events {#delete-an-environments-events}
+
+To remove everything an environment sent, such as test data from a developer's machine, select **Delete events** on its
+row. The dialog shows about how many events from all time will be deleted; the final count can differ. Confirm to start.
+The delete runs as a [background task](/docs/events/#background-tasks) and can't be undone. Deleting events doesn't
+remove the environment from the list. To stop new events from it, also
+[discard unlisted environments](#discard-events-from-unlisted-environments).
 
 ### Notifications by environment
 
-An event can send notifications (email, Slack, and web hooks) only when its environment notifies: a listed environment with notifications on, or an unlisted environment or no environment while **Other environments** notifications are on.
+Each listed environment has its own **Notifications** toggle. The **Other environments** row covers unlisted
+environments and events without one. An event sends notifications (email, Slack, and web hooks) only from an environment
+that notifies.
 
-- Critical error and critical event notifications are sent only for events from a notifying environment.
-- A new error or new event notification is sent the first time a stack occurs in a notifying environment. If an error is first seen in `dev` and `dev` does not notify, nothing is sent; the first time the same error occurs in `Production`, you get the new error notification, and it is not reported as new again in other environments.
-- A regression works the same way as a new stack. If a fixed stack regresses in an environment that does not notify, nothing is sent; the first time the regressed stack occurs in a notifying environment, you get the regression notification. A regression in a notifying environment notifies immediately, as it always has. Changing the stack's status (for example marking it fixed or ignored) drops a regression or new notification that was still waiting.
-- Stacks that existed before environments could be managed are treated as already reported, so deploying this change does not send new notifications for old stacks.
-- Notification emails and Slack messages mention the environment, for example "New error in Production".
-- Daily summaries are unchanged and still include events from every environment.
+- **New stacks**: you're notified the first time a stack occurs in a notifying environment. An error first seen in a
+  muted `dev` sends nothing; its first occurrence in `Production` sends the new error notification, once.
+- **Regressions**: work the same way. A regression in a notifying environment notifies right away. Changing the stack's
+  status drops a notification that's still waiting.
+- **Critical events**: notify only from a notifying environment.
+- Stacks created before environments could be managed are treated as already reported.
+- Notification emails and Slack messages name the environment, for example "New error in Production". Daily summaries
+  still include every environment.
 
-## Fixing stacks across deployments
+## Sessions
 
-Use [fixed in version](/docs/versioning/) when environments run different releases. For example, if a stack is fixed in `2.4.0`, occurrences from production running `2.3.0` do not represent a regression just because staging already has the fix. Continue sending the application version with events. Plain **Fixed**, without a version, retains its existing behavior across all environments.
+When Exceptionless builds sessions from a user's events, it keeps each environment's sessions apart. Session heartbeats
+don't carry an environment, so a heartbeat keeps the user's open sessions active in every environment. See
+[Sessions](/docs/user-sessions/).
 
-## Rollout
+## Self-hosting
 
-Deploy the server before adopting SDK versions that expose the new setting. The server adds mappings to existing event indices without rewriting historical events. Self-hosted installs should let the migration job finish before the new API and job instances process events: events written to an existing index before the mapping is added keep their environment but cannot be filtered or aggregated by it. Clients that do not send an environment continue to work. `data.@environment` and custom `data.environment` values retain their existing meanings.
+The 9.0 upgrade adds the environment field to existing event indexes without reindexing. Before you accept or process
+events with the upgraded deployment, let that migration finish, using the
+[ordered upgrade procedure](/docs/self-hosting/upgrading-self-hosted-instance/#upgrade). Events stored in an existing
+index before the migration ran keep their environment, but you can't filter or count them by it.
 
-Before this release, the server stored an unrecognized root `environment` property as custom data in `data.environment`. A valid root `environment` string is now stored only as the event's environment, trimmed, so read it from `environment` instead of `data.environment`. Any other root value, such as null, an object, a number, a blank string, or an oversized name, is still stored as `data.environment`. If `data.environment` already exists, that value uses the next available key (`environment1`, `environment2`, and so on).
+## Ask Exie
+
+```prompt exie
+Which environments had the most errors in the last 7 days?
+```
+
+```prompt exie
+What are the top errors in production since yesterday?
+```
+
+```prompt exie
+Is the checkout timeout happening in staging as well as production?
+```
+
+With the [MCP server](/docs/ai/mcp-server/) connected, your coding agent can compare environments while it works:
+
+```prompt agent
+Using Exceptionless, list the errors that occur in staging but not in production over the last 7 days, and check
+whether any of them come from code changed on this branch.
+```

@@ -1,1126 +1,195 @@
 ---
 title: "Upgrading"
+metaTitle: "Upgrade a self-hosted Exceptionless instance"
+description: "Upgrade self-hosted Exceptionless to 9.0: run migrations, configure trusted reverse proxies, and review the changes for operators."
+sources:
+  - src/Exceptionless.Core/Jobs/Elastic/MigrationJob.cs
+  - src/Exceptionless.Core/Bootstrapper.cs
+  - src/Exceptionless.Job/JobRunnerOptions.cs
+  - src/Exceptionless.Core/Migrations/MigrationRerunService.cs
+  - src/Exceptionless.Web/Security/TrustedForwardedHeadersOptions.cs
+  - src/Exceptionless.Core/Configuration/AppOptions.cs
+  - src/Exceptionless.Core/Configuration/AuthOptions.cs
+  - src/Exceptionless.Core/Configuration/AssistantOptions.cs
+  - src/Exceptionless.Web/Security/FrontendContentSecurityPolicy.cs
+  - src/Exceptionless.Web/ClientApp/src/lib/features/navigation/legacy-links.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/auth/index.svelte.ts
+  - build/update-config.sh
+  - Dockerfile
+  - k8s/exceptionless/templates/config.yaml
+  - k8s/exceptionless/templates/app.yaml
+  - k8s/exceptionless/templates/jobs.yaml
+  - src/Exceptionless.Core/Migrations/010_AddEventEnvironment.cs
+  - src/Exceptionless.Job/Program.cs
+  - src/Exceptionless.Job/appsettings.Production.yml
 ---
 
 # Upgrading
 
-## Trusted proxy migration
+This page explains how to upgrade a self-hosted instance and what changed in 9.0 for the people who run it. It covers
+upgrades from 8.x.
 
-Upgrading from unrestricted forwarding requires [explicit trust for non-loopback reverse proxies](/docs/self-hosting/#reverse-proxies-and-https). Configure and verify the actual ingress peers before rollout, or client-IP limits and HTTPS detection can change. Direct hosting needs no new settings.
+## Before you upgrade
 
-**Please ensure that you have created backups before upgrading!**
+1. Check the version you're running at `/api/v2/about` on your instance.
+2. Read [what changed in 9.0](#what-changed-in-9-0) and update your configuration first, especially if a reverse proxy
+   sits in front of Exceptionless.
 
-**If you are upgrading from v1 or [v2](https://github.com/exceptionless/Exceptionless/releases/tag/v2.0.0) you will need to upgrade to [v3.0](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) before upgrading to the latest release.**
+If you run a version older than 8.0, upgrade to 8.x first. Version 8 moved to Elasticsearch 8; see the
+[8.0.0 release notes](https://github.com/exceptionless/Exceptionless/releases/tag/v8.0.0).
 
-## Upgrading from v7.1 to v8
+## Upgrade {#upgrade}
 
-We simplified the self hosting process by integrating the UI into the existing app images. As such `exceptionless/ui` docker images are deprecated and we recommend using `exceptionless/app`.
+Migrations must finish before the new version accepts or processes events. In 9.0, for example, a migration adds the
+`environment` field to existing event indexes; events stored in those indexes before it finishes can't be filtered or
+counted by environment. Upgrade in this order:
 
-We also upgraded to Elasticsearch 8 in the base images. One requirement of upgrading with existing data is the Elasticsearch data is loaded with the latest Elasticsearch 7.x release. If you are using the all in one image, first use `exceptionless/exceptionless:8.0.0-elasticsearch7` and wait for the app to startup and give it some time. Then turn off the app and then use `exceptionless/exceptionless:8.0.0` image. We will be deprecating the `exceptionless/exceptionless:8.0.0-elasticsearch7` image in the future, this is only there to help with the upgrade process.
+1. Take an Elasticsearch snapshot.
+2. Stop everything that accepts or processes events: the app, the API, and the jobs. Clients keep queued events and
+   retry later, but a client that exits before then loses events it keeps only in memory.
+3. Run the new version's migration job on its own and wait for it to exit.
+4. Search its log for `Failed running migration` and `failed to complete`. Either one means a migration failed. The job
+   exits normally even when a migration fails, so don't rely on its exit status. In `Production` mode the job logs only
+   warnings and errors, so a successful run may print nothing about migrations.
+5. Start the new version of the app, API, and jobs.
+6. Open **Settings** > **System** > **Migrations** and check that **Failed** is 0, then send a test event and find it in
+   the app.
 
-You may also need to update the connection strings. In v8.2.7 we updated the Redis Connection String to remove the `server=` prefix.
+If a migration fails, keep the app and jobs stopped. Fix the cause shown in the log and run the migration job again; a
+migration that can't resume says what to do in its `failed to complete` message. If you can't fix it, restore the
+snapshot from step 1 and start the previous version. Going back to the old images without the snapshot doesn't undo a
+migration.
 
-## Rerunning a completed migration
+### Docker Compose {#upgrade-docker-compose}
 
-Only migrations explicitly marked as safe to rerun can be started again. Create an Elasticsearch snapshot and stop older Exceptionless app and job instances before proceeding.
+With the [Docker Compose setup](/docs/self-hosting/docker/), set the new version in the `app` and `jobs` image tags in
+`compose.yaml` first. If you use `latest`, `docker compose pull` fetches the new images. Then:
 
-- In the System UI, open **System → Migrations**, choose the migration's action menu, and select **Rerun migration**. The confirmation dialog shows the exact phrase you must enter.
-- From the job image or CLI, run `dotnet Exceptionless.Job.dll Migration --rerun <id>`, using the migration ID shown in the System UI. Pass the same Elasticsearch, Redis, and other configuration used by the normal migration job.
-
-A split deployment that runs jobs outside the web process must configure a distributed queue and Redis-backed cache to use the System UI action. If those services are unavailable, use the CLI command from the job instance instead.
-
-A rerun does not change the recorded current migration version or the original migration completion timestamp. Its outcome is reported separately in the UI and application logs.
-
-## Upgrading from v7 to v7.1
-
-We made some changes to email configuration. Yoy wukk now be required to set the `EX_SmtpFrom` config map/environment variable in order to send email. The value should be in the following format: `"Exceptionless <noreply@YOUR_CUSTOM_DOMAIN_NAME>"`
-
-## Upgrading from v6 to v7
-
-A migration job will need to be run as there are several in place data migrations that need to be applied. The migrations will add new index mappings for soft delete support as well as stack status and populate various stack fields with data.
-
-1. You'll need to run an out of process `Migration` job. In order to do this you'll need to update configuration to ensure it's pointing to your Elasticsearch (e.g., `EX_ConnectionStrings__Elasticsearch` environment variable/connection string) and Redis instances.
-2. Scale down existing Exceptionless apps and jobs.
-3. Start the `Migration` job.
-   1. For docker, you just need to pass the `Migration` argument to the `exceptionless/job` container image (e.g., `docker run exceptionless/job:latest Migration`). Please remember to pass any configuration settings (e.g., connection strings) to the migration job.
-   2. For Kubernetes, you can run [`kubectl apply -f manual-migration-job.yaml`](https://github.com/exceptionless/Exceptionless/blob/master/k8s/manual-migration-job.yaml). Please note that you may have to tweak namespaces and container image version.
-4. Scale back up and you should be good to go.
-
-## Upgrading from v5 to v6
-
-Version 6 added support for Elasticsearch 7, which requires a complete data migration from Elasticsearch 5.x. This tutorial assumes you have docker/Kubernetes installed and have followed the [setup guide](/docs/self-hosting/).
-
-1. Create a new Elasticsearch 7 cluster or modify your existing `docker-compose` file to also include our Elasticsearch 7.x image (There will need to be two Elasticsearch docker instances (5.x and 7.x). Please note that we've included the Elasticsearch major version number in the data path of the docker data path, this allows you to run two versions side by side without losing the data.
-2. Add a new environment variable or config map setting for `EX_ElasticsearchToMigrate` with the value of the `EX_Elasticsearch` 5.x connection string.
-3. Add your existing Elasticsearch instance to `reindex.remote.whitelist` in Elasticsearch 7's `elasticsearch.yml`. Make sure you include the port as well, for example `reindex.remote.whitelist: 127.0.0.1:9200`.
-4. Update the existing `EX_Elasticsearch` environment variable or config map entry to point to the Elasticsearch 7.x Cluster.
-5. Scale down existing Exceptionless apps and jobs.
-6. Start the Data Migration by running the `DataMigration` job. You can run it by opening the CLI and executing `dotnet Exceptionless.Job.dll DataMigration`. If you receive a warning that the port is already used, you need to change `ASPNETCORE_URLS` first, for example `ASPNETCORE_URLS=http://+:8080`. You can also run an incremental reindex by setting the `EX_ReindexCutOffDate` with a date value (E.G., `2022-01-28T18:00:00.00Z`., environment variable or config map entry and rerunning the Migration Job.
-7. Scale up the rest of the app!
-
-## Upgrading from v4 to v5
-
-We now only provide official docker images as release artifacts. This tutorial assumes you have docker/Kubernetes installed and have followed the [setup guide](/docs/self-hosting/).
-
-1. We now can run on linux or windows as we are running on ASP.NET Core! As a result we've completely redone the configuration. For the most part we've prefixed configuration with `EX_` and simplified it as much as possible. I'd recommend taking a look at your previous configuration settings and then read over the following [configuration document](/docs/self-hosting/kubernetes#configuration) to migrate your settings.
-2. Please note that no Elasticsearch changes are required. You can continue to use your existing Elasticsearch cluster. You just need to update the connection string by following step 1.
-3. Please note that the UI and API no longer run on the same port as they are now two different docker images. You may need to update your server url accordingly in your client applications.
-
-## Upgrading from v3 to v4
-
-This process requires you to setup and configure a new Elasticsearch 5 instance and reindex your existing Elasticsearch 1.x data into the Elasticsearch 5 instance using [external reindexing](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-reindex.html). This tutorial assumes you have Elasticsearch 5 Kibana instance installed and configured.
-
-1. Edit the Elasticsearch 5's `elasticsearch.yml` configuration file.
-    1. Add the `reindex.remote.whitelist: 10.0.0.9:9200` setting with a value that contains the IP address or hostname of the 1.x server. This allows you to reindex the 1.x data into your new 5.x instance.
-    2. Temporarily comment out (with a leading `#`) the following line: `#action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*`
-    3. Restart the elasticsearch service.
-2. Open Kibana (E.G., [http://localhost:5601](http://localhost:5601)) and execute the following scripts to reindex your data.
-
-### Create Organization Index with the correct mappings:
-
-```json
-PUT organizations-v1
-{
-  "settings": {
-    "index.number_of_replicas": 1,
-    "index.number_of_shards": 3,
-    "analysis": {
-      "analyzer": {
-        "keyword_lowercase": {
-          "type": "custom",
-          "filter": [
-            "lowercase"
-          ],
-          "tokenizer": "keyword"
-        }
-      }
-    }
-  },
-  "aliases": {
-    "organizations": {}
-  },
-  "mappings": {
-    "organization": {
-      "dynamic": false,
-      "properties": {
-        "id": {
-          "type": "keyword"
-        },
-        "created_utc": {
-          "type": "date"
-        },
-        "updated_utc": {
-          "type": "date"
-        },
-        "name": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "type": "keyword",
-              "ignore_above": 256
-            }
-          }
-        },
-        "stripe_customer_id": {
-          "type": "keyword"
-        },
-        "has_premium_features": {
-          "type": "boolean"
-        },
-        "plan_id": {
-          "type": "keyword"
-        },
-        "plan_name": {
-          "type": "keyword",
-          "ignore_above": 256
-        },
-        "subscribe_date": {
-          "type": "date"
-        },
-        "billing_status": {
-          "type": "float"
-        },
-        "billing_price": {
-          "type": "double"
-        },
-        "is_suspended": {
-          "type": "boolean"
-        },
-        "retention_days": {
-          "type": "integer"
-        },
-        "invites": {
-          "type": "object",
-          "properties": {
-            "token": {
-              "type": "keyword"
-            },
-            "email_address": {
-              "type": "text",
-              "analyzer": "keyword_lowercase"
-            }
-          }
-        },
-        "usage": {
-          "type": "object",
-          "properties": {
-            "date": {
-              "type": "date"
-            },
-            "total": {
-              "type": "float"
-            },
-            "blocked": {
-              "type": "float"
-            },
-            "limit": {
-              "type": "float"
-            },
-            "too_big": {
-              "type": "float"
-            }
-          }
-        },
-        "overage_hours": {
-          "type": "object",
-          "properties": {
-            "date": {
-              "type": "date"
-            },
-            "total": {
-              "type": "float"
-            },
-            "blocked": {
-              "type": "float"
-            },
-            "limit": {
-              "type": "float"
-            },
-            "too_big": {
-              "type": "float"
-            }
-          }
-        }
-      }
-    },
-    "project": {
-      "dynamic": false,
-      "properties": {
-        "id": {
-          "type": "keyword"
-        },
-        "created_utc": {
-          "type": "date"
-        },
-        "updated_utc": {
-          "type": "date"
-        },
-        "organization_id": {
-          "type": "keyword"
-        },
-        "name": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "type": "keyword",
-              "ignore_above": 256
-            }
-          }
-        },
-        "next_summary_end_of_day_ticks": {
-          "type": "long"
-        }
-      }
-    },
-    "token": {
-      "dynamic": false,
-      "properties": {
-        "id": {
-          "type": "keyword"
-        },
-        "created_utc": {
-          "type": "date"
-        },
-        "updated_utc": {
-          "type": "date"
-        },
-        "expires_utc": {
-          "type": "date"
-        },
-        "organization_id": {
-          "type": "keyword"
-        },
-        "project_id": {
-          "type": "keyword"
-        },
-        "default_project_id": {
-          "type": "keyword"
-        },
-        "user_id": {
-          "type": "keyword"
-        },
-        "refresh": {
-          "type": "keyword"
-        },
-        "scopes": {
-          "type": "keyword"
-        },
-        "type": {
-          "type": "byte"
-        }
-      }
-    },
-    "user": {
-      "dynamic": false,
-      "properties": {
-        "id": {
-          "type": "keyword"
-        },
-        "created_utc": {
-          "type": "date"
-        },
-        "updated_utc": {
-          "type": "date"
-        },
-        "organization_ids": {
-          "type": "keyword"
-        },
-        "full_name": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "type": "keyword",
-              "ignore_above": 256
-            }
-          }
-        },
-        "email_address": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "type": "keyword",
-              "ignore_above": 256
-            }
-          },
-          "analyzer": "keyword_lowercase"
-        },
-        "verify_email_address_token": {
-          "type": "keyword"
-        },
-        "password_reset_token": {
-          "type": "keyword"
-        },
-        "roles": {
-          "type": "keyword"
-        },
-        "o_auth_accounts": {
-          "type": "object",
-          "properties": {
-            "provider": {
-              "type": "keyword"
-            },
-            "provider_user_id": {
-              "type": "keyword"
-            },
-            "username": {
-              "type": "keyword"
-            }
-          }
-        }
-      }
-    },
-    "webhook": {
-      "dynamic": false,
-      "properties": {
-        "id": {
-          "type": "keyword"
-        },
-        "created_utc": {
-          "type": "date"
-        },
-        "organization_id": {
-          "type": "keyword"
-        },
-        "project_id": {
-          "type": "keyword"
-        },
-        "url": {
-          "type": "keyword"
-        },
-        "event_types": {
-          "type": "keyword"
-        }
-      }
-    }
-  }
-}
+```bash
+docker compose stop app jobs
+docker compose pull
+docker compose run --rm --no-deps -T jobs Migration 2>&1 | tee migration.log
+grep -E "Failed running migration|failed to complete" migration.log
+docker compose up -d
 ```
 
-### Reindex Organization data from 1.x into 5.x **Please make sure you update the host name**:
+`--no-deps` keeps Compose from starting the `app` container, which the `jobs` service depends on.
 
-```json
-POST _reindex
-{
-  "source": {
-    "remote": {
-      "host": "http://10.0.0.9:9200"
-    },
-    "index": "organizations-v1"
-  },
-  "dest": {
-    "index": "organizations-v1",
-    "op_type": "create"
-  },
-  "script": {
-    "inline": "if (ctx._source.modified_utc != null) { ctx._source.updated_utc = ctx._source.remove('modified_utc'); }",
-    "lang": "painless"
-  }
-}
+### Kubernetes {#upgrade-kubernetes}
+
+With the [Helm chart](/docs/self-hosting/kubernetes/), save this as `exceptionless-stopped.yaml`. It scales every
+deployment that accepts or processes events to zero:
+
+```yaml
+app:
+  replicaCount: 0
+api:
+  replicaCount: 0
+jobs:
+  closeInactiveSessions:
+    replicaCount: 0
+  dailySummary:
+    replicaCount: 0
+  eventNotifications:
+    replicaCount: 0
+  eventPosts:
+    replicaCount: 0
+  eventUsage:
+    replicaCount: 0
+  eventUserDescriptions:
+    replicaCount: 0
+  mailMessage:
+    replicaCount: 0
+  stackEventCount:
+    replicaCount: 0
+  webhooks:
+    replicaCount: 0
+  workitem:
+    replicaCount: 0
 ```
 
-### Create Stack Index with the correct mappings:
+Set `version` to the new release in your values file, then run these commands from an up-to-date clone of the
+repository. Use a new job name each time:
 
-```json
-PUT stacks-v1
-{
-  "settings": {
-    "index.number_of_replicas": 1,
-    "index.number_of_shards": 3
-  },
-  "aliases": {
-    "stacks": {}
-  },
-  "mappings": {
-    "stacks": {
-      "include_in_all": false,
-      "dynamic": false,
-      "properties": {
-        "id": {
-          "type": "keyword"
-        },
-        "organization_id": {
-          "type": "keyword"
-        },
-        "project_id": {
-          "type": "keyword"
-        },
-        "signature_hash": {
-          "type": "keyword"
-        },
-        "type": {
-          "type": "keyword"
-        },
-        "first_occurrence": {
-          "type": "date"
-        },
-        "last_occurrence": {
-          "type": "date"
-        },
-        "title": {
-          "type": "text",
-          "boost": 1.1,
-          "include_in_all": true
-        },
-        "description": {
-          "type": "text",
-          "include_in_all": true
-        },
-        "tags": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "type": "keyword",
-              "ignore_above": 256
-            }
-          },
-          "boost": 1.2,
-          "include_in_all": true
-        },
-        "references": {
-          "type": "text",
-          "include_in_all": true
-        },
-        "date_fixed": {
-          "type": "date"
-        },
-        "fixed": {
-          "type": "boolean"
-        },
-        "fixed_in_version": {
-          "type": "keyword"
-        },
-        "is_hidden": {
-          "type": "boolean"
-        },
-        "is_regressed": {
-          "type": "boolean"
-        },
-        "occurrences_are_critical": {
-          "type": "boolean"
-        },
-        "total_occurrences": {
-          "type": "integer"
-        }
-      }
-    }
-  }
-}
+```bash
+helm upgrade exceptionless ./Exceptionless/k8s/exceptionless --namespace exceptionless \
+  --values exceptionless-values.yaml --values exceptionless-stopped.yaml --wait
+kubectl create job --from=cronjob/exceptionless-jobs-migration exceptionless-migration-2 --namespace exceptionless
+kubectl wait --for=condition=complete --timeout=20m job/exceptionless-migration-2 --namespace exceptionless
+kubectl logs job/exceptionless-migration-2 --namespace exceptionless \
+  | grep -E "Failed running migration|failed to complete"
+helm upgrade exceptionless ./Exceptionless/k8s/exceptionless --namespace exceptionless \
+  --values exceptionless-values.yaml
 ```
 
-### Reindex Stack data from 1.x into 5.x **Please make sure you update the host name**:
+The first `helm upgrade` also points the migration cron job at the new image, so the job you create runs the new
+version's migrations.
 
-```json
-POST _reindex
-{
-  "source": {
-    "remote": {
-      "host": "http://10.0.0.9:9200"
-    },
-    "index": "stacks-v1"
-  },
-  "dest": {
-    "index": "stacks-v1",
-    "op_type": "create"
-  }
-}
-```
+### One container
 
-### Create Event Template so daily indexes can be created with the correct mappings:
+The all-in-one `exceptionless/exceptionless` image, and an `app` container with `EX_RunJobsInProcess` set to `true`, run
+migrations in the same process as the jobs that process events, so they can't follow this order. Use them for testing,
+or take a snapshot before you upgrade them.
 
-```json
-PUT _template/events-v1
-{
-  "template": "events-v1-*",
-  "settings": {
-    "number_of_shards": 1,
-    "number_of_replicas": 1,
-    "analysis": {
-      "analyzer": {
-        "comma_whitespace": {
-          "type": "pattern",
-          "pattern": "[,\\s]+"
-        },
-        "email": {
-          "type": "custom",
-          "filter": [
-            "email",
-            "lowercase",
-            "unique"
-          ],
-          "tokenizer": "keyword"
-        },
-        "version_index": {
-          "type": "custom",
-          "filter": [
-            "version_pad1",
-            "version_pad2",
-            "version_pad3",
-            "version_pad4",
-            "version",
-            "lowercase",
-            "unique"
-          ],
-          "tokenizer": "whitespace"
-        },
-        "version_search": {
-          "type": "custom",
-          "filter": [
-            "version_pad1",
-            "version_pad2",
-            "version_pad3",
-            "version_pad4",
-            "lowercase"
-          ],
-          "tokenizer": "whitespace"
-        },
-        "whitespace_lower": {
-          "type": "custom",
-          "filter": [
-            "lowercase"
-          ],
-          "tokenizer": "whitespace"
-        },
-        "typename": {
-          "type": "custom",
-          "filter": [
-            "typename",
-            "lowercase",
-            "unique"
-          ],
-          "tokenizer": "typename_hierarchy"
-        },
-        "standardplus": {
-          "type": "custom",
-          "filter": [
-            "standard",
-            "typename",
-            "lowercase",
-            "stop",
-            "unique"
-          ],
-          "tokenizer": "comma_whitespace"
-        }
-      },
-      "filter": {
-        "email": {
-          "type": "pattern_capture",
-          "patterns": [
-            "(\\w+)",
-            "(\\p{L}+)",
-            "(\\d+)",
-            "(.+)@",
-            "@(.+)"
-          ]
-        },
-        "typename": {
-          "type": "pattern_capture",
-          "patterns": [
-            "\\.(\\w+)",
-            "([^\\()]+)"
-          ]
-        },
-        "version": {
-          "type": "pattern_capture",
-          "patterns": [
-            "^(\\d+)\\.",
-            "^(\\d+\\.\\d+)",
-            "^(\\d+\\.\\d+\\.\\d+)"
-          ]
-        },
-        "version_pad1": {
-          "type": "pattern_replace",
-          "pattern": "(\\.|^)(\\d{1})(?=\\.|-|$)",
-          "replacement": "$10000$2"
-        },
-        "version_pad2": {
-          "type": "pattern_replace",
-          "pattern": "(\\.|^)(\\d{2})(?=\\.|-|$)",
-          "replacement": "$1000$2"
-        },
-        "version_pad3": {
-          "type": "pattern_replace",
-          "pattern": "(\\.|^)(\\d{3})(?=\\.|-|$)",
-          "replacement": "$100$2"
-        },
-        "version_pad4": {
-          "type": "pattern_replace",
-          "pattern": "(\\.|^)(\\d{4})(?=\\.|-|$)",
-          "replacement": "$10$2"
-        }
-      },
-      "tokenizer": {
-        "comma_whitespace": {
-          "type": "pattern",
-          "pattern": "[,\\s]+"
-        },
-        "typename_hierarchy": {
-          "type": "path_hierarchy",
-          "delimiter": "."
-        }
-      }
-    }
-  },
-  "mappings": {
-    "events": {
-        "dynamic": "false",
-        "include_in_all": false,
-        "_all": {
-          "analyzer": "standardplus",
-          "search_analyzer": "whitespace_lower"
-        },
-        "_size": {
-          "enabled": true
-        },
-        "dynamic_templates": [
-          {
-            "idx_reference": {
-              "match": "*-r",
-              "mapping": {
-                "ignore_above": 256,
-                "type": "keyword"
-              }
-            }
-          }
-        ],
-        "properties": {
-          "count": {
-            "type": "integer"
-          },
-          "created_utc": {
-            "type": "date"
-          },
-          "data": {
-            "properties": {
-              "@environment": {
-                "properties": {
-                  "architecture": {
-                    "type": "keyword"
-                  },
-                  "ip_address": {
-                    "type": "text",
-                    "index": false,
-                    "copy_to": [
-                      "ip"
-                    ],
-                    "include_in_all": true
-                  },
-                  "machine_name": {
-                    "type": "text",
-                    "boost": 1.1,
-                    "fields": {
-                      "keyword": {
-                        "type": "keyword",
-                        "ignore_above": 256
-                      }
-                    },
-                    "include_in_all": true
-                  },
-                  "o_s_name": {
-                    "type": "text",
-                    "copy_to": [
-                      "os"
-                    ]
-                  }
-                }
-              },
-              "@error": {
-                "properties": {
-                  "data": {
-                    "properties": {
-                      "@target": {
-                        "properties": {
-                          "ExceptionType": {
-                            "type": "text",
-                            "index": false,
-                            "copy_to": [
-                              "error.targettype"
-                            ],
-                            "include_in_all": true
-                          },
-                          "Method": {
-                            "type": "text",
-                            "index": false,
-                            "copy_to": [
-                              "error.targetmethod"
-                            ],
-                            "include_in_all": true
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "@level": {
-                "type": "text",
-                "fields": {
-                  "keyword": {
-                    "type": "keyword",
-                    "ignore_above": 256
-                  }
-                }
-              },
-              "@location": {
-                "properties": {
-                  "country": {
-                    "type": "keyword"
-                  },
-                  "level1": {
-                    "type": "keyword"
-                  },
-                  "level2": {
-                    "type": "keyword"
-                  },
-                  "locality": {
-                    "type": "keyword"
-                  }
-                }
-              },
-              "@request": {
-                "properties": {
-                  "client_ip_address": {
-                    "type": "text",
-                    "index": false,
-                    "copy_to": [
-                      "ip"
-                    ],
-                    "include_in_all": true
-                  },
-                  "data": {
-                    "properties": {
-                      "@browser": {
-                        "type": "text",
-                        "fields": {
-                          "keyword": {
-                            "type": "keyword",
-                            "ignore_above": 256
-                          }
-                        }
-                      },
-                      "@browser_major_version": {
-                        "type": "text"
-                      },
-                      "@browser_version": {
-                        "type": "text",
-                        "fields": {
-                          "keyword": {
-                            "type": "keyword",
-                            "ignore_above": 256
-                          }
-                        }
-                      },
-                      "@device": {
-                        "type": "text",
-                        "fields": {
-                          "keyword": {
-                            "type": "keyword",
-                            "ignore_above": 256
-                          }
-                        }
-                      },
-                      "@is_bot": {
-                        "type": "boolean"
-                      },
-                      "@os": {
-                        "type": "text",
-                        "index": false,
-                        "copy_to": [
-                          "os"
-                        ]
-                      },
-                      "@os_major_version": {
-                        "type": "text"
-                      },
-                      "@os_version": {
-                        "type": "text",
-                        "fields": {
-                          "keyword": {
-                            "type": "keyword",
-                            "ignore_above": 256
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "path": {
-                    "type": "text",
-                    "fields": {
-                      "keyword": {
-                        "type": "keyword",
-                        "ignore_above": 256
-                      }
-                    },
-                    "include_in_all": true
-                  },
-                  "user_agent": {
-                    "type": "text",
-                    "fields": {
-                      "keyword": {
-                        "type": "keyword",
-                        "ignore_above": 256
-                      }
-                    }
-                  }
-                }
-              },
-              "@simple_error": {
-                "properties": {
-                  "data": {
-                    "properties": {
-                      "@target": {
-                        "properties": {
-                          "ExceptionType": {
-                            "type": "text",
-                            "index": false,
-                            "copy_to": [
-                              "error.targettype"
-                            ],
-                            "include_in_all": true
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "@submission_method": {
-                "type": "text",
-                "fields": {
-                  "keyword": {
-                    "type": "keyword",
-                    "ignore_above": 256
-                  }
-                }
-              },
-              "@user": {
-                "properties": {
-                  "identity": {
-                    "type": "text",
-                    "boost": 1.1,
-                    "fields": {
-                      "keyword": {
-                        "type": "keyword",
-                        "ignore_above": 256
-                      }
-                    },
-                    "analyzer": "email",
-                    "search_analyzer": "whitespace_lower",
-                    "include_in_all": true
-                  },
-                  "name": {
-                    "type": "text",
-                    "fields": {
-                      "keyword": {
-                        "type": "keyword",
-                        "ignore_above": 256
-                      }
-                    },
-                    "include_in_all": true
-                  }
-                }
-              },
-              "@user_description": {
-                "properties": {
-                  "description": {
-                    "type": "text",
-                    "include_in_all": true
-                  },
-                  "email_address": {
-                    "type": "text",
-                    "boost": 1.1,
-                    "fields": {
-                      "keyword": {
-                        "type": "keyword",
-                        "ignore_above": 256
-                      }
-                    },
-                    "analyzer": "email",
-                    "search_analyzer": "simple",
-                    "include_in_all": true
-                  }
-                }
-              },
-              "@version": {
-                "type": "text",
-                "fields": {
-                  "keyword": {
-                    "type": "keyword",
-                    "ignore_above": 256
-                  }
-                },
-                "analyzer": "version_index",
-                "search_analyzer": "version_search"
-              }
-            }
-          },
-          "date": {
-            "type": "date"
-          },
-          "error": {
-            "include_in_all": true,
-            "properties": {
-              "code": {
-                "type": "keyword",
-                "boost": 1.1
-              },
-              "message": {
-                "type": "text",
-                "fields": {
-                  "keyword": {
-                    "type": "keyword",
-                    "ignore_above": 256
-                  }
-                }
-              },
-              "targetmethod": {
-                "type": "text",
-                "boost": 1.2,
-                "fields": {
-                  "keyword": {
-                    "type": "keyword",
-                    "ignore_above": 256
-                  }
-                },
-                "analyzer": "typename",
-                "search_analyzer": "whitespace_lower"
-              },
-              "targettype": {
-                "type": "text",
-                "boost": 1.2,
-                "fields": {
-                  "keyword": {
-                    "type": "keyword",
-                    "ignore_above": 256
-                  }
-                },
-                "analyzer": "typename",
-                "search_analyzer": "whitespace_lower"
-              },
-              "type": {
-                "type": "text",
-                "boost": 1.1,
-                "fields": {
-                  "keyword": {
-                    "type": "keyword",
-                    "ignore_above": 256
-                  }
-                },
-                "analyzer": "typename",
-                "search_analyzer": "whitespace_lower"
-              }
-            }
-          },
-          "geo": {
-            "type": "geo_point"
-          },
-          "id": {
-            "type": "keyword",
-            "include_in_all": true
-          },
-          "idx": {
-            "type": "object",
-            "dynamic": "true"
-          },
-          "ip": {
-            "type": "text",
-            "analyzer": "comma_whitespace"
-          },
-          "is_deleted": {
-            "type": "boolean"
-          },
-          "is_first_occurrence": {
-            "type": "boolean"
-          },
-          "is_fixed": {
-            "type": "boolean"
-          },
-          "is_hidden": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "text",
-            "include_in_all": true
-          },
-          "organization_id": {
-            "type": "keyword"
-          },
-          "os": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            }
-          },
-          "project_id": {
-            "type": "keyword"
-          },
-          "reference_id": {
-            "type": "keyword"
-          },
-          "source": {
-            "type": "text",
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            },
-            "include_in_all": true
-          },
-          "stack_id": {
-            "type": "keyword"
-          },
-          "tags": {
-            "type": "text",
-            "boost": 1.2,
-            "fields": {
-              "keyword": {
-                "type": "keyword",
-                "ignore_above": 256
-              }
-            },
-            "include_in_all": true
-          },
-          "type": {
-            "type": "keyword"
-          },
-          "updated_utc": {
-            "type": "date"
-          },
-          "value": {
-            "type": "double"
-          }
-        }
-      }
-  }
-}
-```
+## Migrations
 
-### Reindex Event data from 1.x into 5.x **Please make sure you update the host name**:
+Some versions change how data is stored in Elasticsearch. Exceptionless applies these changes with migrations:
 
-```json
-POST _reindex
-{
-  "source": {
-    "remote": {
-      "host": "http://10.0.0.9:9200"
-    },
-    "index": "events-v1-*",
-    "size": 200
-  },
-  "dest": {
-    "index": "events-v1-error"
-  },
-  "script": {
-    "lang": "painless",
-    "inline": "ctx._index = 'events-v1-' + DateTimeFormatter.ofPattern('yyyy.MM.dd').format(OffsetDateTime.parse(ctx._source.date).toInstant().atZone(ZoneOffset.UTC)); if (ctx._source.updated_utc == null) { ctx._source.updated_utc = ctx._source.created_utc; } if (ctx._source.is_deleted == null) { ctx._source.is_deleted = false; } if (!ctx.containsKey('data') || !(ctx.data.containsKey('@error') || ctx.data.containsKey('@simple_error'))) return null;def types = [];def messages = [];def codes = [];def err = ctx.data.containsKey('@error') ? ctx.data['@error'] : ctx.data['@simple_error'];def curr = err;while (curr != null) { if (curr.containsKey('type'))  types.add(curr.type); if (curr.containsKey('message'))  messages.add(curr.message); if (curr.containsKey('code'))  codes.add(curr.code); curr = curr.inner;}if (ctx.error == null) ctx.error = new HashMap();ctx.error.type = types;ctx.error.message = messages;ctx.error.code = codes;"
-  }
-}
-```
+- The `job` image runs pending migrations each time it starts with no arguments or with `Migration`. With no arguments,
+  it runs them alongside every other job.
+- The `app` and all-in-one images run them at startup when jobs run in the same process.
+- In Kubernetes, you start the migration job yourself after each upgrade.
 
-### Delete the previous Event Template:
+To see progress and failures, go to **Settings** > **System** > **Migrations**, or read the job's logs. See
+[Administration](/docs/self-hosting/administration/#migrations).
 
-```json
-DELETE _template/events-v1
-```
+## Rerun a migration {#rerunning-a-completed-migration}
 
-## Upgrading from v2 to v3
+Some completed migrations can be run again. Take a snapshot first, and stop older instances. You can rerun one from
+**Settings** > **System** > **Migrations**, or from the job image with `Migration --rerun MIGRATION_NAME`. See
+[Rerun a migration](/docs/self-hosting/administration/#rerunning-a-completed-migration).
 
-_Please note that upgrading from [v2](https://github.com/exceptionless/Exceptionless/releases/tag/v2.0.0) to [v3](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) requires that `Redis` is installed and configured._
+## What changed in 9.0 {#what-changed-in-9-0}
 
-1. Download and extract the [v3](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) release to a temp folder.
-2. Update the connection strings in the `App_Data\JobRunner\Job.exe.config` config file.
-   1. You'll also need to add a `Migration:MongoConnectionString` connection string for the migration jobs to run.
+### Reverse proxies need to be trusted
 
-       ```xml
-       <add name="Migration:MongoConnectionString" connectionString="mongodb://localhost/exceptionless" />
-       ```
+Exceptionless now reads `X-Forwarded-For` and `X-Forwarded-Proto` only from loopback addresses and from proxies you
+list. Earlier versions accepted them from anyone.
 
-3. Open the terminal and run the following jobs to migrate data from previous major versions of Exceptionless. `Jobs.exe` can be found in the `\wwwroot\App_Data\JobRunner\` folder.
+If a reverse proxy, load balancer, or ingress controller sits in front of Exceptionless, add its address before you
+upgrade. Otherwise every request appears to come from the proxy over HTTP, and all anonymous visitors share one set of
+IP-based limits. See [Reverse proxies and HTTPS](/docs/self-hosting/reverse-proxy/). If clients connect directly, you
+don't need to change anything.
 
-```powershell
-Job.exe -t "Exceptionless.EventMigration.OrganizationMigrationJob, Exceptionless.EventMigration" -s "Exceptionless.Core.Jobs.JobBootstrapper, Exceptionless.Core"
-```
+Exceptionless refuses to start if these settings are invalid, so check the logs after the upgrade.
 
-## Upgrading from v1 to v3
+### The new web UI replaces the old one
 
-_Please note that upgrading from v1 to [v3](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) requires that `Redis` is installed and configured._
+The Angular UI is gone. The Svelte UI, which 8.x served at `/next`, is now at the root of the site.
 
-1. Download and extract the [v3](https://github.com/exceptionless/Exceptionless/releases/tag/v3.0.0) release to a temp folder.
-2. Update the connection strings in the `App_Data\JobRunner\Job.exe.config` config file.
-   1. You'll also need to add a `Migration:MongoConnectionString` connection string for the migration jobs to run.
+- Remove `EX_Html5Mode`; it no longer does anything.
+- Set `EX_BaseURL` to the plain URL of your app, such as `https://errors.example.com`, without `/#!`.
+- Old bookmarks that use `#!/` links are redirected to the new pages.
 
-       ```xml
-       <add name="Migration:MongoConnectionString" connectionString="mongodb://localhost/exceptionless" />
-       ```
+### Sign-in providers
 
-3. Open the terminal and run the following jobs to migrate data from previous major versions of Exceptionless. `Jobs.exe` can be found in the `\wwwroot\App_Data\JobRunner\` folder.
+- Microsoft sign-in now uses the Microsoft identity platform: the `common` endpoint and the `User.Read` scope. Check
+  that your app registration in Microsoft Entra accepts accounts from any organizational directory and lists your web
+  app's origin as a **Web** redirect URI. The keys are still `MicrosoftId` and `MicrosoftSecret`.
+- Facebook sign-in is removed, and `FacebookId` and `FacebookSecret` are ignored. People who signed in only with
+  Facebook can set a password with **Forgot password?** on the sign-in page.
 
-```powershell
-Job.exe -t "Exceptionless.EventMigration.StackMigrationJob, Exceptionless.EventMigration" -s "Exceptionless.Core.Jobs.JobBootstrapper, Exceptionless.Core"
-Job.exe -t "Exceptionless.EventMigration.QueueEventMigrationsJob, Exceptionless.EventMigration" -s "Exceptionless.Core.Jobs.JobBootstrapper, Exceptionless.Core"
-Job.exe -t "Exceptionless.EventMigration.EventMigrationJob, Exceptionless.EventMigration" -c -s "Exceptionless.Core.Jobs.JobBootstrapper, Exceptionless.Core"
-Job.exe -t "Exceptionless.EventMigration.OrganizationMigrationJob, Exceptionless.EventMigration" -s "Exceptionless.Core.Jobs.JobBootstrapper, Exceptionless.Core"
-```
+See [Sign-in providers](/docs/self-hosting/configuration/#sign-in-providers).
+
+### New and changed settings
+
+- `EX_ApiUrl` is now also read by the server. OAuth discovery and the MCP server use it, and fall back to `EX_BaseURL`.
+  Set it only if the API is on a different host name than the web app.
+- `EX_EnableSsl` now also makes the app send a Content Security Policy that upgrades insecure requests.
+- `EX_ForwardedHeaders__*` settings control proxy trust. The Helm chart adds `forwardedHeaders.knownNetworks`.
+- Exie's default model is now `openai/gpt-6.1-sol`. If you didn't set `EX_Assistant__Model` or choose a model under
+  **Settings** > **System** > **Settings**, Exie switches to it.
+
+### Elasticsearch
+
+9.0 still uses Elasticsearch 8, so you don't need to reindex. The images and samples now use Elasticsearch 8.19.22.

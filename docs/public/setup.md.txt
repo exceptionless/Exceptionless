@@ -5,8 +5,8 @@ Instructions for a coding agent adding Exceptionless error and event tracking to
 ## Before you start
 
 - Replace `YOUR_API_KEY` with the API key the user gave you. If they didn't give one, ask for it. It's on the project's API Keys page in Exceptionless.
-- Replace `YOUR_SERVER_URL` with the server URL the user gave you. If they didn't give one, leave out the lines that set the server URL, and send REST API requests to `https://collector.exceptionless.io`.
-- The API key can only submit events, so it is fine in client code and committed config, like any client SDK key. If the project keeps settings in configuration or environment variables, put the key and server URL there.
+- Replace `YOUR_SERVER_URL` with the server URL the user gave you. If they didn't give one, leave out the lines that set the server URL, and send REST API requests to `https://api.exceptionless.io`.
+- A client API key can only send events, read client configuration, and connect the project to Zapier, so it is fine in shipped client code. Prefer configuration or environment variables so the key can be rotated. Never put a user or OAuth token in client code.
 - JavaScript clients queue events until `Exceptionless.startup()` finishes, so there is no need to await it.
 - A `localhost` server URL only works on the user's own machine. Phones and emulators need the machine's network address instead (`10.0.2.2` on the Android emulator).
 
@@ -42,7 +42,7 @@ dotnet add package Exceptionless.AspNetCore
 
 ### 2. Add Exceptionless to Program.cs
 
-Register the client and middleware in Program.cs.
+Register the client and middleware in Program.cs. Keep your existing routes and middleware; app.Run() stays last.
 
 ```csharp
 using Exceptionless;
@@ -57,11 +57,13 @@ builder.Services.AddProblemDetails();
 var app = builder.Build();
 app.UseExceptionHandler();
 app.UseExceptionless();
+
+app.Run();
 ```
 
 ### 3. Send a test error
 
-Add this after app.UseExceptionless(), run your app once, then remove it.
+Add this after app.UseExceptionless() and before app.Run(), run your app once, then remove it.
 
 ```csharp
 try { throw new Exception("Hello from Exceptionless setup"); } catch (Exception ex) { ex.ToExceptionless().Submit(); }
@@ -82,7 +84,7 @@ To keep settings out of code, put them in appsettings.json (or Exceptionless__Ap
 
 ### Optional: Send your logs
 
-Send warnings and errors from ILogger too. You can tune log levels per source later from project settings.
+Send ILogger logs to Exceptionless too. The provider sends whatever levels the Logging configuration of your app allows (Information and above by default), so adjust the levels under Logging in appsettings.json.
 
 ```bash
 dotnet add package Exceptionless.Extensions.Logging
@@ -169,7 +171,7 @@ catch (Exception ex) { host.Services.GetRequiredService<ExceptionlessClient>().S
 
 ### 4. Send your logs
 
-The host logs a worker's exceptions instead of crashing, so send ILogger warnings and errors to Exceptionless too.
+The host logs a worker's exceptions instead of crashing, so send ILogger logs to Exceptionless too. Which levels are sent follows the Logging configuration of your app (Information and above by default).
 
 ```bash
 dotnet add package Exceptionless.Extensions.Logging
@@ -247,7 +249,7 @@ npm install @exceptionless/node
 
 ### 2. Start Exceptionless
 
-Run this once when your process starts, before the rest of your code. Unsent events wait in a .exceptionless folder; add it to .gitignore.
+Run this once when your process starts, before the rest of your code. The client keeps unsent events in memory, so a hard crash can lose them; its synced settings go in a .exceptionless folder, so add it to .gitignore.
 
 ```javascript
 import { Exceptionless } from "@exceptionless/node";
@@ -338,11 +340,11 @@ npm install @exceptionless/vue
 
 ### 2. Start Exceptionless and add the error handler
 
-Start the client in main.js or main.ts and hand component errors to Exceptionless. Keep your existing imports.
+Start the client in main.js or main.ts and hand component errors to Exceptionless. Keep your existing imports. Do not use the package ExceptionlessErrorHandler export: it attaches the whole component instance to the event, which can freeze the page.
 
 ```javascript
 import { createApp } from "vue";
-import { Exceptionless, ExceptionlessErrorHandler } from "@exceptionless/vue";
+import { Exceptionless, toError } from "@exceptionless/vue";
 import App from "./App.vue";
 
 Exceptionless.startup((c) => {
@@ -351,9 +353,9 @@ Exceptionless.startup((c) => {
 });
 
 const app = createApp(App);
-app.config.errorHandler = (error, instance, info) => {
-  console.error(error);
-  ExceptionlessErrorHandler(error instanceof Error ? error : new Error(String(error)), instance, info);
+app.config.errorHandler = (err, instance, info) => {
+  console.error(err);
+  void Exceptionless.createException(toError(err)).setProperty("info", info).submit();
 };
 app.mount("#app");
 ```
@@ -384,7 +386,7 @@ npm install @exceptionless/browser
 
 ### 2. Start Exceptionless and add an ErrorHandler
 
-Start the client in main.ts, and add the ErrorHandler to your providers in app.config.ts. Apps that bootstrap AppComponent work the same way.
+Start the client in main.ts, and add the ErrorHandler to your providers in app.config.ts. Remove provideBrowserGlobalErrorListeners() from the providers if it is there: it forwards window errors and unhandled rejections to ErrorHandler, which the browser client already reports, so each would arrive twice. Apps that bootstrap AppComponent work the same way.
 
 ```javascript
 // main.ts
@@ -416,7 +418,7 @@ export class ExceptionlessErrorHandler implements ErrorHandler {
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    // ...your existing providers
+    // ...your existing providers, without provideBrowserGlobalErrorListeners()
     { provide: ErrorHandler, useClass: ExceptionlessErrorHandler }
   ]
 };
@@ -436,7 +438,7 @@ Call c.useDebugLogger() inside Exceptionless.startup to log what the client is d
 
 ## React Native
 
-Mobile. Docs: https://github.com/exceptionless/Exceptionless.JavaScript/tree/main/packages/react-native
+Mobile. Docs: https://exceptionless.com/docs/clients/javascript/guides/react-native/
 
 ### 1. Install the client
 
@@ -449,20 +451,17 @@ cd ios && pod install
 
 ### 2. Start Exceptionless
 
-Start the client once when your app mounts, and wrap your existing root component (YourApp here) in the error boundary.
+Start the client at module scope in your root file, outside any component, so it runs before the first render and the error boundary can report that render. Wrap your existing root component (YourApp here) in the error boundary.
 
 ```javascript
-import { useEffect } from "react";
 import { Exceptionless, ExceptionlessErrorBoundary } from "@exceptionless/react-native";
 
-export default function App() {
-  useEffect(() => {
-    Exceptionless.startup((c) => {
-      c.apiKey = "YOUR_API_KEY";
-      c.serverUrl = "YOUR_SERVER_URL";
-    });
-  }, []);
+Exceptionless.startup((c) => {
+  c.apiKey = "YOUR_API_KEY";
+  c.serverUrl = "YOUR_SERVER_URL";
+});
 
+export default function App() {
   return (
     <ExceptionlessErrorBoundary>
       <YourApp />
@@ -473,7 +472,7 @@ export default function App() {
 
 ### 3. Send a test error
 
-Add this inside the same useEffect, right after startup. Run the app once, then remove it.
+Add this at module scope right after startup. Run the app once, then remove it.
 
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
@@ -485,7 +484,7 @@ Call c.useDebugLogger() inside Exceptionless.startup to log what the client is d
 
 ## Expo
 
-Mobile. Docs: https://github.com/exceptionless/Exceptionless.JavaScript/tree/main/packages/react-native
+Mobile. Docs: https://exceptionless.com/docs/clients/javascript/guides/react-native/
 
 ### 1. Install the client
 
@@ -509,20 +508,17 @@ Add the config plugin to app.json for development and standalone builds. Expo Go
 
 ### 3. Start Exceptionless
 
-Start the client once when your app mounts, and wrap your existing root component (YourApp here) in the error boundary.
+Start the client at module scope in your root file, outside any component, so it runs before the first render and the error boundary can report that render. Wrap your existing root component (YourApp here) in the error boundary.
 
 ```javascript
-import { useEffect } from "react";
 import { Exceptionless, ExceptionlessErrorBoundary } from "@exceptionless/react-native";
 
-export default function App() {
-  useEffect(() => {
-    Exceptionless.startup((c) => {
-      c.apiKey = "YOUR_API_KEY";
-      c.serverUrl = "YOUR_SERVER_URL";
-    });
-  }, []);
+Exceptionless.startup((c) => {
+  c.apiKey = "YOUR_API_KEY";
+  c.serverUrl = "YOUR_SERVER_URL";
+});
 
+export default function App() {
   return (
     <ExceptionlessErrorBoundary>
       <YourApp />
@@ -533,7 +529,7 @@ export default function App() {
 
 ### 4. Send a test error
 
-Add this inside the same useEffect, right after startup. Run the app once, then remove it.
+Add this at module scope right after startup. Run the app once, then remove it.
 
 ```javascript
 Exceptionless.submitException(new Error("Hello from Exceptionless setup"));
@@ -557,16 +553,20 @@ dotnet add package Exceptionless.Wpf
 
 ### 2. Register Exceptionless in App.xaml.cs
 
-Register Exceptionless when your app starts. Point Startup="Application_Startup" at this handler in App.xaml.
+Register Exceptionless in OnStartup, which runs before the StartupUri window opens, so App.xaml needs no changes. Change MyApp to the namespace in x:Class in App.xaml.
 
 ```csharp
+using System.Windows;
 using Exceptionless;
 
-public partial class App : Application {
-    private void Application_Startup(object sender, StartupEventArgs e) {
-        ExceptionlessClient.Default.Configuration.ApiKey = "YOUR_API_KEY";
-        ExceptionlessClient.Default.Configuration.ServerUrl = "YOUR_SERVER_URL";
-        ExceptionlessClient.Default.Register();
+namespace MyApp {
+    public partial class App : Application {
+        protected override void OnStartup(StartupEventArgs e) {
+            ExceptionlessClient.Default.Configuration.ApiKey = "YOUR_API_KEY";
+            ExceptionlessClient.Default.Configuration.ServerUrl = "YOUR_SERVER_URL";
+            ExceptionlessClient.Default.Register();
+            base.OnStartup(e);
+        }
     }
 }
 ```
@@ -692,15 +692,20 @@ Install-Package Exceptionless
 Start the client in Main. The Submit() line sends a test error so you can see it arrive; remove only that line afterwards.
 
 ```csharp
+using System;
 using Exceptionless;
 
-ExceptionlessClient.Default.Configuration.ServerUrl = "YOUR_SERVER_URL";
-ExceptionlessClient.Default.Startup("YOUR_API_KEY");
+internal static class Program {
+    static void Main() {
+        ExceptionlessClient.Default.Configuration.ServerUrl = "YOUR_SERVER_URL";
+        ExceptionlessClient.Default.Startup("YOUR_API_KEY");
 
-try { throw new Exception("Hello from Exceptionless setup"); } catch (Exception ex) { ex.ToExceptionless().Submit(); }
+        try { throw new Exception("Hello from Exceptionless setup"); } catch (Exception ex) { ex.ToExceptionless().Submit(); }
 
-// Send anything queued before the app exits.
-ExceptionlessClient.Default.ProcessQueueAsync().GetAwaiter().GetResult();
+        // Send anything queued before the app exits.
+        ExceptionlessClient.Default.ProcessQueueAsync().GetAwaiter().GetResult();
+    }
+}
 ```
 
 ### Check it worked
@@ -754,7 +759,7 @@ try { throw new Exception("Hello from Exceptionless setup"); } catch (Exception 
 
 ### Check it worked
 
-Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.
+A relative log path resolves against the IIS working directory, which the app pool usually cannot write to. Use an absolute path in a folder it can write to: call ExceptionlessClient.Default.Configuration.UseFileLogger(Path.Combine(HttpRuntime.AppDomainAppPath, "App_Data", "exceptionless.log"), Exceptionless.Logging.LogLevel.Debug) in Application_Start (or set enableLogging="true" and an absolute logPath on the <exceptionless> element), then check the log for submission errors.
 
 ## ASP.NET Web API
 
@@ -805,7 +810,7 @@ try { throw new Exception("Hello from Exceptionless setup"); } catch (Exception 
 
 ### Check it worked
 
-Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.
+A relative log path resolves against the IIS working directory, which the app pool usually cannot write to. Use an absolute path in a folder it can write to: call ExceptionlessClient.Default.Configuration.UseFileLogger(Path.Combine(HttpRuntime.AppDomainAppPath, "App_Data", "exceptionless.log"), Exceptionless.Logging.LogLevel.Debug) in Application_Start (or set enableLogging="true" and an absolute logPath on the <exceptionless> element), then check the log for submission errors.
 
 ## ASP.NET Web Forms
 
@@ -854,7 +859,7 @@ try { throw new Exception("Hello from Exceptionless setup"); } catch (Exception 
 
 ### Check it worked
 
-Add enableLogging="true" logPath="exceptionless.log" to the <exceptionless> element (or call ExceptionlessClient.Default.Configuration.UseFileLogger("exceptionless.log")), then check the log for submission errors.
+A relative log path resolves against the IIS working directory, which the app pool usually cannot write to. Use an absolute path in a folder it can write to: call ExceptionlessClient.Default.Configuration.UseFileLogger(Path.Combine(HttpRuntime.AppDomainAppPath, "App_Data", "exceptionless.log"), Exceptionless.Logging.LogLevel.Debug) in Application_Start (or set enableLogging="true" and an absolute logPath on the <exceptionless> element), then check the log for submission errors.
 
 ## Windows Forms (.NET Framework)
 
@@ -935,14 +940,18 @@ NuGet adds this to app.config for packages.config projects. Check it is there wi
 
 ### 3. Register Exceptionless in App.xaml.cs
 
-Register Exceptionless when your app starts. Point Startup="Application_Startup" at this handler in App.xaml.
+Register Exceptionless in OnStartup, which runs before the StartupUri window opens, so App.xaml needs no changes. Change MyApp to the namespace in x:Class in App.xaml.
 
 ```csharp
+using System.Windows;
 using Exceptionless;
 
-public partial class App : Application {
-    private void Application_Startup(object sender, StartupEventArgs e) {
-        ExceptionlessClient.Default.Register();
+namespace MyApp {
+    public partial class App : Application {
+        protected override void OnStartup(StartupEventArgs e) {
+            ExceptionlessClient.Default.Register();
+            base.OnStartup(e);
+        }
     }
 }
 ```

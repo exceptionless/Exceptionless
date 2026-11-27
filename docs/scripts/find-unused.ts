@@ -10,6 +10,7 @@ type AssetCandidate = {
 const siteRoot = "_site"
 const keepOutputPaths = new Set([
   "_site/favicon.ico",
+  "_site/assets/fonts/inter/LICENSE.txt",
 ])
 const staticAssetExtensions = new Set([
   ".avif",

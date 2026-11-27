@@ -1,0 +1,225 @@
+---
+title: "Organizations and billing"
+description: "Create organizations, invite users, change plans, check usage, and view invoices for your Exceptionless organization."
+navTitle: "Organizations and users"
+keywords:
+  - "team"
+  - "teammate"
+  - "invite"
+  - "users"
+  - "members"
+  - "billing"
+sources:
+  - docs/_data/plans.json
+  - src/Exceptionless.Core/Billing/BillingPlans.cs
+  - src/Exceptionless.Core/Billing/BillingManager.cs
+  - src/Exceptionless.Core/Authorization/AuthorizationRoles.cs
+  - src/Exceptionless.Core/Services/OrganizationService.cs
+  - src/Exceptionless.Web/Api/Handlers/OrganizationHandler.cs
+  - src/Exceptionless.Web/Api/Handlers/AuthHandler.cs
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/organization/routes.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/organization/[organizationId]/routes.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/organization/[organizationId]/manage/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/organization/[organizationId]/users/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/organization/[organizationId]/billing/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/organization/[organizationId]/usage/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/organization/add/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/organization/list/+page.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/payment/[id]/+page@.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/(components)/layouts/sidebar-user.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/(components)/layouts/sidebar-organization-switcher.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/(components)/navigation-command.svelte
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/+layout.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/billing/components/change-plan-dialog.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/billing/invoice.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/users/components/invite-user-dialog.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/users/components/table/options.svelte.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/users/components/table/user-actions-cell.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/table/organization-actions-cell.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/organization-notifications.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/notifications/monthly-overage-notification.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/notifications/hourly-overage-notification.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/notifications/usage-warning-notification.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/notifications/trial-notification.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/components/notifications/trial-ended-notification.svelte
+  - src/Exceptionless.Web/ClientApp/src/lib/features/organizations/notification-dismissals.ts
+  - src/Exceptionless.Web/ClientApp/src/lib/features/billing/trial.ts
+  - src/Exceptionless.Web/ClientApp/src/routes/(app)/(components)/layouts/sidebar-trial-indicator.svelte
+  - src/Exceptionless.Core/Configuration/BillingOptions.cs
+  - src/Exceptionless.Core/Jobs/TrialExpirationJob.cs
+---
+
+# Organizations and billing
+
+An organization holds your projects, the users who can see them, and the plan you pay for. Plan limits, such as events
+per month and the number of users, apply to the whole organization. This page covers organization settings, users,
+plans, usage, and invoices.
+
+## Open organization settings
+
+Any of these opens the current organization's settings:
+
+- the user menu at the bottom of the sidebar (<kbd>U</kbd>) > **Manage Organization** or **Billing**,
+- the organization switcher at the top of the sidebar (<kbd>O</kbd>) > **Manage Organization**,
+- **Settings** > **Organizations** in the sidebar, then click the organization.
+
+If you belong to only one organization, the switcher and <kbd>O</kbd> open its settings directly, and the sidebar shows
+**Settings** > **Organization** instead of the list.
+
+The settings have these tabs: **General**, **Users**, **Billing**, and **Usage**.
+
+To switch to another organization, use the organization switcher, or press <kbd>/</kbd> and type its name. See
+[Navigating the app](/docs/navigation/).
+
+## Create an organization
+
+1. Press <kbd>/</kbd> and choose **Add Organization**. With more than one organization, you can also click **Add
+   Organization** in the organization switcher, or **+** (**Add Organization**) on **Settings** > **Organizations**.
+2. On the **Set up Exceptionless** page, enter the first project's name under **What's your app called?** and an
+   **Organization name**, then click **Continue**.
+3. Connect your app on the **Client Setup** page that opens. See [Quickstart](/docs/getting-started/).
+
+An eligible account's first organization starts with a [free trial](#free-trial). Otherwise, new organizations start on
+the Free plan. You can own at most one Free or trial organization at a time; upgrade that organization before creating
+another.
+
+## Change organization settings
+
+On the **General** tab:
+
+- Click the icon to upload an organization icon (PNG, JPEG, GIF, or WebP). The **X** button next to it removes it.
+- Edit the **Organization name**. It saves as you type.
+- **View Events** and **View Projects** open the organization's events and projects.
+
+## Users and invites {#users-and-invites}
+
+Everyone in an organization has the same access: they can see all of its projects and events, change settings, invite
+and remove users, and manage billing. There are no per-user roles, so invite only people you trust with all of that. To
+give a tool limited access instead, use a [client API key](/docs/project-settings/#api-keys) or a
+[connected application](/docs/account/#connected-applications).
+
+To invite someone:
+
+1. Open the **Users** tab and click **+** (**Invite User**). You can also choose **Invite User** in the command palette.
+2. Enter their **Email Address** and click **Invite User**.
+
+If the email address already has an Exceptionless account, that user joins the organization right away and gets an email
+about it. Otherwise, Exceptionless emails them an invitation, and they join when they sign up from it. Pending
+invitations show in the list with the date in the **Invited** column.
+
+From a user's menu (**...**) in the list:
+
+- **Resend Invite Email** sends a pending invitation again.
+- **Revoke Invite** cancels a pending invitation.
+- **Remove User** takes a member out of the organization. Their private [saved views](/docs/saved-views/) and their
+  [notification settings](/docs/notifications/) for the organization's projects are deleted.
+
+Pending invitations count toward your plan's user limit. An organization always keeps at least one user.
+
+On Free and trial organizations, you need a verified email address to invite users, and you can send a limited number of
+invitations each day. Paid organizations don't have these limits.
+
+To leave an organization yourself, open **Settings** > **Organizations**, open the organization's menu (**...**), and
+click **Leave Organization**. If you belong to only one organization, the sidebar doesn't link to that list; open
+`https://be.exceptionless.io/organization/list` instead.
+
+## Plans
+
+| Plan         | Includes                                                                                                                                             |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Free         | Error and log monitoring, the daily project summary, and the MCP server.                                                                             |
+| Small        | Everything in Free, plus unlimited projects and users, event notifications by email and Slack, webhooks, sessions, and filtering on any event field. |
+| Medium       | Everything in Small, plus [Exie](/docs/ai/exie/).                                                                                                    |
+| Large and up | Everything in Medium, with higher event and Exie allowances.                                                                                         |
+
+Paid plans include unlimited projects and users, and differ in events per month, data retention, and Exie access and
+allowances. See [Limits](/docs/concepts/limits/) for the numbers and what happens when you reach them, and
+[pricing](/pricing/) for prices. Yearly billing is available for every paid plan and costs the same as 11 months.
+
+The app shows a notice at the top of the page when the organization needs attention, each with an **Upgrade now** link:
+
+- **has used 85% of its monthly events** (or another percentage), from 80% of the monthly limit. Dismiss it to hide it
+  until next month.
+- **has reached its monthly plan limit**, when new events are blocked until next month.
+- **Events are currently being throttled**, when too many events arrive in a short time.
+
+Trial notices are described under [Free trial](#free-trial).
+
+## Free trial {#free-trial}
+
+Eligible new accounts can try premium features without a credit card. The trial lasts 14 days by default and includes
+unlimited projects and users, 75,000 events per calendar month, and 90-day retention. It also includes
+[Exie](/docs/ai/exie/), after you verify your email address, with a smaller AI allowance than the Medium plan.
+
+Trials are for accounts that don't belong to an organization and have no existing organizations they created. A recent
+trial for the same mailbox, including an alias or a deleted account, or a blocked disposable email domain can make an
+account ineligible. On a self-hosted instance that enables billing, the administrator sets the trial length, and a
+length of 0 turns trials off.
+
+While the trial runs, the sidebar shows when it ends, such as **Trial ends in 9 days**. Click it to choose a plan. In
+the last 3 days, a notice such as **Your free trial for Acme ends in 2 days.** appears at the top of the page;
+dismissing it hides it until the next day. Organization members also get a reminder email 3 days before the trial ends.
+
+To subscribe during the trial, choose a plan in the **Manage subscription** dialog. The trial ends and billing starts
+that day.
+
+The trial doesn't charge you automatically. If you don't choose a paid plan, the organization moves to Free when the
+trial ends, and the app shows **Your trial has ended** until you dismiss it. Its projects and users aren't deleted, but
+Free-plan limits apply. If it has more projects or users (including pending invitations) than Free allows, the
+organization is suspended: the app shows **{name} has been suspended.** at the top of the page with links to upgrade or
+remove the excess users, invitations, and projects, and events sent while it's suspended are discarded. Intake resumes
+automatically once the organization is within the Free limits.
+
+## Change your plan
+
+1. Open the **Billing** tab and click **Change your plan or billing information**. The **Manage subscription** dialog
+   opens. **Upgrade now** links in the app open the same dialog.
+2. Choose **Monthly** or **Yearly**, then choose a plan. Choose **Free** to cancel your paid plan.
+3. For a paid plan, enter a card under **Payment method**, or keep the card on file.
+4. To use a coupon, click **Have a coupon code?**, enter it, and click **Apply**.
+5. Click the button at the bottom, such as **Start Small monthly**, **Switch to Large**, or **Downgrade to Free**.
+
+Plan changes take effect right away and are prorated: you pay the difference when you upgrade, and get a prorated credit
+when you downgrade. To update only your card, choose **Use a different payment method**, enter it, and click **Update
+payment method**.
+
+You can't move to a plan that allows fewer users or projects than you have. The dialog tells you how many to remove
+first, and pending invitations count as users.
+
+## Usage
+
+The **Usage** tab shows how many events the organization has left this calendar month and when the count resets, in UTC.
+The chart shows **Total** events against the **Limit**, along with **Blocked**, **Discarded**, **Too Big**, and
+**Deleted** events. Each project's settings have a **Usage** tab too. See [Limits](/docs/concepts/limits/) for what each
+line means.
+
+## Invoices
+
+The **Billing** tab lists your payments with their **Payment Number**, **Date**, **Amount**, and **Status**, such as
+**Paid**, **Payment due**, or **Credit issued**. Click a payment, or choose **View Payment** from its menu, to open a
+receipt that you can print or save.
+
+## Delete an organization
+
+1. Delete the organization's projects first. See [Projects](/docs/project-settings/#delete-a-project).
+2. On the **General** tab, click **Delete** > **Delete Organization**, and confirm.
+
+You can't delete an organization that still has projects. You also can't delete one that has had a paid subscription:
+the app shows **An organization cannot be deleted if it has a subscription.** Contact support to close it.
+
+## Self-hosting
+
+Self-hosted instances usually run without billing. New organizations then get an unlimited plan, the **Billing** tab has
+no plan to change, and the **Usage** tab says monthly usage isn't available. See [Self-hosting](/docs/self-hosting/).
+
+## Ask Exie
+
+[Exie](/docs/ai/exie/) is on Medium plans and up.
+
+```prompt exie
+List the projects in this organization and when each one last received an event.
+```
+
+```prompt exie
+How many events did this project receive each day this week?
+```
