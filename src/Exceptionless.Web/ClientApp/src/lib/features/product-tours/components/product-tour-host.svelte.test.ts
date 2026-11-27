@@ -60,6 +60,26 @@ describe('ProductTourHost', () => {
         productTourCheckpoint.clear();
     });
 
+    it.each([
+        ['shows the welcome for an established organization', '2026-01-01T00:00:00Z', {}, true],
+        ['leaves a new organization to the getting-started checklist', new Date().toISOString(), {}, false],
+        ['shows the welcome after the checklist is dismissed', new Date().toISOString(), { checklist_dismissed: '2026-09-08T00:00:00Z' }, true]
+    ])('%s', async (_name, organizationCreatedUtc, productTours, expected) => {
+        // Arrange
+        const options = { ...props(), currentUser: { id: 'user', product_tours: productTours } as ViewCurrentUser, organizationCreatedUtc };
+
+        // Act
+        render(ProductTourHost, options);
+
+        // Assert
+        if (expected) {
+            expect(await screen.findByRole('region', { name: 'Welcome to Exceptionless' })).toBeVisible();
+        } else {
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            expect(screen.queryByRole('region', { name: 'Welcome to Exceptionless' })).toBeNull();
+        }
+    });
+
     it('opens Change Plan directly with the eligible plan and refreshes access after success', async () => {
         // Arrange
         const options = props();

@@ -341,7 +341,8 @@ public class OrganizationHandler(
             MaxUsers = organization.MaxUsers,
             RetentionDays = organization.RetentionDays,
             MaxEventsPerMonth = organization.MaxEventsPerMonth,
-            HasPremiumFeatures = organization.HasPremiumFeatures
+            HasPremiumFeatures = organization.HasPremiumFeatures,
+            Assistant = plans.GetPlan(organization.PlanId)?.Assistant
         };
 
         int idx = availablePlans.FindIndex(p => String.Equals(p.Id, organization.PlanId, StringComparison.OrdinalIgnoreCase));
@@ -903,6 +904,7 @@ public class OrganizationHandler(
                 billingManager.ApplyBillingPlan(value, plans.FreePlan, user);
         }
 
+        // First-run setup lists organizations immediately after creating one, so make it searchable before responding.
         var organization = await repository.AddAsync(value, o => o.ImmediateConsistency().Cache());
 
         user.OrganizationIds.Add(organization.Id);

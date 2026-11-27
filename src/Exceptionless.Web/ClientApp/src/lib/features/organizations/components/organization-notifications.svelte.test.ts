@@ -103,7 +103,7 @@ describe('OrganizationNotifications', () => {
         projectsRefetch.mockReset();
         recordProductTour.mockReset();
         state.isRecordingProductTour = false;
-        projects[0]!.is_configured = false;
+        projects.splice(0, projects.length, { id: 'project-id', is_configured: false, organization_id: 'organization-id' });
         state.me.organization_ids = ['organization-id'];
         state.me.product_tours = {};
         state.me.roles = [];
@@ -111,6 +111,56 @@ describe('OrganizationNotifications', () => {
         localStorage.clear();
         // Dismissing for a long-past day prunes every stored dismissal.
         dismissOrganizationNotification('trial-ending', 'reset', new Date(2000, 0, 1));
+    });
+
+    it.each([
+        ['no projects', [], {}, 'Set up your first project'],
+        ['no projects on a premium page', [], { premiumFeatureName: 'Sessions', requiresPremium: true }, 'Set up your first project'],
+        [
+            'only unconfigured projects',
+            [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }],
+            {},
+            "We haven't received any events yet!"
+        ]
+    ])('shows setup prompts before upgrade prompts for an organization with %s', (_, organizationProjects, props, title) => {
+        // Arrange
+        state.organization = createOrganization({ has_premium_features: false, usage: createUsage(2900) });
+        projects.splice(0, projects.length, ...organizationProjects);
+
+        // Act
+        render(OrganizationNotifications, { isChatEnabled: false, openChat: vi.fn(), ...props });
+
+        // Assert
+        expect(screen.getByText(title)).toBeInTheDocument();
+        expect(screen.getAllByRole('alert')).toHaveLength(1);
+    });
+
+    it.each([
+        ['no projects', []],
+        ['only unconfigured projects', [{ id: 'project-id', is_configured: false, organization_id: 'organization-id' }]]
+    ])('leaves the setup prompt to pages with their own for an organization with %s', (_, organizationProjects) => {
+        // Arrange
+        state.organization = createOrganization({ has_premium_features: false });
+        projects.splice(0, projects.length, ...organizationProjects);
+
+        // Act
+        render(OrganizationNotifications, { ignoreSetupPrompts: true, isChatEnabled: false, openChat: vi.fn() });
+
+        // Assert
+        expect(screen.queryAllByRole('alert')).toHaveLength(0);
+    });
+
+    it('still shows lower-priority notices when the page shows its own setup prompt', () => {
+        // Arrange
+        state.organization = createOrganization({ trial_ends_utc: new Date(Date.now() + 2 * DAY).toISOString() });
+        projects.splice(0, projects.length);
+
+        // Act
+        render(OrganizationNotifications, { ignoreSetupPrompts: true, isChatEnabled: false, openChat: vi.fn() });
+
+        // Assert
+        expect(screen.getByText(/Your free trial for Acme ends/)).toBeInTheDocument();
+        expect(screen.queryByText('Set up your first project')).not.toBeInTheDocument();
     });
 
     it('records configuration events before project data loads', () => {
@@ -198,7 +248,7 @@ describe('OrganizationNotifications', () => {
             const { unmount } = renderNotifications();
 
             // Assert
-            expect(screen.getByText(/The Acme free trial ends/).textContent).toContain('in 2 days');
+            expect(screen.getByText(/Your free trial for Acme ends/).textContent).toContain('in 2 days');
 
             // Act
             await fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
@@ -257,7 +307,7 @@ describe('OrganizationNotifications', () => {
 
                 // Assert
                 expect(wasDismissed).toBe(true);
-                expect(screen.getByText(/The Acme free trial ends/).textContent).toContain('in 2 days');
+                expect(screen.getByText(/Your free trial for Acme ends/).textContent).toContain('in 2 days');
                 expect(organizationRefetch).not.toHaveBeenCalled();
                 expect(projectsRefetch).not.toHaveBeenCalled();
             } finally {

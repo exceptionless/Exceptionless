@@ -6,6 +6,7 @@ import SourceMaps from '@lucide/svelte/icons/file-code-2';
 import ApiKey from '@lucide/svelte/icons/key';
 import Stacks from '@lucide/svelte/icons/layers';
 import Integration from '@lucide/svelte/icons/plug-2';
+import Environments from '@lucide/svelte/icons/server';
 import Settings from '@lucide/svelte/icons/settings';
 
 import type { NavigationItem } from '../../../routes.svelte';
@@ -39,6 +40,14 @@ export function routes(): NavigationItem[] {
             }),
             icon: Settings,
             title: 'Settings'
+        },
+        {
+            group: 'Project Settings',
+            href: resolve('/(app)/project/[projectId]/environments', {
+                projectId: page.params.projectId
+            }),
+            icon: Environments,
+            title: 'Environments'
         },
         {
             group: 'Project Settings',

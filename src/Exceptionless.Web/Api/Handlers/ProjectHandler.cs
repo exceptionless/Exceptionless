@@ -3,10 +3,12 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.BackgroundTasks;
 using Exceptionless.Core.Utility;
 using Exceptionless.Web.Api.Infrastructure;
 using Exceptionless.Web.Api.Messages;
@@ -37,10 +39,12 @@ public class ProjectHandler(
     SlackService slackService,
     IOAuthProviderClient oauthProviderClient,
     SampleDataService sampleDataService,
+    BackgroundTaskService backgroundTaskService,
     ApiMapper mapper,
     ITextSerializer serializer,
     AppOptions options,
     UsageService usageService,
+    DiscardedEnvironmentService discardedEnvironmentService,
     TimeProvider timeProvider,
     LinkGenerator linkGenerator,
     ILoggerFactory loggerFactory)
@@ -143,7 +147,8 @@ public class ProjectHandler(
         if (message.Changes.ContainsChangedProperty(p => p.PromotedTabs!))
             original.PromotedTabs = NormalizePromotedTabs(original.PromotedTabs);
 
-        await repository.SaveAsync(original, o => o.Cache());
+        // Clients list the organization's projects right after a rename, so the change must be searchable before we respond.
+        await repository.SaveAsync(original, o => o.Cache().ImmediateConsistency());
         return await MapToViewAsync(original);
     }
 
@@ -228,8 +233,8 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        string workItemId = await sampleDataService.EnqueueSampleEventsAsync(project.OrganizationId, project.Id);
-        return new WorkInProgressResult([workItemId]);
+        string taskId = await sampleDataService.EnqueueSampleEventsAsync(project, GetCurrentUser(message.Context).Id);
+        return new WorkInProgressResult([taskId]);
     }
 
     public async Task<Result<WorkInProgressResult>> Handle(ResetProjectData message)
@@ -238,13 +243,22 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        string workItemId = await workItemQueue.EnqueueAsync(new ResetProjectDataWorkItem
+        // The returned id is the background task that tracks the reset, so the progress panel can follow it.
+        var task = await backgroundTaskService.CreateAndEnqueueAsync(new BackgroundTask
         {
             OrganizationId = project.OrganizationId,
-            ProjectId = project.Id
+            ProjectId = project.Id,
+            Type = BackgroundTaskTypes.ResetProjectData,
+            Description = $"Reset data for {project.Name}",
+            CreatedByUserId = GetCurrentUser(message.Context).Id
+        }, t => new ResetProjectDataWorkItem
+        {
+            OrganizationId = project.OrganizationId,
+            ProjectId = project.Id,
+            TaskId = t.Id
         });
 
-        return new WorkInProgressResult([workItemId]);
+        return new WorkInProgressResult([task.Id]);
     }
 
     public async Task<Result<IDictionary<string, NotificationSettings>>> Handle(GetProjectNotificationSettings message)
@@ -467,6 +481,116 @@ public class ProjectHandler(
         return Result.Success();
     }
 
+    public async Task<Result<ProjectEnvironmentSettings>> Handle(AddProjectEnvironment message)
+    {
+        var project = await GetModelAsync(message.Id, message.Context, useCache: false);
+        if (project is null)
+            return Result.NotFound("Project not found.");
+
+        string? name = ProjectEnvironment.NormalizeName(message.Environment.Name);
+        if (name is null)
+            return Result.Invalid(ValidationError.Create("name", "Environment names must be 1 to 64 letters, digits, periods, underscores, or hyphens, and start with a letter or digit."));
+
+        if (project.FindEnvironment(name) is not null)
+            return Result.Conflict($"The environment '{name}' is already listed. Names are case-insensitive.");
+
+        if (project.Environments.Count >= ProjectEnvironment.MaximumCount)
+            return Result.Invalid(ValidationError.Create("environments", $"A project cannot list more than {ProjectEnvironment.MaximumCount} environments."));
+
+        var environment = new ProjectEnvironment { Name = name, Notify = message.Environment.Notify, CreatedUtc = timeProvider.GetUtcNow().UtcDateTime };
+        if (!await repository.AddEnvironmentAsync(project, environment))
+        {
+            // A concurrent edit listed the name or filled the list after the checks above.
+            var latest = await GetModelAsync(message.Id, message.Context, useCache: false);
+            if (latest?.FindEnvironment(name) is not null)
+                return Result.Conflict($"The environment '{name}' is already listed. Names are case-insensitive.");
+
+            return Result.Invalid(ValidationError.Create("environments", $"A project cannot list more than {ProjectEnvironment.MaximumCount} environments."));
+        }
+
+        // Adding the name means those events are accepted from now on, so stop reporting them as discarded.
+        await discardedEnvironmentService.RemoveAsync(project.Id, name);
+        return await GetEnvironmentSettingsAsync(message.Id, message.Context);
+    }
+
+    public async Task<Result<ProjectEnvironmentSettings>> Handle(ChangeProjectEnvironment message)
+    {
+        var project = await GetModelAsync(message.Id, message.Context, useCache: false);
+        if (project is null)
+            return Result.NotFound("Project not found.");
+
+        var environment = project.FindEnvironment(ProjectEnvironment.NormalizeName(message.Name));
+        if (environment is null)
+            return Result.NotFound("Environment not found.");
+
+        if (message.Changes.Notify is { } notify && environment.Notify != notify)
+            await repository.SetEnvironmentNotifyAsync(project, environment.Name, notify);
+
+        return await GetEnvironmentSettingsAsync(message.Id, message.Context);
+    }
+
+    public async Task<Result<ProjectEnvironmentSettings>> Handle(RemoveProjectEnvironment message)
+    {
+        var project = await GetModelAsync(message.Id, message.Context, useCache: false);
+        if (project is null)
+            return Result.NotFound("Project not found.");
+
+        // Removing a name never touches events. It only changes how new events are treated.
+        string? name = ProjectEnvironment.NormalizeName(message.Name);
+        if (name is not null && project.FindEnvironment(name) is not null)
+            await repository.RemoveEnvironmentAsync(project, name);
+
+        return await GetEnvironmentSettingsAsync(message.Id, message.Context);
+    }
+
+    public async Task<Result<ProjectEnvironmentSettings>> Handle(ChangeProjectEnvironmentSettings message)
+    {
+        var project = await GetModelAsync(message.Id, message.Context, useCache: false);
+        if (project is null)
+            return Result.NotFound("Project not found.");
+
+        var changes = message.Settings;
+        bool stoppedDiscardingWithoutEnvironment = changes.DiscardEventsWithoutEnvironment is false && project.DiscardEventsWithoutEnvironment;
+        await repository.SetEnvironmentSettingsAsync(project, changes.DiscardUnlistedEnvironments, changes.DiscardEventsWithoutEnvironment, changes.NotifyOtherEnvironments);
+
+        if (stoppedDiscardingWithoutEnvironment)
+            await discardedEnvironmentService.RemoveAsync(project.Id, null);
+
+        return await GetEnvironmentSettingsAsync(message.Id, message.Context);
+    }
+
+    public async Task<Result<ProjectDiscardedEnvironments>> Handle(GetDiscardedProjectEnvironments message)
+    {
+        var project = await GetModelAsync(message.Id, message.Context);
+        if (project is null)
+            return Result.NotFound("Project not found.");
+
+        var discarded = await discardedEnvironmentService.GetAsync(project.Id);
+        return new ProjectDiscardedEnvironments
+        {
+            RetentionDays = DiscardedEnvironmentService.RetentionDays,
+            Environments = discarded.Environments,
+            OtherEvents = discarded.OtherEvents,
+            OtherNames = discarded.OtherNames,
+            OtherNamesCapped = discarded.OtherNamesCapped
+        };
+    }
+
+    private async Task<Result<ProjectEnvironmentSettings>> GetEnvironmentSettingsAsync(string id, HttpContext context)
+    {
+        // Read the saved project so the response includes concurrent edits, not just this one.
+        var project = await GetModelAsync(id, context, useCache: false);
+        return project is null ? Result.NotFound("Project not found.") : MapEnvironmentSettings(project);
+    }
+
+    private static ProjectEnvironmentSettings MapEnvironmentSettings(Project project) => new()
+    {
+        Environments = project.Environments,
+        DiscardUnlistedEnvironments = project.DiscardUnlistedEnvironments,
+        DiscardEventsWithoutEnvironment = project.DiscardEventsWithoutEnvironment,
+        NotifyOtherEnvironments = project.NotifyOtherEnvironments
+    };
+
     private async Task<Result<object>> GetConfigAsync(string? id, int? version, HttpContext httpContext)
     {
         if (String.IsNullOrEmpty(id))
@@ -564,7 +688,8 @@ public class ProjectHandler(
         value.AddDefaultNotificationSettings(GetCurrentUserId(httpContext));
         value.SetDefaultUserAgentBotPatterns();
         value.Configuration.IncrementVersion();
-        // The next capacity check uses a search count, so creation must be visible before releasing the billing lock.
+        // The next capacity check uses a search count, and first-run setup lists the organization's projects right
+        // after creating one, so creation must be visible before releasing the billing lock and responding.
         return repository.AddAsync(value, o => o.Cache().ImmediateConsistency());
     }
 
@@ -604,7 +729,8 @@ public class ProjectHandler(
         foreach (var project in projects.OfType<ISupportSoftDeletes>())
             project.IsDeleted = true;
 
-        // A suspended organization needs the updated project count before checking whether ingestion can resume.
+        // Clients list the organization's projects right after a delete, and a suspended organization needs the updated
+        // project count before checking whether ingestion can resume, so the soft delete must be searchable first.
         await repository.SaveAsync(projects, command => command.ImmediateConsistency());
         foreach (string organizationId in projects.Select(project => project.OrganizationId).Distinct(StringComparer.Ordinal))
             await billingManager.RecheckPlanLimitSuspensionAsync(organizationId);

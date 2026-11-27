@@ -1,8 +1,10 @@
-﻿using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Foundatio.Queues;
 using Microsoft.Extensions.Logging;
 
@@ -14,14 +16,18 @@ public class QueueNotificationAction : EventPipelineActionBase
     private readonly IQueue<EventNotification> _notificationQueue;
     private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
     private readonly IWebHookRepository _webHookRepository;
+    private readonly IStackRepository _stackRepository;
     private readonly WebHookDataPluginManager _webHookDataPluginManager;
+    private readonly SemanticVersionParser _semanticVersionParser;
 
-    public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, WebHookDataPluginManager webHookDataPluginManager, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository, IStackRepository stackRepository, WebHookDataPluginManager webHookDataPluginManager, SemanticVersionParser semanticVersionParser, AppOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _notificationQueue = notificationQueue;
         _webHookNotificationQueue = webHookNotificationQueue;
         _webHookRepository = webHookRepository;
+        _stackRepository = stackRepository;
         _webHookDataPluginManager = webHookDataPluginManager;
+        _semanticVersionParser = semanticVersionParser;
         ContinueOnError = true;
     }
 
@@ -34,22 +40,43 @@ public class QueueNotificationAction : EventPipelineActionBase
         if (ctx.Stack is null || !ctx.Stack.AllowNotifications)
             return;
 
-        if (ShouldQueueNotification(ctx))
-            await _notificationQueue.EnqueueAsync(new EventNotification
+        // Every notification for every channel (email, Slack, web hooks) requires a notifying environment.
+        if (!ctx.Project.ShouldNotifyForEnvironment(ctx.Event.Environment))
+            return;
+
+        bool isNew = await IsNewForNotificationAsync(ctx);
+        // An immediate regression reserves the same per-cycle key a pending claim uses, so a concurrent batch that marks the regression
+        // pending from a non-notifying environment can't report it a second time.
+        bool isRegression = ctx.IsRegression
+            ? await _stackRepository.TryReserveNotificationAsync(ctx.Stack, PendingStackNotification.Regression)
+            : IsAfterFix(ctx) && await ClaimPendingAsync(ctx, PendingStackNotification.Regression);
+        if (ShouldQueueNotification(ctx, isNew, isRegression))
+        {
+            try
             {
-                EventId = ctx.Event.Id,
-                IsNew = ctx.IsNew,
-                IsRegression = ctx.IsRegression,
-                TotalOccurrences = ctx.Stack.TotalOccurrences
-            });
+                await _notificationQueue.EnqueueAsync(new EventNotification
+                {
+                    EventId = ctx.Event.Id,
+                    IsNew = isNew,
+                    IsRegression = isRegression,
+                    TotalOccurrences = ctx.Stack.TotalOccurrences
+                });
+            }
+            catch (Exception) when (isNew || isRegression)
+            {
+                // The claim is already spent. Put it back so the next occurrence sends the notification instead of losing it.
+                await ReleaseAsync(ctx.Stack, isNew, isRegression);
+                throw;
+            }
+        }
 
         var webHooks = await _webHookRepository.GetByOrganizationIdOrProjectIdAsync(ctx.Event.OrganizationId, ctx.Event.ProjectId);
         foreach (var hook in webHooks.Documents)
         {
-            if (!ShouldCallWebHook(hook, ctx))
+            if (!ShouldCallWebHook(hook, ctx, isNew, isRegression))
                 continue;
 
-            var context = new WebHookDataContext(hook, ctx.Organization, ctx.Project, ctx.Stack, ctx.Event, ctx.IsNew, ctx.IsRegression);
+            var context = new WebHookDataContext(hook, ctx.Organization, ctx.Project, ctx.Stack, ctx.Event, isNew, isRegression);
             var notification = new WebHookNotification
             {
                 OrganizationId = ctx.Event.OrganizationId,
@@ -71,7 +98,77 @@ public class QueueNotificationAction : EventPipelineActionBase
         }
     }
 
-    private bool ShouldCallWebHook(WebHook hook, EventContext ctx)
+    /// <summary>
+    /// A stack is new for notifications on its first occurrence in a notifying environment. That is the occurrence that created it,
+    /// or the first one after it was created in an environment that does not notify. Stacks created before environments were managed
+    /// are never pending, so they are never reported as new again.
+    /// </summary>
+    private async Task<bool> IsNewForNotificationAsync(EventContext ctx)
+    {
+        if (ctx.IsNew)
+            return true;
+
+        return await ClaimPendingAsync(ctx, PendingStackNotification.New);
+    }
+
+    private async Task ReleaseAsync(Stack stack, bool isNew, bool isRegression)
+    {
+        try
+        {
+            if (isNew)
+            {
+                await _stackRepository.ReleaseNotificationAsync(stack, PendingStackNotification.New);
+                stack.IsNewNotificationPending = true;
+            }
+
+            if (isRegression)
+            {
+                await _stackRepository.ReleaseNotificationAsync(stack, PendingStackNotification.Regression);
+                stack.IsRegressionNotificationPending = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to release the notification claim for stack {StackId}: {Message}", stack.Id, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// The repository clears the flag atomically, so concurrent events can only produce one notification.
+    /// </summary>
+    private async Task<bool> ClaimPendingAsync(EventContext ctx, PendingStackNotification kind)
+    {
+        bool isPending = kind == PendingStackNotification.New ? ctx.Stack!.IsNewNotificationPending : ctx.Stack!.IsRegressionNotificationPending;
+        if (!isPending)
+            return false;
+
+        bool claimed = await _stackRepository.TryClaimNotificationAsync(ctx.Stack, kind);
+        if (kind == PendingStackNotification.New)
+            ctx.Stack.IsNewNotificationPending = false;
+        else
+            ctx.Stack.IsRegressionNotificationPending = false;
+
+        return claimed;
+    }
+
+    /// <summary>
+    /// A deferred regression is only reported by an occurrence that is itself past the fix. Once the stack is regressed, the regression check
+    /// no longer filters older versions, so an occurrence from before the fix must not claim a regression first seen in another environment.
+    /// </summary>
+    private bool IsAfterFix(EventContext ctx)
+    {
+        var stack = ctx.Stack!;
+        if (!String.IsNullOrEmpty(stack.FixedInVersion))
+        {
+            var fixedInVersion = _semanticVersionParser.Parse(stack.FixedInVersion);
+            var version = _semanticVersionParser.Parse(ctx.Event.GetVersion()) ?? _semanticVersionParser.Default;
+            return fixedInVersion is null || version >= fixedInVersion;
+        }
+
+        return stack.DateFixed is not { } dateFixed || dateFixed < ctx.Event.Date.UtcDateTime;
+    }
+
+    private bool ShouldCallWebHook(WebHook hook, EventContext ctx, bool isNew, bool isRegression)
     {
         if (!hook.IsEnabled)
             return false;
@@ -79,16 +176,16 @@ public class QueueNotificationAction : EventPipelineActionBase
         if (!String.IsNullOrEmpty(hook.ProjectId) && !String.Equals(ctx.Project.Id, hook.ProjectId))
             return false;
 
-        if (ctx.IsNew && ctx.Event.IsError() && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewError))
+        if (isNew && ctx.Event.IsError() && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewError))
             return true;
 
         if (ctx.Event.IsCritical() && ctx.Event.IsError() && hook.EventTypes.Contains(WebHook.KnownEventTypes.CriticalError))
             return true;
 
-        if (ctx.IsRegression && hook.EventTypes.Contains(WebHook.KnownEventTypes.StackRegression))
+        if (isRegression && hook.EventTypes.Contains(WebHook.KnownEventTypes.StackRegression))
             return true;
 
-        if (ctx.IsNew && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewEvent))
+        if (isNew && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewEvent))
             return true;
 
         if (ctx.Event.IsCritical() && hook.EventTypes.Contains(WebHook.KnownEventTypes.CriticalEvent))
@@ -97,21 +194,21 @@ public class QueueNotificationAction : EventPipelineActionBase
         return false;
     }
 
-    private bool ShouldQueueNotification(EventContext ctx)
+    private bool ShouldQueueNotification(EventContext ctx, bool isNew, bool isRegression)
     {
         if (ctx.Project.NotificationSettings.Count == 0)
             return false;
 
-        if (ctx.IsNew && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewErrors))
+        if (isNew && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewErrors))
             return true;
 
         if (ctx.Event.IsCritical() && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalErrors))
             return true;
 
-        if (ctx.IsRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportEventRegressions))
+        if (isRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportEventRegressions))
             return true;
 
-        if (ctx.IsNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewEvents))
+        if (isNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewEvents))
             return true;
 
         if (ctx.Event.IsCritical() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalEvents))

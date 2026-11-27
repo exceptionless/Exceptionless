@@ -30,3 +30,8 @@ public record SetProjectData(string Id, string? Key, ValueFromBody<string> Value
 public record DeleteProjectData(string Id, string? Key, HttpContext Context);
 public record AddProjectSlack(string Id, string Code, HttpContext Context);
 public record RemoveProjectSlack(string Id, HttpContext Context);
+public record AddProjectEnvironment(string Id, NewProjectEnvironment Environment, HttpContext Context);
+public record ChangeProjectEnvironment(string Id, string? Name, UpdateProjectEnvironment Changes, HttpContext Context);
+public record RemoveProjectEnvironment(string Id, string? Name, HttpContext Context);
+public record ChangeProjectEnvironmentSettings(string Id, UpdateProjectEnvironmentSettings Settings, HttpContext Context);
+public record GetDiscardedProjectEnvironments(string Id, HttpContext Context);

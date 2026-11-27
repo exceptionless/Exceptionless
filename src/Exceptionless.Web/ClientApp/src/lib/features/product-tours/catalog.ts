@@ -95,7 +95,7 @@ export const productTourCatalog: readonly ProductTourDefinition[] = [
             }
 
             if (!context.organizationId) {
-                return { checkpointName: 'organization-name', route: resolve('/(app)/organization/add') };
+                return { checkpointName: 'project-name', route: resolve('/(app)/organization/add') };
             }
 
             const unconfiguredProject = context.projects?.find((project) => !project.is_configured);

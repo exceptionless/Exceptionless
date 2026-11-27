@@ -57,7 +57,7 @@
                 <DataTable.Loading {table} />
             </DelayedRender>
         {:else}
-            <DataTable.Empty {table} />
+            <DataTable.Empty {table}>No events match these filters.</DataTable.Empty>
         {/if}
         {#if bodyChildren}
             {@render bodyChildren()}

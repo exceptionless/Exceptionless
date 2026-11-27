@@ -91,6 +91,146 @@ public class ProjectRepository : RepositoryOwnedByOrganization<Project>, IProjec
             await InvalidateCacheAsync(projects);
     }
 
+    public async Task<bool> SetIsConfiguredAsync(Project project, bool isConfigured)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+
+        // Patch only this field so concurrent project edits and deletions are preserved. An id-only
+        // patch notification has no organization id, so web socket clients never receive it; publish
+        // the change with the project's ownership instead. Clients refetch project lists when notified,
+        // so the change must be searchable before the notification is published.
+        bool modified = await PatchAsync(project.Id, new PartialPatch(new { is_configured = isConfigured }), o => o.ImmediateConsistency().Notifications(false));
+        if (modified)
+            await PublishChangeTypeMessageAsync(ChangeType.Saved, project);
+
+        return modified;
+    }
+
+    // The environment edits below patch only the fields they change. The environments page sends several small edits back to back,
+    // and saving a whole stale copy of the project would silently undo whichever edit finished first.
+
+    public Task<bool> AddEnvironmentAsync(Project project, ProjectEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentNullException.ThrowIfNull(environment);
+
+        const string script = @"
+if (ctx._source.environments == null) {
+  ctx._source.environments = new ArrayList();
+}
+
+for (def environment : ctx._source.environments) {
+  if (environment.name.toLowerCase() == params.key) {
+    ctx.op = 'noop';
+    return;
+  }
+}
+
+if (ctx._source.environments.size() >= params.maximumCount) {
+  ctx.op = 'noop';
+  return;
+}
+
+ctx._source.environments.add(params.environment);
+ctx._source.updated_utc = params.updatedUtc;";
+
+        return PatchEnvironmentsAsync(project, new ScriptPatch(script.TrimScript())
+        {
+            Params = new Dictionary<string, object>(4)
+            {
+                { "key", ProjectEnvironment.GetKey(environment.Name) },
+                { "maximumCount", ProjectEnvironment.MaximumCount },
+                { "environment", new Dictionary<string, object> { { "name", environment.Name }, { "notify", environment.Notify }, { "created_utc", environment.CreatedUtc } } },
+                { "updatedUtc", _timeProvider.GetUtcNow().UtcDateTime }
+            }
+        });
+    }
+
+    public Task<bool> SetEnvironmentNotifyAsync(Project project, string name, bool notify)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+
+        const string script = @"
+boolean changed = false;
+if (ctx._source.environments != null) {
+  for (def environment : ctx._source.environments) {
+    if (environment.name.toLowerCase() == params.key && environment.notify != params.notify) {
+      environment.notify = params.notify;
+      changed = true;
+    }
+  }
+}
+
+if (changed) {
+  ctx._source.updated_utc = params.updatedUtc;
+} else {
+  ctx.op = 'noop';
+}";
+
+        return PatchEnvironmentsAsync(project, new ScriptPatch(script.TrimScript())
+        {
+            Params = new Dictionary<string, object>(3)
+            {
+                { "key", ProjectEnvironment.GetKey(name) },
+                { "notify", notify },
+                { "updatedUtc", _timeProvider.GetUtcNow().UtcDateTime }
+            }
+        });
+    }
+
+    public Task<bool> RemoveEnvironmentAsync(Project project, string name)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+
+        const string script = @"
+if (ctx._source.environments != null && ctx._source.environments.removeIf(environment -> environment.name.toLowerCase() == params.key)) {
+  ctx._source.updated_utc = params.updatedUtc;
+} else {
+  ctx.op = 'noop';
+}";
+
+        return PatchEnvironmentsAsync(project, new ScriptPatch(script.TrimScript())
+        {
+            Params = new Dictionary<string, object>(2)
+            {
+                { "key", ProjectEnvironment.GetKey(name) },
+                { "updatedUtc", _timeProvider.GetUtcNow().UtcDateTime }
+            }
+        });
+    }
+
+    public Task<bool> SetEnvironmentSettingsAsync(Project project, bool? discardUnlistedEnvironments, bool? discardEventsWithoutEnvironment, bool? notifyOtherEnvironments)
+    {
+        ArgumentNullException.ThrowIfNull(project);
+
+        var changes = new Dictionary<string, object>(4);
+        if (discardUnlistedEnvironments is { } discardUnlisted)
+            changes["discard_unlisted_environments"] = discardUnlisted;
+        if (discardEventsWithoutEnvironment is { } discardWithout)
+            changes["discard_events_without_environment"] = discardWithout;
+        if (notifyOtherEnvironments is { } notifyOther)
+            changes["notify_other_environments"] = notifyOther;
+
+        if (changes.Count == 0)
+            return Task.FromResult(false);
+
+        changes["updated_utc"] = _timeProvider.GetUtcNow().UtcDateTime;
+        return PatchEnvironmentsAsync(project, new PartialPatch(changes));
+    }
+
+    private async Task<bool> PatchEnvironmentsAsync(Project project, IPatchOperation operation)
+    {
+        // Like SetIsConfiguredAsync: an id-only patch notification has no organization id, so publish with the project's ownership.
+        bool modified = await PatchAsync(project.Id, operation, o => o.ImmediateConsistency().Notifications(false));
+        if (!modified)
+            return false;
+
+        // Ingestion reads cached projects, so drop every cached copy, including the client configuration entry.
+        await InvalidateCacheAsync([project]);
+        await PublishChangeTypeMessageAsync(ChangeType.Saved, project);
+        return true;
+    }
+
     protected override async Task AddDocumentsToCacheAsync(ICollection<FindHit<Project>> findHits, ICommandOptions options, bool isDirtyRead)
     {
         await base.AddDocumentsToCacheAsync(findHits, options, isDirtyRead);

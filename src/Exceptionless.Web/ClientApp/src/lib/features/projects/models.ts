@@ -1,4 +1,17 @@
-export type { ClientConfiguration, NewProject, NotificationSettings, UpdateProject, ViewProject } from '#generated/api.ts';
+export type {
+    ClientConfiguration,
+    DiscardedEnvironment,
+    NewProject,
+    NewProjectEnvironment,
+    NotificationSettings,
+    ProjectDiscardedEnvironments,
+    ProjectEnvironment,
+    ProjectEnvironmentSettings,
+    UpdateProject,
+    UpdateProjectEnvironment,
+    UpdateProjectEnvironmentSettings,
+    ViewProject
+} from '#generated/api.ts';
 
 export interface ClientConfigurationSetting {
     key: string;

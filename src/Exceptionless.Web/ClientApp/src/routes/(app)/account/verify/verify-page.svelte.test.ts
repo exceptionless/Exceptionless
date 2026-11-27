@@ -1,66 +1,131 @@
+import { FetchClient } from '@foundatiofx/fetchclient';
+import { QueryClient } from '@tanstack/svelte-query';
 import { render, waitFor } from '@testing-library/svelte';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type Mock, type MockInstance, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({
-    getJSON: vi.fn(),
-    goto: vi.fn(),
-    resetQueries: vi.fn(),
-    toast: { error: vi.fn(), success: vi.fn() }
-}));
-
-vi.mock('$app/navigation', () => ({ goto: mocks.goto }));
-vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
-vi.mock('$app/state', () => ({ page: { url: new URL('https://app.test/account/verify?token=abc') } }));
-vi.mock('@foundatiofx/fetchclient', () => ({ useFetchClient: () => ({ getJSON: mocks.getJSON }) }));
-vi.mock('@tanstack/svelte-query', () => ({
-    useQueryClient: () => ({ resetQueries: mocks.resetQueries })
-}));
-vi.mock('#features/users/api.svelte.ts', () => ({ queryKeys: { me: () => ['User', 'me'] } }));
-vi.mock('svelte-sonner', () => ({ toast: mocks.toast }));
+import { queryKeys } from '#features/users/api.svelte.ts';
 
 import VerifyPage from './+page.svelte';
 
-describe('account verify page', () => {
+const mocks = vi.hoisted(() => ({
+    goto: vi.fn(),
+    page: { url: new URL('http://localhost/account/verify') },
+    queryClient: undefined as QueryClient | undefined,
+    toast: { error: vi.fn(), success: vi.fn() },
+    useFetchClient: vi.fn()
+}));
+
+vi.mock('$app/navigation', () => ({ goto: mocks.goto }));
+vi.mock('$app/paths', () => ({ resolve: (path: string) => path.replace('/(app)', '') || '/' }));
+vi.mock('$app/state', () => ({ page: mocks.page }));
+vi.mock('svelte-sonner', () => ({ toast: mocks.toast }));
+vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@foundatiofx/fetchclient')>()),
+    useFetchClient: mocks.useFetchClient
+}));
+vi.mock('@tanstack/svelte-query', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@tanstack/svelte-query')>()),
+    useQueryClient: () => mocks.queryClient
+}));
+
+const token = 'A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9t0';
+
+function problemResponse(status: number, title: string) {
+    return new Response(JSON.stringify({ status, title }), { headers: { 'Content-Type': 'application/problem+json' }, status });
+}
+
+describe('Verify email address page', () => {
+    let fetch: Mock<typeof globalThis.fetch>;
+    let resetQueries: MockInstance<QueryClient['resetQueries']>;
+
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.resetQueries.mockResolvedValue(undefined);
+        fetch = vi.fn<typeof globalThis.fetch>();
+        mocks.useFetchClient.mockReturnValue(new FetchClient({ baseUrl: 'http://localhost/api/v2/', fetch }));
+        mocks.queryClient = new QueryClient();
+        resetQueries = vi.spyOn(mocks.queryClient, 'resetQueries');
+        mocks.page.url = new URL(`http://localhost/account/verify?token=${token}`);
     });
 
-    it('identifies the email address verified by the link', async () => {
+    function respondAsVerified(verifiedEmail: string, signedInEmail: string) {
+        fetch.mockImplementation(async (input) =>
+            (input as Request).url.endsWith('/users/me')
+                ? Response.json({ email_address: signedInEmail, id: 'user-id', is_email_address_verified: verifiedEmail === signedInEmail })
+                : Response.json({ email_address: verifiedEmail })
+        );
+    }
+
+    it('VerifyEmailAddress_ValidToken_VerifiesWithGetAndContinuesIntoTheApp', async () => {
         // Arrange
-        mocks.getJSON.mockResolvedValue({ data: { email_address: 'alice@example.com' } });
+        respondAsVerified('alice@example.com', 'Alice@Example.com');
 
         // Act
         render(VerifyPage);
 
         // Assert
-        await waitFor(() => expect(mocks.goto).toHaveBeenCalled());
+        await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/'));
+        const request = fetch.mock.calls[0]![0] as Request;
+        expect(request.url).toBe(`http://localhost/api/v2/users/verify-email-address/${token}`);
+        expect(request.method).toBe('GET');
+        expect(resetQueries).toHaveBeenCalledWith({ exact: true, queryKey: queryKeys.me() });
         expect(mocks.toast.success).toHaveBeenCalledWith('Verified alice@example.com.');
-        expect(mocks.resetQueries).toHaveBeenCalledWith({ exact: true, queryKey: ['User', 'me'] });
+        expect(mocks.toast.error).not.toHaveBeenCalled();
     });
 
-    it('reports verification without claiming the signed-in account when no address is returned', async () => {
+    it('VerifyEmailAddress_LinkForAnotherAccount_StaysWhereTheSignedInUserCanResend', async () => {
         // Arrange
-        mocks.getJSON.mockResolvedValue({ data: null });
+        respondAsVerified('other@example.com', 'alice@example.com');
 
         // Act
         render(VerifyPage);
 
         // Assert
-        await waitFor(() => expect(mocks.goto).toHaveBeenCalled());
-        expect(mocks.toast.success).toHaveBeenCalledWith('Email address verified.');
+        await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/account/manage'));
+        // Name the address: the signed-in account is still unverified.
+        expect(mocks.toast.success).toHaveBeenCalledWith('Verified other@example.com.');
     });
 
-    it('reports an error when the link cannot be verified', async () => {
+    it.each([
+        [404, 'User not found.', 'This verification link is invalid or has already been used.'],
+        [422, 'Verify Email Address Token has expired.', 'This verification link has expired.'],
+        [500, 'Internal Server Error', 'We could not verify your email address.']
+    ])('VerifyEmailAddress_%i_ShowsSpecificErrorWithoutRefreshingCurrentUser', async (status, title, message) => {
         // Arrange
-        mocks.getJSON.mockRejectedValue(new Error('Invalid token'));
+        fetch.mockResolvedValue(problemResponse(status, title));
 
         // Act
         render(VerifyPage);
 
         // Assert
-        await waitFor(() => expect(mocks.goto).toHaveBeenCalled());
-        expect(mocks.toast.error).toHaveBeenCalled();
+        await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/account/manage'));
+        expect(mocks.toast.error).toHaveBeenCalledWith(expect.stringContaining(message));
         expect(mocks.toast.success).not.toHaveBeenCalled();
+        expect(resetQueries).not.toHaveBeenCalled();
+    });
+
+    it('VerifyEmailAddress_MissingToken_ExplainsWithoutCallingApi', async () => {
+        // Arrange
+        mocks.page.url = new URL('http://localhost/account/verify');
+
+        // Act
+        render(VerifyPage);
+
+        // Assert
+        await waitFor(() => expect(mocks.goto).toHaveBeenCalledWith('/account/manage'));
+        expect(fetch).not.toHaveBeenCalled();
+        expect(mocks.toast.error).toHaveBeenCalledWith(expect.stringContaining('This verification link is incomplete.'));
+    });
+
+    it('VerifyEmailAddress_TokenWithReservedCharacters_EncodesPathSegment', async () => {
+        // Arrange
+        mocks.page.url = new URL('http://localhost/account/verify?token=abc%2F..%3Fx%3D1');
+        fetch.mockResolvedValue(problemResponse(404, 'Not Found'));
+
+        // Act
+        render(VerifyPage);
+
+        // Assert
+        await waitFor(() => expect(mocks.goto).toHaveBeenCalled());
+        expect((fetch.mock.calls[0]![0] as Request).url).toBe('http://localhost/api/v2/users/verify-email-address/abc%2F..%3Fx%3D1');
     });
 });

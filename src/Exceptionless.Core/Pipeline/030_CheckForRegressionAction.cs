@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -75,8 +76,14 @@ public class CheckForRegressionAction : EventPipelineActionBase
                     continue;
 
                 _logger.LogDebug("Marking stack and events as regressed in version: {Version}", regressedVersion);
-                await _stackRepository.MarkAsRegressedAsync(stack.Id);
+                // A regression seen only in an environment that does not notify is reported when a notifying environment first sees it.
+                bool notificationPending = !regressedContext.Project.ShouldNotifyForEnvironment(regressedContext.Event.Environment);
+                await _stackRepository.MarkAsRegressedAsync(stack, notificationPending);
+
+                // Every event in the group shares this stack instance, so update it once.
                 stack.Status = StackStatus.Regressed;
+                stack.IsNewNotificationPending = false;
+                stack.IsRegressionNotificationPending = notificationPending;
 
                 foreach (var ctx in stackGroup)
                     ctx.IsRegression = ctx == regressedContext;

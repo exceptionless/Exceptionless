@@ -13,6 +13,8 @@ public class CountingMailer : IMailer
 
     public List<OrganizationTrialEndingCall> OrganizationTrialEndingCalls { get; } = [];
 
+    public List<UserEmailVerifyCall> UserEmailVerifyCalls { get; } = [];
+
     /// <summary>
     /// When true, <see cref="SendOrganizationNoticeAsync"/> throws instead of recording a call.
     /// Reset by <see cref="Reset"/>.
@@ -29,8 +31,15 @@ public class CountingMailer : IMailer
         return Task.FromResult(true);
     }
 
+    public List<EventNoticeCall> EventNoticeCalls { get; } = [];
+
     public Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences)
     {
+        lock (EventNoticeCalls)
+        {
+            EventNoticeCalls.Add(new EventNoticeCall(user.Id, ev.Id, isNew, isRegression));
+        }
+
         return Task.FromResult(true);
     }
 
@@ -78,8 +87,13 @@ public class CountingMailer : IMailer
         return Task.CompletedTask;
     }
 
-    public Task SendUserEmailVerifyAsync(User user)
+    public Task SendUserEmailVerifyAsync(User user, bool isNewAccount = false)
     {
+        lock (UserEmailVerifyCalls)
+        {
+            UserEmailVerifyCalls.Add(new UserEmailVerifyCall(user.EmailAddress, isNewAccount));
+        }
+
         return Task.CompletedTask;
     }
 
@@ -95,9 +109,18 @@ public class CountingMailer : IMailer
         {
             OrganizationNoticeCalls.Clear();
         }
+
+        lock (EventNoticeCalls)
+        {
+            EventNoticeCalls.Clear();
+        }
         lock (OrganizationTrialEndingCalls)
         {
             OrganizationTrialEndingCalls.Clear();
+        }
+        lock (UserEmailVerifyCalls)
+        {
+            UserEmailVerifyCalls.Clear();
         }
         ShouldThrow = false;
         OnOrganizationTrialEnding = null;
@@ -106,4 +129,8 @@ public class CountingMailer : IMailer
 
 public record OrganizationNoticeCall(string UserId, string OrganizationId, bool IsOverMonthlyLimit, bool IsOverHourlyLimit);
 
+public record EventNoticeCall(string UserId, string EventId, bool IsNew, bool IsRegression);
+
 public record OrganizationTrialEndingCall(string UserId, string OrganizationId);
+
+public record UserEmailVerifyCall(string EmailAddress, bool IsNewAccount);

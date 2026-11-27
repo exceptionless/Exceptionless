@@ -27,7 +27,7 @@ Ordinary test navigation uses root routes. `tests/legacy-links.e2e.ts` specifica
 ## Coverage Shape
 
 - Authentication: validation, successful login, session restoration, logout, and protected-route redirect.
-- Account recovery: password reset and organization invitation acceptance through local email links.
+- Account recovery: password reset, email verification, and organization invitation acceptance through local email links.
 - Discovery: sidebar navigation, filters, empty states, and recovery.
 - Investigation: open event and stack details through rendered tables and sheets.
 - Organizations: switch organizations and verify event isolation persists through reload.

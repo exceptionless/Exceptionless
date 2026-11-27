@@ -263,10 +263,18 @@ static IReadOnlyCollection<EmailPreview> GetPreviews()
             $"{appUrl}/project/project-1/dashboard?type=error&view=stacks",
             $"{appUrl}/project/project-1/dashboard?type=error&view=stacks",
             $"{appUrl}/account/notifications?project=project-1")),
-        new("user-email-verify", "Email verification", new UserEmailVerifyEmail(
-            "Exceptionless Account Confirmation",
+        new("user-email-verify-welcome", "Welcome and email verification", new UserEmailVerifyEmail(
+            "Welcome to Exceptionless — confirm your email",
             "Ada Lovelace",
-            new EmailAction("Verify Address", $"{appUrl}/account/verify?token=preview-token"))),
+            true,
+            $"{appUrl}/",
+            new EmailAction("Confirm Email Address", $"{appUrl}/account/verify?token=preview-token"))),
+        new("user-email-verify", "Email verification", new UserEmailVerifyEmail(
+            "Confirm your Exceptionless email address",
+            "Ada Lovelace",
+            false,
+            $"{appUrl}/",
+            new EmailAction("Confirm Email Address", $"{appUrl}/account/verify?token=preview-token"))),
         new("user-password-reset", "Password reset", new UserPasswordResetEmail(
             "Exceptionless Password Reset",
             "Ada Lovelace",

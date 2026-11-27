@@ -7,12 +7,25 @@ export enum StackStatus {
   Discarded = "discarded",
 }
 
+export enum BulkOperationSelectionKind {
+  Ids = "Ids",
+  Filter = "Filter",
+}
+
 export enum BillingStatus {
   Trialing = 0,
   Active = 1,
   PastDue = 2,
   Canceled = 3,
   Unpaid = 4,
+}
+
+export enum BackgroundTaskStatus {
+  Queued = "Queued",
+  Running = "Running",
+  Completed = "Completed",
+  Failed = "Failed",
+  Cancelled = "Cancelled",
 }
 
 export interface AdminAssistantOrganizationUsage {
@@ -132,6 +145,8 @@ export interface BillingPlan {
   max_events_per_month: number;
   has_premium_features: boolean;
   is_hidden: boolean;
+  /** Whether the plan includes Exie. */
+  has_assistant: boolean;
 }
 
 export interface ChangePasswordModel {
@@ -162,6 +177,21 @@ export interface CountResult {
   total: number;
   aggregations?: null | Record<string, IAggregate>;
   data?: null | object;
+}
+
+/** An environment name that recently had events discarded because it is not listed on the project. */
+export interface DiscardedEnvironment {
+  /** The lowercased key for the environment, or null for events that had no environment. */
+  key?: null | string;
+  /** The first-seen casing of the name, or null for events that had no environment. */
+  name?: null | string;
+  /**
+   * The number of events discarded within the retention window.
+   * @format int64
+   */
+  count: number;
+  /** @format date-time */
+  last_seen_utc: string;
 }
 
 export interface EventSubmissionSettings {
@@ -242,6 +272,36 @@ export interface Login {
   invite_token?: null | string;
 }
 
+export interface NewBulkOperation {
+  /** The action to run, e.g. events.delete. */
+  type: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  /**
+   * Optionally limits the operation to one project of the organization.
+   * @pattern ^[a-fA-F0-9]{24}$
+   */
+  project_id?: null | string;
+  selection: NewBulkOperationSelection;
+  /** Action specific parameters. Actions without parameters reject any value here. */
+  parameters?: null | Record<string, string>;
+}
+
+export interface NewBulkOperationSelection {
+  kind: BulkOperationSelectionKind;
+  /** The ids to process when Kind is ids. */
+  ids?: string[] | null;
+  /** The search filter when Kind is filter. An empty filter matches everything in the time window. */
+  filter?: null | string;
+  /**
+   * The time range of the filter, e.g. [now-7d TO now]. It is resolved to absolute UTC dates when the
+   * operation is created.
+   */
+  time?: null | string;
+  /** The UTC offset used to resolve Time, e.g. -5h. */
+  offset?: null | string;
+}
+
 export interface NewOrganization {
   name: string;
 }
@@ -252,6 +312,13 @@ export interface NewProject {
   name: string;
   delete_bot_data_enabled: boolean;
   promoted_tabs?: string[] | null;
+}
+
+export interface NewProjectEnvironment {
+  /** The environment name: 1 to 64 letters, digits, periods, underscores, or hyphens, starting with a letter or digit. It is matched case-insensitively against event environments. */
+  name: string;
+  /** If true, events from this environment can send notifications. */
+  notify: boolean;
 }
 
 export interface NewSavedView {
@@ -449,6 +516,7 @@ export interface PersistentEvent {
   /**
    * The deployment environment, such as production, staging, or development.
    * Missing or invalid names remain unspecified. Machine and runtime information is stored separately in data.@environment.
+   * @pattern ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$
    */
   environment?: null | string;
   /**
@@ -506,6 +574,44 @@ export interface ProblemDetails {
   status?: null | number;
   detail?: null | string;
   instance?: null | string;
+}
+
+export interface ProjectDiscardedEnvironments {
+  /**
+   * The number of days that discarded environment names are remembered.
+   * @format int32
+   */
+  retention_days: number;
+  environments: DiscardedEnvironment[];
+  /**
+   * Events from names beyond the per-project limit, which are counted but not listed individually.
+   * @format int64
+   */
+  other_events: number;
+  /**
+   * How many different names those events came from, up to a limit.
+   * @format int32
+   */
+  other_names: number;
+  /** True when there were more other names than are counted. */
+  other_names_capped: boolean;
+}
+
+/** A deployment environment that a project has chosen to list, such as production or staging. */
+export interface ProjectEnvironment {
+  /** The environment name in the exact casing that was entered. Matching against event environments is case-insensitive. */
+  name: string;
+  /** If true, events from this environment can send notifications. */
+  notify: boolean;
+  /** @format date-time */
+  created_utc: string;
+}
+
+export interface ProjectEnvironmentSettings {
+  environments: ProjectEnvironment[];
+  discard_unlisted_environments: boolean;
+  discard_events_without_environment: boolean;
+  notify_other_environments: boolean;
 }
 
 export interface RecordProductTourResult {
@@ -622,6 +728,18 @@ export interface Stack {
   description?: null | string;
   /** If true, all future occurrences will be marked as critical. */
   occurrences_are_critical: boolean;
+  /**
+   * True when the stack was created by an event from an environment that does not send notifications and no notifying
+   * environment has reported it yet. The first occurrence in a notifying environment clears this and is reported as new.
+   * Stacks created before this field existed are not pending, so they never produce a new notification for it.
+   */
+  is_new_notification_pending: boolean;
+  /**
+   * True when the stack regressed from an environment that does not send notifications and no notifying environment has
+   * reported the regression yet. The first notifying occurrence clears this and is reported as the regression.
+   * Changing the stack's status clears it.
+   */
+  is_regression_notification_pending: boolean;
   /** A list of references. */
   references: string[];
   /** A list of tags used to categorize this stack. */
@@ -686,6 +804,20 @@ export interface UpdateProject {
   name: string;
   delete_bot_data_enabled: boolean;
   promoted_tabs?: string[] | null;
+}
+
+export interface UpdateProjectEnvironment {
+  /** If true, events from this environment can send notifications. */
+  notify?: null | boolean;
+}
+
+export interface UpdateProjectEnvironmentSettings {
+  /** If true, events whose environment is not listed are discarded. */
+  discard_unlisted_environments?: null | boolean;
+  /** If true, events without an environment are also discarded. Only applies while unlisted environments are discarded. */
+  discard_events_without_environment?: null | boolean;
+  /** If true, events from environments that are not listed and events without an environment can send notifications. */
+  notify_other_environments?: null | boolean;
 }
 
 /** A class the tracks changes (i.e. the Delta) for a particular TEntityType. */
@@ -834,6 +966,72 @@ export interface VerifyEmailAddressResult {
   email_address: string;
 }
 
+export interface ViewBackgroundTask {
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  organization_id: string;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  project_id?: null | string;
+  /** What the task does, e.g. events.delete, projects.reset-data or projects.sample-data. */
+  type: string;
+  description: string;
+  status: BackgroundTaskStatus;
+  /**
+   * Percent complete, 0 to 100.
+   * @format int32
+   */
+  progress: number;
+  /**
+   * The item counts. All zero for tasks that only report a percent.
+   * @format int64
+   */
+  total: number;
+  /** @format int64 */
+  processed: number;
+  /** @format int64 */
+  succeeded: number;
+  /** @format int64 */
+  failed: number;
+  /** Whether the task can be stopped with the cancel endpoint. */
+  can_cancel: boolean;
+  /** What a bulk action applies to. Only set for bulk actions. */
+  selection?: null | ViewBulkOperationSelection;
+  /** @pattern ^[a-fA-F0-9]{24}$ */
+  created_by_user_id: string;
+  /** @format date-time */
+  created_utc: string;
+  /** @format date-time */
+  started_utc?: null | string;
+  /** @format date-time */
+  completed_utc?: null | string;
+  /** @format date-time */
+  updated_utc: string;
+  message?: null | string;
+}
+
+/** What a bulk action applies to. Only set for bulk actions. */
+export interface ViewBulkOperationSelection {
+  kind: BulkOperationSelectionKind;
+  /**
+   * The number of ids when the selection is an id list.
+   * @format int32
+   */
+  id_count?: null | number;
+  filter?: null | string;
+  time?: null | string;
+  /**
+   * The absolute start of the resolved time window.
+   * @format date-time
+   */
+  utc_start?: null | string;
+  /**
+   * The absolute end of the resolved time window, never later than when the task was created.
+   * @format date-time
+   */
+  utc_end?: null | string;
+}
+
 export interface ViewCurrentUser {
   hash?: null | string;
   has_local_account: boolean;
@@ -949,6 +1147,11 @@ export interface ViewProject {
   organization_name: string;
   name: string;
   delete_bot_data_enabled: boolean;
+  /** The environments that the project lists, in the casing they were entered. Change them with the project environment endpoints. */
+  environments: ProjectEnvironment[];
+  discard_unlisted_environments: boolean;
+  discard_events_without_environment: boolean;
+  notify_other_environments: boolean;
   data?: null | Record<string, unknown>;
   promoted_tabs: string[];
   is_configured?: null | boolean;

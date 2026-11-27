@@ -2,19 +2,33 @@ import { custom, type infer as Infer, object, string } from 'zod';
 
 import {
     UpdateProjectSchema as GeneratedUpdateProjectSchema,
+    type NewProjectEnvironmentFormData,
+    NewProjectEnvironmentSchema,
     type NewProjectFormData,
     NewProjectSchema,
     type NotificationSettingsFormData,
     NotificationSettingsSchema
 } from '#generated/schemas.ts';
 
-export { type NewProjectFormData, NewProjectSchema, type NotificationSettingsFormData, NotificationSettingsSchema };
+export {
+    type NewProjectEnvironmentFormData,
+    NewProjectEnvironmentSchema,
+    type NewProjectFormData,
+    NewProjectSchema,
+    type NotificationSettingsFormData,
+    NotificationSettingsSchema
+};
 
 export const ClientConfigurationSettingSchema = object({
     key: string().min(1, 'Key is required'),
     value: string().min(1, 'Value is required')
 });
 export type ClientConfigurationSettingFormData = Infer<typeof ClientConfigurationSettingSchema>;
+
+/** Project creation from the UI: whitespace-only names are rejected before the request. */
+export const AddProjectSchema = NewProjectSchema.extend({
+    name: string().trim().min(1, 'Give your app a name').max(100, 'Name must be at most 100 characters')
+});
 
 export const UpdateProjectSchema = GeneratedUpdateProjectSchema.partial();
 export type UpdateProjectFormData = Infer<typeof UpdateProjectSchema>;

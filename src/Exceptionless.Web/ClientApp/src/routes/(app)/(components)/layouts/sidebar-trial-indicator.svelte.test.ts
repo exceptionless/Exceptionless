@@ -37,6 +37,17 @@ describe('SidebarTrialIndicator', () => {
         expect(screen.getByRole('button').textContent).toContain('Trial ends in 3 days');
     });
 
+    it('says the trial ended while the expiration job has not moved the organization to Free yet', () => {
+        // Arrange
+        vi.setSystemTime(new Date('2026-11-11T13:00:00Z'));
+
+        // Act
+        renderTrialIndicator(TRIAL_PLAN_ID);
+
+        // Assert
+        expect(screen.getByRole('button').textContent).toContain('Trial ended an hour ago');
+    });
+
     it('hides once the organization is no longer on the trial plan', () => {
         // Act
         renderTrialIndicator(FREE_PLAN_ID);
