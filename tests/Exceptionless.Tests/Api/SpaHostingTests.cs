@@ -1,12 +1,21 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Exceptionless.Models;
+using Exceptionless.Serializer;
 using Exceptionless.Tests.Extensions;
+using Exceptionless.Web.Extensions;
 using Foundatio.Xunit;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Sinks.Exceptionless;
 using Xunit;
 
 namespace Exceptionless.Tests.Api;
@@ -44,6 +53,7 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
     [InlineData("/docs/missing/nested")]
     [InlineData("/health/missing")]
     [InlineData("/ready/missing")]
+    [InlineData("/csp-reports")]
     [InlineData("/.well-known/missing")]
     [InlineData("/_app/missing")]
     [InlineData("/_app/missing.js")]
@@ -146,6 +156,84 @@ public sealed class SpaHostingTests : TestWithLoggingBase, IClassFixture<AppWebH
         Assert.Contains("'strict-dynamic'", scriptSources);
         Assert.Contains("https://*.stripe.com", scriptSources);
         Assert.Contains("https://*.intercom.io", scriptSources);
+    }
+
+    [Theory]
+    [InlineData(null, "https://localhost", "/_app/env.js")]
+    [InlineData(null, "https://localhost:443", "/_app/immutable/entry/old-build.js")]
+    [InlineData("localhost:443", "https://localhost", "/_app/bootstrap.js")]
+    public async Task PostAsync_BrowserReport_SubmitsSanitizedWarning(string? hostHeader, string reportedOrigin, string script)
+    {
+        // Arrange
+        const string report = """{"csp-report":{"document-uri":"https://localhost/reset-password?token=private-token","blocked-uri":"https://localhost/_app/env.js?v=private-version","effective-directive":"script-src-elem","disposition":"enforce","script-sample":"private-script-sample","referrer":"private-body-referrer"}}""";
+        string[] reports =
+        [
+            report.Replace("enforce", "report", StringComparison.Ordinal),
+            report.Replace("script-src-elem", "style-src-elem", StringComparison.Ordinal),
+            report.Replace("https://localhost/_app/", "https://other.localhost/_app/", StringComparison.Ordinal),
+            report.Replace("https://localhost/_app/", "http://localhost:443/_app/", StringComparison.Ordinal),
+            report.Replace("https://localhost/_app/", "https://localhost:8443/_app/", StringComparison.Ordinal),
+            report.Replace("/_app/env.js", "/_app-other/script.js", StringComparison.Ordinal),
+            report.Replace("https://localhost/_app/env.js?v=private-version", "inline", StringComparison.Ordinal),
+            report.Replace("script-src-elem", "\\uDEAD", StringComparison.Ordinal),
+            "not JSON",
+            report.Replace("https://localhost/_app/env.js", $"{reportedOrigin}{script}", StringComparison.Ordinal)
+        ];
+        var submitted = new ConcurrentQueue<Event>();
+        using var telemetry = new ExceptionlessClient(configuration =>
+        {
+            configuration.ApiKey = "00000000000000000000000000000000";
+            configuration.ServerUrl = "http://localhost";
+            configuration.UseInMemoryStorage();
+        });
+        telemetry.SubmittingEvent += (_, args) =>
+        {
+            if (args.Event.Source == "SpaCspReportEndpoint")
+                submitted.Enqueue(args.Event);
+            args.Cancel = true;
+        };
+        using var logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .WriteTo.Sink(new ExceptionlessSink(client: telemetry))
+            .CreateLogger();
+        using var loggerFactory = logger.ToLoggerFactory();
+        await using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services => services.AddSingleton<ILoggerFactory>(loggerFactory)));
+        await factory.Server.WaitForReadyAsync();
+        using var client = factory.CreateClient(new() { BaseAddress = new Uri("https://localhost") });
+        client.DefaultRequestHeaders.Host = hostHeader;
+        using var preflight = new HttpRequestMessage(HttpMethod.Options, "/csp-reports");
+        preflight.Headers.Add("Origin", "https://other.localhost");
+        preflight.Headers.Add("Access-Control-Request-Method", "POST");
+
+        // Act
+        using var loginResponse = await client.GetAsync("/login", TestCancellationToken);
+        using var preflightResponse = await client.SendAsync(preflight, TestCancellationToken);
+        var results = new List<(HttpStatusCode Status, int WarningCount)>();
+        foreach (string body in reports)
+        {
+            using var content = new StringContent(body, Encoding.UTF8, "application/csp-report");
+            using var response = await client.PostAsync("/csp-reports", content, TestCancellationToken);
+            results.Add((response.StatusCode, submitted.Count));
+        }
+
+        // Assert
+        string policyHeader = Assert.Single(loginResponse.Headers.GetValues("Content-Security-Policy"));
+        Assert.Contains("report-uri /csp-reports", policyHeader.Split(';', StringSplitOptions.TrimEntries));
+        Assert.False(preflightResponse.Headers.Contains("Access-Control-Allow-Origin"));
+        Assert.All(results, result => Assert.Equal(HttpStatusCode.NoContent, result.Status));
+        Assert.All(results.SkipLast(1), result => Assert.Equal(0, result.WarningCount));
+        var submittedEvent = Assert.Single(submitted);
+        Assert.Equal(Event.KnownTypes.Log, submittedEvent.Type);
+        Assert.Equal("Content Security Policy blocked a SPA script", submittedEvent.Message);
+        Assert.Contains("csp", submittedEvent.Tags!);
+        Assert.Equal("Warn", submittedEvent.Data!["@level"]);
+        string serialized = new DefaultJsonSerializer().Serialize(submittedEvent);
+        Assert.DoesNotContain("private-token", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("private-version", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("private-script-sample", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("private-body-referrer", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain(script, serialized, StringComparison.Ordinal);
     }
 
     [Fact]

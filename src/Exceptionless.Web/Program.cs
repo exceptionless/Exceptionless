@@ -330,6 +330,7 @@ public partial class Program
             app.MapOpenApi("/docs/v2/openapi.json");
             app.MapScalarApiReference("/docs", ConfigureScalar);
             app.MapApiEndpoints();
+            SpaCspReportEndpoint.Map(app);
             app.MapGet("/mcp", () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed))
                 .RequireAuthorization(AuthorizationRoles.McpPolicy)
                 .ExcludeFromDescription();
@@ -407,7 +408,7 @@ public partial class Program
     private static RequestDelegate CreateRequestDelegate(IEndpointRouteBuilder endpoints, string filePath)
     {
         var app = endpoints.CreateApplicationBuilder();
-        string[] reservedPrefixes = ["/api", "/docs", "/health", "/ready", "/mcp", "/.well-known", "/_app"];
+        string[] reservedPrefixes = ["/api", "/docs", "/health", "/ready", "/mcp", "/.well-known", "/_app", SpaCspReportEndpoint.Path];
         app.Use(next => context =>
         {
             if ((!HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method)) ||

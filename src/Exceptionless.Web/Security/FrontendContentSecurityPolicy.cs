@@ -115,6 +115,9 @@ internal static partial class FrontendContentSecurityPolicy
         if (options.EnableSsl)
             csp.SetUpgradeInsecureRequests();
 
+        // The browser can report a blocked app script before the JavaScript SDK starts.
+        csp.ReportViolationsTo(SpaCspReportEndpoint.Path);
+
         csp.OnSendingHeader = context =>
         {
             context.ShouldNotSend = context.HttpContext.Request.Path.StartsWithSegments("/api");
