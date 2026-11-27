@@ -854,8 +854,7 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         var repository = new Mock<IStackRepository>(MockBehavior.Strict);
         repository.Setup(r => r.GetStackBySignatureHashAsync(project.Id, signatureHash)).Returns(() =>
             ++signatureReads == 1 ? Task.FromResult<Stack?>(null) : _stackRepository.GetByIdAsync(stack.Id, o => o.Cache()));
-        repository.Setup(r => r.SaveAsync(It.IsAny<IEnumerable<Stack>>(), It.IsAny<CommandOptionsDescriptor<Stack>>()))
-            .Returns((IEnumerable<Stack> stacks, CommandOptionsDescriptor<Stack> options) => _stackRepository.SaveAsync(stacks, options));
+        repository.Setup(r => r.UpdateTagsAsync(It.IsAny<Stack>())).Returns((Stack updated) => _stackRepository.UpdateTagsAsync(updated));
 
         var formatting = GetService<FormattingPluginManager>();
         var publisher = GetService<IMessagePublisher>();

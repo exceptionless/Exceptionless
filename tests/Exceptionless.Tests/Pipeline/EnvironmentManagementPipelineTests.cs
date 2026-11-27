@@ -519,7 +519,7 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         var notifications = await DequeueNotificationsAsync();
 
         // Assert
-        Assert.NotSame(contexts.First().Stack, contexts.Last().Stack);
+        Assert.Same(contexts.First().Stack, contexts.Last().Stack);
         var notification = Assert.Single(notifications);
         Assert.Equal(production.Id, notification.EventId);
         Assert.True(notification.IsRegression);
