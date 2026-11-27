@@ -5,6 +5,10 @@ import { BackgroundTaskStatus, BulkOperationSelectionKind, type NewBulkOperation
 export { BackgroundTaskStatus, BulkOperationSelectionKind, type NewBulkOperation, type ViewBackgroundTask };
 
 export const EVENTS_DELETE_OPERATION = 'events.delete';
+export const STACKS_CHANGE_STATUS_OPERATION = 'stacks.change-status';
+export const STACKS_DELETE_OPERATION = 'stacks.delete';
+export const STACKS_MARK_FIXED_OPERATION = 'stacks.mark-fixed';
+export const STACKS_SNOOZE_OPERATION = 'stacks.snooze';
 
 /** Finished tasks stay visible in the panel for this long, unless dismissed. */
 export const FINISHED_TASK_VISIBLE_MS = 2 * 60 * 1000;

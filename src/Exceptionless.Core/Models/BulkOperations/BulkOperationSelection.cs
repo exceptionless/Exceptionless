@@ -19,7 +19,8 @@ public class BulkOperationDetails
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum BulkOperationEntity
 {
-    Events
+    Events,
+    Stacks
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -33,7 +34,7 @@ public enum BulkOperationSelectionKind
 /// Either an explicit list of ids or a filter. A filter selection always carries the absolute UTC window that was
 /// resolved when the operation was created, so items that arrive afterwards are never included.
 /// </summary>
-public class BulkOperationSelection
+public record BulkOperationSelection
 {
     public BulkOperationSelectionKind Kind { get; set; }
     public List<string>? Ids { get; set; }

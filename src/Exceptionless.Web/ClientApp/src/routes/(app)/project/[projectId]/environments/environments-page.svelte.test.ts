@@ -5,13 +5,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     addEnvironment: vi.fn(),
     countData: undefined as unknown,
+    countMatching: vi.fn(),
     project: undefined as unknown,
+    startBulk: vi.fn(),
+    toast: { error: vi.fn(), success: vi.fn() },
     updateEnvironment: vi.fn(),
     updateSettings: vi.fn()
 }));
 
+// Read lazily, so the route can change during a test.
+const pageState = $state({ params: { projectId: 'project-id' } });
+
 vi.mock('$app/state', () => ({
-    page: { params: { projectId: 'project-id' } }
+    get page() {
+        return pageState;
+    }
+}));
+
+vi.mock('svelte-sonner', () => ({ toast: mocks.toast }));
+
+vi.mock('#features/tasks/api.svelte.ts', () => ({
+    postBulkOperation: () => ({ mutateAsync: mocks.startBulk })
 }));
 
 vi.mock('#features/events/api.svelte.ts', () => ({
@@ -22,7 +36,8 @@ vi.mock('#features/events/api.svelte.ts', () => ({
         isError: false,
         isLoading: false,
         isSuccess: true
-    })
+    }),
+    getProjectMatchingEventCount: mocks.countMatching
 }));
 
 vi.mock('#features/projects/api.svelte.ts', () => ({
@@ -44,6 +59,8 @@ vi.mock('#features/projects/api.svelte.ts', () => ({
     putProjectEnvironmentSettings: () => ({ isPending: false, mutateAsync: mocks.updateSettings })
 }));
 
+import { BulkOperationSelectionKind } from '#features/tasks/models.ts';
+
 import EnvironmentsPage from './+page.svelte';
 
 const project = (environments: { created_utc: string; name: string; notify: boolean }[]) => ({
@@ -51,7 +68,8 @@ const project = (environments: { created_utc: string; name: string; notify: bool
     discard_unlisted_environments: false,
     environments,
     id: 'project-id',
-    notify_other_environments: true
+    notify_other_environments: true,
+    organization_id: 'organization-id'
 });
 
 const observed = (...environments: { count: number; key: string }[]) => ({
@@ -73,6 +91,9 @@ describe('Environments page', () => {
         mocks.updateSettings.mockResolvedValue({});
         mocks.countData = observed();
         mocks.project = project([]);
+        mocks.countMatching.mockResolvedValue(42);
+        pageState.params = { projectId: 'project-id' };
+        mocks.startBulk.mockResolvedValue({});
     });
 
     afterEach(() => {
@@ -178,6 +199,92 @@ describe('Environments page', () => {
         // Assert
         expect(screen.getByText('Discarded in the Last 7 Days')).toBeTruthy();
         expect(screen.getByText('Nothing discarded in the last 7 days.')).toBeTruthy();
+    });
+    it.each([
+        ['Production', 'environment:production'],
+        ['qa west', 'environment:"qa west"'],
+        ['say "hi"', 'environment:"say \\"hi\\""'],
+        ['Staging_2', 'environment:staging_2']
+    ])('deletes the events of %s with a project scoped filter after confirming the estimated count', async (name, filter) => {
+        // Arrange
+        mocks.project = project([{ created_utc: '2026-11-01T00:00:00Z', name, notify: true }]);
+        render(EnvironmentsPage);
+
+        // Act
+        await userEvent.click(screen.getByRole('button', { name: `Delete events in ${name}` }));
+        const dialog = await screen.findByRole('alertdialog');
+        const description = dialog.textContent?.replace(/\s+/g, ' ');
+        await userEvent.click(screen.getByRole('button', { name: 'Delete Matching Events' }));
+
+        // Assert
+        expect(mocks.countMatching).toHaveBeenCalledWith('project-id', filter);
+        expect(dialog.querySelector('[data-slot="alert-dialog-title"]')?.textContent?.trim()).toBe(`Delete all events from ${name}?`);
+        expect(description).toContain(`About 42 events from all time in ${name} will be deleted.`);
+        await waitFor(() =>
+            expect(mocks.startBulk).toHaveBeenCalledWith({
+                organization_id: 'organization-id',
+                project_id: 'project-id',
+                selection: { filter, kind: BulkOperationSelectionKind.Filter },
+                type: 'events.delete'
+            })
+        );
+    });
+
+    it('keeps the other environments from being chosen while counting and names the environment that was counted', async () => {
+        // Arrange
+        let resolveCount: (count: number) => void = () => {};
+        mocks.countMatching.mockReturnValue(new Promise<number>((resolve) => (resolveCount = resolve)));
+        mocks.project = project([
+            { created_utc: '2026-11-01T00:00:00Z', name: 'Production', notify: true },
+            { created_utc: '2026-11-01T00:00:00Z', name: 'Staging', notify: true }
+        ]);
+        render(EnvironmentsPage);
+        await userEvent.click(screen.getByRole('button', { name: 'Delete events in Production' }));
+
+        // Act
+        const stagingButton = screen.getByRole('button', { name: 'Delete events in Staging' });
+        const wasDisabled = (stagingButton as HTMLButtonElement).disabled;
+        resolveCount(3);
+        const dialog = await screen.findByRole('alertdialog');
+
+        // Assert
+        expect(wasDisabled).toBe(true);
+        expect(mocks.countMatching).toHaveBeenCalledTimes(1);
+        expect(dialog.querySelector('[data-slot="alert-dialog-title"]')?.textContent?.trim()).toBe('Delete all events from Production?');
+    });
+
+    it('drops the delete when the page moves to another project while counting', async () => {
+        // Arrange
+        let resolveCount: (count: number) => void = () => {};
+        mocks.countMatching.mockReturnValue(new Promise<number>((resolve) => (resolveCount = resolve)));
+        mocks.project = project([{ created_utc: '2026-11-01T00:00:00Z', name: 'Production', notify: true }]);
+        render(EnvironmentsPage);
+        await userEvent.click(screen.getByRole('button', { name: 'Delete events in Production' }));
+
+        // Act
+        pageState.params = { projectId: 'other-project-id' };
+        resolveCount(42);
+
+        // Assert
+        await waitFor(() => expect(mocks.countMatching).toHaveBeenCalledWith('project-id', 'environment:production'));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        expect(screen.queryByRole('button', { name: 'Delete Matching Events' })).toBeNull();
+        expect(mocks.startBulk).not.toHaveBeenCalled();
+    });
+
+    it('reports the problem when the delete cannot start', async () => {
+        // Arrange
+        mocks.project = project([{ created_utc: '2026-11-01T00:00:00Z', name: 'Production', notify: true }]);
+        mocks.startBulk.mockRejectedValue({ status: 409, title: 'Another destructive operation is already running for this project.' });
+        render(EnvironmentsPage);
+
+        // Act
+        await userEvent.click(screen.getByRole('button', { name: 'Delete events in Production' }));
+        await userEvent.click(await screen.findByRole('button', { name: 'Delete Matching Events' }));
+
+        // Assert
+        await waitFor(() => expect(mocks.toast.error).toHaveBeenCalled());
+        expect(mocks.toast.success).not.toHaveBeenCalled();
     });
 
     it('puts the setting back when saving it fails', async () => {

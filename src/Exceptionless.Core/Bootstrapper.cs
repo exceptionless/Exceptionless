@@ -239,6 +239,7 @@ public class Bootstrapper
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
         services.AddSingleton<EventDeletionService>();
+        services.AddSingleton<StackActionService>();
         services.AddSingleton<BackgroundTaskOptions>();
         services.AddSingleton<BackgroundTaskService>();
         services.AddSingleton<BulkOperationOptions>();

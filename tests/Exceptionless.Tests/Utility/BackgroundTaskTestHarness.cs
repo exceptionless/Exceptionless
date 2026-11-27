@@ -1,3 +1,4 @@
+using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Services.BackgroundTasks;
 using Foundatio.Caching;

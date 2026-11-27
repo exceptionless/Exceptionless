@@ -1,16 +1,23 @@
-﻿using Elastic.Clients.Elasticsearch.QueryDsl;
+﻿using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Aggregations;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
+using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
 
 namespace Exceptionless.Core.Repositories;
 
 public class EventRepository : RepositoryOwnedByOrganizationAndProject<PersistentEvent>, IEventRepository
 {
+    private const string StackIdsAggregation = "stack_ids";
+    private const string CompositeStackIdSource = "stack_id";
+    private const string StackCountAggregation = "stack_count";
     private readonly TimeProvider _timeProvider;
 
     public EventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, MiniValidationValidator validator)
@@ -204,6 +211,105 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     public override Task<FindResults<PersistentEvent>> GetByProjectIdAsync(string projectId, CommandOptionsDescriptor<PersistentEvent>? options = null)
     {
         return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
+    }
+
+    public async Task<IdPage> GetStackIdPageAsync(IRepositoryQuery query, string? afterStackId, int size)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+
+        var options = ConfigureOptions(new CommandOptions<PersistentEvent>().TrackTotalHits(false).SoftDeleteMode(SoftDeleteQueryMode.ActiveOnly));
+        var search = await CreateSearchDescriptorAsync(query, options);
+        var composite = new CompositeAggregation
+        {
+            Size = size,
+            Sources = [new KeyValuePair<string, CompositeAggregationSource>(CompositeStackIdSource, new CompositeAggregationSource { Terms = new CompositeTermsAggregation { Field = InferField(e => e.StackId) } })]
+        };
+
+        if (!String.IsNullOrEmpty(afterStackId))
+            composite.After = new Dictionary<Field, FieldValue> { [CompositeStackIdSource] = afterStackId };
+
+        search.Size(0).Aggregations(a => a.Add(StackIdsAggregation, new Aggregation { Composite = composite }));
+
+        var response = await _client.SearchAsync<PersistentEvent>(search);
+        if (!response.IsValidResponse)
+            throw new DocumentException($"Error while paging stack ids: {response.ElasticsearchServerError?.Error?.Reason ?? response.DebugInformation}", response.ApiCallDetails.OriginalException);
+
+        EnsureComplete(response.Shards, response.TimedOut, "paging stack ids");
+
+        var buckets = response.Aggregations?.GetComposite(StackIdsAggregation)?.Buckets ?? [];
+        string[] stackIds = buckets.Select(b => b.Key[CompositeStackIdSource].ToString()!).ToArray();
+        return new IdPage(stackIds, stackIds.Length >= size ? stackIds[^1] : null);
+    }
+
+    public async Task<IdPage> GetEventIdPageAsync(IRepositoryQuery query, string? cursor, int size)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+
+        var options = ConfigureOptions(new CommandOptions<PersistentEvent>().TrackTotalHits(false).SoftDeleteMode(SoftDeleteQueryMode.ActiveOnly));
+        var search = await CreateSearchDescriptorAsync(query, options);
+        search.Size(size).Source(false);
+        if (!String.IsNullOrEmpty(cursor))
+            search.SearchAfter(DecodeSortValues(cursor));
+
+        var response = await _client.SearchAsync<PersistentEvent>(search);
+        if (!response.IsValidResponse)
+            throw new DocumentException($"Error while paging event ids: {response.ElasticsearchServerError?.Error?.Reason ?? response.DebugInformation}", response.ApiCallDetails.OriginalException);
+
+        EnsureComplete(response.Shards, response.TimedOut, "paging event ids");
+
+        string[] ids = response.Hits.Where(h => !String.IsNullOrEmpty(h.Id)).Select(h => h.Id!).ToArray();
+        var last = response.Hits.LastOrDefault();
+        return new IdPage(ids, ids.Length > 0 && last?.Sort is not null ? EncodeSortValues(last.Sort) : null);
+    }
+
+    public async Task<long> CountStacksAsync(IRepositoryQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var options = ConfigureOptions(new CommandOptions<PersistentEvent>().TrackTotalHits(false).SoftDeleteMode(SoftDeleteQueryMode.ActiveOnly));
+        var search = await CreateSearchDescriptorAsync(query, options);
+        search.Size(0).Aggregations(a => a.Add(StackCountAggregation, new Aggregation { Cardinality = new CardinalityAggregation { Field = InferField(e => e.StackId) } }));
+
+        var response = await _client.SearchAsync<PersistentEvent>(search);
+        if (!response.IsValidResponse)
+            throw new DocumentException($"Error while counting stacks: {response.ElasticsearchServerError?.Error?.Reason ?? response.DebugInformation}", response.ApiCallDetails.OriginalException);
+
+        EnsureComplete(response.Shards, response.TimedOut, "counting stacks");
+
+        double? count = response.Aggregations?.GetCardinality(StackCountAggregation)?.Value;
+        return count.HasValue ? Convert.ToInt64(count.Value) : 0;
+    }
+
+    /// <summary>
+    /// A search can answer 200 with some shards failed or the search timed out, and then holds only part of the matches. Applying a
+    /// partial page would skip the rest while the task reports success, so such a page is an error and the worker retries it.
+    /// </summary>
+    public static void EnsureComplete(ShardStatistics? shards, bool? timedOut, string operation)
+    {
+        if (timedOut is true)
+            throw new DocumentException($"The search timed out while {operation}; the result may be incomplete.");
+
+        if (shards is not null && shards.Failed > 0)
+            throw new DocumentException($"{shards.Failed} of {shards.Total} shards failed while {operation}; the result may be incomplete.");
+    }
+
+    // The cursor has the same format as Foundatio's search after token (base64 of the JSON array of sort values), so a task that
+    // started with a token Foundatio wrote keeps running and tokens written here are readable by Foundatio.
+    private static string EncodeSortValues(IEnumerable<FieldValue> values)
+    {
+        object[] sortValues = values.Select(v => v.TryGetLong(out long? l) && l.HasValue ? (object)l.Value : v.TryGetString(out string? str) && str is not null ? str : throw new NotSupportedException("Unsupported sort value.")).ToArray();
+        return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(sortValues)));
+    }
+
+    private static List<FieldValue> DecodeSortValues(string cursor)
+    {
+        var values = new List<FieldValue>();
+        foreach (var element in System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(Convert.FromBase64String(cursor))!)
+            values.Add(element.ValueKind is System.Text.Json.JsonValueKind.Number ? FieldValue.Long(element.GetInt64()) : FieldValue.String(element.GetString()!));
+
+        return values;
     }
 
     public Task<long> RemoveAllByStackIdsAsync(string[] stackIds)

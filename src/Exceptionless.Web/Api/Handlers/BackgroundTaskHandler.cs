@@ -173,7 +173,7 @@ public class BackgroundTaskHandler(
                 return (null, Result.Invalid(ValidationError.Create("selection", "An id selection cannot include a filter or time.")));
 
             var ids = (model.Ids ?? []).Distinct(StringComparer.Ordinal).ToList();
-            if (ids.Count == 0)
+            if (ids.Count is 0)
                 return (null, Result.Invalid(ValidationError.Create("selection.ids", "At least one id is required.")));
 
             if (ids.Count > MaxIds)

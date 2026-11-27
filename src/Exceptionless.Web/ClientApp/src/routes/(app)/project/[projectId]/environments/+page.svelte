@@ -8,7 +8,9 @@
     import { A, H4, Muted } from '#comp/typography/index.ts';
     import * as AlertDialog from '#comp/ui/alert-dialog/index.ts';
     import { Button, buttonVariants } from '#comp/ui/button/index.ts';
-    import { getProjectCountQuery } from '#features/events/api.svelte.ts';
+    import { getProjectCountQuery, getProjectMatchingEventCount } from '#features/events/api.svelte.ts';
+    import RemoveEventDialog from '#features/events/components/dialogs/remove-event-dialog.svelte';
+    import { EnvironmentFilter } from '#features/events/components/filters/models.svelte.ts';
     import {
         deleteProjectEnvironment,
         getProjectDiscardedEnvironments,
@@ -23,6 +25,9 @@
     import EnvironmentsTable from '#features/projects/components/environments/environments-table.svelte';
     import { buildEnvironmentRows, type EnvironmentRow, getDiscardUnlistedWarning, splitDiscardedEnvironments } from '#features/projects/environments.ts';
     import * as agg from '#features/shared/api/aggregations.ts';
+    import { postBulkOperation } from '#features/tasks/api.svelte.ts';
+    import { BulkOperationSelectionKind, EVENTS_DELETE_OPERATION } from '#features/tasks/models.ts';
+    import { getProblemMessage } from '#shared/validation.ts';
 
     const projectId = $derived(page.params.projectId || '');
     const request = {
@@ -52,7 +57,14 @@
     const removeEnvironment = deleteProjectEnvironment(request);
     const updateSettings = putProjectEnvironmentSettings(request);
 
+    const startBulk = postBulkOperation();
+
     let environmentToRemove = $state<EnvironmentRow>();
+    let eventsToDelete = $state<{ count: number; filter: string; name: string; organizationId: string; projectId: string }>();
+    let showDeleteEventsDialog = $state(false);
+    let isCountingEvents = $state(false);
+    // The latest delete click owns the confirmation. A count that finishes after a newer click is dropped.
+    let countRequest = 0;
     let showRemoveDialog = $state(false);
     let showAddDialog = $state(false);
     let addName = $state('');
@@ -117,6 +129,14 @@
         return change(settings);
     }
 
+    // A confirmation belongs to the project it was counted in.
+    $effect(() => {
+        if (eventsToDelete && eventsToDelete.projectId !== projectId) {
+            eventsToDelete = undefined;
+            showDeleteEventsDialog = false;
+        }
+    });
+
     // Cancel, Escape and clicking outside all close the dialog without confirming.
     $effect(() => {
         if (!showDiscardDialog && pendingSettings) {
@@ -134,6 +154,48 @@
         }
     }
 
+    // The filter is the same one the events page builds for an environment: the name is lowercased and quoted when needed,
+    // and the search matches environment names without regard to case, so exactly this environment's events match.
+    async function confirmDeleteEvents(row: EnvironmentRow) {
+        // Pin the scope that is counted, so the delete can't run against another project if the page moves on while counting.
+        const scope = {
+            organizationId: project?.organization_id,
+            projectId
+        };
+        if (!scope.organizationId) {
+            return;
+        }
+
+        const request = ++countRequest;
+        eventsToDelete = undefined;
+        showDeleteEventsDialog = false;
+        isCountingEvents = true;
+        try {
+            const filter = new EnvironmentFilter([row.name]).toFilter();
+            const count = await getProjectMatchingEventCount(scope.projectId, filter);
+            if (request !== countRequest || scope.projectId !== projectId) {
+                return;
+            }
+
+            eventsToDelete = {
+                count,
+                filter,
+                name: row.name,
+                organizationId: scope.organizationId,
+                projectId: scope.projectId
+            };
+            showDeleteEventsDialog = true;
+        } catch (error) {
+            if (request === countRequest) {
+                toast.error(getProblemMessage(error, `Unable to count the events in ${row.name}. Please try again.`));
+            }
+        } finally {
+            if (request === countRequest) {
+                isCountingEvents = false;
+            }
+        }
+    }
+
     async function confirmDiscard() {
         const settings = pendingSettings;
         pendingSettings = undefined;
@@ -146,6 +208,31 @@
     function confirmRemove(row: EnvironmentRow) {
         environmentToRemove = row;
         showRemoveDialog = true;
+    }
+
+    async function deleteEvents() {
+        const target = eventsToDelete;
+        if (!target || target.projectId !== projectId) {
+            return;
+        }
+
+        try {
+            await startBulk.mutateAsync({
+                organization_id: target.organizationId,
+                project_id: target.projectId,
+                selection: {
+                    filter: target.filter,
+                    kind: BulkOperationSelectionKind.Filter
+                },
+                type: EVENTS_DELETE_OPERATION
+            });
+        } catch (error) {
+            // For example another delete is already running for this project.
+            toast.error(getProblemMessage(error, `Unable to start deleting the events in ${target.name}.`));
+            return;
+        }
+
+        toast.success(`Deleting about ${Intl.NumberFormat().format(target.count)} events in ${target.name}. Progress is shown at the bottom of the page.`);
     }
 
     async function remove() {
@@ -194,7 +281,8 @@
     {#key controlsVersion}
         <EnvironmentsTable
             add={(row) => openAddDialog(row.name)}
-            {busy}
+            busy={busy || isCountingEvents}
+            deleteEvents={confirmDeleteEvents}
             discardUnlisted={project?.discard_unlisted_environments ?? false}
             isError={projectQuery.isError || observedQuery.isError}
             isLoading={projectQuery.isLoading || observedQuery.isLoading}
@@ -250,6 +338,10 @@
 
 {#if showAddDialog}
     <AddEnvironmentDialog add={addFromDialog} bind:open={showAddDialog} listedNames={project?.environments?.map((e) => e.name) ?? []} name={addName} />
+{/if}
+
+{#if showDeleteEventsDialog && eventsToDelete}
+    <RemoveEventDialog bind:open={showDeleteEventsDialog} count={eventsToDelete.count} environment={eventsToDelete.name} matchingFilter remove={deleteEvents} />
 {/if}
 
 <AlertDialog.Root bind:open={showDiscardDialog}>

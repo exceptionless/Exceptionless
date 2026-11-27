@@ -17,12 +17,14 @@
 
     interface Props {
         count?: number;
+        /** The action runs against everything matching the current filter; the count is an estimate. */
+        matchingFilter?: boolean;
         open: boolean;
         save: (version?: string) => Promise<void>;
         stackTitle?: string;
     }
 
-    let { count = 1, open = $bindable(), save, stackTitle }: Props = $props();
+    let { count = 1, matchingFilter = false, open = $bindable(), save, stackTitle }: Props = $props();
 
     const form = createForm(() => ({
         defaultValues: {
@@ -89,7 +91,9 @@
         >
             <AlertDialog.Header>
                 <AlertDialog.Title>
-                    {#if count === 1}
+                    {#if matchingFilter}
+                        Mark Matching Stacks As Fixed
+                    {:else if count === 1}
                         Mark Stack As Fixed
                     {:else}
                         Mark <Number value={count} /> Stacks As Fixed
@@ -97,6 +101,10 @@
                 </AlertDialog.Title>
                 <AlertDialog.Description>
                     {#if stackTitle}<strong>{stackTitle}</strong><br />{/if}
+                    {#if matchingFilter}
+                        About <Number value={count} />
+                        {count === 1 ? 'stack matches' : 'stacks match'} this filter. The final count may differ.
+                    {/if}
                     Marks
                     {#if count === 1}
                         the stack
@@ -151,13 +159,17 @@
                     <AlertDialog.Footer>
                         <AlertDialog.Cancel type="button" disabled={submitting}>Cancel</AlertDialog.Cancel>
                         <Button type="submit" disabled={submitting}>
-                            Mark
-                            {#if count === 1}
-                                Stack
+                            {#if matchingFilter}
+                                Mark Matching Stacks Fixed
                             {:else}
-                                <Number value={count} /> Stacks
+                                Mark
+                                {#if count === 1}
+                                    Stack
+                                {:else}
+                                    <Number value={count} /> Stacks
+                                {/if}
+                                Fixed
                             {/if}
-                            Fixed
                         </Button>
                     </AlertDialog.Footer>
                 {/snippet}
