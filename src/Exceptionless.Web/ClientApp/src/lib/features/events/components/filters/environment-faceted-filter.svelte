@@ -7,6 +7,8 @@
     import * as FacetedFilter from '#comp/faceted-filter/index.ts';
     import { getOrganizationCountQuery } from '#features/events/api.svelte.ts';
     import { organization } from '#features/organizations/context.svelte.ts';
+    import { getOrganizationProjectsQuery } from '#features/projects/api.svelte.ts';
+    import { getEnvironmentKey, getListedEnvironmentNames, normalizeEnvironmentName } from '#features/projects/environments.ts';
     import { terms } from '#features/shared/api/aggregations.ts';
 
     import { getProjectScopeFilter } from './helpers.svelte';
@@ -31,28 +33,41 @@
             }
         }
     });
-    const names = $derived(
-        [...new Set([...filter.value, ...(terms(countQuery.data?.aggregations, 'terms_environment')?.buckets?.map((bucket) => bucket.key) ?? [])])]
-            .filter(Boolean)
-            .sort()
+    const projectsQuery = getOrganizationProjectsQuery({
+        enabled: () => !!organization.current,
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
+    // Listed environments show in the casing the project chose. Matching stays case-insensitive.
+    const listedNames = $derived(
+        getListedEnvironmentNames(projectsQuery.data?.data ?? [], getProjectScopeFilter(scope?.filters ?? []).match(/[a-fA-F0-9]{24}/g) ?? undefined)
     );
+    // A selected value wins over the aggregation key with the same name so it stays selected.
+    const names = $derived.by(() => {
+        const candidates = [...filter.value, ...(terms(countQuery.data?.aggregations, 'terms_environment')?.buckets?.map((bucket) => bucket.key) ?? [])];
+        return candidates
+            .filter((name, index) => !!name && candidates.findIndex((other) => getEnvironmentKey(other) === getEnvironmentKey(name)) === index)
+            .sort();
+    });
     const options = $derived([
         {
             label: 'Unspecified',
             value: ''
         },
         ...names.map((name) => ({
-            label: name,
+            label: listedNames.get(getEnvironmentKey(name)) ?? name,
             value: name
         }))
     ]);
 
     function createOption(search: string) {
-        const value = search.trim().toLowerCase();
-        // eslint-disable-next-line no-control-regex -- Deployment names cannot contain control characters.
-        return value && value.length <= 64 && !/[\u0000-\u001f\u007f-\u009f]/u.test(value)
+        const value = normalizeEnvironmentName(search)?.toLowerCase();
+        return value
             ? {
-                  label: value,
+                  label: listedNames.get(value) ?? value,
                   value
               }
             : undefined;

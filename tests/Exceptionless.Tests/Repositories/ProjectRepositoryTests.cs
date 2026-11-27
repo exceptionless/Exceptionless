@@ -63,6 +63,39 @@ public sealed class ProjectRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task EnvironmentEdits_FromTheSameStaleCopy_KeepEveryEdit()
+    {
+        // Arrange
+        var stale = await _repository.AddAsync(_projectData.GenerateSampleProject(), o => o.ImmediateConsistency());
+        var utcNow = DateTime.UtcNow;
+
+        // Act
+        bool[] results =
+        [
+            await _repository.AddEnvironmentAsync(stale, new ProjectEnvironment { Name = "Production", Notify = true, CreatedUtc = utcNow }),
+            await _repository.AddEnvironmentAsync(stale, new ProjectEnvironment { Name = "Staging", Notify = true, CreatedUtc = utcNow }),
+            await _repository.AddEnvironmentAsync(stale, new ProjectEnvironment { Name = "production", Notify = false, CreatedUtc = utcNow }),
+            await _repository.SetEnvironmentNotifyAsync(stale, "STAGING", false),
+            await _repository.SetEnvironmentSettingsAsync(stale, discardUnlistedEnvironments: true, discardEventsWithoutEnvironment: null, notifyOtherEnvironments: false),
+            await _repository.SetEnvironmentSettingsAsync(stale, null, null, null),
+            await _repository.RemoveEnvironmentAsync(stale, "staging"),
+            await _repository.RemoveEnvironmentAsync(stale, "staging")
+        ];
+
+        // Assert
+        // A duplicate name, an empty settings change and removing a missing name change nothing.
+        Assert.Equal([true, true, false, true, true, false, true, false], results);
+        var saved = await _repository.GetByIdAsync(stale.Id, o => o.Cache());
+        Assert.NotNull(saved);
+        var environment = Assert.Single(saved.Environments);
+        Assert.Equal("Production", environment.Name);
+        Assert.True(environment.Notify);
+        Assert.True(saved.DiscardUnlistedEnvironments);
+        Assert.False(saved.DiscardEventsWithoutEnvironment);
+        Assert.False(saved.NotifyOtherEnvironments);
+    }
+
+    [Fact]
     public async Task GetByOrganizationIdsAsync()
     {
         var project1 = await _repository.AddAsync(_projectData.GenerateProject(id: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, name: "One"), o => o.ImmediateConsistency());
