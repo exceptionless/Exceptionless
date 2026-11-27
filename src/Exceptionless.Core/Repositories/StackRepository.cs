@@ -250,20 +250,23 @@ ctx._source.snooze_until_utc = params.snoozeUntilUtc;
 ctx._source.fixed_in_version = params.fixedInVersion;
 ctx._source.date_fixed = params.dateFixed;
 ctx._source.is_new_notification_pending = params.isNewNotificationPending;
-ctx._source.is_regression_notification_pending = params.isRegressionNotificationPending;";
+ctx._source.is_regression_notification_pending = params.isRegressionNotificationPending;
+ctx._source.updated_utc = params.updatedUtc;";
 
+        var updatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
         foreach (var stack in stacks)
         {
             var operation = new ScriptPatch(script.TrimScript())
             {
-                Params = new Dictionary<string, object>(6)
+                Params = new Dictionary<string, object>(7)
                 {
                     { "status", stack.Status.ToString().ToLowerInvariant() },
                     { "snoozeUntilUtc", stack.SnoozeUntilUtc!},
                     { "fixedInVersion", stack.FixedInVersion! },
                     { "dateFixed", stack.DateFixed! },
                     { "isNewNotificationPending", stack.IsNewNotificationPending },
-                    { "isRegressionNotificationPending", stack.IsRegressionNotificationPending }
+                    { "isRegressionNotificationPending", stack.IsRegressionNotificationPending },
+                    { "updatedUtc", updatedUtc }
                 }
             };
 
@@ -274,7 +277,7 @@ ctx._source.is_regression_notification_pending = params.isRegressionNotification
     public async Task SoftDeleteAsync(IReadOnlyCollection<Stack> stacks)
     {
         foreach (var stack in stacks)
-            await PatchStackAsync(stack, new PartialPatch(new { is_deleted = true }));
+            await PatchStackAsync(stack, new PartialPatch(new { is_deleted = true, updated_utc = _timeProvider.GetUtcNow().UtcDateTime }));
     }
 
     private async Task PatchStackAsync(Stack stack, IPatchOperation operation)

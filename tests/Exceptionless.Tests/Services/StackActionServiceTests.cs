@@ -32,6 +32,8 @@ public sealed class StackActionServiceTests : IntegrationTestsBase
         await RefreshDataAsync();
 
         // Act
+        TimeProvider.Advance(TimeSpan.FromHours(1));
+        var actedUtc = TimeProvider.GetUtcNow().UtcDateTime;
         await _service.MarkFixedAsync([stale], null);
         await RefreshDataAsync();
 
@@ -41,6 +43,7 @@ public sealed class StackActionServiceTests : IntegrationTestsBase
         Assert.Equal(StackStatus.Fixed, actual.Status);
         Assert.NotNull(actual.DateFixed);
         Assert.Equal(2, actual.TotalOccurrences);
+        Assert.Equal(actedUtc, actual.UpdatedUtc);
     }
 
     [Fact]
@@ -58,6 +61,8 @@ public sealed class StackActionServiceTests : IntegrationTestsBase
         var until = TimeProvider.GetUtcNow().UtcDateTime.AddHours(6);
 
         // Act
+        TimeProvider.Advance(TimeSpan.FromHours(1));
+        var actedUtc = TimeProvider.GetUtcNow().UtcDateTime;
         await _service.SnoozeAsync([stale], until);
         await RefreshDataAsync();
 
@@ -69,6 +74,7 @@ public sealed class StackActionServiceTests : IntegrationTestsBase
         Assert.Null(actual.FixedInVersion);
         Assert.Null(actual.DateFixed);
         Assert.Equal(2, actual.TotalOccurrences);
+        Assert.Equal(actedUtc, actual.UpdatedUtc);
     }
 
     [Fact]
@@ -82,6 +88,8 @@ public sealed class StackActionServiceTests : IntegrationTestsBase
         await _repository.IncrementEventCounterAsync(stack.OrganizationId, stack.ProjectId, stack.Id, TimeProvider.GetUtcNow().UtcDateTime, TimeProvider.GetUtcNow().UtcDateTime, 1);
 
         // Act
+        TimeProvider.Advance(TimeSpan.FromHours(1));
+        var actedUtc = TimeProvider.GetUtcNow().UtcDateTime;
         await _service.DeleteAsync([stale]);
         await RefreshDataAsync();
 
@@ -91,5 +99,6 @@ public sealed class StackActionServiceTests : IntegrationTestsBase
         Assert.NotNull(actual);
         Assert.True(actual.IsDeleted);
         Assert.Equal(2, actual.TotalOccurrences);
+        Assert.Equal(actedUtc, actual.UpdatedUtc);
     }
 }
