@@ -218,7 +218,8 @@ describe('Environments page', () => {
 
         // Assert
         expect(mocks.countMatching).toHaveBeenCalledWith('project-id', filter);
-        expect(description).toContain('About 42 events match this filter. The final count may differ.');
+        expect(dialog.querySelector('[data-slot="alert-dialog-title"]')?.textContent?.trim()).toBe(`Delete all events from ${name}?`);
+        expect(description).toContain(`About 42 events from all time in ${name} will be deleted.`);
         await waitFor(() =>
             expect(mocks.startBulk).toHaveBeenCalledWith({
                 organization_id: 'organization-id',
@@ -227,6 +228,29 @@ describe('Environments page', () => {
                 type: 'events.delete'
             })
         );
+    });
+
+    it('keeps the other environments from being chosen while counting and names the environment that was counted', async () => {
+        // Arrange
+        let resolveCount: (count: number) => void = () => {};
+        mocks.countMatching.mockReturnValue(new Promise<number>((resolve) => (resolveCount = resolve)));
+        mocks.project = project([
+            { created_utc: '2026-11-01T00:00:00Z', name: 'Production', notify: true },
+            { created_utc: '2026-11-01T00:00:00Z', name: 'Staging', notify: true }
+        ]);
+        render(EnvironmentsPage);
+        await userEvent.click(screen.getByRole('button', { name: 'Delete events in Production' }));
+
+        // Act
+        const stagingButton = screen.getByRole('button', { name: 'Delete events in Staging' });
+        const wasDisabled = (stagingButton as HTMLButtonElement).disabled;
+        resolveCount(3);
+        const dialog = await screen.findByRole('alertdialog');
+
+        // Assert
+        expect(wasDisabled).toBe(true);
+        expect(mocks.countMatching).toHaveBeenCalledTimes(1);
+        expect(dialog.querySelector('[data-slot="alert-dialog-title"]')?.textContent?.trim()).toBe('Delete all events from Production?');
     });
 
     it('drops the delete when the page moves to another project while counting', async () => {

@@ -62,7 +62,9 @@
     let environmentToRemove = $state<EnvironmentRow>();
     let eventsToDelete = $state<{ count: number; filter: string; name: string; organizationId: string; projectId: string }>();
     let showDeleteEventsDialog = $state(false);
-    let isCountingEvents = false;
+    let isCountingEvents = $state(false);
+    // The latest delete click owns the confirmation. A count that finishes after a newer click is dropped.
+    let countRequest = 0;
     let showRemoveDialog = $state(false);
     let showAddDialog = $state(false);
     let addName = $state('');
@@ -155,10 +157,6 @@
     // The filter is the same one the events page builds for an environment: the name is lowercased and quoted when needed,
     // and the search matches environment names without regard to case, so exactly this environment's events match.
     async function confirmDeleteEvents(row: EnvironmentRow) {
-        if (isCountingEvents) {
-            return;
-        }
-
         // Pin the scope that is counted, so the delete can't run against another project if the page moves on while counting.
         const scope = {
             organizationId: project?.organization_id,
@@ -168,11 +166,14 @@
             return;
         }
 
+        const request = ++countRequest;
+        eventsToDelete = undefined;
+        showDeleteEventsDialog = false;
         isCountingEvents = true;
         try {
             const filter = new EnvironmentFilter([row.name]).toFilter();
             const count = await getProjectMatchingEventCount(scope.projectId, filter);
-            if (scope.projectId !== projectId) {
+            if (request !== countRequest || scope.projectId !== projectId) {
                 return;
             }
 
@@ -185,9 +186,13 @@
             };
             showDeleteEventsDialog = true;
         } catch (error) {
-            toast.error(getProblemMessage(error, `Unable to count the events in ${row.name}. Please try again.`));
+            if (request === countRequest) {
+                toast.error(getProblemMessage(error, `Unable to count the events in ${row.name}. Please try again.`));
+            }
         } finally {
-            isCountingEvents = false;
+            if (request === countRequest) {
+                isCountingEvents = false;
+            }
         }
     }
 
@@ -276,7 +281,7 @@
     {#key controlsVersion}
         <EnvironmentsTable
             add={(row) => openAddDialog(row.name)}
-            {busy}
+            busy={busy || isCountingEvents}
             deleteEvents={confirmDeleteEvents}
             discardUnlisted={project?.discard_unlisted_environments ?? false}
             isError={projectQuery.isError || observedQuery.isError}
@@ -336,7 +341,7 @@
 {/if}
 
 {#if showDeleteEventsDialog && eventsToDelete}
-    <RemoveEventDialog bind:open={showDeleteEventsDialog} count={eventsToDelete.count} matchingFilter remove={deleteEvents} />
+    <RemoveEventDialog bind:open={showDeleteEventsDialog} count={eventsToDelete.count} environment={eventsToDelete.name} matchingFilter remove={deleteEvents} />
 {/if}
 
 <AlertDialog.Root bind:open={showDiscardDialog}>
