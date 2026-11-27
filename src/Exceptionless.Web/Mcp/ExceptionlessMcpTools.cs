@@ -780,7 +780,7 @@ public sealed partial class ExceptionlessMcpTools
             }
             else if (changed)
             {
-                stack.Status = stackStatus;
+                stack.SetStatus(stackStatus);
                 stack.DateFixed = null;
                 stack.FixedInVersion = null;
                 stack.SnoozeUntilUtc = null;
@@ -835,7 +835,7 @@ public sealed partial class ExceptionlessMcpTools
                 || stack.DateFixed is not null;
             if (changed)
             {
-                stack.Status = StackStatus.Snoozed;
+                stack.SetStatus(StackStatus.Snoozed);
                 stack.SnoozeUntilUtc = untilUtc;
                 stack.FixedInVersion = null;
                 stack.DateFixed = null;

@@ -64,10 +64,11 @@ The `POST` body can also be an array of events, each with its own environment. S
 ### Naming rules
 
 - Leading and trailing spaces are trimmed, and the name keeps its casing: `" Production "` is stored as `Production`.
-- Names can be up to 64 characters. Custom names such as `qa-west` are fine.
+- A name is 1 to 64 ASCII letters, digits, periods (`.`), underscores (`_`), or hyphens (`-`), and starts with a letter
+  or digit. Custom names such as `qa-west`, `staging.eu`, or `dev_local` are fine.
 - Filters ignore case, so `Production` and `production` are the same environment.
-- A value that isn't a valid name, such as an empty string, a number, an object, or a name over 64 characters, leaves
-  the event unspecified. The value is kept in the event's custom data under `environment` instead, or `environment1` if
+- A value that isn't a valid name, such as `Staging West`, `prod/eu`, an empty string, a number, an object, or a name over
+  64 characters, leaves the event unspecified. The value is kept in the event's custom data under `environment` instead, or `environment1` if
   that key is already taken.
 
 ### Environment isn't machine information
@@ -90,7 +91,6 @@ raw filter or the API, use these queries:
 | `(environment:production OR environment:staging)` | Either environment            |
 | `_missing_:environment`                           | Events without an environment |
 | `_exists_:environment`                            | Events with an environment    |
-| `environment:"qa west"`                           | A name with a space in it     |
 
 Environment filters work on every plan. See the [search syntax](/docs/reference/search-syntax/).
 
@@ -112,12 +112,46 @@ When environments run different releases, mark stacks fixed in a version. If a s
 already runs it, events from production on `2.3.0` don't reopen the stack. Continue sending your app's version with
 every event so this works. See [Releases and regressions](/docs/versioning/).
 
-Some features don't look at environments yet:
+**New Stacks** counts don't look at environments: a stack is dated from its first event in any environment.
+Notifications do; see [Notifications by environment](#notifications-by-environment).
 
-- A stack is new once, when its first event arrives from any environment. An error first seen in development triggers
-  the new error notification then, and isn't new again when it reaches production. **New Stacks** counts work the same
-  way.
-- Critical error and regression notifications are sent for events from every environment.
+## Manage a project's environments
+
+Open **Project Settings** > **Environments** to list the environments a project uses. A listed name is shown in the
+casing you typed, such as `Production`, in the Environment filter, event details, and notification emails. Matching still
+ignores case. A project can list up to 100 environments.
+
+Adding or removing a name never changes or deletes events, and Exceptionless never adds names to the list on its own.
+Environments that sent events in the last 30 days show up in the table with an **Add** action.
+
+### Discard events from unlisted environments
+
+Projects accept events from any environment by default. To accept only listed ones, set **Accept events from** to
+**Only environments in this list**:
+
+- Events from an unlisted environment are discarded before they're stored or stacked. They count as discarded events and
+  don't count toward your plan limit, like events for a discarded stack.
+- **Also accept events that don't send an environment** is on by default. Turn it off to discard those events too.
+  Session heartbeats and session ends never carry an environment and are never discarded for this reason.
+- Clients are told the events were accepted, so nothing looks wrong on their side.
+
+The **Discarded** section lists the names rejected in the last 7 days, up to 50 per project, with an event count and an
+**Allow** action that adds the name to the list. It's the quickest way to spot a misspelling such as `prodution`.
+
+### Notifications by environment
+
+Each listed environment has its own **Notifications** toggle. The **Other environments** row covers unlisted environments
+and events without one. An event sends notifications (email, Slack, and web hooks) only from an environment that
+notifies.
+
+- **New stacks**: you're notified the first time a stack occurs in a notifying environment. An error first seen in a
+  muted `dev` sends nothing; its first occurrence in `Production` sends the new error notification, once.
+- **Regressions**: work the same way. A regression in a notifying environment notifies right away. Changing the stack's
+  status drops a notification that's still waiting.
+- **Critical events**: notify only from a notifying environment.
+- Stacks created before environments could be managed are treated as already reported.
+- Notification emails and Slack messages name the environment, for example "New error in Production". Daily summaries
+  still include every environment.
 
 ## Sessions
 

@@ -82,7 +82,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
     /// <summary>
     /// Runs through the formatting plugins to get notification mail content for an event.
     /// </summary>
-    public MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    public MailMessageData GetEventNotificationMailMessageData(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
         foreach (var plugin in Plugins.Values.ToList())
         {
@@ -90,7 +90,7 @@ public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin>
 
             try
             {
-                var result = plugin.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
+                var result = plugin.GetEventNotificationMailMessageData(ev, project, isCritical, isNew, isRegression);
                 if (result is not null)
                     return result;
             }

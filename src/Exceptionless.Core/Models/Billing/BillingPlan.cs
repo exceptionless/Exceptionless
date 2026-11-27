@@ -24,6 +24,11 @@ public record BillingPlan
 
     [JsonIgnore]
     public AssistantPlanOptions? Assistant { get; init; }
+
+    /// <summary>
+    /// Whether the plan includes Exie.
+    /// </summary>
+    public bool HasAssistant => Assistant is not null;
 }
 
 public sealed record AssistantPlanOptions

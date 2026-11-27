@@ -2,13 +2,22 @@ import { custom, type infer as Infer, object, string } from 'zod';
 
 import {
     UpdateProjectSchema as GeneratedUpdateProjectSchema,
+    type NewProjectEnvironmentFormData,
+    NewProjectEnvironmentSchema,
     type NewProjectFormData,
     NewProjectSchema,
     type NotificationSettingsFormData,
     NotificationSettingsSchema
 } from '#generated/schemas.ts';
 
-export { type NewProjectFormData, NewProjectSchema, type NotificationSettingsFormData, NotificationSettingsSchema };
+export {
+    type NewProjectEnvironmentFormData,
+    NewProjectEnvironmentSchema,
+    type NewProjectFormData,
+    NewProjectSchema,
+    type NotificationSettingsFormData,
+    NotificationSettingsSchema
+};
 
 export const ClientConfigurationSettingSchema = object({
     key: string().min(1, 'Key is required'),

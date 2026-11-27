@@ -55,6 +55,8 @@ To keep notifications useful when something breaks badly, Exceptionless limits t
 - A project sends notifications for at most 10 events every 30 minutes.
 - Regressions are always sent.
 - Events from stacks that are fixed, snoozed, ignored, or discarded don't notify.
+- Events from an environment whose notifications are off don't notify, and a new stack or regression is reported the
+  first time it reaches an environment that does. See [Environments](/docs/environments/#notifications-by-environment).
 - Events from bots don't notify. Bots are user agents that look like crawlers or match the project's
   [spam detection](/docs/project-settings/#spam-detection) list.
 

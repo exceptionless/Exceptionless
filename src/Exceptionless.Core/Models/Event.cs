@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
 using MiniValidation;
@@ -9,7 +10,7 @@ using MiniValidation;
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
-public class Event : IData, IJsonOnDeserialized
+public partial class Event : IData, IJsonOnDeserialized
 {
     private string? _environment;
 
@@ -25,15 +26,17 @@ public class Event : IData, IJsonOnDeserialized
     }
 
     /// <summary>
-    /// Returns the trimmed deployment name, or null when the value cannot be a deployment name.
+    /// Returns the trimmed deployment name, or null when it is not a valid name. Names are identifiers so they can be used in filters and
+    /// scripts: 1 to 64 ASCII letters, digits, periods, underscores, or hyphens, starting with a letter or digit.
     /// </summary>
     public static string? NormalizeEnvironment(string? value)
     {
         string? name = value?.Trim();
-        return String.IsNullOrEmpty(name) || name.Length > 64 || name.Any(Char.IsControl)
-            ? null
-            : name;
+        return name is not null && EnvironmentNameRegex().IsMatch(name) ? name : null;
     }
+
+    [GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z", RegexOptions.CultureInvariant)]
+    private static partial Regex EnvironmentNameRegex();
 
     /// <summary>
     /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.

@@ -68,7 +68,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
         return new SummaryData { Id = ev.Id, TemplateKey = "event-log-summary", Data = data };
     }
 
-    public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -83,6 +83,7 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
             notificationType = String.Concat("Critical ", notificationType.ToLowerInvariant());
 
         string source = !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
+        notificationType = InEnvironment(notificationType, ev, project);
         string subject = String.Concat(notificationType, ": ", source).Truncate(120);
         var data = new Dictionary<string, object?> { { "Source", source.Truncate(60) } };
         if (!String.IsNullOrEmpty(ev.Message))
@@ -154,7 +155,8 @@ public sealed class LogFormattingPlugin : FormattingPluginBase
             attachment.Fields.Add(new SlackMessage.SlackAttachmentFields { Title = "Url", Value = requestInfo.GetFullPath(true, true, true) });
 
         AddDefaultSlackFields(ev, attachment.Fields);
-        string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, source.Truncate(120))}*";
+        notificationType = InEnvironment(notificationType, ev, project);
+        string subject = $"[{EscapeSlack(project.Name)}] A {EscapeSlack(notificationType)}: *{GetSlackEventUrl(ev.Id, source.Truncate(120))}*";
         return new SlackMessage(subject)
         {
             Attachments = [attachment]

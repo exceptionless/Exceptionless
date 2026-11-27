@@ -59,6 +59,8 @@ In the sidebar, open **Settings** > **Projects** and click the project. The sett
 - **General**: the project name, shortcuts, and the reset and delete buttons.
 - **API Keys**: client API keys and source map upload tokens.
 - **Settings**: the default log level, data exclusions, error stacking, source maps, and spam detection.
+- **Environments**: which environments the project accepts events and notifications from. See
+  [Environments](/docs/environments/#manage-a-projects-environments).
 - **Configuration**: client configuration values.
 - **Integrations**: Slack, webhooks, and Zapier. See [Integrations](/docs/integrations/).
 - **Stack Management**: ignored and discarded stacks by default. Change the filters to see other statuses. See
