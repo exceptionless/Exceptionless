@@ -1,11 +1,11 @@
 export interface AllMatchingSelection {
-    /** How many events matched when the user chose "select all matching". */
+    /** How many items matched when the user chose "select all matching". */
     count: number;
     /** The query the selection was made for. */
     identity: string;
 }
 
-/** Everything matching the current filter, as passed to an action menu. */
+/** Everything matching the current filter, as passed to an action menu. The count is an estimate. */
 export interface AllMatchingTarget {
     count: number;
     filter?: string;
@@ -52,6 +52,7 @@ export function createAllMatchingSelection(getIdentity: () => string) {
     };
 }
 
-export function getEventsQueryIdentity(parts: { filter?: null | string; organizationId?: string; savedViewId?: string; time?: null | string }): string {
+/** The identity of the query a list is showing. Events and stacks lists both use it. */
+export function getAllMatchingIdentity(parts: { filter?: null | string; organizationId?: string; savedViewId?: string; time?: null | string }): string {
     return JSON.stringify([parts.organizationId ?? null, parts.filter ?? null, parts.time ?? null, parts.savedViewId ?? null]);
 }

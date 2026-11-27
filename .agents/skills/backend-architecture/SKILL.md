@@ -29,6 +29,7 @@ Keep domain behavior in Core: Web and Job consume Core, while Insulation supplie
 
 ## Implementation details
 
+- Prefer `is` and `is not` for constant and null patterns. Compare string values with `String.Equals` and an explicit `StringComparison`. Use `Exceptionless.DateTimeExtensions` for date ordering, preserving inclusive boundaries.
 - Prefer constructor injection and readonly dependency fields. When explicitly resolving a service, assign it to a named variable before accessing a member or passing it as an argument; never chain a service lookup and invocation. Follow `.editorconfig`, use the `Async` suffix for asynchronous methods, and avoid adding regions.
 - Use `ICacheClient`, `IQueue<T>`, `IMessageBus`, `IFileStorage`, `ILockProvider`, and `IResiliencePolicyProvider` rather than creating provider-specific parallel abstractions.
 - Queue consumers commonly derive from `QueueJobBase<T>`; scheduled jobs use bases such as `JobWithLockBase` and `[Job]` scheduling attributes. Preserve lock, completion, abandonment, and cancellation behavior when modifying a job. Invalid input should not enter an endless retry cycle.

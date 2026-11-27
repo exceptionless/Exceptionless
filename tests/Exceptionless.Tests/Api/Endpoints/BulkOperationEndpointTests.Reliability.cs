@@ -1,3 +1,4 @@
+using Exceptionless.Core.Configuration;
 using System.Collections.Concurrent;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
@@ -32,22 +33,20 @@ namespace Exceptionless.Tests.Api.Endpoints;
 public partial class BulkOperationEndpointTests
 {
     [Fact]
-    public async Task GetPageAsync_Paging_DoesNotCountTotalHits()
+    public async Task GetPageAsync_Paging_UsesTheEventIdPageAndItsCursor()
     {
         // Arrange
-        ICommandOptions? capturedOptions = null;
         var repository = new Mock<IEventRepository>();
-        repository.Setup(r => r.FindAsync(It.IsAny<IRepositoryQuery>(), It.IsAny<ICommandOptions>()))
-            .Callback<IRepositoryQuery, ICommandOptions?>((_, options) => capturedOptions = options)
-            .ReturnsAsync(new FindResults<PersistentEvent>());
+        repository.Setup(r => r.GetEventIdPageAsync(It.IsAny<IRepositoryQuery>(), "start", 10))
+            .ReturnsAsync(new IdPage(["a", "b"], "next"));
         var resolver = CreateResolver(repository.Object);
 
         // Act
-        await resolver.GetPageAsync(NewRecordingOperation("test.record"), "{}", null, 10, TestCancellationToken);
+        var page = await resolver.GetPageAsync(NewRecordingOperation("test.record"), "{}", "start", 10, TestCancellationToken);
 
         // Assert
-        Assert.NotNull(capturedOptions);
-        Assert.False(capturedOptions.ShouldTrackTotalHits());
+        Assert.Equal(["a", "b"], page.Ids.ToArray());
+        Assert.Equal("next", page.NextCursor);
     }
 
     [Fact]

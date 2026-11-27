@@ -7,6 +7,7 @@ using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queries.Validation;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Services;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Repositories.Queries;
@@ -38,7 +39,7 @@ public class StackHandler(
     IQueue<WebHookNotification> webHookNotificationQueue,
     ICacheClient cacheClient,
     FormattingPluginManager formattingPluginManager,
-    SemanticVersionParser semanticVersionParser,
+    StackActionService stackActions,
     StackQueryValidator validator,
     AppOptions options,
     TimeProvider timeProvider,
@@ -61,23 +62,14 @@ public class StackHandler(
 
     public async Task<Result> Handle(MarkStacksFixed message)
     {
-        SemanticVersion? semanticVersion = null;
-
-        if (!String.IsNullOrEmpty(message.Version))
-        {
-            semanticVersion = semanticVersionParser.Parse(message.Version);
-            if (semanticVersion is null)
-                return Result.BadRequest("Invalid semantic version");
-        }
+        if (!stackActions.TryParseVersion(message.Version, out var semanticVersion))
+            return Result.BadRequest("Invalid semantic version");
 
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)
             return Result.NotFound("Stacks not found.");
 
-        foreach (var stack in stacks)
-            stack.MarkFixed(semanticVersion, timeProvider);
-
-        await stackRepository.SaveAsync(stacks);
+        await stackActions.MarkFixedAsync(stacks.ToList(), semanticVersion);
 
         return Result.Success();
     }
@@ -102,22 +94,15 @@ public class StackHandler(
 
     public async Task<Result> Handle(SnoozeStacks message)
     {
-        if (message.SnoozeUntilUtc < timeProvider.GetUtcNow().UtcDateTime.AddMinutes(5))
-            return Result.BadRequest("Must snooze for at least 5 minutes.");
+        string? snoozeError = stackActions.ValidateSnooze(message.SnoozeUntilUtc);
+        if (snoozeError is not null)
+            return Result.BadRequest(snoozeError);
 
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)
             return Result.NotFound("Stacks not found.");
 
-        foreach (var stack in stacks)
-        {
-            stack.Status = StackStatus.Snoozed;
-            stack.SnoozeUntilUtc = message.SnoozeUntilUtc;
-            stack.FixedInVersion = null;
-            stack.DateFixed = null;
-        }
-
-        await stackRepository.SaveAsync(stacks);
+        await stackActions.SnoozeAsync(stacks.ToList(), message.SnoozeUntilUtc);
 
         return Result.Success();
     }
@@ -215,34 +200,14 @@ public class StackHandler(
 
     public async Task<Result> Handle(ChangeStacksStatus message)
     {
-        if (message.Status is StackStatus.Regressed or StackStatus.Snoozed)
+        if (!StackActionService.CanChangeStatusTo(message.Status))
             return Result.BadRequest("Can't set stack status to regressed or snoozed.");
 
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)
             return Result.NotFound("Stacks not found.");
 
-        stacks = stacks.Where(s => s.Status != message.Status).ToList();
-        if (stacks.Count > 0)
-        {
-            foreach (var stack in stacks)
-            {
-                stack.Status = message.Status;
-                if (message.Status == StackStatus.Fixed)
-                {
-                    stack.DateFixed = timeProvider.GetUtcNow().UtcDateTime;
-                }
-                else
-                {
-                    stack.DateFixed = null;
-                    stack.FixedInVersion = null;
-                }
-
-                stack.SnoozeUntilUtc = null;
-            }
-
-            await stackRepository.SaveAsync(stacks);
-        }
+        await stackActions.ChangeStatusAsync(stacks.ToList(), message.Status);
 
         return Result.Success();
     }
@@ -338,8 +303,7 @@ public class StackHandler(
             _logger.LogInformation("User {User} deleted {RemovedCount} stacks in project ({ProjectId})", currentUser.Id, projectStacks.Count(), stack.ProjectId);
         }
 
-        list.ForEach(v => v.IsDeleted = true);
-        await stackRepository.SaveAsync(list);
+        await stackActions.DeleteAsync(list);
 
         if (results.Failure.Count == 0)
             return new WorkInProgressResult();

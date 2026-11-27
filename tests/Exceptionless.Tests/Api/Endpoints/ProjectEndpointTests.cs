@@ -17,7 +17,7 @@ using Xunit;
 
 namespace Exceptionless.Tests.Api.Endpoints;
 
-public sealed class ProjectEndpointTests : IntegrationTestsBase
+public sealed partial class ProjectEndpointTests : IntegrationTestsBase
 {
     private readonly IEventRepository _eventRepository;
     private readonly IOrganizationRepository _organizationRepository;

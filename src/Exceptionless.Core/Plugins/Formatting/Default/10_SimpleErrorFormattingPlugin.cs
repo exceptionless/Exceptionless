@@ -68,7 +68,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         return new SummaryData { Id = ev.Id, TemplateKey = "event-simple-summary", Data = data };
     }
 
-    public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, bool isCritical, bool isNew, bool isRegression)
+    public override MailMessageData? GetEventNotificationMailMessageData(PersistentEvent ev, Project project, bool isCritical, bool isNew, bool isRegression)
     {
         if (!ShouldHandle(ev))
             return null;
@@ -91,6 +91,7 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         if (isCritical)
             notificationType = String.Concat("Critical ", notificationType);
 
+        notificationType = InEnvironment(notificationType, ev, project);
         string subject = String.Concat(notificationType, ": ", error.Message).Truncate(120);
         var data = new Dictionary<string, object?> { { "Message", error.Message?.Truncate(60) } };
         if (!String.IsNullOrEmpty(errorTypeName))
@@ -149,7 +150,8 @@ public sealed class SimpleErrorFormattingPlugin : FormattingPluginBase
         }
 
         AddDefaultSlackFields(ev, attachment.Fields);
-        string subject = $"[{project.Name}] A {notificationType}: *{GetSlackEventUrl(ev.Id, error.Message?.Truncate(120))}*";
+        notificationType = InEnvironment(notificationType, ev, project);
+        string subject = $"[{EscapeSlack(project.Name)}] A {EscapeSlack(notificationType)}: *{GetSlackEventUrl(ev.Id, error.Message?.Truncate(120))}*";
         return new SlackMessage(subject)
         {
             Attachments = [attachment]

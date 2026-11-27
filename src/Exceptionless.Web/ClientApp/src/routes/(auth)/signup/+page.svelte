@@ -69,7 +69,7 @@
 
 <div class="mx-auto grid w-full max-w-5xl items-center gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] md:gap-12 md:self-center">
     <section aria-label="Getting started with Exie" class="hidden flex-col gap-8 md:flex">
-        <Logo class="mx-0 h-14 max-h-none w-auto self-start object-contain" />
+        <Logo class="mx-0 h-20 max-h-none w-auto self-start object-contain" />
         <ExieGuide live={false} mood="hello" size={120} title="Hi, I'm Exie!">I'll help you catch your first error in about 5 minutes.</ExieGuide>
         <div class="flex flex-col gap-3">
             <p class="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Here's the plan</p>
@@ -79,7 +79,7 @@
 
     <div class="flex w-full flex-col gap-4">
         <div class="flex flex-col items-center gap-4 md:hidden">
-            <Logo class="h-11 max-h-none w-auto object-contain" />
+            <Logo class="h-16 max-h-none w-auto object-contain" />
             <ExieGuide class="w-full" live={false} mood="hello" size={48}>Hi, I'm Exie! Let's catch your first error in about 5 minutes.</ExieGuide>
         </div>
 

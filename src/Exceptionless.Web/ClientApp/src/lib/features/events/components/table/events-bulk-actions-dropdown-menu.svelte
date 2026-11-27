@@ -9,13 +9,13 @@
     import { type RowData, type StockFeatures, type Table } from '@tanstack/svelte-table';
     import { toast } from 'svelte-sonner';
 
+    import type { AllMatchingTarget } from '#features/shared/all-matching-selection.svelte.ts';
+
     import { Button } from '#comp/ui/button/index.ts';
     import * as DropdownMenu from '#comp/ui/dropdown-menu/index.ts';
     import { deleteEvent } from '#features/events/api.svelte.ts';
     import { postBulkOperation } from '#features/tasks/api.svelte.ts';
     import { BulkOperationSelectionKind, EVENTS_DELETE_OPERATION } from '#features/tasks/models.ts';
-
-    import type { AllMatchingTarget } from './all-matching-selection.svelte';
 
     import RemoveEventDialog from '../dialogs/remove-event-dialog.svelte';
 

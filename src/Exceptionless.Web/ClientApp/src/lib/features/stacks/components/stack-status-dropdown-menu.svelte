@@ -89,8 +89,8 @@
         }
     }
 
-    async function markSnoozed(timePeriod?: '6hours' | 'day' | 'month' | 'week') {
-        let snoozeUntilUtc = new SvelteDate();
+    async function markSnoozed(timePeriod: '6hours' | 'day' | 'month' | 'week') {
+        const snoozeUntilUtc = new SvelteDate();
         switch (timePeriod) {
             case '6hours':
                 snoozeUntilUtc.setHours(snoozeUntilUtc.getHours() + 6);
@@ -98,12 +98,11 @@
             case 'day':
                 snoozeUntilUtc.setDate(snoozeUntilUtc.getDate() + 1);
                 break;
+            case 'month':
+                snoozeUntilUtc.setMonth(snoozeUntilUtc.getMonth() + 1);
+                break;
             case 'week':
                 snoozeUntilUtc.setDate(snoozeUntilUtc.getDate() + 7);
-                break;
-            case 'month':
-            default:
-                snoozeUntilUtc.setMonth(snoozeUntilUtc.getMonth() + 1);
                 break;
         }
 
@@ -131,9 +130,7 @@
             <DropdownMenu.Item title="Mark this stack as open" onclick={() => markOpen()}>Open</DropdownMenu.Item>
             <DropdownMenu.Item title="Mark this stack as fixed" onclick={() => (openMarkStackFixedInVersionDialog = true)}>Fixed</DropdownMenu.Item>
             <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger title="Hide this stack from reports and mutes occurrence notifications" onclick={() => markSnoozed()}
-                    >Snoozed</DropdownMenu.SubTrigger
-                >
+                <DropdownMenu.SubTrigger title="Hide this stack from reports and mutes occurrence notifications">Snoozed</DropdownMenu.SubTrigger>
                 <DropdownMenu.SubContent>
                     <DropdownMenu.Item onclick={() => markSnoozed('6hours')}>6 Hours</DropdownMenu.Item>
                     <DropdownMenu.Item onclick={() => markSnoozed('day')}>1 Day</DropdownMenu.Item>
