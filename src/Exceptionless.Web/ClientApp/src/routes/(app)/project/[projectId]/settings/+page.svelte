@@ -11,7 +11,15 @@
     import { Input } from '#comp/ui/input/index.ts';
     import { Label } from '#comp/ui/label/index.ts';
     import { Switch } from '#comp/ui/switch/index.ts';
-    import { deleteProjectConfig, getProjectConfig, getProjectQuery, postProjectConfig, updateProject } from '#features/projects/api.svelte.ts';
+    import {
+        deleteProjectConfig,
+        deleteProjectData,
+        getProjectConfig,
+        getProjectQuery,
+        postProjectConfig,
+        postProjectData,
+        updateProject
+    } from '#features/projects/api.svelte.ts';
     import ProjectLogLevel from '#features/projects/components/project-log-level.svelte';
 
     let toastId = $state<number | string>();
@@ -56,6 +64,22 @@
         }
     });
 
+    const updateProjectData = postProjectData({
+        route: {
+            get id() {
+                return projectId;
+            }
+        }
+    });
+
+    const removeProjectData = deleteProjectData({
+        route: {
+            get id() {
+                return projectId;
+            }
+        }
+    });
+
     let dataExclusions = $state('');
     let excludePrivateInformation = $state(false);
     let userNamespaces = $state('');
@@ -63,11 +87,15 @@
     let userAgents = $state('');
     let deleteBotDataEnabled = $state(false);
     const settings = $derived(projectConfigQuery.data?.settings ?? {});
+    // Stacking reads these from the project's data, not its client configuration.
+    const projectData = $derived((projectQuery.data?.data ?? {}) as Record<string, unknown>);
+    const savedUserNamespaces = $derived(typeof projectData.UserNamespaces === 'string' ? projectData.UserNamespaces : '');
+    const savedCommonMethods = $derived(typeof projectData.CommonMethods === 'string' ? projectData.CommonMethods : '');
 
     const dataExclusionsIsDirty = $derived(dataExclusions !== settings['@@DataExclusions']);
     const excludePrivateInformationIsDirty = $derived(excludePrivateInformation !== (settings['@@IncludePrivateInformation'] === 'false'));
-    const userNamespacesIsDirty = $derived(userNamespaces !== settings.UserNamespaces);
-    const commonMethodsIsDirty = $derived(commonMethods !== settings.CommonMethods);
+    const userNamespacesIsDirty = $derived(userNamespaces !== savedUserNamespaces);
+    const commonMethodsIsDirty = $derived(commonMethods !== savedCommonMethods);
     const userAgentsIsDirty = $derived(userAgents !== (settings['@@UserAgentBotPatterns'] as string));
     const deleteBotDataEnabledIsDirty = $derived(deleteBotDataEnabled !== projectQuery.data?.delete_bot_data_enabled);
 
@@ -76,7 +104,7 @@
             return;
         }
 
-        await updateOrRemoveProjectConfig('CommonMethods', commonMethods, 'Common Methods');
+        await updateOrRemoveProjectData('CommonMethods', commonMethods, 'Common Methods');
     }
 
     async function saveDataExclusion() {
@@ -128,7 +156,7 @@
             return;
         }
 
-        await updateOrRemoveProjectConfig('UserNamespaces', userNamespaces, 'User Namespaces');
+        await updateOrRemoveProjectData('UserNamespaces', userNamespaces, 'User Namespaces');
     }
 
     async function updateOrRemoveProjectConfig(key: string, value: null | string, displayName: string) {
@@ -152,6 +180,27 @@
         }
     }
 
+    async function updateOrRemoveProjectData(key: string, value: string, displayName: string) {
+        toast.dismiss(toastId);
+
+        try {
+            if (value.trim()) {
+                await updateProjectData.mutateAsync({
+                    key,
+                    value
+                });
+            } else {
+                await removeProjectData.mutateAsync({
+                    key
+                });
+            }
+
+            toastId = toast.success(`Successfully updated ${displayName} setting.`);
+        } catch {
+            toastId = toast.error(`Error updating ${displayName}'s setting. Please try again.`);
+        }
+    }
+
     const debouncedSaveDataExclusion = debounce(500, saveDataExclusion);
     const debouncedSaveIncludePrivateInformation = debounce(500, saveIncludePrivateInformation);
     const debouncedSaveUserNamespaces = debounce(500, saveUserNamespaces);
@@ -163,13 +212,13 @@
         if (projectConfigQuery.dataUpdatedAt) {
             dataExclusions = settings['@@DataExclusions'] ?? '';
             excludePrivateInformation = settings['@@IncludePrivateInformation'] === 'false';
-            userNamespaces = settings.UserNamespaces ?? '';
-            commonMethods = settings.CommonMethods ?? '';
             userAgents = settings['@@UserAgentBotPatterns'] ?? '';
         }
 
         if (projectQuery.dataUpdatedAt) {
             deleteBotDataEnabled = projectQuery.data?.delete_bot_data_enabled ?? false;
+            userNamespaces = savedUserNamespaces;
+            commonMethods = savedCommonMethods;
         }
     });
 </script>

@@ -3,18 +3,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ViewProject } from './models';
 
-import { deleteProject, getProjectQuery, getProjectsQuery, queryKeys } from './api.svelte';
+import { deleteProject, deleteProjectData, getProjectQuery, getProjectsQuery, postProjectData, queryKeys } from './api.svelte';
 
 const mocks = vi.hoisted(() => ({
     createMutation: vi.fn<(options: () => MutationObserverOptions<unknown, Error, void>) => void>(),
     createQuery: vi.fn<(options: () => QueryObserverOptions<ViewProject>) => void>(),
+    delete: vi.fn(),
     getJSON: vi.fn(),
+    post: vi.fn(),
     queryClient: undefined as QueryClient | undefined
 }));
 vi.mock('#features/auth/index.svelte.ts', () => ({ accessToken: { current: 'test-token' } }));
 vi.mock('@foundatiofx/fetchclient', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@foundatiofx/fetchclient')>()),
-    useFetchClient: () => ({ getJSON: mocks.getJSON })
+    useFetchClient: () => ({ delete: mocks.delete, getJSON: mocks.getJSON, post: mocks.post })
 }));
 vi.mock('@tanstack/svelte-query', async (importOriginal) => ({
     ...(await importOriginal<typeof import('@tanstack/svelte-query')>()),
@@ -133,5 +135,52 @@ describe('project read lifecycle', () => {
         expect(client.getQueryData<{ data: ViewProject[] }>(listKey('organization-id'))?.data.map((p) => p.id)).toEqual(['other-project-id']);
         expect(client.getQueryData<{ data: ViewProject[] }>(listKey('other-organization-id'))?.data.map((p) => p.id)).toEqual(['unrelated-project-id']);
         expect(client.getQueryState(listKey('organization-id'))?.isInvalidated).toBe(true);
+    });
+});
+
+describe('project data mutations', () => {
+    let client: QueryClient;
+
+    beforeEach(() => {
+        vi.resetAllMocks();
+        client = new QueryClient();
+        mocks.queryClient = client;
+    });
+
+    afterEach(() => client.clear());
+
+    it('posts the value in the body and the key in the query string, then refreshes the project', async () => {
+        // Arrange
+        mocks.post.mockResolvedValue({ ok: true });
+        client.setQueryData(queryKeys.id('project-id'), {});
+        postProjectData({ route: { id: 'project-id' } });
+        const options = mocks.createMutation.mock.calls[0]![0]();
+
+        // Act
+        const result = await options.mutationFn!({ key: 'UserNamespaces', value: 'Contoso' } as never, undefined as never);
+        await options.onSuccess!(undefined as never, undefined as never, undefined as never, undefined as never);
+
+        // Assert
+        expect(result).toBe(true);
+        expect(mocks.post).toHaveBeenCalledExactlyOnceWith('projects/project-id/data', { value: 'Contoso' }, { params: { key: 'UserNamespaces' } });
+        expect(options.mutationKey).toEqual(queryKeys.postData('project-id'));
+        expect(client.getQueryState(queryKeys.id('project-id'))?.isInvalidated).toBe(true);
+    });
+
+    it('deletes by key from the data endpoint, then refreshes the project', async () => {
+        // Arrange
+        mocks.delete.mockResolvedValue({ ok: true });
+        client.setQueryData(queryKeys.id('project-id'), {});
+        deleteProjectData({ route: { id: 'project-id' } });
+        const options = mocks.createMutation.mock.calls[0]![0]();
+
+        // Act
+        const result = await options.mutationFn!({ key: 'CommonMethods' } as never, undefined as never);
+        await options.onSuccess!(undefined as never, undefined as never, undefined as never, undefined as never);
+
+        // Assert
+        expect(result).toBe(true);
+        expect(mocks.delete).toHaveBeenCalledExactlyOnceWith('projects/project-id/data', { params: { key: 'CommonMethods' } });
+        expect(client.getQueryState(queryKeys.id('project-id'))?.isInvalidated).toBe(true);
     });
 });
