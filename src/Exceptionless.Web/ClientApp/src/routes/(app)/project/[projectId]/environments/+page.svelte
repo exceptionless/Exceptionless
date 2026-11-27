@@ -260,6 +260,10 @@
                 {#if discardWarning === 'empty-list'}
                     No environments are listed, so <span class="font-medium">every event that has an environment will be discarded</span> until you list them. Clients
                     are told the events were accepted, so nothing will look wrong on their side.
+                {:else if discardWarning === 'unknown-activity'}
+                    Recent activity could not be loaded, so it is not possible to check which environments are sending events. <span class="font-medium"
+                        >Events from any environment that is not listed will be discarded</span
+                    >. Clients are told the events were accepted, so nothing will look wrong on their side.
                 {:else}
                     None of the listed environments has had events in the last 30 days, so <span class="font-medium"
                         >events from the environments you are sending now will be discarded</span

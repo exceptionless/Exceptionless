@@ -125,7 +125,7 @@ describe('getDiscardUnlistedWarning', () => {
         ['no listed environments', [], true, 'empty-list'],
         ['no listed environment has events', [undefined, 0], true, 'no-recent-events'],
         ['a listed environment has events', [undefined, 3], true, undefined],
-        ['recent activity has not loaded', [undefined], false, undefined]
+        ['recent activity has not loaded', [undefined, 3], false, 'unknown-activity']
     ])('returns the right warning when %s', (_, counts, loaded, expected) => {
         expect(getDiscardUnlistedWarning(rows(...(counts as (number | undefined)[])), loaded)).toBe(expected);
     });
