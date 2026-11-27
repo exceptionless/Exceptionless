@@ -90,6 +90,11 @@ public sealed class TokenEndpointTests : IntegrationTestsBase
         Assert.True(response.Headers.Location.IsAbsoluteUri);
         Assert.Equal("localhost", response.Headers.Location.Host);
         Assert.StartsWith("/api/v2/tokens/", response.Headers.Location.AbsolutePath);
+
+        // Token ids are case sensitive, so the location must preserve their case.
+        var viewToken = await response.DeserializeAsync<ViewToken>();
+        Assert.NotNull(viewToken);
+        Assert.EndsWith("/" + viewToken.Id, response.Headers.Location.AbsolutePath, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -20,6 +20,7 @@ public sealed class EventEnvironmentSchemaTransformer : IOpenApiSchemaTransforme
             // The tolerant JSON converter accepts malformed input, but responses contain only a string or null.
             environment.Type = JsonSchemaType.String | JsonSchemaType.Null;
             environment.MaxLength = 64;
+            environment.Pattern = "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$";
             schema.Required?.Remove(name);
         }
 

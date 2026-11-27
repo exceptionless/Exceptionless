@@ -17,12 +17,12 @@ test('operator can manage project API keys and follow first-event redirect', asy
         await page.locator(`a[href="/project/${e2eScenario.projectId}/configure"]`).filter({ hasText: 'Client setup' }).last().click();
 
         await expect(page).toHaveURL(new RegExp(`/project/${e2eScenario.projectId}/configure(?:[?#]|$)`));
-        await expect(page.getByRole('heading', { name: `Send Events to ${e2eScenario.projectName}` })).toBeVisible();
+        await expect(page.getByRole('heading', { name: `Send events to ${e2eScenario.projectName}` })).toBeVisible();
     });
 
-    await test.step('redirect to project Events when the first event arrives', async () => {
+    await test.step('celebrate the first event and open project Events', async () => {
         await page.goto(`/project/${e2eScenario.projectId}/configure?redirect=true&type=bash`);
-        await expect(page.getByText('Waiting for your first event')).toBeVisible();
+        await expect(page.getByText('Listening for your first event')).toBeVisible();
         await expect(page.getByText(e2eScenario.projectToken, { exact: false }).first()).toBeVisible();
 
         await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, {
@@ -32,6 +32,12 @@ test('operator can manage project API keys and follow first-event redirect', asy
             referenceId: e2eScenario.referenceId
         });
 
+        // The first event no longer races into an empty list; the user chooses where to go.
+        const celebration = page.getByRole('dialog', { name: 'You caught your first event!' });
+        await expect(celebration).toBeVisible({ timeout: 30_000 });
+        await expect(celebration.getByText(e2eScenario.message)).toBeVisible({ timeout: 30_000 });
+        await expect(page).toHaveURL(new RegExp(`/project/${e2eScenario.projectId}/configure`));
+        await celebration.getByRole('button', { name: 'See all events' }).click();
         await expect(page).toHaveURL(new RegExp(`/event[?].*project=${e2eScenario.projectId}`), { timeout: 30_000 });
     });
 });

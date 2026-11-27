@@ -1,19 +1,20 @@
 <script lang="ts">
-    import type { Stripe, StripeElements, StripeElementsOptions, StripePaymentElement } from '@stripe/stripe-js';
+    import type { Stripe, StripeElements, StripePaymentElement } from '@stripe/stripe-js';
 
+    import { mode as themeMode } from 'mode-watcher';
     import { onMount, setContext } from 'svelte';
 
     import ErrorMessage from '#comp/error-message.svelte';
+    import { getStripeAppearance } from '#features/billing/stripe-appearance.ts';
     import { loadStripeOnce, setStripeContext } from '#features/billing/stripe.svelte.ts';
 
     type Props = {
-        appearance?: StripeElementsOptions['appearance'];
         currency?: string;
         onElementsChange?: (elements: StripeElements | undefined) => void;
         onload?: (stripe: Stripe) => void;
     } & ({ clientSecret: string; mode?: never } | { clientSecret?: never; mode?: 'setup' });
 
-    let { appearance, clientSecret, currency = 'usd', mode = 'setup', onElementsChange, onload }: Props = $props();
+    let { clientSecret, currency = 'usd', mode = 'setup', onElementsChange, onload }: Props = $props();
 
     let stripeInstance: null | Stripe = null;
     let elementsInstance: null | StripeElements = null;
@@ -39,6 +40,7 @@
                 }
 
                 stripeInstance = stripe;
+                const appearance = getStripeAppearance(themeMode.current === 'dark');
                 elementsInstance = clientSecret
                     ? stripe.elements({
                           appearance,
@@ -74,6 +76,18 @@
             disposed = true;
             paymentElement?.destroy();
         };
+    });
+
+    // Stripe renders in an iframe that can't see the app's CSS, so push the theme colors again when the theme changes.
+    $effect(() => {
+        const isDark = themeMode.current === 'dark';
+        // Wait a frame so the theme class and its CSS variables are applied before reading them.
+        const frame = requestAnimationFrame(() =>
+            elementsInstance?.update({
+                appearance: getStripeAppearance(isDark)
+            })
+        );
+        return () => cancelAnimationFrame(frame);
     });
 
     function showError(msg: string) {

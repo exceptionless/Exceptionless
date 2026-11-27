@@ -1,4 +1,5 @@
-﻿using Exceptionless.Core.Models;
+﻿using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -53,7 +54,7 @@ public class CheckForRegressionAction : EventPipelineActionBase
                         var version = _semanticVersionParser.Parse(versionGroup.Key, versionCache) ?? _semanticVersionParser.Default;
                         if (version < fixedInVersion)
                         {
-                            foreach (var ctx in stackGroup.Where(s => s.Organization.HasPremiumFeatures))
+                            foreach (var ctx in versionGroup.Where(s => s.Organization.HasPremiumFeatures))
                             {
                                 _logger.LogDebug("Discarding fixed stack event: Version {Version} is older than fixed in version {FixedInVersion}", version, fixedInVersion);
                                 ctx.IsDiscarded = true;
@@ -63,9 +64,11 @@ public class CheckForRegressionAction : EventPipelineActionBase
                             continue;
                         }
 
-                        regressedVersion = version;
-                        regressedContext = versionGroup.First();
-                        break;
+                        if (regressedContext is null)
+                        {
+                            regressedVersion = version;
+                            regressedContext = versionGroup.First();
+                        }
                     }
                 }
 
@@ -73,8 +76,14 @@ public class CheckForRegressionAction : EventPipelineActionBase
                     continue;
 
                 _logger.LogDebug("Marking stack and events as regressed in version: {Version}", regressedVersion);
+                // A regression seen only in an environment that does not notify is reported when a notifying environment first sees it.
+                bool notificationPending = !regressedContext.Project.ShouldNotifyForEnvironment(regressedContext.Event.Environment);
+                await _stackRepository.MarkAsRegressedAsync(stack, notificationPending);
+
+                // Every event in the group shares this stack instance, so update it once.
                 stack.Status = StackStatus.Regressed;
-                await _stackRepository.MarkAsRegressedAsync(stack.Id);
+                stack.IsNewNotificationPending = false;
+                stack.IsRegressionNotificationPending = notificationPending;
 
                 foreach (var ctx in stackGroup)
                     ctx.IsRegression = ctx == regressedContext;

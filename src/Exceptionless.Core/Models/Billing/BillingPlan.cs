@@ -6,6 +6,11 @@ namespace Exceptionless.Core.Models.Billing;
 [DebuggerDisplay("Id: {Id} Name: {Name} Price: {Price}")]
 public record BillingPlan
 {
+    /// <summary>
+    /// Limit value that means no limit.
+    /// </summary>
+    public const int Unlimited = -1;
+
     public required string Id { get; init; }
     public required string Name { get; init; }
     public required string Description { get; init; }
@@ -19,6 +24,11 @@ public record BillingPlan
 
     [JsonIgnore]
     public AssistantPlanOptions? Assistant { get; init; }
+
+    /// <summary>
+    /// Whether the plan includes Exie.
+    /// </summary>
+    public bool HasAssistant => Assistant is not null;
 }
 
 public sealed record AssistantPlanOptions
@@ -27,4 +37,14 @@ public sealed record AssistantPlanOptions
     public int MaximumTurnsPerMinute { get; init; }
     public long MaximumMonthlyTokens { get; init; }
     public decimal MaximumMonthlyCostUsd { get; init; }
+
+    /// <summary>
+    /// Groups organizations whose combined daily Exie cost is limited by <see cref="MaximumSharedDailyCostUsd"/>.
+    /// </summary>
+    public string? SharedDailyCostLimitKey { get; init; }
+
+    /// <summary>
+    /// Combined daily Exie cost limit for every organization sharing <see cref="SharedDailyCostLimitKey"/>. Zero or less disables the limit.
+    /// </summary>
+    public decimal MaximumSharedDailyCostUsd { get; init; }
 }

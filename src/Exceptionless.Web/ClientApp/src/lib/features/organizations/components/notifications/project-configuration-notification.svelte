@@ -29,6 +29,6 @@
 <Notification variant="information" {...restProps}>
     <NotificationTitle>We haven't received any events yet!</NotificationTitle>
     <NotificationDescription>
-        Open <A href={configureHref}>Client setup</A> for this project and start becoming Exceptionless!
+        Open <A href={configureHref}>Client setup</A> to connect your app and send your first event.
     </NotificationDescription>
 </Notification>

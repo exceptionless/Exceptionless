@@ -1,3 +1,4 @@
+using System.Globalization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
@@ -74,7 +75,7 @@ public class Mailer : IMailer
     public async Task<bool> SendEventNoticeAsync(User user, PersistentEvent ev, Project project, bool isNew, bool isRegression, int totalOccurrences)
     {
         bool isCritical = ev.IsCritical();
-        var result = _pluginManager.GetEventNotificationMailMessageData(ev, isCritical, isNew, isRegression);
+        var result = _pluginManager.GetEventNotificationMailMessageData(ev, project, isCritical, isNew, isRegression);
         if (result is null || result.Data.Count == 0)
         {
             _logger.LogWarning("Unable to create event notification mail message for event \"{UserId}\". User: \"{EmailAddress}\"", ev.Id, user.EmailAddress);
@@ -207,8 +208,8 @@ public class Mailer : IMailer
                 : $"[{organization.Name}] Events are currently being throttled.";
         string upgradeUrl = _appUrls.OrganizationUpgrade(organization.Id);
         string learnMoreUrl = isOverMonthlyLimit
-            ? "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-what-happens-if-the-organization-plan-limit-is-reached"
-            : "https://github.com/exceptionless/Exceptionless/wiki/Frequently-Asked-Questions#q-why-is-my-organization-throttled";
+            ? "https://exceptionless.com/docs/FAQ/#what-happens-if-the-organization-plan-limit-is-reached"
+            : "https://exceptionless.com/docs/FAQ/#why-is-my-organization-throttled";
         var message = new OrganizationNoticeEmail(
             subject,
             organization.Name,
@@ -245,6 +246,27 @@ public class Mailer : IMailer
             To = owner.EmailAddress,
             Subject = subject,
             Body = await _templateRenderer.RenderAsync(message)
+        }, template);
+    }
+
+    public async Task SendOrganizationTrialEndingAsync(User user, Organization organization)
+    {
+        ArgumentNullException.ThrowIfNull(organization.TrialEndsUtc);
+
+        const string template = "organization-trial-ending";
+        string subject = $"[{organization.Name}] Your free trial ends soon";
+        var message = new OrganizationTrialEndingEmail(
+            subject,
+            organization.Name,
+            organization.TrialEndsUtc.Value.ToString("MMMM d, yyyy", CultureInfo.InvariantCulture),
+            _appUrls.OrganizationUpgrade(organization.Id));
+
+        string body = await _templateRenderer.RenderAsync(message);
+        await QueueMessageAsync(new MailMessage
+        {
+            To = user.EmailAddress,
+            Subject = subject,
+            Body = body
         }, template);
     }
 
@@ -294,17 +316,19 @@ public class Mailer : IMailer
             _appUrls.Stack(stack.Id))).ToArray();
     }
 
-    public async Task SendUserEmailVerifyAsync(User user)
+    public async Task SendUserEmailVerifyAsync(User user, bool isNewAccount = false)
     {
         if (String.IsNullOrEmpty(user?.VerifyEmailAddressToken))
             return;
 
         const string template = "user-email-verify";
-        const string subject = "Exceptionless Account Confirmation";
+        string subject = isNewAccount ? "Welcome to Exceptionless — confirm your email" : "Confirm your Exceptionless email address";
         var message = new UserEmailVerifyEmail(
             subject,
             user.FullName,
-            new EmailAction("Verify Address", _appUrls.VerifyEmail(user.VerifyEmailAddressToken)));
+            isNewAccount,
+            _appUrls.Home(),
+            new EmailAction("Confirm Email Address", _appUrls.VerifyEmail(user.VerifyEmailAddressToken)));
 
         await QueueMessageAsync(new MailMessage
         {

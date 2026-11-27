@@ -33,7 +33,7 @@
     import DeleteCurrentUserDialog from '#features/users/components/dialogs/delete-current-user-dialog.svelte';
     import { getGravatarFromCurrentUser } from '#features/users/gravatar.svelte.ts';
     import { type UpdateUserEmailAddressFormData, UpdateUserEmailAddressSchema, type UpdateUserFormData, UpdateUserSchema } from '#features/users/schemas.ts';
-    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors } from '#shared/validation.ts';
+    import { ariaInvalid, getFormErrorMessages, mapFieldErrors, problemDetailsToFormErrors, submitWhenValidated } from '#shared/validation.ts';
 
     let toastId = $state<number | string>();
     let showDeleteAccountDialog = $state(false);
@@ -134,7 +134,7 @@
         }
     }));
 
-    const debouncedUpdateEmailAddressFormSubmit = debounce(1000, () => updateEmailAddressForm.handleSubmit());
+    const debouncedUpdateEmailAddressFormSubmit = debounce(1000, () => submitWhenValidated(updateEmailAddressForm));
     const debouncedUpdatedUserFormSubmit = debounce(1000, () => updateUserForm.handleSubmit());
     const isAvatarSaving = $derived(uploadAvatar.isPending || removeAvatar.isPending);
 
@@ -305,7 +305,7 @@
             onsubmit={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                updateEmailAddressForm.handleSubmit();
+                void submitWhenValidated(updateEmailAddressForm);
             }}
         >
             <updateEmailAddressForm.Subscribe selector={(state) => state.errors}>

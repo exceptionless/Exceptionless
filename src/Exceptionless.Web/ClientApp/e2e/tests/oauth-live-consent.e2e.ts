@@ -51,7 +51,7 @@ test('AuthorizeConsent_ExpandedClientRegistration_RequiresFreshMemberGrant', asy
         expect(metadataResponse.status()).toBe(200);
         const { resource } = (await metadataResponse.json()) as { resource: string };
 
-        await test.step('register a restricted client and show its actual denied-scope response', async () => {
+        await test.step('register a read-only client and still offer every requested scope', async () => {
             // Act
             const registrationResponse = await request.post(`${environment.apiUrl}/oauth/register`, {
                 data: {
@@ -76,16 +76,16 @@ test('AuthorizeConsent_ExpandedClientRegistration_RequiresFreshMemberGrant', asy
             expect(forbidden.status()).toBe(403);
 
             await page.goto(authorizationUrl(allScopes));
-            await expect(page.getByText(/^Scopes not allowed for this application: stacks:write, offline_access\./)).toBeVisible();
-            await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeDisabled();
-            await expect(page.getByRole('checkbox', { name: /Stacks Write/ })).toBeDisabled();
-            await expect(page.getByRole('checkbox', { name: /Offline Access/ })).toBeDisabled();
-            await expect(page.getByRole('checkbox', { exact: true, name: e2eScenario.organizationName })).toBeDisabled();
+            await expect(page.getByRole('button', { exact: true, name: 'Approve' })).toBeEnabled();
+            await expect(page.getByRole('checkbox', { name: /Projects Read/ })).toBeEnabled();
+            await expect(page.getByRole('checkbox', { name: /Stacks Write/ })).toBeEnabled();
+            await expect(page.getByRole('checkbox', { name: /Offline Access/ })).toBeEnabled();
+            await expect(page.getByText('not allowed for this application')).toHaveCount(0);
         });
 
         await administratorContext.addInitScript((token) => window.localStorage.setItem('satellizer_token', token), administratorToken);
         const administratorPage = await administratorContext.newPage();
-        await test.step('find the failed registration through Not authorized', async () => {
+        await test.step('find the unapproved registration through Not authorized', async () => {
             // Act
             await administratorPage.goto(`/system/oauth-applications?criteria=${encodeURIComponent(applicationName)}`);
             // Assert
@@ -100,7 +100,7 @@ test('AuthorizeConsent_ExpandedClientRegistration_RequiresFreshMemberGrant', asy
             await expect(administratorPage.getByLabel('Client ID', { exact: true })).toHaveValue(clientId!);
         });
 
-        const limitedGrant = await test.step('consent to an allowed subset without offline access', async () => {
+        const limitedGrant = await test.step('consent to a read-only subset without offline access', async () => {
             // Act
             const tokens = await approveAndExchange(readScopes);
             // Assert

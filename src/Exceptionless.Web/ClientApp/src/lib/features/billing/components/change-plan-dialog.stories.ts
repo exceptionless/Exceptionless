@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/sveltekit';
 
+import { spyOn } from 'storybook/test';
+
 import type { ViewOrganization } from '#features/organizations/models.ts';
 import type { BillingPlan } from '#lib/generated/api.ts';
 
@@ -8,6 +10,7 @@ import Harness from './change-plan-dialog-harness.svelte';
 const MOCK_PLANS: BillingPlan[] = [
     {
         description: 'Free',
+        has_assistant: false,
         has_premium_features: false,
         id: 'EX_FREE',
         is_hidden: false,
@@ -20,6 +23,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Small ($15/month)',
+        has_assistant: false,
         has_premium_features: true,
         id: 'EX_SMALL',
         is_hidden: false,
@@ -32,6 +36,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Small Yearly ($165/year - Save $15)',
+        has_assistant: false,
         has_premium_features: true,
         id: 'EX_SMALL_YEARLY',
         is_hidden: false,
@@ -44,6 +49,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Medium ($49/month)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_MEDIUM',
         is_hidden: false,
@@ -56,6 +62,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Medium Yearly ($539/year - Save $49)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_MEDIUM_YEARLY',
         is_hidden: false,
@@ -68,6 +75,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Large ($99/month)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_LARGE',
         is_hidden: false,
@@ -80,6 +88,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Large Yearly ($1,089/year - Save $99)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_LARGE_YEARLY',
         is_hidden: false,
@@ -92,6 +101,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Extra Large ($199/month)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_XL',
         is_hidden: false,
@@ -104,6 +114,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Extra Large Yearly ($2,189/year - Save $199)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_XL_YEARLY',
         is_hidden: false,
@@ -116,6 +127,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Enterprise ($499/month)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_ENT',
         is_hidden: false,
@@ -128,6 +140,7 @@ const MOCK_PLANS: BillingPlan[] = [
     },
     {
         description: 'Enterprise Yearly ($5,489/year - Save $499)',
+        has_assistant: true,
         has_premium_features: true,
         id: 'EX_ENT_YEARLY',
         is_hidden: false,
@@ -183,6 +196,19 @@ function makeOrg(overrides: Partial<ViewOrganization> = {}): ViewOrganization {
 }
 
 const meta = {
+    beforeEach: ({ args }) => {
+        const originalFetch = globalThis.fetch;
+        const mockFetch = spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+            const url = input instanceof Request ? input.url : String(input);
+            if (new URL(url, globalThis.location.href).pathname.endsWith(`/organizations/${args.organization.id}/users`)) {
+                return Promise.resolve(Response.json([{ email_address: 'user@example.test', id: 'storybook-user' }]));
+            }
+
+            return originalFetch(input, init);
+        });
+
+        return () => mockFetch.mockRestore();
+    },
     component: Harness,
     parameters: {
         layout: 'centered'
@@ -220,6 +246,39 @@ export const ExieUpgrade: Story = {
         plans: MOCK_PLANS
     },
     name: 'Exie upgrade to Medium'
+};
+
+/** Trial organization — shows days left, preselects Medium, and notes that billing starts today. */
+export const Trial: Story = {
+    args: {
+        organization: makeOrg({
+            has_premium_features: true,
+            max_events_per_month: 75000,
+            max_projects: -1,
+            max_users: -1,
+            plan_description: 'Free Trial',
+            plan_id: 'EX_TRIAL',
+            plan_name: 'Trial',
+            retention_days: 90,
+            trial_ends_utc: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
+        }),
+        plans: [
+            ...MOCK_PLANS,
+            {
+                description: 'Free Trial',
+                has_assistant: true,
+                has_premium_features: true,
+                id: 'EX_TRIAL',
+                is_hidden: false,
+                max_events_per_month: 75000,
+                max_projects: -1,
+                max_users: -1,
+                name: 'Trial',
+                price: 0,
+                retention_days: 90
+            }
+        ]
+    }
 };
 
 /** Paid Small monthly org selects a different paid plan (Large monthly). */

@@ -121,6 +121,91 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
     }
 
     [Fact]
+    public async Task TryClaimNotificationAsync_WhenAStaleSaveRestoresTheFlag_ClearsItAgainWithoutClaiming()
+    {
+        // Arrange
+        var stack = await AddPendingStackAsync();
+        var stale = (await _repository.GetByIdAsync(stack.Id))!;
+        bool claimed = await _repository.TryClaimNotificationAsync(stack, PendingStackNotification.New);
+
+        // Act
+        await _repository.SaveAsync(stale, o => o.ImmediateConsistency());
+        bool restored = (await _repository.GetByIdAsync(stack.Id))!.IsNewNotificationPending;
+        bool claimedAgain = await _repository.TryClaimNotificationAsync(stack, PendingStackNotification.New);
+
+        // Assert
+        Assert.True(claimed);
+        Assert.True(restored);
+        Assert.False(claimedAgain);
+        Assert.False((await _repository.GetByIdAsync(stack.Id))!.IsNewNotificationPending);
+    }
+
+    [Fact]
+    public async Task TryClaimNotificationAsync_ForALaterRegressionCycle_ClaimsEvenThoughAnEarlierCycleWasClaimed()
+    {
+        // Arrange
+        var stack = await AddPendingStackAsync();
+        stack.DateFixed = DateTime.UtcNow.AddDays(-2);
+        await _repository.MarkAsRegressedAsync(stack, notificationPending: true);
+        bool first = await _repository.TryClaimNotificationAsync(stack, PendingStackNotification.Regression);
+
+        // Act: the stack is fixed again and regresses again. The new cycle is pending in Elasticsearch before anything else happens,
+        // so a claim at that moment must not be blocked by the previous cycle's guard.
+        stack.DateFixed = DateTime.UtcNow.AddDays(-1);
+        await _repository.MarkAsRegressedAsync(stack, notificationPending: true);
+        bool second = await _repository.TryClaimNotificationAsync(stack, PendingStackNotification.Regression);
+
+        // Assert
+        Assert.True(first);
+        Assert.True(second);
+    }
+
+    [Fact]
+    public async Task TryClaimNotificationAsync_WhenAStaleSaveRestoresARegressionFlag_DoesNotClaimTheSameCycleTwice()
+    {
+        // Arrange
+        var stack = await AddPendingStackAsync();
+        stack.DateFixed = DateTime.UtcNow.AddDays(-1);
+        await _repository.MarkAsRegressedAsync(stack, notificationPending: true);
+        var stale = (await _repository.GetByIdAsync(stack.Id))!;
+        bool claimed = await _repository.TryClaimNotificationAsync(stack, PendingStackNotification.Regression);
+
+        // Act
+        await _repository.SaveAsync(stale, o => o.ImmediateConsistency());
+        bool claimedAgain = await _repository.TryClaimNotificationAsync(stack, PendingStackNotification.Regression);
+
+        // Assert
+        Assert.True(claimed);
+        Assert.False(claimedAgain);
+    }
+
+    [Fact]
+    public async Task MarkAsRegressedAsync_WithStaleStack_ChangesOnlyTheStatusAndNotificationFlags()
+    {
+        // Arrange
+        var stack = await AddPendingStackAsync();
+        var stale = (await _repository.GetByIdAsync(stack.Id))!;
+        await _repository.IncrementEventCounterAsync(stack.OrganizationId, stack.ProjectId, stack.Id, DateTime.UtcNow, DateTime.UtcNow, 5);
+
+        // Act
+        await _repository.MarkAsRegressedAsync(stale);
+
+        // Assert
+        var saved = (await _repository.GetByIdAsync(stack.Id))!;
+        Assert.Equal(StackStatus.Regressed, saved.Status);
+        Assert.Equal(5, saved.TotalOccurrences);
+        Assert.False(saved.IsNewNotificationPending);
+        Assert.False(saved.IsRegressionNotificationPending);
+    }
+
+    private async Task<Stack> AddPendingStackAsync()
+    {
+        var stack = await _repository.AddAsync(_stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId), o => o.ImmediateConsistency());
+        stack.IsNewNotificationPending = true;
+        return await _repository.SaveAsync(stack, o => o.ImmediateConsistency());
+    }
+
+    [Fact]
     public async Task CanMarkAsRegressedAsync()
     {
         var stack = await _repository.AddAsync(_stackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, dateFixed: DateTime.UtcNow.SubtractMonths(1)), o => o.ImmediateConsistency());
@@ -128,7 +213,7 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         Assert.False(stack.Status == StackStatus.Regressed);
         Assert.NotNull(stack.DateFixed);
 
-        await _repository.MarkAsRegressedAsync(stack.Id);
+        await _repository.MarkAsRegressedAsync(stack);
 
         stack = await _repository.GetByIdAsync(stack.Id);
         Assert.NotNull(stack);

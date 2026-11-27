@@ -217,6 +217,10 @@
                 return 'Offline Access';
             case 'projects:read':
                 return 'Projects Read';
+            case 'saved-views:read':
+                return 'Saved Views Read';
+            case 'saved-views:write':
+                return 'Saved Views Write';
             case 'stacks:read':
                 return 'Stacks Read';
             case 'stacks:write':
@@ -341,7 +345,7 @@
 <div class="mx-auto flex w-full max-w-2xl flex-col items-center">
     <Card.Root class="w-full" size="sm">
         <Card.Header>
-            <Logo class="max-h-10" />
+            <Logo class="h-16 max-h-none w-auto object-contain" />
             <Card.Title>Approve OAuth access</Card.Title>
             <Card.Description>Review the requested Exceptionless access before continuing.</Card.Description>
         </Card.Header>

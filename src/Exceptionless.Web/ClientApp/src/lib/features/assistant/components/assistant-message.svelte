@@ -72,7 +72,7 @@
         <Message.Content class="gap-3">
             {#each segments as segment, index (segment.key)}
                 {#if segment.type === 'tools'}
-                    <AssistantToolTrace {isStreaming} {projectNames} tools={segment.tools} />
+                    <AssistantToolTrace isAwaitingReply={isLast} {isStreaming} {projectNames} tools={segment.tools} />
                 {:else}
                     {@const isStreamingText = isStreaming && index === segments.length - 1}
                     <Response

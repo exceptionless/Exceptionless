@@ -47,6 +47,7 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         var paths = document.RootElement.GetProperty("paths");
 
         // Assert
+        Assert.Equal("3.2.0", document.RootElement.GetProperty("openapi").GetString());
         Assert.True(paths.TryGetProperty("/api/v2/auth/login", out var loginPath));
         Assert.True(loginPath.TryGetProperty("post", out var loginPost));
         Assert.True(loginPost.TryGetProperty("requestBody", out _));
@@ -69,6 +70,9 @@ public sealed class OpenApiSnapshotTests : IClassFixture<AppWebHostFactory>
         Assert.True(paths.TryGetProperty("/api/v2/assistant/chat", out var assistantChatPath));
         Assert.True(assistantChatPath.TryGetProperty("post", out var assistantChatPost));
         AssertResponseCodes(assistantChatPost, "200", "400", "401", "403", "404", "426", "429", "503");
+
+        var addUserPost = paths.GetProperty("/api/v2/organizations/{id}/users/{email}").GetProperty("post");
+        AssertResponseCodes(addUserPost, "200", "403", "404", "426", "429");
 
         Assert.True(paths.TryGetProperty("/api/v2/events/by-ref/{referenceId}/user-description", out var userDescriptionPath));
         Assert.True(userDescriptionPath.TryGetProperty("post", out var userDescriptionPost));

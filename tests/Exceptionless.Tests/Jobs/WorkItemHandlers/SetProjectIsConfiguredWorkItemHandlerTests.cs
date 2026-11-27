@@ -1,5 +1,7 @@
+using System.Collections.Concurrent;
 using Exceptionless.Core;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
@@ -9,6 +11,7 @@ using Exceptionless.Tests.Utility;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Options;
 using Xunit;
@@ -44,6 +47,47 @@ public class SetProjectIsConfiguredWorkItemHandlerTests(ITestOutputHelper output
         Assert.Equal(deleteProject, updated.IsDeleted);
         Assert.Equal("Changed during configuration", updated.Name);
         Assert.Equal(!deleteProject, await repository.GetByIdAsync(project.Id, o => o.Cache()) is not null);
+    }
+
+    [Fact]
+    public async Task HandleItemAsync_FirstEvent_PublishesProjectChangedWithOrganizationId()
+    {
+        // Arrange
+        var repository = GetService<IProjectRepository>();
+        var project = await repository.AddAsync(GetService<ProjectData>().GenerateProject(generateId: true), o => o.ImmediateConsistency());
+        var projectRepository = Assert.IsAssignableFrom<ElasticRepositoryBase<Project>>(repository);
+        var messages = new ConcurrentQueue<EntityChanged>();
+        Func<object, BeforePublishEntityChangedEventArgs<Project>, Task> captureMessage = (_, args) =>
+        {
+            if (args.Message.Id == project.Id && args.Message.ChangeType is ChangeType.Saved)
+                messages.Enqueue(args.Message);
+
+            return Task.CompletedTask;
+        };
+        var handler = GetService<SetProjectIsConfiguredWorkItemHandler>();
+        var workItem = new SetProjectIsConfiguredWorkItem { ProjectId = project.Id, IsConfigured = true };
+        await using var workItemLock = await handler.GetWorkItemLockAsync(workItem, TestCancellationToken);
+        Assert.NotNull(workItemLock);
+        var context = new WorkItemContext(workItem, "test-job", workItemLock, TestCancellationToken, static (_, _) => Task.CompletedTask);
+        projectRepository.BeforePublishEntityChanged.AddHandler(captureMessage);
+
+        try
+        {
+            // Act
+            await handler.HandleItemAsync(context);
+        }
+        finally
+        {
+            projectRepository.BeforePublishEntityChanged.RemoveHandler(captureMessage);
+        }
+
+        // Assert: the web socket broker drops entity changes without an organization id.
+        var message = ExtendedEntityChanged.Create(Assert.Single(messages), false);
+        Assert.Equal("Project", message.Type);
+        Assert.Equal(project.OrganizationId, message.OrganizationId);
+        var updated = await repository.GetByIdAsync(project.Id);
+        Assert.NotNull(updated);
+        Assert.True(updated.IsConfigured);
     }
 
     private sealed class InterleavingProjectRepository(

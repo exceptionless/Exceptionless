@@ -54,11 +54,16 @@
     import EventsDataTable from '#features/events/components/table/events-data-table.svelte';
     import { defaultStackColumnVisibility, getColumns } from '#features/events/components/table/options.svelte.ts';
     import { filterUsesPremiumFeatures } from '#features/events/premium-filter.ts';
+    import ExieEmptyState from '#features/onboarding/components/exie-empty-state.svelte';
+    import GettingStartedChecklist from '#features/onboarding/components/getting-started-checklist.svelte';
+    import { useOrganizationOnboarding } from '#features/onboarding/onboarding-state.svelte.ts';
     import { organization } from '#features/organizations/context.svelte.ts';
     import { premiumPage } from '#features/organizations/premium-page.svelte.ts';
     import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
     import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '#features/saved-views/use-saved-views.svelte.ts';
+    import { createAllMatchingSelection, getAllMatchingIdentity } from '#features/shared/all-matching-selection.svelte.ts';
     import * as agg from '#features/shared/api/aggregations.ts';
+    import SelectAllBanner from '#features/shared/components/select-all-banner.svelte';
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '#features/shared/table.svelte.ts';
     import { fillDateSeries } from '#features/shared/utils/charts.ts';
     import { parseDateMathRange, toDateMathRange } from '#features/shared/utils/datemath.ts';
@@ -738,6 +743,60 @@
         })
     );
 
+    // Gmail-style "select everything matching the filter". It belongs to the query it was made for, so a different
+    // filter, time range, project or saved view drops it.
+    const allMatching = createAllMatchingSelection(() =>
+        getAllMatchingIdentity({
+            filter: eventsQueryParameters.filter,
+            organizationId: organization.current,
+            savedViewId: savedViewsState.activeSavedView?.id,
+            time: eventsQueryParameters.time
+        })
+    );
+    const pageRowCount = $derived(table.getRowModel().rows.length);
+    const isPageSelected = $derived(pageRowCount > 0 && table.getIsAllRowsSelected());
+
+    // The same request the list makes, asking only for the total, so the count always agrees with the list.
+    const matchingTotalQuery = getOrganizationEventsQuery({
+        enabled: () => !isSavedViewRoutePending && isPageSelected,
+        get params() {
+            return {
+                filter: eventsQueryParameters.filter,
+                include: 'total' as const,
+                limit: 1,
+                mode: eventsQueryParameters.mode,
+                offset: DEFAULT_OFFSET,
+                time: eventsQueryParameters.time
+            };
+        },
+        route: {
+            get organizationId() {
+                return organization.current;
+            }
+        }
+    });
+    const totalMatching = $derived((matchingTotalQuery.data?.meta.total ?? eventsQuery.data?.meta.total) as number | undefined);
+    const allMatchingTarget = $derived.by(() => {
+        const selection = allMatching.active;
+        if (!selection || !organization.current) {
+            return undefined;
+        }
+
+        return {
+            count: selection.count,
+            filter: eventsQueryParameters.filter ?? '',
+            offset: DEFAULT_OFFSET,
+            organizationId: organization.current,
+            time: eventsQueryParameters.time
+        };
+    });
+
+    $effect(() => {
+        if (!allMatching.active || !isPageSelected) {
+            untrack(() => allMatching.clear());
+        }
+    });
+
     async function handleRefresh() {
         table.resetRowSelection();
         await eventsQuery.refetch();
@@ -746,6 +805,17 @@
     function reset() {
         table.resetRowSelection();
         table.setPageIndex(0);
+    }
+
+    async function selectAllMatching() {
+        // Count again right now, so the number the user confirms is current. If the filter changes while the count is
+        // loading, the count belongs to the old filter and must not be bound to the new one.
+        const identity = allMatching.identity;
+        const result = await matchingTotalQuery.refetch();
+        const count = (result.data?.meta.total ?? totalMatching) as number | undefined;
+        if (count !== undefined) {
+            allMatching.select(count, identity);
+        }
     }
 
     const debouncedReconciliationRefetch = debounce(1500, () => eventsQuery.refetch());
@@ -873,6 +943,8 @@
     function onRangeSelect(start: Date, end: Date) {
         onFilterChanged(new DateFilter('date', toDateMathRange(start, end)));
     }
+
+    const onboarding = useOrganizationOnboarding(() => organization.current);
 </script>
 
 {#if savedViewsState.isMissing}
@@ -921,43 +993,70 @@
     </div>
 
     <div class="flex flex-col gap-y-4">
-        {#if showStats}
-            <EventsStatsDashboard
-                eventsPerHour={stats.eventsPerHour}
-                isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
-                newStacks={stats.newStacks}
-                totalEvents={stats.totalEvents}
-                totalStacks={stats.totalStacks}
+        <GettingStartedChecklist />
+
+        {#if onboarding.isAwaitingFirstEvent}
+            <ExieEmptyState
+                continueSetupHref={onboarding.continueSetupHref}
+                sampleProject={onboarding.firstProject
+                    ? {
+                          id: onboarding.firstProject.id,
+                          name: onboarding.firstProject.name
+                      }
+                    : undefined}
             />
-        {/if}
+        {:else}
+            {#if showStats}
+                <EventsStatsDashboard
+                    eventsPerHour={stats.eventsPerHour}
+                    isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
+                    newStacks={stats.newStacks}
+                    totalEvents={stats.totalEvents}
+                    totalStacks={stats.totalStacks}
+                />
+            {/if}
 
-        {#if showChart}
-            <EventsDashboardChart
-                data={chartData()}
-                isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
-                {onRangeSelect}
+            {#if showChart}
+                <EventsDashboardChart
+                    data={chartData()}
+                    isLoading={isSavedViewRoutePending || (chartDataQuery.isLoading && !chartDataQuery.isSuccess)}
+                    {onRangeSelect}
+                />
+            {/if}
+
+            <SelectAllBanner
+                allMatchingCount={allMatching.active?.count}
+                {isPageSelected}
+                noun="stack"
+                onClear={() => {
+                    allMatching.clear();
+                    table.resetRowSelection();
+                }}
+                onSelectAllMatching={selectAllMatching}
+                pageCount={pageRowCount}
+                {totalMatching}
             />
+
+            <EventsDataTable
+                autoFillColumnId={savedViewsState.autoFillColumnId}
+                bind:limit={eventsQueryParameters.limit!}
+                isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
+                onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
+                {rowClick}
+                {rowHref}
+                {table}
+                wrappedColumnIds={savedViewsState.wrappedColumnIds}
+            >
+                {#snippet footerChildren()}
+                    <div class="flex min-w-0 items-center gap-3">
+                        <TableStacksBulkActionsDropdownMenu allMatching={allMatchingTarget} onAllMatchingStarted={() => allMatching.clear()} {table} />
+                        <DataTable.Selection {table} />
+                    </div>
+
+                    <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} variant="floating" />
+                {/snippet}
+            </EventsDataTable>
         {/if}
-
-        <EventsDataTable
-            autoFillColumnId={savedViewsState.autoFillColumnId}
-            bind:limit={eventsQueryParameters.limit!}
-            isLoading={isSavedViewRoutePending || eventsQuery.isFetching}
-            onAutoFillColumnResized={() => savedViewsState.setAutoFillColumnId(null)}
-            {rowClick}
-            {rowHref}
-            {table}
-            wrappedColumnIds={savedViewsState.wrappedColumnIds}
-        >
-            {#snippet footerChildren()}
-                <div class="flex min-w-0 items-center gap-3">
-                    <TableStacksBulkActionsDropdownMenu {table} />
-                    <DataTable.Selection {table} />
-                </div>
-
-                <DataTable.Pager bind:value={eventsQueryParameters.limit!} {table} variant="floating" />
-            {/snippet}
-        </EventsDataTable>
     </div>
 </div>
 

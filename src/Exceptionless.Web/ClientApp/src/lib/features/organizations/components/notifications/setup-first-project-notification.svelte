@@ -10,10 +10,9 @@
 </script>
 
 <Notification variant="information" {...restProps}>
-    <NotificationTitle>Setup your first project</NotificationTitle>
+    <NotificationTitle>Set up your first project</NotificationTitle>
     <NotificationDescription>
-        Please
-        <A href={resolve('/(app)/project/add')}>add a new project</A>
+        <A href={resolve('/(app)/project/add')}>Add a new project</A>
         and start becoming Exceptionless in less than 60 seconds!
     </NotificationDescription>
 </Notification>

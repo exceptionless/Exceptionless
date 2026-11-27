@@ -176,6 +176,8 @@ test.describe('shell and identity checkpoints', () => {
     test('supports responsive guides and clears them on reload or identity changes', async ({ e2eApi, e2eScenario, e2eSecondaryOrganization, page }) => {
         // Arrange
         test.setTimeout(240_000);
+        // Organizations without events open client setup, where the shell guides are unavailable.
+        await seedRepresentativeEvent(e2eApi, e2eScenario.userToken, e2eScenario);
         const progressWrites: string[] = [];
         page.on('request', (request) => {
             if (request.method() === 'PUT' && request.url().includes('/api/v2/users/me/product-tours/')) {
@@ -517,7 +519,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         if (!projectId) {
             createdProject = true;
             await expect(page.getByRole('heading', { name: 'Add Project' })).toBeVisible();
-            await page.getByLabel('Project Name', { exact: true }).fill(`Tour Project ${e2eScenario.run}`);
+            await page.getByLabel("What's your app called?", { exact: true }).fill(`Tour Project ${e2eScenario.run}`);
             await page.getByRole('button', { name: 'Continue to Client Setup' }).click();
             await page.waitForURL(/\/project\/[^/]+\/configure\?redirect=true/);
             projectId = page.url().match(/\/project\/([^/]+)\/configure/)?.[1];
@@ -530,10 +532,12 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
         const projectProgressRoute = (url: URL) => url.pathname === '/api/v2/users/me/product-tours/project-configure/record';
         try {
             // Act
-            await page.locator('[data-tour="project-configure-platform"]').click();
-            await page.getByRole('option', { name: 'Browser applications' }).click();
+            await page
+                .locator('[data-tour="project-configure-platform"]')
+                .getByRole('button', { name: /^Browser JavaScript/ })
+                .click();
             // Assert
-            await expect(page.getByText('Waiting for your first event')).toBeVisible();
+            await expect(page.getByText('Listening for your first event')).toBeVisible();
             await expect(page.locator('.driver-popover')).toHaveCount(0);
             await expect(page.locator('.driver-overlay')).toHaveCount(0);
             await expect(page.locator('[data-tour="project-sdk-instructions"]')).toBeVisible();
@@ -542,7 +546,7 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
             // Act
             const instructionButtons = page.locator('[data-tour="project-sdk-instructions"]').getByRole('button');
             const reachedButtons = new Set<number>();
-            await page.locator('[data-tour="project-configure-platform"]').focus();
+            await page.getByRole('button', { name: 'Change platform from Browser JavaScript' }).focus();
             for (let tab = 0; tab < 40 && reachedButtons.size < (await instructionButtons.count()); tab++) {
                 const focusedIndex = await instructionButtons.evaluateAll((buttons) => buttons.indexOf(document.activeElement as HTMLButtonElement));
                 if (focusedIndex >= 0) {
@@ -572,12 +576,15 @@ test('domain workflows advance only on real success', async ({ e2eApi, e2eScenar
                 })
             );
             // Assert
-            await expect(page).toHaveURL(/\/event/);
+            const celebration = page.getByRole('dialog', { name: 'You caught your first event!' });
+            await expect(celebration).toBeVisible({ timeout: 30_000 });
             await expectActiveProductTour(page, false);
             await expect.poll(() => projectProgressRequests).toBe(1);
             await expect.poll(async () => (await e2eApi.getProject(e2eScenario.userToken, projectId!))?.is_configured).toBe(true);
 
             // Act
+            await celebration.getByRole('button', { name: 'See all events' }).click();
+            await expect(page).toHaveURL(/\/event/);
             await page.unroute(projectProgressRoute);
             await page.goto(`/project/${projectId}/configure`);
             // Assert

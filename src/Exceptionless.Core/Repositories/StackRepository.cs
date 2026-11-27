@@ -14,6 +14,7 @@ public class StackRepository : RepositoryOwnedByOrganizationAndProject<Stack>, I
 {
     private readonly TimeProvider _timeProvider;
     private const string STACKING_VERSION = "v2";
+    private static readonly TimeSpan _claimGuardExpiration = TimeSpan.FromDays(7);
 
     public StackRepository(ExceptionlessElasticConfiguration configuration, MiniValidationValidator validator, AppOptions options)
         : base(configuration.Stacks, validator, options)
@@ -151,6 +152,77 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
         }
     }
 
+    public async Task<bool> TryClaimNotificationAsync(Stack stack, PendingStackNotification kind)
+    {
+        // The update is applied by Elasticsearch to the current document, so only one caller can see the flag set.
+        // Everyone else (and stacks that were never pending) becomes a no-op, which PatchAsync reports as not modified.
+        string field = GetPendingField(kind);
+        string script = $@"
+if (ctx._source.{field} == true) {{
+  ctx._source.{field} = false;
+}} else {{
+  ctx.op = 'noop';
+}}";
+
+        try
+        {
+            bool claimed = await PatchAsync(stack.Id, new ScriptPatch(script.TrimScript()), o => o.Notifications(false));
+            if (!claimed)
+                return false;
+
+            await InvalidateStackCacheAsync(stack);
+
+            // A whole-document save of a stale copy can put the flag back after it was claimed. Remembering the claim lets the next
+            // claim clear the restored flag again without reporting the same notification twice.
+            // Delivery is at most once: the flag is already cleared, so if this cache call throws the notification is lost, not repeated.
+            return await Cache.AddAsync(GetClaimCacheKey(stack, kind), true, _claimGuardExpiration);
+        }
+        catch (DocumentNotFoundException)
+        {
+            return false;
+        }
+    }
+
+    public Task<bool> TryReserveNotificationAsync(Stack stack, PendingStackNotification kind)
+    {
+        // Shares the claim key, so a pending flag restored by a concurrent batch can't send the same notification again.
+        return Cache.AddAsync(GetClaimCacheKey(stack, kind), true, _claimGuardExpiration);
+    }
+
+    public async Task ReleaseNotificationAsync(Stack stack, PendingStackNotification kind)
+    {
+        // Remove the guard before restoring the flag. While the flag is still clear nobody can claim, so a concurrent claimant can't clear
+        // the restored flag and then be refused by a guard this release is about to remove. If the patch fails the notification is lost,
+        // which is no worse than before the release.
+        await Cache.RemoveAsync(GetClaimCacheKey(stack, kind));
+
+        string field = GetPendingField(kind);
+        try
+        {
+            await PatchAsync(stack.Id, new ScriptPatch($"ctx._source.{field} = true;"), o => o.Notifications(false));
+            await InvalidateStackCacheAsync(stack);
+        }
+        catch (DocumentNotFoundException)
+        {
+            // The stack was deleted, so there is nothing left to notify about.
+        }
+    }
+
+    public async Task UpdateTagsAsync(Stack stack)
+    {
+        // Only the tags change, so patch them instead of saving the whole document. A stale copy must not overwrite fields that other
+        // events changed while this batch was running, such as a claimed notification.
+        try
+        {
+            await PatchAsync(stack.Id, new PartialPatch(new { tags = stack.Tags }), o => o.Notifications(false));
+            await InvalidateStackCacheAsync(stack);
+        }
+        catch (DocumentNotFoundException)
+        {
+            _logger.LogWarning("Stack {StackId} not found when updating tags", stack.Id);
+        }
+    }
+
     public async Task<Stack?> GetStackBySignatureHashAsync(string projectId, string signatureHash)
     {
         string key = GetStackSignatureCacheKey(projectId, signatureHash);
@@ -163,17 +235,81 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
         return FindAsync(q => query.Configure().OnlyIds(), options);
     }
 
-    public async Task MarkAsRegressedAsync(string stackId)
+    public async Task MarkAsRegressedAsync(Stack stack, bool notificationPending = false)
     {
-        var stack = await GetByIdAsync(stackId);
-        if (stack is null)
-        {
-            _logger.LogWarning("Stack {StackId} not found when marking as regressed", stackId);
-            return;
-        }
+        // A script update changes only these fields on the current document, so a regression cannot restore or drop a claimed flag.
+        // The claim guard key belongs to the regression cycle (see GetClaimCacheKey), so an earlier cycle's key never blocks this one.
+        const string script = @"
+ctx._source.status = 'regressed';
+ctx._source.is_new_notification_pending = false;
+ctx._source.is_regression_notification_pending = params.notificationPending;";
 
-        stack.Status = StackStatus.Regressed;
-        await SaveAsync(stack, o => o.Cache());
+        try
+        {
+            await PatchAsync(stack.Id, new ScriptPatch(script.TrimScript())
+            {
+                Params = new Dictionary<string, object>(1) { { "notificationPending", notificationPending } }
+            });
+
+            await InvalidateStackCacheAsync(stack);
+        }
+        catch (DocumentNotFoundException)
+        {
+            _logger.LogWarning("Stack {StackId} not found when marking as regressed", stack.Id);
+        }
+    }
+
+    public async Task UpdateStateAsync(IReadOnlyCollection<Stack> stacks)
+    {
+        // Only the fields a status change owns are written. Whole-document saves of a copy that was read earlier would roll back counters
+        // that ingestion incremented since, so patch the document that is current in the index.
+        const string script = @"
+ctx._source.status = params.status;
+ctx._source.snooze_until_utc = params.snoozeUntilUtc;
+ctx._source.fixed_in_version = params.fixedInVersion;
+ctx._source.date_fixed = params.dateFixed;
+ctx._source.is_new_notification_pending = params.isNewNotificationPending;
+ctx._source.is_regression_notification_pending = params.isRegressionNotificationPending;
+ctx._source.updated_utc = params.updatedUtc;";
+
+        var updatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+        foreach (var stack in stacks)
+        {
+            var operation = new ScriptPatch(script.TrimScript())
+            {
+                Params = new Dictionary<string, object>(7)
+                {
+                    { "status", stack.Status.ToString().ToLowerInvariant() },
+                    { "snoozeUntilUtc", stack.SnoozeUntilUtc!},
+                    { "fixedInVersion", stack.FixedInVersion! },
+                    { "dateFixed", stack.DateFixed! },
+                    { "isNewNotificationPending", stack.IsNewNotificationPending },
+                    { "isRegressionNotificationPending", stack.IsRegressionNotificationPending },
+                    { "updatedUtc", updatedUtc }
+                }
+            };
+
+            await PatchStackAsync(stack, operation);
+        }
+    }
+
+    public async Task SoftDeleteAsync(IReadOnlyCollection<Stack> stacks)
+    {
+        foreach (var stack in stacks)
+            await PatchStackAsync(stack, new PartialPatch(new { is_deleted = true, updated_utc = _timeProvider.GetUtcNow().UtcDateTime }));
+    }
+
+    private async Task PatchStackAsync(Stack stack, IPatchOperation operation)
+    {
+        try
+        {
+            await PatchAsync(stack.Id, operation);
+            await InvalidateStackCacheAsync(stack);
+        }
+        catch (DocumentNotFoundException)
+        {
+            _logger.LogWarning("Stack {StackId} not found when updating its state", stack.Id);
+        }
     }
 
     public Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId)
@@ -205,6 +341,21 @@ if (parseDate(ctx._source.updated_utc).isBefore(parseDate(params.updatedUtc))) {
         await Cache.RemoveAllAsync(keysToRemove);
         await base.InvalidateCacheAsync(documents, changeType);
     }
+
+    private Task InvalidateStackCacheAsync(Stack stack) => InvalidateCacheAsync([new ModifiedDocument<Stack>(stack, stack)]);
+
+    private static string GetPendingField(PendingStackNotification kind) => kind switch
+    {
+        PendingStackNotification.New => "is_new_notification_pending",
+        PendingStackNotification.Regression => "is_regression_notification_pending",
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
+    };
+
+    // A new notification is pending once per stack. A regression is pending once per fix (a stack regresses again only after it was fixed
+    // again), so the fix date identifies the cycle and each cycle gets its own key.
+    private static string GetClaimCacheKey(Stack stack, PendingStackNotification kind) => kind == PendingStackNotification.Regression
+        ? String.Concat("notification-claim:", stack.Id, ":", GetPendingField(kind), ":", stack.DateFixed?.Ticks ?? 0)
+        : String.Concat("notification-claim:", stack.Id, ":", GetPendingField(kind));
 
     private static string GetStackSignatureCacheKey(Stack stack) => GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
     private static string GetStackSignatureCacheKey(string projectId, string signatureHash) => String.Concat(projectId, ":", signatureHash, ":", STACKING_VERSION);

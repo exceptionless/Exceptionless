@@ -26,6 +26,8 @@ using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Seed;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.BackgroundTasks;
+using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Core.Services.SourceMaps;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
@@ -93,6 +95,7 @@ public class Bootstrapper
         services.AddSingleton<WorkItemHandlers>(s =>
         {
             var handlers = new WorkItemHandlers();
+            handlers.Register<BulkOperationWorkItem>(s.GetRequiredService<BulkOperationWorkItemHandler>);
             handlers.Register<FixStackStatsWorkItem>(s.GetRequiredService<FixStackStatsWorkItemHandler>);
             handlers.Register<ForcePredefinedSavedViewsWorkItem>(s.GetRequiredService<ForcePredefinedSavedViewsWorkItemHandler>);
             handlers.Register<OrganizationMaintenanceWorkItem>(s.GetRequiredService<OrganizationMaintenanceWorkItemHandler>);
@@ -102,12 +105,12 @@ public class Bootstrapper
             handlers.Register<RemoveBotEventsWorkItem>(s.GetRequiredService<RemoveBotEventsWorkItemHandler>);
             handlers.Register<RemoveStacksWorkItem>(s.GetRequiredService<RemoveStacksWorkItemHandler>);
             handlers.Register<RerunMigrationWorkItem>(s.GetRequiredService<RerunMigrationWorkItemHandler>);
-            handlers.Register<ResetProjectDataWorkItem>(s.GetRequiredService<ResetProjectDataWorkItemHandler>);
+            handlers.Register<ResetProjectDataWorkItem>(() => TrackWithBackgroundTask(s, s.GetRequiredService<ResetProjectDataWorkItemHandler>()));
             handlers.Register<SetLocationFromGeoWorkItem>(s.GetRequiredService<SetLocationFromGeoWorkItemHandler>);
             handlers.Register<SetProjectIsConfiguredWorkItem>(s.GetRequiredService<SetProjectIsConfiguredWorkItemHandler>);
             handlers.Register<UpdateProjectNotificationSettingsWorkItem>(s.GetRequiredService<UpdateProjectNotificationSettingsWorkItemHandler>);
             handlers.Register<UserMaintenanceWorkItem>(s.GetRequiredService<UserMaintenanceWorkItemHandler>);
-            handlers.Register<GenerateSampleEventsWorkItem>(s.GetRequiredService<GenerateSampleEventsWorkItemHandler>);
+            handlers.Register<GenerateSampleEventsWorkItem>(() => TrackWithBackgroundTask(s, s.GetRequiredService<GenerateSampleEventsWorkItemHandler>()));
             return handlers;
         });
 
@@ -156,6 +159,7 @@ public class Bootstrapper
         services.AddSingleton<IWebHookRepository, WebHookRepository>();
         services.AddSingleton<ISavedViewRepository, SavedViewRepository>();
         services.AddSingleton<ISystemSettingsRepository, SystemSettingsRepository>();
+        services.AddSingleton<ITrialClaimRepository, TrialClaimRepository>();
         services.AddSingleton<ITokenRepository, TokenRepository>();
 
         services.AddSingleton<IGeocodeService, NullGeocodeService>();
@@ -234,9 +238,18 @@ public class Bootstrapper
             });
         services.AddSingleton<OAuthService>();
         services.AddSingleton<UsageService>();
+        services.AddSingleton<EventDeletionService>();
+        services.AddSingleton<StackActionService>();
+        services.AddSingleton<BackgroundTaskOptions>();
+        services.AddSingleton<BackgroundTaskService>();
+        services.AddSingleton<BulkOperationOptions>();
+        services.AddSingleton<BulkOperationService>();
+        services.AddSingleton(typeof(IBulkOperationHandler), typeof(Bootstrapper).Assembly);
+        services.AddSingleton(typeof(IBulkSelectionResolver), typeof(Bootstrapper).Assembly);
         services.AddSingleton<IAssistantUsageRecorder>(provider => provider.GetRequiredService<UsageService>());
         services.AddSingleton<SlackService>();
         services.AddSingleton<StackService>();
+        services.AddSingleton<DiscardedEnvironmentService>();
 
         services.AddTransient<IDomainLoginProvider, ActiveDirectoryLoginProvider>();
     }
@@ -523,9 +536,15 @@ public class Bootstrapper
         services.AddDistributedCronJob<CleanupOrphanedDataJob>("45 */8 * * *");
         services.AddDistributedCronJob<DownloadGeoIPDatabaseJob>(Cron.Daily(1));
         services.AddDistributedCronJob<MaintainIndexesJob>("10 */2 * * *");
+        services.AddDistributedCronJob<TrialExpirationJob>("15 * * * *");
 
         var logger = loggerFactory.CreateLogger<Bootstrapper>();
         logger.LogWarning("Jobs running in process");
+    }
+
+    private static IWorkItemHandler TrackWithBackgroundTask(IServiceProvider container, IWorkItemHandler handler)
+    {
+        return new BackgroundTaskTrackingWorkItemHandler(handler, container.GetRequiredService<BackgroundTaskService>(), container.GetRequiredService<TimeProvider>());
     }
 
     private static IQueue<T> CreateQueue<T>(IServiceProvider container, TimeSpan? workItemTimeout = null) where T : class
