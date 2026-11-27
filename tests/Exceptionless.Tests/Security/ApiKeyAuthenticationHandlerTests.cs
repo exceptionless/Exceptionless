@@ -63,7 +63,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         oauthTokens.Setup(repository => repository.GetByIdAsync(tokenId, It.IsAny<CommandOptionsDescriptor<OAuthToken>>())).ReturnsAsync(token);
         oauthTokens.Setup(repository => repository.SaveAsync(token, It.IsAny<CommandOptionsDescriptor<OAuthToken>>())).ReturnsAsync(token);
         var applications = new Mock<IOAuthApplicationRepository>(MockBehavior.Strict);
-        applications.Setup(repository => repository.GetByClientIdAsync(clientId, null)).ReturnsAsync(new OAuthApplication { ClientId = clientId });
+        applications.Setup(repository => repository.GetByClientIdAsync(clientId, It.IsAny<CommandOptionsDescriptor<OAuthApplication>>())).ReturnsAsync(new OAuthApplication { ClientId = clientId });
         var oauthService = new OAuthService(new OAuthServerOptions(), cache, GetService<ILockProvider>(), applications.Object,
             GetService<IOAuthClientMetadataService>(), oauthTokens.Object, users.Object, TimeProvider);
         var options = new Mock<IOptionsMonitor<ApiKeyAuthenticationOptions>>(MockBehavior.Strict);
@@ -88,7 +88,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         oauthTokens.Verify(repository => repository.SaveAsync(token, It.IsAny<CommandOptionsDescriptor<OAuthToken>>()), Times.Exactly(isActive ? 0 : 1));
         oauthTokens.Verify(repository => repository.GetByIdAsync(tokenId, It.IsAny<CommandOptionsDescriptor<OAuthToken>>()), Times.Once);
         users.Verify(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>()), Times.Once);
-        applications.Verify(repository => repository.GetByClientIdAsync(clientId, null), Times.Once);
+        applications.Verify(repository => repository.GetByClientIdAsync(clientId, It.IsAny<CommandOptionsDescriptor<OAuthApplication>>()), Times.Once);
         oauthTokens.VerifyNoOtherCalls();
         users.VerifyNoOtherCalls();
         applications.VerifyNoOtherCalls();
@@ -130,7 +130,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
             })
             .ReturnsAsync(user);
         var tokens = new Mock<ITokenRepository>(MockBehavior.Strict);
-        tokens.Setup(repository => repository.GetByIdAsync(tokenId, It.IsAny<CommandOptionsDescriptor<Token>>())).ReturnsAsync(token);
+        tokens.Setup(repository => repository.GetForAuthenticationAsync(tokenId)).ReturnsAsync(token);
         var oauthTokens = new Mock<IOAuthTokenRepository>(MockBehavior.Strict);
         var options = new Mock<IOptionsMonitor<ApiKeyAuthenticationOptions>>(MockBehavior.Strict);
         options.Setup(monitor => monitor.Get(It.IsAny<string>())).Returns(new ApiKeyAuthenticationOptions());
@@ -149,7 +149,7 @@ public sealed class ApiKeyAuthenticationHandlerTests(ITestOutputHelper output) :
         // Assert
         Assert.Equal(expectedSuccess, result.Succeeded);
         users.Verify(repository => repository.GetByIdAsync(user.Id, It.IsAny<CommandOptionsDescriptor<User>>()), Times.Once);
-        tokens.Verify(repository => repository.GetByIdAsync(tokenId, It.IsAny<CommandOptionsDescriptor<Token>>()), Times.Once);
+        tokens.Verify(repository => repository.GetForAuthenticationAsync(tokenId), Times.Once);
         users.VerifyNoOtherCalls();
         tokens.VerifyNoOtherCalls();
         oauthTokens.VerifyNoOtherCalls();
