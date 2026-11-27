@@ -1674,6 +1674,45 @@ public sealed class EventPipelineTests : IntegrationTestsBase
         Assert.Equal("System.ArgumentNullException", exceptionType);
     }
 
+    [Theory]
+    [InlineData(true, 1)]
+    [InlineData(false, 0)]
+    public async Task ErrorPlugin_UserNamespaces_AreReadFromProjectDataNotClientConfiguration(bool storedInProjectData, int expectedTargetFrame)
+    {
+        // Arrange
+        var ev = GenerateEvent(type: Event.KnownTypes.Error);
+        ev.Data = new DataDictionary
+        {
+            [Event.KnownDataKeys.Error] = new Error
+            {
+                Type = "System.InvalidOperationException",
+                Message = "Test error for user namespaces",
+                StackTrace =
+                [
+                    new Exceptionless.Core.Models.Data.StackFrame { DeclaringNamespace = "TestApp.Services", DeclaringType = "TestService", Name = "DoWork" },
+                    new Exceptionless.Core.Models.Data.StackFrame { DeclaringNamespace = "TestApp.Controllers", DeclaringType = "HomeController", Name = "Index" }
+                ]
+            }
+        };
+
+        var project = _projectData.GenerateSampleProject();
+        if (storedInProjectData)
+            project.Data!["UserNamespaces"] = "TestApp.Controllers";
+        else
+            project.Configuration.Settings["UserNamespaces"] = "TestApp.Controllers";
+
+        // Act
+        var context = await _pipeline.RunAsync(ev, _organizationData.GenerateSampleOrganization(_billingManager, _plans), project);
+
+        // Assert
+        Assert.False(context.HasError, context.ErrorMessage);
+        await RefreshDataAsync();
+        var error = (await _eventRepository.GetByIdAsync(ev.Id))?.GetError(_serializer, _logger);
+        Assert.NotNull(error?.StackTrace);
+        Assert.Equal(expectedTargetFrame is 0, error.StackTrace[0].IsSignatureTarget);
+        Assert.Equal(expectedTargetFrame is 1, error.StackTrace[1].IsSignatureTarget);
+    }
+
     private PersistentEvent GenerateEvent(DateTimeOffset? occurrenceDate = null, string? userIdentity = null, string? type = null, string? sessionId = null)
     {
         occurrenceDate ??= DateTimeOffset.Now;
