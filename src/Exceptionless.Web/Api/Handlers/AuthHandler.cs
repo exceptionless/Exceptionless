@@ -61,7 +61,9 @@ public class AuthHandler(
         User? user;
         try
         {
-            user = await userRepository.GetByEmailAddressAsync(email);
+            user = authOptions.EnableActiveDirectoryAuth
+                ? await userRepository.GetByEmailAddressAsync(email)
+                : await authService.AuthenticateAsync(email, model.Password);
         }
         catch (Exception ex)
         {
@@ -72,7 +74,7 @@ public class AuthHandler(
         if (user is null)
         {
             await authService.RecordLoginFailureAsync(loginAttempt);
-            logger.LogError("Login failed for {EmailAddress}: User not found", email);
+            logger.LogError("Login failed for {EmailAddress}: Invalid account or password", email);
             return Result.Unauthorized("Login failed.");
         }
 
@@ -83,23 +85,7 @@ public class AuthHandler(
             return Result.Unauthorized("Login failed.");
         }
 
-        if (!authOptions.EnableActiveDirectoryAuth)
-        {
-            if (String.IsNullOrEmpty(user.Salt))
-            {
-                await authService.RecordLoginFailureAsync(loginAttempt);
-                logger.LogError("Login failed for {EmailAddress}: The user has no salt defined", user.EmailAddress);
-                return Result.Unauthorized("Login failed.");
-            }
-
-            if (!user.IsCorrectPassword(model.Password))
-            {
-                await authService.RecordLoginFailureAsync(loginAttempt);
-                logger.LogError("Login failed for {EmailAddress}: Invalid Password", user.EmailAddress);
-                return Result.Unauthorized("Login failed.");
-            }
-        }
-        else if (!IsValidActiveDirectoryLogin(email, model.Password))
+        if (authOptions.EnableActiveDirectoryAuth && !IsValidActiveDirectoryLogin(email, model.Password))
         {
             await authService.RecordLoginFailureAsync(loginAttempt);
             logger.LogError("Domain login failed for {EmailAddress}: Invalid Password or Account", user.EmailAddress);
