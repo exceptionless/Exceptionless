@@ -5,6 +5,8 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Core.Utility;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
+using Foundatio.Serializer;
 using Xunit;
 
 namespace Exceptionless.Tests.Services.BulkOperations;
@@ -46,6 +48,30 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
         Assert.Equal(5, preparation.Total);
         Assert.Equal([2, 2, 1], pages.Select(p => p.Count).ToArray());
         Assert.Equal(events.OrderByDescending(e => e.Date).Select(e => e.Id).ToArray(), pages.SelectMany(p => p).ToArray());
+    }
+
+    [Fact]
+    public async Task GetPageAsync_CursorWrittenByFoundatio_ResumesAfterThatEvent()
+    {
+        // Arrange
+        var now = TimeProvider.GetUtcNow();
+        var (_, events) = await CreateDataAsync(d =>
+        {
+            for (int i = 0; i < 5; i++)
+                d.Event().TestProject().Date(now.AddMinutes(-i - 1));
+        });
+        var task = NewFilterTask("");
+        var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
+        var ordered = events.OrderByDescending(e => e.Date).Select(e => e.Id).ToArray();
+        var previous = await _eventRepository.FindAsync(q => q.Include(e => e.Id).SortExpression("-date"), o => o.SearchAfterToken(null, GetService<ITextSerializer>()).PageLimit(2).TrackTotalHits(false));
+        string? oldCursor = previous.Hits.Last().GetSortToken(GetService<ITextSerializer>());
+
+        // Act
+        var page = await _resolver.GetPageAsync(task, preparation.PinnedState, oldCursor, 10, TestCancellationToken);
+
+        // Assert
+        Assert.Equal(ordered[..2], previous.Hits.Select(h => h.Id).ToArray());
+        Assert.Equal(ordered[2..], page.Ids.ToArray());
     }
 
     [Fact]

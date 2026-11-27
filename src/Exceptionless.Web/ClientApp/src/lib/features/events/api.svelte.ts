@@ -625,6 +625,23 @@ export function getProjectLatestEventQuery(request: GetProjectLatestEventRequest
     });
 }
 
+/** Counts the events of a project that match a filter, over all time. Used to show an estimate before a bulk action. */
+export async function getProjectMatchingEventCount(projectId: string, filter: string): Promise<number> {
+    const client = useFetchClient();
+    const response = await client.getJSON<CountResult>(`/projects/${projectId}/events/count`, {
+        params: {
+            filter,
+            ...(DEFAULT_OFFSET
+                ? {
+                      offset: DEFAULT_OFFSET
+                  }
+                : {})
+        }
+    });
+
+    return response.data?.total ?? 0;
+}
+
 export function getSessionEventsQuery(request: GetSessionEventsRequest) {
     return createQuery<EventSummaryModel<SummaryTemplateKeys>[], ProblemDetails>(() => ({
         enabled: () => !!accessToken.current && !!request.route.sessionId,

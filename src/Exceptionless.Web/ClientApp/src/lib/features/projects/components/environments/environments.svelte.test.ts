@@ -46,6 +46,18 @@ describe('EnvironmentsTable', () => {
         expect(remove).toHaveBeenCalledWith(rows[0]);
     });
 
+    it('offers to delete the events of any environment row', async () => {
+        // Arrange
+        const deleteEvents = vi.fn();
+        render(EnvironmentsTable, { ...tableProps, deleteEvents });
+
+        // Act
+        await userEvent.click(screen.getByRole('button', { name: 'Delete events in prodution' }));
+
+        // Assert
+        expect(deleteEvents).toHaveBeenCalledWith(rows[2]);
+    });
+
     it('toggles notifications for a listed environment', async () => {
         // Arrange
         const toggleNotify = vi.fn();

@@ -51,10 +51,8 @@
     } from '#features/events/components/filters/index.ts';
     import OrganizationDefaultsFacetedFilterBuilder from '#features/events/components/filters/organization-defaults-faceted-filter-builder.svelte';
     import { buildEventDetailsHref, type EventSummaryModel, type SummaryTemplateKeys } from '#features/events/components/summary/index.ts';
-    import { createAllMatchingSelection, getEventsQueryIdentity } from '#features/events/components/table/all-matching-selection.svelte.ts';
     import EventsBulkActionsDropdownMenu from '#features/events/components/table/events-bulk-actions-dropdown-menu.svelte';
     import EventsDataTable from '#features/events/components/table/events-data-table.svelte';
-    import EventsSelectAllBanner from '#features/events/components/table/events-select-all-banner.svelte';
     import { defaultEventColumnVisibility, getColumns } from '#features/events/components/table/options.svelte.ts';
     import InvestigationListTour from '#features/events/components/tours/investigation-list.svelte';
     import { filterUsesPremiumFeatures } from '#features/events/premium-filter.ts';
@@ -65,7 +63,9 @@
     import { premiumPage } from '#features/organizations/premium-page.svelte.ts';
     import SavedViewPicker from '#features/saved-views/components/saved-view-picker.svelte';
     import { isSavedViewHydrationPending, isSavedViewUnavailable, useSavedViews } from '#features/saved-views/use-saved-views.svelte.ts';
+    import { createAllMatchingSelection, getAllMatchingIdentity } from '#features/shared/all-matching-selection.svelte.ts';
     import * as agg from '#features/shared/api/aggregations.ts';
+    import SelectAllBanner from '#features/shared/components/select-all-banner.svelte';
     import { createPageSizePreference, getSharedTableOptions, removeTableData, removeTableSelection } from '#features/shared/table.svelte.ts';
     import { fillDateSeries } from '#features/shared/utils/charts.ts';
     import { toDateMathRange } from '#features/shared/utils/datemath.ts';
@@ -775,7 +775,7 @@
     // Gmail-style "select everything matching the filter". It belongs to the query it was made for, so a different
     // filter, time range, project or saved view drops it.
     const allMatching = createAllMatchingSelection(() =>
-        getEventsQueryIdentity({
+        getAllMatchingIdentity({
             filter: eventsQueryParameters.filter,
             organizationId: organization.current,
             savedViewId: savedViewsState.activeSavedView?.id,
@@ -1125,9 +1125,10 @@
                 />
             {/if}
 
-            <EventsSelectAllBanner
+            <SelectAllBanner
                 allMatchingCount={allMatching.active?.count}
                 {isPageSelected}
+                noun="event"
                 onClear={() => {
                     allMatching.clear();
                     table.resetRowSelection();

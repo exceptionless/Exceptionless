@@ -66,6 +66,7 @@ export const queryKeys = {
     addEnvironment: (id: string | undefined) => [...queryKeys.id(id), 'add-environment'] as const,
     config: (id: string | undefined) => [...queryKeys.id(id), 'config'] as const,
     deleteConfig: (id: string | undefined) => [...queryKeys.id(id), 'delete-config'] as const,
+    deleteData: (id: string | undefined) => [...queryKeys.id(id), 'delete-data'] as const,
     deleteProject: (ids: string[] | undefined) => [...queryKeys.ids(ids), 'delete'] as const,
     deletePromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'demote-tab'] as const,
     deleteSlack: (id: string | undefined) => [...queryKeys.id(id), 'delete-slack'] as const,
@@ -76,6 +77,7 @@ export const queryKeys = {
     integrationNotificationSettings: (id: string | undefined, integration: string) => [...queryKeys.id(id), integration, 'notification-settings'] as const,
     organization: (id: string | undefined) => [...queryKeys.type, 'organization', id] as const,
     postConfig: (id: string | undefined) => [...queryKeys.id(id), 'post-config'] as const,
+    postData: (id: string | undefined) => [...queryKeys.id(id), 'post-data'] as const,
     postProject: () => [...queryKeys.type, 'post-project'] as const,
     postPromotedTab: (id: string | undefined) => [...queryKeys.id(id), 'promote-tab'] as const,
     postSlack: (id: string | undefined) => [...queryKeys.id(id), 'post-slack'] as const,
@@ -99,6 +101,10 @@ export interface DeleteConfigRequest {
     route: {
         id: string | undefined;
     };
+}
+
+export interface DeleteDataParams {
+    key: string;
 }
 
 export interface DeleteProjectRequest {
@@ -202,6 +208,11 @@ export interface PostConfigRequest {
     route: {
         id: string | undefined;
     };
+}
+
+export interface PostDataParams {
+    key: string;
+    value: string;
 }
 
 export interface PostProjectUserNotificationSettingsRequest {
@@ -324,6 +335,30 @@ export function deleteProjectConfig(request: DeleteConfigRequest) {
         onSuccess: () => {
             queryClient.invalidateQueries({
                 queryKey: queryKeys.config(request.route.id)
+            });
+        }
+    }));
+}
+
+export function deleteProjectData(request: DeleteConfigRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, DeleteDataParams>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (params: DeleteDataParams) => {
+            const client = useFetchClient();
+            const response = await client.delete(`projects/${request.route.id}/data`, {
+                params: {
+                    key: params.key
+                }
+            });
+
+            return response.ok;
+        },
+        mutationKey: queryKeys.deleteData(request.route.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
             });
         }
     }));
@@ -683,6 +718,36 @@ export function postProjectConfig(request: PostConfigRequest) {
         onSuccess: () => {
             queryClient.invalidateQueries({
                 queryKey: queryKeys.config(request.route.id)
+            });
+        }
+    }));
+}
+
+export function postProjectData(request: PostConfigRequest) {
+    const queryClient = useQueryClient();
+
+    return createMutation<boolean, ProblemDetails, PostDataParams>(() => ({
+        enabled: () => !!accessToken.current,
+        mutationFn: async (params: PostDataParams) => {
+            const client = useFetchClient();
+            const response = await client.post(
+                `projects/${request.route.id}/data`,
+                <StringValueFromBody>{
+                    value: params.value
+                },
+                {
+                    params: {
+                        key: params.key
+                    }
+                }
+            );
+
+            return response.ok;
+        },
+        mutationKey: queryKeys.postData(request.route.id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.id(request.route.id)
             });
         }
     }));

@@ -4,11 +4,15 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Services;
+using Exceptionless.Core.Services.BackgroundTasks;
+using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Models;
 using Foundatio.Repositories.Utility;
@@ -331,6 +335,20 @@ public class CleanupDataJobTests : IntegrationTestsBase
         var event1 = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization1.Id, project1.Id, stack1.Id), o => o.ImmediateConsistency());
         var event2 = await _eventRepository.AddAsync(_eventData.GenerateEvent(organization2.Id, project2.Id, stack2.Id), o => o.ImmediateConsistency());
 
+        var tasks = GetService<BackgroundTaskService>();
+        var cache = GetService<ICacheClient>();
+        var bulkOperations = GetService<BulkOperationService>();
+        var removedTask = new BackgroundTask { OrganizationId = organization1.Id };
+        var retainedTask = new BackgroundTask { OrganizationId = organization2.Id };
+        await tasks.AddAsync(removedTask);
+        await tasks.AddAsync(retainedTask);
+        await cache.SetAsync(BackgroundTaskService.GetPinnedSelectionCacheKey(removedTask.Id), "saved filter", BackgroundTaskService.TaskLifetime);
+        await cache.SetAsync(BackgroundTaskService.GetPinnedSelectionCacheKey(retainedTask.Id), "saved filter", BackgroundTaskService.TaskLifetime);
+        await cache.SetAsync(BackgroundTaskService.GetCancelCacheKey(removedTask.Id), true, BackgroundTaskService.TaskLifetime);
+
+        // A stale index entry that points at another organization's task must not remove that task.
+        await cache.ListAddAsync(BackgroundTaskService.GetOrganizationIndexCacheKey(organization1.Id), [retainedTask.Id], BackgroundTaskService.TaskLifetime);
+
         // Include both active and already-deleted projects in the deleted organization.
         var deletedProject = _projectData.GenerateProject(generateId: true, organizationId: organization1.Id);
         deletedProject.IsDeleted = true;
@@ -354,6 +372,14 @@ public class CleanupDataJobTests : IntegrationTestsBase
         await _job.RunAsync(TestCancellationToken);
 
         // Assert - Organization 1's entire hierarchy is hard-deleted; Organization 2's everything remains
+        Assert.Null(await tasks.GetAsync(removedTask.Id));
+        Assert.NotNull(await tasks.GetAsync(retainedTask.Id));
+        Assert.Null(await bulkOperations.GetPinnedSelectionAsync(removedTask.Id));
+        Assert.NotNull(await bulkOperations.GetPinnedSelectionAsync(retainedTask.Id));
+        Assert.False(await tasks.IsCancelRequestedAsync(removedTask.Id));
+        Assert.Empty(await tasks.GetByOrganizationAsync(organization1.Id));
+        Assert.Empty(await tasks.GetActiveIdsAsync(organization1.Id));
+        Assert.Single(await tasks.GetByOrganizationAsync(organization2.Id));
         Assert.Null(await _organizationRepository.GetByIdAsync(organization1.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _projectRepository.GetByIdAsync(project1.Id, o => o.IncludeSoftDeletes()));
         Assert.Null(await _projectRepository.GetByIdAsync(deletedProject.Id, o => o.IncludeSoftDeletes()));

@@ -9,15 +9,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Exceptionless.Core.Services.BulkOperations;
 
-public class BulkOperationOptions
-{
-    /// <summary>How many ids are resolved and executed per batch.</summary>
-    public int BatchSize { get; set; } = 500;
-
-    /// <summary>How long to wait before continuing after a temporary error. Multiplied by the number of errors in a row.</summary>
-    public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(5);
-}
-
 /// <summary>
 /// The bulk specific part of background tasks: the registry of handlers and selection resolvers, counting and pinning a
 /// selection, and the one-active-destructive-task-per-project rule. Storage, indexes and notifications are
@@ -43,8 +34,6 @@ public class BulkOperationService
         _timeProvider = timeProvider;
     }
 
-    public static string GetPinnedSelectionCacheKey(string id) => $"{BackgroundTaskService.KeyPrefix}:{id}:selection";
-
     public IBulkOperationHandler? GetHandler(string type) => _handlers.GetValueOrDefault(type);
 
     /// <summary>
@@ -55,7 +44,7 @@ public class BulkOperationService
 
     public async Task<string?> GetPinnedSelectionAsync(string id)
     {
-        var cached = await _cache.GetAsync<string>(GetPinnedSelectionCacheKey(id));
+        var cached = await _cache.GetAsync<string>(BackgroundTaskService.GetPinnedSelectionCacheKey(id));
         return cached.HasValue ? cached.Value : null;
     }
 
@@ -77,7 +66,7 @@ public class BulkOperationService
             if (!_resolvers.TryGetValue(handler.Entity, out var resolver))
                 throw new InvalidOperationException($"No selection resolver is registered for {handler.Entity}.");
 
-            task.CreatedUtc = _timeProvider.GetUtcNow().UtcDateTime;
+            bulk.Selection.UtcCreatedBefore ??= _timeProvider.GetUtcNow().UtcDateTime;
             var preparation = await resolver.PrepareAsync(task, CancellationToken.None);
             if (!preparation.Check.IsOk)
                 return BulkOperationCreateResult.Rejected(preparation.Check);
@@ -105,7 +94,7 @@ public class BulkOperationService
 
         await _taskService.AddAsync(task);
         if (pinnedSelection is not null)
-            await _cache.SetAsync(GetPinnedSelectionCacheKey(task.Id), pinnedSelection, BackgroundTaskService.TaskLifetime);
+            await _cache.SetAsync(BackgroundTaskService.GetPinnedSelectionCacheKey(task.Id), pinnedSelection, BackgroundTaskService.TaskLifetime);
 
         await _taskService.EnqueueAsync(task, new BulkOperationWorkItem
         {
@@ -161,12 +150,12 @@ public class BulkOperationService
             if (!overlaps)
                 continue;
 
-            if (utcNow - existing.UpdatedUtc >= BackgroundTaskService.StaleAfter)
+            if (BackgroundTaskService.IsStale(existing, utcNow))
             {
                 // Retire it before admitting a replacement, so a delayed delivery cannot run it alongside the new one.
                 var retired = await _taskService.UpdateAsync(existing.Id, current =>
                 {
-                    if (!current.IsActive || utcNow - current.UpdatedUtc < BackgroundTaskService.StaleAfter)
+                    if (!current.IsActive || !BackgroundTaskService.IsStale(current, utcNow))
                         return false;
 
                     current.Finish(BackgroundTaskStatus.Failed, "Stopped because it made no progress for two hours.", utcNow);

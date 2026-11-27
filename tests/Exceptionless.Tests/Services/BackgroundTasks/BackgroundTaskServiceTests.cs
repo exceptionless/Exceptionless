@@ -592,7 +592,7 @@ public class BackgroundTaskServiceTests : TestWithLoggingBase, IDisposable
         Assert.Equal(all.Count, all.Distinct().Count());
     }
 
-    private static string BulkOperationService_GetPinnedSelectionCacheKey(string id) => Exceptionless.Core.Services.BulkOperations.BulkOperationService.GetPinnedSelectionCacheKey(id);
+    private static string BulkOperationService_GetPinnedSelectionCacheKey(string id) => BackgroundTaskService.GetPinnedSelectionCacheKey(id);
 
     private static BackgroundTask NewTask(string organizationId = OrganizationId, bool canCancel = false)
     {
