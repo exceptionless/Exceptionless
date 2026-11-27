@@ -240,6 +240,56 @@ ctx._source.is_regression_notification_pending = params.notificationPending;";
         }
     }
 
+    public async Task UpdateStateAsync(IReadOnlyCollection<Stack> stacks)
+    {
+        // Only the fields a status change owns are written. Whole-document saves of a copy that was read earlier would roll back counters
+        // that ingestion incremented since, so patch the document that is current in the index.
+        const string script = @"
+ctx._source.status = params.status;
+ctx._source.snooze_until_utc = params.snoozeUntilUtc;
+ctx._source.fixed_in_version = params.fixedInVersion;
+ctx._source.date_fixed = params.dateFixed;
+ctx._source.is_new_notification_pending = params.isNewNotificationPending;
+ctx._source.is_regression_notification_pending = params.isRegressionNotificationPending;";
+
+        foreach (var stack in stacks)
+        {
+            var operation = new ScriptPatch(script.TrimScript())
+            {
+                Params = new Dictionary<string, object>(6)
+                {
+                    { "status", stack.Status.ToString().ToLowerInvariant() },
+                    { "snoozeUntilUtc", stack.SnoozeUntilUtc!},
+                    { "fixedInVersion", stack.FixedInVersion! },
+                    { "dateFixed", stack.DateFixed! },
+                    { "isNewNotificationPending", stack.IsNewNotificationPending },
+                    { "isRegressionNotificationPending", stack.IsRegressionNotificationPending }
+                }
+            };
+
+            await PatchStackAsync(stack, operation);
+        }
+    }
+
+    public async Task SoftDeleteAsync(IReadOnlyCollection<Stack> stacks)
+    {
+        foreach (var stack in stacks)
+            await PatchStackAsync(stack, new PartialPatch(new { is_deleted = true }));
+    }
+
+    private async Task PatchStackAsync(Stack stack, IPatchOperation operation)
+    {
+        try
+        {
+            await PatchAsync(stack.Id, operation);
+            await InvalidateStackCacheAsync(stack);
+        }
+        catch (DocumentNotFoundException)
+        {
+            _logger.LogWarning("Stack {StackId} not found when updating its state", stack.Id);
+        }
+    }
+
     public Task<long> SoftDeleteByProjectIdAsync(string organizationId, string projectId)
     {
         ArgumentException.ThrowIfNullOrEmpty(organizationId);

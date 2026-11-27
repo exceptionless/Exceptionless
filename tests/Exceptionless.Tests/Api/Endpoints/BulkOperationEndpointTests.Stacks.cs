@@ -152,6 +152,7 @@ public partial class BulkOperationEndpointTests
 
         // Act
         await SendRequestAsync(r => r.Delete().AsTestOrganizationUser().AppendPath($"stacks/{single.Id}").StatusCodeShouldBeAccepted());
+        await RefreshDataAsync();
         var created = await CreateOperationAsync(request);
         await _workItemJob.RunUntilEmptyAsync(TestCancellationToken);
         await RefreshDataAsync();

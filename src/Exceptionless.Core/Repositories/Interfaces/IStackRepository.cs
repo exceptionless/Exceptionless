@@ -30,6 +30,15 @@ public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Sta
     /// Updates only the tags of the stack.
     /// </summary>
     Task UpdateTagsAsync(Stack stack);
+
+    /// <summary>
+    /// Writes the status, snooze, fix and pending notification state of the stacks without touching any other field, so counters that
+    /// ingestion incremented since the stacks were read survive.
+    /// </summary>
+    Task UpdateStateAsync(IReadOnlyCollection<Stack> stacks);
+
+    /// <summary>Soft deletes the stacks, changing only the deleted flag.</summary>
+    Task SoftDeleteAsync(IReadOnlyCollection<Stack> stacks);
     Task<bool> IncrementEventCounterAsync(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true);
     Task<bool> SetEventCounterAsync(string stackId, DateTime firstOccurrenceUtc, DateTime lastOccurrenceUtc, long totalOccurrences, bool sendNotifications = true);
     Task<FindResults<Stack>> GetStacksForCleanupAsync(string organizationId, DateTime cutoff);

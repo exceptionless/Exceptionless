@@ -52,7 +52,7 @@ public class StackActionService
         foreach (var stack in stacks)
             stack.MarkFixed(version, _timeProvider);
 
-        return _stackRepository.SaveAsync(stacks);
+        return _stackRepository.UpdateStateAsync(stacks);
     }
 
     public Task SnoozeAsync(IReadOnlyCollection<Stack> stacks, DateTime snoozeUntilUtc)
@@ -65,7 +65,7 @@ public class StackActionService
             stack.DateFixed = null;
         }
 
-        return _stackRepository.SaveAsync(stacks);
+        return _stackRepository.UpdateStateAsync(stacks);
     }
 
     public async Task ChangeStatusAsync(IReadOnlyCollection<Stack> stacks, StackStatus status)
@@ -90,7 +90,7 @@ public class StackActionService
             stack.SnoozeUntilUtc = null;
         }
 
-        await _stackRepository.SaveAsync(changed);
+        await _stackRepository.UpdateStateAsync(changed);
     }
 
     /// <summary>
@@ -101,6 +101,6 @@ public class StackActionService
         foreach (var stack in stacks)
             stack.IsDeleted = true;
 
-        return _stackRepository.SaveAsync(stacks);
+        return _stackRepository.SoftDeleteAsync(stacks);
     }
 }

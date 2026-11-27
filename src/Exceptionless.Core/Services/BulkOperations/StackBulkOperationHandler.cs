@@ -45,7 +45,7 @@ public abstract class StackBulkOperationHandler : IBulkOperationHandler
 
     public async Task<BulkBatchResult> ExecuteBatchAsync(BackgroundTask task, IReadOnlyCollection<string> ids, CancellationToken cancellationToken)
     {
-        // Saving replaces the document, so the batch is read from the index rather than the cache.
+        // The batch is read from the index rather than the cache so the state that is changed starts from what is stored.
         var stacks = await _stackRepository.GetByIdsAsync(ids.ToArray(), o => o.Cache(false));
 
         // The task may only touch its own organization (and project), no matter what ids it was given.
