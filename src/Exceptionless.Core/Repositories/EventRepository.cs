@@ -213,7 +213,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         return FindAsync(q => q.Project(projectId).SortDescending(e => e.Date).SortDescending(e => e.Id), options);
     }
 
-    public async Task<StackIdPage> GetStackIdPageAsync(IRepositoryQuery query, string? afterStackId, int size)
+    public async Task<IdPage> GetStackIdPageAsync(IRepositoryQuery query, string? afterStackId, int size)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
@@ -239,10 +239,10 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
         var buckets = response.Aggregations?.GetComposite(StackIdsAggregation)?.Buckets ?? [];
         string[] stackIds = buckets.Select(b => b.Key[CompositeStackIdSource].ToString()!).ToArray();
-        return new StackIdPage(stackIds, stackIds.Length >= size ? stackIds[^1] : null);
+        return new IdPage(stackIds, stackIds.Length >= size ? stackIds[^1] : null);
     }
 
-    public async Task<StackIdPage> GetEventIdPageAsync(IRepositoryQuery query, string? cursor, int size)
+    public async Task<IdPage> GetEventIdPageAsync(IRepositoryQuery query, string? cursor, int size)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
@@ -261,7 +261,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
 
         string[] ids = response.Hits.Where(h => !String.IsNullOrEmpty(h.Id)).Select(h => h.Id!).ToArray();
         var last = response.Hits.LastOrDefault();
-        return new StackIdPage(ids, ids.Length > 0 && last?.Sort is not null ? EncodeSortValues(last.Sort) : null);
+        return new IdPage(ids, ids.Length > 0 && last?.Sort is not null ? EncodeSortValues(last.Sort) : null);
     }
 
     public async Task<long> CountStacksAsync(IRepositoryQuery query)
@@ -295,15 +295,18 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             throw new DocumentException($"{shards.Failed} of {shards.Total} shards failed while {operation}; the result may be incomplete.");
     }
 
+    // The cursor has the same format as Foundatio's search after token (base64 of the JSON array of sort values), so a task that
+    // started with a token Foundatio wrote keeps running and tokens written here are readable by Foundatio.
     private static string EncodeSortValues(IEnumerable<FieldValue> values)
     {
-        return System.Text.Json.JsonSerializer.Serialize(values.Select(v => v.TryGetLong(out long? l) && l.HasValue ? (object)l.Value : v.TryGetString(out string? str) && str is not null ? str : throw new NotSupportedException("Unsupported sort value.")));
+        object[] sortValues = values.Select(v => v.TryGetLong(out long? l) && l.HasValue ? (object)l.Value : v.TryGetString(out string? str) && str is not null ? str : throw new NotSupportedException("Unsupported sort value.")).ToArray();
+        return Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(sortValues)));
     }
 
     private static List<FieldValue> DecodeSortValues(string cursor)
     {
         var values = new List<FieldValue>();
-        foreach (var element in System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(cursor)!)
+        foreach (var element in System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(Convert.FromBase64String(cursor))!)
             values.Add(element.ValueKind is System.Text.Json.JsonValueKind.Number ? FieldValue.Long(element.GetInt64()) : FieldValue.String(element.GetString()!));
 
         return values;

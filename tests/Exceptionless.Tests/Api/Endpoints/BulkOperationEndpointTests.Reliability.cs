@@ -38,7 +38,7 @@ public partial class BulkOperationEndpointTests
         // Arrange
         var repository = new Mock<IEventRepository>();
         repository.Setup(r => r.GetEventIdPageAsync(It.IsAny<IRepositoryQuery>(), "start", 10))
-            .ReturnsAsync(new StackIdPage(["a", "b"], "next"));
+            .ReturnsAsync(new IdPage(["a", "b"], "next"));
         var resolver = CreateResolver(repository.Object);
 
         // Act

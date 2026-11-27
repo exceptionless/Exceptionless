@@ -37,6 +37,6 @@ public class EventBulkSelectionResolver : EventQueryBulkSelectionResolver
         query.SortExpression($"-{EventIndex.Alias.Date} id");
 
         var page = await _eventRepository.GetEventIdPageAsync(query, cursor, size);
-        return new BulkSelectionPage(page.StackIds.ToArray(), page.NextAfterStackId);
+        return new BulkSelectionPage(page.Ids.ToArray(), page.NextCursor);
     }
 }

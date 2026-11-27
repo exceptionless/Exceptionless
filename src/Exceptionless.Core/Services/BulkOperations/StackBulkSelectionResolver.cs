@@ -34,6 +34,6 @@ public class StackBulkSelectionResolver : EventQueryBulkSelectionResolver
     protected override async Task<BulkSelectionPage> FindPageAsync(RepositoryQuery<PersistentEvent> query, string? cursor, int size)
     {
         var page = await _eventRepository.GetStackIdPageAsync(query, cursor, size);
-        return new BulkSelectionPage(page.StackIds, page.NextAfterStackId);
+        return new BulkSelectionPage(page.Ids, page.NextCursor);
     }
 }

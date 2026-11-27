@@ -19,20 +19,20 @@ public interface IEventRepository : IRepositoryOwnedByOrganizationAndProject<Per
     /// Pages the distinct stack ids of the events that match the query in ascending id order. The position is the last id of the
     /// previous page, so paging stays correct while events or stacks change between pages.
     /// </summary>
-    Task<StackIdPage> GetStackIdPageAsync(IRepositoryQuery query, string? afterStackId, int size);
+    Task<IdPage> GetStackIdPageAsync(IRepositoryQuery query, string? afterStackId, int size);
 
     /// <summary>
     /// Pages the ids of the events that match the query in the order of the query's sort. The cursor is the sort position of the last
     /// event of the previous page. Throws when the search answered only partly (failed shards or a timeout).
     /// </summary>
-    Task<StackIdPage> GetEventIdPageAsync(IRepositoryQuery query, string? cursor, int size);
+    Task<IdPage> GetEventIdPageAsync(IRepositoryQuery query, string? cursor, int size);
 
     /// <summary>Approximately how many distinct stacks the events matching the query belong to.</summary>
     Task<long> CountStacksAsync(IRepositoryQuery query);
 }
 
-/// <summary>A page of distinct stack ids. <see cref="NextAfterStackId"/> is null when there are no more pages.</summary>
-public record StackIdPage(IReadOnlyList<string> StackIds, string? NextAfterStackId);
+/// <summary>A page of ids. <see cref="NextCursor"/> is null when there are no more pages.</summary>
+public record IdPage(IReadOnlyList<string> Ids, string? NextCursor);
 
 public static class EventRepositoryExtensions
 {
