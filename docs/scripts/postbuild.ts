@@ -204,6 +204,7 @@ async function rewriteHtmlReferences(root: string): Promise<void> {
   }
 }
 
+/** Builds the docs "On this page" list from rendered h2/h3 headings so it is present before scripts run. */
 async function renderDocsPageTocs(root: string): Promise<void> {
   for await (const path of walk(root)) {
     if (!path.endsWith(".html")) {
@@ -218,7 +219,6 @@ async function renderDocsPageTocs(root: string): Promise<void> {
   }
 }
 
-/** Builds the docs "On this page" list from rendered h2/h3 headings so it is present before scripts run. */
 /** Adds FAQPage structured data to pages that render a `.faq` list of <details> questions. */
 async function addFaqStructuredData(root: string): Promise<void> {
   for await (const path of walk(root)) {
@@ -252,7 +252,7 @@ async function addFaqStructuredData(root: string): Promise<void> {
 /** Publishes each docs page as Markdown next to its HTML route (for example /docs/getting-started.md) for AI tools. */
 async function writeDocsMarkdown(pages: ContentPage[]): Promise<void> {
   for (const page of pages) {
-    await Deno.writeTextFile(`_site${markdownUrl(page.url)}`, renderDocsMarkdown(page))
+    await Deno.writeTextFile(`_site${markdownPathFor(page.url)}`, renderDocsMarkdown(page))
   }
 }
 
@@ -266,10 +266,6 @@ function renderDocsMarkdown(page: ContentPage): string {
   ].filter(Boolean).join("\n>\n")
     .concat(page.description || page.plan ? "\n\n" : "")
   return `${heading}\n\n${summary}${body}\n\n---\n\nSource: ${siteUrl}${page.url}\nAll Exceptionless documentation: ${siteUrl}/llms.txt\n`
-}
-
-function markdownUrl(pageUrl: string): string {
-  return pageUrl === "/docs/" ? "/docs.md" : `${pageUrl.replace(/\/$/, "")}.md`
 }
 
 /** Makes root-relative links absolute, pointing docs page links at their Markdown copies. */
@@ -289,7 +285,7 @@ function markdownLinkTarget(target: string): string {
     return `${siteUrl}${target}`
   }
 
-  return `${siteUrl}${markdownUrl(ensureTrailingSlash(path))}${hash}`
+  return `${siteUrl}${markdownPathFor(ensureTrailingSlash(path))}${hash}`
 }
 
 function renderDocsPageToc(html: string): string {
@@ -425,6 +421,7 @@ function renderNewsPage(template: string, pageUrl: string, body: string): string
 }
 
 async function renderNewsArticles(posts: ContentPage[]): Promise<string> {
+  const icons = JSON.parse(await Deno.readTextFile("_data/icons.json")) as Record<string, string>
   const articles: string[] = []
   for (const post of posts) {
     try {
@@ -436,7 +433,7 @@ async function renderNewsArticles(posts: ContentPage[]): Promise<string> {
           post.date ? `  ${renderPostDate(post.date)}` : "",
           `  <h2 id="${slugify(post.title)}">${escapeHtml(post.title)}</h2>`,
           excerpt ? `  <p>${escapeHtml(excerpt)}</p>` : "",
-          '  <span class="text-link">Read more <span aria-hidden="true">&rarr;</span></span>',
+          `  <span class="text-link">Read more ${icons["arrow-right"] ?? ""}</span>`,
           "</a>",
         ].filter(Boolean).join("\n"),
       )
@@ -580,7 +577,7 @@ async function writeSearchIndex(root: string, routes: string[], posts: ContentPa
     })
   }
 
-  await Deno.writeTextFile(`${root}/search-index.json`, JSON.stringify({ entries }, null, 2))
+  await Deno.writeTextFile(`${root}/search-index.json`, JSON.stringify({ entries }))
 }
 
 /** The docs nav section and groups that contain a page, as the sidebar labels them. */
@@ -971,7 +968,7 @@ function renderLlms(pages: ContentPage[], mode: LlmsMode): string {
       ...clients.map((client) =>
         llmsLink(
           `${client.name} for ${client.language}`,
-          markdownUrl(client.docsUrl),
+          markdownPathFor(client.docsUrl),
           `${client.support} client, version ${client.version}. Packages: ${
             client.packages.map((pkg) => pkg.name).join(", ")
           }.`,
@@ -984,7 +981,7 @@ function renderLlms(pages: ContentPage[], mode: LlmsMode): string {
   for (const section of sections) {
     lines.push(`## Docs: ${section.title}`, "")
     for (const page of section.pages) {
-      lines.push(llmsLink(page.title, markdownUrl(page.url), page.description))
+      lines.push(llmsLink(page.title, markdownPathFor(page.url), page.description))
     }
     lines.push("")
   }

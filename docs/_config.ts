@@ -103,14 +103,22 @@ const productShotSizes: Record<string, [number, number]> = {
   mcp: [1184, 769],
 }
 
+/** Loads the active theme's image in the button just before this script. site.js loads the other on a theme change. */
+const activeThemeImageScript =
+  `<script>(function(b){var t=document.documentElement.dataset.theme==="dark"?"dark":"light";b.querySelectorAll("img.only-"+t+"[data-src]").forEach(function(i){i.srcset=i.dataset.srcset;i.src=i.dataset.src;i.removeAttribute("data-src");i.removeAttribute("data-srcset")})})(document.currentScript.previousElementSibling)</script>`
+
 /** Renders a light/dark product screenshot pair from public/assets/img/product with lightbox support. */
 function productShot(name: string, alt: string, options: ProductShotOptions = {}): string {
   const [width, height] = productShotSizes[name] ?? [1184, 839]
   const sizes = options.sizes ?? "(max-width: 960px) 100vw, 680px"
   const loading = options.eager ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"'
+  // An eager pair would download both themes, because hidden eager images still load. Eager images carry their
+  // sources in data attributes instead, and the script after the button loads only the active theme's image.
+  const source = options.eager ? "data-src" : "src"
+  const sourceSet = options.eager ? "data-srcset" : "srcset"
   const images = ["light", "dark"].map((scheme) => {
     const base = `/assets/img/product/${name}-${scheme}`
-    return `<img class="only-${scheme}" src="${base}.webp" srcset="${base}.webp ${width}w, ${base}@2x.webp ${
+    return `<img class="only-${scheme}" ${source}="${base}.webp" ${sourceSet}="${base}.webp ${width}w, ${base}@2x.webp ${
       width * 2
     }w" sizes="${sizes}" width="${width}" height="${height}" alt="${
       escapeAttribute(alt)
@@ -121,7 +129,7 @@ function productShot(name: string, alt: string, options: ProductShotOptions = {}
     options.frame ? " shot-framed" : ""
   }" type="button" data-lightbox data-caption="${escapeAttribute(alt)}" aria-label="Enlarge screenshot: ${
     escapeAttribute(alt)
-  }">${images}</button>`
+  }">${images}</button>${options.eager ? activeThemeImageScript : ""}`
 
   if (!options.frame) {
     return button

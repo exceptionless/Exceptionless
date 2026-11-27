@@ -192,7 +192,9 @@ A `202` means the server stored the request, not that every event was kept. Chec
 - **The reference ID.** A second event with the same `reference_id` in the same project within a day is discarded.
 - **The project's usage.** Events over the plan's monthly limit are discarded. The project's **Usage** settings show
   blocked events.
-- **The body.** A body that isn't a JSON object or array is stored as log events, one per line.
+- **The body.** A body that can't be read as an event object or array is stored as log events, one per line.
+- **The size after decompression.** A compressed body that's more than 2,000,000 bytes once decompressed (10 times the
+  request limit) is discarded after the `202`.
 
 ## Use a coding agent {#coding-agent}
 

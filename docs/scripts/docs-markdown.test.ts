@@ -166,7 +166,7 @@ Deno.test("prompts: exie and agent prompts render cards with a copy button", () 
   assertStringIncludes(exie, "<svg>exie</svg>")
   assertStringIncludes(exie, 'data-copy-target="prompt-1-text"')
   assertStringIncludes(exie, 'id="prompt-1-text">Which &lt;new&gt; stacks appeared since the deploy?</div>')
-  assertStringIncludes(exie, 'aria-label="Copy prompt"')
+  assertStringIncludes(exie, 'class="prompt-copy"')
 
   assertStringIncludes(agent, "<span>Paste into your coding agent</span>")
   assertStringIncludes(agent, "<svg>terminal</svg>")

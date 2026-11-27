@@ -126,7 +126,7 @@ ${dotnetDefaultClientConfiguration(context, '        ')}
             blocks: [{ code: startup, language: 'csharp' }],
             description:
                 entryPoint === 'App.xaml.cs'
-                    ? 'Register Exceptionless in OnStartup, which runs before the StartupUri window opens, so App.xaml needs no changes. Change `MyApp` to the namespace in x:Class in App.xaml.'
+                    ? 'Register Exceptionless in OnStartup, which runs before the StartupUri window opens, so App.xaml needs no changes. Change MyApp to the namespace in x:Class in App.xaml.'
                     : 'Register Exceptionless before Application.Run so unhandled exceptions are reported.',
             title: `Register Exceptionless in ${entryPoint}`
         },
@@ -915,7 +915,7 @@ namespace MyApp {
                     }
                 ],
                 description:
-                    'Register Exceptionless in OnStartup, which runs before the StartupUri window opens, so App.xaml needs no changes. Change `MyApp` to the namespace in x:Class in App.xaml.',
+                    'Register Exceptionless in OnStartup, which runs before the StartupUri window opens, so App.xaml needs no changes. Change MyApp to the namespace in x:Class in App.xaml.',
                 title: 'Register Exceptionless in App.xaml.cs'
             },
             dotnetTestError('Add this after Register() and run your app once.')

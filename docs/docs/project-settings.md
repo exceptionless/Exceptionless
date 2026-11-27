@@ -79,9 +79,9 @@ also lists its tabs under **Project Settings**. See [Navigating the app](/docs/n
 
 ## API keys {#api-keys}
 
-A client API key lets an app send events and read client configuration values for one project. It can't read stored
-events or change project settings, and is intended for use in client apps. See [API keys](/docs/security/#api-keys) for
-its permissions.
+A client API key lets an app send events, read client configuration values, and connect Zapier for one project. It can't
+read stored events or change project settings, and is intended for use in client apps. See
+[API keys](/docs/security/#api-keys) for its permissions.
 
 1. Open the **API Keys** tab.
 2. Click **Add token** and choose:
@@ -214,7 +214,8 @@ The **Spam Detection** section of the **Settings** tab filters out bots and craw
 
 - The user agent list: a comma-separated list of user agent patterns to ignore, with `*` wildcards. New projects start
   with `*bot*,*crawler*,*spider*,*aolbuild*,*teoma*,*yahoo*`. The .NET and JavaScript clients don't send events from
-  requests whose user agent matches. The server marks matching events as bots and doesn't send notifications for them.
+  requests whose user agent matches. The server marks matching events as bots and doesn't send email or Slack
+  notifications for them. Webhooks are still called.
 - **Reduce noise by automatically hiding high volumes of events coming from a single client IP address**: when 25 or
   more events arrive from one public IP address within a five-minute window, the server discards them and deletes the
   events from that window. This needs IP addresses, so it doesn't apply while the project removes user identifiable
@@ -240,7 +241,7 @@ The project and its data are queued for deletion. You can also delete a project 
 
 ## Ask Exie
 
-[Exie](/docs/ai/exie/) is on Medium plans and up.
+[Exie](/docs/ai/exie/) is on Medium plans and up, and during a free trial once you verify your email.
 
 ```prompt exie
 List my projects and when each one last received an event.

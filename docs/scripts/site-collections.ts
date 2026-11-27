@@ -268,8 +268,8 @@ function titleFromSegment(segment: string): string {
 }
 
 function dateFromPath(path: string): string | undefined {
-  const match = slash(path).match(/\/(\d{4}-\d{2}-\d{1,2})-/)
-  return match?.[1]
+  const match = slash(path).match(/\/(\d{4})-(\d{2})-(\d{1,2})-/)
+  return match ? `${match[1]}-${match[2]}-${match[3].padStart(2, "0")}` : undefined
 }
 
 function dateToIsoDate(value: Date | string | number | undefined): string | undefined {

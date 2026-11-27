@@ -76,8 +76,10 @@ To remove a webhook, open its menu (**...**) in the list and click **Delete**.
 | **Promoted**       | `StackPromoted`   | Someone clicks **Promote To External** on a stack. | Stack   |
 
 An event is critical when its stack has **Future Occurrences Are Critical** turned on, or when your code marks it
-critical. Events in stacks that are fixed, snoozed, ignored, or discarded don't call webhooks. Unlike email and Slack,
-webhooks aren't rate limited: every matching event calls them.
+critical. Events in stacks that are fixed, snoozed, ignored, or discarded don't call webhooks, and neither do events
+from an environment whose notifications are turned off (see
+[Notifications by environment](/docs/environments/#notifications-by-environment)). Unlike email and Slack, webhooks aren't rate
+limited: every matching event calls them.
 
 **Promote To External** is in a stack's options menu. It sends the stack to every **Promoted** webhook in the project,
 for example to open an issue in your tracker. If the project has no **Promoted** webhook, the app offers to take you to
@@ -126,20 +128,20 @@ The five event types send the event that triggered the webhook, with its stack:
 }
 ```
 
-| Field                                                      | Description                                                                      |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `id`, `url`                                                | The event ID and its page in the app.                                            |
-| `occurrence_date`                                          | When the event happened, with the offset the client sent.                        |
-| `type`, `source`, `message`, `environment`, `tags`         | The event's type, source, message, [environment](/docs/environments/), and tags. |
-| `project_id`, `project_name`                               | The project.                                                                     |
-| `organization_id`, `organization_name`                     | The organization.                                                                |
-| `stack_id`, `stack_url`, `stack_title`                     | The stack the event belongs to and its page in the app.                          |
-| `stack_description`, `stack_tags`                          | The stack's description and tags.                                                |
-| `total_occurrences`, `first_occurrence`, `last_occurrence` | The stack's occurrence count and first and last occurrence, in UTC.              |
-| `date_fixed`                                               | When the stack was marked fixed, if it is.                                       |
-| `is_new`                                                   | `true` when this event started the stack.                                        |
-| `is_regression`                                            | `true` when this event regressed a fixed stack.                                  |
-| `is_critical`                                              | `true` when the event is marked critical.                                        |
+| Field                                                      | Description                                                                                              |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `id`, `url`                                                | The event ID and its page in the app.                                                                    |
+| `occurrence_date`                                          | When the event happened, with the offset the client sent.                                                |
+| `type`, `source`, `message`, `environment`, `tags`         | The event's type, source, message, [environment](/docs/environments/), and tags.                         |
+| `project_id`, `project_name`                               | The project.                                                                                             |
+| `organization_id`, `organization_name`                     | The organization.                                                                                        |
+| `stack_id`, `stack_url`, `stack_title`                     | The stack the event belongs to and its page in the app.                                                  |
+| `stack_description`, `stack_tags`                          | The stack's description and tags.                                                                        |
+| `total_occurrences`, `first_occurrence`, `last_occurrence` | The stack's occurrence count and first and last occurrence, in UTC.                                      |
+| `date_fixed`                                               | When the stack was marked fixed, if it is.                                                               |
+| `is_new`                                                   | `true` when this event started the stack, or is the stack's first event in an environment that notifies. |
+| `is_regression`                                            | `true` when this event regressed a fixed stack.                                                          |
+| `is_critical`                                              | `true` when the event is marked critical.                                                                |
 
 Fields without a value, and empty lists, are left out of the payload. For example, `source` is usually missing on
 errors, and `tags` is missing when the event has none.
@@ -181,7 +183,8 @@ project. Create a key on the project's **API Keys** tab (see [Projects](/docs/pr
 
 ## Ask Exie
 
-[Exie](/docs/ai/exie/) can attach links to a stack, such as the issue a webhook created. Exie is on Medium plans and up.
+[Exie](/docs/ai/exie/) can attach links to a stack, such as the issue a webhook created. Exie is on Medium plans and up,
+and during a free trial once you verify your email.
 
 ```prompt exie
 Add https://github.com/acme/store/issues/412 as a reference link on this stack.

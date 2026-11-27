@@ -79,8 +79,12 @@ export function initializeSiteSearch(modal) {
     window.clearTimeout(debounceTimer)
     activeSearchId++
     document.body.classList.remove("site-search-open")
-    if (lastActiveElement instanceof HTMLElement) {
-      lastActiveElement.focus()
+    // The mobile menu's search button is hidden once the menu closes, so return focus to the menu button instead.
+    const returnTo = lastActiveElement instanceof HTMLElement && isShown(lastActiveElement)
+      ? lastActiveElement
+      : document.querySelector("[data-nav-toggle]")
+    if (returnTo instanceof HTMLElement) {
+      returnTo.focus()
     }
   })
 
@@ -756,4 +760,9 @@ function isTypingTarget(target) {
     target instanceof HTMLTextAreaElement ||
     target instanceof HTMLSelectElement ||
     (target instanceof HTMLElement && target.isContentEditable)
+}
+
+/** Whether an element is rendered, so focus can return to it. */
+function isShown(element) {
+  return typeof element.getClientRects !== "function" || element.getClientRects().length > 0
 }

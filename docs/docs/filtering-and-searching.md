@@ -139,8 +139,7 @@ See the [search syntax reference](/docs/reference/search-syntax/) for every fiel
 
 The **Date** filter sets the time range of the list. Select it, then pick a range:
 
-- A quick range, from **Last 5 minutes** to **Last 90 days**, such as **Last 24 hours**, **Last 7 days**, or **This
-  month so far**.
+- A quick range, from **Last 15 minutes** to **Last 90 days**, such as **Last 24 hours** or **Last 7 days**.
 - **Custom range** for anything else.
 
 A custom range has two tabs:

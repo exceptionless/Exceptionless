@@ -77,7 +77,7 @@ The response is an array of events, newest first. This example shows one event, 
 
 Every field is described in [Event format](/docs/reference/event-format/).
 
-These routes return events and take the same parameters:
+These routes return events and take the same parameters, except where noted:
 
 | Route                                               | Events from                                                               |
 | --------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -85,7 +85,7 @@ These routes return events and take the same parameters:
 | `GET /api/v2/organizations/{organizationId}/events` | One organization.                                                         |
 | `GET /api/v2/projects/{projectId}/events`           | One project.                                                              |
 | `GET /api/v2/stacks/{stackId}/events`               | One stack.                                                                |
-| `GET /api/v2/events/by-ref/{referenceId}`           | Events with this reference ID.                                            |
+| `GET /api/v2/events/by-ref/{referenceId}`           | Events with this reference ID. Doesn't take `filter`, `sort`, or `time`.  |
 | `GET /api/v2/events/sessions/{sessionId}`           | Events in one session.                                                    |
 | `GET /api/v2/projects/{projectId}/events/sessions`  | Session start events in one project. Also by organization and across all. |
 
@@ -215,8 +215,8 @@ Link: <https://api.exceptionless.io/api/v2/projects/YOUR_PROJECT_ID/events?limit
 ```
 
 Stacks, projects, tokens, and the stack modes page by number: send `page=2`, `page=3`, and so on. For events and stacks,
-page-based paging stops at 1,000 results; past that, a request returns an empty array. Use cursors, or narrow the `time`
-range or `filter`, to reach older results.
+page-based paging stops after about 1,000 results; past that, a request returns an empty array. Use cursors, or narrow
+the `time` range or `filter`, to reach older results.
 
 ## Use a coding agent {#coding-agent}
 

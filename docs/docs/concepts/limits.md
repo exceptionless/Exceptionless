@@ -65,7 +65,7 @@ allowance. When the trial ends without a subscription, Free-plan limits apply.
 An event counts against the monthly limit when it's processed and stored. These don't count:
 
 - Events for stacks marked **Discarded**.
-- Events that the server throws away: those removed by [bot protection](#bots-and-spam), events dated outside the
+- Events that the server throws away: those discarded by [bot protection](#bots-and-spam), events dated outside the
   [submission window](#retention), and events that repeat a reference ID.
 - Events that a client filters out before sending them, such as logs below the minimum log level or events excluded by a
   plugin.
@@ -184,8 +184,9 @@ them on the project's **Settings** page under **Spam Detection**:
 - A list of user agents to ignore. The clients drop events from requests with a matching user agent before sending them.
 - **Reduce noise by automatically hiding high volumes of events coming from a single client IP address.** When a single
   public IP address causes 25 or more events in the project within a five-minute window, the server discards them and
-  removes the events already stored from that address in that project and window. This needs IP addresses, so it has no
-  effect when the project removes user identifiable information.
+  removes the events already stored from that address in that project and window. Events it discards don't count toward
+  your plan, but the ones already stored before the threshold was reached still do, even after they're removed. This
+  needs IP addresses, so it has no effect when the project removes user identifiable information.
 
 See [Projects](/docs/project-settings/) for both settings.
 

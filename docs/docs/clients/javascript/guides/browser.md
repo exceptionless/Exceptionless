@@ -75,10 +75,10 @@ import { Exceptionless } from "@exceptionless/browser"
 await Exceptionless.submitFeatureUsage("Export to CSV")
 ```
 
-The API key is visible to anyone who loads your page. That's expected: client API keys can only submit events and read
-client configuration, so they're fine to ship in apps. Never put a user or OAuth token in client code. See
-[API keys](/docs/security/#api-keys). See the [configuration reference](/docs/clients/javascript/client-configuration/)
-for every setting, including privacy options.
+The API key is visible to anyone who loads your page. That's expected: client API keys can only submit events, read
+client configuration, and connect the project to Zapier, so they're fine to ship in apps. Never put a user or OAuth
+token in client code. See [API keys](/docs/security/#api-keys). See the
+[configuration reference](/docs/clients/javascript/client-configuration/) for every setting, including privacy options.
 
 > [!NOTE]
 > Self-hosted instances use your own URL: add `c.serverUrl = "https://exceptionless.example.com"`.

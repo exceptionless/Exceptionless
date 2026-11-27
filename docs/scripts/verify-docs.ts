@@ -9,6 +9,7 @@
  */
 import { parse } from "lume/deps/yaml.ts"
 import { navUrls, parseDocsNav } from "./docs-nav.ts"
+import { markdownPathFor } from "./redirects.ts"
 
 /** The only hostname for the hosted API. The value lives in _data/site.json as `apiUrl`. */
 const site = JSON.parse(Deno.readTextFileSync("_data/site.json")) as { apiUrl: string; appUrl: string }
@@ -88,8 +89,8 @@ async function verifyNav(): Promise<void> {
   for (const url of listed) {
     if (!published.has(url)) {
       errors.push(`docs_nav.yml lists ${url}, which is not a published page.`)
-    } else if (!isFile(`${siteRoot}${markdownPath(url)}`)) {
-      errors.push(`docs_nav.yml lists ${url}, but its Markdown copy ${markdownPath(url)} is missing.`)
+    } else if (!isFile(`${siteRoot}${markdownPathFor(url)}`)) {
+      errors.push(`docs_nav.yml lists ${url}, but its Markdown copy ${markdownPathFor(url)} is missing.`)
     }
   }
 
@@ -180,11 +181,11 @@ async function verifyHostnames(): Promise<void> {
   )
 
   const exemptFiles = new Set(
-    [...bannedHostnameRoutes].flatMap((route) => [`${route}index.html`, markdownPath(route)]),
+    [...bannedHostnameRoutes].flatMap((route) => [`${route}index.html`, markdownPathFor(route)]),
   )
   const exemptMentions = new Map(bannedHostnames.map((hostname) => [hostname, 0]))
   for (const route of bannedHostnameRoutes) {
-    const text = await Deno.readTextFile(`${siteRoot}${markdownPath(route)}`)
+    const text = await Deno.readTextFile(`${siteRoot}${markdownPathFor(route)}`)
     for (const hostname of bannedHostnames) {
       exemptMentions.set(hostname, exemptMentions.get(hostname)! + text.split(hostname).length - 1)
     }
@@ -221,10 +222,6 @@ async function verifyHostnames(): Promise<void> {
       break
     }
   }
-}
-
-function markdownPath(url: string): string {
-  return url === "/docs/" ? "/docs.md" : `${url.replace(/\/$/, "")}.md`
 }
 
 function isFile(path: string): boolean {

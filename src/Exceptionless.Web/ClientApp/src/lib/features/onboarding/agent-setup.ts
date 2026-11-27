@@ -40,7 +40,7 @@ export function buildAgentSetupMarkdown(): string {
         [
             "- Replace `YOUR_API_KEY` with the API key the user gave you. If they didn't give one, ask for it. It's on the project's API Keys page in Exceptionless.",
             `- Replace \`YOUR_SERVER_URL\` with the server URL the user gave you. If they didn't give one, leave out the lines that set the server URL, and send REST API requests to \`${DEFAULT_SUBMISSION_URL}\`.`,
-            '- A client API key can only send events and read client configuration, so it is fine in shipped client code. Prefer configuration or environment variables so the key can be rotated. Never put a user or OAuth token in client code.',
+            '- A client API key can only send events, read client configuration, and connect the project to Zapier, so it is fine in shipped client code. Prefer configuration or environment variables so the key can be rotated. Never put a user or OAuth token in client code.',
             '- JavaScript clients queue events until `Exceptionless.startup()` finishes, so there is no need to await it.',
             "- A `localhost` server URL only works on the user's own machine. Phones and emulators need the machine's network address instead (`10.0.2.2` on the Android emulator)."
         ].join('\n'),

@@ -1,7 +1,6 @@
 import {
   type CalloutKind,
   calloutKinds,
-  escapeHtml,
   type Icons,
   isPromptKind,
   promptKindList,

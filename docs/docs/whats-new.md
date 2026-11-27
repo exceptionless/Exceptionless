@@ -101,7 +101,7 @@ they are saved with it, instead of a global picker at the top of the app. See [S
 
 Choose **Custom range** in the date filter to pick dates on a calendar or type them into **From** and **To** fields on
 the **Absolute** tab. The **Relative** tab keeps the date math expressions, such as `now-7d`. The quick ranges, from
-**Last 5 minutes** to **Last 90 days**, still apply with one click. See
+**Last 15 minutes** to **Last 90 days**, still apply with one click. See
 [Filtering and searching](/docs/filtering-and-searching/).
 
 ## Exie, the AI assistant
@@ -151,6 +151,10 @@ Events can now carry a top-level `environment`, such as `production` or `staging
 **Sessions** have an **Environment** filter, including **Unspecified** for events without one, and the filter is saved
 with your views. Environments don't split stacks: one error in staging and production is still one stack with one
 status. See [Environments](/docs/environments/) for how to send it.
+
+A project's new **Environments** settings tab lists the environments it uses. From there you can discard events from
+environments you don't list, such as a developer's machine, and turn notifications on or off per environment. See
+[Manage a project's environments](/docs/environments/#manage-a-projects-environments).
 
 ## JavaScript source maps
 
@@ -217,16 +221,16 @@ To upgrade, follow [Upgrading a self-hosted instance](/docs/self-hosting/upgradi
 
 ## Where things moved {#where-things-moved}
 
-| In the classic app                             | In 9.0                                                                                                                           |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Most frequent and new dashboards               | **Stacks**, with a saved view for each kind of event                                                                             |
-| Dashboard and recent (timeline) pages          | **Events**                                                                                                                       |
-| Sessions dashboard                             | **Sessions**                                                                                                                     |
-| Project and date pickers at the top of the app | Filters on each page, saved with the view                                                                                        |
-| Download & Configure Client                    | **Client Setup**, in the project's actions menu under **Settings** > **Projects**                                                |
-| Project settings tabs                          | Project pages: **General**, **API Keys**, **Settings**, **Configuration**, **Integrations**, **Stack Management**, and **Usage** |
-| My Account                                     | **Account**, **Notifications**, and **AI Tools** in your user menu                                                               |
-| Organization billing tab                       | **Billing** in your user menu                                                                                                    |
+| In the classic app                             | In 9.0                                                                                                                                             |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Most frequent and new dashboards               | **Stacks**, with a saved view for each kind of event                                                                                               |
+| Dashboard and recent (timeline) pages          | **Events**                                                                                                                                         |
+| Sessions dashboard                             | **Sessions**                                                                                                                                       |
+| Project and date pickers at the top of the app | Filters on each page, saved with the view                                                                                                          |
+| Download & Configure Client                    | **Client Setup**, in the project's actions menu under **Settings** > **Projects**                                                                  |
+| Project settings tabs                          | Project pages: **General**, **API Keys**, **Settings**, **Environments**, **Configuration**, **Integrations**, **Stack Management**, and **Usage** |
+| My Account                                     | **Account**, **Notifications**, and **AI Tools** in your user menu                                                                                 |
+| Organization billing tab                       | **Billing** in your user menu                                                                                                                      |
 
 ## Ask Exie
 

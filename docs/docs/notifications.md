@@ -96,7 +96,7 @@ options**. See [Mark future occurrences critical](/docs/managing-stacks/#mark-fu
 
 ## Daily project summary
 
-The daily summary is an email for one project that covers the previous day, in UTC:
+The daily summary is an email for one project that covers the 24 hours ending at 01:00 UTC:
 
 - the number of errors, how many unique stacks they came from, and how many were new,
 - the most frequent error stacks and the newest ones,
@@ -131,7 +131,7 @@ Slack**. See [Self-hosting configuration](/docs/self-hosting/configuration/).
 
 ## Ask Exie
 
-[Exie](/docs/ai/exie/) is on Medium plans and up.
+[Exie](/docs/ai/exie/) is on Medium plans and up, and during a free trial once you verify your email.
 
 ```prompt exie
 Which new errors appeared in this project in the last 24 hours?

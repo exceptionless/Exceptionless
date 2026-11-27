@@ -1,5 +1,3 @@
-import { initializeSiteSearch } from "./site-search.js"
-
 const root = document.documentElement
 const tabStorageKey = "docs-tab"
 
@@ -20,16 +18,36 @@ initializeAnchorNav()
 initializeReveal()
 initializeGitHubStars()
 
+// Load search on its own, with the same ?v= cache-busting query as this file, so the rest of the page doesn't wait for it.
 const searchModal = document.getElementById("site-search-modal")
 if (searchModal) {
-  initializeSiteSearch(searchModal)
+  const searchModuleUrl = new URL(`./site-search.js${new URL(import.meta.url).search}`, import.meta.url).href
+  import(searchModuleUrl).then(({ initializeSiteSearch }) => initializeSiteSearch(searchModal))
 }
 
 function initializeTheme() {
-  document.querySelectorAll("[data-theme-toggle]").forEach((toggle) => {
+  const toggles = document.querySelectorAll("[data-theme-toggle]")
+  // The theme-color tags follow the OS setting until the page knows the chosen theme; then both use it.
+  const themeColors = document.querySelectorAll("meta[name='theme-color']")
+  const syncPressed = () => {
+    const dark = root.dataset.theme === "dark"
+    toggles.forEach((toggle) => toggle.setAttribute("aria-pressed", String(dark)))
+    themeColors.forEach((meta) => meta.setAttribute("content", dark ? "#04070b" : "#ffffff"))
+    // Eager screenshot pairs load only the active theme's image; load the other one when the theme changes.
+    document.querySelectorAll(`img.only-${dark ? "dark" : "light"}[data-src]`).forEach((image) => {
+      image.srcset = image.dataset.srcset ?? ""
+      image.src = image.dataset.src ?? ""
+      image.removeAttribute("data-src")
+      image.removeAttribute("data-srcset")
+    })
+  }
+  syncPressed()
+
+  toggles.forEach((toggle) => {
     toggle.addEventListener("click", () => {
       const theme = root.dataset.theme === "dark" ? "light" : "dark"
       root.dataset.theme = theme
+      syncPressed()
       try {
         localStorage.setItem("theme", theme)
       } catch {
@@ -48,6 +66,7 @@ function initializeTheme() {
 
     if (stored !== "light" && stored !== "dark") {
       root.dataset.theme = event.matches ? "dark" : "light"
+      syncPressed()
     }
   })
 }
@@ -69,16 +88,27 @@ function initializeMobileNav() {
     return
   }
 
+  // While the menu covers the page, keep keyboard focus out of the content behind it.
+  const covered = document.querySelectorAll("#page-content, .site-footer")
   const setOpen = (open) => {
     document.body.classList.toggle("nav-open", open)
     toggle.setAttribute("aria-expanded", String(open))
     toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu")
+    covered.forEach((element) => {
+      element.inert = open
+    })
   }
 
   toggle.addEventListener("click", () => setOpen(!document.body.classList.contains("nav-open")))
   document.querySelectorAll("#mobile-nav a, #mobile-nav button").forEach((link) =>
     link.addEventListener("click", () => setOpen(false))
   )
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && document.body.classList.contains("nav-open")) {
+      setOpen(false)
+      toggle.focus()
+    }
+  })
   globalThis.addEventListener("resize", () => {
     if (globalThis.innerWidth > 1120) {
       setOpen(false)
@@ -93,25 +123,43 @@ function initializeDocsNav() {
     return
   }
 
-  const setOpen = (open) => {
+  // Below 900px the sidebar is an off-screen drawer. Keep its links out of the Tab order while it's closed.
+  const drawer = globalThis.matchMedia?.("(max-width: 900px)")
+  const isOpen = () => document.body.classList.contains("docs-nav-open")
+  const syncInert = () => {
+    sidebar.inert = Boolean(drawer?.matches) && !isOpen()
+  }
+
+  const setOpen = (open, { restoreFocus = false } = {}) => {
+    const wasOpen = isOpen()
     document.body.classList.toggle("docs-nav-open", open)
     toggle.setAttribute("aria-expanded", String(open))
+    syncInert()
+    if (open && !wasOpen) {
+      const target = sidebar.querySelector(".toc-active a, [aria-current='page']") ?? sidebar.querySelector("a")
+      target?.focus({ preventScroll: true })
+    } else if (!open && wasOpen && restoreFocus) {
+      toggle.focus()
+    }
   }
+
+  syncInert()
+  drawer?.addEventListener("change", syncInert)
 
   toggle.addEventListener("click", (event) => {
     event.stopPropagation()
-    setOpen(!document.body.classList.contains("docs-nav-open"))
+    setOpen(!isOpen())
   })
 
   document.addEventListener("click", (event) => {
-    if (document.body.classList.contains("docs-nav-open") && !sidebar.contains(event.target)) {
-      setOpen(false)
+    if (isOpen() && !sidebar.contains(event.target)) {
+      setOpen(false, { restoreFocus: sidebar.contains(document.activeElement) })
     }
   })
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      setOpen(false)
+    if (event.key === "Escape" && isOpen()) {
+      setOpen(false, { restoreFocus: true })
     }
   })
 }
@@ -210,13 +258,32 @@ function initializeHeadingAnchors() {
 }
 
 /** Copies text and shows the result on the button label for a moment. Falls back to a hint when copying is blocked. */
+/** Announces a short status, such as "Copied", to screen readers; a button's own text change isn't announced. */
+function announce(message) {
+  let region = document.getElementById("site-status")
+  if (!region) {
+    region = document.createElement("div")
+    region.id = "site-status"
+    region.className = "sr-only"
+    region.setAttribute("role", "status")
+    document.body.append(region)
+  }
+
+  region.textContent = ""
+  setTimeout(() => {
+    region.textContent = message
+  }, 50)
+}
+
 async function copyWithFeedback(text, label) {
   label.dataset.defaultLabel ??= label.textContent
   try {
     await navigator.clipboard.writeText(text)
     label.textContent = "Copied"
+    announce("Copied to clipboard")
   } catch {
     label.textContent = "Press Ctrl+C"
+    announce("Couldn't copy. Select the text and press Ctrl+C.")
   }
 
   setTimeout(() => {
@@ -308,6 +375,29 @@ function initializeScrollHints() {
       new ResizeObserver(update).observe(scroller)
     }
   })
+
+  // Code tab strips hide their scrollbar, so fade the edge that has more tabs past it.
+  document.querySelectorAll(".tab-list").forEach((list) => {
+    if (list.parentElement?.classList.contains("scroll-hint")) {
+      return
+    }
+
+    const hint = document.createElement("div")
+    hint.className = "scroll-hint tab-list-hint"
+    list.replaceWith(hint)
+    hint.append(list)
+    const update = () => {
+      const overflow = list.scrollWidth - list.clientWidth
+      hint.classList.toggle("can-scroll-start", list.scrollLeft > 1)
+      hint.classList.toggle("can-scroll-end", list.scrollLeft < overflow - 1)
+    }
+
+    update()
+    list.addEventListener("scroll", update, { passive: true })
+    if (globalThis.ResizeObserver) {
+      new ResizeObserver(update).observe(list)
+    }
+  })
 }
 
 function initializeCopyMarkdown() {
@@ -332,8 +422,10 @@ function initializeCopyMarkdown() {
         }
 
         label.textContent = "Copied"
+        announce("Markdown copied to clipboard")
       } catch {
         label.textContent = "Copy failed"
+        announce("Couldn't copy the Markdown")
       }
 
       setTimeout(() => {

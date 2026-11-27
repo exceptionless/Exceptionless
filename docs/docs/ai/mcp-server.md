@@ -360,9 +360,9 @@ For step-by-step jobs, see the recipes in [Coding agents](/docs/ai/coding-agents
 - **Grant only what the agent needs.** Clear **Stacks Write** unless the agent should change stacks, and **Saved Views
   Write** unless it should create, update, or delete views. Approve only the organizations it needs.
 - **The API key in setup results.** `get_client_setup_instructions` returns the project's API key so the agent can
-  configure a client. A client API key can only send events and read client configuration, so it's fine in shipped
-  client code. Keep it in configuration or an environment variable so you can rotate it. See
-  [API keys](/docs/security/#api-keys).
+  configure a client. A client API key can only send events, read client configuration, and connect the project to
+  Zapier, so it's fine in shipped client code. Keep it in configuration or an environment variable so you can rotate it.
+  See [API keys](/docs/security/#api-keys).
 - **Review connected applications** under **My Account** > **Applications**, and revoke any you don't use.
 
 See [AI privacy and security](/docs/ai/privacy/) for how Exie and the MCP server handle your data.

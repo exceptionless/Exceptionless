@@ -35,7 +35,8 @@ The client picks up the new value the next time it sends events or checks for up
 ## Read a value
 
 Values are in `Configuration.Settings`, a dictionary of strings with typed helpers. Each helper takes the key and an
-optional default, returned when the key is missing or can't be converted:
+optional default, returned when the key is missing or can't be converted. `GetGuid` is the exception: it throws a
+`FormatException` when the value isn't a valid GUID.
 
 ```csharp
 using Exceptionless;

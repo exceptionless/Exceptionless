@@ -259,7 +259,7 @@ Active Directory sign-in uses Windows directory APIs, so it doesn't work in the 
 
 ## Troubleshooting
 
-- To check the version you're running, open `/api/v2/about` on your app domain.
+- To check the version you're running, sign in and look at the app's footer.
 - Each pod serves `/health` for liveness and `/ready` for readiness on port 8080.
 - For more detailed logs, set `EX_Serilog__MinimumLevel__Default: Debug` in `config` and upgrade.
 

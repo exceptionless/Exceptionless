@@ -259,7 +259,7 @@
         "package": "@exceptionless/react-native",
         "install": "npx expo install @exceptionless/react-native @react-native-async-storage/async-storage",
         "language": "js",
-        "code": "import { Exceptionless } from \"@exceptionless/react-native\";\n\nawait Exceptionless.startup((c) => {\n  c.apiKey = \"YOUR_API_KEY\";\n});\n\n// JavaScript errors and promise rejections are captured automatically.\nawait Exceptionless.submitFeatureUsage(\"Checkout\");",
+        "code": "import { Exceptionless } from \"@exceptionless/react-native\";\n\nExceptionless.startup((c) => {\n  c.apiKey = \"YOUR_API_KEY\";\n});\n\n// JavaScript errors and promise rejections are captured automatically.\nvoid Exceptionless.submitFeatureUsage(\"Checkout\");",
         "caption": "Works with Expo and bare React Native. Native iOS crash reporting needs a development or release build, not Expo Go.",
         "docsUrl": "/docs/clients/javascript/guides/react-native/"
       }

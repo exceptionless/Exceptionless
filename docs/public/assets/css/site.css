@@ -37,10 +37,11 @@
   --primary-ring: rgb(102 192 42 / 35%);
   --primary-text: #111a0b;
   --link: #3c7d18;
-  --accent-blue: #2f7fd1;
+  --accent-blue: #1d6bb8;
   --danger: #d23b3b;
+  --danger-text: #b83232;
   --accent-violet: #7f56d9;
-  --accent-amber: #a86a00;
+  --accent-amber: #8a5700;
 
   --code-bg: #f6f8fa;
   --code-border: #e3e7ed;
@@ -81,6 +82,7 @@
   --link: #8fd65a;
   --accent-blue: #7cc4ff;
   --danger: #ff6b6b;
+  --danger-text: #ff6b6b;
   --accent-violet: #b9a2ff;
   --accent-amber: #f0b44c;
 
@@ -987,7 +989,7 @@ a.shot {
   font-size: 14px;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .proof-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1097,7 +1099,7 @@ a.shot {
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: color-mix(in srgb, var(--code-text) 60%, transparent);
+  color: color-mix(in srgb, var(--code-text) 75%, transparent);
   font: inherit;
   font-size: 13.5px;
   font-weight: 600;
@@ -1132,7 +1134,7 @@ a.shot {
 .code-caption {
   margin: 0;
   padding: 0 24px 18px;
-  color: color-mix(in srgb, var(--code-text) 60%, transparent);
+  color: color-mix(in srgb, var(--code-text) 75%, transparent);
   font-size: 13px;
 }
 
@@ -1327,7 +1329,7 @@ h1 .ai-mark {
 @media (max-width: 960px) {
   .feature-row,
   .feature-row.reverse {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 36px;
   }
 
@@ -2292,7 +2294,7 @@ main:has(> .section:last-child > .container > .cta) ~ .site-footer {
 .compare-table .icon {
   width: 18px;
   height: 18px;
-  color: var(--primary);
+  color: var(--link);
 }
 
 .compare-table .no {
@@ -2751,6 +2753,10 @@ main:has(> .section:last-child > .container > .cta) ~ .site-footer {
 
 .prose .callout-tip .callout-title {
   color: var(--link);
+}
+
+.prose .callout-caution .callout-title {
+  color: var(--danger-text);
 }
 
 .prose .callout-title .icon {
@@ -3423,6 +3429,10 @@ main:has(> .section:last-child > .container > .cta) ~ .site-footer {
   --scroll-fade: var(--surface);
 }
 
+.scroll-hint.tab-list-hint {
+  --scroll-fade: var(--code-bg);
+}
+
 .scroll-hint::before,
 .scroll-hint::after {
   content: "";
@@ -3496,6 +3506,15 @@ main:has(> .section:last-child > .container > .cta) ~ .site-footer {
   gap: 16px;
   max-width: 860px;
   margin: 0 auto;
+}
+
+.news-list > * {
+  min-width: 0;
+}
+
+.news-item h2,
+.news-item p {
+  overflow-wrap: anywhere;
 }
 
 .news-item {

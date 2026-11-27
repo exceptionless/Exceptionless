@@ -128,7 +128,7 @@ try {
 | Method                                                      | What it does                                                                              |
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `SetProperty(name, value)`                                  | Adds a value, shown in its own section on the event's **Extended Data** tab.              |
-| `AddObject(value, name, excludedPropertyNames, maxDepth)`   | Adds an object, serialized with optional excluded properties and a maximum depth.         |
+| `AddObject(data, name, maxDepth, excludedPropertyNames)`    | Adds an object, serialized with optional excluded properties and a maximum depth.         |
 | `AddTags(tags)`                                             | Adds tags.                                                                                |
 | `MarkAsCritical()`                                          | Marks the event critical.                                                                 |
 | `SetUserIdentity(identity, name)`                           | Sets the user for this event.                                                             |

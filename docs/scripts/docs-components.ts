@@ -73,7 +73,7 @@ export function renderPrompt(id: string, kind: PromptKind, text: string, icons: 
   const { title, icon } = promptKinds[kind]
   return `<div class="prompt prompt-${kind}" role="group" aria-labelledby="${id}-title"><div class="prompt-header"><span class="prompt-title" id="${id}-title">${
     icons[icon] ?? ""
-  }<span>${title}</span></span><button type="button" class="prompt-copy" data-copy-target="${id}-text" aria-label="Copy prompt">${
+  }<span>${title}</span></span><button type="button" class="prompt-copy" data-copy-target="${id}-text">${
     icons.copy ?? ""
   }<span data-copy-label>Copy</span></button></div><div class="prompt-text" id="${id}-text">${
     escapeHtml(text.trim())
