@@ -31,6 +31,9 @@ jobs:
     minReplicaCount: 2
     maxReplicaCount: 5
 
+storage:
+  storageClassName: managed-csi-premium
+
 config:
   EX_ClientSetupShowServerUrl: "false"
   EX_EnableSnapshotJobs: "true"

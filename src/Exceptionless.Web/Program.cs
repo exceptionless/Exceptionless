@@ -268,10 +268,9 @@ public partial class Program
                 await next();
             });
 
-            var serverAddressesFeature = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>();
-            bool ssl = options.AppMode != AppMode.Development && serverAddressesFeature is not null && serverAddressesFeature.Addresses.Any(a => a.StartsWith("https://"));
-
-            if (ssl)
+            // Resolves the HTTPS port lazily on the first request (HTTPS_PORT or the bound https addresses)
+            // and does nothing when there is no HTTPS endpoint. Server addresses are not known until startup.
+            if (options.AppMode != AppMode.Development)
                 app.UseHttpsRedirection();
 
             var frontendOptions = app.Services.GetRequiredService<AppOptions>();
