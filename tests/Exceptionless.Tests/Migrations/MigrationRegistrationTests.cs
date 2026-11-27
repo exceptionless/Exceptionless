@@ -24,10 +24,15 @@ public sealed class MigrationRegistrationTests : TestWithServices
     [Fact]
     public void MigrationRegistration_ProjectStackingSettingsMigration_IsVersionedAndResumable()
     {
-        var migration = GetService<IEnumerable<IMigration>>()
+        // Arrange
+        var migrations = GetService<IEnumerable<IMigration>>();
+
+        // Act
+        var migration = migrations
             .DistinctBy(migration => migration.GetType())
             .SingleOrDefault(migration => migration is MoveProjectStackingSettingsToData);
 
+        // Assert
         Assert.NotNull(migration);
         Assert.Equal(MigrationType.VersionedAndResumable, migration.MigrationType);
         Assert.Equal(12, migration.Version);

@@ -1,4 +1,3 @@
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Foundatio.Repositories;
 using Foundatio.Repositories.Migrations;
@@ -35,66 +34,64 @@ public sealed class MoveProjectStackingSettingsToData : MigrationBase
                 .SearchAfterPaging()
                 .PageLimit(BatchSize));
 
+        // Patch in place instead of saving whole documents, so a project edited while the migration runs isn't
+        // overwritten with the snapshot read above. Projects without these settings are left untouched (noop).
+        var patch = new ScriptPatch("""
+            def config = ctx._source.configuration;
+            def settings = config == null ? null : config.settings;
+            boolean moved = false;
+            if (settings != null) {
+                for (def key : params.keys) {
+                    if (!settings.containsKey(key)) {
+                        continue;
+                    }
+
+                    def value = settings.remove(key);
+                    moved = true;
+                    if (value == null || value.toString().trim().isEmpty()) {
+                        continue;
+                    }
+
+                    if (ctx._source.data == null) {
+                        ctx._source.data = new HashMap();
+                    }
+
+                    ctx._source.data[key] = value.toString().trim();
+                }
+            }
+
+            if (moved) {
+                config.version = (config.version == null ? 0 : config.version) + 1;
+            } else {
+                ctx.op = 'noop';
+            }
+            """)
+        {
+            Params = new Dictionary<string, object> { ["keys"] = SettingKeys }
+        };
+
         long scanned = 0;
-        long migrated = 0;
-        long values = 0;
+        long patched = 0;
         while (projects.Documents.Count is > 0)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            var changed = new List<Project>();
-            foreach (var project in projects.Documents)
-            {
-                int moved = MoveSettings(project);
-                if (moved is 0)
-                    continue;
+            var ids = projects.Documents
+                .Where(project => SettingKeys.Any(key => project.Configuration?.Settings.ContainsKey(key) is true))
+                .Select(project => project.Id)
+                .ToArray();
 
-                changed.Add(project);
-                values += moved;
-            }
-
-            if (changed.Count > 0)
-            {
-                await _projectRepository.SaveAsync(changed, options => options.Cache().Notifications(false));
-                migrated += changed.Count;
-            }
+            if (ids.Length > 0)
+                patched += await _projectRepository.PatchAsync(ids, patch, options => options.Cache().Notifications(false));
 
             scanned += projects.Documents.Count;
-            _logger.LogInformation("Scanned {ProjectCount} projects and moved stacking settings for {MigratedCount} so far", scanned, migrated);
+            _logger.LogInformation("Scanned {ProjectCount} projects and moved stacking settings for {PatchedCount} so far", scanned, patched);
             await context.Lock.RenewAsync();
 
             if (!await projects.NextPageAsync())
                 break;
         }
 
-        _logger.LogInformation("Moved {ValueCount} stacking settings to project data for {MigratedCount} of {ProjectCount} projects", values, migrated, scanned);
-    }
-
-    private static int MoveSettings(Project project)
-    {
-        var settings = project.Configuration?.Settings;
-        if (settings is null)
-            return 0;
-
-        int moved = 0;
-        foreach (string key in SettingKeys)
-        {
-            if (!settings.TryGetValue(key, out string? value))
-                continue;
-
-            settings.Remove(key);
-            moved++;
-
-            if (String.IsNullOrWhiteSpace(value))
-                continue;
-
-            project.Data ??= new DataDictionary();
-            project.Data[key] = value.Trim();
-        }
-
-        if (moved > 0)
-            project.Configuration!.IncrementVersion();
-
-        return moved;
+        _logger.LogInformation("Moved stacking settings to project data for {PatchedCount} of {ProjectCount} projects", patched, scanned);
     }
 }
