@@ -3534,12 +3534,6 @@ main:has(> .section:last-child > .container > .cta) ~ .site-footer {
   transform: translateY(-1px);
 }
 
-.post-meta {
-  color: var(--text-subtle);
-  font-size: 14px;
-  font-weight: 500;
-}
-
 .news-item h2 {
   margin: 6px 0 10px;
   font-size: 22px;
