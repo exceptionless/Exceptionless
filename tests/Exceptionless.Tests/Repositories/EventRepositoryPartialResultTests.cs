@@ -1,11 +1,12 @@
 using Elastic.Clients.Elasticsearch;
 using Exceptionless.Core.Repositories;
 using Foundatio.Repositories.Exceptions;
+using Foundatio.Xunit;
 using Xunit;
 
 namespace Exceptionless.Tests.Repositories;
 
-public class EventRepositoryPartialResultTests
+public sealed class EventRepositoryPartialResultTests(ITestOutputHelper output) : TestWithLoggingBase(output)
 {
     [Fact]
     public void EnsureComplete_WhenAllShardsSucceeded_DoesNotThrow()
