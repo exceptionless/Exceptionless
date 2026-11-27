@@ -40,8 +40,6 @@ type SearchIndexEntry = {
   headings?: SearchHeading[]
   /** Synonyms from the page's `keywords` front matter. */
   keywords?: string[]
-  /** News posts only, as YYYY-MM-DD. */
-  date?: string
   codeBlocks?: SearchCodeBlock[]
 }
 
@@ -430,7 +428,6 @@ async function renderNewsArticles(posts: ContentPage[]): Promise<string> {
       articles.push(
         [
           `<a class="news-item" href="${post.url}">`,
-          post.date ? `  ${renderPostDate(post.date)}` : "",
           `  <h2 id="${slugify(post.title)}">${escapeHtml(post.title)}</h2>`,
           excerpt ? `  <p>${escapeHtml(excerpt)}</p>` : "",
           `  <span class="text-link">Read more ${icons["arrow-right"] ?? ""}</span>`,
@@ -443,17 +440,6 @@ async function renderNewsArticles(posts: ContentPage[]): Promise<string> {
   }
 
   return `<div class="news-list">\n${articles.join("\n\n")}\n</div>`
-}
-
-function renderPostDate(date: string): string {
-  const day = date.slice(0, 10)
-  const label = new Date(`${day}T00:00:00.000Z`).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "UTC",
-  })
-  return `<time datetime="${day}">${label}</time>`
 }
 
 function postExcerpt(html: string): string {
@@ -535,7 +521,6 @@ async function collectHtmlRoutes(root: string): Promise<string[]> {
 
 async function writeSearchIndex(root: string, routes: string[], posts: ContentPage[]): Promise<void> {
   const entries: SearchIndexEntry[] = []
-  const postDates = new Map(posts.map((post) => [post.url, post.date]))
 
   for (const route of routes) {
     if (!shouldIndexRoute(route)) {
@@ -562,7 +547,6 @@ async function writeSearchIndex(root: string, routes: string[], posts: ContentPa
 
     const headings = extractSearchHeadings(mainHtml)
     const keywords = pageKeywords(cleanedHtml)
-    const date = postDates.get(route)?.slice(0, 10)
     entries.push({
       title: pageTitle(cleanedHtml) || titleFromRoute(route),
       url: route,
@@ -572,7 +556,6 @@ async function writeSearchIndex(root: string, routes: string[], posts: ContentPa
       ...(path.length ? { path } : {}),
       ...(headings.length ? { headings } : {}),
       ...(keywords.length ? { keywords } : {}),
-      ...(date ? { date } : {}),
       ...(codeBlocks.length ? { codeBlocks } : {}),
     })
   }

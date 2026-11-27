@@ -3534,11 +3534,6 @@ main:has(> .section:last-child > .container > .cta) ~ .site-footer {
   transform: translateY(-1px);
 }
 
-.news-item time {
-  display: block;
-}
-
-.news-item time,
 .post-meta {
   color: var(--text-subtle);
   font-size: 14px;

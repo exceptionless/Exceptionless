@@ -6,7 +6,7 @@ bodyClass: layout-post
   <header class="post-header">
     <a class="back-link" href="/news/">{{ icons["arrow-right"] }} All news</a>
     <h1 class="entry-title">{{ title }}</h1>
-    {{ if date || author }}<p class="post-meta">{{ if date }}<time datetime="{{ date.toISOString().slice(0, 10) }}">{{ date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }) }}</time>{{ /if }}{{ if date && author }} &middot; {{ /if }}{{ if author }}By {{ author }}{{ /if }}</p>{{ /if }}
+    {{ if author }}<p class="post-meta">By {{ author }}</p>{{ /if }}
   </header>
   <article class="post-body prose">
     <div class="entry-content">

@@ -643,13 +643,14 @@ function formatResultPath(result) {
 }
 
 function resultPathParts(result) {
-  // The index records the sidebar labels (section, groups) for docs pages, and the publish date for news posts.
+  // The index records the sidebar labels (section, groups) for docs pages. News posts show only their type label: their
+  // URLs carry the publish year, which would date them.
   if (Array.isArray(result.path) && result.path.length) {
     return [...result.path]
   }
 
-  if (result.date) {
-    return [formatResultDate(result.date)]
+  if (result.url.startsWith("/news/")) {
+    return []
   }
 
   const segments = result.url
@@ -663,13 +664,6 @@ function resultPathParts(result) {
 
   // A docs page directly under /docs/ has no section; the type label already says "Docs".
   return result.url.startsWith("/docs/") && segments.length <= 1 ? [] : segments.slice(0, -1).map(formatPathSegment)
-}
-
-function formatResultDate(value) {
-  const date = new Date(`${String(value).slice(0, 10)}T00:00:00Z`)
-  return Number.isNaN(date.getTime())
-    ? String(value)
-    : date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" })
 }
 
 function formatPathSegment(segment) {
