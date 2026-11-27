@@ -191,6 +191,11 @@ if (ctx._source.{field} == true) {{
 
     public async Task ReleaseNotificationAsync(Stack stack, PendingStackNotification kind)
     {
+        // Remove the guard before restoring the flag. While the flag is still clear nobody can claim, so a concurrent claimant can't clear
+        // the restored flag and then be refused by a guard this release is about to remove. If the patch fails the notification is lost,
+        // which is no worse than before the release.
+        await Cache.RemoveAsync(GetClaimCacheKey(stack, kind));
+
         string field = GetPendingField(kind);
         try
         {
@@ -199,11 +204,8 @@ if (ctx._source.{field} == true) {{
         }
         catch (DocumentNotFoundException)
         {
-            return;
+            // The stack was deleted, so there is nothing left to notify about.
         }
-
-        // Remove the guard last. If this fails the flag is set but the next claim is refused, which is no worse than before the release.
-        await Cache.RemoveAsync(GetClaimCacheKey(stack, kind));
     }
 
     public async Task UpdateTagsAsync(Stack stack)
