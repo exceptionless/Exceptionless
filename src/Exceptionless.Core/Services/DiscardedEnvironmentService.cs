@@ -142,7 +142,7 @@ public class DiscardedEnvironmentService
             if (count <= 0)
                 continue;
 
-            bool isUnspecified = bucket is UnspecifiedBucket;
+            bool isUnspecified = String.Equals(bucket, UnspecifiedBucket, StringComparison.Ordinal);
             string? name = null;
             if (!isUnspecified)
             {

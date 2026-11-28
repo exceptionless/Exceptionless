@@ -98,7 +98,7 @@ public partial class BulkOperationEndpointTests
             d.Event().TestProject().Status(StackStatus.Fixed).Date(now.AddHours(-1));
             d.Event().FreeProject().Status(StackStatus.Open).Date(now.AddHours(-1));
         });
-        var matching = stacks.Where(s => s.OrganizationId is SampleDataService.TEST_ORG_ID && s.Status is StackStatus.Open).Take(5).ToList();
+        var matching = stacks.Where(s => String.Equals(s.OrganizationId, SampleDataService.TEST_ORG_ID, StringComparison.Ordinal) && s.Status is StackStatus.Open).Take(5).ToList();
         var request = StackFilterRequest("stacks.change-status", "status:open", ("status", "ignored"));
 
         // Act
@@ -115,7 +115,7 @@ public partial class BulkOperationEndpointTests
         Assert.Equal(5, finished.Succeeded);
         Assert.Equal(0, finished.Failed);
         Assert.All(matching, s => Assert.Equal(StackStatus.Ignored, after[s.Id].Status));
-        Assert.Equal(StackStatus.Open, after[stacks.Single(s => s.OrganizationId is SampleDataService.FREE_ORG_ID).Id].Status);
+        Assert.Equal(StackStatus.Open, after[stacks.Single(s => String.Equals(s.OrganizationId, SampleDataService.FREE_ORG_ID, StringComparison.Ordinal)).Id].Status);
         Assert.Equal(StackStatus.Fixed, after[stacks.Single(s => s.Status is StackStatus.Fixed).Id].Status);
     }
 
@@ -249,9 +249,9 @@ public partial class BulkOperationEndpointTests
             d.Event().TestProject().Project(SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID);
             d.Event().FreeProject();
         });
-        var own = stacks.Single(s => s.ProjectId is SampleDataService.TEST_PROJECT_ID);
-        var otherProject = stacks.Single(s => s.ProjectId is SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID);
-        var foreign = stacks.Single(s => s.OrganizationId is SampleDataService.FREE_ORG_ID);
+        var own = stacks.Single(s => String.Equals(s.ProjectId, SampleDataService.TEST_PROJECT_ID, StringComparison.Ordinal));
+        var otherProject = stacks.Single(s => String.Equals(s.ProjectId, SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, StringComparison.Ordinal));
+        var foreign = stacks.Single(s => String.Equals(s.OrganizationId, SampleDataService.FREE_ORG_ID, StringComparison.Ordinal));
 
         // Act
         var created = await CreateOperationAsync(StackIdRequest("stacks.delete", [own.Id, otherProject.Id, foreign.Id]) with { ProjectId = SampleDataService.TEST_PROJECT_ID });

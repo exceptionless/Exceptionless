@@ -159,7 +159,7 @@ public class StackBulkSelectionResolverTests : IntegrationTestsBase
 
         // Assert
         Assert.Equal(1, preparation.Total);
-        Assert.Equal([stacks.Single(s => s.ProjectId is SampleDataService.TEST_PROJECT_ID).Id], pages.SelectMany(p => p).ToArray());
+        Assert.Equal([stacks.Single(s => String.Equals(s.ProjectId, SampleDataService.TEST_PROJECT_ID, StringComparison.Ordinal)).Id], pages.SelectMany(p => p).ToArray());
     }
 
     [Fact]

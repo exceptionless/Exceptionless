@@ -268,7 +268,7 @@ public sealed partial class ProjectEndpointTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(2, result.Environments.Count);
-        var typo = Assert.Single(result.Environments, e => e.Key is "prodution");
+        var typo = Assert.Single(result.Environments, e => String.Equals(e.Key, "prodution", StringComparison.Ordinal));
         Assert.Equal("Prodution", typo.Name);
         Assert.Equal(2, typo.Count);
         Assert.NotEqual(default, typo.LastSeenUtc);
