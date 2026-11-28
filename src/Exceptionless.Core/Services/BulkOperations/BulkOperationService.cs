@@ -94,7 +94,9 @@ public class BulkOperationService
 
         await _taskService.AddAsync(task);
         if (pinnedSelection is not null)
+        {
             await _cache.SetAsync(BackgroundTaskService.GetPinnedSelectionCacheKey(task.Id), pinnedSelection, BackgroundTaskService.TaskLifetime);
+        }
 
         await _taskService.EnqueueAsync(task, new BulkOperationWorkItem
         {
@@ -156,7 +158,9 @@ public class BulkOperationService
                 var retired = await _taskService.UpdateAsync(existing.Id, current =>
                 {
                     if (!current.IsActive || !BackgroundTaskService.IsStale(current, utcNow))
+                    {
                         return false;
+                    }
 
                     current.Finish(BackgroundTaskStatus.Failed, "Stopped because it made no progress for two hours.", utcNow);
                     return true;

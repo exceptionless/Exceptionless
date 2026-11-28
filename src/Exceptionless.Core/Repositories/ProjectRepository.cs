@@ -205,14 +205,22 @@ if (ctx._source.environments != null && ctx._source.environments.removeIf(enviro
 
         var changes = new Dictionary<string, object>(4);
         if (discardUnlistedEnvironments is { } discardUnlisted)
+        {
             changes["discard_unlisted_environments"] = discardUnlisted;
+        }
         if (discardEventsWithoutEnvironment is { } discardWithout)
+        {
             changes["discard_events_without_environment"] = discardWithout;
+        }
         if (notifyOtherEnvironments is { } notifyOther)
+        {
             changes["notify_other_environments"] = notifyOther;
+        }
 
-        if (changes.Count == 0)
+        if (changes.Count is 0)
+        {
             return Task.FromResult(false);
+        }
 
         changes["updated_utc"] = _timeProvider.GetUtcNow().UtcDateTime;
         return PatchEnvironmentsAsync(project, new PartialPatch(changes));
@@ -223,7 +231,9 @@ if (ctx._source.environments != null && ctx._source.environments.removeIf(enviro
         // Like SetIsConfiguredAsync: an id-only patch notification has no organization id, so publish with the project's ownership.
         bool modified = await PatchAsync(project.Id, operation, o => o.ImmediateConsistency().Notifications(false));
         if (!modified)
+        {
             return false;
+        }
 
         // Ingestion reads cached projects, so drop every cached copy, including the client configuration entry.
         await InvalidateCacheAsync([project]);

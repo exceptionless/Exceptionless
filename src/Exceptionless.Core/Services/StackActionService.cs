@@ -32,7 +32,9 @@ public class StackActionService
     {
         semanticVersion = null;
         if (String.IsNullOrEmpty(version))
+        {
             return true;
+        }
 
         semanticVersion = _semanticVersionParser.Parse(version);
         return semanticVersion is not null;
@@ -50,7 +52,9 @@ public class StackActionService
     public Task MarkFixedAsync(IReadOnlyCollection<Stack> stacks, SemanticVersion? version)
     {
         foreach (var stack in stacks)
+        {
             stack.MarkFixed(version, _timeProvider);
+        }
 
         return _stackRepository.UpdateStateAsync(stacks);
     }
@@ -72,7 +76,9 @@ public class StackActionService
     {
         var changed = stacks.Where(s => s.Status != status).ToList();
         if (changed.Count is 0)
+        {
             return;
+        }
 
         foreach (var stack in changed)
         {
@@ -99,7 +105,9 @@ public class StackActionService
     public Task DeleteAsync(IReadOnlyCollection<Stack> stacks)
     {
         foreach (var stack in stacks)
+        {
             stack.IsDeleted = true;
+        }
 
         return _stackRepository.SoftDeleteAsync(stacks);
     }

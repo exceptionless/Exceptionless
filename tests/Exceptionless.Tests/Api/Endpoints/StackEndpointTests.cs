@@ -215,7 +215,7 @@ public class StackEndpointTests : IntegrationTestsBase
         await _stackRepository.SaveAsync(pending, o => o.ImmediateConsistency());
 
         // Act
-        if (action == "status")
+        if (action is "status")
         {
             await SendRequestAsync(r => r.Post().AsGlobalAdminUser().AppendPath($"stacks/{ev.StackId}/change-status").QueryString("status", "fixed").StatusCodeShouldBeOk());
         }

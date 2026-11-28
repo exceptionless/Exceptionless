@@ -81,13 +81,16 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             // The pipeline only queues notifying environments, but the project settings may have changed while this was queued.
             if (!project.ShouldNotifyForEnvironment(ev.Environment))
             {
-                if (shouldLog) _logger.LogInformation("Skipping notification because the environment does not send notifications: environment={Environment}", ev.Environment);
+                if (shouldLog)
+                {
+                    _logger.LogInformation("Skipping notification because the environment does not send notifications: environment={Environment}", ev.Environment);
+                }
                 return JobResult.Success;
             }
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 15 minutes
             var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", ev.StackId), DateTime.MinValue);
-            if (wi is { TotalOccurrences: > 2, IsRegression: false, IsNew: false } && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(-15))
+            if (wi is { TotalOccurrences: > 2, IsRegression: false, IsNew: false } && !lastTimeSentUtc.Equals(DateTime.MinValue) && lastTimeSentUtc > _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(-15))
             {
                 if (shouldLog) _logger.LogInformation("Skipping message because of stack throttling: last sent={LastSentUtc} occurrences={TotalOccurrences}", lastTimeSentUtc, wi.TotalOccurrences);
                 return JobResult.Success;

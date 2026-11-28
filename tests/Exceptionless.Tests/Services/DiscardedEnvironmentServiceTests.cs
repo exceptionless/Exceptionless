@@ -52,7 +52,7 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
         var unspecified = Assert.Single(discarded, d => d.Key is null);
         Assert.Null(unspecified.Name);
         Assert.Equal(3, unspecified.Count);
-        Assert.Equal(1, Assert.Single(discarded, d => d.Key == "dev").Count);
+        Assert.Equal(1, Assert.Single(discarded, d => d.Key is "dev").Count);
     }
 
     [Fact]
@@ -61,7 +61,9 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
         // Arrange
         var names = Enumerable.Range(0, DiscardedEnvironmentService.MaximumNamesPerProject + 10).Select(i => $"env-{i}").ToList();
         foreach (string name in names)
+        {
             await _service.RecordAsync(ProjectId, [name]);
+        }
 
         // Act
         await _service.RecordAsync(ProjectId, ["ENV-0", "env-0"]);
@@ -70,8 +72,8 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
 
         // Assert
         Assert.Equal(DiscardedEnvironmentService.MaximumNamesPerProject, summary.Environments.Count);
-        Assert.DoesNotContain(summary.Environments, d => d.Key == names[^1]);
-        Assert.Equal(3, summary.Environments.Single(d => d.Key == "env-0").Count);
+        Assert.DoesNotContain(summary.Environments, d => String.Equals(d.Key, names[^1], StringComparison.Ordinal));
+        Assert.Equal(3, summary.Environments.Single(d => d.Key is "env-0").Count);
         Assert.Equal(12, summary.OtherEvents);
         Assert.Equal(10, summary.OtherNames);
         Assert.False(summary.OtherNamesCapped);

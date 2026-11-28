@@ -13,7 +13,9 @@ public class DeleteStacksBulkOperationHandler(IStackRepository stackRepository, 
     public override Task<BulkOperationCheckResult> ValidateAsync(BulkOperationRequest request)
     {
         if (request.Parameters.Count > 0)
+        {
             return Task.FromResult(BulkOperationCheckResult.Invalid("parameters", $"The {Type} operation does not take parameters."));
+        }
 
         return Task.FromResult(Ok);
     }

@@ -113,16 +113,22 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
         }
 
         foreach (var result in ValidateEnvironments(Environments))
+        {
             yield return result;
+        }
     }
 
     public static IEnumerable<ValidationResult> ValidateEnvironments(IReadOnlyCollection<ProjectEnvironment>? environments)
     {
         if (environments is null)
+        {
             yield break;
+        }
 
         if (environments.Count > ProjectEnvironment.MaximumCount)
+        {
             yield return new ValidationResult($"A project cannot list more than {ProjectEnvironment.MaximumCount} environments.", [nameof(Environments)]);
+        }
 
         var names = new HashSet<string>(StringComparer.Ordinal);
         foreach (var environment in environments)
@@ -135,7 +141,9 @@ public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates, ISup
             }
 
             if (!names.Add(ProjectEnvironment.GetKey(name)))
+            {
                 yield return new ValidationResult($"The environment '{name}' is listed more than once. Names are case-insensitive.", [nameof(Environments)]);
+            }
         }
     }
 }

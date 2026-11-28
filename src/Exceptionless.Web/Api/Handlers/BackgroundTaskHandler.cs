@@ -174,7 +174,9 @@ public class BackgroundTaskHandler(
 
             var ids = (model.Ids ?? []).Distinct(StringComparer.Ordinal).ToList();
             if (ids.Count is 0)
+            {
                 return (null, Result.Invalid(ValidationError.Create("selection.ids", "At least one id is required.")));
+            }
 
             if (ids.Count > MaxIds)
                 return (null, Result.Invalid(ValidationError.Create("selection.ids", $"At most {MaxIds} ids can be selected. Use a filter selection for more.")));

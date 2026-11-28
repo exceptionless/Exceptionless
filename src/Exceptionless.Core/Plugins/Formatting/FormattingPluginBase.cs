@@ -92,7 +92,9 @@ public abstract class FormattingPluginBase : PluginBase, IFormattingPlugin
     {
         var parts = new List<string> { new AppUrlBuilder(_options.BaseURL).Event(eventId) };
         if (!String.IsNullOrEmpty(message))
+        {
             parts.Add($"|{EscapeSlack(message)}");
+        }
 
         return $"<{String.Join(String.Empty, parts)}>";
     }

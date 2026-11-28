@@ -24,25 +24,33 @@ public class CheckEventEnvironmentAction : EventPipelineActionBase
     {
         var project = contexts.FirstOrDefault()?.Project;
         if (project is null || !project.DiscardUnlistedEnvironments)
+        {
             return;
+        }
 
         var discarded = new List<EventContext>();
         foreach (var ctx in contexts)
         {
             // Heartbeats and session ends never carry an environment. They only keep sessions alive and are never stored as events.
             if (ctx.Event.Environment is null && (ctx.Event.IsSessionHeartbeat() || ctx.Event.IsSessionEnd()))
+            {
                 continue;
+            }
 
             if (!project.ShouldDiscardEnvironment(ctx.Event.Environment))
+            {
                 continue;
+            }
 
             ctx.IsDiscarded = true;
             ctx.IsCancelled = true;
             discarded.Add(ctx);
         }
 
-        if (discarded.Count == 0)
+        if (discarded.Count is 0)
+        {
             return;
+        }
 
         _logger.LogInformation("Discarding {Count} events from environments that are not listed on the project", discarded.Count);
 

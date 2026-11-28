@@ -120,7 +120,9 @@ public class BackgroundTaskService
             await using var updateLock = await AcquireUpdateLockAsync(id, cancellationToken);
             var task = await GetAsync(id);
             if (task is not null && !String.Equals(task.OrganizationId, organizationId, StringComparison.Ordinal))
+            {
                 continue;
+            }
 
             await _cache.RemoveAllAsync([GetTaskCacheKey(id), GetPinnedSelectionCacheKey(id), GetCancelCacheKey(id)]);
         }
@@ -158,10 +160,14 @@ public class BackgroundTaskService
 
         await SaveAsync(task);
         if (await _cache.ListAddAsync(GetOrganizationIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime) is not 1)
+        {
             throw new InvalidOperationException("The background task could not be added to the organization index.");
+        }
 
         if (await _cache.ListAddAsync(GetActiveIndexCacheKey(task.OrganizationId), [task.Id], TaskLifetime) is not 1)
+        {
             throw new InvalidOperationException("The background task could not be added to the active index.");
+        }
     }
 
     /// <summary>
@@ -251,7 +257,9 @@ public class BackgroundTaskService
 
         bool isStale = IsStale(task, utcNow);
         if (!task.CanCancel && !isStale)
+        {
             return BackgroundTaskCancelResult.NotCancellable(task);
+        }
 
         bool requestCancellation = false;
         var updated = await UpdateAsync(id, current =>
@@ -263,7 +271,9 @@ public class BackgroundTaskService
             var currentUtcNow = _timeProvider.GetUtcNow().UtcDateTime;
             bool isStaleNow = IsStale(current, currentUtcNow);
             if (!current.CanCancel && !isStaleNow)
+            {
                 return false;
+            }
 
             requestCancellation = true;
             bool isRunningNow = current.Status is BackgroundTaskStatus.Running && !isStaleNow;
@@ -352,7 +362,9 @@ public class BackgroundTaskService
         {
             var batch = await _cache.GetListAsync<string>(key, page, IndexPageSize);
             if (!batch.HasValue || batch.Value.Count is 0)
+            {
                 break;
+            }
 
             ids.AddRange(batch.Value);
             if (batch.Value.Count < IndexPageSize)

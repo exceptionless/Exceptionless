@@ -229,7 +229,7 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
     {
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
-            return targetMethod!.Name == nameof(IQueue<EventNotification>.EnqueueAsync)
+            return targetMethod!.Name is nameof(IQueue<EventNotification>.EnqueueAsync)
                 ? Task.FromException<string>(new InvalidOperationException("The queue is unavailable."))
                 : throw new NotSupportedException(targetMethod.Name);
         }
@@ -654,7 +654,9 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         ev.Tags = ["late"];
         var context = new EventContext(ev, await GetOrganizationAsync(), project);
         foreach (var item in dev.Stack.SignatureInfo)
+        {
             context.StackSignatureData[item.Key] = item.Value;
+        }
 
         // Act
         await action.ProcessBatchAsync([context]);
@@ -675,14 +677,16 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
             object? result = targetMethod!.Invoke(Inner, args);
-            return targetMethod.Name == nameof(IStackRepository.GetStackBySignatureHashAsync) ? LoadAsync((Task<Stack?>)result!) : result;
+            return targetMethod.Name is nameof(IStackRepository.GetStackBySignatureHashAsync) ? LoadAsync((Task<Stack?>)result!) : result;
         }
 
         private async Task<Stack?> LoadAsync(Task<Stack?> load)
         {
             var stack = await load;
             if (stack is not null)
+            {
                 await AfterLoaded(stack);
+            }
 
             return stack;
         }
@@ -732,7 +736,9 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         var ev = NewEvent(environment, source);
         ev.SetVersion(version);
         if (critical)
+        {
             ev.Tags!.Add(Event.KnownTags.Critical);
+        }
 
         var context = await _pipeline.RunAsync(ev, await GetOrganizationAsync(), project);
         await RefreshDataAsync();

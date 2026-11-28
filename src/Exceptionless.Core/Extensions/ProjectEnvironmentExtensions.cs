@@ -11,12 +11,16 @@ public static class ProjectEnvironmentExtensions
     public static ProjectEnvironment? FindEnvironment(this Project project, string? environment)
     {
         if (String.IsNullOrEmpty(environment) || project.Environments is not { Count: > 0 })
+        {
             return null;
+        }
 
         foreach (var listed in project.Environments)
         {
             if (ProjectEnvironment.NamesMatch(listed.Name, environment))
+            {
                 return listed;
+            }
         }
 
         return null;
@@ -36,10 +40,14 @@ public static class ProjectEnvironmentExtensions
     public static bool ShouldDiscardEnvironment(this Project project, string? environment)
     {
         if (!project.DiscardUnlistedEnvironments)
+        {
             return false;
+        }
 
         if (String.IsNullOrEmpty(environment))
+        {
             return project.DiscardEventsWithoutEnvironment;
+        }
 
         return project.FindEnvironment(environment) is null;
     }

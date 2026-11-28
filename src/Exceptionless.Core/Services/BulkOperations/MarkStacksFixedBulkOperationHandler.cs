@@ -15,11 +15,15 @@ public class MarkStacksFixedBulkOperationHandler(IStackRepository stackRepositor
     {
         var unknown = RejectUnknownParameters(request, VersionParameter);
         if (!unknown.IsOk)
+        {
             return Task.FromResult(unknown);
+        }
 
         request.Parameters.TryGetValue(VersionParameter, out string? version);
         if (!StackActions.TryParseVersion(version, out _))
+        {
             return Task.FromResult(BulkOperationCheckResult.Invalid($"parameters.{VersionParameter}", "Invalid semantic version"));
+        }
 
         return Task.FromResult(Ok);
     }

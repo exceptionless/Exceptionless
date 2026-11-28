@@ -16,10 +16,14 @@ public class SnoozeStacksBulkOperationHandler(IStackRepository stackRepository, 
     {
         var unknown = RejectUnknownParameters(request, SnoozeUntilParameter);
         if (!unknown.IsOk)
+        {
             return Task.FromResult(unknown);
+        }
 
         if (!request.Parameters.TryGetValue(SnoozeUntilParameter, out string? value) || !TryParse(value, out var snoozeUntilUtc))
+        {
             return Task.FromResult(BulkOperationCheckResult.Invalid($"parameters.{SnoozeUntilParameter}", "A snooze end time (UTC) is required."));
+        }
 
         string? error = StackActions.ValidateSnooze(snoozeUntilUtc);
         return Task.FromResult(error is null ? Ok : BulkOperationCheckResult.Invalid($"parameters.{SnoozeUntilParameter}", error));

@@ -131,7 +131,9 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
 
                 var page = await GetPageAsync(task, resolver, pinnedSelection, context.CancellationToken);
                 if (page.Ids.Count is 0)
+                {
                     break;
+                }
 
                 // The user who started the task is authorized once, when it is created. Each batch re-checks the scope
                 // (organization and project) but not the user: someone removed from the organization mid-run still finishes
@@ -185,7 +187,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         catch (Exception ex) when (!IsPermanent(ex))
         {
             // Elasticsearch, cache and network hiccups: continue in a new work item from the saved counts and cursor. Rethrowing
-            // would use the queue's retries, which cover the whole work item, so an task that makes progress between errors
+            // would use the queue's retries, which cover the whole work item, so a task that makes progress between errors
             // would run out of deliveries while still marked running. After MaxTransientFailures in a row, give up.
             var failed = await _taskService.UpdateAsync(workItem.TaskId, current =>
             {
@@ -195,7 +197,9 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
                 current.Bulk!.RetryCount++;
                 current.Message = current.Bulk!.RetryCount >= _options.MaxTransientFailures ? "The operation stopped because of repeated errors." : "Retrying after a temporary error.";
                 if (current.Bulk!.RetryCount >= _options.MaxTransientFailures)
+                {
                     current.Finish(BackgroundTaskStatus.Failed, current.Message, UtcNow);
+                }
 
                 return true;
             });
@@ -241,7 +245,9 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
     {
         int size = Math.Max(1, _options.BatchSize);
         if (String.Equals(task.Bulk!.Cursor, ExhaustedCursor, StringComparison.Ordinal))
+        {
             return new BulkSelectionPage([], null);
+        }
 
         if (task.Bulk!.Selection.Kind is not BulkOperationSelectionKind.Ids)
             return await resolver.GetPageAsync(task, pinnedSelection, task.Bulk!.Cursor, size, cancellationToken);

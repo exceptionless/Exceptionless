@@ -168,7 +168,9 @@ if (ctx._source.{field} == true) {{
         {
             bool claimed = await PatchAsync(stack.Id, new ScriptPatch(script.TrimScript()), o => o.Notifications(false));
             if (!claimed)
+            {
                 return false;
+            }
 
             await InvalidateStackCacheAsync(stack);
 
@@ -296,7 +298,9 @@ ctx._source.updated_utc = params.updatedUtc;";
     public async Task SoftDeleteAsync(IReadOnlyCollection<Stack> stacks)
     {
         foreach (var stack in stacks)
+        {
             await PatchStackAsync(stack, new PartialPatch(new { is_deleted = true, updated_utc = _timeProvider.GetUtcNow().UtcDateTime }));
+        }
     }
 
     private async Task PatchStackAsync(Stack stack, IPatchOperation operation)
@@ -353,7 +357,7 @@ ctx._source.updated_utc = params.updatedUtc;";
 
     // A new notification is pending once per stack. A regression is pending once per fix (a stack regresses again only after it was fixed
     // again), so the fix date identifies the cycle and each cycle gets its own key.
-    private static string GetClaimCacheKey(Stack stack, PendingStackNotification kind) => kind == PendingStackNotification.Regression
+    private static string GetClaimCacheKey(Stack stack, PendingStackNotification kind) => kind is PendingStackNotification.Regression
         ? String.Concat("notification-claim:", stack.Id, ":", GetPendingField(kind), ":", stack.DateFixed?.Ticks ?? 0)
         : String.Concat("notification-claim:", stack.Id, ":", GetPendingField(kind));
 
